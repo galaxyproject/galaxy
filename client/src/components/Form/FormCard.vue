@@ -11,20 +11,23 @@
                     size="sm"
                     class="float-right"
                     v-b-tooltip.hover.bottom
-                    @click="onCollapse"
-                >
-                    <font-awesome-icon v-if="collapsed" icon="eye-slash" class="fa-fw" />
+                    @click="onCollapse">
+                    <font-awesome-icon v-if="expanded" icon="eye-slash" class="fa-fw" />
                     <font-awesome-icon v-else icon="eye" class="fa-fw" />
                 </b-button>
             </div>
-            <a class="portlet-title" @click="onCollapse" :href="href">
-                <i :class="['portlet-title-icon fa mr-1', icon]" style="display: inline"></i>
-                <span class="portlet-title-text">
-                    <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span>
-                </span>
-            </a>
+            <b-link class="portlet-title" v-if="collapsible" @click="onCollapse" href="#">
+                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
+                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
+            </b-link>
+            <span class="portlet-title" v-else>
+                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
+                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
+                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
+            </span>
         </div>
-        <div v-show="!collapsed" class="portlet-content">
+        <div v-show="expanded" class="portlet-content">
             <slot name="body" />
         </div>
     </div>
@@ -52,29 +55,24 @@ export default {
         },
         icon: {
             type: String,
-            default: "",
+            default: null,
         },
         collapsible: {
             type: Boolean,
             default: false,
         },
-        collapsed: {
+        expanded: {
             type: Boolean,
-            default: false,
+            default: true,
         },
     },
     data() {
         return {};
     },
-    computed: {
-        href() {
-            return this.collapsible ? "#" : null;
-        },
-    },
     methods: {
         onCollapse() {
             if (this.collapsible) {
-                this.$emit("update:collapsed", !this.collapsed);
+                this.$emit("update:expanded", !this.expanded);
             }
         },
     },

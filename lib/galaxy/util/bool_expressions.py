@@ -172,7 +172,7 @@ class TokenContainedEvaluator(TokenEvaluator):
         :param tokens: The list of tokens that should be evaluated to True.
         :type tokens: List[str]
         """
-        self.tokens = tokens
+        self.tokens = tokens or set()
 
     def evaluate(self, token: str) -> bool:
         return token in self.tokens

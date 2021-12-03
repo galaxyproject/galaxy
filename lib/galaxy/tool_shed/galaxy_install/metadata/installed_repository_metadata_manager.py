@@ -87,10 +87,10 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
     def reset_all_metadata_on_installed_repository(self):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         if self.relative_install_dir:
-            original_metadata_dict = self.repository.metadata
+            original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
-                self.repository.metadata = self.metadata_dict
+                self.repository.metadata_ = self.metadata_dict
                 self.update_in_shed_tool_config()
                 self.app.install_model.context.add(self.repository)
                 self.app.install_model.context.flush()

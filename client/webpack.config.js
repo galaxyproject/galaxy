@@ -2,9 +2,9 @@
 const webpack = require("webpack");
 const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
-const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -13,9 +13,10 @@ const styleBase = path.join(scriptsBase, "style");
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
-    const targetEnv = argv.mode || "development";
+    const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
     const buildconfig = {
+        mode: targetEnv,
         entry: {
             login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
@@ -26,17 +27,22 @@ module.exports = (env = {}, argv = {}) => {
             path: path.join(__dirname, "../", "/static/dist"),
             publicPath: "/static/dist/",
             filename: "[name].bundled.js",
-            chunkFilename: "[name].chunk.js",
         },
         resolve: {
-            extensions: ["*", ".js", ".json", ".vue", ".scss"],
+            extensions: [".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
+            fallback: {
+                timers: require.resolve("timers-browserify"),
+                stream: require.resolve("stream-browserify"),
+                "process/browser": require.resolve("process/browser"),
+            },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
                 "popper.js": path.resolve(__dirname, "node_modules/popper.js/"),
                 moment: path.resolve(__dirname, "node_modules/moment"),
+                uuid: path.resolve(__dirname, "node_modules/uuid"),
                 underscore: path.resolve(__dirname, "node_modules/underscore"),
                 // client-side application config
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
@@ -53,12 +59,14 @@ module.exports = (env = {}, argv = {}) => {
                     },
                     libs: {
                         name: "libs",
-                        test: /node_modules[\\/](?!(handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
+                        test: /node_modules[\\/](?!(jspdf|canvg|html2canvas|handsontable|pikaday|moment|elkjs)[\\/])|galaxy\/scripts\/libs/,
                         chunks: "all",
                         priority: -10,
                     },
                 },
             },
+            minimize: true,
+            minimizer: [`...`, new CssMinimizerPlugin()],
         },
         module: {
             rules: [
@@ -90,14 +98,10 @@ module.exports = (env = {}, argv = {}) => {
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
-                    use: [
-                        {
-                            loader: "expose-loader",
-                            options: {
-                                exposes: ["jQuery", "$"],
-                            },
-                        },
-                    ],
+                    loader: "expose-loader",
+                    options: {
+                        exposes: ["$", "jQuery"],
+                    },
                 },
                 {
                     test: require.resolve("underscore"),
@@ -105,20 +109,12 @@ module.exports = (env = {}, argv = {}) => {
                         {
                             loader: "expose-loader",
                             options: {
-                                exposes: ["underscore", "_"],
+                                exposes: {
+                                    globalName: ["underscore", "_"],
+                                },
                             },
                         },
                     ],
-                },
-                {
-                    test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
-                    use: {
-                        loader: "file-loader",
-                        options: {
-                            outputPath: "assets",
-                            publicPath: "../dist/assets/",
-                        },
-                    },
                 },
                 // Alternative to setting window.bundleEntries
                 // Just import "bundleEntries" in any endpoint that needs
@@ -149,9 +145,7 @@ module.exports = (env = {}, argv = {}) => {
                     use: [
                         {
                             loader: MiniCssExtractPlugin.loader,
-                            options: {
-                                hmr: process.env.NODE_ENV === "development",
-                            },
+                            options: {},
                         },
                         {
                             loader: "css-loader",
@@ -159,17 +153,13 @@ module.exports = (env = {}, argv = {}) => {
                         },
                         {
                             loader: "postcss-loader",
-                            options: {
-                                plugins: function () {
-                                    return [require("autoprefixer")];
-                                },
-                            },
                         },
                         {
                             loader: "sass-loader",
                             options: {
                                 sourceMap: true,
                                 sassOptions: {
+                                    quietDeps: true,
                                     includePaths: [
                                         path.join(styleBase, "scss"),
                                         path.resolve(__dirname, "./node_modules"),
@@ -183,14 +173,7 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
-                {
-                    test: /\.worker\.js$/,
-                    use: { loader: "worker-loader" },
-                },
             ],
-        },
-        node: {
-            setImmediate: false,
         },
         resolveLoader: {
             alias: {
@@ -205,30 +188,31 @@ module.exports = (env = {}, argv = {}) => {
             new webpack.ProvidePlugin({
                 $: `${libsBase}/jquery.custom.js`,
                 jQuery: `${libsBase}/jquery.custom.js`,
+                "window.jQuery": `${libsBase}/jquery.custom.js`,
                 _: "underscore",
                 Backbone: "backbone",
                 Galaxy: ["app", "monitor"],
+                Buffer: ["buffer", "Buffer"],
+                process: "process/browser",
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
-                sourceMap: true,
-            }),
-            // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
-            new OptimizeCssAssetsPlugin({
-                cssProcessorOptions: {
-                    map: {
-                        inline: false,
-                        annotation: true,
-                    },
-                },
             }),
             new DuplicatePackageCheckerPlugin(),
         ],
         devServer: {
+            client: {
+                overlay: {
+                    errors: true,
+                    warnings: false,
+                },
+            },
             hot: true,
             // proxy *everything* to the galaxy server
             // someday, this can be a more limited set -- e.g. `/api`, `/auth`
+            port: 8081,
+            host: "0.0.0.0",
             proxy: {
                 "/": {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
@@ -239,8 +223,8 @@ module.exports = (env = {}, argv = {}) => {
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
-        buildconfig.devtool = "source-map";
+    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
+        buildconfig.devtool = "eval-cheap-source-map";
     }
 
     return buildconfig;

@@ -51,8 +51,7 @@
 <%def name="javascripts()">
     ## TODO: remove when all libs are required directly in modules
     ${h.dist_js(
-        'libs.chunk',
-        'base.chunk'
+        'libs.bundled',
     )}
     ${self.javascript_entry()}
 </%def>

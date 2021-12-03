@@ -354,7 +354,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
             """
         ]
         contents = [clean_multiline_string(c) for c in contents]
-        source_list = [open(self.tmpfiles.create_tmpfile(c)) for c in contents]
+        source_list_f = [open(self.tmpfiles.create_tmpfile(c)) for c in contents]
 
         def no_Fs(string):
             return None if string.startswith('F') else string
@@ -363,9 +363,9 @@ class Test_MultiSourceDataProvider(BaseTestCase):
             return None if ('youtu.be' in string) else string
 
         source_list = [
-            base.LimitedOffsetDataProvider(source_list[0], filter_fn=no_Fs, limit=2, offset=1),
-            base.LimitedOffsetDataProvider(source_list[1], limit=1, offset=3),
-            base.FilteredDataProvider(source_list[2], filter_fn=no_youtube),
+            base.LimitedOffsetDataProvider(source_list_f[0], filter_fn=no_Fs, limit=2, offset=1),
+            base.LimitedOffsetDataProvider(source_list_f[1], limit=1, offset=3),
+            base.FilteredDataProvider(source_list_f[2], filter_fn=no_youtube),
         ]
         provider = self.provider_class(source_list)
         log.debug('provider: %s', provider)

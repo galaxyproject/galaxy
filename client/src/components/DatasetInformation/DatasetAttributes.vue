@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Edit Dataset Attributes</h4>
+        <h4 v-localize>Edit Dataset Attributes</h4>
         <b-alert v-if="messageText" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>
@@ -17,8 +17,7 @@
                                 id="dataset-attributes-default-save"
                                 @click="submit('attribute', 'attributes')"
                                 variant="primary"
-                                class="mr-1"
-                            >
+                                class="mr-1">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
                             <b-button @click="submit('attribute', 'autodetect')">

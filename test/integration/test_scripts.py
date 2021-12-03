@@ -178,7 +178,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
         except Exception as e:
             if isinstance(e, subprocess.CalledProcessError):
-                raise Exception("{}\nOutput was:\n{}".format(unicodify(e), unicodify(e.output)))
+                raise Exception(f"{unicodify(e)}\nOutput was:\n{unicodify(e.output)}")
             raise
 
     def write_config_file(self):

@@ -136,6 +136,9 @@
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
+  <tool file="validation_metadata_in_datatable.xml"/>
+  <tool file="validation_metadata_in_file.xml"/>
+  <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
@@ -248,6 +251,7 @@
   <tool file="mulled_example_broken_no_requirements_fallback.xml" />
 
   <tool file="simple_constructs.yml" />
+  <tool file="from_work_dir_glob.xml" />
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
   <tool file="cat_data_and_sleep.xml" />
@@ -267,6 +271,7 @@
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
   <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

@@ -1,7 +1,6 @@
 import _ from "underscore";
 
 import { visitInputs } from "components/Form/utilities";
-import WorkflowIcons from "components/Workflow/icons";
 import Utils from "utils/utils";
 
 export class WorkflowRunModel {
@@ -26,7 +25,6 @@ export class WorkflowRunModel {
         let hasReplacementParametersInToolForm = false;
 
         _.each(runData.steps, (step, i) => {
-            var icon = WorkflowIcons[step.step_type];
             var title = `${parseInt(i + 1)}: ${step.step_label || step.step_name}`;
             if (step.annotation) {
                 title += ` - ${step.annotation}`;
@@ -34,29 +32,18 @@ export class WorkflowRunModel {
             if (step.step_version) {
                 title += ` (Galaxy Version ${step.step_version})`;
             }
-
             step = Utils.merge(
                 {
                     index: i,
                     fixed_title: _.escape(title),
-                    icon: icon || "",
-                    help: null,
-                    citations: null,
-                    collapsible: true,
-                    collapsed: i > 0 && !isDataStep(step),
-                    text_enable: "Edit",
-                    text_disable: "Undo",
-                    cls_enable: "fa fa-edit",
-                    cls_disable: "fa fa-undo",
+                    expanded: i == 0 || isDataStep(step),
                     errors: step.messages,
                 },
                 step
             );
-
             this.steps[i] = step;
             this.links[i] = [];
             this.parms[i] = {};
-
             if (step.step_type == "parameter_input" && step.step_label) {
                 this.parameterInputLabels.push(step.step_label);
             }
@@ -93,6 +80,7 @@ export class WorkflowRunModel {
                 _.each(this.parms[j], (input, name) => {
                     var connection = connections_by_name[name];
                     if (connection) {
+                        input.connected = true;
                         input.type = "hidden";
                         input.help = input.step_linked ? `${input.help}, ` : "";
                         input.help += `Connected to '${connection.output_name}' from Step ${parseInt(i) + 1}`;
@@ -168,7 +156,7 @@ export class WorkflowRunModel {
                         is_data_input ||
                         (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
                     ) {
-                        step.collapsed = false;
+                        step.expanded = true;
                         hasOpenToolSteps = true;
                     }
                     if (is_runtime_value) {
@@ -186,6 +174,10 @@ export class WorkflowRunModel {
         });
         this.hasOpenToolSteps = hasOpenToolSteps;
         this.hasReplacementParametersInToolForm = hasReplacementParametersInToolForm;
+    }
+
+    isConnected(stepId, inputName) {
+        return this.parms[stepId][inputName].connected;
     }
 }
 

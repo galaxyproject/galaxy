@@ -7,31 +7,21 @@ from within Galaxy.
 """
 import logging
 import re
-from enum import Enum
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
     Callable,
-    List,
-    Optional,
-)
-
-from pydantic import (
-    BaseModel,
-    Extra,
-    Field,
 )
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_util import (
-    internal_galaxy_markdown_to_pdf,
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import PageContentFormat
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -68,229 +58,6 @@ _cp1252 = {
     158: '\u017e',  # latin small letter z with caron
     159: '\u0178',  # latin capital letter y with diaeresis
 }
-
-
-class PageContentFormat(str, Enum):
-    markdown = "markdown"
-    html = "html"
-
-
-ContentFormatField: PageContentFormat = Field(
-    default=PageContentFormat.html,
-    title="Content format",
-    description="Either `markdown` or `html`.",
-)
-
-ContentField: Optional[str] = Field(
-    default="",
-    title="Content",
-    description="Raw text contents of the first page revision (type dependent on content_format).",
-)
-
-
-class PageSummaryBase(BaseModel):
-    title: str = Field(
-        ...,  # Required
-        title="Title",
-        description="The name of the page",
-    )
-    slug: str = Field(
-        ...,  # Required
-        title="Identifier",
-        description="The title slug for the page URL, must be unique.",
-        regex=r"^[a-z0-9\-]+$",
-    )
-
-
-class CreatePagePayload(PageSummaryBase):
-    content_format: PageContentFormat = ContentFormatField
-    content: Optional[str] = ContentField
-    annotation: Optional[str] = Field(
-        default=None,
-        title="Annotation",
-        description="Annotation that will be attached to the page.",
-    )
-    invocation_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="Workflow invocation ID",
-        description="Encoded ID used by workflow generated reports.",
-    )
-
-    class Config:
-        use_enum_values = True  # When using .dict()
-        extra = Extra.allow  # Allow any other extra fields
-
-
-class PageSummary(PageSummaryBase):
-    id: EncodedDatabaseIdField = Field(
-        ...,  # Required
-        title="ID",
-        description="Encoded ID of the Page.",
-    )
-    model_class: str = Field(
-        ...,  # Required
-        title="Model class",
-        description="The class of the model associated with the ID.",
-        example="Page",
-    )
-    username: str = Field(
-        ...,  # Required
-        title="Username",
-        description="The name of the user owning this Page.",
-    )
-    published: bool = Field(
-        ...,  # Required
-        title="Published",
-        description="Whether this Page has been published.",
-    )
-    importable: bool = Field(
-        ...,  # Required
-        title="Importable",
-        description="Whether this Page can be imported.",
-    )
-    deleted: bool = Field(
-        ...,  # Required
-        title="Deleted",
-        description="Whether this Page has been deleted.",
-    )
-    latest_revision_id: EncodedDatabaseIdField = Field(
-        ...,  # Required
-        title="Latest revision ID",
-        description="The encoded ID of the last revision of this Page.",
-    )
-    revision_ids: List[EncodedDatabaseIdField] = Field(
-        ...,  # Required
-        title="List of revisions",
-        description="The history with the encoded ID of each revision of the Page.",
-    )
-
-
-class PageDetails(PageSummary):
-    content_format: PageContentFormat = ContentFormatField
-    content: Optional[str] = ContentField
-    generate_version: Optional[str] = Field(
-        None,
-        title="Galaxy Version",
-        description="The version of Galaxy this page was generated with.",
-    )
-    generate_time: Optional[str] = Field(
-        None,
-        title="Generate Date",
-        description="The date this page was generated.",
-    )
-
-    class Config:
-        extra = Extra.allow  # Allow any other extra fields
-
-
-class PageSummaryList(BaseModel):
-    __root__: List[PageSummary] = Field(
-        default=[],
-        title='List with summary information of Pages.',
-    )
-
-
-class PagesService:
-    """Common interface/service logic for interactions with pages in the context of the API.
-
-    Provides the logic of the actions invoked by API controllers and uses type definitions
-    and pydantic models to declare its parameters and return types.
-    """
-
-    def __init__(self, app: MinimalManagerApp):
-        self.manager = PageManager(app)
-        self.serializer = PageSerializer(app)
-        self.shareable_service = sharable.ShareableService(self.manager, self.serializer)
-
-    def index(self, trans, deleted: bool = False) -> PageSummaryList:
-        """Return a list of Pages viewable by the user
-
-        :param deleted: Display deleted pages
-
-        :rtype:     list
-        :returns:   dictionaries containing summary or detailed Page information
-        """
-        out = []
-
-        if trans.user_is_admin:
-            r = trans.sa_session.query(model.Page)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-        else:
-            # Transaction user's pages (if any)
-            user = trans.user
-            r = trans.sa_session.query(model.Page).filter_by(user=user)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-            # Published pages from other users
-            r = trans.sa_session.query(model.Page).filter(model.Page.user != user).filter_by(published=True)
-            if not deleted:
-                r = r.filter_by(deleted=False)
-            for row in r:
-                out.append(trans.security.encode_all_ids(row.to_dict(), recursive=True))
-
-        return PageSummaryList.parse_obj(out)
-
-    def create(self, trans, payload: CreatePagePayload) -> PageSummary:
-        """
-        Create a page and return Page summary
-        """
-        page = self.manager.create(trans, payload.dict())
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
-        rval['content'] = page.latest_revision.content
-        self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.parse_obj(rval)
-
-    def delete(self, trans, id: EncodedDatabaseIdField):
-        """
-        Deletes a page (or marks it as deleted)
-        """
-        page = base.get_object(trans, id, 'Page', check_ownership=True)
-
-        # Mark a page as deleted
-        page.deleted = True
-        trans.sa_session.flush()
-
-    def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
-        """View a page summary and the content of the latest revision
-
-        :param  id:    ID of page to be displayed
-
-        :rtype:     dict
-        :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
-        """
-        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
-        rval['content'] = page.latest_revision.content
-        rval['content_format'] = page.latest_revision.content_format
-        self.manager.rewrite_content_for_export(trans, rval)
-        return PageDetails.parse_obj(rval)
-
-    def show_pdf(self, trans, id: EncodedDatabaseIdField):
-        """
-        View a page summary and the content of the latest revision as PDF.
-
-        :param  id: ID of page to be displayed
-
-        :rtype: dict
-        :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
-        """
-        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
-        if page.latest_revision.content_format != PageContentFormat.markdown.value:
-            raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
-        internal_galaxy_markdown = page.latest_revision.content
-        trans.response.set_content_type("application/pdf")
-        return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, 'page')
-
-    def sharing(self, trans, id: EncodedDatabaseIdField, payload: Optional[sharable.SharingPayload] = None) -> sharable.SharingStatus:
-        """Allows to publish or share with other users the given resource (by id) and returns the current sharing
-        status of the resource.
-        """
-        return self.shareable_service.sharing(trans, id, payload)
 
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):

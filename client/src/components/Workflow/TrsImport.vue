@@ -8,8 +8,7 @@
                     :query-trs-server="queryTrsServer"
                     :query-trs-id="queryTrsId"
                     @onTrsSelection="onTrsSelection"
-                    @onError="onTrsSelectionError"
-                />
+                    @onError="onTrsSelectionError" />
             </div>
             <div v-if="isAutoImport && !hasErrorMessage" class="text-center my-2">
                 <b-spinner class="align-middle"></b-spinner>

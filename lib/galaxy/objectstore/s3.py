@@ -17,13 +17,14 @@ try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
 except ImportError:
-    boto = None  # type: ignore
+    boto = None  # type: ignore[assignment]
 
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.util import (
     directory_hash_id,
     string_as_bool,
     umask_fix_perms,
+    unlink,
     which,
 )
 from galaxy.util.path import safe_relpath
@@ -492,6 +493,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                           rel_path, source_file)
         except S3ResponseError:
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
+            raise
         return False
 
     def file_ready(self, obj, **kwargs):
@@ -612,7 +614,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 results = self._bucket.get_all_keys(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
@@ -620,7 +622,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
                     key = Key(self._bucket, rel_path)

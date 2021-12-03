@@ -1,7 +1,13 @@
+from pathlib import Path
+from typing import cast
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.wsgi import WSGIMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+from starlette.responses import (
+    FileResponse,
+    Response,
+)
 
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -63,13 +69,35 @@ class GalaxyCORSMiddleware(CORSMiddleware):
 
 
 def add_galaxy_middleware(app: FastAPI, gx_app):
-    x_frame_options = getattr(gx_app.config, 'x_frame_options', None)
+    x_frame_options = gx_app.config.x_frame_options
     if x_frame_options:
 
         @app.middleware("http")
         async def add_x_frame_options(request: Request, call_next):
             response = await call_next(request)
             response.headers['X-Frame-Options'] = x_frame_options
+            return response
+
+    nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
+    apache_xsendfile = gx_app.config.apache_xsendfile
+
+    if gx_app.config.sentry_dsn:
+        from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+        app.add_middleware(SentryAsgiMiddleware)
+
+    if nginx_x_accel_redirect_base or apache_xsendfile:
+
+        @app.middleware("http")
+        async def add_send_file_header(request: Request, call_next) -> Response:
+            response = await call_next(request)
+            if not isinstance(response, FileResponse):
+                return response
+            response = cast(FileResponse, response)
+            if nginx_x_accel_redirect_base:
+                full_path = Path(nginx_x_accel_redirect_base) / response.path
+                response.headers['X-Accel-Redirect'] = str(full_path)
+            if apache_xsendfile:
+                response.headers['X-Sendfile'] = str(response.path)
             return response
 
     if gx_app.config.get('allowed_origin_hostnames', None):

@@ -39,8 +39,8 @@ class TestDependencyDefinitionValidation(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_tool_dependency_repository(self):
-        '''Create and populate package_invalid_tool_dependency_xml_1_0_0.'''
-        '''
+        '''Create and populate package_invalid_tool_dependency_xml_1_0_0.
+
         This is step 1 - Create a repository package_invalid_tool_dependency_xml_1_0_0.
 
         Create a repository named package_invalid_tool_dependency_xml_1_0_0 that will contain only a single file named tool_dependencies.xml.
@@ -63,8 +63,8 @@ class TestDependencyDefinitionValidation(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_populate_tool_dependency_repository(self):
-        '''Verify package_invalid_tool_dependency_xml_1_0_0.'''
-        '''
+        '''Verify package_invalid_tool_dependency_xml_1_0_0.
+
         This is step 3 - Verify repository. The uploaded tool dependency XML should not have resulted in a new changeset.
         '''
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)

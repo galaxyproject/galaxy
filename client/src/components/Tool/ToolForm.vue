@@ -3,6 +3,7 @@
         <CurrentUser v-slot="{ user }">
             <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
                 <div v-if="currentHistoryId">
+                    <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                     <LoadingSpan v-if="showLoading" message="Loading Tool" />
                     <div v-if="showEntryPoints">
                         <ToolEntryPoints v-for="job in entryPoints" :job-id="job.id" :key="job.id" />
@@ -11,17 +12,18 @@
                         v-if="showSuccess"
                         :job-def="jobDef"
                         :job-response="jobResponse"
-                        :tool-name="toolName"
-                    />
+                        :tool-name="toolName" />
                     <Webhook v-if="showSuccess" type="tool" :tool-id="jobDef.tool_id" />
-                    <b-alert v-if="showError" show variant="danger">
-                        <h4>{{ errorTitle | l }}</h4>
-                        <p>
-                            The server could not complete the request. Please contact the Galaxy Team if this error
-                            persists.
-                        </p>
-                        <pre>{{ errorContentPretty }}</pre>
-                    </b-alert>
+                    <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+                        <b-alert show variant="danger">
+                            The server could not complete this request. Please verify your parameter settings, retry
+                            submission and contact the Galaxy Team if this error persists. A transcript of the submitted
+                            data is shown below.
+                        </b-alert>
+                        <small class="text-muted">
+                            <pre>{{ errorContentPretty }}</pre>
+                        </small>
+                    </b-modal>
                     <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
                     <ToolCard
                         v-if="showForm"
@@ -33,43 +35,39 @@
                         :options="formConfig"
                         :message-text="messageText"
                         :message-variant="messageVariant"
+                        :disabled="disabled || showExecuting"
                         @onChangeVersion="onChangeVersion"
                         @onUpdateFavorites="onUpdateFavorites"
                         itemscope="itemscope"
-                        itemtype="https://schema.org/CreativeWork"
-                    >
+                        itemtype="https://schema.org/CreativeWork">
                         <template v-slot:body>
                             <FormDisplay
                                 :id="formConfig.id"
                                 :inputs="formConfig.inputs"
                                 :validation-scroll-to="validationScrollTo"
                                 @onChange="onChange"
-                                @onValidation="onValidation"
-                            />
+                                @onValidation="onValidation" />
                             <FormElement
                                 v-if="emailAllowed(config, user)"
                                 id="send_email_notification"
                                 title="Email notification"
                                 help="Send an email notification when the job completes."
                                 type="boolean"
-                                v-model="useEmail"
-                            />
+                                v-model="useEmail" />
                             <FormElement
                                 v-if="remapAllowed"
                                 id="rerun_remap_job_id"
                                 :title="remapTitle"
                                 :help="remapHelp"
                                 type="boolean"
-                                v-model="useJobRemapping"
-                            />
+                                v-model="useJobRemapping" />
                             <FormElement
                                 v-if="reuseAllowed(user)"
                                 id="use_cached_job"
                                 title="Attempt to re-use jobs with identical parameters?"
                                 help="This may skip executing jobs that you have already run."
                                 type="boolean"
-                                v-model="useCachedJobs"
-                            />
+                                v-model="useCachedJobs" />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
@@ -77,8 +75,7 @@
                                 title="Execute"
                                 @onClick="onExecute(config, currentHistoryId)"
                                 :wait="showExecuting"
-                                :tooltip="tooltip"
-                            />
+                                :tooltip="tooltip" />
                         </template>
                     </ToolCard>
                 </div>
@@ -98,6 +95,7 @@ import ConfigProvider from "components/providers/ConfigProvider";
 import LoadingSpan from "components/LoadingSpan";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
+import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
 import UserHistories from "components/History/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
@@ -111,6 +109,7 @@ export default {
         FormDisplay,
         ToolCard,
         FormElement,
+        ToolEntryPoints,
         ToolSuccess,
         UserHistories,
         Webhook,
@@ -135,6 +134,7 @@ export default {
     },
     data() {
         return {
+            disabled: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -148,6 +148,7 @@ export default {
             remapAllowed: false,
             errorTitle: null,
             errorContent: null,
+            messageShow: false,
             messageVariant: "",
             messageText: "",
             useCachedJobs: false,
@@ -163,12 +164,19 @@ export default {
         };
     },
     created() {
-        this.requestTool();
+        this.requestTool().then(() => {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel) {
+                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+            }
+        });
+    },
+    beforeDestroy() {
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.on("change", () => {
-                this.onUpdate();
-            });
+            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
         }
     },
     computed: {
@@ -203,6 +211,10 @@ export default {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
         },
+        onHistoryChange() {
+            console.debug(`ToolForm::created - Loading history changes. [${this.id}]`);
+            this.onUpdate();
+        },
         onValidation(validationInternal) {
             this.validationInternal = validationInternal;
         },
@@ -213,9 +225,15 @@ export default {
             }
         },
         onUpdate() {
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData).then((data) => {
-                this.formConfig = data;
-            });
+            this.disabled = true;
+            console.debug("ToolForm - Updating input parameters.", this.formData);
+            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+                .then((data) => {
+                    this.formConfig = data;
+                })
+                .finally(() => {
+                    this.disabled = false;
+                });
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
@@ -225,16 +243,28 @@ export default {
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
-            getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id).then((data) => {
-                this.formConfig = data;
-                this.remapAllowed = this.job_id && data.job_remap;
-                this.showLoading = false;
-                this.showForm = true;
-                if (newVersion) {
-                    this.messageVariant = "success";
-                    this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
-                }
-            });
+            this.disabled = true;
+            console.debug("ToolForm - Requesting tool.", this.id);
+            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
+                .then((data) => {
+                    this.formConfig = data;
+                    this.remapAllowed = this.job_id && data.job_remap;
+                    this.showForm = true;
+                    this.messageShow = false;
+                    if (newVersion) {
+                        this.messageVariant = "success";
+                        this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
+                    }
+                })
+                .catch((error) => {
+                    this.messageVariant = "danger";
+                    this.messageText = `Loading tool ${this.id} failed: ${error}`;
+                    this.messageShow = true;
+                })
+                .finally(() => {
+                    this.disabled = false;
+                    this.showLoading = false;
+                });
         },
         onExecute(config, historyId) {
             if (this.validationInternal) {
@@ -263,22 +293,24 @@ export default {
             console.debug("toolForm::onExecute()", jobDef);
             submitJob(jobDef).then(
                 (jobResponse) => {
+                    this.showExecuting = false;
                     if (Galaxy.currHistoryPanel) {
                         Galaxy.currHistoryPanel.refreshContents();
                     }
-                    this.showForm = false;
                     if (jobResponse.produces_entry_points) {
                         this.showEntryPoints = true;
                         this.entryPoints = jobResponse.jobs;
                     }
                     const nJobs = jobResponse && jobResponse.jobs ? jobResponse.jobs.length : 0;
                     if (nJobs > 0) {
+                        this.showForm = false;
                         this.showSuccess = true;
                         this.jobDef = jobDef;
                         this.jobResponse = jobResponse;
                     } else {
                         this.showError = true;
-                        this.errorTitle = "Invalid success response. No jobs found.";
+                        this.showForm = true;
+                        this.errorTitle = "Job submission rejected.";
                         this.errorContent = jobResponse;
                     }
                     if ([true, "true"].includes(config.enable_tool_recommendations)) {
@@ -299,8 +331,7 @@ export default {
                     }
                     if (genericError) {
                         this.showError = true;
-                        this.showForm = false;
-                        this.errorTitle = "Job submission failed";
+                        this.errorTitle = "Job submission failed.";
                         this.errorContent = this.jobDef;
                     }
                 }

@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from os.path import join
+from typing import Any, Dict
 
 from galaxy.tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from galaxy.tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder
@@ -49,7 +50,7 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
     action_elem = parse_xml_string(xml)
     required_for_install_env_sh = '/path/to/existing.sh'
     all_env_paths = [required_for_install_env_sh]
-    action_dict = {}
+    action_dict: Dict[str, Any] = {}
     env_manager = EnvManager(mock_app)
 
     r_env_sh = '/path/to/go/env.sh'
@@ -65,7 +66,7 @@ def test_get_env_shell_file_paths_from_setup_environment_elem():
         # Verify new ones added.
         assert r_env_sh in all_env_paths
         # env_shell_file_paths includes everything
-        assert all([env in action_dict['env_shell_file_paths'] for env in all_env_paths])
+        assert all(env in action_dict['env_shell_file_paths'] for env in all_env_paths)
         # for every given repository there should be one env
         # file + the required_for_install_env_sh file
         assert len(action_dict['env_shell_file_paths']) == 3

@@ -16,6 +16,10 @@ class SeleniumIntegrationTestCase(integration_util.IntegrationTestCase, framewor
         self.tear_down_selenium()
         super().tearDown()
 
+    def restart(self, handle_reconfig=None):
+        super().restart(handle_reconfig=handle_reconfig)
+        self.reset_driver_and_session()
+
 
 __all__ = (
     'selenium_test',

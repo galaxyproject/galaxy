@@ -19,8 +19,7 @@
                     <b-button
                         class="m-1 workflow-import"
                         :data-version-name="version.name"
-                        @click="importVersion(version)"
-                    >
+                        @click="importVersion(version)">
                         {{ version.name }}
                         <font-awesome-icon icon="upload" />
                     </b-button>

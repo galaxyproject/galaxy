@@ -96,6 +96,6 @@ class DatabaseHeartbeat:
 
     def send_database_heartbeat(self):
         if self.active:
-            while not self.exit.isSet():
+            while not self.exit.is_set():
                 self.update_watcher_designation()
                 self.exit.wait(self.heartbeat_interval)

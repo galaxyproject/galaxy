@@ -4,7 +4,6 @@ import inspect
 
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import submodules
-from galaxy.util.getargspec import getfullargspec
 
 
 LEVEL_ALL = "all"
@@ -47,7 +46,7 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None):
                 # Look at the first argument to the linter to decide
                 # if we should lint the XML description or the abstract
                 # tool parser object.
-                first_arg = getfullargspec(value).args[0]
+                first_arg = inspect.getfullargspec(value).args[0]
                 if first_arg == "tool_xml":
                     if tool_xml is None:
                         # XML linter and non-XML tool, skip for now

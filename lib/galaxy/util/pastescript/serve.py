@@ -369,7 +369,7 @@ class NotFoundCommand(Command):
             print('(try running python setup.py develop)')
             return 2
         print('Known commands:')
-        longest = max([len(n) for n, c in commands])
+        longest = max(len(n) for n, c in commands)
         for name, command in commands:
             print(f'  {self.pad(name, length=longest)}  {command.load().summary}')
         return 2

@@ -62,6 +62,22 @@
                         <td>Full Path</td>
                         <td id="file_name">{{ dataset.file_name }}</td>
                     </tr>
+                    <tr v-if="dataset.created_from_basename">
+                        <td>Originally Created From a File Named</td>
+                        <td id="created_from_basename">{{ dataset.created_from_basename }}</td>
+                    </tr>
+                    <tr v-if="dataset.sources && dataset.sources.length > 0">
+                        <td>Sources</td>
+                        <td>
+                            <DatasetSources :sources="dataset.sources" />
+                        </td>
+                    </tr>
+                    <tr v-if="dataset.hashes && dataset.hashes.length > 0">
+                        <td>Hashes</td>
+                        <td>
+                            <DatasetHashes :hashes="dataset.hashes" />
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -77,6 +93,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faEye } from "@fortawesome/free-solid-svg-icons";
 import { getAppRoot } from "onload/loadConfig";
+import DatasetSources from "./DatasetSources";
+import DatasetHashes from "./DatasetHashes";
 
 library.add(faEdit, faEye);
 export default {
@@ -93,7 +111,9 @@ export default {
     },
     components: {
         FontAwesomeIcon,
+        DatasetHashes,
         DatasetProvider,
+        DatasetSources,
         DecodedId,
         UtcDate,
     },

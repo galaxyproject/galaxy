@@ -18,7 +18,6 @@ from galaxy import (
     util
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.folders import FoldersService
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFolderPayload,
@@ -31,6 +30,7 @@ from galaxy.schema.schema import (
     UpdateLibraryFolderPayload,
 )
 from galaxy.web import expose_api
+from galaxy.webapps.galaxy.services.library_folders import LibraryFoldersService
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -56,8 +56,8 @@ UndeleteQueryParam: Optional[bool] = Query(
 
 
 @router.cbv
-class FastAPIFolders:
-    service: FoldersService = depends(FoldersService)
+class FastAPILibraryFolders:
+    service: LibraryFoldersService = depends(LibraryFoldersService)
 
     @router.get(
         '/api/folders/{id}',
@@ -177,7 +177,7 @@ class FastAPIFolders:
 
 class FoldersController(BaseGalaxyAPIController):
 
-    service: FoldersService = depends(FoldersService)
+    service: LibraryFoldersService = depends(LibraryFoldersService)
 
     @expose_api
     def index(self, trans, **kwd):

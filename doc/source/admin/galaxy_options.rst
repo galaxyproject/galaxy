@@ -287,6 +287,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``maximum_upload_file_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum size of uploadable files, specified in bytes (default:
+    100GB). This value is ignored if an external upload server is
+    configured.
+:Default: ``107374182400``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``tool_config_file``
 ~~~~~~~~~~~~~~~~~~~~
@@ -1370,8 +1382,30 @@
     list. This is the address used to subscribe to the list. Uncomment
     and leave empty if you want to remove this option from the user
     registration form.
-    Example value 'galaxy-announce-join@bx.psu.edu'
+    Example value 'galaxy-announce-join@lists.galaxyproject.org'
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_subject``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The subject of the email sent to the mailing list join address.
+    See the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_body``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The body of the email sent to the mailing list join address. See
+    the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
 :Type: str
 
 
@@ -2305,8 +2339,8 @@
 :Description:
     Galaxy can upload user files in chunks without using nginx. Enable
     the chunk uploader by specifying a chunk size larger than 0. The
-    chunk size is specified in bytes (default: 100MB).
-:Default: ``104857600``
+    chunk size is specified in bytes (default: 10MB).
+:Default: ``10485760``
 :Type: int
 
 
@@ -2766,18 +2800,16 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sentry_sloreq_threshold``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+``sentry_event_level``
+~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sentry slow request logging.  Requests slower than the threshold
-    indicated below will be sent as events to the configured Sentry
-    server (above, sentry_dsn).  A value of '0' is disabled.  For
-    example, you would set this to .005 to log all queries taking
-    longer than 5 milliseconds.
-:Default: ``0.0``
-:Type: float
+    Determines the minimum log level that will be sent as an event to
+    Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or
+    CRITICAL.
+:Default: ``ERROR``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~
@@ -3876,6 +3908,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_source_display``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option allows users to view the tool wrapper source code.
+    This is safe to enable if you have not hardcoded any secrets in
+    any of the tool wrappers installed on this Galaxy server. If you
+    have only installed tool wrappers from  public tool sheds and
+    tools shipped with Galaxy there you can enable this option.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``job_metrics_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4078,17 +4124,35 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``enable_job_recovery``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_handler_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable job recovery (if Galaxy is restarted while cluster jobs are
-    running, it can "recover" them when it starts).  This is not safe
-    to use if you are running more than one Galaxy server using the
-    same database.
-:Default: ``true``
-:Type: bool
+    Each Galaxy job handler process runs one thread responsible for
+    discovering jobs and dispatching them to runners. This thread
+    operates in a loop and sleeps for the given number of seconds at
+    the end of each iteration. This can be decreased if extremely high
+    job throughput is necessary, but doing so can increase CPU usage
+    of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_runner_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy job handler process runs one thread per job runner
+    plugin responsible for checking the state of queued and running
+    jobs.  This thread operates in a loop and sleeps for the given
+    number of seconds at the end of each iteration. This can be
+    decreased if extremely high job throughput is necessary, but doing
+    so can increase CPU usage of handler processes. Float values are
+    allowed.
+:Default: ``1.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -4167,6 +4231,24 @@
     -actimeo=0 (Solaris).
 :Default: ``0``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_evaluation_strategy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines which process will evaluate the tool command line. If
+    set to "local" the tool command line, configuration files and
+    other dynamic values will be templated in the job handler process.
+    If set to ``remote`` the tool command line will be built as part
+    of the submitted job. Note that ``remote`` is a beta setting that
+    will be useful for materializing deferred datasets as part of the
+    submitted job. Note also that you have to set
+    ``metadata_strategy`` to ``extended`` if you set this option to
+    ``remote``.
+:Default: ``local``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4745,6 +4827,18 @@
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``tool_destinations.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``welcome_directory``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of New User Welcome data, a single directory containing
+    the images and JSON of Topics/Subtopics/Slides as export. This
+    location is relative to galaxy/static
+:Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
 
 

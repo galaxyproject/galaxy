@@ -9,7 +9,7 @@ Emit new History model object when done via .sync syntax
             <h3 data-description="history name display">{{ historyName || "(History Name)" }}</h3>
             <h5 class="history-size">
                 <span v-if="history.size">{{ history.size | niceFileSize }}</span>
-                <span v-else>(empty)</span>
+                <span v-else v-localize>(empty)</span>
             </h5>
 
             <!-- display title, annotation, tags -->
@@ -26,8 +26,7 @@ Emit new History model object when done via .sync syntax
                     placeholder="History Name"
                     trim
                     max-rows="4"
-                    data-description="name input"
-                ></b-textarea>
+                    data-description="name input"></b-textarea>
 
                 <b-textarea
                     class="mb-2"
@@ -35,8 +34,7 @@ Emit new History model object when done via .sync syntax
                     placeholder="Annotation (optional)"
                     trim
                     max-rows="4"
-                    data-description="annotation input"
-                ></b-textarea>
+                    data-description="annotation input"></b-textarea>
 
                 <StatelessTags class="mt-3 tags" v-model="tags" />
             </div>
@@ -51,8 +49,7 @@ Emit new History model object when done via .sync syntax
             :valid="valid"
             :dirty="dirty"
             @save="save"
-            @revert="revert"
-        />
+            @revert="revert" />
     </section>
 </template>
 

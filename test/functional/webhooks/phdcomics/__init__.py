@@ -24,10 +24,10 @@ def main(trans, webhook, params):
             content = urlopen(url).read()
             soap = BeautifulSoup(content, 'html.parser')
             pattern = r'(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
-            webhook.config['latest_id'] = max([
+            webhook.config['latest_id'] = max(
                 int(re.search(pattern, link.text).group(1))
                 for link in soap.find_all('link', text=re.compile(pattern))
-            ])
+            )
 
         random_id = random.randint(1, webhook.config['latest_id'])
         url = 'http://www.phdcomics.com/comics/archive.php?comicid=%d' % \

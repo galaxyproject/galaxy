@@ -64,8 +64,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
         repository_datatypes_count = self.get_repository_datatypes_count(repository)
 
     def test_0010_install_datatypes_repository(self):
-        '''Install the proteomics_datatypes_1450 repository into the Galaxy instance.'''
-        '''
+        '''Install the proteomics_datatypes_1450 repository into the Galaxy instance.
+
         This includes steps 1 and 2 - Get a count of datatypes and sniffers.
         Store a count of the current datatypes registry and sniffers in global variables, to compare with the updated count
         after changing the installation status of the proteomics_datatypes_1450 repository.
@@ -88,8 +88,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
 
     def test_0015_verify_datatypes_count(self):
-        '''Verify that datatypes were added in the previous step.'''
-        '''
+        '''Verify that datatypes were added in the previous step.
+
         This is step 3 - Verify the count of datatypes and sniffers is the previous count + the datatypes
                          contained within proteomics_datatypes_1450.
         Compare the current datatypes registry and sniffers with the values that were retrieved in the previous step.
@@ -103,8 +103,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
             (current_sniffers, base_sniffers_count)
 
     def test_0020_deactivate_datatypes_repository(self):
-        '''Deactivate the installed proteomics_datatypes_1450 repository.'''
-        '''
+        '''Deactivate the installed proteomics_datatypes_1450 repository.
+
         This is step 4 - Deactivate proteomics_datatypes_1450, verify the count of datatypes and sniffers is equal to
                          the count determined in step 1.
         Deactivate proteomics_datatypes_1450 and check that the in-memory datatypes and sniffers match the base values
@@ -122,8 +122,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
             (current_sniffers, base_sniffers_count)
 
     def test_0025_reactivate_datatypes_repository(self):
-        '''Reactivate the deactivated proteomics_datatypes_1450 repository.'''
-        '''
+        '''Reactivate the deactivated proteomics_datatypes_1450 repository.
+
         This is step 5 - Reactivate proteomics_datatypes, verify that the count of datatypes and sniffers has been
                          increased by the contents of the repository.
         '''
@@ -141,8 +141,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
             (current_sniffers, base_sniffers_count)
 
     def test_0030_uninstall_datatypes_repository(self):
-        '''Uninstall the installed proteomics_datatypes_1450 repository.'''
-        '''
+        '''Uninstall the installed proteomics_datatypes_1450 repository.
+
         This is step 6 - Uninstall proteomics_datatypes_1450, verify the count of datatypes and sniffers is equal
                          to the count determined in step 1.
         Uninstall proteomics_datatypes_1450 and check that the in-memory datatypes and sniffers match the base values
@@ -159,8 +159,8 @@ class TestInstallDatatypesSniffers(ShedTwillTestCase):
             (current_sniffers, base_sniffers_count)
 
     def test_0035_reinstall_datatypes_repository(self):
-        '''Reinstall the uninstalled proteomics_datatypes_1450 repository.'''
-        '''
+        '''Reinstall the uninstalled proteomics_datatypes_1450 repository.
+
         This is step 7 - Reinstall proteomics_datatypes_1450, verify that the count of datatypes and sniffers has been
                          increased by the contents of the repository.
         '''

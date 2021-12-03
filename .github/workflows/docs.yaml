@@ -1,5 +1,11 @@
 name: Build docs
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: true

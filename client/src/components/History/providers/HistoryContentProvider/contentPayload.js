@@ -150,7 +150,7 @@ export const contentPayload = (cfg = {}) => {
             filter(([a,b]) => !isNaN(a.maxHid) && !isNaN(b.maxHid)),
             withLatestFrom(pos$, hid$),
             map(([[lastResponse, response], pos, hid]) => {
-                const updatesAtTop = response.maxHid > lastResponse.maxHid;
+                const updatesAtTop = response.maxHid >= lastResponse.maxHid;
 
                 const scrollerExactlyAtTop = pos.cursor === 0 || pos.key === lastResponse.maxHid;
                 const fudge = 2;

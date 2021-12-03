@@ -36,8 +36,7 @@
                 title="Disconnect External Identity"
                 v-for="item in items"
                 :key="item.email"
-                class="d-block mt-3"
-            >
+                class="d-block mt-3">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </b-button>
 
@@ -48,8 +47,7 @@
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"
-            ></b-modal>
+                @cancel="doomedItem = null"></b-modal>
 
             <b-modal
                 centered
@@ -57,8 +55,7 @@
                 ref="deleteAndResetModal"
                 title="Deleting last external identity"
                 @ok="disconnectAndReset"
-                @cancel="doomedItem = null"
-            >
+                @cancel="doomedItem = null">
                 <p>
                     This is your only defined external identity. If you delete this identity, you will be logged out. To
                     log back in you will need to use a password associated with your account, or reconnect to this third

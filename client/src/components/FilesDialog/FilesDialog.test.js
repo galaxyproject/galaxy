@@ -1,10 +1,13 @@
 import FilesDialog from "./FilesDialog";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog";
 import DataDialogTable from "components/SelectionDialog/DataDialogTable";
-import { shallowMount } from "@vue/test-utils";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { BButton } from "bootstrap-vue";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+
 import {
     rootId,
     directoryId,
@@ -31,15 +34,20 @@ const api_paths_map = new Map([
 ]);
 const initComponent = async (props) => {
     const axiosMock = new MockAdapter(axios);
+    const localVue = createLocalVue();
 
-    const wrapper = shallowMount(FilesDialog, {
-        propsData: props,
-    });
+    localVue.use(BootstrapVue);
+    localVue.component("BBtnStub", BButton);
 
     // register axios paths
     for (const [path, response] of api_paths_map.entries()) {
         axiosMock.onGet(path).reply(200, response);
     }
+
+    const wrapper = shallowMount(FilesDialog, {
+        localVue,
+        propsData: props,
+    });
 
     await flushPromises();
 
@@ -107,7 +115,7 @@ describe("FilesDialog, file mode", () => {
         // assert that OK button is active
         expect(wrapper.vm.hasValue).toBe(true);
 
-        //    unselect each file
+        // unselect each file
         applyForEachFile((file) => utils.clickOn(file));
 
         // assert that OK button is disabled
@@ -209,9 +217,22 @@ describe("FilesDialog, directory mode", () => {
     });
 
     it("should select folders", async () => {
+        const btn = wrapper.find("#ok-btn");
+
+        expect(btn.attributes().disabled).toBe("disabled");
         await utils.open_root_folder(false);
         const folder = utils.getRenderedDirectory(directoryId);
-        await utils.getTable().$emit("clicked", folder);
+        await utils.getTable().$emit("open", folder);
+        await flushPromises();
+
+        const currentDirectory = wrapper.vm.currentDirectory;
+        expect(currentDirectory.id).toBe(folder.id);
+
+        // make sure that disabled attribute is absent
+        expect(btn.attributes().disabled).toBe(undefined);
+        wrapper.vm.selectLeaf(currentDirectory);
+        await flushPromises();
+
         // finalize function should be called
         expect(spyFinalize).toHaveBeenCalled();
         //should close modal

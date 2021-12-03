@@ -1,9 +1,9 @@
 import logging
 import os
 import shutil
+from inspect import getfullargspec
 
 from galaxy import model, util
-from galaxy.util.getargspec import getfullargspec
 
 
 log = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ def do_split(job_wrapper):
     input_datasets = []
     for input in parent_job.input_datasets:
         if input.name in split_inputs:
-            this_input_files = job_wrapper.get_input_dataset_fnames(input.dataset)
+            this_input_files = job_wrapper.job_io.get_input_dataset_fnames(input.dataset)
             if len(this_input_files) > 1:
                 log_error = f"The input '{str(input.name)}' is composed of multiple files - splitting is not allowed"
                 log.error(log_error)
@@ -96,7 +96,7 @@ def do_split(job_wrapper):
     # next, after we know how many divisions there are, add the shared inputs via soft links
     for input in parent_job.input_datasets:
         if input and input.name in shared_inputs:
-            names = job_wrapper.get_input_dataset_fnames(input.dataset)
+            names = job_wrapper.job_io.get_input_dataset_fnames(input.dataset)
             for dir in task_dirs:
                 for file in names:
                     os.symlink(file, os.path.join(dir, os.path.basename(file)))
@@ -135,8 +135,8 @@ def do_merge(job_wrapper, task_wrappers):
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         assert task_dirs, "Should be at least one sub-task!"
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
-        outputs = job_wrapper.get_output_hdas_and_fnames()
-        output_paths = job_wrapper.get_output_fnames()
+        outputs = job_wrapper.job_io.get_output_hdas_and_fnames()
+        output_paths = job_wrapper.job_io.get_output_fnames()
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         task_dirs.sort(key=lambda x: int(x.split('task_')[-1]))

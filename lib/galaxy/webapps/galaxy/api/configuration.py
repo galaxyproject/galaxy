@@ -209,6 +209,6 @@ def _user_to_model(user, security):
     return UserModel(**user.to_dict(view='element', value_mapper={'id': security.encode_id})) if user else None
 
 
-def _index(manager, trans, view, keys):
+def _index(manager: ConfigurationManager, trans, view, keys):
     serialization_params = parse_serialization_params(view, keys, 'all')
     return manager.get_configuration(trans, serialization_params)

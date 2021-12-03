@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import (
-    List,
     Optional,
 )
 
@@ -13,11 +12,12 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ItemTagAssociation
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import TagCollection
 
 taggable_item_names = {item: item for item in ItemTagAssociation.associated_item_names}
 # This Enum is generated dynamically and mypy can not statically infer it's real type
-# so it should be ignored. See:https://github.com/python/mypy/issues/4865#issuecomment-592560696
-TaggableItemClass = Enum('TaggableItemClass', taggable_item_names)  # type: ignore
+# so it should be ignored. See: https://github.com/python/mypy/issues/4865#issuecomment-592560696
+TaggableItemClass = Enum('TaggableItemClass', taggable_item_names)  # type: ignore[misc]
 
 
 class ItemTagsPayload(BaseModel):
@@ -31,7 +31,7 @@ class ItemTagsPayload(BaseModel):
         title="Item class",
         description="The name of the class of the item that will be tagged.",
     )
-    item_tags: Optional[List[str]] = Field(
+    item_tags: Optional[TagCollection] = Field(
         default=None,
         title="Item tags",
         description="The list of tags that will replace the current tags associated with the item.",
@@ -48,8 +48,8 @@ class TagsManager:
         """Apply a new set of tags to an item; previous tags are deleted."""
         tag_handler = GalaxyTagHandlerSession(trans.sa_session)
         new_tags: Optional[str] = None
-        if payload.item_tags and len(payload.item_tags) > 0:
-            new_tags = ",".join(payload.item_tags)
+        if payload.item_tags and len(payload.item_tags.__root__) > 0:
+            new_tags = ",".join(payload.item_tags.__root__)
         item = self._get_item(trans, payload)
         user = trans.user
         tag_handler.delete_item_tags(user, item)

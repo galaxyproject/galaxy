@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+import os
 import threading
 from contextvars import ContextVar
 from inspect import (
@@ -38,7 +39,6 @@ class ModelMapping(Bunch):
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
-        self._SessionLocal = SessionLocal
         self.session = context
         self.scoped_registry = context.registry
 
@@ -106,6 +106,24 @@ def versioned_objects(iter):
     for obj in iter:
         if hasattr(obj, '__create_version__'):
             yield obj
+
+
+def versioned_objects_strict(iter):
+    for obj in iter:
+        if hasattr(obj, '__create_version__'):
+            if obj.extension != "len":
+                # TODO: Custom builds (with .len extension) do not get a history or a HID.
+                # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
+                # Everything else needs to have a hid and a history
+                if not obj.history and not obj.history_id:
+                    raise Exception(f'HistoryDatsetAssociation {obj} without history detected, this is not valid')
+                elif not obj.hid:
+                    raise Exception(f'HistoryDatsetAssociation {obj} without has no hid, this is not valid')
+            yield obj
+
+
+if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+    versioned_objects = versioned_objects_strict  # noqa: F811
 
 
 def versioned_session(session):

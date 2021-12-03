@@ -1,5 +1,5 @@
 import logging
-
+from typing import Any, Dict, List
 
 import galaxy.model
 from galaxy.util import asbool
@@ -108,7 +108,7 @@ class VisualizationsConfigParser:
         # param modifiers provide extra information for other params (e.g. hda_ldda='hda' -> dataset_id is an hda id)
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
-        param_modifiers = {}
+        param_modifiers: Dict[str, Any] = {}
         param_modifier_elements = param_confs.findall('param_modifier') if param_confs is not None else []
         for param_modifier_conf in param_modifier_elements:
             param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
@@ -287,7 +287,7 @@ class DataSourceParser:
         # tests should NOT include expensive operations: reading file data, running jobs, etc.
         # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
         # currently tests are or'd only (could be and'd or made into compound boolean tests)
-        tests = []
+        tests: List[Dict[str, Any]] = []
         if not xml_tree_list:
             return tests
 
@@ -354,7 +354,7 @@ class DataSourceParser:
         the registry to convert the data_source into one or more appropriate
         params for the visualization.
         """
-        to_param_dict = {}
+        to_param_dict: Dict[str, Any] = {}
         if not xml_tree_list:
             return to_param_dict
 
@@ -419,13 +419,15 @@ class DictParser(dict):
             self.update(dict(parent_element.items()))
         for element in parent_element:
             if len(element) > 0:
+                asJson: Any
                 if element.tag == element[0].tag:
-                    aDict = ListParser(element)
+                    asJson = ListParser(element)
                 else:
                     aDict = DictParser(element)
-                if element.items():
-                    aDict.update(dict(element.items()))
-                self.update({element.tag: aDict})
+                    if element.items():
+                        aDict.update(dict(element.items()))
+                    asJson = aDict
+                self.update({element.tag: asJson})
             elif element.items():
                 self.update({element.tag: dict(element.items())})
             else:

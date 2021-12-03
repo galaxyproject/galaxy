@@ -13,8 +13,7 @@ either through the props, and make updates through the events -->
         :data-state="dataset.state"
         @keydown.arrow-left.self.stop="$emit('update:expanded', false)"
         @keydown.arrow-right.self.stop="$emit('update:expanded', true)"
-        @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-    >
+        @keydown.space.self.stop.prevent="$emit('update:selected', !selected)">
         <!-- name, state buttons, menus -->
         <nav class="content-top-menu p-1 d-flex cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
             <div class="d-flex flex-grow-1 overflow-hidden">
@@ -26,8 +25,7 @@ either through the props, and make updates through the events -->
                     v-if="!collapsed"
                     class="status-icon px-1"
                     :state="dataset.state"
-                    @click.stop="onStatusClick"
-                />
+                    @click.stop="onStatusClick" />
 
                 <IconButton
                     v-if="!collapsed && !dataset.visible"
@@ -35,8 +33,7 @@ either through the props, and make updates through the events -->
                     state="hidden"
                     title="Unhide"
                     icon="eye-slash"
-                    @click.stop="$emit('unhide')"
-                />
+                    @click.stop="$emit('unhide')" />
 
                 <IconButton
                     v-if="!collapsed && dataset.isDeleted && !dataset.purged"
@@ -44,8 +41,7 @@ either through the props, and make updates through the events -->
                     state="deleted"
                     title="Undelete"
                     icon="trash-restore"
-                    @click.stop="$emit('undelete')"
-                />
+                    @click.stop="$emit('undelete')" />
 
                 <div class="content-title title p-1 overflow-hidden">
                     <h5 class="text-truncate" v-if="collapsed">
@@ -57,7 +53,12 @@ either through the props, and make updates through the events -->
 
             <div class="d-flex">
                 <slot name="menu">
-                    <DatasetMenu :dataset="dataset" :expanded="expanded" :writable="writable" v-on="$listeners" />
+                    <DatasetMenu
+                        :dataset="dataset"
+                        :expanded="expanded"
+                        :writable="writable"
+                        @edit="edit"
+                        v-on="$listeners" />
                 </slot>
             </div>
         </nav>
@@ -85,16 +86,14 @@ either through the props, and make updates through the events -->
                             v-model="name"
                             placeholder="Dataset Name"
                             trim
-                            max-rows="4"
-                        ></b-textarea>
+                            max-rows="4"></b-textarea>
 
                         <b-textarea
                             class="mb-3"
                             v-model="annotation"
                             placeholder="Annotation (optional)"
                             trim
-                            max-rows="4"
-                        ></b-textarea>
+                            max-rows="4"></b-textarea>
 
                         <StatelessTags class="mt-2" v-model="tags" />
                     </div>
@@ -103,18 +102,17 @@ either through the props, and make updates through the events -->
                 <EditorMenu
                     class="ml-3 flex-grow-0 d-flex flex-column"
                     v-if="writable"
-                    model-name="Collection"
+                    model-name="Dataset"
                     :editing.sync="editing"
                     :writable="writable"
                     :valid="valid"
                     :dirty="dirty"
                     @save="save"
-                    @revert="revert"
-                />
+                    @revert="revert" />
             </div>
 
             <div class="details">
-                <DatasetSummary :dataset="dataset" class="summary" />
+                <DatasetSummary :dataset="dataset" class="summary" @edit="edit" />
 
                 <div class="display-applications" v-if="dataset.displayLinks.length">
                     <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
@@ -242,6 +240,9 @@ export default {
             if (this.dirty) {
                 this.reset();
             }
+        },
+        edit() {
+            this.backboneRoute("datasets/edit", { dataset_id: this.dataset.id });
         },
     },
 };

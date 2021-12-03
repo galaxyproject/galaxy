@@ -15,6 +15,7 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import sniff
+from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.hdas import HDADeserializer, HDAManager
@@ -187,7 +188,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Ensure ck_size is an integer before passing through to datatypes.
         if ck_size:
             ck_size = int(ck_size)
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        display_data, headers = data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        trans.response.headers.update(headers)
+        return display_data
 
     @web.legacy_expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
@@ -377,9 +380,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                    job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                         trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
                         overwrite=False)  # overwrite is False as per existing behavior
+                    trans.app.job_manager.enqueue(job, tool=trans.app.datatypes_registry.set_external_metadata_tool)
                     message = f'Detection was finished and changed the datatype to {datatype}.'
             else:
                 return self.message_exception(trans, f'Changing datatype "{data.extension}" is not allowed.')
@@ -390,7 +394,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
-                message = data.datatype.convert_dataset(trans, data, target_type)
+                try:
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                except DatatypeConverterNotFoundException as e:
+                    return self.message_exception(trans, str(e))
         elif operation == 'permission':
             # Adapt form request to API - style.
             payload_permissions = {}
@@ -887,66 +894,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return "OK"
         else:
             raise Exception(message)
-
-    @web.expose
-    def show_params(self, trans, dataset_id=None, from_noframe=None, **kwd):
-        """
-        Show the parameters used for the job associated with an HDA
-        """
-        try:
-            hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
-        except ValueError:
-            hda = None
-        if not hda:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(f"Invalid reference dataset id: {escape(str(dataset_id))}.")
-        if not self._can_access_dataset(trans, hda):
-            return trans.show_error_message("You are not allowed to access this dataset")
-
-        # Get the associated job, if any. If this hda was copied from another,
-        # we need to find the job that created the origial dataset association.
-        params_objects = None
-        job = None
-        tool = None
-        upgrade_messages = {}
-        has_parameter_errors = False
-        inherit_chain = hda.source_dataset_chain
-        if inherit_chain:
-            job_dataset_association = inherit_chain[-1][0]
-        else:
-            job_dataset_association = hda
-        if job_dataset_association.creating_job_associations:
-            job = job_dataset_association.creating_job_associations[0].job
-            if job:
-                # Get the tool object
-                try:
-                    # Load the tool
-                    toolbox = self.get_toolbox()
-                    tool = toolbox.get_tool(job.tool_id, job.tool_version)
-                    assert tool is not None, 'Requested tool has not been loaded.'
-                    # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
-                    try:
-                        params_objects = job.get_param_values(trans.app, ignore_errors=False)
-                    except Exception:
-                        params_objects = job.get_param_values(trans.app, ignore_errors=True)
-                        # use different param_objects in the following line, since we want to display original values as much as possible
-                        upgrade_messages = tool.check_and_update_param_values(job.get_param_values(trans.app, ignore_errors=True),
-                                                                              trans,
-                                                                              update_values=False)
-                        has_parameter_errors = True
-                except Exception:
-                    pass
-        if job is None:
-            return trans.show_error_message("Job information is not available for this dataset.")
-        # TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
-        return trans.fill_template("show_params.mako",
-                                   inherit_chain=inherit_chain,
-                                   history=trans.get_history(),
-                                   hda=hda,
-                                   job=job,
-                                   tool=tool,
-                                   params_objects=params_objects,
-                                   upgrade_messages=upgrade_messages,
-                                   has_parameter_errors=has_parameter_errors)
 
     @web.expose
     def copy_datasets(self, trans, source_history=None, source_content_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd):

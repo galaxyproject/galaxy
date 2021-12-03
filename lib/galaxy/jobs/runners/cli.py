@@ -33,8 +33,6 @@ class ShellJobRunner(AsynchronousJobRunner):
         super().__init__(app, nworkers)
 
         self.cli_interface = CliInterface()
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     def get_cli_plugins(self, shell_params, job_params):
         return self.cli_interface.get_plugins(shell_params, job_params)
@@ -81,7 +79,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         )
 
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
             log.exception(f"({galaxy_id_tag}) failure writing job script")
             job_wrapper.fail("failure preparing job script", exception=True)

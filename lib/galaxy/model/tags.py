@@ -1,12 +1,12 @@
 import logging
 import re
-from typing import Dict
+from typing import Dict, List, Optional, Tuple
 
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     strip_control_characters,
     unicodify,
@@ -28,7 +28,7 @@ class TagHandler:
     Manages CRUD operations related to tagging objects.
     """
 
-    def __init__(self, sa_session: scoped_session) -> None:
+    def __init__(self, sa_session: galaxy_scoped_session) -> None:
         self.sa_session = sa_session
         # Minimum tag length.
         self.min_tag_len = 1
@@ -156,6 +156,8 @@ class TagHandler:
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
         # Use lowercase name for searching/creating tag.
+        if name is None:
+            return
         lc_name = name.lower()
         # Get or create item-tag association.
         item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
@@ -288,7 +290,7 @@ class TagHandler:
         raw_tags = reg_exp.split(tag_str)
         return self.parse_tags_list(raw_tags)
 
-    def parse_tags_list(self, tags_list):
+    def parse_tags_list(self, tags_list: List[str]) -> List[Tuple[str, Optional[str]]]:
         """
         Return a list of tag tuples (name, value) pairs derived from a list.
         Method scrubs tag names and values as well.
@@ -339,13 +341,13 @@ class TagHandler:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list
 
-    def _get_name_value_pair(self, tag_str):
+    def _get_name_value_pair(self, tag_str) -> List[Optional[str]]:
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         if tag_str.startswith('#'):
             tag_str = f"name:{tag_str[1:]}"
         reg_exp = re.compile(f"[{self.key_value_separators}]")
-        name_value_pair = reg_exp.split(tag_str, 1)
+        name_value_pair: List[Optional[str]] = list(reg_exp.split(tag_str, 1))
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)
@@ -353,7 +355,7 @@ class TagHandler:
 
 
 class GalaxyTagHandler(TagHandler):
-    def __init__(self, sa_session: scoped_session):
+    def __init__(self, sa_session: galaxy_scoped_session):
         from galaxy import model
         TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
@@ -399,6 +401,17 @@ class GalaxyTagHandlerSession(GalaxyTagHandler):
         tag = super()._create_tag_instance(tag_name)
         self.created_tags[tag_name] = tag
         return tag
+
+
+class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
+
+    def _get_tag(self, tag_name):
+        """Get tag from cache or database."""
+        # Short-circuit session access
+        return self.created_tags.get(tag_name)
+
+    def get_tag_by_name(self, tag_name):
+        self.created_tags.get(tag_name)
 
 
 class CommunityTagHandler(TagHandler):

@@ -24,8 +24,8 @@ class TestUpdateManager(ShedTwillTestCase):
     '''Test the Galaxy update manager.'''
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
@@ -43,8 +43,8 @@ class TestUpdateManager(ShedTwillTestCase):
         self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_create_filtering_repository(self):
-        '''Create and populate the filtering_1410 repository.'''
-        '''
+        '''Create and populate the filtering_1410 repository.
+
         We are at step 1 - Create and populate the filtering_1410 repository.
         Create filtering_1410 and upload the tool tarball to it.
         '''
@@ -67,8 +67,8 @@ class TestUpdateManager(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_install_filtering_repository(self):
-        '''Install the filtering_1410 repository.'''
-        '''
+        '''Install the filtering_1410 repository.
+
         We are at step 2 - Install filtering_1410 to Galaxy.
         Install the filtering repository to Galaxy.
         '''
@@ -89,8 +89,8 @@ class TestUpdateManager(ShedTwillTestCase):
         self.verify_tool_metadata_for_installed_repository(installed_repository)
 
     def test_0015_upload_readme_file(self):
-        '''Upload readme.txt to filtering_1410.'''
-        '''
+        '''Upload readme.txt to filtering_1410.
+
         We are at step 3 - Upload a readme file.
         Upload readme.txt. This will have the effect of making the installed changeset revision not be the most recent downloadable revision,
         but without generating a second downloadable revision. Then sleep for 3 seconds to make sure the update manager picks up the new
@@ -109,8 +109,8 @@ class TestUpdateManager(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_check_for_displayed_update(self):
-        '''Browse installed repositories and verify update.'''
-        '''
+        '''Browse installed repositories and verify update.
+
         We are at step 4 - Verify that the browse page now shows an update available.
         The browse page should now show filtering_1410 as installed, but with a yellow box indicating that there is an update available.
         '''

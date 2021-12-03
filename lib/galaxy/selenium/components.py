@@ -4,6 +4,7 @@ from abc import (
     ABCMeta,
     abstractproperty,
 )
+from typing import Union
 
 from selenium.webdriver.common.by import By
 
@@ -23,7 +24,10 @@ class Target(metaclass=ABCMeta):
 
 class SelectorTemplate(Target):
 
-    def __init__(self, selector, selector_type, children=None, kwds=None, with_classes=None, with_data=None):
+    def __init__(self, selector: str, selector_type: str, children=None, kwds=None, with_classes=None, with_data=None):
+        if selector_type == "data-description":
+            selector_type = "css"
+            selector = f'[data-description="{selector}"]'
         self._selector = selector
         self.selector_type = selector_type
         self._children = children or {}
@@ -93,7 +97,7 @@ class SelectorTemplate(Target):
         elif self.selector_type == "id":
             by = By.ID
         else:
-            raise Exception("Unknown selector type")
+            raise Exception(f"Unknown selector type {self.selector_type}")
         return (by, self.selector)
 
     @property
@@ -137,6 +141,9 @@ class Text(Target):
     @property
     def element_locator(self):
         return (By.PARTIAL_LINK_TEXT, self.text)
+
+
+HasText = Union[Label, Text]
 
 
 class Component:

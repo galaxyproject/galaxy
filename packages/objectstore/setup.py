@@ -31,6 +31,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.objectstore',
+    'galaxy.objectstore.unittest_utils',
 ]
 ENTRY_POINTS = '''
         [console_scripts]

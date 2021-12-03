@@ -56,8 +56,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0010_install_datatype_converter_to_galaxy(self):
-        '''Install bed_to_gff_converter_0130 into the running Galaxy instance.'''
-        '''
+        '''Install bed_to_gff_converter_0130 into the running Galaxy instance.
+
         We are at step 1 - Install the bed_to_gff_converter repository.
         Install bed_to_gff_converter_0130, checking that the option to select the tool panel section is *not* displayed.
         '''
@@ -77,8 +77,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
                                 includes_tools_for_display_in_tool_panel=False)
 
     def test_0015_uninstall_and_verify_tool_panel_section(self):
-        '''Uninstall bed_to_gff_converter_0130 and verify that the saved tool_panel_section is None.'''
-        '''
+        '''Uninstall bed_to_gff_converter_0130 and verify that the saved tool_panel_section is None.
+
         We are at step 3 - Make sure the bed_to_gff_converter tool is not displayed in the tool panel.
         The previous tool panel section for a tool is only recorded in the metadata when a repository is uninstalled,
         so we have to uninstall it first, then verify that it was not assigned a tool panel section.

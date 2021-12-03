@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import re
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -7,7 +8,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
     Union,
 )
 
@@ -15,6 +15,7 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    ConstrainedStr,
     Extra,
     Field,
     FilePath,
@@ -85,19 +86,19 @@ DatasetStateField: Dataset.states = Field(
     description="The current state of this dataset.",
 )
 
-CreateTimeField: datetime = Field(
-    ...,
+CreateTimeField = Field(
     title="Create Time",
     description="The time and date this item was created.",
 )
 
-UpdateTimeField: datetime = Field(
-    ...,
+UpdateTimeField = Field(
     title="Update Time",
     description="The last time and date this item was updated.",
 )
 
-CollectionTypeField: str = Field(
+CollectionType = str  # str alias for now
+
+CollectionTypeField = Field(
     ...,
     title="Collection Type",
     description=(
@@ -133,12 +134,11 @@ ElementCountField: Optional[int] = Field(
 )
 
 PopulatedField: bool = Field(
-    ...,
     title="Populated",
     description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
 )
 
-ElementsField: List['DCESummary'] = Field(
+ElementsField = Field(
     [],
     title="Elements",
     description="The summary information of each of the elements inside the dataset collection.",
@@ -160,6 +160,11 @@ GenomeBuildField: Optional[str] = Field(
     "?",
     title="Genome Build",
     description="TODO",
+)
+
+ContentsUrlField = Field(
+    title="Contents URL",
+    description="The relative URL to access the contents of this History.",
 )
 
 
@@ -241,9 +246,18 @@ class HistoryContentSource(str, Enum):
     new_collection = "new_collection"
 
 
+class DatasetCollectionInstanceType(str, Enum):
+    history = "history"
+    library = "library"
+
+
+class TagItem(ConstrainedStr):
+    regex = re.compile(r"^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$")
+
+
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
-    __root__: List[str] = Field(
+    __root__: List[TagItem] = Field(
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
@@ -316,8 +330,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
     id: EncodedDatabaseIdField = EncodedEntityIdField
-    name: str = Field(
-        ...,
+    name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
     )
@@ -346,8 +359,8 @@ class HistoryItemBase(Model):
 
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
-    type_id: str = Field(
-        ...,
+    type_id: Optional[str] = Field(
+        default=None,
         title="Type - ID",
         description="The type and the encoded ID of this item. Used for caching.",
         example="dataset-616e371b2cc6c62e",
@@ -357,8 +370,8 @@ class HistoryItemCommon(HistoryItemBase):
         title="Type",
         description="The type of this item.",
     )
-    create_time: datetime = CreateTimeField
-    update_time: datetime = UpdateTimeField
+    create_time: Optional[datetime] = CreateTimeField
+    update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrl = RelativeUrlField
     tags: TagCollection
 
@@ -390,16 +403,19 @@ class HDAInaccessible(HistoryItemBase):
     state: Dataset.states = DatasetStateField
 
 
+HdaLddaField = Field(
+    DatasetSourceType.hda,
+    const=True,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+    deprecated=False  # TODO Should this field be deprecated in favor of model_class?
+)
+
+
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
-    hda_ldda: DatasetSourceType = Field(
-        DatasetSourceType.hda,
-        const=True,
-        title="HDA or LDDA",
-        description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-        deprecated=False  # TODO Should this field be deprecated in favor of model_class?
-    )
+    hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
     misc_info: str = Field(
@@ -554,10 +570,33 @@ class DCSummary(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
-    collection_type: str = CollectionTypeField
+    collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
+
+
+class HDAObject(Model):
+    """History Dataset Association Object"""
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
+    state: Dataset.states = DatasetStateField
+    hda_ldda: DatasetSourceType = HdaLddaField
+    history_id: EncodedDatabaseIdField = HistoryIdField
+
+    class Config:
+        extra = Extra.allow  # Can contain more fields like metadata_*
+
+
+class DCObject(Model):
+    """Dataset Collection Object"""
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+    model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
+    collection_type: CollectionType = CollectionTypeField
+    populated: Optional[bool] = PopulatedField
+    element_count: Optional[int] = ElementCountField
+    contents_url: Optional[RelativeUrl] = ContentsUrlField
+    elements: List['DCESummary'] = ElementsField
 
 
 class DCESummary(Model):
@@ -579,11 +618,14 @@ class DCESummary(Model):
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDASummary, DCSummary] = Field(
+    object: Union[HDAObject, HDADetailed, DCObject] = Field(
         ...,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
+
+
+DCObject.update_forward_refs()
 
 
 class DCDetailed(DCSummary):
@@ -601,7 +643,7 @@ class HDCASummary(HistoryItemCommon):
         title="Type",
         description="This is always `collection` for dataset collections.",
     )
-    collection_type: str = CollectionTypeField
+    collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
@@ -615,11 +657,7 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
-    contents_url: RelativeUrl = Field(
-        ...,
-        title="Contents URL",
-        description="The relative URL to access the contents of this dataset collection.",
-    )
+    contents_url: RelativeUrl = ContentsUrlField
 
 
 class HDCADetailed(HDCASummary):
@@ -634,7 +672,12 @@ class UpdateHDCAPayload(HDCADetailed):
     pass
 
 
-class UpdateHistoryContentsBatchPayload(Model):
+class UpdateHistoryContentsBatchPayload(BaseModel):
+    class Config:
+        use_enum_values = True  # when using .dict()
+        allow_population_by_field_name = True
+        extra = Extra.allow  # Allow any additional field
+
     items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
         ...,
         title="Items",
@@ -718,11 +761,7 @@ HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
-    contents_url: RelativeUrl = Field(
-        ...,
-        title="Contents URL",
-        description="The relative URL to access the contents of this History.",
-    )
+    contents_url: RelativeUrl = ContentsUrlField
     size: int = Field(
         ...,
         title="Size",
@@ -806,6 +845,14 @@ class HistoryBeta(HistoryDetailed):
     )
 
 
+AnyHistoryView = Union[
+    HistoryBeta, HistoryDetailed, HistorySummary,
+    # Any will cover those cases in which only specific `keys` are requested
+    # otherwise the validation will fail because the required fields are not returned
+    Any,
+]
+
+
 class ExportHistoryArchivePayload(Model):
     gzip: Optional[bool] = Field(
         default=True,
@@ -870,8 +917,6 @@ class CreateHistoryPayload(Model):
         title="Archive Source",
         description=(
             "The URL that will generate the archive to import when `archive_type='url'`. "
-            # This seems a bit odd but the create history action expects `archive_source` to be != None
-            "When importing from a file using `archive_file`, please set `archive_source=''`."
         ),
     )
     archive_type: Optional[HistoryImportArchiveSourceType] = Field(
@@ -882,11 +927,80 @@ class CreateHistoryPayload(Model):
     archive_file: Optional[Any] = Field(
         default=None,
         title="Archive File",
-        description="Detailed file information when importing the history from a file.",
+        description="Uploaded file information when importing the history from a file.",
     )
 
 
-class JobExportHistoryArchive(Model):
+class CollectionElementIdentifier(Model):
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the element.",
+    )
+    src: ColletionSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of the element.",
+    )
+    id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="ID",
+        description="The encoded ID of the element.",
+    )
+    collection_type: Optional[CollectionType]
+    element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
+        default=None,
+        title="Element Identifiers",
+        description="List of elements that should be in the new sub-collection.",
+    )
+    tags: Optional[List[str]] = Field(
+        default=None,
+        title="Tags",
+        description="The list of tags associated with the element.",
+    )
+
+
+CollectionElementIdentifier.update_forward_refs()
+
+
+class CreateNewCollectionPayload(Model):
+    collection_type: CollectionType = CollectionTypeField
+    element_identifiers: List[CollectionElementIdentifier] = Field(
+        ...,
+        title="Element Identifiers",
+        description="List of elements that should be in the new collection.",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        title="Name",
+        description="The name of the new collection.",
+    )
+    hide_source_items: Optional[bool] = Field(
+        default=False,
+        title="Hide Source Items",
+        description="Whether to mark the original HDAs as hidden.",
+    )
+    copy_elements: Optional[bool] = Field(
+        default=False,
+        title="Copy Elements",
+        description="Whether to create a copy of the source HDAs for the new collection.",
+    )
+    instance_type: Optional[DatasetCollectionInstanceType] = Field(
+        default=DatasetCollectionInstanceType.history,
+        title="Instance Type",
+        description="The type of the instance, either `history` (default) or `library`.",
+    )
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=history`.",
+    )
+    folder_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
+    )
+
+
+class JobExportHistoryArchiveModel(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -927,6 +1041,10 @@ class JobExportHistoryArchive(Model):
         title="External Download Permanent URL",
         description="Fully qualified URL to download this particular version of the exported history archive.",
     )
+
+
+class JobExportHistoryArchiveCollection(Model):
+    __root__: List[JobExportHistoryArchiveModel]
 
 
 class LabelValuePair(BaseModel):
@@ -1905,9 +2023,9 @@ class BasicRoleModel(BaseModel):
 
 
 class RoleModel(BasicRoleModel):
-    description: str = RoleDescriptionField
+    description: Optional[str] = RoleDescriptionField
     url: str = Field(title="URL", description="URL for the role")
-    model_class: str = Field(title="Model class", description="Database model class (Role)")
+    model_class: str = ModelClassField("Role")
 
 
 class RoleDefinitionModel(BaseModel):
@@ -1923,7 +2041,8 @@ class RoleListModel(BaseModel):
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
+# TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
+RoleNameIdTuple = List[str]  # Tuple[str, EncodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
@@ -2314,7 +2433,7 @@ class DatasetAssociationRoles(Model):
 
 class UpdateDatasetPermissionsPayload(Model):
     action: Optional[DatasetPermissionAction] = Field(
-        ...,
+        DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
@@ -2348,4 +2467,285 @@ class DeleteHDCAResult(Model):
         ...,
         title="Deleted",
         description="True if the collection was successfully deleted.",
+    )
+
+
+AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
+AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
+
+AnyJobStateSummary = Union[
+    JobStateSummary,
+    ImplicitCollectionJobsStateSummary,
+    WorkflowInvocationStateSummary,
+]
+
+HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+
+# Sharing -----------------------------------------------------------------
+
+
+class SharingOptions(str, Enum):
+    """Options for sharing resources that may have restricted access to all or part of their contents."""
+    make_public = "make_public"
+    make_accessible_to_shared = "make_accessible_to_shared"
+    no_changes = "no_changes"
+
+
+class ShareWithExtra(BaseModel):
+    can_share: bool = Field(
+        False,
+        title="Can Share",
+        description="Indicates whether the resource can be directly shared or requires further actions.",
+    )
+
+    class Config:
+        extra = Extra.allow
+
+
+UserIdentifier = Union[EncodedDatabaseIdField, str]
+
+
+class ShareWithPayload(BaseModel):
+    user_ids: List[UserIdentifier] = Field(
+        ...,
+        title="User Identifiers",
+        description=(
+            "A collection of encoded IDs (or email addresses) of users "
+            "that this resource will be shared with."
+        ),
+    )
+    share_option: Optional[SharingOptions] = Field(
+        None,
+        title="Share Option",
+        description=(
+            "User choice for sharing resources which its contents may be restricted:\n"
+            " - None: The user did not choose anything yet or no option is needed.\n"
+            f" - {SharingOptions.make_public}: The contents of the resource will be made publicly accessible.\n"
+            f" - {SharingOptions.make_accessible_to_shared}: This will automatically create a new `sharing role` allowing protected contents to be accessed only by the desired users.\n"
+            f" - {SharingOptions.no_changes}: This won't change the current permissions for the contents. The user which this resource will be shared may not be able to access all its contents.\n"
+        ),
+    )
+
+
+class SetSlugPayload(BaseModel):
+    new_slug: str = Field(
+        ...,
+        title="New Slug",
+        description="The slug that will be used to access this shared item.",
+    )
+
+
+class UserEmail(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="User ID",
+        description="The encoded ID of the user.",
+    )
+    email: str = Field(
+        ...,
+        title="Email",
+        description="The email of the user.",
+    )
+
+
+class SharingStatus(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the resource to be shared.",
+    )
+    title: str = Field(
+        ...,
+        title="Title",
+        description="The title or name of the resource.",
+    )
+    importable: bool = Field(
+        ...,
+        title="Importable",
+        description="Whether this resource can be published using a link.",
+    )
+    published: bool = Field(
+        ...,
+        title="Published",
+        description="Whether this resource is currently published.",
+    )
+    users_shared_with: List[UserEmail] = Field(
+        [],
+        title="Users shared with",
+        description="The list of encoded ids for users the resource has been shared.",
+    )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/{resource_single_char}/{slug}",
+    )
+
+
+class ShareWithStatus(SharingStatus):
+    errors: List[str] = Field(
+        [],
+        title="Errors",
+        description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
+    )
+    extra: Optional[ShareWithExtra] = Field(
+        None,
+        title="Extra",
+        description=(
+            "Optional extra information about this shareable resource that may be of interest. "
+            "The contents of this field depend on the particular resource."
+        ),
+    )
+
+
+class HDABasicInfo(BaseModel):
+    id: EncodedDatabaseIdField
+    name: str
+
+
+class ShareHistoryExtra(ShareWithExtra):
+    can_change: List[HDABasicInfo] = Field(
+        [],
+        title="Can Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that can be made accessible for others by the user sharing the history."
+        ),
+    )
+    cannot_change: List[HDABasicInfo] = Field(
+        [],
+        title="Cannot Change",
+        description=(
+            "A collection of datasets that are not accessible by one or more of the target users "
+            "and that cannot be made accessible for others by the user sharing the history."
+        ),
+    )
+    accessible_count: int = Field(
+        0,
+        title="Accessible Count",
+        description=(
+            "The number of datasets in the history that are public or accessible by all the target users."
+        ),
+    )
+
+# Pages -------------------------------------------------------
+
+
+class PageContentFormat(str, Enum):
+    markdown = "markdown"
+    html = "html"
+
+
+ContentFormatField: PageContentFormat = Field(
+    default=PageContentFormat.html,
+    title="Content format",
+    description="Either `markdown` or `html`.",
+)
+
+ContentField: Optional[str] = Field(
+    default="",
+    title="Content",
+    description="Raw text contents of the first page revision (type dependent on content_format).",
+)
+
+
+class PageSummaryBase(BaseModel):
+    title: str = Field(
+        ...,  # Required
+        title="Title",
+        description="The name of the page",
+    )
+    slug: str = Field(
+        ...,  # Required
+        title="Identifier",
+        description="The title slug for the page URL, must be unique.",
+        regex=r"^[a-z0-9\-]+$",
+    )
+
+
+class CreatePagePayload(PageSummaryBase):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="Annotation that will be attached to the page.",
+    )
+    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Workflow invocation ID",
+        description="Encoded ID used by workflow generated reports.",
+    )
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummary(PageSummaryBase):
+    id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="ID",
+        description="Encoded ID of the Page.",
+    )
+    model_class: str = Field(
+        ...,  # Required
+        title="Model class",
+        description="The class of the model associated with the ID.",
+        example="Page",
+    )
+    username: str = Field(
+        ...,  # Required
+        title="Username",
+        description="The name of the user owning this Page.",
+    )
+    published: bool = Field(
+        ...,  # Required
+        title="Published",
+        description="Whether this Page has been published.",
+    )
+    importable: bool = Field(
+        ...,  # Required
+        title="Importable",
+        description="Whether this Page can be imported.",
+    )
+    deleted: bool = Field(
+        ...,  # Required
+        title="Deleted",
+        description="Whether this Page has been deleted.",
+    )
+    latest_revision_id: EncodedDatabaseIdField = Field(
+        ...,  # Required
+        title="Latest revision ID",
+        description="The encoded ID of the last revision of this Page.",
+    )
+    revision_ids: List[EncodedDatabaseIdField] = Field(
+        ...,  # Required
+        title="List of revisions",
+        description="The history with the encoded ID of each revision of the Page.",
+    )
+
+
+class PageDetails(PageSummary):
+    content_format: PageContentFormat = ContentFormatField
+    content: Optional[str] = ContentField
+    generate_version: Optional[str] = Field(
+        None,
+        title="Galaxy Version",
+        description="The version of Galaxy this page was generated with.",
+    )
+    generate_time: Optional[str] = Field(
+        None,
+        title="Generate Date",
+        description="The date this page was generated.",
+    )
+
+    class Config:
+        extra = Extra.allow  # Allow any other extra fields
+
+
+class PageSummaryList(BaseModel):
+    __root__: List[PageSummary] = Field(
+        default=[],
+        title='List with summary information of Pages.',
     )

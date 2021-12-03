@@ -7,16 +7,14 @@
                 title="Copy all citations as BibTeX"
                 icon="copy"
                 style="cursor: pointer"
-                @click="copyBibtex"
-            />
+                @click="copyBibtex" />
             <Citation
                 class="formatted-reference"
                 v-for="(citation, index) in citations"
                 :key="index"
                 :citation="citation"
                 output-format="bibliography"
-                prefix="-"
-            />
+                prefix="-" />
         </div>
         <div v-if="hasRequirements" class="mb-1">
             <span class="font-weight-bold"
@@ -45,15 +43,13 @@
                         <font-awesome-icon
                             v-b-tooltip.hover
                             title="Visit bio.tools reference"
-                            icon="external-link-alt"
-                        /> </a
+                            icon="external-link-alt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
                         <font-awesome-icon
                             v-b-tooltip.hover
                             title="Visit OpenEBench reference"
-                            icon="external-link-alt"
-                        /> </a
+                            icon="external-link-alt" /> </a
                     >)
                 </template>
                 <template v-else>
@@ -133,18 +129,26 @@ export default {
             citations: [],
         };
     },
+    watch: {
+        id() {
+            this.loadCitations();
+        },
+    },
     created() {
-        if (this.hasCitations) {
-            getCitations("tools", this.id)
-                .then((citations) => {
-                    this.citations = citations;
-                })
-                .catch((e) => {
-                    console.error(e);
-                });
-        }
+        this.loadCitations();
     },
     methods: {
+        loadCitations() {
+            if (this.hasCitations) {
+                getCitations("tools", this.id)
+                    .then((citations) => {
+                        this.citations = citations;
+                    })
+                    .catch((e) => {
+                        console.error(e);
+                    });
+            }
+        },
         copyBibtex() {
             var text = "";
             this.citations.forEach((citation) => {

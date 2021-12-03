@@ -25,6 +25,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
+    Data,
     DatatypeValidation,
     get_file_peek,
 )
@@ -36,7 +37,7 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.sniff import build_sniff_from_prefix
-from galaxy.util import nice_size, sqlite
+from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
@@ -51,6 +52,7 @@ pysam.set_verbosity(0)
 class Binary(data.Data):
     """Binary data"""
     edam_format = "format_2333"
+    file_ext = "binary"
 
     @staticmethod
     def register_sniffable_binary_format(data_type, ext, type_class):
@@ -266,7 +268,10 @@ class Bref3(Binary):
 
 class DynamicCompressedArchive(CompressedArchive):
 
-    def matches_any(self, target_datatypes):
+    compressed_format: str
+    uncompressed_datatype_instance: Data
+
+    def matches_any(self, target_datatypes) -> bool:
         """Treat two aspects of compressed datatypes separately.
         """
         compressed_target_datatypes = []
@@ -280,8 +285,12 @@ class DynamicCompressedArchive(CompressedArchive):
 
         # TODO: Add gz and bz2 as proper datatypes and use those instances instead of
         # CompressedArchive() in the following check.
-        return self.uncompressed_datatype_instance.matches_any(uncompressed_target_datatypes) or \
-            CompressedArchive().matches_any(compressed_target_datatypes)
+        if not hasattr(self, "uncompressed_datatype_instance"):
+            raise Exception("Missing 'uncompressed_datatype_instance' attribute.")
+        else:
+            return self.uncompressed_datatype_instance.matches_any(
+                uncompressed_target_datatypes
+            ) or CompressedArchive().matches_any(compressed_target_datatypes)
 
 
 class GzDynamicCompressedArchive(DynamicCompressedArchive):
@@ -331,12 +340,37 @@ class GenericAsn1Binary(Binary):
     edam_data = "data_0849"
 
 
-class BamNative(CompressedArchive):
+class _BamOrSam:
+    """
+    Helper class to set the metadata common to sam and bam files
+    """
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        try:
+            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
+            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
+            dataset.metadata.reference_names = list(bam_file.references)
+            dataset.metadata.reference_lengths = list(bam_file.lengths)
+            dataset.metadata.bam_header = dict(bam_file.header.items())
+            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
+            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
+            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
+        except Exception:
+            # Per Dan, don't log here because doing so will cause datasets that
+            # fail metadata to end in the error state
+            pass
+
+
+class BamNative(CompressedArchive, _BamOrSam):
     """Class describing a BAM binary file that is not necessarily sorted"""
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "unsorted.bam"
     sort_flag: Optional[str] = None
+
+    MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
+    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
+    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
 
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
@@ -344,9 +378,9 @@ class BamNative(CompressedArchive):
     MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
-    MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
-    MetadataElement(name="column_types", default=['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str'], desc="Column types", param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    MetadataElement(name="column_names", default=['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR', 'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'], desc="Column names", readonly=True, visible=False, optional=True, no_value=[])
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        _BamOrSam().set_meta(dataset)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -375,21 +409,6 @@ class BamNative(CompressedArchive):
             return False
         except Exception:
             return False
-
-    def set_meta(self, dataset, overwrite=True, **kwd):
-        try:
-            bam_file = pysam.AlignmentFile(dataset.file_name, mode='rb')
-            # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
-            dataset.metadata.reference_names = list(bam_file.references)
-            dataset.metadata.reference_lengths = list(bam_file.lengths)
-            dataset.metadata.bam_header = dict(bam_file.header.items())
-            dataset.metadata.read_groups = [read_group['ID'] for read_group in dataset.metadata.bam_header.get('RG', []) if 'ID' in read_group]
-            dataset.metadata.sort_order = dataset.metadata.bam_header.get('HD', {}).get('SO', None)
-            dataset.metadata.bam_version = dataset.metadata.bam_header.get('HD', {}).get('VN', None)
-        except Exception:
-            # Per Dan, don't log here because doing so will cause datasets that
-            # fail metadata to end in the error state
-            pass
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -483,9 +502,10 @@ class BamNative(CompressedArchive):
                       'offset': offset})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
+            return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
         else:
@@ -503,7 +523,7 @@ class BamNative(CompressedArchive):
                                        chunk=self.get_chunk(trans, dataset, 0),
                                        column_number=column_number,
                                        column_names=column_names,
-                                       column_types=column_types)
+                                       column_types=column_types), headers
 
     def validate(self, dataset, **kwd):
         if not BamNative.is_bam(dataset.file_name):
@@ -680,16 +700,14 @@ class ProBam(Bam):
 
 
 class BamInputSorted(BamNative):
-
-    sort_flag = '-n'
-    file_ext = 'qname_input_sorted.bam'
-
     """
     A class for BAM files that can formally be unsorted or queryname sorted.
     Alignments are either ordered based on the order with which the queries appear when producing the alignment,
     or ordered by their queryname.
     This notaby keeps alignments produced by paired end sequencing adjacent.
     """
+    sort_flag = '-n'
+    file_ext = 'qname_input_sorted.bam'
 
     def sniff(self, file_name):
         # We never want to sniff to this datatype
@@ -1566,11 +1584,12 @@ class H5MLM(H5):
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
 
         if to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, **kwd)
 
         rval = {}
         try:
@@ -1589,7 +1608,7 @@ class H5MLM(H5):
 
         repr_ = self.get_repr(dataset.file_name)
 
-        return "<pre>{}</pre><pre>{}</pre>".format(repr_, rval)
+        return f"<pre>{repr_}</pre><pre>{rval}</pre>", headers
 
 
 class HexrdMaterials(H5):
@@ -2399,22 +2418,134 @@ class Sra(Binary):
             return f'Binary sra file ({nice_size(dataset.get_size())})'
 
 
-class RData(Binary):
-    """Generic R Data file datatype implementation"""
+@build_sniff_from_prefix
+class RData(CompressedArchive):
+    """Generic R Data file datatype implementation, i.e. files generated with R's save or save.img function
+    see https://www.loc.gov/preservation/digital/formats/fdd/fdd000470.shtml
+    and https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.rdata')
+    >>> RData().sniff(fname)
+    True
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> dataset.file_name = fname
+    >>> dataset.has_data = lambda: True
+    >>> RData().set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
+    """
+    VERSION_2_PREFIX = b'RDX2\nX\n'
+    VERSION_3_PREFIX = b'RDX3\nX\n'
     file_ext = 'rdata'
 
-    def sniff(self, filename):
-        rdata_header = b'RDX2\nX\n'
-        try:
-            header = open(filename, 'rb').read(7)
-            if header == rdata_header:
-                return True
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
 
-            header = gzip.open(filename).read(7)
-            if header == rdata_header:
-                return True
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        try:
+            dataset.metadata.version = self._parse_rdata_header(fh)
+        except Exception:
+            pass
+        finally:
+            fh.close()
+
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
+
+    def _parse_rdata_header(self, fh):
+        header = fh.read(7)
+        if header == self.VERSION_2_PREFIX:
+            return "2"
+        elif header == self.VERSION_3_PREFIX:
+            return "3"
+        else:
+            raise ValueError()
+
+
+@build_sniff_from_prefix
+class RDS(CompressedArchive):
+    """
+    File using a serialized R object generated with R's saveRDS function
+    see https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('int-r3.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r4.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> fname = get_test_fname('int-r3-version2.rds')
+    >>> RDS().sniff(fname)
+    True
+    >>> from galaxy.util.bunch import Bunch
+    >>> dataset = Bunch()
+    >>> dataset.metadata = Bunch
+    >>> dataset.file_name = get_test_fname('int-r4.rds')
+    >>> dataset.has_data = lambda: True
+    >>> RDS().set_meta(dataset)
+    >>> dataset.metadata.version
+    '3'
+    >>> dataset.metadata.rversion
+    '4.1.1'
+    >>> dataset.metadata.minrversion
+    '3.5.0'
+    """
+    file_ext = 'rds'
+
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
+    MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=False, visible=True, optional=False, no_value=None)
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
+        try:
+            _, dataset.metadata.version, dataset.metadata.rversion, dataset.metadata.minrversion = self._parse_rds_header(fh.read(14))
+        except Exception:
+            pass
+        finally:
+            fh.close()
+
+    def sniff_prefix(self, sniff_prefix):
+        try:
+            self._parse_rds_header(sniff_prefix.contents_header_bytes[:14])
         except Exception:
             return False
+        return True
+
+    def _parse_rds_header(self, header_bytes):
+        """
+        get the header info from a rds file
+        - starts with b'X\n' or 'A\n'
+        - then 3 integers (each 4bytes) encoded with base 10, e.g. b"\x00\x03\x06\x03" for version "3.6.3"
+          - the serialization version (2/3)
+          - the r version used to generate the file
+          - the minimum r version needed to read the file
+        """
+        header = header_bytes[:2]
+        if header == b'X\n':
+            mode = "X"
+        elif header == b'A\n':
+            mode = "A"
+        else:
+            raise Exception()
+        version = header_bytes[2:6]
+        rversion = header_bytes[6:10]
+        minrversion = header_bytes[10:14]
+        version = int("".join(str(_) for _ in version))
+        if version not in [2, 3]:
+            raise Exception()
+        rversion = int("".join(str(_) for _ in rversion))
+        minrversion = int("".join(str(_) for _ in minrversion))
+        version = ".".join(str(version))
+        rversion = ".".join(str(rversion))
+        minrversion = ".".join(str(minrversion))
+        return mode, version, rversion, minrversion
 
 
 class OxliBinary(Binary):
@@ -3142,6 +3273,7 @@ class Pretext(Binary):
     >>> Pretext().sniff(fname)
     True
     """
+    file_ext = "pretext"
 
     def sniff_prefix(self, sniff_prefix):
         # The first 4 bytes of any pretext file is 'pstm', and the rest of the

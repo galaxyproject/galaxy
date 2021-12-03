@@ -15,6 +15,7 @@ from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers
 )
@@ -62,7 +63,6 @@ class Interval(Tabular):
     track_type = "FeatureTrack"
     data_sources = {"data": "tabix", "index": "bigwig"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -292,7 +292,7 @@ class Interval(Tabular):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'intervalness'
 
@@ -382,7 +382,6 @@ class Bed(Interval):
 
     column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts']
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -450,7 +449,7 @@ class Bed(Interval):
         except Exception:
             return "This item contains no content"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'bedness'
 
@@ -625,7 +624,6 @@ class Gff(Tabular, _RemoteCallMixin):
     data_sources = {"data": "interval_index", "index": "bigwig", "feature_search": "fli"}
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'int', 'str', 'str', 'str'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
@@ -800,7 +798,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in gff format
 
@@ -823,8 +821,9 @@ class Gff(Tabular, _RemoteCallMixin):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
-                    return False
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version':
+                    return hdr0_parts[1].startswith('2')
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
                     continue
@@ -883,7 +882,6 @@ class Gff3(Gff):
     column_names = ['Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes']
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
@@ -920,7 +918,7 @@ class Gff3(Gff):
                             break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in GFF version 3 format
 
@@ -963,10 +961,9 @@ class Gff3(Gff):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
-                    return True
-                elif hdr[0].startswith('##gff-version') and hdr[0].find('3') < 0:
-                    return False
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version':
+                    return hdr0_parts[1].startswith('3')
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
                     continue
@@ -1005,12 +1002,11 @@ class Gtf(Gff):
     column_names = ['Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes']
     track_type = Interval.track_type
 
-    """Add metadata elements"""
     MetadataElement(name="columns", default=9, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in gtf format
 
@@ -1045,7 +1041,8 @@ class Gtf(Gff):
             for hdr in iter_headers(file_prefix, '\t'):
                 if not hdr or hdr == ['']:
                     continue
-                if hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
+                hdr0_parts = hdr[0].split()
+                if hdr0_parts[0] == '##gff-version' and not hdr0_parts[1].startswith('2'):
                     return False
                 # The gff-version header comment may have been stripped, so inspect the data
                 if hdr[0].startswith('#'):
@@ -1206,7 +1203,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
             max_data_lines = 100
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines wether the file is in wiggle format
 
@@ -1345,7 +1342,7 @@ class CustomTrack(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in customtrack format.
 
@@ -1419,7 +1416,6 @@ class ENCODEPeak(Interval):
     column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak']
     data_sources = {"data": "tabix", "index": "bigwig"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
@@ -1439,7 +1435,6 @@ class ChromatinInteractions(Interval):
     data_sources = {"data": "tabix", "index": "bigwig"}
     column_names = ['Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value']
 
-    """Add metadata elements"""
     MetadataElement(name="chrom1Col", default=1, desc="Chrom1 column", param=metadata.ColumnParameter)
     MetadataElement(name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter)
     MetadataElement(name="end1Col", default=3, desc="End1 column", param=metadata.ColumnParameter)
@@ -1465,6 +1460,16 @@ class ScIdx(Tabular):
     count (type int), Reverse strand peak count (type int) and value (type int).
     The value of the 5th 'value' column is the sum of the forward and reverse
     peak count values.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('cntrl_hg19.scidx')
+    >>> ScIdx().sniff(fname)
+    True
+    >>> Bed().sniff(fname)
+    False
+    >>> fname = get_test_fname('empty.txt')
+    >>> ScIdx().sniff(fname)
+    False
     """
     file_ext = "scidx"
 
@@ -1480,54 +1485,34 @@ class ScIdx(Tabular):
         # line of the dataset displays them.
         self.column_names = ['chrom', 'index', 'forward', 'reverse', 'value']
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'scidx-ness.'
         """
         count = 0
-        fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                # EOF
-                if count > 1:
-                    # The second line is always the labels:
-                    # chrom index forward reverse value
-                    # We need at least the column labels and a data line.
-                    return True
-                return False
-            line = line.strip()
+        for count, line in enumerate(iter_headers(file_prefix, '\t')):
             # The first line is always a comment like this:
             # 2015-11-23 20:18:56.51;input.bam;READ1
             if count == 0:
-                if line.startswith('#'):
-                    count += 1
-                    continue
-                else:
+                if not line[0].startswith('#'):
                     return False
-            # Skip first line.
-            if count > 1:
-                items = line.split('\t')
-                if len(items) != 5:
+            # The 2nd line is always a specific header
+            elif count == 1:
+                if line != ["chrom", "index", "forward", "reverse", "value"]:
                     return False
-                index = items[1]
-                if not index.isdigit():
+            # data line columns 2:5 need to be integers and
+            # the fwd and rev column need to sum to value
+            else:
+                if len(line) != 5:
                     return False
-                forward = items[2]
-                if not forward.isdigit():
+                if not line[1].isdigit():
                     return False
-                reverse = items[3]
-                if not reverse.isdigit():
+                if int(line[2]) + int(line[3]) != int(line[4]):
                     return False
-                value = items[4]
-                if not value.isdigit():
-                    return False
-                if int(forward) + int(reverse) != int(value):
-                    return False
-            if count == 100:
-                return True
-            count += 1
-        if count < 100 and count > 0:
+                # just check one data line
+                break
+        # at least the comment and header are required
+        if count >= 1:
             return True
         return False
 

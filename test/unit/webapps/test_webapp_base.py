@@ -3,11 +3,12 @@ Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
 import re
+import sys
 import unittest
 
 import galaxy.config
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.webapps.base import webapp as Webapp
-from ..unittest_utils import galaxy_mock
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         app.config = CORSParsingMockConfig(
             allowed_origin_hostnames=allowed_origin_hostnames
         )
-        webapp = galaxy_mock.MockWebapp()
+        webapp = galaxy_mock.MockWebapp(app.security)
         environ = galaxy_mock.buildMockEnviron()
         trans = StubGalaxyWebTransaction(environ, app, webapp)
         return trans
@@ -59,10 +60,9 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         hostnames = config._parse_allowed_origin_hostnames({
             "allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"
         })
-        # re._pattern_type has been changed to re.Pattern in python 3.7
-        try:
+        if sys.version_info >= (3, 7):
             Pattern = re.Pattern
-        except AttributeError:
+        else:
             Pattern = re._pattern_type
         self.assertTrue(isinstance(hostnames[0], Pattern))
         self.assertTrue(isinstance(hostnames[1], str))

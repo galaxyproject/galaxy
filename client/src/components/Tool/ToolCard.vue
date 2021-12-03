@@ -12,8 +12,7 @@
                         aria-label="View all Options"
                         class="tool-dropdown float-right"
                         size="sm"
-                        v-b-tooltip.hover
-                    >
+                        v-b-tooltip.hover>
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
@@ -26,6 +25,7 @@
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
                             ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
+                        <ToolSourceMenuItem :tool-id="id" />
                         <b-dropdown-item v-if="showLink" @click="onLink"
                             ><span class="fa fa-external-link" /><span v-localize
                                 >See in Tool Shed</span
@@ -45,13 +45,12 @@
                         aria-label="Select Versions"
                         class="float-right tool-versions"
                         size="sm"
-                        v-b-tooltip.hover
-                    >
+                        v-b-tooltip.hover>
                         <template v-slot:button-content>
                             <span class="fa fa-cubes" />
                         </template>
                         <b-dropdown-item v-for="v of availableVersions" :key="v" @click="$emit('onChangeVersion', v)">
-                            <span class="fa fa-cube" /><span v-localize>Switch to </span>{{ v }}</b-dropdown-item
+                            <span class="fa fa-cube" /><span v-localize>Switch to</span> {{ v }}</b-dropdown-item
                         >
                     </b-dropdown>
                     <b-button
@@ -62,8 +61,7 @@
                         size="sm"
                         class="float-right"
                         v-b-tooltip.hover
-                        @click="onAddFavorite"
-                    >
+                        @click="onAddFavorite">
                         <span class="fa fa-star-o" />
                     </b-button>
                     <b-button
@@ -74,23 +72,24 @@
                         size="sm"
                         class="float-right"
                         v-b-tooltip.hover
-                        @click="onRemoveFavorite"
-                    >
+                        @click="onRemoveFavorite">
                         <span class="fa fa-star" />
                     </b-button>
                 </div>
                 <div class="portlet-title">
-                    <i class="portlet-title-icon fa mr-1 fa-wrench" style="display: inline"></i>
+                    <font-awesome-icon icon="wrench" class="portlet-title-icon fa-fw mr-1" />
                     <span class="portlet-title-text">
                         <b itemprop="name">{{ title }}</b> <span itemprop="description">{{ description }}</span> (Galaxy
                         Version {{ version }})
                     </span>
                 </div>
             </div>
+
             <div class="portlet-content">
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage :message="messageText" :variant="messageVariant" />
                 <slot name="body" />
+                <div v-if="disabled" class="portlet-backdrop" />
             </div>
         </div>
         <slot name="buttons" />
@@ -102,8 +101,7 @@
                 :xrefs="options.xrefs"
                 :license="options.license"
                 :creators="options.creator"
-                :requirements="options.requirements"
-            />
+                :requirements="options.requirements" />
         </div>
     </div>
 </template>
@@ -113,14 +111,22 @@ import { copyLink, downloadTool, openLink } from "./utilities";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
+import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import Webhooks from "mvc/webhooks";
 import { addFavorite, removeFavorite } from "components/Tool/services";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faWrench);
 
 export default {
     components: {
+        FontAwesomeIcon,
         FormMessage,
         ToolFooter,
         ToolHelp,
+        ToolSourceMenuItem,
     },
     props: {
         id: {
@@ -154,6 +160,10 @@ export default {
         messageVariant: {
             type: String,
             default: "info",
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
@@ -273,3 +283,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.portlet-backdrop {
+    display: block;
+}
+</style>

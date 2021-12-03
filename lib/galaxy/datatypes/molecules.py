@@ -11,6 +11,7 @@ from galaxy.datatypes.data import (
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers
 )
@@ -76,7 +77,7 @@ class MOL(GenericMolFile):
 class SDF(GenericMolFile):
     file_ext = "sdf"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a SDF2 file.
 
@@ -179,7 +180,7 @@ class SDF(GenericMolFile):
 class MOL2(GenericMolFile):
     file_ext = "mol2"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a MOL2 file.
 
@@ -269,7 +270,7 @@ class FPS(GenericMolFile):
     """
     file_ext = "fps"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a FPS file.
 
@@ -458,7 +459,7 @@ class PDB(GenericMolFile):
     file_ext = "pdb"
     MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a PDB file.
 
@@ -528,7 +529,7 @@ class PDBQT(GenericMolFile):
     """
     file_ext = "pdbqt"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a PDBQT file.
 
@@ -615,7 +616,7 @@ class PQR(GenericMolFile):
               r'([-+]?\d*\.\d+|\d+)\s+'
         return re.compile(pat)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a PQR file.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -722,7 +723,7 @@ class InChI(Tabular):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a InChI file.
 
@@ -744,6 +745,11 @@ class InChI(Tabular):
 
 
 class SMILES(Tabular):
+    # It is hard or impossible to sniff a SMILES File. We can try to import the
+    # first SMILES and check if it is a molecule, but currently it is not
+    # possible to use external libraries in datatype definition files.
+    # Moreover it seems impossible to include OpenBabel as Python library
+    # because OpenBabel is GPL licensed.
     file_ext = "smi"
     column_names = ['SMILES', 'TITLE']
     MetadataElement(name="columns", default=2, desc="Number of columns", readonly=True, visible=False)
@@ -766,40 +772,6 @@ class SMILES(Tabular):
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
-
-    '''
-    def sniff(self, filename):
-        """
-        Its hard or impossible to sniff a SMILES File. We can
-        try to import the first SMILES and check if it is a molecule, but
-        currently its not possible to use external libraries in datatype definition files.
-        Moreover it seems mpossible to inlcude OpenBabel as python library because OpenBabel
-        is GPL licensed.
-        """
-        self.molecule_number = count_lines(filename, non_empty = True)
-        word_count = count_lines(filename)
-
-        if self.molecule_number != word_count:
-            return False
-
-        if self.molecule_number > 0:
-            # test first 3 SMILES
-            smiles_lines = get_headers(filename, sep='\t', count=3)
-            for smiles_line in smiles_lines:
-                if len(smiles_line) > 2:
-                    return False
-                smiles = smiles_line[0]
-                try:
-                    # if we have atoms, we have a molecule
-                    if not len(pybel.readstring('smi', smiles).atoms) > 0:
-                        return False
-                except Exception:
-                    # if convert fails its not a smiles string
-                    return False
-            return True
-        else:
-            return False
-    '''
 
 
 @build_sniff_from_prefix
@@ -828,7 +800,7 @@ class CML(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a CML file.
 
@@ -939,3 +911,42 @@ class CML(GenericXml):
                         if molecule_found:
                             out.write(line)
             out.write("</cml>\n")
+
+
+class GRO(GenericMolFile):
+    """
+    GROMACS structure format.
+    https://manual.gromacs.org/current/reference-manual/file-formats.html#gro
+    """
+    file_ext = "gro"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Try to guess if the file is a GRO file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('5e5z.gro')
+        >>> GRO().sniff_prefix(fname)
+        True
+        >>> fname = get_test_fname('5e5z.pdb')
+        >>> GRO().sniff_prefix(fname)
+        False
+        """
+        headers = get_headers(file_prefix, sep='\n', count=300)
+        try:
+            int(headers[1][0])  # the second line should just be the number of atoms
+        except ValueError:
+            return False
+        for line in headers[2:-1]:  # skip the first, second and last lines
+            if not re.search(r'^[0-9 ]{5}[a-zA-Z0-9 ]{10}[0-9 ]{5}[0-9 -]{4}\.[0-9]{3}[0-9 -]{4}\.[0-9]{3}[0-9 -]{4}\.[0-9]{3}', line[0]):
+                return False
+        return True
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name)
+            atom_number = int(dataset.peek.split('\n')[1])
+            dataset.blurb = f"{atom_number} atoms"
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'

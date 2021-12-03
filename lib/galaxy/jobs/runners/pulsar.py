@@ -32,10 +32,8 @@ from pulsar.client import (
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
-from galaxy.jobs import (
-    ComputeEnvironment,
-    JobDestination
-)
+from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -188,6 +186,7 @@ PARAMETER_SPECIFICATION_IGNORED = object()
 class PulsarJobRunner(AsynchronousJobRunner):
     """Base class for pulsar job runners."""
 
+    start_methods = ['_init_worker_threads', '_init_client_manager', '_monitor']
     runner_name = "PulsarJobRunner"
     default_build_pulsar_app = False
     use_mq = False
@@ -196,15 +195,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __init__(self, app, nworkers, **kwds):
         """Start the job runner."""
         super().__init__(app, nworkers, runner_param_specs=PULSAR_PARAM_SPECS, **kwds)
-        self._init_worker_threads()
         galaxy_url = self.runner_params.galaxy_url
         if not galaxy_url:
             galaxy_url = app.config.galaxy_infrastructure_url
         if galaxy_url:
             galaxy_url = galaxy_url.rstrip("/")
         self.galaxy_url = galaxy_url
-        self.__init_client_manager()
-        self._monitor()
 
     def _monitor(self):
         if self.use_mq:
@@ -218,7 +214,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         else:
             self._init_noop_monitor()
 
-    def __init_client_manager(self):
+    def _init_client_manager(self):
         pulsar_conf = self.runner_params.get('pulsar_app_config', None)
         pulsar_conf_file = None
         if pulsar_conf is None:
@@ -344,7 +340,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -378,7 +374,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_pulsar_app_config = dest_params.get("pulsar_app_config", {}).copy()
             if "pulsar_app_config_path" in dest_params:
                 pulsar_app_config_path = dest_params["pulsar_app_config_path"]
-                with open(pulsar_app_config_path, "r") as fh:
+                with open(pulsar_app_config_path) as fh:
                     remote_pulsar_app_config.update(yaml.safe_load(fh))
             job_directory_files = []
             config_files = job_wrapper.extra_filenames
@@ -561,11 +557,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return updated
 
     def get_output_files(self, job_wrapper):
-        output_paths = job_wrapper.get_output_fnames()
+        output_paths = job_wrapper.job_io.get_output_fnames()
         return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
 
     def get_input_files(self, job_wrapper):
-        input_paths = job_wrapper.get_input_paths()
+        input_paths = job_wrapper.job_io.get_input_paths()
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
     def get_client_from_wrapper(self, job_wrapper):
@@ -654,7 +650,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # Following check is a hack for jobs started during 19.01 or earlier release
             # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
             # along with hacks for legacy metadata compute strategy.
-            if not os.path.exists(job_metrics_directory) or not any(["__instrument" in f for f in os.listdir(job_metrics_directory)]):
+            if not os.path.exists(job_metrics_directory) or not any("__instrument" in f for f in os.listdir(job_metrics_directory)):
                 job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
                 stdout,
@@ -756,8 +752,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return job_state
 
     def __client_outputs(self, client, job_wrapper):
-        work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
-        output_files = self.get_output_files(job_wrapper)
         metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         metadata_strategy = job_wrapper.get_destination_configuration('metadata_strategy', None)
         tool = job_wrapper.tool
@@ -769,6 +763,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # if Pulsar is doing remote metadata and the remote metadata is extended,
             # we only need to recover the final model store.
             dynamic_outputs = EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN
+            output_files = []
+            work_dir_outputs = []
         else:
             # otherwise collect everything we might need
             dynamic_outputs = DEFAULT_DYNAMIC_COLLECTION_PATTERN[:]
@@ -776,6 +772,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             dynamic_outputs.extend(job_wrapper.tool.output_discover_patterns)
             # grab tool provided metadata (galaxy.json) also...
             dynamic_outputs.append(re.escape(tool_provided_metadata_file_path))
+            output_files = self.get_output_files(job_wrapper)
+            work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         dynamic_file_sources = [
             {"path": tool_provided_metadata_file_path, "type": "galaxy" if tool_provided_metadata_style == "default" else "legacy_galaxy"}
         ]
@@ -1032,7 +1030,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def output_names(self):
         # Maybe this should use the path mapper, but the path mapper just uses basenames
-        return self.job_wrapper.get_output_basenames()
+        return self.job_wrapper.job_io.get_output_basenames()
 
     def input_path_rewrite(self, dataset):
         local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)
@@ -1133,6 +1131,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def galaxy_url(self):
         return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
+
+    def get_file_sources_dict(self):
+        return self.job_wrapper.job_io.file_sources_dict
 
 
 class UnsupportedPulsarException(Exception):

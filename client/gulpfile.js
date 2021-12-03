@@ -10,28 +10,40 @@ const glob = require("glob");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_IDS = [
+const STATIC_PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
+    "cytoscape",
+    "drawrna",
     "editor",
+    "example",
     "heatmap/heatmap_default",
     "hyphyvision",
+    "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
     "ngl",
+    "nvd3/nvd3_bar",
     "openlayers",
     "openseadragon",
     "pv",
     "nora",
+    "venn",
 ];
+
+const DIST_PLUGIN_BUILD_IDS = ["new_user"];
+
+const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
 const paths = {
     node_modules: "./node_modules",
     plugin_dirs: [
-        "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
     ],
-    plugin_build_modules: [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`],
+    plugin_build_modules: [
+        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
+    ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -86,7 +98,11 @@ function buildPlugins(callback) {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
                 const plugin_name = path.dirname(file).split(path.sep).pop();
-                const hash_file_path = path.join(f, "static", "plugin_build_hash.txt");
+                const hash_file_path = path.join(
+                    f,
+                    DIST_PLUGIN_BUILD_IDS.indexOf(plugin_name) > -1 ? "dist" : "static",
+                    "plugin_build_hash.txt"
+                );
 
                 if (fs.existsSync(hash_file_path)) {
                     skip_build =
@@ -122,14 +138,16 @@ function buildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
-    const BUILD_PLUGIN_WATCH_GLOB = [`../config/plugins/visualizations/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`];
+    const BUILD_PLUGIN_WATCH_GLOB = [
+        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
+    ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
 

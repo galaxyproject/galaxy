@@ -1,5 +1,6 @@
 import logging
 import uuid
+from typing import List, Union
 
 from galaxy import model
 from galaxy.util import ExecutionTimer
@@ -13,57 +14,9 @@ from galaxy.workflow.run_request import (
 log = logging.getLogger(__name__)
 
 
-# Entry point for direct invoke via controllers. Deprecated to some degree.
-def invoke(trans, workflow, workflow_run_config, workflow_invocation=None, populate_state=False):
-    if force_queue(trans, workflow):
-        invocation = queue_invoke(trans, workflow, workflow_run_config, populate_state=populate_state)
-        return [], invocation
-    else:
-        return __invoke(trans, workflow, workflow_run_config, workflow_invocation, populate_state)
-
-
 # Entry point for core workflow scheduler.
 def schedule(trans, workflow, workflow_run_config, workflow_invocation):
     return __invoke(trans, workflow, workflow_run_config, workflow_invocation)
-
-
-BASIC_WORKFLOW_STEP_TYPES = [None, "tool", "data_input", "data_collection_input"]
-
-
-def force_queue(trans, workflow):
-    # Default behavior is still to just schedule workflows completley right
-    # away. This can be modified here in various ways.
-
-    # TODO: check for implicit connections - these should also force backgrounding
-    #       this would fix running Dan's data manager workflows via UI.
-    # TODO: ensure state if populated before calling force_queue from old API
-    #       workflow endpoint so the has_module check below is unneeded and these
-    #       interesting workflows will work with the older endpoint.
-    config = trans.app.config
-    force_for_collection = config.force_beta_workflow_scheduled_for_collections
-    force_min_steps = config.force_beta_workflow_scheduled_min_steps
-
-    step_count = len(workflow.steps)
-    if step_count > force_min_steps:
-        log.info("Workflow has many steps %d, backgrounding execution" % step_count)
-        return True
-    for step in workflow.steps:
-        # State and module haven't been populated if workflow submitted via
-        # the API. API requests for "interesting" workflows should use newer
-        # endpoint that skips this check entirely - POST /api/workflows/<id>/invocations
-        has_module = hasattr(step, "module")
-        if step.type not in BASIC_WORKFLOW_STEP_TYPES:
-            log.info("Found non-basic workflow step type - backgrounding execution")
-            # Force all new beta modules types to be use force queueing of
-            # workflow.
-            return True
-        if step.type == "data_collection_input" and force_for_collection:
-            log.info("Found collection input step - backgrounding execution")
-            return True
-        if step.type == "tool" and has_module and step.module.tool.produces_collections_with_unknown_structure:
-            log.info("Found dynamically structured output collection - backgrounding execution")
-            return True
-    return False
 
 
 def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, populate_state=False):
@@ -248,21 +201,15 @@ class WorkflowInvoker:
             delayed_why = f"depends on step [{output_id}] job has not finished scheduling yet"
             raise modules.DelayedWorkflowEvaluation(delayed_why)
 
-        for job_assoc in step_invocation.jobs:
-            job = job_assoc.job
-            if job:
-                # At least one job in incomplete.
-                if not job.finished:
-                    delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
-                    raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+        # TODO: Handle implicit dependency on stuff like pause steps.
+        for job in step_invocation.jobs:
+            # At least one job in incomplete.
+            if not job.finished:
+                delayed_why = f"depends on step [{output_id}] but one or more jobs created from that step have not finished yet"
+                raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-                if job.state != job.states.OK:
-                    raise modules.CancelWorkflowEvaluation()
-
-            else:
-                # TODO: Handle implicit dependency on stuff like
-                # pause steps.
-                pass
+            if job.state != job.states.OK:
+                raise modules.CancelWorkflowEvaluation()
 
     def _invoke_step(self, invocation_step):
         incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans,
@@ -324,19 +271,27 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(self, step, input_dict):
-        replacement = modules.NO_REPLACEMENT
+        replacement: Union[
+            modules.NoReplacement,
+            model.DatasetCollectionInstance,
+            List[model.DatasetCollectionInstance],
+        ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
             if input_dict["input_type"] == "dataset" and multiple:
-                replacement = [self.replacement_for_connection(c) for c in connection]
+                temp = [self.replacement_for_connection(c) for c in connection]
                 # If replacement is just one dataset collection, replace tool
                 # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
-                if len(replacement) == 1:
-                    if isinstance(replacement[0], model.HistoryDatasetCollectionAssociation):
-                        replacement = replacement[0]
+                if len(temp) == 1:
+                    if isinstance(temp[0], model.HistoryDatasetCollectionAssociation):
+                        replacement = temp[0]
+                    else:
+                        replacement = temp
+                else:
+                    replacement = temp
             else:
                 is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
@@ -346,8 +301,7 @@ class WorkflowProgress:
     def replacement_for_connection(self, connection, is_data=True):
         output_step_id = connection.output_step.id
         if output_step_id not in self.outputs:
-            template = "No outputs found for step id %s, outputs are %s"
-            message = template % (output_step_id, self.outputs)
+            message = f"No outputs found for step id {output_step_id}, outputs are {self.outputs}"
             raise Exception(message)
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
@@ -373,8 +327,9 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
-        if not is_data and isinstance(replacement, data_inputs):
+        if isinstance(replacement, model.DatasetCollection):
+            raise NotImplementedError
+        if not is_data and isinstance(replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation()
@@ -523,4 +478,4 @@ class WorkflowProgress:
             self.mark_step_outputs_delayed(step_invocation.workflow_step, de.why)
 
 
-__all__ = ('invoke', 'WorkflowRunConfig')
+__all__ = ('queue_invoke', 'WorkflowRunConfig')

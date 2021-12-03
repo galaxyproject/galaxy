@@ -52,7 +52,6 @@ var View = Backbone.View.extend({
             },
         });
         this.instance.$mount(vm);
-        this.collapsible_disabled = true;
     },
 
     _fetchCollectionAndEdit: function () {
@@ -134,25 +133,6 @@ var View = Backbone.View.extend({
             this.trigger("change");
             this.instance.inputRules = new_value;
         }
-    },
-
-    /** Validate input element value */
-    validate: function () {
-        const value = this._value;
-        let message = null;
-        if (!value || value.rules.length === 0) {
-            message = "No rules defined, define at least one rule.";
-        } else if (value.mapping.length === 0) {
-            message = "No collection identifiers defined, specify at least one collection identifier.";
-        } else {
-            for (const rule of value.rules) {
-                if (rule.error) {
-                    message = "One or more rules in error.";
-                    break;
-                }
-            }
-        }
-        return message;
     },
 });
 

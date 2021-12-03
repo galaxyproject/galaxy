@@ -18,8 +18,7 @@
                     placeholder="Collection Name"
                     trim
                     max-rows="4"
-                    data-description="name input"
-                ></b-textarea>
+                    data-description="name input"></b-textarea>
                 <StatelessTags v-model="tags" class="mt-3 tags" />
             </div>
 
@@ -37,8 +36,7 @@
             :valid="valid"
             :dirty="dirty"
             @save="save"
-            @revert="revert"
-        />
+            @revert="revert" />
     </section>
 </template>
 

@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
-    >
+        :hide-modal="() => (modalShow = false)">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -18,12 +17,10 @@
                 :show-select-icon="undoShow && multiple"
                 :show-details="showDetails"
                 :show-time="showTime"
-                :show-navigate="showNavigate"
                 :is-busy="isBusy"
                 @clicked="clicked"
                 @open="open"
-                @toggleSelectAll="toggleSelectAll"
-            />
+                @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
             <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
@@ -31,14 +28,14 @@
                 Back
             </b-btn>
             <b-btn
-                v-if="multiple"
+                v-if="multiple || !fileMode"
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                @click="finalize"
-                :disabled="!hasValue"
-            >
-                Ok
+                id="ok-btn"
+                @click="fileMode ? finalize() : selectLeaf(currentDirectory)"
+                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())">
+                {{ fileMode ? "Ok" : "Select this folder" }}
             </b-btn>
         </template>
     </selection-dialog>
@@ -90,7 +87,6 @@ export default {
             hasValue: false,
             showTime: true,
             showDetails: true,
-            showNavigate: true,
             isBusy: false,
             currentDirectory: undefined,
             selectAllIcon: selectionStates.unselected,
@@ -137,9 +133,13 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            if (record.isLeaf || !this.fileMode) {
+            // ignore the click during directory mode
+            if (!this.fileMode) {
+                return;
+            }
+            if (record.isLeaf) {
                 // record is file
-                this.selectFile(record);
+                this.selectLeaf(record);
             } else {
                 // record is directory
                 // you cannot select entire root directory
@@ -171,7 +171,7 @@ export default {
                 this.model.unselectUnderPath(path);
             }
         },
-        selectFile(file, selectOnly = false) {
+        selectLeaf(file, selectOnly = false) {
             const selected = this.model.exists(file.id);
             if (selected) {
                 this.unselectPath(file.url, true);
@@ -206,7 +206,7 @@ export default {
                         const sub_record = this.parseItemFileMode(item);
                         if (sub_record.isLeaf) {
                             // select file under this path
-                            this.selectFile(sub_record, true);
+                            this.selectLeaf(sub_record, true);
                         } else {
                             // select subdirectory
                             this.selectedDirectories.push(sub_record);

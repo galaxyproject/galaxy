@@ -112,7 +112,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
-        tool_shed_repository.metadata = metadata_dict
+        tool_shed_repository.metadata_ = metadata_dict
         tool_shed_repository.includes_datatypes = includes_datatypes
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
@@ -127,7 +127,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
                                                  installed_changeset_revision=installed_changeset_revision,
                                                  changeset_revision=current_changeset_revision,
                                                  ctx_rev=ctx_rev,
-                                                 metadata=metadata_dict,
+                                                 metadata_=metadata_dict,
                                                  includes_datatypes=includes_datatypes,
                                                  dist_to_shed=dist_to_shed,
                                                  deleted=deleted,

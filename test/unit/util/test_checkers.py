@@ -13,7 +13,7 @@ def test_check_html():
         tmp.flush()
         assert check_html(tmp.name)
     # Test a non-UTF8 binary file
-    with tempfile.NamedTemporaryFile(mode='wb') as tmp:
-        tmp.write(b'\x1f\x8b')
-        tmp.flush()
-        assert not check_html(tmp.name)
+    with tempfile.NamedTemporaryFile(mode='wb') as tmpb:
+        tmpb.write(b'\x1f\x8b')
+        tmpb.flush()
+        assert not check_html(tmpb.name)

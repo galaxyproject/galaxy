@@ -50,6 +50,8 @@ class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
 
+    language = 'xml'
+
     def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
@@ -438,6 +440,11 @@ class XmlToolSource(ToolSource):
         output.filters = data_elem.findall('filter')
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
+        if output.from_work_dir and getattr(tool, 'profile', 0) < 21.09:
+            # We started quoting from_work_dir outputs in 21.09.
+            # Prior to quoting, trailing spaces had no effect.
+            # This ensures that old tools continue to work.
+            output.from_work_dir = output.from_work_dir.strip()
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
         output.actions = ToolOutputActionGroup(output, data_elem.find('actions'))
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(data_elem, legacy=self.legacy_defaults)
@@ -1079,7 +1086,7 @@ class XmlPageSource(PageSource):
         return display
 
     def parse_input_sources(self):
-        return map(XmlInputSource, self.parent_elem)
+        return list(map(XmlInputSource, self.parent_elem))
 
 
 class XmlInputSource(InputSource):

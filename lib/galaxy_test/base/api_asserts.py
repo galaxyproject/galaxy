@@ -4,6 +4,8 @@ from typing import Any, cast, Dict, Union
 
 from requests import Response
 
+from galaxy.exceptions.error_codes import ErrorCode
+
 ASSERT_FAIL_ERROR_CODE = "Expected Galaxy error code %d, obtained %d"
 ASSERT_FAIL_STATUS_CODE = "Request status code (%d) was not expected value %s. Body was %s"
 
@@ -50,7 +52,7 @@ def assert_not_has_keys(response: dict, *keys: str):
         assert key not in response, f"Response [{response}] contains invalid key [{key}]"
 
 
-def assert_error_code_is(response: Union[Response, dict], error_code: int):
+def assert_error_code_is(response: Union[Response, dict], error_code: Union[int, ErrorCode]):
     """Assert that the supplied response has the supplied Galaxy error code.
 
     Galaxy error codes can be imported from :py:mod:`galaxy.exceptions.error_codes`

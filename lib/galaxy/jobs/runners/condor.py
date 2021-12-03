@@ -51,12 +51,6 @@ class CondorJobRunner(AsynchronousJobRunner):
     """
     runner_name = "CondorRunner"
 
-    def __init__(self, app, nworkers):
-        """Initialize this job runner and start the monitor thread"""
-        super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 
@@ -114,7 +108,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             shell=job_wrapper.shell,
         )
         try:
-            self.write_executable_script(executable, script)
+            self.write_executable_script(executable, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception(f"({galaxy_id_tag}) failure preparing job script")

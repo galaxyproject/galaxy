@@ -1,6 +1,7 @@
 import json
 import zipfile
 from io import BytesIO
+from typing import List
 
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
@@ -8,6 +9,7 @@ from ._framework import ApiTestCase
 
 
 class DatasetCollectionApiTestCase(ApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -20,7 +22,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 2, dataset_collection
@@ -31,11 +33,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_datasets = dataset_collection["elements"]
         assert len(returned_datasets) == 3, dataset_collection
@@ -45,7 +47,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             self.history_id,
             instance_type="history",
         )
-        pair_create_response = self._post("dataset_collections", pair_payload)
+        pair_create_response = self._post("dataset_collections", pair_payload, json=True)
         dataset_collection = self._check_create_response(pair_create_response)
         hdca_id = dataset_collection["id"]
 
@@ -56,10 +58,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         returned_collections = dataset_collection["elements"]
         assert len(returned_collections) == 1, dataset_collection
@@ -71,9 +73,9 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             instance_type="history",
             history_id=self.history_id,
             name="a nested collection",
-            element_identifiers=json.dumps(identifiers),
+            element_identifiers=identifiers,
         )
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = self._check_create_response(create_response)
         assert dataset_collection["collection_type"] == "list:paired"
         assert dataset_collection["name"] == "a nested collection"
@@ -167,10 +169,10 @@ class DatasetCollectionApiTestCase(ApiTestCase):
             payload = dict(
                 instance_type="history",
                 history_id=history_id,
-                element_identifiers=json.dumps(element_identifiers),
+                element_identifiers=element_identifiers,
                 collection_type="paired",
             )
-            create_response = self._post("dataset_collections", payload)
+            create_response = self._post("dataset_collections", payload, json=True)
             self._assert_status_code_is(create_response, 403)
 
     def test_enforces_unique_names(self):
@@ -179,11 +181,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = dict(
             instance_type="history",
             history_id=self.history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         self._assert_status_code_is(create_response, 400)
 
     def test_upload_collection(self):
@@ -356,6 +358,93 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert len(offset_contents) == 1
         assert offset_contents[0]['element_index'] == 1
 
+    def test_get_suitable_converters_single_datatype(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "bed"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
+        expected = [
+            'CONVERTER_bed_to_fli_0',
+            'CONVERTER_interval_to_bed_0',
+            'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
+            'CONVERTER_bed_to_gff_0',
+            'CONVERTER_interval_to_bgzip_0',
+            'tabular_to_csv',
+            'CONVERTER_interval_to_bed6_0',
+            'CONVERTER_interval_to_bedstrict_0',
+            'CONVERTER_interval_to_tabix_0',
+            'CONVERTER_interval_to_bed12_0']
+        actual = []
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert sorted(actual) == sorted(expected)
+
+    def test_get_suitable_converters_different_datatypes_matches(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "tabular"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "tabular"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
+        expected = ['tabular_to_csv']
+        actual = []
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert sorted(actual) == sorted(expected)
+
+    def test_get_suitable_converters_different_datatypes_no_matches(self):
+        response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "bed"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "bed"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "fasta"},
+                ]
+            }
+        ])
+        self._assert_status_code_is(response, 200)
+        hdca_list_id = response.json()["outputs"][0]["id"]
+        converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
+        actual: List[str] = []
+        for converter in converters.json():
+            actual.append(converter["tool_id"])
+        assert actual == []
+
     def test_collection_tools_tag_propagation(self):
         elements = [{"src": "files", "tags": ["name:element_tag"]}]
         targets = [{
@@ -399,7 +488,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
     def _create_collection_contents_pair(self):
         # Create a simple collection, return hdca and contents_url
         payload = self.dataset_collection_populator.create_pair_payload(self.history_id, instance_type="history")
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         hdca = self._check_create_response(create_response)
         root_contents_url = self._get_contents_url_for_hdca(hdca)
         return hdca, root_contents_url

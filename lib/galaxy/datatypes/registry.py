@@ -6,7 +6,7 @@ import imp
 import logging
 import os
 from string import Template
-from typing import Dict
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import yaml
 
@@ -27,6 +27,9 @@ from . import (
     xml
 )
 from .display_applications.application import DisplayApplication
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class ConfigurationError(Exception):
@@ -885,7 +888,9 @@ class Registry:
             return converters[target_ext]
         return None
 
-    def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
+    def find_conversion_destination_for_dataset_by_extensions(
+        self, dataset_or_ext, accepted_formats: List[str], converter_safe: bool = True
+    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format

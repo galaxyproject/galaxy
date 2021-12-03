@@ -72,8 +72,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_lapack_repository(self):
-        '''Create and populate package_lapack_3_4_1420.'''
-        '''
+        '''Create and populate package_lapack_3_4_1420.
+
         This is step 1 - Create repository package_lapack_3_4_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -106,8 +106,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_atlas_repository(self):
-        '''Create and populate package_atlas_3_10_1420.'''
-        '''
+        '''Create and populate package_atlas_3_10_1420.
+
         This is step 1 - Create repository package_atlas_3_10_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -140,8 +140,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_bzlib_repository(self):
-        '''Create and populate package_bzlib_1_0_1420.'''
-        '''
+        '''Create and populate package_bzlib_1_0_1420.
+
         This is step 1 - Create repository package_bzlib_1_0_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -174,8 +174,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_create_boost_repository(self):
-        '''Create and populate package_boost_1_53_1420.'''
-        '''
+        '''Create and populate package_boost_1_53_1420.
+
         This is step 1 - Create repository package_boost_1_53_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -208,8 +208,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0025_create_numpy_repository(self):
-        '''Create and populate package_numpy_1_7_1420.'''
-        '''
+        '''Create and populate package_numpy_1_7_1420.
+
         This is step 1 - Create repository package_numpy_1_7_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -242,8 +242,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0030_create_rdkit_repository(self):
-        '''Create and populate package_rdkit_2012_12_1420.'''
-        '''
+        '''Create and populate package_rdkit_2012_12_1420.
+
         This is step 1 - Create repository package_rdkit_2012_12_1420.
 
         All tool dependency definitions should download and extract a tarball containing precompiled binaries from the local
@@ -276,8 +276,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0035_install_rdkit_2012_12_repository(self):
-        '''Install the package_rdkit_2012_12_1420 repository into Galaxy.'''
-        '''
+        '''Install the package_rdkit_2012_12_1420 repository into Galaxy.
+
         This is step 4 - Install package_rdkit_2012_12_1420 into Galaxy.
 
         Install package_rdkit_2012_12_1420 with tool dependencies selected to be installed. The result of this should be
@@ -295,8 +295,8 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
                                 post_submit_strings_displayed=post_submit_strings_displayed)
 
     def test_0040_verify_env_sh_contents(self):
-        '''Check the env.sh file for the appropriate contents.'''
-        '''
+        '''Check the env.sh file for the appropriate contents.
+
         This is step 5 - Verify that the env.sh file for package_rdkit_2012_12_1420 also defines the variables inherited from package_numpy_1_7_1420
         and package_boost_1_53_1420. Test for the numpy and boost tool dependency paths.
         '''

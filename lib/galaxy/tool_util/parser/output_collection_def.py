@@ -92,6 +92,7 @@ class DatasetCollectionDescription:
             'assign_primary_output': self.assign_primary_output,
             'directory': self.directory,
             'recurse': self.recurse,
+            'match_relative_path': self.match_relative_path,
         }
 
     @property
@@ -116,7 +117,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern
-        sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
+        self.sort_by = sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
             self.sort_reverse = True
             sort_by = sort_by[len("reverse_"):]
@@ -143,6 +144,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             "sort_comp": self.sort_comp,
             "pattern": self.pattern,
             "recurse": self.recurse,
+            "sort_by": self.sort_by,
         })
         return as_dict
 

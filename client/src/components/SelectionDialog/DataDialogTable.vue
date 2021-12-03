@@ -10,15 +10,13 @@
             :current-page="currentPage"
             :busy.sync="isBusy"
             @row-clicked="clicked"
-            @filtered="filtered"
-        >
+            @filtered="filtered">
             <template v-slot:head(select_icon)="">
                 <font-awesome-icon
                     @click="$emit('toggleSelectAll')"
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
-                    :icon="selectionIcon(selectAllIcon)"
-                />
+                    :icon="selectionIcon(selectAllIcon)" />
             </template>
             <template v-slot:cell(select_icon)="data">
                 <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
@@ -27,27 +25,33 @@
                 <div style="cursor: pointer">
                     <pre
                         v-if="isEncoded"
-                        :title="data.item.labelTitle"
-                    ><code>{{ data.value ? data.value : "-" }}</code></pre>
+                        :title="`label-${data.item.labelTitle}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                     <span v-else>
-                        <i v-if="data.item.isLeaf" :class="leafIcon" />
-                        <font-awesome-icon v-else icon="folder" />
-                        <span :title="data.item.labelTitle">{{ data.value ? data.value : "-" }}</span>
+                        <div v-if="data.item.isLeaf">
+                            <i :class="leafIcon" />
+                            <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
+                        </div>
+                        <div @click.stop="open(data.item)" v-else>
+                            <font-awesome-icon icon="folder" />
+                            <b-link :title="`label-${data.item.labelTitle}`">{{
+                                data.value ? data.value : "-"
+                            }}</b-link>
+                        </div>
                     </span>
                 </div>
             </template>
             <template v-slot:cell(details)="data">
-                {{ data.value ? data.value : "-" }}
+                <span :title="`details-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
             </template>
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template v-slot:cell(navigate)="data">
-                <b-button variant="light" size="sm" v-if="!data.item.isLeaf" @click.stop="open(data.item)">
-                    <font-awesome-icon :icon="['far', 'caret-square-right']" />
-                </b-button>
-            </template>
         </b-table>
+        <div class="text-center" v-if="isBusy">
+            <b-spinner small type="grow"></b-spinner>
+            <b-spinner small type="grow"></b-spinner>
+            <b-spinner small type="grow"></b-spinner>
+        </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
                 No search results found for: <b>{{ this.filter }}</b
@@ -55,26 +59,30 @@
             </div>
             <div v-else>No entries.</div>
         </div>
-        <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
+        <b-pagination
+            class="justify-content-md-center"
+            v-if="nItems > perPage"
+            v-model="currentPage"
+            :per-page="perPage"
+            :total-rows="nItems" />
     </div>
 </template>
 
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faCaretSquareRight, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 Vue.use(BootstrapVue);
-library.add(faCheckSquare, faSquare, faFolder, faCaretSquareRight, faMinusSquare);
+library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
 const TIME_FIELD = { key: "time", sortable: true };
-const NAVIGATE_FIELD = { key: "navigate", label: "", sortable: false };
 const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 export default {
@@ -109,10 +117,6 @@ export default {
         showTime: {
             type: Boolean,
             default: true,
-        },
-        showNavigate: {
-            type: Boolean,
-            default: false,
         },
         showSelectIcon: {
             type: Boolean,
@@ -154,9 +158,6 @@ export default {
             }
             if (this.showTime) {
                 fields.push(TIME_FIELD);
-            }
-            if (this.showNavigate) {
-                fields.push(NAVIGATE_FIELD);
             }
 
             return fields;

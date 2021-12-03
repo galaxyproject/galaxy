@@ -523,14 +523,14 @@ HistoryView.prototype.templates = (() => {
         `<div>
             <div class="controls history-details"></div>
             <ul class="list-items"></ul>
-            <div class="empty-message infomessagesmall"></div>',
+            <div class="empty-message alert alert-info"></div>',
         </div>`;
 
     var controlsTemplate = BASE_MVC.wrapTemplate(
         [
             '<div class="controls history-details">',
             '<div class="title">',
-            '<div class="name"><%- history.name %></div>',
+            '<div class="name history-title"><%- history.name %></div>',
             "</div>",
             '<div class="subtitle"></div>',
             '<div class="history-size"><%- history.nice_size %></div>',

@@ -79,16 +79,16 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         return
 
     # read object_store_info file
-    with open(object_store_info_file, mode="r") as osi:
+    with open(object_store_info_file) as osi:
         object_store_info = json.load(osi)
     osi_keys = tuple(object_store_info.keys())
 
     # read irods_info_file
-    with open(irods_info_file, mode="r") as ii:
+    with open(irods_info_file) as ii:
         irods_info = json.load(ii)
 
     # read db_connectin_info file
-    with open(db_connection_info_file, mode="r") as dci:
+    with open(db_connection_info_file) as dci:
         db_connection_info = json.load(dci)
 
     try:
@@ -257,7 +257,7 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         irods_tape_resc_cuttoff_dt = datetime.strptime(irods_tape_resc_cuttoff, "%m/%d/%Y")
 
         read_cursor = conn.cursor()
-        args = ('ok', objectid, objectid, tuple([object_store_id]), 'ok', objectid, objectid, tuple([object_store_id]))
+        args = ('ok', objectid, objectid, (object_store_id, ), 'ok', objectid, objectid, (object_store_id, ))
         read_cursor.execute(last_accessed_sql_statement, args)
         row = read_cursor.fetchone()
         if row is None:

@@ -1,7 +1,9 @@
 import sys
 from json import loads
+from typing import Iterator
 
 from galaxy.datatypes.tabular import Tabular
+from galaxy.model import DatasetInstance
 
 
 class BaseDataProvider:
@@ -12,6 +14,7 @@ class BaseDataProvider:
     - write subsets of data to new datasets
 
     """
+    original_dataset: DatasetInstance
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
                  error_max_vals="Only the first %i values are returned."):
@@ -28,7 +31,7 @@ class BaseDataProvider:
         """
         raise Exception("Unimplemented Function")
 
-    def get_iterator(self, **kwargs):
+    def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
         """
         Returns an iterator that provides data in the region chrom:start-end
         """

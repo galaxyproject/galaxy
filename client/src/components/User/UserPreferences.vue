@@ -1,11 +1,11 @@
 <template>
     <b-container fluid class="p-0">
-        <h2>User preferences</h2>
+        <h2 v-localize>User preferences</h2>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
+            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
@@ -25,8 +25,8 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
-                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
-                <div class="form-text text-muted">
+                <a @click="toggleNotifications" href="javascript:void(0)"><b v-localize>Enable notifications</b></a>
+                <div class="form-text text-muted" v-localize>
                     Allow push and tab notifcations on job completion. To disable, revoke the site notification
                     privilege in your browser.
                 </div>
@@ -37,9 +37,9 @@
                 <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
                 <div class="pref-content pr-1">
                     <a id="delete-account" href="javascript:void(0)"
-                        ><b v-b-modal.modal-prevent-closing>Delete Account</b></a
+                        ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
                     >
-                    <div class="form-text text-muted">Delete your account on this Galaxy server.</div>
+                    <div class="form-text text-muted" v-localize>Delete your account on this Galaxy server.</div>
                     <b-modal
                         id="modal-prevent-closing"
                         centered
@@ -48,8 +48,7 @@
                         title-tag="h2"
                         @show="resetModal"
                         @hidden="resetModal"
-                        @ok="handleOk"
-                    >
+                        @ok="handleOk">
                         <p>
                             <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
                             <b>
@@ -62,8 +61,7 @@
                                 :state="nameState"
                                 label="Enter your user email for this account as confirmation."
                                 label-for="Email"
-                                invalid-feedback="Incorrect email"
-                            >
+                                invalid-feedback="Incorrect email">
                                 <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
                             </b-form-group>
                         </b-form>
@@ -72,11 +70,13 @@
             </b-row>
         </ConfigProvider>
         <p class="mt-2">
-            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
+            {{ titleYouAreUsing }} <strong>{{ diskUsage }}</strong> {{ titleOfDiskSpace }}
             <span v-html="quotaUsageString"></span>
-            Is your usage more than expected? See the
-            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for
-            tips on how to find all of the data in your account.
+            {{ titleIsYourUsage }}
+            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"
+                ><b v-localize>documentation</b></a
+            >
+            {{ titleForTipsOnHow }}
         </p>
     </b-container>
 </template>
@@ -122,6 +122,11 @@ export default {
             nameState: null,
             deleteError: "",
             submittedNames: [],
+            titleYouAreUsing: _l("You are using"),
+            titleOfDiskSpace: _l("of disk space in this Galaxy instance."),
+            titleIsYourUsage: _l("Is your usage more than expected? See the"),
+            titleForTipsOnHow: _l("for tips on how to find all of the data in your account."),
+            titleLoggedInAs: _l("You are logged in as"),
         };
     },
     created() {

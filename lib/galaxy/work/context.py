@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 from galaxy.managers.context import (
@@ -58,17 +59,55 @@ class WorkRequestContext(ProvidesHistoryContext):
     user = property(get_user, set_user)
 
 
+class GalaxyAbstractRequest:
+    """Abstract interface to provide access to some request properties."""
+
+    @abc.abstractproperty
+    def base(self) -> str:
+        """Base URL of the request."""
+
+    @abc.abstractproperty
+    def host(self) -> str:
+        """The host address."""
+
+
+class GalaxyAbstractResponse:
+    """Abstract interface to provide access to some response utilities."""
+
+    @abc.abstractproperty
+    def headers(self) -> dict:
+        """The response headers."""
+
+    def set_content_type(self, content_type: str):
+        """
+        Sets the Content-Type header
+        """
+        self.headers["content-type"] = content_type
+
+    def get_content_type(self):
+        return self.headers.get("content-type", None)
+
+
 class SessionRequestContext(WorkRequestContext):
-    """Like WorkRequestContext, but provides access to galaxy session and session."""
+    """Like WorkRequestContext, but provides access to galaxy session and request."""
 
     def __init__(self, **kwargs):
         self.galaxy_session = kwargs.pop('galaxy_session', None)
-        self._host = kwargs.pop("host")
+        self.__request: GalaxyAbstractRequest = kwargs.pop("request")
+        self.__response: GalaxyAbstractResponse = kwargs.pop("response")
         super().__init__(**kwargs)
 
     @property
     def host(self):
-        return self._host
+        return self.__request.host
+
+    @property
+    def request(self) -> GalaxyAbstractRequest:
+        return self.__request
+
+    @property
+    def response(self) -> GalaxyAbstractResponse:
+        return self.__response
 
     def get_galaxy_session(self):
         return self.galaxy_session

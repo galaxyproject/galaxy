@@ -7,12 +7,12 @@
             <label class="prompt" v-localize>format</label>
             <span class="value">{{ props.dataset.file_ext }}</span>
         </div>
-        <div v-if="props.dataset.metadata_dbkey" class="dbkey">
+        <div v-if="props.dataset.genome_build" class="dbkey">
             <label class="prompt" v-localize>database</label>
-            <span class="value">{{ props.dataset.metadata_dbkey }}</span>
+            <b-link class="value" @click.stop="listeners['edit']()">{{ props.dataset.genome_build }}</b-link>
         </div>
-        <div v-if="props.dataset.misc_info">
-            <span>{{ props.dataset.misc_info }}</span>
+        <div v-if="props.dataset.misc_info" class="info">
+            <span class="value">{{ props.dataset.misc_info }}</span>
         </div>
     </div>
 </template>

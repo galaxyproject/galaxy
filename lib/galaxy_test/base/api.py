@@ -2,6 +2,8 @@ import os
 from contextlib import contextmanager
 from urllib.parse import urlencode
 
+import requests
+
 from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
@@ -20,6 +22,7 @@ from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 
 class UsesApiTestCaseMixin:
+    url: str
 
     def tearDown(self):
         if os.environ.get('GALAXY_TEST_EXTERNAL') is None:
@@ -59,7 +62,7 @@ class UsesApiTestCaseMixin:
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=OTHER_USER):
+    def _different_user(self, email=OTHER_USER, anon=False):
         """ Use in test cases to switch get/post operations to act as new user
 
         ..code-block:: python
@@ -70,7 +73,13 @@ class UsesApiTestCaseMixin:
         """
         original_api_key = self.user_api_key
         original_interactor_key = self.galaxy_interactor.api_key
-        user, new_key = self._setup_user_get_key(email)
+        original_cookies = self.galaxy_interactor.cookies
+        if anon:
+            cookies = requests.get(self.url).cookies
+            self.galaxy_interactor.cookies = cookies
+            new_key = None
+        else:
+            _, new_key = self._setup_user_get_key(email)
         try:
             self.user_api_key = new_key
             self.galaxy_interactor.api_key = new_key
@@ -78,6 +87,7 @@ class UsesApiTestCaseMixin:
         finally:
             self.user_api_key = original_api_key
             self.galaxy_interactor.api_key = original_interactor_key
+            self.galaxy_interactor.cookies = original_cookies
 
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
@@ -121,6 +131,7 @@ class ApiTestInteractor(BaseInteractor):
     """
 
     def __init__(self, test_case, api_key=None):
+        self.cookies = None
         admin = getattr(test_case, "require_admin_user", False)
         test_user = TEST_USER if not admin else ADMIN_TEST_USER
         super().__init__(test_case, test_user=test_user, api_key=api_key)

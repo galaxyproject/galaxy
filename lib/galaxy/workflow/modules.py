@@ -5,8 +5,10 @@ import json
 import logging
 import re
 from collections import defaultdict
+from typing import Any, cast, Dict, List, Optional, Union
 
 import packaging.version
+from typing_extensions import TypedDict
 
 from galaxy import (
     exceptions,
@@ -14,8 +16,8 @@ from galaxy import (
     web
 )
 from galaxy.exceptions import ToolMissingException
-from galaxy.jobs.actions.post import ActionBox
-from galaxy.model import PostJobAction
+from galaxy.job_execution.actions.post import ActionBox
+from galaxy.model import PostJobAction, Workflow
 from galaxy.model.dataset_collections import matching
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
@@ -81,6 +83,10 @@ NO_REPLACEMENT = NoReplacement()
 
 
 class WorkflowModule:
+
+    label: str
+    type: str
+    name: str
 
     def __init__(self, trans, content_id=None, **kwds):
         self.trans = trans
@@ -398,7 +404,8 @@ class SubWorkflowModule(WorkflowModule):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    _modules = None
+    _modules: Optional[List[Any]] = None
+    subworkflow: Workflow
 
     @classmethod
     def from_dict(Class, trans, d, **kwds):
@@ -474,10 +481,12 @@ class SubWorkflowModule(WorkflowModule):
         return {f"Step {i + 1}": upgrade_message for i, upgrade_message in enumerate(states) if upgrade_message} or None
 
     def get_errors(self, **kwargs):
-        errors = (module.get_errors(include_tool_id=True) for module in self.get_modules())
-        errors = [e for e in errors if e]
-        if any(errors):
-            return errors
+        errors1 = (
+            module.get_errors(include_tool_id=True) for module in self.get_modules()
+        )
+        errors2 = [e for e in errors1 if e]
+        if any(errors2):
+            return errors2
         return None
 
     def get_all_outputs(self, data_only=False):
@@ -606,6 +615,11 @@ def format_param(trans, formats):
     return format_value
 
 
+class InputModuleState(TypedDict, total=False):
+    optional: bool
+    format: List[str]
+
+
 class InputModule(WorkflowModule):
     default_optional = False
 
@@ -654,14 +668,14 @@ class InputModule(WorkflowModule):
 
     def _parse_state_into_dict(self):
         inputs = self.state.inputs
-        rval = {}
+        rval: InputModuleState = {}
         if "optional" in inputs:
             optional = bool(inputs["optional"])
         else:
             optional = self.default_optional
         rval["optional"] = optional
         if "format" in inputs:
-            formats = listify(inputs["format"])
+            formats: Optional[List[str]] = listify(inputs["format"])
         else:
             formats = None
         if formats:
@@ -830,42 +844,50 @@ class InputParameterModule(WorkflowModule):
         cases = []
 
         for param_type in ["text", "integer", "float", "boolean", "color"]:
-            default_source = dict(name="default", label="Default Value", type=param_type)
+            default_source: Dict[str, Union[int, float, bool, str]] = dict(
+                name="default", label="Default Value", type=param_type
+            )
             if param_type == "text":
                 if parameter_type == "text":
-                    default = parameter_def.get("default") or ""
+                    text_default = parameter_def.get("default") or ""
                 else:
-                    default = ""
-                default_source["value"] = default
-                input_default_value = TextToolParameter(None, default_source)
+                    text_default = ""
+                default_source["value"] = text_default
+                input_default_value: Union[
+                    TextToolParameter,
+                    IntegerToolParameter,
+                    FloatToolParameter,
+                    BooleanToolParameter,
+                    ColorToolParameter,
+                ] = TextToolParameter(None, default_source)
             elif param_type == "integer":
                 if parameter_type == "integer":
-                    default = parameter_def.get("default") or 0
+                    integer_default = parameter_def.get("default") or 0
                 else:
-                    default = 0
-                default_source["value"] = default
+                    integer_default = 0
+                default_source["value"] = integer_default
                 input_default_value = IntegerToolParameter(None, default_source)
             elif param_type == "float":
                 if parameter_type == "float":
-                    default = parameter_def.get("default") or 0.0
+                    float_default = parameter_def.get("default") or 0.0
                 else:
-                    default = 0.0
-                default_source["value"] = default
+                    float_default = 0.0
+                default_source["value"] = float_default
                 input_default_value = FloatToolParameter(None, default_source)
             elif param_type == "boolean":
                 if parameter_type == "boolean":
-                    default = parameter_def.get("default") or False
+                    boolean_default = parameter_def.get("default") or False
                 else:
-                    default = False
-                default_source["value"] = default
-                default_source["checked"] = default
+                    boolean_default = False
+                default_source["value"] = boolean_default
+                default_source["checked"] = boolean_default
                 input_default_value = BooleanToolParameter(None, default_source)
             elif param_type == "color":
-                if parameter_type == 'color':
-                    default = parameter_def.get('default') or '#000000'
+                if parameter_type == "color":
+                    color_default = parameter_def.get("default") or "#000000"
                 else:
-                    default = '#000000'
-                default_source["value"] = default
+                    color_default = "#000000"
+                default_source["value"] = color_default
                 input_default_value = ColorToolParameter(None, default_source)
 
             optional_value = optional_param(optional)
@@ -910,7 +932,9 @@ class InputParameterModule(WorkflowModule):
             optional_cond.cases = optional_cases
 
             if param_type == "text":
-                restrict_how_source = dict(name="how", label="Restrict Text Values?", type="select")
+                restrict_how_source: Dict[
+                    str, Union[str, List[Dict[str, Union[str, bool]]]]
+                ] = dict(name="how", label="Restrict Text Values?", type="select")
                 if parameter_def.get("restrictions") is not None:
                     restrict_how_value = "staticRestrictions"
                 elif parameter_def.get("restrictOnConnections") is True:
@@ -953,10 +977,10 @@ class InputParameterModule(WorkflowModule):
                 if restrictions_list is None:
                     restrictions_list = []
                 restriction_values = self._parameter_option_def_to_tool_form_str(restrictions_list)
-                restrictions_source = dict(name="restrictions", label="Restriction Values", value=restriction_values, help="Comman-separated list of potential all values")
+                restrictions_source = dict(name="restrictions", label="Restricted Values", value=restriction_values, help="Comma-separated list of all permitted values")
                 restrictions = TextToolParameter(None, restrictions_source)
 
-                suggestions_source = dict(name="suggestions", label="Suggestion Values", value=restriction_values, help="Comman-separated list of some potential values")
+                suggestions_source = dict(name="suggestions", label="Suggested Values", value=restriction_values, help="Comma-separated list of some potential values")
                 suggestions = TextToolParameter(None, suggestions_source)
 
                 when_restrict_static_restrictions.inputs["restrictions"] = restrictions
@@ -979,7 +1003,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds = {}
+        parameter_kwds: Dict[str, Union[str, List[Dict[str, Any]]]] = {}
 
         is_text = parameter_type == "text"
         restricted_inputs = False
@@ -1268,9 +1292,15 @@ class ToolModule(WorkflowModule):
             current_tool_version = str(self.tool.version)
             if tool_version and exact_tools and self.tool_version != current_tool_version:
                 safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(current_tool_id)
-                if safe_version and safe_version.current_version >= packaging.version.parse(current_tool_id) >= safe_version.min_version:
-                    self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=False, tool_uuid=tool_uuid)
-                else:
+                safe_version_found = False
+                if safe_version and self.tool.lineage:
+                    # tool versions are sorted from old to new, so check newest version first
+                    for lineage_version in reversed(self.tool.lineage.tool_versions):
+                        if safe_version.current_version >= packaging.version.parse(lineage_version) >= safe_version.min_version:
+                            self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=lineage_version, exact=True, tool_uuid=tool_uuid)
+                            safe_version_found = True
+                            break
+                if not safe_version_found:
                     log.info(f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}].")
                     self.tool = None
         self.post_job_actions = {}
@@ -1500,7 +1530,7 @@ class ToolModule(WorkflowModule):
     def get_config_form(self, step=None):
         if self.tool:
             self.add_dummy_datasets(connections=step and step.input_connections)
-            incoming = {}
+            incoming: Dict[str, str] = {}
             params_to_incoming(incoming, self.tool.inputs, self.state.inputs, self.trans.app)
             return self.tool.to_json(self.trans, incoming, workflow_building_mode=True)
 
@@ -1692,16 +1722,17 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement = NO_REPLACEMENT
-                dataset_instance = None
+                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
+                dataset_instance: Optional[model.Dataset] = None
                 if iteration_elements and prefixed_name in iteration_elements:
                     dataset_instance = getattr(iteration_elements[prefixed_name], 'dataset_instance', None)
                     if isinstance(input, DataToolParameter) and dataset_instance:
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
-                        if hasattr(iteration_elements[prefixed_name], 'element_identifier') and iteration_elements[prefixed_name].element_identifier:
-                            replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
+                        temp = iteration_elements[prefixed_name]
+                        if hasattr(temp, 'element_identifier') and temp.element_identifier:
+                            replacement.element_identifier = temp.element_identifier  # type: ignore[attr-defined]
                     else:
                         # If collection - just use element model object.
                         replacement = iteration_elements[prefixed_name]
@@ -1711,9 +1742,11 @@ class ToolModule(WorkflowModule):
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset = dataset_instance or replacement
-                        if getattr(dataset, 'extension', None) == 'expression.json':
-                            with open(dataset.file_name) as f:
+                        dataset2: model.Dataset = cast(
+                            model.Dataset, dataset_instance or replacement
+                        )
+                        if getattr(dataset2, "extension", None) == "expression.json":
+                            with open(dataset2.file_name) as f:
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)
 

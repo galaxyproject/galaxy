@@ -5,9 +5,9 @@ import pytest
 from galaxy_test.api.conftest import pytest_configure  # noqa: F401
 
 
-def pytest_unconfigure(config):
+def pytest_collection_finish(session):
     try:
-        # This needs to be run if no test were run.
+        # This needs to be run after test collection
         from .test_config_defaults import DRIVER
         DRIVER.tear_down()
         print("Galaxy test driver shutdown successful")

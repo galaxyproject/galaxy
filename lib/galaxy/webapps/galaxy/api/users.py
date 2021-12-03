@@ -669,9 +669,13 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
-                if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
-                    prefix = f"{filter_type}|"
-                    new_filters.append(prefixed_name[len(prefix):])
+                if prefixed_name.startswith(filter_type):
+                    filter_selection = payload.get(prefixed_name)
+                    if type(filter_selection) != bool:
+                        raise exceptions.RequestParameterInvalidException('Please specify the filter selection as boolean value.')
+                    if filter_selection:
+                        prefix = f"{filter_type}|"
+                        new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
         trans.sa_session.flush()
@@ -702,7 +706,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 'name': filter_name,
                 'label': short_description or filter_name,
                 'help': description or 'No description available.',
-                'value': 'true' if filter_name in filter_values else 'false'
+                'value': True if filter_name in filter_values else False
             })
         if filter_inputs:
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})

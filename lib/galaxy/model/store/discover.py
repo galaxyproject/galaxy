@@ -19,6 +19,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException
 )
 from galaxy.model.dataset_collections import builder
+from galaxy.model.tags import GalaxySessionlessTagHandler
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer
@@ -59,6 +60,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         created_from_basename=None,
         final_job_state='ok',
         creating_job_id=None,
+        storage_callbacks=None,
     ):
         tag_list = tag_list or []
         sources = sources or []
@@ -114,10 +116,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 self.add_library_dataset_to_folder(library_folder, ld)
                 primary_data = ldda
         primary_data.raw_set_dataset_state(final_job_state)
+        if final_job_state == galaxy.model.Job.states.ERROR and not self.get_implicit_collection_jobs_association_id():
+            primary_data.visible = True
 
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
             source.source_uri = source_dict["source_uri"]
+            source.transform = source_dict.get("transform")
             primary_data.dataset.sources.append(source)
 
         for hash_dict in hashes:
@@ -129,31 +134,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if created_from_basename is not None:
             primary_data.created_from_basename = created_from_basename
 
-        has_flushed = False
         if tag_list:
-            # If we have a tag we need a primary id, so need to flush here
-            # TODO: eliminate creating tag associations within create dataset
-            # We can do this incrementally by not passing in a tag list.
-            self.flush()
-            has_flushed = True
-            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
-
-        # Move data from temp location to dataset location
-        if filename:
-            # TODO: eliminate this, should happen outside of create_dataset so that we don't need to flush
-            if not has_flushed:
-                self.flush()
-                has_flushed = True
-            if not link_data:
-                self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-            else:
-                primary_data.link_to(filename)
-            if extra_files:
-                persist_extra_files(self.object_store, extra_files, primary_data)
-                primary_data.set_size()
-            else:
-                # We are sure there are no extra files, so optimize things that follow by settting total size also.
-                primary_data.set_size(no_extra_files=True)
+            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -174,11 +156,27 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if info is not None:
             primary_data.info = info
-
         if filename:
-            self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
-
+            if storage_callbacks is None:
+                self.finalize_storage(primary_data=primary_data, dataset_attributes=dataset_attributes, extra_files=extra_files, filename=filename, link_data=link_data)
+            else:
+                storage_callbacks.append(lambda: self.finalize_storage(primary_data=primary_data, dataset_attributes=dataset_attributes, extra_files=extra_files, filename=filename, link_data=link_data))
         return primary_data
+
+    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data):
+        # Move data from temp location to dataset location
+        if not link_data:
+            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+        else:
+            primary_data.link_to(filename)
+        if extra_files:
+            persist_extra_files(self.object_store, extra_files, primary_data)
+            primary_data.set_size()
+        else:
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
+        # TODO: this might run set_meta after copying the file to the object store, which could be inefficient if job working directory is closer to the node.
+        self.set_datasets_metadata(datasets=[primary_data], datasets_attributes=[dataset_attributes])
 
     @staticmethod
     def set_datasets_metadata(datasets, datasets_attributes=None):
@@ -297,9 +295,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             association_name = f'__new_primary_file_{name}|{element_identifier_str}__'
             self.add_output_dataset_association(association_name, dataset)
 
-        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history(element_datasets['datasets'])
+        self.update_object_store_with_datasets(datasets=element_datasets['datasets'], paths=element_datasets['paths'], extra_files=element_datasets['extra_files'])
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
             self.job_id(),
@@ -310,13 +308,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
-            # This works around SessionlessModelPersistenceContext not implementing a tag handler ...
-            # that's not better or worse than what we previously did in create_datasets
-            # TDOD: implement that or figure out why it is not implemented and find a better solution.
-            # Could it be that SessionlessModelPersistenceContext doesn't support tags?
-            tag_session = self.tag_handler.create_tag_handler_session()
             for dataset, tags in zip(datasets, tag_lists):
-                tag_session.add_tags_from_list(self.job.user, dataset, tags, flush=False)
+                self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
@@ -358,6 +351,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
+
+    def persist_library_folder(self, library_folder):
+        """Add library folder to sessionless export. Noop for session export."""
 
     def flush(self):
         """If database bound, flush the persisted objects to ensure IDs."""
@@ -425,11 +421,17 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        raise NotImplementedError()
+        return GalaxySessionlessTagHandler(self.sa_session)
 
     @property
     def user(self):
         return None
+
+    def add_tags_to_datasets(self, datasets, tag_lists):
+        user = galaxy.model.User()
+        if any(tag_lists):
+            for dataset, tags in zip(datasets, tag_lists):
+                self.tag_handler.add_tags_from_list(user, dataset, tags, flush=False)
 
     def add_library_dataset_to_folder(self, library_folder, ld):
         library_folder.datasets.append(ld)
@@ -437,19 +439,25 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         library_folder.item_count += 1
 
     def get_library_folder(self, destination):
-        raise NotImplementedError()
+        folder = galaxy.model.LibraryFolder()
+        folder.id = destination.get("library_folder_id")
+        return folder
 
     def get_hdca(self, object_id):
         raise NotImplementedError()
 
-    def create_hdca(name, structure):
-        raise NotImplementedError()
+    def create_hdca(self, name, structure):
+        collection = galaxy.model.DatasetCollection(collection_type=structure.collection_type_description.collection_type, populated=False)
+        return galaxy.model.HistoryDatasetCollectionAssociation(name=name, collection=collection)
 
     def create_library_folder(self, parent_folder, name, description):
         nested_folder = galaxy.model.LibraryFolder(name=name, description=description, order_id=parent_folder.item_count)
         parent_folder.item_count += 1
         parent_folder.folders.append(nested_folder)
         return nested_folder
+
+    def persist_library_folder(self, library_folder):
+        self.export_store.export_library(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
@@ -469,6 +477,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     def add_output_dataset_association(self, name, dataset):
         """No-op, no job context to persist this association for."""
+
+    def get_implicit_collection_jobs_association_id(self):
+        """No-op, no job context."""
 
 
 def persist_extra_files(object_store, src_extra_files_path, primary_data):
@@ -603,6 +614,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
 def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
     # discover files as individual datasets for the target history
     datasets = []
+    storage_callbacks = []
 
     def collect_elements_for_history(elements):
         for element in elements:
@@ -623,7 +635,8 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 hda_id = discovered_file.match.object_id
                 primary_dataset = None
                 if hda_id:
-                    primary_dataset = model_persistence_context.sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+                    sa_session = model_persistence_context.sa_session or model_persistence_context.import_store.sa_session
+                    primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
 
                 sources = fields_match.sources
                 hashes = fields_match.hashes
@@ -648,12 +661,15 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     hashes=hashes,
                     created_from_basename=created_from_basename,
                     final_job_state=state,
+                    storage_callbacks=storage_callbacks,
                 )
                 if not hda_id:
                     datasets.append(dataset)
 
     collect_elements_for_history(elements)
     model_persistence_context.add_datasets_to_history(datasets)
+    for callback in storage_callbacks:
+        callback()
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         if for_output_dataset is not None:

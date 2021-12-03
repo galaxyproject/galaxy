@@ -127,7 +127,7 @@ def _merge_summarizes(raw_data_dicts):
 
 
 def _prepare_raw_data(path):
-    with open(path, "r") as f:
+    with open(path) as f:
         inp_dict = json.load(f)
     environment = dict(raw_data=inp_dict, label=os.path.basename(path))
     __inject_summary(environment)
@@ -261,12 +261,12 @@ def __inject_api_timing_summary_test(test):
 def __inject_statistics(from_dict):
     raw_values = from_dict['raw']
     from_dict['sum'] = sum(raw_values)
-    from_dict['median'] = "{:.2f}".format(statistics.median(raw_values))
+    from_dict['median'] = f"{statistics.median(raw_values):.2f}"
     if len(raw_values) > 1:
-        from_dict['stdev'] = "{:.4f}".format(statistics.stdev(raw_values))
+        from_dict['stdev'] = f"{statistics.stdev(raw_values):.4f}"
     else:
         from_dict['stdev'] = "n/a"
-    from_dict['mean'] = "{:.2f}".format(statistics.mean(raw_values))
+    from_dict['mean'] = f"{statistics.mean(raw_values):.2f}"
     from_dict['count'] = len(raw_values)
     return from_dict
 

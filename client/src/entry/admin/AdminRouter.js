@@ -7,6 +7,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import SanitizeAllow from "components/admin/SanitizeAllow.vue";
 import Jobs from "components/admin/Jobs.vue";
 import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
@@ -40,6 +41,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/data_types": "show_data_types",
             "(/)admin/jobs": "show_jobs",
             "(/)admin/invocations": "show_invocations",
+            "(/)admin/sanitize_allow": "show_sanitize_allow",
             "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
             "(/)admin/data_manager*path": "show_data_manager",
             "(/)admin(/)reset_metadata": "show_reset_metadata",
@@ -126,6 +128,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_invocations: function () {
             this._display_vue_helper(ActiveInvocations);
+        },
+
+        show_sanitize_allow: function () {
+            this._display_vue_helper(SanitizeAllow);
         },
 
         show_toolbox_dependencies: function () {

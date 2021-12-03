@@ -24,8 +24,7 @@
                             title="Go to Dataset Details"
                             variant="secondary"
                             type="button"
-                            :href="`${root}library/list#folders/${folder_id}/datasets/${dataset_id}`"
-                        >
+                            :href="`${root}library/list#folders/${folder_id}/datasets/${dataset_id}`">
                             <font-awesome-icon :icon="['far', 'file']" />
                             &nbsp;Dataset Details
                         </b-button>
@@ -50,8 +49,7 @@
                 title="Roles that can modify the library item"
                 :api-root-url="apiRootUrl"
                 alert="User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item."
-                @input="setUserPermissionsPreferences"
-            />
+                @input="setUserPermissionsPreferences" />
             <hr class="my-4" />
             <h2 class="text-center">Dataset-related permissions</h2>
             <div class="alert alert-warning text-center">
@@ -84,8 +82,7 @@
                 alert="User has to have <strong>all these roles</strong> in order to access this dataset.
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
                         If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>."
-                @input="setUserPermissionsPreferences"
-            />
+                @input="setUserPermissionsPreferences" />
             <PermissionsInputField
                 v-if="manage_dataset_roles"
                 :id="dataset_id"
@@ -95,16 +92,14 @@
                 title="Roles that can manage permissions on the dataset"
                 alert="User with <strong>any</strong> of these roles can manage permissions of this dataset.
                         If you remove yourself you will lose the ability manage this dataset unless you are an admin."
-                @input="setUserPermissionsPreferences"
-            />
+                @input="setUserPermissionsPreferences" />
             <b-button
                 data-toggle="tooltip"
                 data-placement="top"
                 title="Save modifications"
                 class="toolbtn_save_permissions"
                 variant="secondary"
-                @click="postPermissions"
-            >
+                @click="postPermissions">
                 <font-awesome-icon :icon="['far', 'save']" />
                 &nbsp;Save
             </b-button>

@@ -6,8 +6,7 @@
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History export job ended in error"
-                :job="jobError"
-            />
+                :job="jobError" />
         </b-alert>
         <div v-if="loadingExports">
             <loading-span message="Loading history export information from Galaxy server." />
@@ -35,7 +34,7 @@
             <p>
                 <b
                     ><a class="export-link" href="#" @click.prevent="regenerateExport"
-                        >Click here to to generate a new archive for this history.</a
+                        >Click here to generate a new archive for this history.</a
                     ></b
                 >
             </p>

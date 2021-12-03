@@ -1,5 +1,15 @@
 name: Converter tests
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+env:
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
 concurrency:
   group: converter-${{ github.ref }}
   cancel-in-progress: true

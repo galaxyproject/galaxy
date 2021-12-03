@@ -16,15 +16,18 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from ..exceptions.error_codes import error_codes_by_name
+from ..exceptions.error_codes import (
+    error_codes_by_name,
+    ErrorCode,
+)
 
 
 class MessageException(Exception):
     """Most generic Galaxy exception - indicates merely that some exceptional condition happened."""
     # status code to be set when used with API.
-    status_code = 400
+    status_code: int = 400
     # Error code information embedded into API json responses.
-    err_code = error_codes_by_name['UNKNOWN']
+    err_code: ErrorCode = error_codes_by_name['UNKNOWN']
 
     def __init__(self, err_msg=None, type="info", **extra_error_info):
         self.err_msg = err_msg or self.err_code.default_error_message
@@ -241,12 +244,19 @@ class ReferenceDataError(MessageException):
     err_code = error_codes_by_name['REFERENCE_DATA_ERROR']
 
 
+class ServerNotConfiguredForRequest(MessageException):
+    # A bit like ConfigDoesNotAllowException but it has nothing to do with the user of the
+    # request being "forbidden". It just isn't configured.
+    status_code = 501
+    err_code = error_codes_by_name['SERVER_NOT_CONFIGURED_FOR_REQUEST']
+
+
 # non-web exceptions
 
 class ContainerCLIError(Exception):
     def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
                  command=None, subprocess_command=None, **kwargs):
-        super().__init__(msg, **kwargs)
+        super().__init__(msg)
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
@@ -256,24 +266,24 @@ class ContainerCLIError(Exception):
 
 class ContainerNotFound(Exception):
     def __init__(self, msg=None, container_id=None, **kwargs):
-        super().__init__(msg, **kwargs)
+        super().__init__(msg)
         self.container_id = container_id
 
 
 class ContainerImageNotFound(Exception):
     def __init__(self, msg=None, image=None, **kwargs):
-        super().__init__(msg, **kwargs)
+        super().__init__(msg)
         self.image = image
 
 
 class ContainerRunError(Exception):
     def __init__(self, msg=None, image=None, command=None, **kwargs):
-        super().__init__(msg, **kwargs)
+        super().__init__(msg)
         self.image = image
         self.command = command
 
 
 class HandlerAssignmentError(Exception):
     def __init__(self, msg=None, obj=None, **kwargs):
-        super().__init__(msg, **kwargs)
+        super().__init__(msg)
         self.obj = obj

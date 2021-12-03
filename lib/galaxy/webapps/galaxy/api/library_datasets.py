@@ -456,8 +456,9 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
             path = os.path.join(full_dir, path)
             if unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
                 # the path is a dir and contains files that symlink outside the user dir
-                error = 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', \
-                        path, os.path.realpath(path)
+                error = 'User attempted to import a path that resolves to a path outside of their import dir: {} -> {}'.format(
+                    path, os.path.realpath(path)
+                )
                 if trans.app.config.user_library_import_check_permissions:
                     error += ' or is not readable for them.'
                 log.error(error)
@@ -519,8 +520,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         job_params['link_data_only'] = dumps(kwd.get('link_data_only', 'copy_files'))
         job_params['uuid'] = dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job(trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params)
-        trans.sa_session.add(job)
-        trans.sa_session.flush()
+        trans.app.job_manager.enqueue(job, tool=tool)
         job_dict = job.to_dict()
         job_dict['id'] = trans.security.encode_id(job_dict['id'])
         return job_dict

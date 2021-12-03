@@ -1,18 +1,22 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
-        <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-            <a @click="toggleMenu()" href="javascript:void(0)" role="button">
+        <div
+            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
+            :title="title"
+            v-b-tooltip.topright.hover
+            @mouseover="hover = true"
+            @mouseleave="hover = false">
+            <a class="title-link" @click="toggleMenu()" href="javascript:void(0)">
                 <span class="name">
                     {{ this.name }}
                 </span>
+                <ToolPanelLinks :links="links" :show="hover" />
             </a>
         </div>
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in category.elems.entries()">
-                    <div v-if="el.text" class="tool-panel-label" :key="key">
-                        {{ el.text }}
-                    </div>
+                    <ToolPanelLabel v-if="category.text" :definition="el" :key="key" />
                     <tool
                         v-else
                         class="ml-2"
@@ -23,16 +27,13 @@
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
                         @onOperation="onOperation"
-                        @onClick="onClick"
-                    />
+                        @onClick="onClick" />
                 </template>
             </div>
         </transition>
     </div>
     <div v-else>
-        <div v-if="category.text" class="tool-panel-label">
-            {{ category.text }}
-        </div>
+        <ToolPanelLabel v-if="category.text" :definition="category" />
         <tool
             v-else
             :tool="category"
@@ -40,19 +41,22 @@
             :operation-title="operationTitle"
             :operation-icon="operationIcon"
             @onOperation="onOperation"
-            @onClick="onClick"
-        />
+            @onClick="onClick" />
     </div>
 </template>
 
 <script>
 import Tool from "./Tool";
+import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
+import ToolPanelLinks from "./ToolPanelLinks";
 
 export default {
     name: "ToolSection",
     components: {
         Tool,
+        ToolPanelLabel,
+        ToolPanelLinks,
     },
     props: {
         category: {
@@ -93,6 +97,7 @@ export default {
     data() {
         return {
             opened: this.expanded || this.checkFilter(),
+            hover: false,
         };
     },
     watch: {
@@ -115,6 +120,12 @@ export default {
         },
         hasElements() {
             return this.category.elems && this.category.elems.length > 0;
+        },
+        title() {
+            return this.category.description;
+        },
+        links() {
+            return this.category.links || {};
         },
     },
     methods: {

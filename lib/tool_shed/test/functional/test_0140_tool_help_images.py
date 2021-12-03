@@ -36,8 +36,8 @@ class TestToolHelpImages(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_htseq_count_repository(self):
-        '''Create and populate htseq_count_0140.'''
-        '''
+        '''Create and populate htseq_count_0140.
+
         We are at step 1 - Create and populate the htseq_count_0140 repository.
         Create the htseq_count_0140 repository and upload the tarball.
         '''
@@ -62,8 +62,8 @@ class TestToolHelpImages(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_load_tool_page(self):
-        '''Load the tool page and check for the image.'''
-        '''
+        '''Load the tool page and check for the image.
+
         We are at step 2
         Visit the manage_repository page and the tool page, and look for the image url
         similar to the following string:

@@ -162,6 +162,10 @@ table.info_data_table th:nth-child(1) {
     border-color: transparent;
 }
 
+.alert-info {
+    background: $state-info-bg !important;
+}
+
 // increase visibility of dropdown menu section headers
 .dropdown-header {
     font-size: 1rem;

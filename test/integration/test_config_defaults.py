@@ -226,6 +226,9 @@ def driver(request):
     return DRIVER
 
 
+DRIVER: GalaxyTestDriver
+
+
 def create_driver():
     # Same approach as in functional/test_toolbox_pytest.py:
     # We setup a global driver, so that the driver fixture can tear down the driver.
@@ -241,6 +244,7 @@ def create_driver():
 
 
 def get_config_data():
+    global DRIVER
 
     def load_parent_dirs():
         return {
@@ -272,6 +276,8 @@ def get_config_data():
     for key, data in DRIVER.app.config.schema.app_schema.items():
         if key in DO_NOT_TEST:
             continue
+        elif f"GALAXY_CONFIG_OVERRIDE_{str(key).upper()}" in os.environ:
+            continue
         expected_value = get_expected(key, data, parent_dirs)
         loaded_value = getattr(DRIVER.app.config, key)
         data = OptionData(key=key, expected=expected_value, loaded=loaded_value)  # passed to test
@@ -294,6 +300,7 @@ def test_config_option(data, driver):
 
 @pytest.mark.parametrize('data', get_path_data())
 def test_is_path_absolute(data, driver):
+    global DRIVER
     path = getattr(DRIVER.app.config, data)
     if path:
         assert os.path.isabs(path)

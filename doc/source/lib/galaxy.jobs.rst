@@ -12,7 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   galaxy.jobs.actions
+   galaxy.job_execution.actions
    galaxy.jobs.rules
    galaxy.jobs.runners
    galaxy.jobs.splitters

@@ -1,6 +1,7 @@
 import asyncio
 import concurrent.futures
 import functools
+import sys
 import threading
 import time
 import uuid
@@ -12,9 +13,8 @@ from httpx import AsyncClient
 pytest.importorskip("starlette_context")
 from starlette_context import context as request_context
 
-
+from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.webapps.galaxy.fast_app import add_request_id_middleware
-from ..unittest_utils.galaxy_mock import MockApp
 
 app = FastAPI()
 GX_APP = None
@@ -102,6 +102,7 @@ async def test_request_scoped_sa_session_single_request():
         response = await client.get("/")
         assert response.status_code == 200
         assert response.json() == {"msg": "Hello World"}
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -111,6 +112,7 @@ async def test_request_scoped_sa_session_exception():
     async with AsyncClient(app=app, base_url="http://test") as client:
         with pytest.raises(UnexpectedException):
             await client.get("/internal_server_error")
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -125,6 +127,7 @@ async def test_request_scoped_sa_session_concurrent_requests_sync():
             assert r.status_code == 200
             uuids.append(r.json())
         assert len(set(uuids)) == 10
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
@@ -139,13 +142,17 @@ async def test_request_scoped_sa_session_concurrent_requests_async():
             assert r.status_code == 200
             uuids.append(r.json())
         assert len(set(uuids)) == 10
+        assert GX_APP
         assert GX_APP.model.scoped_registry.registry == {}
 
 
 @pytest.mark.asyncio
 async def test_request_scoped_sa_session_concurrent_requests_and_background_thread():
     add_request_id_middleware(app)
-    loop = asyncio.get_running_loop()
+    if sys.version_info > (3, 6):
+        loop = asyncio.get_running_loop()
+    else:
+        loop = asyncio.get_event_loop()
     target = functools.partial(assert_scoped_session_is_thread_local, GX_APP)
     with concurrent.futures.ThreadPoolExecutor() as pool:
         background_pool = loop.run_in_executor(pool, target)
@@ -157,6 +164,7 @@ async def test_request_scoped_sa_session_concurrent_requests_and_background_thre
                 assert r.status_code == 200
                 uuids.append(r.json())
             assert len(set(uuids)) == 10
+            assert GX_APP
             assert GX_APP.model.scoped_registry.registry == {}
         GX_APP.stop = True
         await background_pool

@@ -163,7 +163,7 @@ class ErrorReporter:
         history_id_encoded = self.app.security.encode_id(hda.history_id)
         history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        hda_show_params_link = web.url_for(controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
         if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects

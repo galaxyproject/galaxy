@@ -6,11 +6,10 @@
                 <input
                     class="search-query parent-width"
                     name="query"
-                    placeholder="search visualizations"
+                    :placeholder="titleSearchVisualizations"
                     autocomplete="off"
                     type="text"
-                    v-model="search"
-                />
+                    v-model="search" />
             </div>
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
@@ -20,8 +19,7 @@
                                 v-if="plugin.logo"
                                 alt="ui thumbnails"
                                 class="ui-thumbnails-image"
-                                :src="plugin.logo"
-                            />
+                                :src="plugin.logo" />
                             <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>
@@ -33,7 +31,7 @@
                         <td />
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="font-weight-bold">Select a dataset to visualize:</div>
+                                <div class="font-weight-bold">{{ titleSelectDataset }}</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :key="file.id" :value="file.id">
@@ -45,12 +43,12 @@
                                 <button
                                     type="button"
                                     class="ui-button-default float-left mt-3 btn btn-primary"
-                                    @click="create(plugin)"
-                                >
-                                    <i class="icon fa fa-check" /> <span class="title">Create Visualization</span>
+                                    @click="create(plugin)">
+                                    <i class="icon fa fa-check" />
+                                    <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>
                             </div>
-                            <div v-else class="alert alert-danger">
+                            <div v-else class="alert alert-danger" v-localize>
                                 There is no suitable dataset in your current history which can be visualized with this
                                 plugin.
                             </div>
@@ -63,6 +61,7 @@
 </template>
 <script>
 import $ from "jquery";
+import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
@@ -77,6 +76,9 @@ export default {
             name: null,
             error: null,
             fixed: false,
+            titleSearchVisualizations: _l("search visualizations"),
+            titleCreateVisualization: _l("Create Visualization"),
+            titleSelectDataset: _l("Select a dataset to visualize:"),
         };
     },
     created() {

@@ -44,6 +44,7 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
     const wrapper = mount(component, {
         propsData,
         localVue,
+        attachTo: document.body,
         stubs: {
             select2: true,
         },

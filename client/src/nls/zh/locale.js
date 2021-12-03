@@ -104,7 +104,7 @@ define({
 
     // ---- history-view-edit
     "Edit history tags": "编辑历史标签",
-    "Edit history Annotation": "编辑历史备注",
+    "Edit history annotation": "编辑历史备注",
     "Click to rename history": "点击以重命名历史",
     // multi operations
     "Operations on multiple datasets": "编辑多个数据集",
@@ -269,7 +269,7 @@ define({
     "Convert the datatype to a new format.": "将数据类型更改为新的格式。",
     "Save attributes of the dataset.": "保存数据集属性。",
     "Change data type": "更改数据类型",
-    "Edit dataset attributes": "编辑数据集属性",
+    "Edit Dataset Attributes": "编辑数据集属性",
     "Save permissions": "保存权限",
     "Manage dataset permissions": "管理数据集权限",
     "Change datatype": "更改数据类型",
@@ -303,16 +303,16 @@ define({
     "Access your current API key or create a new one.": "访问您当前的 API密钥或创建一个新的密钥。",
     "Enable or disable the communication feature to chat with other users.": "启用或禁用与其他用户聊天的通信功能。",
     "Allows you to change your login credentials.": "允许您更改您的登录凭证。",
-    "User Preferences": "用户偏好性",
+    "User preferences": "用户偏好性",
     "Sign out": "退出",
     "Manage custom builds": "管理您自定义的构建集",
     "Manage OpenIDs": "管理 OpenIDs",
     "Manage Toolbox filters": "管理工具箱过滤器",
-    "Manage API key": "管理您的 API 密钥",
+    "Manage API Key": "管理您的 API 密钥",
     "Set dataset permissions for new histories": "为新的历史设置数据集权限",
     "Change communication settings": "修改通信设置",
-    "Change password": "更改密码",
-    "Manage information": "管理您的信息",
+    "Change Password": "更改密码",
+    "Manage Information": "管理您的信息",
     // ---------------------------------------------------------------------------- shed-list-view
     "Configured Galaxy Tool Sheds": "配置 Galaxy Tool Sheds",
     // ---------------------------------------------------------------------------- repository-queue-view

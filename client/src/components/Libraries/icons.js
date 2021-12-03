@@ -53,7 +53,7 @@ export function initPermissionsIcons() {
         library.add(icon);
     });
 }
-export function initLibariesIcons() {
+export function initLibrariesIcons() {
     librariesIcons.forEach((icon) => {
         library.add(icon);
     });

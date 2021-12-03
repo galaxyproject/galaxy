@@ -18,9 +18,14 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.binary import _BamOrSam
+from galaxy.datatypes.metadata import (
+    MetadataElement,
+    MetadataParameter,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers,
     validate_tabular,
@@ -40,7 +45,6 @@ class TabularData(data.Text):
     data_line_offset = 0
     max_peek_columns = 50
 
-    """Add metadata elements"""
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=False, optional=True, no_value=0)
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, visible=False, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False, no_value=0)
@@ -82,25 +86,26 @@ class TabularData(data.Text):
                       })
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+        headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
-            return self.get_chunk(trans, dataset, offset, ck_size)
+            return self.get_chunk(trans, dataset, offset, ck_size), headers
         elif to_ext or not preview:
             to_ext = to_ext or dataset.extension
-            return self._serve_raw(trans, dataset, to_ext, **kwd)
+            return self._serve_raw(dataset, to_ext, headers, **kwd)
         elif dataset.metadata.columns > 100:
             # Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
             if os.stat(dataset.file_name).st_size < max_peek_size:
-                self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name, mode='rb')
+                self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
+                return open(dataset.file_name, mode='rb'), headers
             else:
-                trans.response.set_content_type("text/html")
+                headers["content-type"] = "text/html"
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
-                                                  data=dataset)
+                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                  data=dataset), headers
         else:
             column_names = 'null'
             if dataset.metadata.column_names:
@@ -118,7 +123,7 @@ class TabularData(data.Text):
                                        chunk=self.get_chunk(trans, dataset, 0),
                                        column_number=column_number,
                                        column_names=column_names,
-                                       column_types=column_types)
+                                       column_types=column_types), headers
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
         with open(dataset_instance.file_name) as f:
@@ -260,6 +265,7 @@ class TabularData(data.Text):
 @dataproviders.decorators.has_dataproviders
 class Tabular(TabularData):
     """Tab delimited data"""
+    file_ext = "tabular"
 
     def get_column_names(self, first_line=None):
         return None
@@ -361,10 +367,7 @@ class Tabular(TabularData):
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 i = 0
-                while True:
-                    line = dataset_fh.readline()
-                    if not line:
-                        break
+                for line in dataset_fh:
                     line = line.rstrip('\r\n')
                     if i == 0:
                         column_names = self.get_column_names(first_line=line)
@@ -434,7 +437,7 @@ class Tabular(TabularData):
 
 class SraManifest(Tabular):
     """A manifest received from the sra_source tool."""
-    ext = 'sra_manifest.tabular'
+    file_ext = 'sra_manifest.tabular'
     data_line_offset = 1
 
     def set_meta(self, dataset, **kwds):
@@ -446,6 +449,8 @@ class SraManifest(Tabular):
 
 
 class Taxonomy(Tabular):
+    file_ext = "taxonomy"
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         super().__init__(**kwd)
@@ -462,12 +467,19 @@ class Taxonomy(Tabular):
 
 @dataproviders.decorators.has_dataproviders
 @build_sniff_from_prefix
-class Sam(Tabular):
+class Sam(Tabular, _BamOrSam):
     edam_format = "format_2573"
     edam_data = "data_0863"
     file_ext = 'sam'
     track_type = "ReadTrack"
     data_sources = {"data": "bam", "index": "bigwig"}
+
+    MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
+    MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_names", default=[], desc="Chromosome Names", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="reference_lengths", default=[], desc="Chromosome Lengths", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="bam_header", default={}, desc="Dictionary of BAM Headers", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value={})
 
     def __init__(self, **kwd):
         """Initialize sam datatype"""
@@ -480,7 +492,7 @@ class Sam(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in SAM format
 
@@ -509,13 +521,9 @@ class Sam(Tabular):
         >>> Sam().sniff( fname )
         True
         """
-        fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
+        for line in file_prefix.line_iterator():
             line = line.strip()
-            if not line:
-                break  # EOF
             if line:
                 if line[0] != '@':
                     line_pieces = line.split('\t')
@@ -537,6 +545,26 @@ class Sam(Tabular):
         return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+        >>> from galaxy.model import Dataset, set_datatypes_registry
+        >>> from galaxy.model import History, HistoryDatasetAssociation
+        >>> from galaxy.model.mapping import init
+        >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+        >>> hist = History()
+        >>> sa_session.add(hist)
+        >>> sa_session.flush()
+        >>> set_datatypes_registry(example_datatype_registry_for_sample())
+        >>> fname = get_test_fname( 'sam_with_header.sam' )
+        >>> samds = Dataset(external_filename=fname)
+        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
+        >>> Sam().set_meta(hda)
+        >>> hda.metadata.comment_lines
+        2
+        >>> hda.metadata.reference_names
+        ['ref', 'ref2']
+        """
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
@@ -558,6 +586,8 @@ class Sam(Tabular):
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
+
+            _BamOrSam().set_meta(dataset)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -645,7 +675,6 @@ class Pileup(Tabular):
     line_class = "genomic coordinate"
     data_sources = {"data": "tabix"}
 
-    """Add metadata elements"""
     MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
@@ -662,7 +691,7 @@ class Pileup(Tabular):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'pileup-ness'
 
@@ -686,7 +715,7 @@ class Pileup(Tabular):
         >>> fname = get_test_fname( '2.txt' )
         >>> Pileup().sniff( fname )  # 2.txt
         False
-        >>> fname = get_test_fname( '2.tabular' )
+        >>> fname = get_test_fname( 'test_tab2.tabular' )
         >>> Pileup().sniff( fname )
         False
         """
@@ -795,7 +824,7 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = 'vcf'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return self._sniff(file_prefix)
 
 
@@ -821,7 +850,7 @@ class VcfGz(BaseVcf, binary.Binary):
 
     def set_meta(self, dataset, **kwd):
         super().set_meta(dataset, **kwd)
-        """ Creates the index for the VCF file. """
+        # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
         if not index_file:
@@ -879,7 +908,7 @@ class Eland(Tabular):
             out = f"Can't create peek {exc}"
         return out
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in ELAND export format
 
@@ -892,13 +921,11 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        fh = file_prefix.string_io()
         count = 0
-        while True:
-            line = fh.readline()
+        for line in file_prefix.line_iterator():
             line = line.strip()
             if not line:
-                break  # EOF
+                break  # Had a EOF comment previously, but this does not indicate EOF. I assume empty lines are not valid and this was intentional.
             if line:
                 line_pieces = line.split('\t')
                 if len(line_pieces) != 22:
@@ -954,7 +981,7 @@ class Eland(Tabular):
 class ElandMulti(Tabular):
     file_ext = 'elandmulti'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return False
 
 
@@ -1050,16 +1077,14 @@ class BaseCSV(TabularData):
             return False
         if (auto_dialect.quotechar != self.dialect.quotechar):
             return False
-        """
-        Not checking for other dialect options
-        They may be mis detected from just the sample.
-        Or not effect the read such as doublequote
+        # Not checking for other dialect options
+        # They may be mis detected from just the sample.
+        # Or not effect the read such as doublequote
 
-        Optional: Check for headers as in the past.
-        Note No way around Python's csv calling Sniffer.sniff again.
-        Note Without checking the dialect returned by sniff
-              this test may be checking the wrong dialect.
-        """
+        # Optional: Check for headers as in the past.
+        # Note: No way around Python's csv calling Sniffer.sniff again.
+        # Note: Without checking the dialect returned by sniff
+        #       this test may be checking the wrong dialect.
         if not csv.Sniffer().has_header(big_peek):
             return False
         return True
@@ -1151,7 +1176,7 @@ class ConnectivityTable(Tabular):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
@@ -1274,7 +1299,7 @@ class MatrixMarket(TabularData):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.startswith('%%MatrixMarket matrix coordinate')
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
@@ -1306,13 +1331,6 @@ class MatrixMarket(TabularData):
 
 @build_sniff_from_prefix
 class CMAP(TabularData):
-    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
-    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
-    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
-    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
-    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
-    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
-    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
     """
     # CMAP File Version:    2.0
     # Label Channels:   1
@@ -1328,8 +1346,22 @@ class CMAP(TabularData):
     """
     file_ext = "cmap"
 
-    def sniff_prefix(self, file_prefix):
-        return file_prefix.startswith('# CMAP File Version:')
+    MetadataElement(name="cmap_version", default='0.2', desc="version of cmap", readonly=True, visible=True, optional=False, no_value='0.2')
+    MetadataElement(name="label_channels", default=1, desc="the number of label channels", readonly=True, visible=True, optional=False, no_value=1)
+    MetadataElement(name="nickase_recognition_site_1", default=[], desc="comma separated list of label motif recognition sequences for channel 1", readonly=True, visible=True, optional=False, no_value=[])
+    MetadataElement(name="number_of_consensus_nanomaps", default=0, desc="the total number of consensus genome maps in the CMAP file", readonly=True, visible=True, optional=False, no_value=0)
+    MetadataElement(name="nickase_recognition_site_2", default=[], desc="comma separated list of label motif recognition sequences for channel 2", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_1_color", default=[], desc="channel 1 color", readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="channel_2_color", default=[], desc="channel 2 color", readonly=True, visible=True, optional=True, no_value=[])
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        handle = file_prefix.string_io()
+        for line in handle:
+            if not line.startswith('#'):
+                return False
+            if line.startswith('# CMAP File Version:'):
+                return True
+        return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
         if dataset.has_data():

@@ -39,7 +39,7 @@ masthead:
     user_menu: '#user .dropdown-menu a'
     workflow: '#workflow .nav-link'
 
-    user_email:
+    username:
       type: xpath
       selector: '//a[contains(text(), "Logged in as")]'
 
@@ -85,7 +85,7 @@ toolbox_filters:
   selectors:
     input:
       type: xpath
-      selector: "//span[contains(. ,'${description}')]/../div/div/div[@class=\"custom-control\"]"
+      selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
     submit: '#submit'
 
 change_user_email:
@@ -106,6 +106,12 @@ sign_out:
   selectors:
     cancel_button: '.modal-footer .buttons #button-0'
     sign_out_button: '.modal-footer .buttons #button-1'
+
+dataset_details:
+  selectors:
+    _: 'table#dataset-details'
+    tool_parameters: 'table#tool-parameters'
+    transform_action: '[data-transform-action="${action}"]'
 
 history_panel:
   menu:
@@ -133,14 +139,14 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
-      display_button: '${_} .icon-btn.display-btn'
-      edit_button: '${_} .icon-btn.edit-btn'
-      delete_button: '${_} .icon-btn.delete-btn'
+      display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
+      delete_button: '${_} .delete-btn'
 
       # Action buttons...
       download_button: '${_} .icon-btn.download-btn'
       info_button: '${_} .icon-btn.params-btn'
-      dbkey_button: '${_} .fa.fa-question'
+      tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .icon-btn.rerun-btn'
       nametags: '${_} .nametags .badge-tags'
 
@@ -155,9 +161,6 @@ history_panel:
 
       hid: '${_} .hid'
       name: '${_} .name'
-      title_button_area: '${_} .primary-actions'
-      primary_action_buttons: '${_} .actions .left'
-      secondary_action_buttons: '${_} .actions .right'
       blurb: '${_} .blurb .value'
       dbkey: '${_} .dbkey .value'
       info: '${_} .info .value'
@@ -165,16 +168,16 @@ history_panel:
       toolhelp_title: '${_} .toolhelp strong'
 
       # Title buttons...
-      display_button: '${_} .icon-btn.display-btn'
-      edit_button: '${_} .icon-btn.edit-btn'
-      delete_button: '${_} .icon-btn.delete-btn'
+      display_button: '${_} .display-btn'
+      edit_button: '${_} .edit-btn'
+      delete_button: '${_} .delete-btn'
 
       # Action buttons...
-      download_button: '${_} .icon-btn.download-btn'
-      info_button: '${_} .icon-btn.params-btn'
-      dbkey_button: '${_} .fa.fa-question'
-      rerun_button: '${_} .icon-btn.rerun-btn'
+      download_button: '${_} .download-btn'
+      info_button: '${_} .params-btn'
       nametags: '${_} .nametags .badge-tags'
+
+      dataset_operations_dropdown: '${_}  .dataset-operations-dropdown'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -220,6 +223,7 @@ history_panel:
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_input: '.controls .tags-display .tags-input input'
       list_items: '.dataset-collection-panel .list-items .list-item'
+      list_items_beta: '.dataset-collection-panel .listing .content-item'
 
   selectors:
     beta: '.beta.history'
@@ -228,8 +232,9 @@ history_panel:
     refresh_button: '.history-refresh-button'
     name: '.title .name'
     name_beta: '.history-title span:last-child'
-    name_edit_input: '.name input'
-    name_edit_input_beta: '.history-title input'
+    name_edit_input: 
+      selector: 'name input'
+      type: data-description
     contents: '#current-history-panel .history-content'
 
     empty_message: '.empty-message'
@@ -242,10 +247,13 @@ history_panel:
 
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.history-details .history-annotation'
-    annotation_editable_text: '.history-details .history-annotation .annotation.editable-text'
-    annotation_editable_text_beta: '.history-details .history-annotation.clickToEdit'
-    annotation_edit: '.history-details .history-annotation .annotation textarea'
-    annotation_edit_beta: '.history-details .history-annotation textarea'
+    annotation_editable_text:
+      selector: 'history annotation'
+      type: data-description
+    annotation_edit:
+      selector: 'annotation input'
+      type: data-description
+
     annotation_done: '.history-details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
@@ -264,6 +272,14 @@ history_panel:
     options_use_beta_history:
       type: xpath
       selector: '//a[text()="Use Beta History Panel"]'
+    options_use_legacy_history:
+      type: xpath
+      selector: '//button[contains(span, "Return to legacy history panel")]'
+    
+    collection_menu_button: '.collection-menu'
+    collection_menu_edit_attributes: 
+      type: xpath
+      selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
     histories_operation_menu: '.histories-operation-menu'
@@ -300,6 +316,16 @@ edit_dataset_attributes:
       dbkey_dropdown_option:
         type: xpath
         selector: '//li[normalize-space() = "${dbkey_text}"]'
+
+edit_collection_attributes:
+  selectors:
+    database_genome_tab: 
+      type: xpath
+      selector: '//a[contains(text(), "Database/Build")]'
+    database_value: 
+      type: xpath
+      selector: '//span[contains(text(), "${dbkey}")]'
+    save_btn: '.save-collection-edit'
 
 
 
@@ -371,8 +397,12 @@ histories:
 
   sharing:
     selectors:
-      unshare_user_button: '.unshare_user'
-      share_with_a_user_button: '#share_with_a_user'
+      unshare_user_button: '.share_with_view .multiselect__tag-icon'
+      user_email_input: '.user-email-input-form'
+      submit_sharing_with: '.submit-sharing-with'
+      share_with_collapse: '.share-with-collapse'
+      share_with_multiselect: '.share_with_view > .multiselect'
+      share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
       make_publishable: '.make-publishable label'
     labels:
@@ -380,8 +410,10 @@ histories:
 
 files_dialog:
   selectors:
-    ftp_row: 'span[title="gxftp://"]'
-    row: 'span[title="${uri}"]'
+    ftp_label: 'a[title="label-gxftp://"]'
+    ftp_details: 'span[title="details-gxftp://"]'
+    row: 'span[title="label-${uri}"]'
+    back_btn: '#back-btn'
 
 history_export:
   selectors:
@@ -491,7 +523,7 @@ workflow_run:
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
-    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
 
 workflow_editor:
 
@@ -537,7 +569,7 @@ workflow_editor:
     configure_output:
       type: xpath
       selector: >
-        //span[text()="Configure Output: '${output}'" and not(ancestor::div[contains(@style,'display: none')])]
+        //b[text()="Configure Output: '${output}'"]
     label_output:
       type: xpath
       selector: >
@@ -545,7 +577,7 @@ workflow_editor:
     rename_output:
       type: xpath
       selector: >
-        //div[@data-label='Rename dataset' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@data-label='Rename dataset']//input
     change_datatype:
       type: xpath
       selector: >
@@ -610,6 +642,21 @@ tour:
       end: '${_} button[data-role="end"]'
 
 admin:
+
+  allowlist:
+    selectors:
+      toolshed:
+        type: xpath
+        selector: '//a[contains(text(), "Toolshed Tools")]'
+      local:
+        type: xpath
+        selector: '//a[contains(text(), "Local Tools")]'
+      sanitized:
+        type: xpath
+        selector: '//a[contains(text(), "HTML Sanitized")]'
+      rendered_active:
+        type: xpath
+        selector: '//div[contains(@class, "active")]//a[contains(text(), "HTML Rendered")]'
 
   manage_dependencies:
     selectors:

@@ -36,15 +36,15 @@ export default {
     props: {
         id: {
             type: String,
-            required: false,
+            default: null,
         },
         title: {
             type: String,
-            required: false,
+            default: null,
         },
         icon: {
             type: String,
-            required: false,
+            default: null,
         },
         submitIcon: {
             type: String,
@@ -56,7 +56,7 @@ export default {
         },
         cancelRedirect: {
             type: String,
-            required: false,
+            default: null,
         },
         url: {
             type: String,
@@ -64,7 +64,7 @@ export default {
         },
         redirect: {
             type: String,
-            required: true,
+            default: null,
         },
     },
     components: {

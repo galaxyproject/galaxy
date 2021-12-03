@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 from io import StringIO
+from typing import Any, Dict, List, Tuple
 
 import bdbag.bdbag_api
 
@@ -138,13 +139,14 @@ def _fetch_target(upload_config, target):
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
-            dataset_bunch = Bunch()
             name = item.get("name") or 'Composite Dataset'
-            dataset_bunch.name = name
+            dataset_bunch = Bunch(
+                name=name,
+            )
             primary_file = sniff.stream_to_file(StringIO(datatype.generate_primary_file(dataset_bunch)), prefix='upload_auto_primary_file', dir=".")
             extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
-            rval = {
+            rval: Dict[str, Any] = {
                 "name": name,
                 "filename": primary_file,
                 "ext": requested_ext,
@@ -199,8 +201,9 @@ def _fetch_target(upload_config, target):
         sources = []
 
         url = item.get("url")
+        source_dict = {"source_uri": url}
         if url:
-            sources.append({"source_uri": url})
+            sources.append(source_dict)
         hashes = item.get("hashes", [])
         for hash_dict in hashes:
             hash_function = hash_dict.get("hash_function")
@@ -230,7 +233,7 @@ def _fetch_target(upload_config, target):
             registry = upload_config.registry
             check_content = upload_config.check_content
 
-            stdout, ext, datatype, is_binary, converted_path = handle_upload(
+            stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces = handle_upload(
                 registry=registry,
                 path=path,
                 requested_ext=requested_ext,
@@ -244,7 +247,11 @@ def _fetch_target(upload_config, target):
                 convert_to_posix_lines=to_posix_lines,
                 convert_spaces_to_tabs=space_to_tab,
             )
-
+            transform = []
+            if converted_newlines:
+                transform.append({"action": "to_posix_lines"})
+            if converted_spaces:
+                transform.append({"action": "spaces_to_tabs"})
             if link_data_only:
                 # Never alter a file that will not be copied to Galaxy's local file store.
                 if datatype.dataset_content_needs_grooming(path):
@@ -276,13 +283,13 @@ def _fetch_target(upload_config, target):
                                 item_prefix = os.path.join(prefix, name)
                             walk_extra_files(item.get("elements"), prefix=item_prefix)
                         else:
-                            name, src_path = _has_src_to_path(upload_config, item)
+                            src_name, src_path = _has_src_to_path(upload_config, item)
                             if prefix:
-                                rel_path = os.path.join(prefix, name)
+                                rel_path = os.path.join(prefix, src_name)
                             else:
-                                rel_path = name
+                                rel_path = src_name
 
-                            file_output_path = os.path.join(staged_extra_files, rel_path)
+                            file_output_path = os.path.join(extra_files_path, rel_path)
                             parent_dir = os.path.dirname(file_output_path)
                             if not os.path.exists(parent_dir):
                                 safe_makedirs(parent_dir)
@@ -291,11 +298,21 @@ def _fetch_target(upload_config, target):
 
             # TODO:
             # in galaxy json add 'extra_files' and point at target derived from extra_files:
-            if not link_data_only and datatype and datatype.dataset_content_needs_grooming(path):
+
+            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)
+            if needs_grooming:
                 # Groom the dataset content if necessary
+                transform.append({
+                    "action": "datatype_groom",
+                    "datatype_ext": ext,
+                    "datatype_class": datatype.__class__.__name__
+                })
                 datatype.groom_dataset_content(path)
 
-        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes}
+            if len(transform) > 0:
+                source_dict["transform"] = transform
+
+        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes, "info": f"uploaded {ext} file"}
         if staged_extra_files:
             rval["extra_files"] = os.path.abspath(staged_extra_files)
         return _copy_and_validate_simple_attributes(item, rval)
@@ -358,8 +375,8 @@ def elements_tree_map(f, items):
 
 
 def _directory_to_items(directory):
-    items = []
-    dir_elements = {}
+    items: List[Dict[str, Any]] = []
+    dir_elements: Dict[str, Any] = {}
     for root, dirs, files in os.walk(directory):
         if root in dir_elements:
             target = dir_elements[root]
@@ -375,7 +392,7 @@ def _directory_to_items(directory):
     return items
 
 
-def _has_src_to_path(upload_config, item, is_dataset=False):
+def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")

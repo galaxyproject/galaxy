@@ -22,6 +22,7 @@ from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import DictParameter, MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers,
 )
@@ -68,7 +69,7 @@ class SequenceSplitLocations(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             try:
                 data = json.loads(file_prefix.contents_header)
@@ -86,7 +87,6 @@ class Sequence(data.Text):
     """Class describing a sequence"""
     edam_data = "data_2044"
 
-    """Add metadata elements"""
     MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
@@ -297,7 +297,6 @@ class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
 
-    """Add metadata elements"""
     MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
@@ -313,7 +312,7 @@ class Fasta(Sequence):
     edam_format = "format_1929"
     file_ext = "fasta"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in fasta format
 
@@ -348,25 +347,24 @@ class Fasta(Sequence):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith('>'):
                     # The next line.strip() must not be '', nor startwith '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
 
                     # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
                     line = fh.readline()
+                    if not line:
+                        return True
                     if not line.startswith('>') and re.search(r"[\(\)\[\]\.]", line):
-                        break
+                        return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a fasta header
+                    return False
         return False
 
     @classmethod
@@ -422,74 +420,70 @@ class Fasta(Sequence):
         start of a new FASTQ sequence record.
         """
         log.debug("Attemping to split FASTA file %s into chunks of %i bytes" % (input_file, chunk_size))
-        f = open(input_file)
-        part_file = None
-        try:
-            # Note if the input FASTA file has no sequences, we will
-            # produce just one sub-file which will be a copy of it.
-            part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            part_file = open(part_path, 'w')
-            log.debug(f"Writing {input_file} part to {part_path}")
-            start_offset = 0
-            while True:
-                offset = f.tell()
-                line = f.readline()
-                if not line:
-                    break
-                if line[0] == ">" and offset - start_offset >= chunk_size:
-                    # Start a new sub-file
-                    part_file.close()
-                    part_dir = subdir_generator_function()
-                    part_path = os.path.join(part_dir, os.path.basename(input_file))
-                    part_file = open(part_path, 'w')
-                    log.debug(f"Writing {input_file} part to {part_path}")
-                    start_offset = f.tell()
-                part_file.write(line)
-        except Exception as e:
-            log.error('Unable to size split FASTA file: %s', util.unicodify(e))
-            raise
-        finally:
-            f.close()
-            if part_file:
-                part_file.close()
-
-    @classmethod
-    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
-        """Split a FASTA file into chunks based on counting records."""
-        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
-        f = open(input_file)
-        part_file = None
-        try:
-            # Note if the input FASTA file has no sequences, we will
-            # produce just one sub-file which will be a copy of it.
-            part_dir = subdir_generator_function()
-            part_path = os.path.join(part_dir, os.path.basename(input_file))
-            part_file = open(part_path, 'w')
-            log.debug(f"Writing {input_file} part to {part_path}")
-            rec_count = 0
-            while True:
-                line = f.readline()
-                if not line:
-                    break
-                if line[0] == ">":
-                    rec_count += 1
-                    if rec_count > chunk_size:
+        with open(input_file) as f:
+            part_file = None
+            try:
+                # Note if the input FASTA file has no sequences, we will
+                # produce just one sub-file which will be a copy of it.
+                part_dir = subdir_generator_function()
+                part_path = os.path.join(part_dir, os.path.basename(input_file))
+                part_file = open(part_path, 'w')
+                log.debug(f"Writing {input_file} part to {part_path}")
+                start_offset = 0
+                for line in f:
+                    offset = f.tell()
+                    if not line:
+                        break
+                    if line[0] == ">" and offset - start_offset >= chunk_size:
                         # Start a new sub-file
                         part_file.close()
                         part_dir = subdir_generator_function()
                         part_path = os.path.join(part_dir, os.path.basename(input_file))
                         part_file = open(part_path, 'w')
                         log.debug(f"Writing {input_file} part to {part_path}")
-                        rec_count = 1
-                part_file.write(line)
-        except Exception as e:
-            log.error('Unable to count split FASTA file: %s', util.unicodify(e))
-            raise
-        finally:
-            f.close()
-            if part_file:
-                part_file.close()
+                        start_offset = f.tell()
+                    part_file.write(line)
+            except Exception as e:
+                log.error('Unable to size split FASTA file: %s', util.unicodify(e))
+                raise
+            finally:
+                if part_file:
+                    part_file.close()
+
+    @classmethod
+    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
+        """Split a FASTA file into chunks based on counting records."""
+        log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
+        with open(input_file) as f:
+            part_file = None
+            try:
+                # Note if the input FASTA file has no sequences, we will
+                # produce just one sub-file which will be a copy of it.
+                part_dir = subdir_generator_function()
+                part_path = os.path.join(part_dir, os.path.basename(input_file))
+                part_file = open(part_path, 'w')
+                log.debug(f"Writing {input_file} part to {part_path}")
+                rec_count = 0
+                for line in f:
+                    if not line:
+                        break
+                    if line[0] == ">":
+                        rec_count += 1
+                        if rec_count > chunk_size:
+                            # Start a new sub-file
+                            part_file.close()
+                            part_dir = subdir_generator_function()
+                            part_path = os.path.join(part_dir, os.path.basename(input_file))
+                            part_file = open(part_path, 'w')
+                            log.debug(f"Writing {input_file} part to {part_path}")
+                            rec_count = 1
+                    part_file.write(line)
+            except Exception as e:
+                log.error('Unable to count split FASTA file: %s', util.unicodify(e))
+                raise
+            finally:
+                if part_file:
+                    part_file.close()
 
 
 @build_sniff_from_prefix
@@ -498,7 +492,7 @@ class csFasta(Sequence):
     edam_format = "format_3589"
     file_ext = "csfasta"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Color-space sequence:
             >2_15_85_F3
@@ -513,10 +507,7 @@ class csFasta(Sequence):
         True
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
@@ -529,7 +520,7 @@ class csFasta(Sequence):
                         return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a header
+                    return False
         return False
 
     def set_meta(self, dataset, **kwd):
@@ -542,27 +533,27 @@ class csFasta(Sequence):
 
 @build_sniff_from_prefix
 class Fastg(Sequence):
-    """ Class representing a FASTG sequence """
-    """ http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
+    """ Class representing a FASTG sequence
+    http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
     edam_format = "format_3823"
     file_ext = "fastg"
 
     MetadataElement(name="version", default='1.0', desc="FASTG format version", readonly=True, visible=True, no_value='1.0')
     MetadataElement(name="properties", default={}, param=DictParameter, desc="FASTG properites", readonly=True, visible=True, no_value={})
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """FASTG must begin with lines:
            #FASTG:begin;
            #FASTG:version=*.*;
            #FASTG:properties;
-        """
-        """Or these can be combined on a line:
+
+        Or these can be combined on a line:
            #FASTG:begin:version=*.*:properties;
-        """
-        """FASTG must end with line:
+
+        FASTG must end with line:
            #FASTG:end;
-        """
-        """ Example FASTG file:
+
+        Example FASTG file:
             #FASTG:begin;
             #FASTG:version=1.0:assembly_name="tiny example";
             >chr1:chr1;
@@ -570,8 +561,7 @@ class Fastg(Sequence):
             >chr2;
             ACATACGCATATATATATATATATATAT[20:tandem:size=(10,8..12)|AT]TCAGGCA[1:alt|A,T,TT]GGAC
             #FASTG:end;
-        """
-        """
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
         >>> Fastg().sniff( fname )
@@ -677,7 +667,7 @@ class BaseFastq(Sequence):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in generic fastq format
         For details, see http://maq.sourceforge.net/fastq.shtml
@@ -723,16 +713,17 @@ class BaseFastq(Sequence):
         return self.check_first_block(file_prefix)
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+        headers = kwd.get("headers", {})
         if preview:
             with compression_utils.get_fileobj(dataset.file_name) as fh:
                 max_peek_size = 1000000  # 1 MB
                 if os.stat(dataset.file_name).st_size < max_peek_size:
                     mime = "text/plain"
-                    self._clean_and_set_mime_type(trans, mime)
-                    return fh.read()
+                    self._clean_and_set_mime_type(trans, mime, headers)
+                    return fh.read(), headers
                 return trans.stream_template_mako("/dataset/large_file.mako",
                                                   truncated_data=fh.read(max_peek_size),
-                                                  data=dataset)
+                                                  data=dataset), headers
         else:
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
@@ -789,7 +780,7 @@ class BaseFastq(Sequence):
         return True
 
     @classmethod
-    def check_first_block(cls, file_prefix):
+    def check_first_block(cls, file_prefix: FilePrefix):
         # check that first block looks like a fastq block
         block = get_headers(file_prefix, sep='\n', count=4)
         return cls.check_block(block)
@@ -983,7 +974,7 @@ class Maf(Alignment):
             out = f"Can't create peek {exc}"
         return out
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines wether the file is in maf format
 
@@ -1065,7 +1056,7 @@ class Axt(data.Text):
     edam_format = "format_3013"
     file_ext = "axt"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in axt format
 
@@ -1122,7 +1113,7 @@ class Lav(data.Text):
     edam_format = "format_3014"
     file_ext = "lav"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in lav format
 
@@ -1215,7 +1206,7 @@ class DotBracket(Sequence):
         dataset.metadata.data_lines = data_lines
         dataset.metadata.sequences = sequences
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Galaxy Dbn (Dot-Bracket notation) rules:
 
@@ -1287,7 +1278,7 @@ class Genbank(data.Text):
     edam_data = "data_0849"
     file_ext = "genbank"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determine whether the file is in genbank format.
         Works for compressed files.
@@ -1308,7 +1299,7 @@ class MemePsp(Sequence):
     """Class representing MEME Position Specific Priors"""
     file_ext = "memepsp"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The format of an entry in a PSP file is:
 

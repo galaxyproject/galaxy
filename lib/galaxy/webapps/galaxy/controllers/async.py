@@ -89,7 +89,8 @@ class ASync(BaseUIController):
                     raise Exception("Error: ToolOutput object not found")
 
                 original_history = trans.sa_session.query(trans.app.model.History).get(data.history_id)
-                tool.execute(trans, incoming=params, history=original_history)
+                job, *_ = tool.execute(trans, incoming=params, history=original_history)
+                trans.app.job_manager.enqueue(job, tool=tool)
             else:
                 log.debug(f'async error -> {STATUS}')
                 trans.log_event(f'Async error -> {STATUS}')
@@ -150,7 +151,7 @@ class ASync(BaseUIController):
             trans.sa_session.add(trans.history)
             trans.sa_session.flush()
             # Need to explicitly create the file
-            data.dataset.object_store.create(data)
+            data.dataset.object_store.create(data.dataset)
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
 
             try:

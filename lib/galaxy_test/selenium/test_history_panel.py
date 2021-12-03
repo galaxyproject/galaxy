@@ -20,7 +20,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_panel_landing_state(self):
         self.assert_initial_history_panel_state_correct()
-
+        name_element = self.history_panel_name_element()
         if self.is_beta_history():
             # look for the editor icon
             editor = self.components.history_panel.editor.selector(scope=".beta.history")
@@ -31,19 +31,12 @@ class HistoryPanelTestCase(SeleniumTestCase):
             annotation_icon_selector = self.navigation.history_panel.selectors.annotation_icon
             self.wait_for_visible(tag_icon_selector)
             self.wait_for_visible(annotation_icon_selector)
-            name_element = self.history_panel_name_element()
             self.assert_tooltip_text(name_element, self.navigation.history_panel.text.tooltip_name)
 
     @selenium_test
     def test_history_panel_rename(self):
-        if self.is_beta_history():
-            self.history_panel_rename(NEW_HISTORY_NAME)
-            self.assert_name_changed()
-        else:
-            editable_text_input_element = self.history_panel_click_to_rename()
-            editable_text_input_element.send_keys(NEW_HISTORY_NAME)
-            self.send_enter(editable_text_input_element)
-            self.assert_name_changed()
+        self.history_panel_rename(NEW_HISTORY_NAME)
+        self.assert_name_changed()
 
     @selenium_test
     def test_history_rename_confirm_with_click(self):
@@ -61,10 +54,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.send_escape(editable_text_input_element)
-        if self.is_beta_history():
-            self.components.history_panel.editor.selector(scope=".beta.history").form.wait_for_absent_or_hidden()
-        else:
-            self.assert_absent(self.navigation.history_panel.selectors.name_edit_input)
+        self.components.history_panel.name_edit_input.wait_for_absent_or_hidden()
         assert NEW_HISTORY_NAME not in self.history_panel_name()
 
     @selenium_test
@@ -113,10 +103,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         def assert_current_annotation(expected, error_message="History annotation",
                                       is_equal=True):
 
-            if self.is_beta_history():
-                text_component = self.beta_history_element("history annotation")
-            else:
-                text_component = history_panel.annotation_editable_text
+            text_component = history_panel.annotation_editable_text
             current_annotation = text_component.wait_for_visible()
             error_message += " given: [%s] expected [%s] "
             if is_equal:
@@ -214,7 +201,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         current_tags_size = len(close_tag_buttons)
 
-        errmsg = "there are more tags than expected! current {}, expected {}".format(current_tags_size, expected_tags_size)
+        errmsg = f"there are more tags than expected! current {current_tags_size}, expected {expected_tags_size}"
         assert expected_tags_size == current_tags_size, errmsg
 
         for close_btn in reversed(close_tag_buttons):

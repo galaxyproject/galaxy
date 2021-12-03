@@ -1,7 +1,7 @@
 import Connector from "./connector";
 import Vue from "vue";
 
-export function fromSimple(workflow, data, appendData = false) {
+export async function fromSimple(workflow, data, appendData = false) {
     let offset = 0;
     if (appendData) {
         offset = workflow.nodeIndex;
@@ -15,57 +15,54 @@ export function fromSimple(workflow, data, appendData = false) {
             node.onRemove();
         });
     }
-    Vue.nextTick(() => {
-        workflow.version = data.version;
-        workflow.report = data.report || {};
-        Object.values(data.steps).forEach((step) => {
-            // If workflow being copied into another, wipe UUID and let
-            // Galaxy assign new ones.
-            if (appendData) {
-                step.uuid = null;
-            }
-            Vue.set(workflow.steps, workflow.nodeIndex++, {
-                ...step,
-                _complete: true,
-            });
+    await Vue.nextTick();
+    workflow.version = data.version;
+    workflow.report = data.report || {};
+    Object.values(data.steps).forEach((step) => {
+        // If workflow being copied into another, wipe UUID and let
+        // Galaxy assign new ones.
+        if (appendData) {
+            step.uuid = null;
+        }
+        Vue.set(workflow.steps, workflow.nodeIndex++, {
+            ...step,
         });
-        Vue.nextTick(() => {
-            // Second pass, connections
-            let using_workflow_outputs = false;
-            Object.entries(data.steps).forEach(([id, step]) => {
-                if (step.workflow_outputs && step.workflow_outputs.length > 0) {
-                    using_workflow_outputs = true;
-                }
-            });
+    });
+    await Vue.nextTick();
+    // Second pass, connections
+    let using_workflow_outputs = false;
+    Object.entries(data.steps).forEach(([id, step]) => {
+        if (step.workflow_outputs && step.workflow_outputs.length > 0) {
+            using_workflow_outputs = true;
+        }
+    });
 
-            Object.entries(data.steps).forEach(([id, step]) => {
-                const nodeIndex = parseInt(id) + offset;
-                const node = workflow.nodes[nodeIndex];
-                Object.entries(step.input_connections).forEach(([k, v]) => {
-                    if (v) {
-                        if (!Array.isArray(v)) {
-                            v = [v];
-                        }
-                        v.forEach((x) => {
-                            const otherNodeIndex = parseInt(x.id) + offset;
-                            const otherNode = workflow.nodes[otherNodeIndex];
-                            const c = new Connector(workflow.canvasManager);
-                            c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
-                            c.redraw();
-                        });
-                    }
+    Object.entries(data.steps).forEach(([id, step]) => {
+        const nodeIndex = parseInt(id) + offset;
+        const node = workflow.nodes[nodeIndex];
+        Object.entries(step.input_connections).forEach(([k, v]) => {
+            if (v) {
+                if (!Array.isArray(v)) {
+                    v = [v];
+                }
+                v.forEach((x) => {
+                    const otherNodeIndex = parseInt(x.id) + offset;
+                    const otherNode = workflow.nodes[otherNodeIndex];
+                    const c = new Connector(workflow.canvasManager);
+                    c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
+                    c.redraw();
                 });
+            }
+        });
 
-                if (!using_workflow_outputs) {
-                    // Older workflows contain HideDatasetActions only, but no active outputs yet.
-                    Object.values(node.outputs).forEach((ot) => {
-                        if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
-                            node.activeOutputs.add(ot.name);
-                        }
-                    });
+        if (!using_workflow_outputs) {
+            // Older workflows contain HideDatasetActions only, but no active outputs yet.
+            Object.values(node.outputs).forEach((ot) => {
+                if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                    node.activeOutputs.add(ot.name);
                 }
             });
-        });
+        }
     });
 }
 

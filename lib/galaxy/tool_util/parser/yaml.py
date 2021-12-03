@@ -1,3 +1,5 @@
+import json
+
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -22,6 +24,8 @@ from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
+
+    language = 'yaml'
 
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
@@ -190,6 +194,10 @@ class YamlToolSource(ToolSource):
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
 
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
+
 
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
@@ -286,7 +294,7 @@ class YamlPageSource(PageSource):
         self.inputs_list = inputs_list
 
     def parse_input_sources(self):
-        return map(YamlInputSource, self.inputs_list)
+        return list(map(YamlInputSource, self.inputs_list))
 
 
 class YamlInputSource(InputSource):

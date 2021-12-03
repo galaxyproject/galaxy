@@ -38,10 +38,9 @@
 
 <%def name="javascripts()">
     ${ h.dist_js(
-        'libs.chunk',
-        'base.chunk'
+        'libs.bundled',
+        '%s.bundled' % js_app_name
     )}
-    ${ h.dist_js('%s.bundled' % js_app_name)}
 </%def>
 
 <%def name="javascript_app()">

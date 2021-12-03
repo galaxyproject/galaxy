@@ -138,23 +138,13 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # godocker API login call
         self.auth = self.login(self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"])
 
-        if not self.auth:
-            log.error("Authentication failure, GoDocker runner cannot be started")
-        else:
-            """ Following methods starts threads.
-                These methods invoke threading.Thread(name,target)
-                      which in turn invokes methods monitor() and run_next().
-            """
-            self._init_monitor_thread()
-            self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """ Create job script and submit it to godocker """
         if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=False):
             return
 
         job_destination = job_wrapper.job_destination
-        """ Submit job to godocker """
+        # Submit job to godocker
         job_id = self.post_task(job_wrapper)
         if not job_id:
             log.error("Job creation failure.  No Response from GoDocker")
@@ -175,12 +165,12 @@ class GodockerJobRunner(AsynchronousJobRunner):
             else if the job is running or in pending state, simply
                     return the 'AsynchronousJobState object' (job_state).
         """
-        ''' This function is called by check_watched_items() where
-                    param job_state is an object of AsynchronousJobState.
-            Expected return type of this function is None or
-                    AsynchronousJobState object with updated running status.
-        '''
-        """ Get task from GoDocker """
+        # This function is called by check_watched_items() where param job_state
+        # is an object of AsynchronousJobState.
+        # Expected return type of this function is None or an
+        # AsynchronousJobState object with updated running status.
+
+        # Get task from GoDocker
         job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
         log.debug(f"Job ID: {str(job_state.job_id)} Job Status: {str(job_status_god['status']['primary'])}")
@@ -232,10 +222,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """ Attempts to delete a dispatched executing Job in GoDocker """
-        '''This function is called by fail_job()
-           where param job = self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id )
-           No Return data expected
-        '''
+        # This function is called by fail_job() where
+        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # No Return data expected
         job_id = job_wrapper.job_id
         log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")
         # Get task status from GoDocker.
@@ -247,9 +236,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """ Recovers jobs stuck in the queued/running state when Galaxy started """
-        """ This method is called by galaxy at the time of startup.
-            Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
-        """
+        # This method is called by Galaxy at startup time.
+        # Jobs in Running & Queued state in galaxy are put in the monitor_queue
+        # by creating an AsynchronousJobState object
         job_id = job_wrapper.job_id
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)
@@ -324,7 +313,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         g_auth = Godocker(server, login, apikey, noCert)
         auth = g_auth.http_post_request("/api/1.0/authenticate", data, {'Content-type': 'application/json', 'Accept': 'application/json'})
         if not auth:
-            log.error("GoDocker authentication Error.")
+            raise Exception("Authentication failure, GoDocker runner cannot be started")
         else:
             log.debug("GoDocker authentication successful.")
             token = auth.json()['token']

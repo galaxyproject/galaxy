@@ -2,13 +2,10 @@
     <span>
         <MarkdownSelector
             v-if="labelShow"
-            :initial-value="argumentType"
             :argument-name="argumentName"
             :labels="labels"
-            :label-title="selectedLabelTitle"
             @onOk="onLabel"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <DataDialog v-if="dataShow" :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
         <b-modal
             v-if="formShow"
@@ -17,8 +14,7 @@
             title="Configure Visualization"
             ok-title="Continue"
             @ok="onOk"
-            @cancel="onCancel"
-        >
+            @cancel="onCancel">
             <FormDisplay :inputs="formInputs" @onChange="onChange" />
         </b-modal>
     </span>

@@ -1,6 +1,7 @@
 <template>
     <span>
         <b-alert variant="danger" show v-if="error">
+            <h5>Workflow cannot be executed. Please resolve the following issue:</h5>
             {{ error }}
         </b-alert>
         <span v-else>
@@ -32,14 +33,12 @@
                     :use-job-cache="simpleFormUseJobCache"
                     @submissionSuccess="handleInvocations"
                     @submissionError="handleSubmissionError"
-                    @showAdvanced="showAdvanced"
-                />
+                    @showAdvanced="showAdvanced" />
                 <workflow-run-form
                     v-else
                     :model="model"
                     @submissionSuccess="handleInvocations"
-                    @submissionError="handleSubmissionError"
-                />
+                    @submissionError="handleSubmissionError" />
             </div>
         </span>
     </span>
@@ -62,7 +61,10 @@ export default {
         WorkflowRunFormSimple,
     },
     props: {
-        workflowId: { type: String },
+        workflowId: {
+            type: String,
+            required: true,
+        },
         preferSimpleForm: {
             type: Boolean,
             default: false,

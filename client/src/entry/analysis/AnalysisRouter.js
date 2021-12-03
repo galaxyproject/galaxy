@@ -17,7 +17,7 @@ import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolForm from "components/Tool/ToolForm";
 import FormGeneric from "components/Form/FormGeneric";
-import Sharing from "components/Sharing.vue";
+import Sharing from "components/Sharing/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
 import DatasetList from "components/Dataset/DatasetList.vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
@@ -31,6 +31,7 @@ import TrsImport from "components/Workflow/TrsImport.vue";
 import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
+import CollectionEditView from "components/Collections/common/CollectionEditView.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
@@ -49,8 +50,11 @@ import DisplayStructure from "components/DisplayStructured.vue";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import Confirmation from "components/login/Confirmation.vue";
+import DatasetDetails from "components/Details/DatasetDetails.vue";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
+
+import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 
 /** Routes */
 export const getAnalysisRouter = (Galaxy) => {
@@ -66,6 +70,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)user(/)cloud_auth": "show_cloud_auth",
             "(/)user(/)external_ids": "show_external_ids",
             "(/)user(/)(:form_id)": "show_user_form",
+            "(/)welcome(/)new": "mountWelcome",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)sharing(/)": "show_pages_sharing",
@@ -97,7 +102,11 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)jobs(/)(:job_id)(/)view": "show_job",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
+            "(/)collection(/)edit(/)(:collection_id)": "show_collection_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
+            "(/)datasets(/)(:dataset_id)/details": "show_dataset_details",
+            // legacy url for older links
+            "(/)datasets(/)(:dataset_id)/show_params": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
         },
@@ -116,7 +125,11 @@ export const getAnalysisRouter = (Galaxy) => {
             }
             this.page.display(container, noPadding);
             const mountFn = mountVueComponent(component);
-            return mountFn(propsData, container);
+            if (this.currentComponent && this.currentComponent.$destroy) {
+                this.currentComponent.$destroy();
+            }
+            this.currentComponent = mountFn(propsData, container);
+            return this.currentComponent;
         },
 
         show_tours: function (tour_id) {
@@ -185,8 +198,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_visualizations_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Visualizations",
-                model_class: "Visualization",
+                pluralName: "Visualizations",
+                modelClass: "Visualization",
             });
         },
 
@@ -239,8 +252,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_histories_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Histories",
-                model_class: "History",
+                pluralName: "Histories",
+                modelClass: "History",
             });
         },
 
@@ -311,8 +324,8 @@ export const getAnalysisRouter = (Galaxy) => {
         show_pages_sharing: function () {
             this._display_vue_helper(Sharing, {
                 id: QueryStringParsing.get("id"),
-                plural_name: "Pages",
-                model_class: "Page",
+                pluralName: "Pages",
+                modelClass: "Page",
             });
         },
 
@@ -386,9 +399,17 @@ export const getAnalysisRouter = (Galaxy) => {
             }
         },
 
+        show_collection_edit_attributes: function (collection_id) {
+            this._display_vue_helper(CollectionEditView, { collection_id: collection_id });
+        },
+
         show_dataset_error: function (params) {
             const datasetId = params.dataset_id;
             this._display_vue_helper(DatasetError, { datasetId: datasetId });
+        },
+
+        show_dataset_details: function (dataset_id) {
+            this._display_vue_helper(DatasetDetails, { datasetId: dataset_id });
         },
 
         /**  */
@@ -414,6 +435,17 @@ export const getAnalysisRouter = (Galaxy) => {
                     this._loadCenterIframe("welcome");
                 }
             }
+        },
+
+        mountWelcome: async function () {
+            const propsData = {
+                newUserDict,
+            };
+            return import(/* webpackChunkName: "NewUserWelcome" */ "components/NewUserWelcome/NewUserWelcome.vue").then(
+                (module) => {
+                    this._display_vue_helper(module.default, propsData);
+                }
+            );
         },
 
         /** load the center panel with a tool form described by the given params obj */

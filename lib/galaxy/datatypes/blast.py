@@ -34,13 +34,16 @@ import logging
 import os
 from time import sleep
 
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.util import smart_str
 from .data import (
     Data,
     get_file_peek,
     Text
 )
-from .sniff import build_sniff_from_prefix
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
@@ -62,7 +65,7 @@ class BlastXml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -195,6 +198,7 @@ class _BlastDb(Data):
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
+        headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(trans,
                                         data=data,
@@ -223,7 +227,7 @@ class _BlastDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>")
+        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"), headers
 
     def merge(split_files, output_file):
         """Merge BLAST databases (not implemented for now)."""

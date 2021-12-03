@@ -17,8 +17,8 @@ class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, 
 
     @skip_if_toolshed_down
     def test_tool_test(self):
-        self.install_repository("devteam", "fastqc", "ff9530579d1f")
-        self._run_tool_test("toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.71")
+        self.install_repository("devteam", "fastqc", "3d0c7bdf12f5")
+        self._run_tool_test("toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73+galaxy0")
 
 
 class ToolShedDatatypeTestIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):

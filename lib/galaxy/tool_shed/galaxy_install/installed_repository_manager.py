@@ -87,10 +87,10 @@ class InstalledRepositoryManager:
                                                       tpm=tpm,
                                                       repository=repository,
                                                       changeset_revision=repository.changeset_revision,
-                                                      metadata_dict=repository.metadata)
+                                                      metadata_dict=repository.metadata_)
             repository_tools_tups = irmm.get_repository_tools_tups()
             # Reload tools into the appropriate tool panel section.
-            tool_panel_dict = repository.metadata['tool_panel_section']
+            tool_panel_dict = repository.metadata_['tool_panel_section']
             tpm.add_to_tool_panel(repository.name,
                                   repository_clone_url,
                                   repository.installed_changeset_revision,
@@ -105,7 +105,7 @@ class InstalledRepositoryManager:
                 data_manager_relative_install_dir = os.path.join(data_manager_relative_install_dir, repository.name)
                 dmh = data_manager.DataManagerHandler(self.app)
                 dmh.install_data_managers(self.app.config.shed_data_manager_config_file,
-                                          repository.metadata,
+                                          repository.metadata_,
                                           repository.get_shed_config_dict(self.app),
                                           data_manager_relative_install_dir,
                                           repository,
@@ -204,7 +204,7 @@ class InstalledRepositoryManager:
                                                                                         name,
                                                                                         repository_owner,
                                                                                         changeset_revision)
-            if not updating and repository and repository.metadata:
+            if not updating and repository and repository.metadata_:
                 installed_rd, missing_rd = self.get_installed_and_missing_repository_dependencies(repository)
             else:
                 installed_rd, missing_rd = \
@@ -286,7 +286,7 @@ class InstalledRepositoryManager:
         if has_repository_dependencies:
             # The repository dependencies container will include only the immediate repository
             # dependencies of this repository, so the container will be only a single level in depth.
-            metadata = repository.metadata
+            metadata = repository.metadata_
             installed_rd_tups = []
             missing_rd_tups = []
             for tsr in repository.repository_dependencies:

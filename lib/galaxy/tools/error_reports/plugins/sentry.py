@@ -1,12 +1,18 @@
 """The module describes the ``sentry`` error plugin plugin."""
 import logging
 
+try:
+    import sentry_sdk
+except ImportError:
+    sentry_sdk = None
+
 from galaxy import web
-from galaxy.util import string_as_bool, unicodify
+from galaxy.util import string_as_bool
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
+SENTRY_SDK_IMPORT_MESSAGE = 'The Python sentry-sdk package is required to use this feature, please install it'
 ERROR_TEMPLATE = """Galaxy Job Error: {tool_id} v{tool_version}
 
 Command Line:
@@ -32,94 +38,80 @@ class SentryPlugin(ErrorPlugin):
         self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
-        self.custom_dsn = kwargs.get('custom_dsn', None)
-        self.sentry = None
-        # Use the built in one by default
-        if hasattr(self.app, 'sentry_client'):
-            self.sentry = self.app.sentry_client
-
-        # if they've set a custom one, override.
-        if self.custom_dsn:
-            import raven
-            self.sentry = raven.Client(self.custom_dsn, transport=raven.transport.HTTPTransport)
+        assert sentry_sdk, SENTRY_SDK_IMPORT_MESSAGE
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to sentry
         """
-        if self.sentry:
-            user = job.get_user()
-            extra = {
-                'info': job.info,
-                'id': job.id,
-                'command_line': unicodify(job.command_line),
-                'destination_id': unicodify(job.destination_id),
-                'stderr': unicodify(job.stderr),
-                'traceback': unicodify(job.traceback),
-                'exit_code': job.exit_code,
-                'stdout': unicodify(job.stdout),
-                'handler': unicodify(job.handler),
-                'tool_id': unicodify(job.tool_id),
-                'tool_version': unicodify(job.tool_version),
-                'tool_xml': unicodify(tool.config_file) if tool else None
-            }
-            if self.redact_user_details_in_bugreport:
-                extra['email'] = 'redacted'
-            else:
-                if 'email' in kwargs:
-                    extra['email'] = unicodify(kwargs['email'])
+        extra = {
+            'info': job.info,
+            'id': job.id,
+            'command_line': job.command_line,
+            'destination_id': job.destination_id,
+            'stderr': job.stderr,
+            'traceback': job.traceback,
+            'exit_code': job.exit_code,
+            'stdout': job.stdout,
+            'handler': job.handler,
+            'tool_id': job.tool_id,
+            'tool_version': job.tool_version,
+            'tool_xml': tool.config_file if tool else None
+        }
+        if self.redact_user_details_in_bugreport:
+            extra['email'] = 'redacted'
+        else:
+            if 'email' in kwargs:
+                extra['email'] = kwargs['email']
 
-            # User submitted message
-            extra['message'] = unicodify(kwargs.get('message', ''))
+        # User submitted message
+        extra['message'] = kwargs.get('message', '')
 
-            # Construct the error message to send to sentry. The first line
-            # will be the issue title, everything after that becomes the
-            # "message"
-            error_message = ERROR_TEMPLATE.format(**extra)
+        # Construct the error message to send to sentry. The first line
+        # will be the issue title, everything after that becomes the
+        # "message"
+        error_message = ERROR_TEMPLATE.format(**extra)
 
-            # Update context with user information in a sentry-specific manner
-            context = {}
+        # Update context with user information in a sentry-specific manner
+        context = {}
 
-            # Getting the url allows us to link to the dataset info page in case
-            # anything is missing from this report.
-            try:
-                url = web.url_for(controller="dataset",
-                                  action="show_params",
-                                  dataset_id=self.app.security.encode_id(dataset.id),
-                                  qualified=True)
-            except AttributeError:
-                # The above does not work when handlers are separate from the web handlers
-                url = None
+        # Getting the url allows us to link to the dataset info page in case
+        # anything is missing from this report.
+        try:
+            url = web.url_for(controller="dataset",
+                              action="show_params",
+                              dataset_id=self.app.security.encode_id(dataset.id),
+                              qualified=True)
+        except AttributeError:
+            # The above does not work when handlers are separate from the web handlers
+            url = None
 
-            if self.redact_user_details_in_bugreport:
-                if user:
-                    # Opauqe identifier
-                    context['user'] = {
-                        'id': user.id
-                    }
-            else:
-                if user:
-                    # User information here also places email links + allows seeing
-                    # a list of affected users in the tags/filtering.
-                    context['user'] = {
-                        'name': user.username,
-                        'email': user.email,
-                    }
+        user = job.get_user()
+        if self.redact_user_details_in_bugreport:
+            if user:
+                # Opaque identifier
+                context['user'] = {
+                    'id': user.id
+                }
+        else:
+            if user:
+                # User information here also places email links + allows seeing
+                # a list of affected users in the tags/filtering.
+                context['user'] = {
+                    'name': user.username,
+                    'email': user.email,
+                }
 
-            context['request'] = {'url': url}
+        context['request'] = {'url': url}
 
-            self.sentry_client.context.merge(context)
+        for key, value in context.items():
+            sentry_sdk.set_context(key, value)
+        sentry_sdk.set_context('job', extra)
+        sentry_sdk.set_tag('tool_id', job.tool_id)
+        sentry_sdk.set_tag('tool_version', job.tool_version)
 
-            # Send the message, using message because
-            response = self.sentry_client.capture(
-                'raven.events.Message',
-                tags={
-                    'tool_id': job.tool_id,
-                    'tool_version': job.tool_version,
-                },
-                extra=extra,
-                message=unicodify(error_message),
-            )
-            return (f'Submitted bug report to Sentry. Your guru meditation number is {response}', 'success')
+        # Send the message, using message because
+        response = sentry_sdk.capture_message(error_message)
+        return (f'Submitted bug report to Sentry. Your guru meditation number is {response}', 'success')
 
 
 __all__ = ('SentryPlugin', )

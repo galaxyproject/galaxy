@@ -22,3 +22,7 @@ class PosixFileSourceSeleniumIntegrationTestCase(PosixFileSourceSetup, SeleniumI
         self.upload_start()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_history()
+
+    def setUp(self):
+        super().setUp()
+        self._write_file_fixtures()

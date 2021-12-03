@@ -1,6 +1,7 @@
 import functools
 import os
 import shutil
+from typing import Any, Dict, List
 
 from galaxy import exceptions
 from galaxy.util.path import (
@@ -37,7 +38,7 @@ class PosixFilesSource(BaseFilesSource):
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f'The specified directory does not exist [{dir_path}].')
         if recursive:
-            res = []
+            res: List[Dict[str, Any]] = []
             effective_root = self._effective_root(user_context)
             for (p, dirs, files) in safe_walk(dir_path, allowlist=self._allowlist):
                 rel_dir = os.path.relpath(p, effective_root)

@@ -3,6 +3,7 @@ Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
 import logging
+from typing import Any, Dict, List
 
 from sqlalchemy import (
     asc,
@@ -25,7 +26,6 @@ from galaxy import (
 from galaxy.managers import (
     annotatable,
     base,
-    containers,
     deletable,
     hdas,
     hdcas,
@@ -33,13 +33,18 @@ from galaxy.managers import (
     tools
 )
 from galaxy.structured_app import MinimalManagerApp
+from .base import (
+    parse_bool,
+    raise_filter_err,
+    Serializer,
+)
 
 log = logging.getLogger(__name__)
 
 
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
-class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableManager):
+class HistoryContentsManager(base.SortableManager):
 
     root_container_class = model.History
 
@@ -224,7 +229,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableMana
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map = dict(((self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])))
+        id_map: Dict[str, List[int]] = dict([(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])])
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -343,14 +348,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableMana
         )
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
-        subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
+        subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.table.c.dataset_id)
         if history_id:
-            subquery = subquery.filter(component_class.history_id == history_id)
+            subquery = subquery.filter(component_class.table.c.history_id == history_id)
         else:
             # Make sure we only return items that are user-accessible by checking that they are in a history
             # owned by the current user.
             # TODO: move into filter mixin, and implement accessible logic as SQL query
-            subquery = subquery.filter(component_class.history_id == model.History.table.c.id,
+            subquery = subquery.filter(component_class.table.c.history_id == model.History.table.c.id,
                                        model.History.table.c.user_id == user_id)
         return subquery
 
@@ -411,8 +416,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin, base.SortableMana
         # This will conditionally join a potentially costly job_state summary
         # All the paranoia if-checking makes me wonder if serialization_params
         # should really be a property of the manager class instance
-        if serialization_params and serialization_params['keys']:
-            if 'job_state_summary' in serialization_params['keys']:
+        if serialization_params and serialization_params.keys:
+            if 'job_state_summary' in serialization_params.keys:
                 query = query.options(eagerload('job_state_summary'))
 
         return {row.id: row for row in query.all()}
@@ -449,19 +454,19 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-
-        self.serializers.update({
+        serializers: Dict[str, Serializer] = {
             'type_id': self.serialize_type_id,
             'history_id': self.serialize_id,
             'dataset_id': self.serialize_id_or_skip,
             'collection_id': self.serialize_id_or_skip,
-        })
+        }
+        self.serializers.update(serializers)
 
-    def serialize_id_or_skip(self, content, key, **context):
+    def serialize_id_or_skip(self, item: Any, key: str, **context):
         """Serialize id or skip if attribute with `key` is not present."""
-        if not hasattr(content, key):
+        if not hasattr(item, key):
             raise base.SkipAttribute('no such attribute')
-        return self.serialize_id(content, key, **context)
+        return self.serialize_id(item, key, **context)
 
 
 class HistoryContentsFilters(base.ModelFilterParser,
@@ -483,14 +488,14 @@ class HistoryContentsFilters(base.ModelFilterParser,
             if attr == 'history_content_type' and op == 'eq':
                 if val in ('dataset', 'dataset_collection'):
                     return sql.column('history_content_type') == val
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr == 'type_id':
                 if op == 'eq':
                     return sql.column('type_id') == val
                 if op == 'in':
                     return sql.column('type_id').in_(self.parse_type_id_list(val))
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr in ('update_time', 'create_time'):
                 if op == 'ge':
@@ -501,21 +506,21 @@ class HistoryContentsFilters(base.ModelFilterParser,
                     return sql.column(attr) > self.parse_date(val)
                 if op == 'lt':
                     return sql.column(attr) < self.parse_date(val)
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
             if attr == 'state':
                 valid_states = model.Dataset.states.values()
                 if op == 'eq':
                     if val not in valid_states:
-                        self.raise_filter_err(attr, op, val, 'invalid state in filter')
+                        raise_filter_err(attr, op, val, 'invalid state in filter')
                     return sql.column('state') == val
                 if op == 'in':
                     states = [s for s in val.split(',') if s]
                     for state in states:
                         if state not in valid_states:
-                            self.raise_filter_err(attr, op, state, 'invalid state in filter')
+                            raise_filter_err(attr, op, state, 'invalid state in filter')
                     return sql.column('state').in_(states)
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
 
         column_filter = get_filter(attr, op, val)
         if column_filter is not None:
@@ -547,7 +552,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
             'name': {'op': ('eq', 'contains', 'like')},
             'state': {'op': ('eq', 'in')},
-            'visible': {'op': ('eq'), 'val': self.parse_bool},
+            'visible': {'op': ('eq'), 'val': parse_bool},
             'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
             'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
         })

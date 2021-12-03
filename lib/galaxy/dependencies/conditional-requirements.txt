@@ -1,8 +1,8 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.8.4
+psycopg2-binary==2.9.1
 mysqlclient
 fluent-logger
-raven
+sentry-sdk
 pbs_python
 drmaa
 statsd
@@ -39,3 +39,9 @@ influxdb
 
 # Deep learning packages for tool recommendation
 tensorflow==2.5.1
+
+# weasyprint has problematic requirements so make it optional (i.e. cairo)
+# xref https://github.com/galaxyproject/galaxy/pull/9651
+# Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
+# to install weasyprint as part of Galaxy's conditonal dependency instalation process.
+weasyprint

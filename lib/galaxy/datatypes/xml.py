@@ -6,10 +6,14 @@ import re
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    disable_parent_class_sniffing,
+    FilePrefix,
+)
 from . import (
     data,
     dataproviders,
-    sniff
 )
 
 log = logging.getLogger(__name__)
@@ -19,7 +23,7 @@ SBML_MARKER = re.compile(r'\<sbml')
 
 
 @dataproviders.decorators.has_dataproviders
-@sniff.build_sniff_from_prefix
+@build_sniff_from_prefix
 class GenericXml(data.Text):
     """Base format class for any XML file."""
     edam_format = "format_2332"
@@ -34,17 +38,15 @@ class GenericXml(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def _has_root_element_in_prefix(self, file_prefix, root):
-        contents = file_prefix.string_io()
-        while True:
-            line = contents.readline()
-            if line is None or not line.startswith('<?'):
+    def _has_root_element_in_prefix(self, file_prefix: FilePrefix, root):
+        for line in file_prefix.line_iterator():
+            if not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
         pattern = r'^<(\w*:)?%s' % root
-        return line is not None and re.match(pattern, line) is not None
+        return re.match(pattern, line) is not None
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is XML or not
 
@@ -72,7 +74,7 @@ class GenericXml(data.Text):
         return dataproviders.hierarchy.XMLDataProvider(dataset_source, **settings)
 
 
-@sniff.disable_parent_class_sniffing
+@disable_parent_class_sniffing
 class MEMEXml(GenericXml):
     """MEME XML Output data"""
     file_ext = "memexml"
@@ -87,7 +89,7 @@ class MEMEXml(GenericXml):
             dataset.blurb = 'file purged from disk'
 
 
-@sniff.disable_parent_class_sniffing
+@disable_parent_class_sniffing
 class CisML(GenericXml):
     """CisML XML data"""  # see: http://www.ncbi.nlm.nih.gov/pubmed/15001475
     file_ext = "cisml"
@@ -154,7 +156,7 @@ class Dzi(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checking for keyword - 'Collection' or 'Image' in the first 200 lines.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -187,7 +189,7 @@ class Phyloxml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -227,7 +229,7 @@ class Owl(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
             Checking for keyword - '<owl' in the first 200 lines.
         """
@@ -251,7 +253,7 @@ class Sbml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
             Checking for keyword - '<sbml' in the first 200 lines.
         """

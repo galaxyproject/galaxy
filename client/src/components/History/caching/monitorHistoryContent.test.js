@@ -21,7 +21,7 @@ jest.mock("../caching");
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);
 
-const monitorSpinUp = 100;
+const monitorSpinUp = 400;
 const monitorSafetyTimeout = 1000;
 const selectorHasField = (selector, field) => selector.$and.some((row) => row[field] !== undefined);
 

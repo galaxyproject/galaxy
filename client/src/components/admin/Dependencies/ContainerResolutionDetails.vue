@@ -31,8 +31,7 @@
             <div class="col-8">
                 <container-description
                     :container-description="resolution.status.container_description"
-                    :compact="false"
-                />
+                    :compact="false" />
             </div>
         </div>
         <div class="row">

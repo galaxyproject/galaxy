@@ -104,8 +104,7 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :render-extensions-toggle="true"
-                >
+                    :render-extensions-toggle="true">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -186,8 +185,7 @@
                                 {{ l("Entering regular expressions to match dataset names. See:") }}
                                 <a
                                     href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
-                                    target="_blank"
-                                >
+                                    target="_blank">
                                     {{ l("MDN's JavaScript Regular Expression Tutorial") }}</a
                                 >
                                 {{ l("Note: forward slashes (\\) are not needed.") }}
@@ -256,22 +254,19 @@
                                             float-left
                                             search-input search-query
                                             input-group
-                                        "
-                                    >
+                                        ">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="forwardFilter"
-                                            title="filterTextTitle"
-                                        />
+                                            title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
                                                 class="btn btn-outline-secondary dropdown-toggle"
                                                 type="button"
                                                 data-toggle="dropdown"
                                                 aria-haspopup="true"
-                                                aria-expanded="false"
-                                            ></button>
+                                                aria-expanded="false"></button>
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
@@ -287,8 +282,7 @@
                                         class="clear-filters-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="clickClearFilters"
-                                    >
+                                        @click="clickClearFilters">
                                         {{ l("Clear Filters") }}
                                     </a>
                                     <br />
@@ -296,8 +290,7 @@
                                         class="autopair-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="clickAutopair"
-                                    >
+                                        @click="clickAutopair">
                                         {{ l("Auto-pair") }}
                                     </a>
                                 </div>
@@ -320,22 +313,19 @@
                                             float-left
                                             search-input search-query
                                             input-group
-                                        "
-                                    >
+                                        ">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="reverseFilter"
-                                            title="filterTextTitle"
-                                        />
+                                            title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
                                                 class="btn btn-outline-secondary dropdown-toggle"
                                                 type="button"
                                                 data-toggle="dropdown"
                                                 aria-haspopup="true"
-                                                aria-expanded="false"
-                                            ></button>
+                                                aria-expanded="false"></button>
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
@@ -365,8 +355,7 @@
                                                         selectedForwardElement &&
                                                         element.id == selectedForwardElement.id,
                                                 }"
-                                                :element="element"
-                                            />
+                                                :element="element" />
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column truncate">
@@ -375,8 +364,7 @@
                                                 v-for="(pairableElement, index) in pairableElements"
                                                 :key="index"
                                                 @click="_pair(pairableElement.forward, pairableElement.reverse)"
-                                                class="dataset"
-                                            >
+                                                class="dataset">
                                                 {{ l("Pair these datasets") }}
                                             </li>
                                         </ol>
@@ -392,8 +380,7 @@
                                                         selectedReverseElement &&
                                                         element.id == selectedReverseElement.id,
                                                 }"
-                                                :element="element"
-                                            />
+                                                :element="element" />
                                         </ol>
                                     </div>
                                 </div>
@@ -407,8 +394,7 @@
                                         class="unpair-all-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="unpairAll"
-                                    >
+                                        @click="unpairAll">
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>
@@ -420,8 +406,7 @@
                                                 :key="pair.id"
                                                 :pair="pair"
                                                 :unlink-fn="clickUnpair(pair)"
-                                                @onPairRename="(name) => (pair.name = name)"
-                                            />
+                                                @onPairRename="(name) => (pair.name = name)" />
                                         </draggable>
                                     </ol>
                                 </div>
@@ -480,7 +465,7 @@ export default {
             filters: this.DEFAULT_FILTERS,
             automaticallyPair: true,
             initialPairsPossible: true,
-            matchPercentage: 0.9,
+            matchPercentage: 0.99,
             twoPassAutoPairing: true,
             removeExtensions: true,
             workingElements: [],
@@ -723,6 +708,9 @@ export default {
                     fwdName = fwdName.replace(extension, "");
                     revName = revName.replace(extension, "");
                 }
+            }
+            if (lcs.endsWith(".") || lcs.endsWith("_")) {
+                lcs = lcs.substring(0, lcs.length - 1);
             }
             return lcs || `${fwdName} & ${revName}`;
         },
@@ -1039,9 +1027,9 @@ export default {
 <style lang="scss">
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority

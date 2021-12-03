@@ -33,7 +33,6 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             "cat_data_and_sleep",
             ok_inputs,
             history_id,
-            assert_ok=True,
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
 
@@ -57,11 +56,10 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             "input1": {'batch': True, 'values': [{"src": "hdca", "id": input_collection["id"]}]},
             "sleep_time": 60,
         }
-        running_response = self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
         try:
             assert_status_code_is(running_response, 200)
@@ -119,15 +117,11 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         running_inputs = {
             "sleep_time": 180,
         }
-        running_response = self.dataset_populator.run_tool(
+        payload = self.dataset_populator.run_tool(
             "collection_creates_dynamic_nested",
             running_inputs,
             history_id,
-            assert_ok=False,
         )
-        assert_status_code_is(running_response, 200)
-
-        payload = running_response.json()
         assert payload["output_collections"]
         assert payload["jobs"]
         assert len(payload["jobs"]) > 0
@@ -205,17 +199,17 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         # Test setting a name tag and viewing it from the outer history panel.
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
-        collection_view = self._click_and_wait_for_collection_view(collection_hid)
+        self._click_and_wait_for_collection_view(collection_hid)
 
         if self.is_beta_history():
             self.history_panel_add_tags(["#moo"])
-            self.screenshot("history_panel_collection_view_add_nametag_beta")
-            self._back_to_history()
         else:
             # the space on the end of the parent_selector is important
             self.tagging_add(["#moo"], parent_selector=".dataset-collection-panel .controls ")
-            self.screenshot("history_panel_collection_view_add_nametag")
-            collection_view.back.wait_for_and_click()
+
+        self.sleep_for(WAIT_TYPES.HISTORY_POLL)
+        self.screenshot("history_panel_collection_view_add_nametag")
+        self._back_to_history()
 
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
         nametags = self.history_panel_item_get_nametags(collection_hid)
@@ -243,34 +237,24 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     @flakey  # Fails only in Jenkins full suite - possibly due to #3782
     def test_list_display(self):
         input_collection, failed_collection = self._generate_partially_failed_collection_with_input()
-        input_collection_hid = input_collection['hid']
         failed_hid = failed_collection["hid"]
 
-        if self.is_beta_history():
-            self.content_item_by_attributes(hid=input_collection_hid).wait_for_present()
-            self.content_item_by_attributes(hid=failed_hid, state="error").wait_for_present()
-            self._click_and_wait_for_collection_view(failed_hid)
-            self.content_item_by_attributes(index=3).wait_for_present()
+        self.home()
+        self.history_panel_wait_for_hid_state(failed_hid, "error")
+        collection_view = self._click_and_wait_for_collection_view(failed_hid)
 
-            dataset_elements = self.content_item_by_attributes().all()
-            assert len(dataset_elements) == 4
+        @retry_assertion_during_transitions
+        def check_four_datasets_shown():
+            if self.is_beta_history():
+                self.sleep_for(WAIT_TYPES.HISTORY_POLL)
+                dataset_elements = collection_view.list_items_beta.all()
+            else:
+                dataset_elements = collection_view.list_items.all()
+            assert len(dataset_elements) == 4, dataset_elements
             title_elements = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
-        else:
-            self.home()
-            self.history_panel_wait_for_hid_state(failed_hid, "error")
-            collection_view = self._click_and_wait_for_collection_view(failed_hid)
-
-            @retry_assertion_during_transitions
-            def check_four_datasets_shown():
-                dataset_elements = collection_view.list_items.all()
-                assert len(dataset_elements) == 4, dataset_elements
-                title_elements = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
-                assert title_elements == ["data1", "data2", "data3", "data4"]
-
-            check_four_datasets_shown()
-
+        check_four_datasets_shown()
         self.screenshot("history_panel_collection_view_list")
 
     @selenium_test

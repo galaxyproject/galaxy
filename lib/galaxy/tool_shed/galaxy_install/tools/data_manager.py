@@ -149,7 +149,7 @@ class DataManagerHandler:
         return rval
 
     def remove_from_data_manager(self, repository):
-        metadata_dict = repository.metadata
+        metadata_dict = repository.metadata_
         if metadata_dict and 'data_manager' in metadata_dict:
             shed_data_manager_conf_filename = self.app.config.shed_data_manager_config_file
             tree, error_message = parse_xml(shed_data_manager_conf_filename)

@@ -29,7 +29,7 @@ module.exports = (env, argv) => {
         ],
     };
 
-    wpConfig.module = merge.smart(wpConfig.module, ignoreAssetLoaders);
+    wpConfig.module = merge.merge(wpConfig.module, ignoreAssetLoaders);
 
     // Set exclude for babel-loader to completely ignore *all* node-modules,
     // without our exceptions to support IE as in parent webpack config.

@@ -1,10 +1,14 @@
 import json
 import unittest
 
+import pytest
+import requests
+
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    skip_if_github_down,
 )
 from ._framework import ApiTestCase
 
@@ -45,7 +49,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_nonadmin(self):
         # Anons can't create libs
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=False, anon=True, json=True)
+        create_response = self._post("libraries", data=data, admin=False, anon=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't delete libs
         library = self.library_populator.new_library("AnonDeleteTestLibrary")
@@ -110,8 +114,8 @@ class LibrariesApiTestCase(ApiTestCase):
         library_id = library["id"]
         role_id = self.library_populator.user_private_role_id()
         # As we can manage this library our role will be available
-        current = self.library_populator.get_permissions(library_id, scope="available")
-        available_role_ids = [role["id"] for role in current["roles"]]
+        available = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in available["roles"]]
         assert role_id in available_role_ids
 
     def test_get_library_available_permissions_with_query(self):
@@ -122,40 +126,66 @@ class LibrariesApiTestCase(ApiTestCase):
             email = self.library_populator.user_email()
 
         # test at least 2 user roles should be available now
-        current = self.library_populator.get_permissions(library_id, scope="available")
-        available_role_ids = [role["id"] for role in current["roles"]]
+        available = self.library_populator.get_permissions(library_id, scope="available")
+        available_role_ids = [role["id"] for role in available["roles"]]
         assert len(available_role_ids) > 1
 
         # test query for specific role/email
-        current = self.library_populator.get_permissions(library_id, scope="available", q=email)
-        available_role_emails = [role["name"] for role in current["roles"]]
-        assert current["total"] == 1
+        available = self.library_populator.get_permissions(library_id, scope="available", q=email)
+        available_role_emails = [role["name"] for role in available["roles"]]
+        assert available["total"] == 1
         assert available_role_emails[0] == email
 
+    def test_create_library_dataset_bootstrap_user(self, library_name="private_dataset", wait=True):
+        library = self.library_populator.new_private_library(library_name)
+        payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
+        create_response = self.galaxy_interactor.post("libraries/%s/contents" % library["id"], payload, files=files, key=self.master_api_key)
+        self._assert_status_code_is(create_response, 400)
+
     def test_create_dataset_denied(self):
+        url, payload = self._create_dataset_kwargs()
+        with self._different_user():
+            create_response = self._post(url, payload)
+            self._assert_status_code_is(create_response, 403)
+
+    def test_create_dataset_bootstrap_admin_user(self):
+        url, payload = self._create_dataset_kwargs()
+        with self._different_user():
+            create_response = self._post(url, payload, key=self.master_api_key)
+            self._assert_status_code_is(create_response, 400)
+
+    def _create_dataset_kwargs(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
         folder_response = self._create_folder(library)
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]['id']
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
-        with self._different_user():
-            payload = {'from_hda_id': hda_id}
-            create_response = self._post(f"folders/{folder_id}/contents", payload)
-            self._assert_status_code_is(create_response, 403)
+        return f"folders/{folder_id}/contents", {"from_hda_id": hda_id}
 
     def test_show_private_dataset_permissions(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         with self._different_user():
-            response = self.library_populator.show_ldda(library["id"], library_dataset["id"])
+            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
+                self.library_populator.show_ld(library["id"], library_dataset["id"])
             # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(response, 400)
+            self._assert_status_code_is(exc_info.value.response, 400)
 
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         self._assert_has_keys(library_dataset, "peek", "data_type")
         assert library_dataset["peek"].find("create_test") >= 0
         assert library_dataset["file_ext"] == "txt", library_dataset["file_ext"]
+        # Get library dataset (same as library_dataset)
+        library_dataset_from_show = self.library_populator.show_ld(library["id"], library_dataset["id"])
+        assert library_dataset_from_show["id"] == library_dataset["id"]
+        assert library_dataset_from_show["parent_library_id"] == library["id"]
+        assert library_dataset_from_show["folder_id"] == library["root_folder_id"]
+        # Get library dataset dataset association
+        ldda = self.library_populator.show_ldda(library_dataset_from_show["ldda_id"])
+        assert ldda["library_dataset_id"] == library_dataset["id"]
+        assert ldda["parent_library_id"] == library["id"]
+        assert ldda["file_ext"] == "txt"
 
     def test_fetch_upload_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
@@ -238,6 +268,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 400)
         assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
+    @skip_if_github_down
     def test_fetch_failed_validation(self):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
@@ -268,6 +299,7 @@ class LibrariesApiTestCase(ApiTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["state"] == "error", dataset
 
+    @skip_if_github_down
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
         targets = [{
@@ -344,7 +376,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         ld = create_response.json()
         library_id = ld['parent_library_id']
-        return self.library_populator.wait_on_library_dataset(library={'id': library_id}, dataset=ld)
+        return self.library_populator.wait_on_library_dataset(library_id, ld["id"])
 
     def test_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForUpdateDataset", content=">seq\nATGC", wait=True).json()

@@ -10,10 +10,14 @@ from requests import get, put
 
 from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
+from galaxy_test.base.api_asserts import assert_has_keys, assert_status_code_is
 from galaxy_test.base.populators import (
+    BaseDatasetCollectionPopulator,
+    BaseDatasetPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
+    skip_if_github_down,
     skip_without_tool,
     stage_rules_example,
     uses_test_history,
@@ -45,6 +49,8 @@ MINIMAL_TOOL_NO_ID = {
 
 
 class TestsTools:
+    dataset_populator: BaseDatasetPopulator
+    dataset_collection_populator: BaseDatasetCollectionPopulator
 
     def _build_pair(self, history_id, contents):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
@@ -56,15 +62,15 @@ class TestsTools:
         outputs = create['outputs']
         jobs = create['jobs']
         implicit_collections = create['implicit_collections']
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(outputs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
         output1 = outputs[0]
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output1_content.strip(), "123")
-        self.assertEqual(output2_content.strip(), "456")
+        assert output1_content.strip() == "123"
+        assert output2_content.strip() == "456"
 
     def _run_cat(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat', history_id, inputs, assert_ok=assert_ok, **kwargs)
@@ -86,13 +92,13 @@ class TestsTools:
             payload["tool_version"] = tool_version
         if use_cached_job:
             payload['use_cached_job'] = True
-        create_response = self._post("tools", data=payload)
+        create_response = self.dataset_populator._post("tools", data=payload)
         if wait_for_job:
             self.dataset_populator.wait_for_job(job_id=create_response.json()['jobs'][0]['id'])
         if assert_ok:
-            self._assert_status_code_is(create_response, 200)
+            assert_status_code_is(create_response, 200)
             create = create_response.json()
-            self._assert_has_keys(create, 'outputs')
+            assert_has_keys(create, 'outputs')
             return create
         else:
             return create_response
@@ -229,6 +235,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert xref["value"] == "bwa"
 
     @skip_without_tool("test_data_source")
+    @skip_if_github_down
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
@@ -432,6 +439,82 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert len(namelist) == 6
         expected_names = {'velveth_test1/Roadmaps', 'velveth_test1/output.html', 'velveth_test1/Sequences', 'velveth_test1/Log', 'velveth_test1/output/', 'velveth_test1/output/1'}
         assert set(namelist) == expected_names
+
+    @uses_test_history(require_new=False)
+    def test_convert_dataset_explicit_history(self, history_id):
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+
+        payload = {
+            "src": "hda",
+            "id": hda1["id"],
+            "source_type": "fasta",
+            "target_type": "tabular",
+            "history_id": history_id
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
+        create_response.raise_for_status()
+        assert len(create_response.json()["implicit_collections"]) == 0
+        for output in create_response.json()["outputs"]:
+            assert output["file_ext"] == "tabular"
+
+    @uses_test_history(require_new=False)
+    def test_convert_dataset_implicit_history(self, history_id):
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+
+        payload = {
+            "src": "hda",
+            "id": hda1["id"],
+            "source_type": "fasta",
+            "target_type": "tabular"
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
+        create_response.raise_for_status()
+        assert len(create_response.json()["implicit_collections"]) == 0
+        for output in create_response.json()["outputs"]:
+            assert output["file_ext"] == "tabular"
+
+    @uses_test_history(require_new=False)
+    def test_convert_hdca(self, history_id):
+        data = [
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "456\n", "name": "reverse", "ext": "fasta"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789\n", "name": "forward", "ext": "fasta"},
+                    {"src": "pasted", "paste_content": "0ab\n", "name": "reverse", "ext": "fasta"},
+                ]
+            }
+        ]
+        hdca1 = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=data)
+        self._assert_status_code_is(hdca1, 200)
+
+        payload = {
+            "src": "hdca",
+            "id": hdca1.json()["outputs"][0]["id"],
+            "source_type": "fasta",
+            "target_type": "tabular",
+            "history_id": history_id
+        }
+        create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", payload)
+
+        self.dataset_populator.wait_for_job(create_response.json()["jobs"][0]["id"], assert_ok=True)
+        create_response.raise_for_status()
+
+        assert create_response.json()["implicit_collections"] != []
+        hdca_id = create_response.json()["implicit_collections"][0]["hid"]
+        fetchedResponse = self.dataset_populator.get_history_collection_details(history_id, hid=hdca_id)
+        for element in fetchedResponse["elements"][0]["object"]["elements"]:
+            assert element["object"]["file_ext"] == "tabular"
 
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
@@ -761,8 +844,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def test_run_by_versions(self, history_id):
         for version in ["0.1", "0.2"]:
             # Run simple non-upload tool with an input data parameter.
-            inputs = dict()
-            outputs = self._run_and_get_outputs(tool_id="multiple_versions", history_id=history_id, inputs=inputs, tool_version=version)
+            outputs = self._run_and_get_outputs(tool_id="multiple_versions", history_id=history_id, tool_version=version)
             self.assertEqual(len(outputs), 1)
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
@@ -889,9 +971,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("validation_empty_dataset")
     @uses_test_history(require_new=False)
     def test_validation_empty_dataset(self, history_id):
-        inputs = {
-        }
-        outputs = self._run_and_get_outputs('empty_output', history_id, inputs)
+        outputs = self._run_and_get_outputs('empty_output', history_id)
         empty_dataset = outputs[0]
         inputs = {
             'input1': dataset_to_param(empty_dataset),
@@ -1058,8 +1138,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        inputs = {}
-        self._run("minimal_tool", history_id, inputs)
+        self._run("minimal_tool", history_id)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
@@ -1073,8 +1152,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        inputs = {}
-        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+        self._run(history_id=history_id, tool_uuid=tool_response["uuid"])
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
@@ -1087,8 +1165,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        inputs = {}
-        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+        self._run(history_id=history_id, tool_uuid=tool_response["uuid"])
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
@@ -1118,6 +1195,17 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert found_id
         assert found_uuid
 
+    def test_show_tool_source_admin(self):
+        response = self._get("tools/cat1/raw_tool_source", admin=True)
+        response.raise_for_status()
+        assert "Concatenate datasets" in response.text
+        assert response.headers["language"] == 'xml'
+
+    def test_show_tool_source_denied(self):
+        with self._different_user(anon=True):
+            response = self._get("tools/cat1/raw_tool_source")
+            assert response.status_code == 403
+
     def test_tool_deactivate(self):
         # Create tool.
         tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
@@ -1128,8 +1216,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         # Run tool.
         history_id = self.dataset_populator.new_history()
-        inputs = {}
-        response = self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"], assert_ok=False)
+        response = self._run(history_id=history_id, tool_uuid=tool_response["uuid"], assert_ok=False)
         # Get a 404 when trying to run a deactivated tool.
         self._assert_status_code_is(response, 404)
 
@@ -1289,8 +1376,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "required_files": [['simple_line.txt', {'value': 'simple_line.txt', 'dbkey': 'hg18'}]],
         }]
         dynamic_param_error = None
+        test_driver = self.driver_or_skip_test_if_remote()
         try:
-            self._test_driver.run_tool_test(
+            test_driver.run_tool_test(
                 "dbkey_output_action",
                 tool_test_dicts=tool_test_dicts
             )
@@ -1308,7 +1396,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         }]
         dynamic_param_error = None
         try:
-            self._test_driver.run_tool_test(
+            test_driver.run_tool_test(
                 "dbkey_output_action",
                 tool_test_dicts=tool_test_dicts
             )
@@ -1326,7 +1414,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         }]
         dynamic_param_error = None
         try:
-            self._test_driver.run_tool_test(
+            test_driver.run_tool_test(
                 "dbkey_output_action",
                 tool_test_dicts=tool_test_dicts,
                 register_job_data=register_job_data
@@ -1341,7 +1429,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         dynamic_param_error = None
         try:
-            self._test_driver.run_tool_test(
+            test_driver.run_tool_test(
                 "dbkey_output_action",
                 tool_test_dicts=tool_test_dicts,
                 skip_on_dynamic_param_errors=True,
@@ -1864,11 +1952,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = dict(
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = create_response.json()
 
         inputs = {
@@ -1895,11 +1983,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         payload = dict(
             instance_type="history",
             history_id=history_id,
-            element_identifiers=json.dumps(element_identifiers),
+            element_identifiers=element_identifiers,
             collection_type="list",
         )
 
-        create_response = self._post("dataset_collections", payload)
+        create_response = self._post("dataset_collections", payload, json=True)
         dataset_collection = create_response.json()
 
         inputs = {
@@ -2412,7 +2500,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     def _cat1_outputs(self, history_id, inputs):
         return self._run_outputs(self._run_cat1(history_id, inputs))
 
-    def _run_and_get_outputs(self, tool_id, history_id, inputs, tool_version=None):
+    def _run_and_get_outputs(self, tool_id, history_id, inputs=None, tool_version=None):
+        if inputs is None:
+            inputs = dict()
         return self._run_outputs(self._run(tool_id, history_id, inputs, tool_version=tool_version))
 
     def _run_outputs(self, create_response):
@@ -2471,10 +2561,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
     @skip_without_tool("expression_forty_two")
     def test_galaxy_expression_tool_simplest(self):
         history_id = self.dataset_populator.new_history()
-        inputs = {
-        }
         run_response = self._run(
-            "expression_forty_two", history_id, inputs
+            "expression_forty_two", history_id
         )
         self._assert_status_code_is(run_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)

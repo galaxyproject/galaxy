@@ -119,7 +119,7 @@ class Tree(BaseTree):
         return True
 
     def __len__(self):
-        return sum([len(c[1]) for c in self.children])
+        return sum(len(c[1]) for c in self.children)
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:

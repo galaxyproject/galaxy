@@ -30,7 +30,6 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.action_chains().move_to_element(section).click().perform()
         self.navigate_to_user_preferences()
         self.components.preferences.toolbox_filters.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("toolbox_filters_landing")
         sibling_text = 'This tool filter will disable the Test Section section.'
         component = self.components.toolbox_filters.input(description=sibling_text)

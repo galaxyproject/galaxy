@@ -96,7 +96,7 @@ define({
 
         // ---- history-view-edit
         "Edit history tags": false,
-        "Edit history Annotation": false,
+        "Edit history annotation": false,
         "Click to rename history": false,
         // multi operations
         "Operations on multiple datasets": false,
@@ -292,15 +292,15 @@ define({
         "Customize your Toolbox by displaying or omitting sets of Tools.": false,
         "Access your current API key or create a new one.": false,
         "Allows you to change your login credentials.": false,
-        "User Preferences": false,
+        "User preferences": false,
         "Sign out": false,
         "Manage custom builds": false,
         "Manage OpenIDs": false,
         "Manage Toolbox filters": false,
-        "Manage API key": false,
+        "Manage API Key": false,
         "Set dataset permissions for new histories": false,
-        "Change password": false,
-        "Manage information": false,
+        "Change Password": false,
+        "Manage Information": false,
         // ---------------------------------------------------------------------------- history-list
         Histories: false,
         // ---------------------------------------------------------------------------- shed-list-view

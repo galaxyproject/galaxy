@@ -17,8 +17,8 @@ variables:
         - ~/.cache/yarn
   install_tox: &install_tox
     run: sudo pip install tox
-  install_ffprobe: &install_ffprobe
-    run: sudo apt-get update && sudo apt-get install ffmpeg -y
+  install_deb_reqs: &install_deb_reqs
+    run: sudo apt-get update && sudo apt-get install ffmpeg nodejs -y
   set_workdir: &set_workdir
     working_directory: ~/repo
   requires_get_code: &requires_get_code
@@ -100,7 +100,7 @@ jobs:
     steps:
       - *restore_repo_cache
       - *install_tox
-      - *install_ffprobe
+      - *install_deb_reqs
       - run: tox -e test_galaxy_release
   test_galaxy_packages:
     docker:
@@ -109,25 +109,11 @@ jobs:
     steps:
       - *restore_repo_cache
       - *install_tox
-      - *install_ffprobe
+      - *install_deb_reqs
       - run: tox -e test_galaxy_packages
-  js_unit:
-    docker:
-      - image: circleci/node:12-browsers
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run:
-          name: Build client
-          command: cd client && yarn run build
-          environment:
-              NODE_OPTIONS: --max_old_space_size=4096
-      - run: cd client && yarn run qunit
   js_lint:
     docker:
-      - image: circleci/node:12-browsers
+      - image: cimg/node:14.15
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
@@ -143,8 +129,6 @@ workflows:
       - test_galaxy_packages:
           <<: *requires_get_code
       - validate_test_tools:
-          <<: *requires_get_code
-      - js_unit:
           <<: *requires_get_code
       - js_lint:
           <<: *requires_get_code

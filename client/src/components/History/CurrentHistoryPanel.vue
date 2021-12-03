@@ -7,8 +7,7 @@
                         v-on="handlers"
                         :histories="histories"
                         :current-history="currentHistory"
-                        title="Current History"
-                    />
+                        title="Histories" />
                 </template>
             </HistoryPanel>
 
@@ -32,10 +31,5 @@ export default {
         HistoryPanel,
         HistoriesMenu,
     },
-    // data() {
-    //     return {
-    //         showModal: false,
-    //     };
-    // },
 };
 </script>

@@ -8,17 +8,15 @@
                 :disabled="dataset.purged || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="viewData"
                 variant="link"
-                class="px-1"
-            />
+                class="px-1 display-btn" />
             <IconButton
                 v-if="writable && notIn(STATES.DISCARDED)"
                 icon="pen"
                 :title="editButtonTitle"
                 :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-                @click.stop="backboneRoute('datasets/edit', { dataset_id: dataset.id })"
+                @click.stop="$emit('edit')"
                 variant="link"
-                class="px-1"
-            />
+                class="px-1 edit-btn" />
             <IconButton
                 v-if="writable && dataset.accessible"
                 :icon="dataset.deleted ? 'trash-restore' : 'trash'"
@@ -26,9 +24,8 @@
                 :disabled="dataset.purged"
                 v-b-modal="bsId('delete-modal')"
                 variant="link"
-                class="px-1"
-                @click.stop
-            />
+                class="px-1 delete-btn"
+                @click.stop />
 
             <b-dropdown
                 right
@@ -36,10 +33,9 @@
                 variant="link"
                 :text="'Dataset Operations' | l"
                 toggle-class="p-1 pl-2"
-                class="flex-grow-0"
+                class="flex-grow-0 dataset-operations-dropdown"
                 v-if="expanded"
-                boundary="window"
-            >
+                boundary="window">
                 <template v-slot:button-content>
                     <Icon icon="ellipsis-v" variant="link" />
                     <span class="sr-only">Dataset Operations</span>
@@ -53,30 +49,17 @@
                         backboneRoute('datasets/error', {
                             dataset_id: dataset.id,
                         })
-                    "
-                >
+                    ">
                     <Icon icon="exclamation-triangle" class="mr-1" />
                     <span v-localize>Show Error</span>
                 </b-dropdown-item>
 
                 <b-dropdown-item
-                    v-if="!dataset.purged && dataset.getUrl('download')"
+                    v-if="showDownloads && dataset.getUrl('download')"
                     title="Copy Link"
-                    @click.stop="$emit('copy-link')"
-                >
+                    @click.stop="$emit('copy-link')">
                     <Icon icon="link" class="mr-1" />
                     <span v-localize>Copy Link</span>
-                </b-dropdown-item>
-
-                <b-dropdown-item
-                    v-if="!(showDownloads && dataset.hasMetaData)"
-                    title="Download"
-                    :href="prependPath(dataset.getUrl('download'))"
-                    target="_blank"
-                    download
-                >
-                    <Icon icon="download" class="mr-1" />
-                    <span v-localize>Download</span>
                 </b-dropdown-item>
 
                 <b-dropdown-group v-if="showDownloads && dataset.hasMetaData">
@@ -86,12 +69,22 @@
                         :title="'Download ' + mf.file_type"
                         :href="prependPath(dataset.getUrl('meta_download') + mf.file_type)"
                         target="_blank"
-                        download
-                    >
+                        download>
                         <Icon icon="download" class="mr-1" />
                         <span v-localize>{{ "Download " + mf.file_type }}</span>
                     </b-dropdown-item>
                 </b-dropdown-group>
+
+                <b-dropdown-item
+                    v-else-if="showDownloads"
+                    title="Download"
+                    :href="prependPath(dataset.getUrl('download'))"
+                    target="_blank"
+                    class="download-btn"
+                    download>
+                    <Icon icon="download" class="mr-1" />
+                    <span v-localize>Download</span>
+                </b-dropdown-item>
 
                 <b-dropdown-item
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
@@ -101,8 +94,7 @@
                         backboneRoute('/', {
                             job_id: dataset.creating_job,
                         })
-                    "
-                >
+                    ">
                     <Icon icon="play" class="mr-1" />
                     <span v-localize>Run job again</span>
                 </b-dropdown-item>
@@ -110,8 +102,7 @@
                 <b-dropdown-item
                     v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
                     title="Visualize Data"
-                    @click.stop.prevent="visualize"
-                >
+                    @click.stop.prevent="visualize">
                     <Icon icon="chart-area" class="mr-1" />
                     <span v-localize>Visualize Data</span>
                 </b-dropdown-item>
@@ -119,8 +110,7 @@
                 <b-dropdown-item
                     v-if="currentUser && currentUser.id && dataset.creating_job"
                     title="Tool Help"
-                    @click.stop="showToolHelp(dataset.creating_job)"
-                >
+                    @click.stop="showToolHelp(dataset.creating_job)">
                     <Icon icon="question" class="mr-1" />
                     <span v-localize>Tool Help</span>
                 </b-dropdown-item>
@@ -129,13 +119,8 @@
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
                     title="View Dataset Details"
-                    @click.stop.prevent="
-                        iframeAdd({
-                            path: dataset.getUrl('show_params'),
-                            title: 'View Dataset Details',
-                        })
-                    "
-                >
+                    class="params-btn"
+                    @click.stop.prevent="showDetails">
                     <Icon icon="info-circle" class="mr-1" />
                     <span v-localize>View Dataset Details</span>
                 </b-dropdown-item>
@@ -275,6 +260,17 @@ export default {
                 this.backboneRoute("visualizations", {
                     dataset_id: this.dataset.id,
                 });
+            }
+        },
+
+        showDetails() {
+            const redirectParams = {
+                path: this.dataset.getUrl("show_params"),
+                title: "Dataset details",
+                tryIframe: false,
+            };
+            if (!this.iframeAdd(redirectParams)) {
+                this.backboneRoute(this.dataset.getUrl("show_params"));
             }
         },
 

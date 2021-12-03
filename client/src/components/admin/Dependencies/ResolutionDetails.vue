@@ -57,8 +57,7 @@
                             <div class="col">Dependency Resolver</div>
                             <div class="col">
                                 <dependency-resolver
-                                    :dependency-resolver="resolution.status[index].dependency_resolver"
-                                />
+                                    :dependency-resolver="resolution.status[index].dependency_resolver" />
                             </div>
                         </div>
                     </div>

@@ -2,21 +2,33 @@ import os
 import shutil
 import tempfile
 from contextlib import contextmanager
+from typing import Optional
 
 from galaxy.datatypes.sniff import get_test_fname
-from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import md5_hash_file
+
+
+class MockMetadata:
+    file_name: Optional[str] = None
+
+
+class MockDataset:
+    file_name: Optional[str] = None
+
+    def __init__(self, id):
+        self.id = id
+        self.metadata = MockMetadata()
+
+    def has_data(self):
+        return True
 
 
 @contextmanager
 def get_dataset(filename, index_attr='bam_index', dataset_id=1, has_data=True):
-    dataset = Bunch()
-    dataset.has_data = lambda: True
-    dataset.id = dataset_id
-    dataset.metadata = Bunch()
+    dataset = MockDataset(dataset_id)
     with get_input_files(filename) as input_files, get_tmp_path() as index_path:
         dataset.file_name = input_files[0]
-        index = Bunch()
+        index = MockMetadata()
         index.file_name = index_path
         setattr(dataset.metadata, index_attr, index)
         yield dataset

@@ -132,7 +132,7 @@
     }
 
     &.state-paused {
-        background: $state-paused-bg;
+        background: $state-info-bg;
         .state-icon {
             &:before {
                 content: fa-content($fa-var-pause);

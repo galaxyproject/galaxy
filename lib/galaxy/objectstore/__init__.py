@@ -12,6 +12,7 @@ import random
 import shutil
 import threading
 import time
+from typing import Any, Dict, List, Type
 
 import yaml
 
@@ -213,6 +214,8 @@ class ObjectStore(metaclass=abc.ABCMeta):
 
 
 class BaseObjectStore(ObjectStore):
+    store_by: str
+    store_type: str
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
@@ -625,6 +628,10 @@ class DiskObjectStore(ConcreteObjectStore):
                     path = self._get_filename(obj, **kwargs)
                     shutil.copy(file_name, path)
                     umask_fix_perms(path, self.config.umask, 0o666)
+            except shutil.SameFileError:
+                # That's ok, we need to ignore this so that remote object stores can update
+                # the remote object from the cache file path
+                pass
             except OSError as ex:
                 log.critical(f'Error copying {file_name} to {self.__get_filename(obj, **kwargs)}: {ex}')
                 raise ex
@@ -791,8 +798,8 @@ class DistributedObjectStore(NestedObjectStore):
         self.sleeper = None
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
-            self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor)
-            self.filesystem_monitor_thread.setDaemon(True)
+            self.filesystem_monitor_thread = threading.Thread(target=self.__filesystem_monitor, args=[self.sleeper])
+            self.filesystem_monitor_thread.daemon = True
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
@@ -803,7 +810,7 @@ class DistributedObjectStore(NestedObjectStore):
         else:
             backends_root = config_xml.find('backends')
 
-        backends = []
+        backends: List[Dict[str, Any]] = []
         config_dict = {
             'global_max_percent_full': float(backends_root.get('maxpctfull', 0)),
             'backends': backends,
@@ -847,10 +854,10 @@ class DistributedObjectStore(NestedObjectStore):
         config_dict = clazz.parse_xml(config_xml, legacy=legacy)
         return clazz(config, config_dict, fsmon=fsmon)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
-        backends = []
+        backends: List[Dict[str, Any]] = []
         for backend_id, backend in self.backends.items():
             backend_as_dict = backend.to_dict()
             backend_as_dict["id"] = backend_id
@@ -866,7 +873,7 @@ class DistributedObjectStore(NestedObjectStore):
         if self.sleeper is not None:
             self.sleeper.wake()
 
-    def __filesystem_monitor(self):
+    def __filesystem_monitor(self, sleeper: Sleeper):
         while self.running:
             new_weighted_backend_ids = self.original_weighted_backend_ids
             for id, backend in self.backends.items():
@@ -875,7 +882,7 @@ class DistributedObjectStore(NestedObjectStore):
                 if pct > maxpct:
                     new_weighted_backend_ids = [_ for _ in new_weighted_backend_ids if _ != id]
             self.weighted_backend_ids = new_weighted_backend_ids
-            self.sleeper.sleep(120)  # Test free space every 2 minutes
+            sleeper.sleep(120)  # Test free space every 2 minutes
 
     def _create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
@@ -937,7 +944,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         """The default constructor. Extends `NestedObjectStore`."""
         super().__init__(config, config_dict)
 
-        backends = {}
+        backends: Dict[int, ObjectStore] = {}
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
@@ -977,7 +984,7 @@ class HierarchicalObjectStore(NestedObjectStore):
 
 
 def type_to_object_store_class(store, fsmon=False):
-    objectstore_class = None
+    objectstore_class: Type[ObjectStore]
     objectstore_constructor_kwds = {}
     if store == 'disk':
         objectstore_class = DiskObjectStore
@@ -1005,6 +1012,8 @@ def type_to_object_store_class(store, fsmon=False):
     elif store == 'pithos':
         from .pithos import PithosObjectStore
         objectstore_class = PithosObjectStore
+    else:
+        raise Exception(f"Unrecognized object store definition: {store}")
     # Disable the Pulsar object store for now until it receives some attention
     # elif store == 'pulsar':
     #    from .pulsar import PulsarObjectStore
@@ -1055,9 +1064,6 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
         store = config_dict.get('type')
 
     objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
-    if objectstore_class is None:
-        log.error(f"Unrecognized object store definition: {store}")
-
     if from_object == 'xml':
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
     else:

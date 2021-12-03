@@ -32,19 +32,23 @@
                             <InstallationButton
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
-                                @onUninstall="uninstallRepository(row.item)"
-                            />
+                                @onUninstall="uninstallRepository(row.item)" />
                         </template>
                     </b-table>
-                    <InstallationSettings
-                        v-if="showSettings"
-                        :repo="repo"
-                        :toolshed-url="toolshedUrl"
-                        :changeset-revision="selectedChangeset"
-                        :requires-panel="selectedRequiresPanel"
-                        @hide="onHide"
-                        @ok="onOk"
-                    />
+                    <ConfigProvider v-slot="{ config }">
+                        <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
+                            <InstallationSettings
+                                v-if="showSettings"
+                                :repo="repo"
+                                :toolshed-url="toolshedUrl"
+                                :changeset-revision="selectedChangeset"
+                                :requires-panel="selectedRequiresPanel"
+                                :current-panel="currentPanel"
+                                :tool-dynamic-configs="config.tool_dynamic_configs"
+                                @hide="onHide"
+                                @ok="onOk" />
+                        </ToolPanelViewProvider>
+                    </ConfigProvider>
                 </div>
             </div>
         </div>
@@ -54,6 +58,8 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services";
+import ConfigProvider from "components/providers/ConfigProvider";
+import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";
@@ -62,6 +68,8 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        ConfigProvider,
+        ToolPanelViewProvider,
         InstallationSettings,
         InstallationButton,
         RepositoryTools,

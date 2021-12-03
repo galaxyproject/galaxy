@@ -22,16 +22,27 @@ const getters = {
 };
 
 const actions = {
-    initCurrentPanelView: async ({ commit, state }, siteDefaultPanelView) => {
+    initCurrentPanelView: async ({ commit, state, dispatch }, siteDefaultPanelView) => {
         const panelView = state.currentPanelView || siteDefaultPanelView;
         if (state.currentPanelView == null) {
             commit("setCurrentPanelView", { panelView });
         }
-        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
-        commit("savePanelView", { panelView, panel: data });
+        const response = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`).catch((error) => {
+            if (error.response && error.response.status == 400) {
+                // Assume the stored panelView disappeared, revert to the panel default for this site.
+                dispatch("setCurrentPanelView", siteDefaultPanelView);
+            }
+        });
+        if (response !== undefined) {
+            commit("savePanelView", { panelView, panel: response.data });
+        }
     },
     setCurrentPanelView: async ({ commit }, panelView) => {
         commit("setCurrentPanelView", { panelView });
+        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
+        commit("savePanelView", { panelView, panel: data });
+    },
+    fetchPanel: async ({ commit }, panelView) => {
         const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
         commit("savePanelView", { panelView, panel: data });
     },

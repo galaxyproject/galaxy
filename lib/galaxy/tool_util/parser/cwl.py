@@ -21,10 +21,12 @@ log = logging.getLogger(__name__)
 
 class CwlToolSource(ToolSource):
 
-    def __init__(self, tool_file, strict_cwl_validation=True):
+    language = 'yaml'
+
+    def __init__(self, tool_file, strict_cwl_validation=True, tool_id=None, tool_proxy=None):
         self._cwl_tool_file = tool_file
-        self._id, _ = os.path.splitext(os.path.basename(tool_file))
-        self._tool_proxy = None
+        self._id = tool_id or os.path.splitext(os.path.basename(tool_file))[0]
+        self._tool_proxy = tool_proxy
         self._source_path = tool_file
         self._strict_cwl_validation = strict_cwl_validation
 

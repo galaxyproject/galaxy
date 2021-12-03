@@ -18,6 +18,13 @@ import os
 import re
 import shutil
 import tempfile
+from typing import (
+    Any,
+    Dict,
+    List,
+    Match,
+    Optional,
+)
 
 import markdown
 import pkg_resources
@@ -26,9 +33,10 @@ try:
 except Exception:
     weasyprint = None
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     MalformedContents,
-    MessageException,
+    ServerNotConfiguredForRequest,
 )
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
@@ -38,6 +46,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
+from galaxy.schema import PdfDocumentType
 from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
@@ -195,6 +204,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_dataset_peek(self, line, hda):
+        pass
+
+    @abc.abstractmethod
+    def handle_dataset_embedded(self, line, hda):
         pass
 
     @abc.abstractmethod
@@ -472,7 +485,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
-        metrics_by_plugin = {}
+        metrics_by_plugin: Dict[str, Dict[str, Any]] = {}
         for job_metric in job_metrics:
             plugin = job_metric["plugin"]
             if plugin not in metrics_by_plugin:
@@ -557,7 +570,7 @@ class MarkdownFormatHelpers:
         return f"<pre>{markdown}</pre>"
 
 
-def to_basic_markdown(trans, internal_galaxy_markdown):
+def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export.
     """
     markdown_formatting_helpers = MarkdownFormatHelpers()
@@ -566,13 +579,14 @@ def to_basic_markdown(trans, internal_galaxy_markdown):
     return plain_markdown
 
 
-def to_html(basic_markdown):
+def to_html(basic_markdown: str) -> str:
     # Allow data: urls so we can embed images.
     html = sanitize_html(markdown.markdown(basic_markdown, extensions=["tables"]), allow_data_urls=True)
     return html
 
 
-def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
+def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> bytes:
+    """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
     directory = tempfile.mkdtemp('gxmarkdown')
@@ -589,22 +603,28 @@ def to_pdf(trans, basic_markdown, css_paths=None) -> bytes:
             css = weasyprint.CSS(string=css_content)
             stylesheets.append(css)
         return html.write_pdf(stylesheets=stylesheets)
-        # font_config = FontConfiguration()
-        # stylesheets=[css], font_config=font_config
     finally:
         shutil.rmtree(directory)
 
 
+def weasyprint_available() -> bool:
+    return weasyprint is not None
+
+
 def _check_can_convert_to_pdf_or_raise():
     """Checks if the HTML to PDF converter is available."""
-    if not weasyprint:
-        raise MessageException("PDF conversion service not available.")
+    if not weasyprint_available():
+        raise ServerNotConfiguredForRequest("PDF conversion service not available.")
 
 
-def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_type) -> bytes:
+def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown: str, document_type: PdfDocumentType) -> bytes:
     _check_can_convert_to_pdf_or_raise()
     basic_markdown = to_basic_markdown(trans, internal_galaxy_markdown)
     config = trans.app.config
+    return to_branded_pdf(basic_markdown, document_type, config)
+
+
+def to_branded_pdf(basic_markdown: str, document_type: PdfDocumentType, config: GalaxyAppConfiguration) -> bytes:
     document_type_prologue = getattr(config, f"markdown_export_prologue_{document_type}s", '') or ''
     document_type_epilogue = getattr(config, f"markdown_export_epilogue_{document_type}s", '') or ''
     general_prologue = config.markdown_export_prologue or ''
@@ -613,13 +633,13 @@ def internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, document_ty
     effective_epilogue = document_type_epilogue or general_epilogue
     branded_markdown = effective_prologue + basic_markdown + effective_epilogue
     css_paths = []
-    general_css_path = trans.app.config.markdown_export_css
+    general_css_path = config.markdown_export_css
     document_type_css_path = getattr(config, f"markdown_export_css_{document_type}s", None)
     if general_css_path and os.path.exists(general_css_path):
         css_paths.append(general_css_path)
     if document_type_css_path and os.path.exists(document_type_css_path):
         css_paths.append(document_type_css_path)
-    return to_pdf(trans, branded_markdown, css_paths=css_paths)
+    return to_pdf_raw(branded_markdown, css_paths=css_paths)
 
 
 def resolve_invocation_markdown(trans, invocation, workflow_markdown):
@@ -698,6 +718,8 @@ history_dataset_collection_display(input={})
                 if group:
                     return group
 
+        target_match: Optional[Match]
+        ref_object: Optional[Any]
         if output_match:
             target_match = output_match
             name = find_non_empty_group(target_match)
@@ -715,6 +737,7 @@ history_dataset_collection_display(input={})
             target_match = None
             ref_object = None
         if ref_object:
+            assert target_match  # tell type system, this is set when ref_object is set
             if ref_object_type is None:
                 if ref_object.history_content_type == "dataset":
                     ref_object_type = "history_dataset"
@@ -768,6 +791,7 @@ def _remap_galaxy_markdown_calls(func, markdown):
 
         if matching_line:
             match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+            assert match  # already matched
             return func(match.group(1), f"{matching_line}\n")
         else:
             return (container, True)

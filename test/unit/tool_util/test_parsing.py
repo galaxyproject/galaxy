@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import unittest
 from math import isinf
+from typing import Optional
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.util import galaxy_directory
@@ -194,6 +195,8 @@ outputs:
 
 
 class BaseLoaderTestCase(unittest.TestCase):
+    source_file_name: Optional[str] = None
+    source_contents: Optional[str] = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
@@ -493,7 +496,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = list(page_source.parse_input_sources())
+        input_sources = page_source.parse_input_sources()
         assert len(input_sources) == 2
 
     def test_tests(self):

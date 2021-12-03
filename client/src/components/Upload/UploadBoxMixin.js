@@ -5,6 +5,7 @@ import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
+import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
@@ -53,6 +54,14 @@ export default {
         btnCloseTitle() {
             return this.hasCallback ? "Cancel" : "Close";
         },
+        history_id() {
+            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            if (storeId) {
+                return storeId;
+            }
+            const legacyId = this.app.currentHistory();
+            return legacyId;
+        },
     },
     methods: {
         $uploadBox() {
@@ -76,6 +85,29 @@ export default {
         uploadSelect: function () {
             this.uploadbox.select();
         },
+
+        /** Start upload process */
+        _eventStart: function () {
+            if (this.counterAnnounce == 0 || this.counterRunning > 0) {
+                return;
+            }
+            this.uploadSize = 0;
+            this.uploadCompleted = 0;
+            this.collection.each((model) => {
+                if (model.get("status") == "init") {
+                    model.set("status", "queued");
+                    this.uploadSize += model.get("file_size");
+                }
+            });
+            this.appModel.set({ percentage: 0, status: "success" });
+            this.counterRunning = this.counterAnnounce;
+
+            // package ftp files separately, and remove them from queue
+            this._uploadFtp();
+            this.uploadbox.start();
+            this._updateStateForCounters();
+        },
+
         /** Package and upload ftp files in a single request */
         _uploadFtp: function () {
             const list = [];
@@ -86,7 +118,7 @@ export default {
                 }
             });
             if (list.length > 0) {
-                const data = this.app.toFetchData(list, this.history_id);
+                const data = uploadModelsToPayload(list, this.history_id);
                 axios
                     .post(`${getAppRoot()}api/tools/fetch`, data)
                     .then((message) => {
@@ -254,8 +286,12 @@ export default {
             }
         },
         /** Create a new file */
-        _eventCreate: function () {
-            this.uploadbox.add([{ name: "New File", size: 0, mode: "new" }]);
+        _eventCreate: function (withNewFile) {
+            if (withNewFile == true) {
+                this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
+            } else if (withNewFile == false) {
+                this.uploadbox.add([{ size: 0, mode: "new" }]);
+            }
         },
         /** Pause upload process */
         _eventStop: function () {
@@ -342,9 +378,7 @@ export default {
             return models;
         },
         getRequestUrl: function (items, history_id) {
-            var data = this.app.toData(items, history_id);
-            const appRoot = getAppRoot();
-            return data.fetchRequest ? `${appRoot}api/tools/fetch` : this.app.uploadPath;
+            return `${getAppRoot()}api/tools/fetch`;
         },
     },
 };

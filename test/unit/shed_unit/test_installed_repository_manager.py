@@ -1,4 +1,5 @@
 import os
+from typing import Any, Dict
 from unittest.mock import MagicMock
 
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -9,7 +10,7 @@ from galaxy.tool_shed.util import (
     repository_util,
 )
 from galaxy.util.tool_shed import common_util
-from ..tools.test_toolbox import (
+from ..app.tools.test_toolbox import (
     BaseToolBoxTestCase,
     DEFAULT_TEST_REPO
 )
@@ -60,7 +61,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
     def _install_tool_shed_repository(self, start_status, end_status, changeset_revision):
         repository = self._setup_repository()
         repository.status = start_status
-        repo_info_dict = {
+        repo_info_dict: Dict[str, Any] = {
             'example': (
                 'description', 'github.com/repos/galaxyproject/example', changeset_revision, changeset_revision, 'galaxyproject', [], [],
             )

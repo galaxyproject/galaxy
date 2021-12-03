@@ -9,7 +9,7 @@
 
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery";
-import _ from "expose-loader?exposes[]=_&exposes[]=underscore!underscore"; // eslint-disable-line no-unused-vars
+import _ from "underscore"; // eslint-disable-line no-unused-vars
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 import { TracksterUIView } from "viz/trackster";
@@ -76,32 +76,16 @@ export { default as async_save_text } from "utils/async-save-text";
 
 // Previously "chart"
 import Client from "mvc/visualization/chart/chart-client";
-import Datasets from "mvc/visualization/chart/utilities/datasets";
-import Series from "mvc/visualization/chart/utilities/series";
-import Jobs from "mvc/visualization/chart/utilities/jobs";
-
 export function chart(options) {
     return new Client(options);
 }
 
-export const chartUtilities = {
-    Datasets: Datasets,
-    Jobs: Jobs,
-    Series: Series,
-};
-
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
-export { mountJobMetrics } from "components/JobMetrics";
-export { mountJobParameters } from "components/JobParameters";
 export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
-export { mountDestinationParams } from "components/JobDestinationParams";
-export { mountDatasetInformation } from "components/DatasetInformation";
-export { mountDatasetStorage } from "components/Dataset/DatasetStorage";
-export { mountJobInformation } from "components/JobInformation";
 
 // Used in common.mako
 export { default as store } from "storemodern";

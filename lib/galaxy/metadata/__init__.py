@@ -108,7 +108,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
                                 validate_outputs=False,
-                                object_store_conf=None, tool=None, job=None,
+                                object_store_conf=None, tool=None, job=None, link_data_only=False,
                                 kwds=None):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
@@ -157,14 +157,16 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
         # export model objects and object store configuration for extended metadata also.
         export_directory = os.path.join(metadata_dir, "outputs_new")
-        with DirectoryModelExportStore(export_directory, for_edit=True, serialize_dataset_objects=True, serialize_jobs=False) as export_store:
+        with DirectoryModelExportStore(export_directory, for_edit=True, strip_metadata_files=False, serialize_dataset_objects=True, serialize_jobs=False) as export_store:
+            export_store.export_job(job, tool=tool)
             for dataset in datasets_dict.values():
                 export_store.add_dataset(dataset)
 
             for name, dataset_collection in out_collections.items():
-                export_store.add_dataset_collection(dataset_collection)
+                export_store.export_collection(dataset_collection)
                 output_collections[name] = {
                     'id': dataset_collection.id,
+                    'model_class': dataset_collection.__class__.__name__
                 }
 
         if self.write_object_store_conf:
@@ -180,8 +182,10 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
             # setup the rest
             metadata_params["tool"] = tool_as_dict
+            metadata_params["link_data_only"] = link_data_only
             metadata_params["tool_path"] = tool.config_file
             metadata_params["job_id_tag"] = job.get_id_tag()
+            metadata_params["implicit_collection_jobs_association_id"] = job.implicit_collection_jobs_association and job.implicit_collection_jobs_association.id
             metadata_params["job_params"] = job.raw_param_dict()
             metadata_params["output_collections"] = output_collections
 

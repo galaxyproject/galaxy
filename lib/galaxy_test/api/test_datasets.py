@@ -9,6 +9,7 @@ from ._framework import ApiTestCase
 
 
 class DatasetsApiTestCase(ApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -28,15 +29,15 @@ class DatasetsApiTestCase(ApiTestCase):
         assert index_response[0]['id'] == hda_id
         hdca_id = self.dataset_collection_populator.create_list_in_history(self.history_id,
                                                                            contents=["1\n2\n3"]).json()['id']
-        payload = {'limit': 3, 'offset': 0}
-        index_response = self._get("datasets", payload).json()
+        index_payload_1 = {'limit': 3, 'offset': 0}
+        index_response = self._get("datasets", index_payload_1).json()
         assert len(index_response) == 3
         assert index_response[0]['id'] == hdca_id
         assert index_response[0]['history_content_type'] == 'dataset_collection'
         assert index_response[2]['id'] == hda_id
         assert index_response[2]['history_content_type'] == 'dataset'
-        payload = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
-        index_response = self._get("datasets", payload).json()
+        index_payload_2 = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
+        index_response = self._get("datasets", index_payload_2).json()
         assert index_response[1]['id'] == hda_id
 
     def test_search_by_tag(self):
@@ -101,6 +102,14 @@ class DatasetsApiTestCase(ApiTestCase):
         self._assert_status_code_is(show_response, 200)
         self.__assert_matches_hda(hda1, show_response.json())
 
+    def test_show_permission_denied(self):
+        hda = self.dataset_populator.new_dataset(self.history_id)
+        self.dataset_populator.make_private(history_id=self.history_id, dataset_id=hda['id'])
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is(show_response, 400)
+            assert show_response.json()['err_msg'] == 'You are not allowed to access this dataset'
+
     def __assert_matches_hda(self, input_hda, query_hda):
         self._assert_has_keys(query_hda, "id", "name")
         assert input_hda["name"] == query_hda["name"]
@@ -151,11 +160,10 @@ class DatasetsApiTestCase(ApiTestCase):
             'input1': {'src': 'hda', 'id': hda_id},
             'sleep_time': 10,
         }
-        run_response = self.dataset_populator.run_tool(
+        run_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             inputs,
             self.history_id,
-            assert_ok=False,
         )
         queued_id = run_response.json()["outputs"][0]["id"]
 

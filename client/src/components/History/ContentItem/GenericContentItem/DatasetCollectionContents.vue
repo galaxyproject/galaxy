@@ -4,8 +4,7 @@
             <DatasetProvider
                 v-if="contentItem.element_type === 'hda'"
                 :id="contentItem.object.id"
-                v-slot="{ item, loading }"
-            >
+                v-slot="{ item, loading }">
                 <div>
                     <loading-span v-if="loading" message="Loading datasets" />
                     <DatasetUIWrapper v-else :item="item" :element_identifier="contentItem.element_identifier">
@@ -15,8 +14,7 @@
             <DatasetCollectionUIWrapper
                 v-if="contentItem.element_type === 'dataset_collection'"
                 :item="contentItem"
-                :element_count="collectionContents.length + 1"
-            >
+                :element_count="collectionContents.length + 1">
             </DatasetCollectionUIWrapper>
         </div>
     </div>

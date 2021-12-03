@@ -1,9 +1,10 @@
-<tool id="sort1" name="Sort" version="1.1.0">
+<tool id="sort1" name="Sort" version="1.2.0">
     <description>data in ascending or descending order</description>
     <requirements>
-        <requirement type="package" version="2.7.13">python</requirement>
+        <requirement type="package" version="3.8">python</requirement>
         <requirement type="package" version="2.14">grep</requirement>
         <requirement type="package" version="4.4">sed</requirement>
+        <requirement type="package" version="8.31">coreutils</requirement>
     </requirements>
     <command detect_errors="exit_code">
 python '$__tool_directory__/sorter.py'

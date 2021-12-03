@@ -10,11 +10,13 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
+import glob
 import json
 import logging
 import os
 import sys
 import traceback
+from pathlib import Path
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -39,7 +41,6 @@ from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
     Job,
     store,
 )
@@ -55,7 +56,10 @@ from galaxy.tool_util.parser.stdio import (
     ToolStdioRegex,
 )
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.util import stringify_dictionary_keys
+from galaxy.util import (
+    safe_contains,
+    stringify_dictionary_keys,
+)
 from galaxy.util.expressions import ExpressionContext
 
 logging.basicConfig()
@@ -109,17 +113,31 @@ def set_metadata():
     set_metadata_portable()
 
 
+def get_metadata_params(tool_job_working_directory):
+    metadata_params_path = os.path.join(tool_job_working_directory, "metadata", "params.json")
+    try:
+        with open(metadata_params_path) as f:
+            return json.load(f)
+    except OSError:
+        raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
+
+
+def get_object_store(tool_job_working_directory):
+    object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
+    with open(object_store_conf_path) as f:
+        config_dict = json.load(f)
+    assert config_dict is not None
+    object_store = build_object_store_from_config(None, config_dict=config_dict)
+    Dataset.object_store = object_store
+    return object_store
+
+
 def set_metadata_portable():
     tool_job_working_directory = os.path.abspath(os.getcwd())
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
     MetadataTempFile.tmp_dir = metadata_tmp_files_dir
 
-    metadata_params_path = os.path.join("metadata", "params.json")
-    try:
-        with open(metadata_params_path) as f:
-            metadata_params = json.load(f)
-    except OSError:
-        raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
+    metadata_params = get_metadata_params(tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
@@ -132,10 +150,11 @@ def set_metadata_portable():
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
 
-    object_store_conf_path = os.path.join("metadata", "object_store_conf.json")
-    extended_metadata_collection = os.path.exists(object_store_conf_path)
-
-    object_store = None
+    try:
+        object_store = get_object_store(tool_job_working_directory=tool_job_working_directory)
+    except (FileNotFoundError, AssertionError):
+        object_store = None
+    extended_metadata_collection = bool(object_store)
     job_context = None
     version_string = None
 
@@ -146,12 +165,6 @@ def set_metadata_portable():
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
         stdio_regexes = list(map(ToolStdioRegex, stdio_regex_dicts))
-
-        with open(object_store_conf_path) as f:
-            config_dict = json.load(f)
-        assert config_dict is not None
-        object_store = build_object_store_from_config(None, config_dict=config_dict)
-        Dataset.object_store = object_store
 
         outputs_directory = os.path.join(tool_job_working_directory, "outputs")
         if not os.path.exists(outputs_directory):
@@ -177,6 +190,20 @@ def set_metadata_portable():
 
             with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
                 tool_stderr = f.read()
+        elif os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
+            # We have a task splitting job
+            tool_stdout = b''
+            tool_stderr = b''
+            paths = Path(tool_job_working_directory).glob('task_*')
+            for path in paths:
+                with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
+                    task_stdout = f.read()
+                    if task_stdout:
+                        tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
+                    task_stderr = f.read()
+                    if task_stderr:
+                        tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
         else:
             wdc = os.listdir(tool_job_working_directory)
             odc = os.listdir(outputs_directory)
@@ -202,12 +229,19 @@ def set_metadata_portable():
         expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
 
         # Load outputs.
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=True)
     try:
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
     except AssertionError:
         # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
         import_model_store = None
+
+    tool_script_file = os.path.join(tool_job_working_directory, 'tool_script.sh')
+    if import_model_store and export_store and os.path.exists(tool_script_file):
+        job = next(iter(import_model_store.sa_session.objects[Job].values()))
+        with open(tool_script_file) as command_fh:
+            job.command_line = command_fh.read().strip()
+            export_store.export_job(job, include_job_data=False)
 
     job_context = SessionlessJobContext(
         metadata_params,
@@ -227,8 +261,9 @@ def set_metadata_portable():
         if destination_type == 'hdas':
             for element in elements:
                 filename = element.get('filename')
-                if filename:
-                    unnamed_id_to_path[element['object_id']] = os.path.join(job_context.job_working_directory, filename)
+                object_id = element.get('object_id')
+                if filename and object_id:
+                    unnamed_id_to_path[object_id] = os.path.join(job_context.job_working_directory, filename)
 
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
@@ -254,11 +289,24 @@ def set_metadata_portable():
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
-            dataset.dataset.external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
-            store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
-            extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
-            dataset.dataset.external_extra_files_path = files_path
+            external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
+            if not os.path.exists(external_filename):
+                matches = glob.glob(external_filename)
+                assert len(matches) == 1, f"More than one file matched by output glob '{external_filename}'"
+                external_filename = matches[0]
+                assert safe_contains(tool_job_working_directory, external_filename), f"Cannot collect output '{external_filename}' from outside of working directory"
+                created_from_basename = os.path.relpath(external_filename, os.path.join(tool_job_working_directory, 'working'))
+                dataset.dataset.created_from_basename = created_from_basename
+            # override filename if we're dealing with outputs to working directory and dataset is not linked to
+            link_data_only = metadata_params.get("link_data_only")
+            if not link_data_only:
+                # Only set external filename if we're dealing with files in job working directory.
+                # Fixes link_data_only uploads
+                dataset.dataset.external_filename = external_filename
+                store_by = output_dict.get("object_store_store_by", legacy_object_store_store_by)
+                extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
+                files_path = os.path.abspath(os.path.join(tool_job_working_directory, "working", extra_files_dir_name))
+                dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
@@ -274,17 +322,21 @@ def set_metadata_portable():
                 # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                 # so skip set_meta here.
                 set_meta(dataset, file_dict)
+                if extended_metadata_collection:
+                    collect_extra_files(object_store, dataset, ".")
+                    dataset.state = dataset.dataset.state = final_job_state
 
             if extended_metadata_collection:
+                if not link_data_only and os.path.getsize(external_filename):
+                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+                    # or a remote object store from its cache path.
+                    object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+                # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
                     context = ExpressionContext(meta, expression_context)
                 else:
                     context = expression_context
-
-                # Lazy and unattached
-                # if getattr(dataset, "hidden_beneath_collection_instance", None):
-                #    dataset.visible = False
                 dataset.blurb = 'done'
                 dataset.peek = 'no peek'
                 dataset.info = (dataset.info or '')
@@ -295,26 +347,9 @@ def set_metadata_portable():
                     # Ensure white space between entries
                     dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
-                dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
-                if dataset_filename_override and dataset_filename_override != dataset.file_name:
-                    # This has to be a job with outputs_to_working_directory set.
-                    # We update the object store with the created output file.
-                    object_store.update_from_file(dataset.dataset, file_name=dataset_filename_override, create=True)
-                collect_extra_files(object_store, dataset, ".")
-                if Job.states.ERROR == final_job_state:
-                    dataset.blurb = "error"
-                    dataset.mark_unhidden()
-                else:
-                    # If the tool was expected to set the extension, attempt to retrieve it
-                    if dataset.ext == 'auto':
-                        dataset.extension = context.get('ext', 'data')
-                        dataset.init_meta(copy_from=dataset)
-
-                    # This has already been done:
-                    # else:
-                    #     self.external_output_metadata.load_metadata(dataset, output_name, self.sa_session, working_directory=self.working_directory, remote_metadata_directory=remote_metadata_directory)
+                if not final_job_state == Job.states.ERROR:
                     line_count = context.get('line_count', None)
                     try:
                         # Certain datatype's set_peek methods contain a line_count argument
@@ -322,13 +357,14 @@ def set_metadata_portable():
                     except TypeError:
                         # ... and others don't
                         dataset.set_peek()
-
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-                # We never want to persist the external_filename.
-                dataset.dataset.external_filename = None
+                # We only want to persist the external_filename if the dataset has been linked in.
+                if not link_data_only:
+                    dataset.dataset.external_filename = None
+                    dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
@@ -341,13 +377,16 @@ def set_metadata_portable():
         # discover extra outputs...
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
-            output_collections[name] = import_model_store.sa_session.query(HistoryDatasetCollectionAssociation).find(output_collection["id"])
+            # TODO: remove HistoryDatasetCollectionAssociation fallback on 22.01, model_class used to not be serialized prior to 21.09
+            model_class = output_collection.get('model_class', 'HistoryDatasetCollectionAssociation')
+            collection = import_model_store.sa_session.query(getattr(galaxy.model, model_class)).find(output_collection["id"])
+            output_collections[name] = collection
         outputs = {}
         for name, output in metadata_params["outputs"].items():
             klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
             outputs[name] = import_model_store.sa_session.query(klass).find(output["id"])
 
-        input_ext = json.loads(metadata_params["job_params"].get("__input_ext", '"data"'))
+        input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
         collect_primary_datasets(
             job_context,
             outputs,

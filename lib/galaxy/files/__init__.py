@@ -4,11 +4,13 @@ from collections import (
     defaultdict,
     namedtuple,
 )
+from typing import Set
 
 from galaxy import exceptions
 from galaxy.util import (
     plugin_config
 )
+from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
-    def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
+    def __init__(self, file_sources_config: 'ConfiguredFileSourcesConfig', conf_file=None, conf_dict=None, load_stock_plugins=False):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
         file_sources = []
@@ -146,6 +148,8 @@ class ConfiguredFileSources:
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []
         for file_source in self._file_sources:
+            if not file_source.user_has_access(user_context):
+                continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
         return rval
@@ -218,7 +222,25 @@ class ConfiguredFileSourcesConfig:
         )
 
 
-class ProvidesUserFileSourcesUserContext:
+class FileSourceDictifiable(Dictifiable):
+    dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
+
+    def to_dict(self, view='collection', value_mapper=None):
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['role_names'] = list(self.role_names)
+        rval['group_names'] = list(self.group_names)
+        return rval
+
+    @property
+    def role_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def group_names(sefl) -> Set[str]:
+        raise NotImplementedError
+
+
+class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -244,16 +266,16 @@ class ProvidesUserFileSourcesUserContext:
         return user and user.extra_preferences or defaultdict(lambda: None)
 
     @property
-    def role_names(self):
+    def role_names(self) -> Set[str]:
         """The set of role names of this user."""
         user = self.trans.user
-        return user and set([ura.role.name for ura in user.roles])
+        return {ura.role.name for ura in user.roles} if user else set()
 
     @property
-    def group_names(self):
+    def group_names(self) -> Set[str]:
         """The set of group names to which this user belongs."""
         user = self.trans.user
-        return user and set([ugr.group.name for ugr in user.groups])
+        return {ugr.group.name for ugr in user.groups} if user else set()
 
     @property
     def is_admin(self):
@@ -261,7 +283,7 @@ class ProvidesUserFileSourcesUserContext:
         return self.trans.user_is_admin
 
 
-class DictFileSourcesUserContext:
+class DictFileSourcesUserContext(FileSourceDictifiable):
 
     def __init__(self, **kwd):
         self._kwd = kwd
@@ -284,11 +306,11 @@ class DictFileSourcesUserContext:
 
     @property
     def role_names(self):
-        return self._kwd.get("role_names")
+        return set(self._kwd.get("role_names", []))
 
     @property
     def group_names(self):
-        return self._kwd.get("group_names")
+        return set(self._kwd.get("group_names", []))
 
     @property
     def is_admin(self):

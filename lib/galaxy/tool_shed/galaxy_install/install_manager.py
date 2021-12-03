@@ -515,7 +515,7 @@ class InstallRepositoryManager:
                                                   persist=True)
         irmm.generate_metadata_for_changeset_revision()
         irmm_metadata_dict = irmm.get_metadata_dict()
-        tool_shed_repository.metadata = irmm_metadata_dict
+        tool_shed_repository.metadata_ = irmm_metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
         tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository(self.app, tool_shed_repository)
         if tool_shed_status_dict:
@@ -934,7 +934,7 @@ class InstallRepositoryManager:
                                           shed_tool_conf=shed_tool_conf,
                                           reinstalling=reinstalling,
                                           tool_panel_section_mapping=tool_panel_section_mapping)
-        metadata = tool_shed_repository.metadata
+        metadata = tool_shed_repository.metadata_
         if 'tools' in metadata and install_resolver_dependencies:
             self.update_tool_shed_repository_status(tool_shed_repository,
                                                     self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
@@ -964,7 +964,7 @@ class InstallRepositoryManager:
     def update_tool_shed_repository(self, repository, tool_shed_url, latest_ctx_rev, latest_changeset_revision,
                                     install_new_dependencies=True, install_options=None):
         install_options = install_options or {}
-        original_metadata_dict = repository.metadata
+        original_metadata_dict = repository.metadata_
         original_repository_dependencies_dict = original_metadata_dict.get('repository_dependencies', {})
         original_repository_dependencies = original_repository_dependencies_dict.get('repository_dependencies', [])
         original_tool_dependencies_dict = original_metadata_dict.get('tool_dependencies', {})

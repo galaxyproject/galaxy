@@ -9,7 +9,6 @@ from galaxy.tool_util.edam_util import (
     ROOT_TOPIC,
 )
 from galaxy.util import (
-    etree,
     ExecutionTimer,
 )
 from .interface import (
@@ -66,12 +65,14 @@ class EdamToolPanelView(ToolPanelView):
 
         for tool_id, key, val, val_name in walk_loaded_tools(base_tool_panel, toolbox_registry):
             for term in self._get_edam_sec(val):
-                if term == 'uncategorized':
+                if term == 'uncategorized' or term not in self.edam:
                     uncategorized.append((tool_id, key, val, val_name))
                 else:
                     for path in self.edam[term]['path']:
                         if len(path) == 1:
                             t = term
+                        elif len(path) == 0:
+                            continue
                         else:
                             t = path[0]
 
@@ -81,34 +82,53 @@ class EdamToolPanelView(ToolPanelView):
                             topics[t][tool_id] = (term, tool_id, key, val, val_name)
 
         new_panel = ToolPanelElements()
+
+        def populate_section(term, tool_id, key, val, val_name):
+            edam_def = self.edam[term]
+            description = edam_def['definition']
+            label = edam_def['label']
+            links = {
+                'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+            }
+            section = new_panel.get_or_create_section(term, label, description=description, links=links)
+            toolbox_registry.add_tool_to_tool_panel_view(val, section)
+            new_panel.record_section_for_tool_id(tool_id, key, val_name)
+
         for term in sorted(operations.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(operations[term].keys()) == 0:
                 continue
 
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            new_panel[f"label_{term}"] = ToolSectionLabel(elem)
+            label_dict = {
+                'type': 'label',
+                'text': self.edam[term]['label'],
+                'description': self.edam[term]['definition'],
+                'links': {
+                    'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+                },
+                'id': term,
+            }
+            new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in operations[term].values():
-                section = new_panel.get_or_create_section(term, self.edam[term]['label'])
-
-                toolbox_registry.add_tool_to_tool_panel_view(val, section)
-                new_panel.record_section_for_tool_id(tool_id, key, val_name)
+                populate_section(term, tool_id, key, val, val_name)
 
         for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(topics[term].keys()) == 0:
                 continue
 
-            elem = etree.Element('label')
-            elem.attrib['text'] = self.edam[term]['label']
-            elem.attrib['id'] = term
-            new_panel[f"label_{term}"] = ToolSectionLabel(elem)
+            label_dict = {
+                'type': 'label',
+                'text': self.edam[term]['label'],
+                'description': self.edam[term]['definition'],
+                'links': {
+                    'edam_browser': f"https://edamontology.github.io/edam-browser/#{term}",
+                },
+                'id': term,
+            }
+            new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
             for (term, tool_id, key, val, val_name) in topics[term].values():
-                section = new_panel.get_or_create_section(term, self.edam[term]['label'])
-                toolbox_registry.add_tool_to_tool_panel_view(val, section)
-                new_panel.record_section_for_tool_id(tool_id, key, val_name)
+                populate_section(term, tool_id, key, val, val_name)
 
         section = new_panel.get_or_create_section('uncategorized', 'Uncategorized')
         for (tool_id, key, val, val_name) in uncategorized:
@@ -124,8 +144,7 @@ class EdamToolPanelView(ToolPanelView):
         if self.include_topics:
             edam.extend(tool.edam_topics)
         if len(edam) > 0:
-            for term in edam:
-                yield term
+            yield from edam
         else:
             yield 'uncategorized'
 

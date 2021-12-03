@@ -1,4 +1,4 @@
-__version__ = "21.9.0.dev0"
+__version__ = "22.1.0.dev0"
 
 PROJECT_NAME = "galaxy"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

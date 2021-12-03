@@ -1,7 +1,7 @@
 import logging
 import os
 import unittest
-from typing import Optional
+from typing import Any, Optional
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.env import setup_keep_outdir, target_url_parts
@@ -23,6 +23,7 @@ class FunctionalTestCase(unittest.TestCase):
     url: str
     keepOutdir: str
     test_data_resolver: TestDataResolver
+    _test_driver: Optional[Any]
 
     def setUp(self) -> None:
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)

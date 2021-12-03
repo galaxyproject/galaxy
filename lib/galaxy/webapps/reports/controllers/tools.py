@@ -52,7 +52,7 @@ class Tools(BaseUIController):
                 return f"<font color=\"red\">{returned}</font>"
             return returned
         else:
-            splited = tuple([float(_) for _ in str(date).split(':')])
+            splited = tuple(float(_) for _ in str(date).split(':'))
             if splited[0]:
                 returned = '%d h. %d min.' % splited[:2]
                 if colored:

@@ -7,8 +7,7 @@
         v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
         :title="'Edit annotation...' | localize"
         :placeholder="'Edit annotation...' | localize"
-        v-slot="{ toggleEdit, placeholder, stateValidator }"
-    >
+        v-slot="{ toggleEdit, placeholder, stateValidator }">
         <debounced-input v-model="annotation" :delay="1000" v-slot="inputScope">
             <b-form-textarea
                 size="sm"
@@ -19,8 +18,7 @@
                 @input="inputScope.input"
                 @blur="toggleEdit(false)"
                 :placeholder="placeholder"
-                :state="stateValidator(inputScope.value, annotation)"
-            ></b-form-textarea>
+                :state="stateValidator(inputScope.value, annotation)"></b-form-textarea>
         </debounced-input>
     </click-to-edit>
 </template>

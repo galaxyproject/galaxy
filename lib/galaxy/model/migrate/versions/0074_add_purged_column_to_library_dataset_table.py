@@ -26,7 +26,7 @@ def upgrade(migrate_engine):
     except Exception:
         log.exception("Setting default data for library_dataset.purged column failed.")
 
-    # Update the purged flag for those LibaryDatasets whose purged flag should be True.  This happens
+    # Update the purged flag for those LibraryDatasets whose purged flag should be True.  This happens
     # when the LibraryDataset has no active LibraryDatasetDatasetAssociations.
     cmd = f"SELECT * FROM library_dataset WHERE deleted = {engine_true(migrate_engine)};"
     deleted_lds = migrate_engine.execute(cmd).fetchall()

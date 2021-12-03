@@ -95,8 +95,6 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         self.userid = None
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
 
     def url_to_destination(self, url):
@@ -158,7 +156,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # fill in the DRM's job run template
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception(f"({galaxy_id_tag}) failure writing job script")

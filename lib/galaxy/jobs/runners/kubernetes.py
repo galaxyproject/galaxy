@@ -91,7 +91,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             kwargs['runner_param_specs'] = dict()
         kwargs['runner_param_specs'].update(runner_param_specs)
 
-        """Start the job runner parent object """
+        # Start the job runner parent object
         super().__init__(app, nworkers, **kwargs)
 
         self._pykube_api = pykube_client_from_dict(self.runner_params)
@@ -103,8 +103,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.setup_volumes()
 
     def setup_volumes(self):
@@ -112,7 +110,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
         else:
             volume_claims = {}
-        mountable_volumes = list(set([claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims]))
+        mountable_volumes = list({claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims})
         mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
         volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
@@ -144,20 +142,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell, galaxy_virtual_env=None)
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception(f"({job_wrapper.get_id_tag()}) failure writing job script")
             return
 
         # Construction of Kubernetes objects follow: https://kubernetes.io/docs/concepts/workloads/controllers/job/
-        if self.__is_interactive_tool(ajs):
+        if self.__has_guest_ports(job_wrapper):
             try:
-                self.__configure_interactive_tool_services(ajs)
+                self.__configure_port_routing(ajs)
             except HTTPError:
-                log.exception("Kubernetes failed to create interactive tool services, HTTP exception encountered")
+                log.exception("Kubernetes failed to expose tool ports as services, HTTP exception encountered")
                 ajs.runner_state = JobState.runner_states.UNKNOWN_ERROR
-                ajs.fail_message = "Kubernetes failed to create interactive tool services."
+                ajs.fail_message = "Kubernetes failed to export tool ports as services."
                 self.mark_as_failed(ajs)
                 return
 
@@ -191,10 +189,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_wrapper.set_external_id(job_id)
         self.monitor_queue.put(ajs)
 
-    def __is_interactive_tool(self, ajs):
-        return bool(ajs.job_wrapper.guest_ports)
+    def __has_guest_ports(self, job_wrapper):
+        return bool(job_wrapper.guest_ports)
 
-    def __configure_interactive_tool_services(self, ajs):
+    def __configure_port_routing(self, ajs):
         # Configure interactive tool entry points first
         guest_ports = ajs.job_wrapper.guest_ports
         ports_dict = {}
@@ -202,7 +200,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             ports_dict[str(guest_port)] = dict(host='manual', port=guest_port, protocol="https")
         self.app.interactivetool_manager.configure_entry_points(ajs.job_wrapper.get_job(), ports_dict)
 
-        # Configure additional k8s service and ingress for interactive tool
+        # Configure additional k8s service and ingress for tools with guest ports
         k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_name = self.__get_k8s_job_name(k8s_job_prefix, ajs.job_wrapper)
         log.debug(f'Configuring entry points and deploying service/ingress for job with ID {ajs.job_id}')
@@ -368,7 +366,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 }
             },
             "spec": {
-                "ports": [{"name": "job-{}-{}".format(self.__force_label_conformity(ajs.job_wrapper.get_id_tag()), p),
+                "ports": [{"name": f"job-{self.__force_label_conformity(ajs.job_wrapper.get_id_tag())}-{p}",
                            "port": int(p),
                            "protocol": "TCP",
                            "targetPort": int(p)} for p in guest_ports],
@@ -428,7 +426,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             }
         }
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
-            domains = list(set([e["domain"] for e in entry_points]))
+            domains = list({e["domain"] for e in entry_points})
             k8s_spec_template["spec"]["tls"] = [{"hosts": [domain],
                                                  "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains]
         if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
@@ -500,7 +498,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             extra_envs = yaml.safe_load(self.__get_overridable_params(ajs.job_wrapper, 'k8s_extra_job_envs') or "{}")
             for key in extra_envs:
                 envs.append({'name': key, 'value': extra_envs[key]})
-            if self.__is_interactive_tool(ajs):
+            if self.__has_guest_ports(ajs.job_wrapper):
                 configured_eps = [ep for ep in ajs.job_wrapper.get_job().interactivetool_entry_points if ep.configured]
                 for entry_point in configured_eps:
                     # sending in self.app as `trans` since it's only used for `.security` so seems to work
@@ -725,8 +723,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if job_state.job_wrapper.guest_ports:
-                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
+            if self.__has_guest_ports(job_state.job_wrapper):
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
             log.exception("Could not clean up k8s batch job. Ignoring...")
@@ -749,8 +747,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_state.running = False
         self.mark_as_failed(job_state)
         try:
-            if job_state.job_wrapper.guest_ports:
-                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
+            if self.__has_guest_ports(job_state.job_wrapper):
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)
         except Exception:
             log.exception("Could not clean up k8s batch job. Ignoring...")
@@ -809,9 +807,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         pod = Pod(self._pykube_api, pods.response['items'][0])
         return is_pod_unschedulable(self._pykube_api, pod, self.runner_params['k8s_namespace'])
 
-    def __cleanup_k8s_interactivetools(self, job_wrapper, k8s_job):
+    def __cleanup_k8s_guest_ports(self, job_wrapper, k8s_job):
         k8s_job_prefix = self.__produce_k8s_job_prefix()
-        k8s_job_name = "{}-{}".format(k8s_job_prefix, self.__force_label_conformity(job_wrapper.get_id_tag()))
+        k8s_job_name = f"{k8s_job_prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
         log.debug(f'Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}')
         job_failed = (k8s_job.obj['status']['failed'] > 0
                       if 'failed' in k8s_job.obj['status'] else False)
@@ -831,8 +829,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_to_delete = find_job_object_by_name(self._pykube_api, job.get_job_runner_external_id(), self.runner_params['k8s_namespace'])
             if job_to_delete and len(job_to_delete.response['items']) > 0:
                 k8s_job = Job(self._pykube_api, job_to_delete.response['items'][0])
-                if job_wrapper.guest_ports:
-                    self.__cleanup_k8s_interactivetools(job_wrapper, k8s_job)
+                if self.__has_guest_ports(job_wrapper):
+                    self.__cleanup_k8s_guest_ports(job_wrapper, k8s_job)
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
@@ -878,6 +876,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)
         else:
             job = Job(self._pykube_api, jobs.response['items'][0])
-            if job_state.job_wrapper.guest_ports:
-                self.__cleanup_k8s_interactivetools(job_state.job_wrapper, job)
+            if self.__has_guest_ports(job_state.job_wrapper):
+                self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
             self.__cleanup_k8s_job(job)

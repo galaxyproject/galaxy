@@ -39,8 +39,6 @@ import string
 from json import dumps
 from typing import Callable, List, Optional
 
-from sqlalchemy.orm.scoping import scoped_session
-
 from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model import (
     Dataset,
@@ -49,6 +47,7 @@ from galaxy.model import (
     Role,
 )
 from galaxy.model.base import ModelMapping
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
@@ -136,10 +135,10 @@ class ProvidesAppContext:
             self.sa_session.flush()
 
     @property
-    def sa_session(self) -> scoped_session:
+    def sa_session(self) -> galaxy_scoped_session:
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: sqlalchemy.orm.scoping.scoped_session
+        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
         """
         return self.app.model.session
 
@@ -213,6 +212,11 @@ class ProvidesUserContext(ProvidesAppContext):
     @property
     def user_is_admin(self) -> bool:
         return self.app.config.is_admin_user(self.user)
+
+    @property
+    def user_is_bootstrap_admin(self) -> bool:
+        """Master key provided so there is no real user"""
+        return not self.anonymous and self.user.bootstrap_admin_user
 
     @property
     def user_can_do_run_as(self) -> bool:

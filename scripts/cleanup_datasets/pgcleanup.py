@@ -218,7 +218,7 @@ class Action:
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
                     secondaries = ', '.join('%s: %s' % x for x in zip(causal[1:], r[1:]))
-                    self.log.info('{} {} caused {}'.format(causal[0], r[0], secondaries))
+                    self.log.info(f'{causal[0]} {r[0]} caused {secondaries}')
 
     def handle_results(self, cur):
         results = {}

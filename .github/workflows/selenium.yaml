@@ -1,13 +1,20 @@
 name: Selenium tests
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+env:
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
+  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
   group: selenium-${{ github.ref }}
   cancel-in-progress: true
-env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR: 'true'
-  GALAXY_TEST_SELENIUM_RETRIES: 1
-  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
   test:
     name: Test
@@ -33,11 +40,20 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
@@ -49,4 +65,9 @@ jobs:
         if: failure()
         with:
           name: Selenium test results (${{ matrix.python-version }}, ${{ matrix.chunk }})
+          path: 'galaxy root/run_selenium_tests.html'
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: Selenium debug info (${{ matrix.python-version }}, ${{ matrix.chunk }})
           path: 'galaxy root/database/test_errors'

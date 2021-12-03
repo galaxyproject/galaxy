@@ -13,8 +13,6 @@
         </params>
     </xml>
     <xml name="specs">
-        <use_panels>optional</use_panels>
-        <zoomable>true</zoomable>
         <exports>
             <exports>png</exports>
         </exports>
@@ -57,6 +55,7 @@
             <label>X-Axis grid</label>
             <help>Would you like to show grid lines for the X axis?</help>
             <type>boolean</type>
+            <value>false</value>
         </input>
         <input>
             <name>x_axis_type</name>
@@ -240,6 +239,7 @@
             <label>Y-Axis grid</label>
             <help>Would you like to show grid lines for the Y axis?</help>
             <type>boolean</type>
+            <value>false</value>
         </input>
         <input>
             <name>y_axis_type</name>
@@ -416,6 +416,13 @@
             <help>Would you like to add a legend?</help>
             <type>boolean</type>
             <value>true</value>
+        </input>
+        <input>
+            <name>__use_panels</name>
+            <label>Use multi-panels</label>
+            <help>Would you like to separate your data into individual panels?</help>
+            <type>boolean</type>
+            <value>false</value>
         </input>
     </xml>
 </macros>

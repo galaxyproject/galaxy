@@ -8,15 +8,18 @@ import contextlib
 import random
 import string
 import time
+from abc import abstractmethod
 from functools import partial, wraps
+from typing import cast, Union
 
 import requests
 import yaml
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webdriver import WebDriver
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import sizzle
-from .components import Component
+from .components import Component, HasText
 from .data import (
     load_root_component,
 )
@@ -33,6 +36,8 @@ DEFAULT_PASSWORD = '123456'
 
 RETRY_DURING_TRANSITIONS_SLEEP_DEFAULT = .1
 RETRY_DURING_TRANSITIONS_ATTEMPTS_DEFAULT = 10
+
+GALAXY_MAIN_FRAME_ID = "galaxy_main"
 
 WaitType = collections.namedtuple("WaitType", ["name", "default_length"])
 
@@ -147,13 +152,21 @@ class NavigatesGalaxy(HasDriver):
     class. For instance, the method for clicking an option in the workflow editor is
     workflow_editor_click_option instead of click_workflow_editor_option.
     """
+    timeout_multiplier: float
+    driver: WebDriver
+
+    @abstractmethod
+    def build_url(self, url: str, for_selenium: bool = True) -> str:
+        """Build URL to the target Galaxy."""
+
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
     # set to True to reload each invocation (good for interactive test building)
     _interactive_components: bool = False
     _root_component: Component = load_root_component()
 
-    def get(self, url=""):
+    def get(self, url: str = ""):
+        """Expand supplied relative URL and navigate to page using Selenium driver."""
         full_url = self.build_url(url)
         return self.driver.get(full_url)
 
@@ -165,41 +178,55 @@ class NavigatesGalaxy(HasDriver):
             return self._root_component
 
     @property
-    def components(self):
+    def components(self) -> SmartComponent:
+        """Fetch root component describing the Galaxy DOM."""
         return SmartComponent(self.navigation, self)
 
-    def wait_length(self, wait_type):
+    def wait_length(self, wait_type: WaitType) -> float:
+        """Return the wait time specified by wait_type after applying `timeout_multipler`.
+
+        `timeout_multiplier` is used in production CI tests to reduce transient failures
+        in a uniform way across test suites to expand waiting.
+        """
         return wait_type.default_length * self.timeout_multiplier
 
-    def sleep_for(self, wait_type):
+    def sleep_for(self, wait_type: WaitType) -> None:
+        """Sleep on the Python client side for the specified wait_type.
+
+        This method uses `wait_length` to apply any `timeout_multiplier`.
+        """
         self.sleep_for_seconds(self.wait_length(wait_type))
 
-    def sleep_for_seconds(self, duration):
+    def sleep_for_seconds(self, duration: float) -> None:
+        """Sleep in the local thread for specified number of seconds.
+
+        Ideally, we would be sleeping on the Selenium server instead of in the local client
+        (e.g. test) thread.
+        """
         time.sleep(duration)
 
-    def timeout_for(self, **kwds):
-        wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
+    def timeout_for(self, wait_type: WaitType = DEFAULT_WAIT_TYPE, **kwd) -> float:
         return self.wait_length(wait_type)
 
-    def home(self):
+    def home(self) -> None:
+        """Return to root Galaxy page and wait for some basic widgets to appear."""
         self.get()
-        self.wait_for_visible(self.navigation.masthead.selector)
-        if not self.is_beta_history():
-            self.wait_for_visible(self.navigation.history_panel.selector)
+        self.components.masthead._.wait_for_visible()
 
-    def trs_search(self):
+    def trs_search(self) -> None:
         self.driver.get(self.build_url('workflows/trs_search'))
-        self.wait_for_visible(self.navigation.masthead.selector)
+        self.components.masthead._.wait_for_visible()
 
-    def trs_by_id(self):
+    def trs_by_id(self) -> None:
         self.driver.get(self.build_url('workflows/trs_import'))
-        self.wait_for_visible(self.navigation.masthead.selector)
+        self.components.masthead._.wait_for_visible()
 
     def switch_to_main_panel(self):
-        self.driver.switch_to.frame("galaxy_main")
+        self.driver.switch_to.frame(GALAXY_MAIN_FRAME_ID)
 
     @contextlib.contextmanager
-    def local_storage(self, key, value):
+    def local_storage(self, key: str, value: Union[float, str]):
+        """Method decorator to modify localStorage for the scope of the supplied context."""
         self.driver.execute_script(f'''window.localStorage.setItem("{key}", {value});''')
         try:
             yield
@@ -208,6 +235,7 @@ class NavigatesGalaxy(HasDriver):
 
     @contextlib.contextmanager
     def main_panel(self):
+        """Decorator to operate within the context of Galaxy's main frame."""
         try:
             self.switch_to_main_panel()
             yield
@@ -337,7 +365,7 @@ class NavigatesGalaxy(HasDriver):
 
         def history_has_hid(driver):
             hids = get_hids()
-            return any([h == hid for h in hids])
+            return any(h == hid for h in hids)
 
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         try:
@@ -548,15 +576,15 @@ class NavigatesGalaxy(HasDriver):
             # Make sure the user menu was dropped down
             user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.components.masthead.user_email.wait_for_visible()
+                username_element = self.components.masthead.username.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
                 message = f"Failed to find logged in message in menu items {', '.join(menu_text)}"
                 raise self.prepend_timeout_message(e, message)
 
-            text = user_email_element.text
-            assert email in text
+            text = username_element.text
+            assert username in text
             assert self.get_logged_in_user()["email"] == email
 
             # clicking away no longer closes menu post Masthead -> VueJS
@@ -1033,7 +1061,6 @@ class NavigatesGalaxy(HasDriver):
         search_box.send_keys(text)
         value = search_box.get_attribute("value")
         assert value == text, value
-        self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
@@ -1312,7 +1339,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_click_copy_elements(self):
         if self.is_beta_history():
-            self.use_bootstrap_dropdown(option="copy datasets", menu="new content menu")
+            self.use_bootstrap_dropdown(option="copy datasets", menu="history action menu")
         else:
             self.click_history_option("Copy Datasets")
 
@@ -1370,10 +1397,11 @@ class NavigatesGalaxy(HasDriver):
         return editable_text_input_element
 
     def history_panel_name_input(self):
-        if self.is_beta_history():
-            editable_text_input_element = self.beta_history_element("name input").wait_for_visible()
-        else:
+        if not self.is_beta_history():
             editable_text_input_element = self.history_panel_click_to_rename()
+        history_panel = self.components.history_panel
+        edit = history_panel.name_edit_input
+        editable_text_input_element = edit.wait_for_visible()
         return editable_text_input_element
 
     def history_panel_click_to_rename(self):
@@ -1432,6 +1460,17 @@ class NavigatesGalaxy(HasDriver):
         dataset_selector = next_level_element_selector.descendant(".dataset")
         self.wait_for_and_click(dataset_selector)
 
+    def history_panel_item_view_dataset_details(self, hid):
+        if not self.is_beta_history():
+            self.history_panel_ensure_showing_item_details(hid)
+            self.hda_click_details(hid)
+            self.components.dataset_details._.wait_for_visible()
+        else:
+            item = self.history_panel_item_component(hid=hid)
+            item.dataset_operations_dropdown.wait_for_and_click()
+            item.info_button.wait_for_and_click()
+            self.components.dataset_details._.wait_for_visible()
+
     def history_panel_item_click_visualization_menu(self, hid):
         viz_button_selector = f"{self.history_panel_item_selector(hid)} .visualizations-dropdown"
         self.wait_for_and_click_selector(viz_button_selector)
@@ -1482,11 +1521,14 @@ class NavigatesGalaxy(HasDriver):
             details_component.wait_for_visible()
         return details_component
 
-    def hda_click_primary_action_button(self, hid, button_key):
-        item_component = self.history_panel_click_item_title(hid=hid, wait=True)
-        item_component.primary_action_buttons.wait_for_visible()
+    def hda_click_primary_action_button(self, hid: int, button_key: str):
+        self.history_panel_ensure_showing_item_details(hid)
+        item_component = self.history_panel_item_component(hid=hid)
         button_component = item_component[f"{button_key}_button"]
         button_component.wait_for_and_click()
+
+    def hda_click_details(self, hid: int):
+        self.hda_click_primary_action_button(hid, "info")
 
     def history_panel_click_item_title(self, hid, **kwds):
         item_component = self.history_panel_item_component(hid=hid)
@@ -1631,24 +1673,36 @@ class NavigatesGalaxy(HasDriver):
         """
         return self.assert_absent_or_hidden(selector)
 
-    def assert_tooltip_text(self, element, expected, sleep=0, click_away=True):
+    def assert_tooltip_text(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
         if hasattr(expected, "text"):
-            expected = expected.text
+            expected = cast(HasText, expected).text
         text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
         assert text == expected, f"Tooltip text [{text}] was not expected text [{expected}]."
 
+    def assert_tooltip_text_contains(self, element, expected: Union[str, HasText], sleep: int = 0, click_away: bool = True):
+        if hasattr(expected, "text"):
+            expected = cast(HasText, expected).text
+        text = self.get_tooltip_text(element, sleep=sleep, click_away=click_away)
+        assert expected in text, f"Tooltip text [{text}] was not expected text [{expected}]."
+
     def assert_error_message(self, contains=None):
-        element = self.components._.messages["error"]
-        return self.assert_message(element, contains=contains)
+        self.components._.messages.error.wait_for_visible()
+        elements = self.find_elements(self.components._.messages.selectors.error)
+        return self.assert_message(elements, contains=contains)
 
     def assert_warning_message(self, contains=None):
         element = self.components._.messages["warning"]
         return self.assert_message(element, contains=contains)
 
     def assert_message(self, element, contains=None):
-        element = element.wait_for_visible()
-        assert element, "No error message found, one expected."
         if contains is not None:
+
+            if type(element) == list:
+                assert any(contains in el.text for el in element), \
+                    f"{contains} was not found in {[el.text for el in element]}"
+                return
+
+            element = element.wait_for_visible()
             text = element.text
             if contains not in text:
                 message = f"Text [{contains}] expected inside of [{text}] but not found."

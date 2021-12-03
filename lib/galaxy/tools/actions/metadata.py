@@ -120,11 +120,6 @@ class SetMetadataToolAction(ToolAction):
         job.state = start_job_state  # job inputs have been configured, restore initial job state
         sa_session.flush()
 
-        # Queue the job for execution
-        app.job_manager.enqueue(job, tool=tool)
-        # FIXME: need to add event logging to app and log events there rather than trans.
-        # trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 

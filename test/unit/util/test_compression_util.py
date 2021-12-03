@@ -45,6 +45,7 @@ class CompressionUtilTestCase(unittest.TestCase):
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def assert_format_detected(self, path, expected_fmt, allowed_fmts=None):
+        expected_type: type
         for mode in ['r', 'rb', 'rt', 'U']:
             if 'b' in mode:
                 expected_type = bytes

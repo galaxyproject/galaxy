@@ -1,5 +1,4 @@
 /** This class renders the chart configuration form. */
-import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import { visitInputs } from "components/Form/utilities";
@@ -18,20 +17,8 @@ export default Backbone.View.extend({
     render: function () {
         var self = this;
         var inputs = Utils.clone(this.chart.plugin.settings) || [];
-        var panel_option = this.chart.plugin.specs.use_panels;
-        if (panel_option == "optional") {
-            inputs.push({
-                name: "__use_panels",
-                type: "boolean",
-                label: "Use multi-panels",
-                help: "Would you like to separate your data into individual panels?",
-                value: false,
-            });
-        } else {
-            this.chart.settings.set("__use_panels", panel_option == "yes" ? "true" : "false");
-        }
         this.$el.empty();
-        if (_.size(inputs) > 0) {
+        if (inputs.length > 0) {
             visitInputs(inputs, function (input, name) {
                 var model_value = self.chart.settings.get(name);
                 if (model_value !== undefined && !input.hidden) {

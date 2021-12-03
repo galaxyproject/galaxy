@@ -298,7 +298,7 @@ function perform_stable_merge() {
         log_exec git merge -m "Merge branch 'release_${RELEASE_CURR}' into '${STABLE_BRANCH}'" "__release_${RELEASE_CURR}"
         PUSH_BRANCHES+=("__stable:${STABLE_BRANCH}")
     else
-        log "Release '${RELEASE_CURR}' < stable branch release '${stable}', skipping merge to to '${STABLE_BRANCH}'"
+        log "Release '${RELEASE_CURR}' < stable branch release '${stable}', skipping merge to '${STABLE_BRANCH}'"
     fi
     git checkout "$branch_curr"
 }

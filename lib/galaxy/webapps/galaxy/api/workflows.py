@@ -50,7 +50,7 @@ from galaxy.webapps.base.controller import (
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
-from galaxy.workflow.run import invoke, queue_invoke
+from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 from . import BaseGalaxyAPIController
 
@@ -263,37 +263,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         POST /api/workflows
 
-        Run or create workflows from the api.
+        Create workflows in various ways.
 
-        .. tip:: When executing a workflow externally (e.g. from a script) it is
-            recommended to use the :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.invoke` method below instead.
-
-        If installed_repository_file or from_history_id is specified a new
-        workflow will be created for this user. Otherwise, workflow_id must be
-        specified and this API method will cause a workflow to execute.
-
-        :param  installed_repository_file    The path of a workflow to import. Either workflow_id, installed_repository_file or from_history_id must be specified
-        :type   installed_repository_file    str
-
-        :param  workflow_id:                 An existing workflow id. Either workflow_id, installed_repository_file or from_history_id must be specified
-        :type   workflow_id:                 str
-
-        :param  parameters:                  If workflow_id is set - see _step_parameters() in lib/galaxy/workflow/run_request.py
-        :type   parameters:                  dict
-
-        :param  ds_map:                      If workflow_id is set - a dictionary mapping each input step id to a dictionary with 2 keys: 'src' (which can be 'ldda', 'ld' or 'hda') and 'id' (which should be the id of a LibraryDatasetDatasetAssociation, LibraryDataset or HistoryDatasetAssociation respectively)
-        :type   ds_map:                      dict
-
-        :param  no_add_to_history:           If workflow_id is set - if present in the payload with any value, the input datasets will not be added to the selected history
-        :type   no_add_to_history:           str
-
-        :param  history:                     If workflow_id is set - optional history where to run the workflow, either the name of a new history or "hist_id=HIST_ID" where HIST_ID is the id of an existing history. If not specified, the workflow will be run a new unnamed history
-        :type   history:                     str
-
-        :param  replacement_params:          If workflow_id is set - an optional dictionary used when renaming datasets
-        :type   replacement_params:          dict
-
-        :param  from_history_id:             Id of history to extract a workflow from. Either workflow_id, installed_repository_file or from_history_id must be specified
+        :param  from_history_id:             Id of history to extract a workflow from.
         :type   from_history_id:             str
 
         :param  job_ids:                     If from_history_id is set - optional list of jobs to include when extracting a workflow from history
@@ -308,22 +280,17 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  workflow_name:               If from_history_id is set - name of the workflow to create when extracting a workflow from history
         :type   workflow_name:               str
 
-        :param  allow_tool_state_corrections:  If set to True, any Tool parameter changes will not prevent running workflow, defaults to False
-        :type   allow_tool_state_corrections:  bool
-
-        :param use_cached_job:               If set to True galaxy will attempt to find previously executed steps for all workflow steps with the exact same parameter combinations
-                                             and will copy the outputs of the previously executed step.
-
         """
         ways_to_create = {
             'archive_source',
-            'workflow_id',
-            'installed_repository_file',
             'from_history_id',
             'from_path',
             'shared_workflow_id',
             'workflow',
         }
+
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create or run workflows.")
 
         if payload is None or len(ways_to_create.intersection(payload)) == 0:
             message = f"One parameter among - {', '.join(ways_to_create)} - must be specified"
@@ -332,19 +299,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if len(ways_to_create.intersection(payload)) > 1:
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
-
-        if 'installed_repository_file' in payload:
-            if not trans.user_is_admin:
-                raise exceptions.AdminRequiredException()
-            installed_repository_file = payload.get('installed_repository_file', '')
-            if not os.path.exists(installed_repository_file):
-                raise exceptions.RequestParameterInvalidException(f"Workflow file '{installed_repository_file}' not found")
-            elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                with open(installed_repository_file, encoding='utf-8') as f:
-                    workflow_data = f.read()
-                return self.__api_import_from_archive(trans, workflow_data, payload=payload)
-            else:
-                raise exceptions.MessageException("You attempted to open an empty file.")
 
         if 'archive_source' in payload:
             archive_source = payload['archive_source']
@@ -416,48 +370,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if 'workflow' in payload:
             return self.__api_import_new_workflow(trans, payload, **kwd)
 
-        workflow_id = payload.get('workflow_id', None)
-        if not workflow_id:
-            message = "Invalid workflow_id specified."
-            raise exceptions.RequestParameterInvalidException(message)
-
-        # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
-        workflow = stored_workflow.latest_workflow
-
-        run_configs = build_workflow_run_configs(trans, workflow, payload)
-        assert len(run_configs) == 1
-        run_config = run_configs[0]
-        history = run_config.target_history
-
-        # invoke may throw MessageExceptions on tool erors, failure
-        # to match up inputs, etc...
-        outputs, invocation = invoke(
-            trans=trans,
-            workflow=workflow,
-            workflow_run_config=run_config,
-            populate_state=True,
-        )
-        trans.sa_session.flush()
-
-        # Build legacy output - should probably include more information from
-        # outputs.
-        rval = {}
-        rval['history'] = trans.security.encode_id(history.id)
-        rval['outputs'] = []
-        if outputs:
-            # Newer outputs don't necessarily fill outputs (?)
-            for step in workflow.steps:
-                if step.type == 'tool' or step.type is None:
-                    for v in outputs[step.id].values():
-                        rval['outputs'].append(trans.security.encode_id(v.id))
-
-        # Newer version of this API just returns the invocation as a dict, to
-        # facilitate migration - produce the newer style response and blend in
-        # the older information.
-        invocation_response = self.__encode_invocation(invocation, **kwd)
-        invocation_response.update(rval)
-        return invocation_response
+        # This was already raised above, but just in case...
+        raise exceptions.RequestParameterMissingException("No method for workflow creation supplied.")
 
     @expose_api_raw_anonymous_and_sessionless
     def workflow_dict(self, trans: GalaxyWebTransaction, workflow_id, **kwd):
@@ -625,9 +539,11 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
             if 'menu_entry' in workflow_dict or 'show_in_tool_panel' in workflow_dict:
                 if workflow_dict.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
-                    menuEntry = model.StoredWorkflowMenuEntry()
-                    menuEntry.stored_workflow = stored_workflow
-                    trans.user.stored_workflow_menu_entries.append(menuEntry)
+                    workflow_ids = [wf.stored_workflow_id for wf in trans.user.stored_workflow_menu_entries]
+                    if trans.security.decode_id(id) not in workflow_ids:
+                        menuEntry = model.StoredWorkflowMenuEntry()
+                        menuEntry.stored_workflow = stored_workflow
+                        trans.user.stored_workflow_menu_entries.append(menuEntry)
                 else:
                     # remove if in list
                     entries = {x.stored_workflow_id: x for x in trans.user.stored_workflow_menu_entries}
@@ -835,8 +751,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
         tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
-        if not all([self.app.toolbox.has_tool(tool_id) for tool_id in tool_ids]):
-            raise exceptions.MessageException("Workflow was not invoked; some required tools are not installed.")
+        missing_tool_ids = [tool_id for tool_id in tool_ids if not self.app.toolbox.has_tool(tool_id)]
+        if missing_tool_ids:
+            raise exceptions.MessageException(f"Workflow was not invoked; the following required tools are not installed: {', '.join(missing_tool_ids)}")
 
         invocations = []
         for run_config in run_configs:

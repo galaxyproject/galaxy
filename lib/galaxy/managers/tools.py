@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import sql
@@ -6,10 +7,13 @@ from sqlalchemy import sql
 from galaxy import exceptions
 from galaxy import model
 from galaxy.exceptions import DuplicatedIdentifierException
-from .base import ModelManager
+from .base import ModelManager, raise_filter_err
 from .executables import artifact_class
 
 log = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from galaxy.managers.base import OrmFilterParsersType
 
 
 class DynamicToolManager(ModelManager):
@@ -73,7 +77,7 @@ class DynamicToolManager(ModelManager):
             tool_version = representation.get("version", None)
             value = representation
         else:
-            raise Exception("Unknown tool type encountered.")
+            raise Exception(f"Unknown tool format [{tool_format}] encountered.")
         # TODO: enforce via DB constraint and catch appropriate
         # exception.
         existing_tool = self.get_tool_by_uuid(uuid)
@@ -103,6 +107,7 @@ class DynamicToolManager(ModelManager):
 
 
 class ToolFilterMixin:
+    orm_filter_parsers: "OrmFilterParsersType"
 
     def create_tool_filter(self, attr, op, val):
 
@@ -112,7 +117,7 @@ class ToolFilterMixin:
             elif op == 'contains':
                 cond = model.Job.table.c.tool_id.contains(val, autoescape=True)
             else:
-                self.raise_filter_err(attr, op, val, 'bad op in filter')
+                raise_filter_err(attr, op, val, 'bad op in filter')
             if model_class is model.HistoryDatasetAssociation:
                 return sql.expression.and_(
                     model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,

@@ -10,8 +10,7 @@
                     title="Download Dataset"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
@@ -21,9 +20,32 @@
                     title="Import Dataset"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-file-import" />
+                </b-button>
+                <b-button
+                    v-if="expanded"
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Collapse"
+                    type="button"
+                    class="py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onExpand">
+                    <span class="fa fa-angle-double-up" />
+                </b-button>
+                <b-button
+                    v-else
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Expand"
+                    type="button"
+                    class="py-0 px-1"
+                    v-b-tooltip.hover
+                    @click="onExpand">
+                    <span class="fa fa-angle-double-down" />
                 </b-button>
             </span>
             <span>
@@ -35,7 +57,7 @@
             <UrlDataProvider :url="itemUrl" v-slot="{ result: itemContent, loading, error }">
                 <LoadingSpan v-if="loading" message="Loading Dataset" />
                 <div v-else-if="error">{{ error }}</div>
-                <div v-else class="embedded-dataset content-height">
+                <div v-else :class="contentClass">
                     <UrlDataProvider :url="datatypesUrl" v-slot="{ result: datatypesModel, loading: datatypesLoading }">
                         <LoadingSpan v-if="datatypesLoading" message="Loading Datatypes" />
                         <div v-else>
@@ -43,14 +65,12 @@
                                 v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
                                 type="iframe"
                                 aspect="16by9"
-                                :src="displayUrl"
-                            />
+                                :src="displayUrl" />
                             <div v-else-if="itemContent.item_data">
                                 <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
                                     <UrlDataProvider
                                         :url="metaUrl"
-                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                                    >
+                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }">
                                         <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
                                         <div v-else-if="metaError">{{ metaError }}</div>
                                         <b-table
@@ -58,8 +78,7 @@
                                             striped
                                             hover
                                             :fields="getFields(metaData)"
-                                            :items="getItems(itemContent.item_data, metaData)"
-                                        />
+                                            :items="getItems(itemContent.item_data, metaData)" />
                                     </UrlDataProvider>
                                 </div>
                                 <pre v-else>
@@ -101,7 +120,19 @@ export default {
             default: false,
         },
     },
+    data() {
+        return {
+            expanded: false,
+        };
+    },
     computed: {
+        contentClass() {
+            if (this.expanded) {
+                return "embedded-dataset-expanded";
+            } else {
+                return "embedded-dataset";
+            }
+        },
         datasetType() {
             const dataset = this.datasets[this.args.history_dataset_id];
             return dataset.ext;
@@ -171,11 +202,19 @@ export default {
             });
             return tableData;
         },
+        onExpand() {
+            this.expanded = !this.expanded;
+        },
     },
 };
 </script>
 <style scoped>
-.content-height {
+.embedded-dataset {
     max-height: 20rem;
+    overflow-y: auto;
+}
+.embedded-dataset-expanded {
+    max-height: 40rem;
+    overflow-y: auto;
 }
 </style>

@@ -15,8 +15,7 @@
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
-                :is-all-selected-mode="isAllSelectedMode"
-            />
+                :is-all-selected-mode="isAllSelectedMode" />
 
             <b-table
                 id="folder_list_body"
@@ -30,8 +29,7 @@
                 no-select-on-click
                 @row-clicked="onRowClick"
                 ref="folder_content_table"
-                show-empty
-            >
+                show-empty>
                 <template v-slot:empty>
                     <div v-if="isBusy" class="text-center my-2">
                         <b-spinner class="align-middle"></b-spinner>
@@ -52,24 +50,21 @@
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        icon="minus-square"
-                    />
+                        icon="minus-square" />
                     <font-awesome-icon
                         v-else
                         @click="toggleSelect"
                         class="select-checkbox cursor-pointer"
                         size="lg"
                         title="Check to select all datasets"
-                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']"
-                    />
+                        :icon="isAllSelectedOnPage() ? ['far', 'check-square'] : ['far', 'square']" />
                 </template>
                 <template v-slot:cell(selected)="row">
                     <font-awesome-icon
                         class="select-checkbox lib-folder-checkbox"
                         size="lg"
                         v-if="!row.item.isNewFolder && !row.item.deleted"
-                        :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']"
-                    />
+                        :icon="row.rowSelected ? ['far', 'check-square'] : ['far', 'square']" />
                 </template>
                 <!-- Name -->
                 <template v-slot:cell(name)="row">
@@ -80,15 +75,13 @@
                             name="input_folder_name"
                             :ref="'name' + row.item.id"
                             v-model="row.item.name"
-                            rows="3"
-                        />
+                            rows="3" />
                         <textarea
                             v-else
                             class="form-control"
                             :ref="'name' + row.item.id"
                             :value="row.item.name"
-                            rows="3"
-                        />
+                            rows="3" />
                     </div>
                     <div v-else-if="!row.item.deleted">
                         <b-link
@@ -114,15 +107,13 @@
                             class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
                             v-model="row.item.description"
-                            rows="3"
-                        ></textarea>
+                            rows="3"></textarea>
                         <textarea
                             v-else
                             class="form-control input_folder_description"
                             :ref="'description' + row.item.id"
                             :value="row.item.description"
-                            rows="3"
-                        ></textarea>
+                            rows="3"></textarea>
                     </div>
                     <div v-else>
                         <div class="description-field" v-if="getMessage(row.item)">
@@ -130,13 +121,11 @@
                                 v-if="
                                     getMessage(row.item).length > maxDescriptionLength &&
                                     !expandedMessage.includes(row.item.id)
-                                "
-                            >
+                                ">
                                 <span
                                     class="shrinked-description"
                                     :title="getMessage(row.item)"
-                                    v-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))"
-                                >
+                                    v-html="linkify(getMessage(row.item).substring(0, maxDescriptionLength))">
                                 </span>
                                 <span :title="getMessage(row.item)"> ...</span>
                                 <a class="more-text-btn" @click="expandMessage(row.item)" href="javascript:void(0)"
@@ -168,22 +157,19 @@
                         v-if="row.item.update_time"
                         :date="row.item.update_time"
                         custom-format="'YYYY-MM-DD- HH:mm a'"
-                        mode="elapsed"
-                    />
+                        mode="elapsed" />
                 </template>
                 <template v-slot:cell(is_unrestricted)="row">
                     <font-awesome-icon v-if="row.item.is_unrestricted" title="Unrestricted dataset" icon="globe" />
                     <font-awesome-icon
                         v-else-if="row.item.deleted"
                         title="Marked deleted"
-                        icon="ban"
-                    ></font-awesome-icon>
+                        icon="ban"></font-awesome-icon>
                     <font-awesome-icon v-else-if="row.item.is_private" title="Private dataset" icon="key" />
                     <font-awesome-icon
                         v-else-if="row.item.is_private === false && row.item.is_unrestricted === false"
                         title="Restricted dataset"
-                        icon="shield-alt"
-                    />
+                        icon="shield-alt" />
                 </template>
 
                 <template v-slot:cell(buttons)="row">
@@ -191,16 +177,14 @@
                         <button
                             @click="row.item.isNewFolder ? createNewFolder(row.item) : saveChanges(row.item)"
                             class="primary-button btn-sm permission_folder_btn save_folder_btn"
-                            :title="'save ' + row.item.name"
-                        >
+                            :title="'save ' + row.item.name">
                             <font-awesome-icon :icon="['far', 'save']" />
                             Save
                         </button>
                         <button
                             class="primary-button btn-sm permission_folder_btn"
                             title="Discard Changes"
-                            @click="toggleEditMode(row.item)"
-                        >
+                            @click="toggleEditMode(row.item)">
                             <font-awesome-icon :icon="['fas', 'times']" />
                             Cancel
                         </button>
@@ -213,8 +197,7 @@
                             data-placement="top"
                             size="sm"
                             class="lib-btn permission_folder_btn edit_folder_btn"
-                            :title="'Edit ' + row.item.name"
-                        >
+                            :title="'Edit ' + row.item.name">
                             <font-awesome-icon icon="pencil-alt" />
                             Edit
                         </b-button>
@@ -223,8 +206,7 @@
                             size="sm"
                             class="lib-btn permission_lib_btn"
                             :title="`Permissions of ${row.item.name}`"
-                            :to="{ path: `${navigateToPermission(row.item)}` }"
-                        >
+                            :to="{ path: `${navigateToPermission(row.item)}` }">
                             <font-awesome-icon icon="users" />
                             Manage
                         </b-button>
@@ -233,8 +215,7 @@
                             v-if="row.item.deleted"
                             :title="'Undelete ' + row.item.name"
                             class="lib-btn primary-button btn-sm undelete_dataset_btn"
-                            type="button"
-                        >
+                            type="button">
                             <font-awesome-icon icon="unlock" />
                             Undelete
                         </button>
@@ -256,8 +237,7 @@
                             :total-rows="total_rows"
                             :per-page="perPage"
                             @input="changePage"
-                            aria-controls="folder_list_body"
-                        >
+                            aria-controls="folder_list_body">
                         </b-pagination>
                     </b-col>
 
@@ -270,8 +250,7 @@
                                         id="paginationPerPage"
                                         autocomplete="off"
                                         type="number"
-                                        v-model="perPage"
-                                    />
+                                        v-model="perPage" />
                                 </td>
                                 <td class="text-muted ml-1 paginator-text">
                                     <span class="pagination-total-pages-text">per page, {{ total_rows }} total</span>

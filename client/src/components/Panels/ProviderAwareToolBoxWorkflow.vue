@@ -2,9 +2,8 @@
     <ConfigProvider class="d-flex flex-column" v-slot="{ config }">
         <ToolPanelViewProvider
             v-slot="{ currentPanel, currentPanelView }"
-            :site-default-panel-view="config.default_panel_view"
-            v-if="config.default_panel_view"
-        >
+            :panel-view="config.default_panel_view"
+            v-if="config.default_panel_view">
             <ToolBoxWorkflow
                 :toolbox="currentPanel"
                 :panel-views="config.panel_views"
@@ -17,8 +16,7 @@
                 @onInsertModule="onInsertModule"
                 @onInsertWorkflow="onInsertWorkflow"
                 @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                v-if="currentPanelView"
-            >
+                v-if="currentPanelView">
             </ToolBoxWorkflow>
         </ToolPanelViewProvider>
     </ConfigProvider>

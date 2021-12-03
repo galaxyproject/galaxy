@@ -403,7 +403,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         this check.
         """
         if not trans.user:
-            return False
+            raise exceptions.ItemAccessibilityException("Anonymous users cannot add to library items")
 
         current_user_roles = trans.get_current_user_roles()
         if trans.user_is_admin:
@@ -754,7 +754,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         # precondition: only add new revision on owned vis's
         # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(visualization, title, dbkey, config)
+        revision = trans.model.VisualizationRevision(visualization=visualization, title=title, dbkey=dbkey, config=config)
+
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)
@@ -1470,7 +1471,7 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, (f"{meta}").encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode()
 
 
 def sort_by_attr(seq, attr):

@@ -5,6 +5,7 @@ import pytest
 from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
+    convert_sep2tabs,
     get_test_fname,
 )
 
@@ -14,7 +15,7 @@ def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n'):
         tf.write(content)
     rval = convert_newlines_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     assert expected == open(tf.name).read()
-    assert rval == (2, None), rval
+    assert rval[0:2] == (2, None), rval
 
 
 def assert_converts_to_1234_convert(content, block_size=1024):
@@ -23,7 +24,14 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     rval = convert_newlines(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
     actual_contents = open(tf.name).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
-    assert rval == (2, None), f"rval != {rval} for {content}"
+    assert rval[0:2] == (2, None), f"rval != {rval} for {content}"
+
+
+def assert_converts_to_1234_convert_sep2tabs_only(content: bytes, expected: bytes):
+    with tempfile.NamedTemporaryFile(delete=False, mode='wb') as tf:
+        tf.write(content)
+    convert_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
+    assert expected == open(tf.name, "rb").read()
 
 
 @pytest.mark.parametrize('source,block_size', [
@@ -59,6 +67,7 @@ def test_convert_newlines_non_utf():
     fname = get_test_fname("dosimzml")
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), in_place=False)
     new_file = rval[1]
+    assert new_file
     assert open(new_file, "rb").read() == open(get_test_fname("1imzml"), "rb").read()
 
 
@@ -76,3 +85,9 @@ def test_convert_sep2tabs(source, expected):
         assert_converts_to_1234_convert_sep2tabs(source, expected=expected)
     else:
         assert_converts_to_1234_convert_sep2tabs(source)
+
+
+def test_convert_sep2tabs_only():
+    assert_converts_to_1234_convert_sep2tabs_only(b"1 2\r3 4", b"1\t2\r3\t4")
+    assert_converts_to_1234_convert_sep2tabs_only(b"1 2\n3 4", b"1\t2\n3\t4")
+    assert_converts_to_1234_convert_sep2tabs_only(b"1    2\n3    4", b"1\t2\n3\t4")

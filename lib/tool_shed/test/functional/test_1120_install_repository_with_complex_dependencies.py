@@ -265,8 +265,8 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             raise AssertionError(f'Repository name package_bwa_0_5_9_0100 not found in env.sh.\nContents of env.sh: {contents}')
 
     def test_0060_verify_tool_dependency_uninstallation(self):
-        '''Uninstall the package_bwa_0_5_9_0100 repository.'''
-        '''
+        '''Uninstall the package_bwa_0_5_9_0100 repository.
+
         Uninstall the repository that defines a tool dependency relationship on BWA 0.5.9, and verify
         that this results in the compiled binary package also being removed.
         '''

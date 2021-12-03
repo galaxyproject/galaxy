@@ -29,7 +29,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.structured_app import BasicApp, MinimalManagerApp
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -58,7 +58,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app: BasicApp):
+    def __init__(self, app: BasicSharedApp):
         self.model_class = app.model.User
         super().__init__(app)
 
@@ -476,7 +476,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Send the verification email containing the activation link to the user's email.
         """
-        activation_token = self.__get_activation_token(trans, escape(email))
+        activation_token = self.__get_activation_token(trans, email)
         activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
         host = self.__get_host(trans)
         custom_message = ''
@@ -580,10 +580,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.app.config.smtp_server is None:
             return "Subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator."
         else:
-            body = 'Join Mailing list.\n'
+            body = (self.app.config.mailing_join_body or '') + '\n'
             to = self.app.config.mailing_join_addr
             frm = email
-            subject = 'Join Mailing List'
+            subject = self.app.config.mailing_join_subject or ''
             try:
                 util.send_mail(frm, to, subject, body, self.app.config)
             except Exception:

@@ -2,6 +2,8 @@
 export {
     // DatasetProvider,
     DatasetCollectionContentProvider,
+    GenomeProvider,
+    SuitableConvertersProvider,
     JobProvider,
 } from "./storeProviders";
 

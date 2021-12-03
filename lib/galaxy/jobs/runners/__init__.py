@@ -67,6 +67,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    start_methods = ['_init_monitor_thread', '_init_worker_threads']
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -83,6 +85,11 @@ class BaseJobRunner:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+        self._should_stop = False
+
+    def start(self):
+        for start_method in self.start_methods:
+            getattr(self, start_method, lambda: None)()
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -93,7 +100,7 @@ class BaseJobRunner:
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
-            self.app.application_stack.register_postfork_function(worker.start)
+            worker.start()
             self.work_threads.append(worker)
 
     def _alive_worker_threads(self, cycle=False):
@@ -110,8 +117,11 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while True:
-            (method, arg) = self.work_queue.get()
+        while self._should_stop is False:
+            try:
+                (method, arg) = self.work_queue.get(timeout=1)
+            except Empty:
+                continue
             if method is STOP_SIGNAL:
                 return
             # id and name are collected first so that the call of method() is the last exception.
@@ -161,6 +171,7 @@ class BaseJobRunner:
         """Attempts to gracefully shut down the worker threads
         """
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
+        self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
@@ -301,7 +312,7 @@ class BaseJobRunner:
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
-        for dataset_path in job_wrapper.get_output_fnames():
+        for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
             if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
                 path = dataset_path.false_path
@@ -345,10 +356,10 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.output_paths:
+        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.job_io.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.get_output_fnames(),
+            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.job_io.get_output_fnames(),
                                                                            set_extension=True,
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
@@ -401,8 +412,8 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path, contents):
-        write_script(path, contents, self.app.config)
+    def write_executable_script(self, path, contents, job_io):
+        write_script(path, contents, job_io)
 
     def _find_container(
         self,
@@ -702,7 +713,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
-            time.sleep(1)
+            time.sleep(self.app.config.job_runner_monitor_sleep)
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)

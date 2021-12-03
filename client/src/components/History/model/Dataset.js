@@ -17,7 +17,7 @@ export class Dataset extends Content {
             download: `datasets/${id}/display?to_ext=${file_ext}`,
             report_error: `dataset/errors?id=${id}`,
             rerun: `tool_runner/rerun?id=${id}`,
-            show_params: `datasets/${id}/show_params`,
+            show_params: `datasets/${id}/details`,
             visualization: "visualization",
             meta_download: `dataset/get_metadata_file?hda_id=${id}&metadata_name=`,
         };

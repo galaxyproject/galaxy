@@ -10,8 +10,7 @@ cache first to see if we already have the data -->
         :dataset="dataset"
         :writable="false"
         :selectable="false"
-        @update:expanded="onExpand"
-    />
+        @update:expanded="onExpand" />
 </template>
 
 <script>

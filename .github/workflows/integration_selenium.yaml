@@ -1,17 +1,24 @@
 name: Integration Selenium
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+env:
+  GALAXY_SKIP_CLIENT_BUILD: '0'
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+  GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_TEST_SELENIUM_RETRIES: 1
+  YARN_INSTALL_OPTS: --frozen-lockfile
 concurrency:
   group: integration-selenium-${{ github.ref }}
   cancel-in-progress: true
-env:
-  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
-  GALAXY_SKIP_CLIENT_BUILD: '0'
-  GALAXY_TEST_SELENIUM_RETRIES: 1
-  YARN_INSTALL_OPTS: --frozen-lockfile
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.7']
@@ -30,21 +37,29 @@ jobs:
       - uses: actions/checkout@v2
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v1
+      - uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
       - name: Cache pip dir
-        uses: actions/cache@v1
-        id: pip-cache
+        uses: actions/cache@v2
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration-selenium
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: './run_tests.sh -integration test/integration_selenium'
+        run: ./run_tests.sh -integration test/integration_selenium
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()

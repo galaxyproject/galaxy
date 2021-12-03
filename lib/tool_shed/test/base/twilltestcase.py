@@ -43,6 +43,7 @@ tc.options['equiv_refresh_interval'] = 0
 
 
 class ShedTwillTestCase(DrivenFunctionalTestCase):
+    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def setUp(self):
         # Security helper
@@ -65,8 +66,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get('GALAXY_TEST_TOOL_DEPENDENCY_DIR')
-
-    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -321,7 +320,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             (installed_repository.status, expected_status)
 
     def check_galaxy_repository_tool_panel_section(self, repository, expected_tool_panel_section):
-        metadata = repository.metadata
+        metadata = repository.metadata_
         assert 'tools' in metadata, f'Tools not found in repository metadata: {metadata}'
         # If integrated_tool_panel.xml is to be tested, this test method will need to be enhanced to handle tools
         # from the same repository in different tool panel sections. Getting the first tool guid is ok, because
@@ -571,7 +570,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
-        data_managers = installed_repository.metadata.get('data_manager', {}).get('data_managers', {})
+        data_managers = installed_repository.metadata_.get('data_manager', {}).get('data_managers', {})
         if data_manager_names:
             if not isinstance(data_manager_names, list):
                 data_manager_names = [data_manager_names]
@@ -1500,14 +1499,14 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
-        metadata = installed_repository.metadata
+        metadata = installed_repository.metadata_
         self.reset_installed_repository_metadata(installed_repository)
-        new_metadata = installed_repository.metadata
+        new_metadata = installed_repository.metadata_
         assert metadata == new_metadata, f'Metadata for installed repository {name} differs after metadata reset.'
 
     def verify_installed_repository_no_tool_panel_section(self, repository):
         '''Verify that there is no 'tool_panel_section' entry in the repository metadata.'''
-        metadata = repository.metadata
+        metadata = repository.metadata_
         assert 'tool_panel_section' not in metadata, f'Tool panel section incorrectly found in metadata: {metadata}'
 
     def verify_installed_repository_data_table_entries(self, required_data_table_entries):
@@ -1582,7 +1581,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         if strings_not_displayed is None:
             strings_not_displayed = []
         repository_id = self.security.encode_id(installed_repository.id)
-        for tool in installed_repository.metadata['tools']:
+        for tool in installed_repository.metadata_['tools']:
             strings = list(strings_displayed)
             strings.extend([tool['id'], tool['description'], tool['version'], tool['guid'], tool['name']])
             params = dict(repository_id=repository_id, tool_id=tool['id'])

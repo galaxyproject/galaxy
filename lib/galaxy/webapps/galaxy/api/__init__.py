@@ -1,6 +1,7 @@
 """
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
+import inspect
 from typing import (
     Any,
     AsyncGenerator,
@@ -12,12 +13,15 @@ from typing import (
 
 from fastapi import (
     Cookie,
+    Form,
     Header,
     Query,
+    Response,
 )
 from fastapi.params import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
+from pydantic.main import BaseModel
 try:
     from starlette_context import context as request_context
 except ImportError:
@@ -41,7 +45,11 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
-from galaxy.work.context import SessionRequestContext
+from galaxy.work.context import (
+    GalaxyAbstractRequest,
+    GalaxyAbstractResponse,
+    SessionRequestContext,
+)
 
 
 def get_app() -> StructuredApp:
@@ -101,7 +109,15 @@ def get_api_user(
         user_manager: UserManager = depends(UserManager),
         key: Optional[str] = Query(None),
         x_api_key: Optional[str] = Header(None),
-        run_as: Optional[EncodedDatabaseIdField] = Header(None, title='Run as User', description='Admins and ')) -> Optional[User]:
+        run_as: Optional[EncodedDatabaseIdField] = Header(
+            default=None,
+            title='Run as User',
+            description=(
+                'The user ID that will be used to effectively make this API call. '
+                'Only admins and designated users can make API calls on behalf of other users.'
+            )
+        )
+) -> Optional[User]:
     api_key = key or x_api_key
     if not api_key:
         return None
@@ -136,14 +152,61 @@ class UrlBuilder:
         return self.request.app.url_path_for(name, **path_params)
 
 
+class GalaxyASGIRequest(GalaxyAbstractRequest):
+    """Wrapper around Starlette/FastAPI Request object.
+
+    Implements the GalaxyAbstractRequest interface to provide access to some properties
+    of the request commonly used."""
+
+    def __init__(self, request: Request):
+        self.__request = request
+
+    @property
+    def base(self) -> str:
+        return str(self.__request.base_url)
+
+    @property
+    def host(self) -> str:
+        return str(self.__request.client.host)
+
+
+class GalaxyASGIResponse(GalaxyAbstractResponse):
+    """Wrapper around Starlette/FastAPI Response object.
+
+    Implements the GalaxyAbstractResponse interface to provide access to some properties
+    of the response object commonly used."""
+
+    def __init__(self, response: Response):
+        self.__response = response
+
+    @property
+    def headers(self):
+        return self.__response.headers
+
+
 DependsOnUser = Depends(get_user)
 
 
-def get_trans(request: Request, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
+def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
+    if galaxy_session:
+        return galaxy_session.current_history
+    return None
+
+
+def get_trans(request: Request, response: Response, app: StructuredApp = DependsOnApp, user: Optional[User] = Depends(get_user),
               galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
               ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
-    return SessionRequestContext(app=app, user=user, galaxy_session=galaxy_session, url_builder=url_builder, host=request.client.host)
+    galaxy_request = GalaxyASGIRequest(request)
+    galaxy_response = GalaxyASGIResponse(response)
+    return SessionRequestContext(
+        app=app, user=user,
+        galaxy_session=galaxy_session,
+        url_builder=url_builder,
+        request=galaxy_request,
+        response=galaxy_response,
+        history=get_current_history_from_session(galaxy_session),
+    )
 
 
 DependsOnTrans = Depends(get_trans)
@@ -201,3 +264,37 @@ class Router(InferringRouter):
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+def as_form(cls: Type[BaseModel]):
+    """
+    Adds an as_form class method to decorated models. The as_form class method
+    can be used with FastAPI endpoints.
+
+    See https://github.com/tiangolo/fastapi/issues/2387#issuecomment-731662551
+    """
+    new_params = [
+        inspect.Parameter(
+            field.alias,
+            inspect.Parameter.POSITIONAL_ONLY,
+            default=(Form(field.default) if not field.required else Form(...)),
+        )
+        for field in cls.__fields__.values()
+    ]
+
+    async def _as_form(**data):
+        return cls(**data)
+
+    sig = inspect.signature(_as_form)
+    sig = sig.replace(parameters=new_params)
+    _as_form.__signature__ = sig    # type: ignore[attr-defined]
+    cls.as_form = _as_form          # type: ignore[attr-defined]
+    return cls
+
+
+async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
+    """Returns the request body as a JSON object if the content type is JSON."""
+    if "application/json" in request.headers.get("content-type", ""):
+        body = await request.json()
+        return body
+    return None

@@ -16,8 +16,7 @@
                         track-by="id"
                         @input="valueChanged"
                         @search-change="searchChanged"
-                        :internal-search="false"
-                    >
+                        :internal-search="false">
                         <template slot="afterList">
                             <div v-observe-visibility="reachedEndOfList" v-if="hasMorePages">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />

@@ -101,7 +101,7 @@ class ToolConfWatcher:
         hashes = {}
         if self.cache:
             self.cache.assert_hashes_initialized()
-        while self._active and not self.exit.isSet():
+        while self._active and not self.exit.is_set():
             do_reload = False
             drop_on_next_loop = set()
             drop_now = set()

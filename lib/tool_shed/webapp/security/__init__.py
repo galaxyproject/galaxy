@@ -234,7 +234,7 @@ class CommunityRBACAgent(RBACAgent):
                         # of a group that is associated with the role.
                         for gra in role.groups:
                             group = gra.group
-                            for uga in group.members:
+                            for uga in group.users:
                                 member = uga.user
                                 if member.id == user.id:
                                     return True

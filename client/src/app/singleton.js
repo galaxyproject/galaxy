@@ -39,5 +39,5 @@ export function galaxyIsInitialized() {
 // Having a CORS issue in the toolshed iframe, store separate versions
 // of galaxy in each window for the short-term
 export function getStorage() {
-    return window.parent;
+    return window;
 }

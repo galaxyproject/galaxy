@@ -1,6 +1,7 @@
 import os
+from typing import NamedTuple, Optional
 
-from galaxy.datatypes import sniff
+from galaxy.datatypes import data, sniff
 from galaxy.util.checkers import (
     check_binary,
     is_single_file_zip,
@@ -12,20 +13,30 @@ class UploadProblemException(Exception):
     pass
 
 
+class HandleUploadResponse(NamedTuple):
+    stdout: Optional[str]
+    ext: str
+    datatype: data.Data
+    is_binary: bool
+    converted_path: Optional[str]
+    converted_newlines: bool
+    converted_spaces: bool
+
+
 def handle_upload(
     registry,
-    path,  # dataset.path
-    requested_ext,  # dataset.file_type
-    name,  # dataset.name,
-    tmp_prefix,
-    tmp_dir,
-    check_content,
-    link_data_only,
-    in_place,
-    auto_decompress,
-    convert_to_posix_lines,
-    convert_spaces_to_tabs,
-):
+    path: str,  # dataset.path
+    requested_ext: str,  # dataset.file_type
+    name: str,  # dataset.name,
+    tmp_prefix: Optional[str],
+    tmp_dir: Optional[str],
+    check_content: bool,
+    link_data_only: bool,
+    in_place: bool,
+    auto_decompress: bool,
+    convert_to_posix_lines: bool,
+    convert_spaces_to_tabs: bool,
+) -> HandleUploadResponse:
     stdout = None
     converted_path = None
     multi_file_zip = False
@@ -33,13 +44,15 @@ def handle_upload(
     # Does the first 1K contain a null?
     is_binary = check_binary(path)
 
+    converted_newlines, converted_spaces = False, False
+
     # Decompress if needed/desired and determine/validate filetype. If a keep-compressed datatype is explicitly selected
     # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
     if not link_data_only:
         if auto_decompress and is_zip(path) and not is_single_file_zip(path):
             multi_file_zip = True
         try:
-            ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file_internal(
+            ext, converted_path, compression_type, converted_newlines, converted_spaces = sniff.handle_uploaded_dataset_file_internal(
                 path,
                 registry,
                 ext=requested_ext,
@@ -87,4 +100,4 @@ def handle_upload(
     if multi_file_zip and not getattr(datatype, 'compressed', False):
         stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
 
-    return stdout, ext, datatype, is_binary, converted_path
+    return HandleUploadResponse(stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces)

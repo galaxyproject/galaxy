@@ -55,6 +55,10 @@ List of behavior changes associated with profile versions:
 - Exit immediately if a command exits with a non-zero status (`set -e`).
 - Assume sort order for collection elements.
 
+### 21.09
+
+- Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
+
 ### Examples
 
 A normal tool:
@@ -1439,8 +1443,8 @@ Values for these parameters are simply given by the desired value.
 #### ``boolean``
 
 The value of the test parameter should be set to `true` or `false` corresponding
-to the cases that the parameter is checked or not. Alternatively the value
-specified as `truevalue` or `falsevalue` can be given.
+to the cases that the parameter is checked or not. It is also possible, but
+discouraged, to use the value specified as `truevalue` or `falsevalue`.
 
 #### ``data``
 
@@ -2521,13 +2525,11 @@ In output filters sections are represented as dictionary with the same name as t
 <filter>section_name['parameter_name']</filter>
 ```
 
-In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is:
+In order to reference parameters in sections from tags in the `<outputs>` section, e.g. in the `format_source` attribute of `<data>` tags, the syntax is currently:
 
 ```
-<data name="output" format_source="section_name|parameter_name" metadata_source="section_name|parameter_name"/>
+<data name="output" format_source="parameter_name" metadata_source="parameter_name"/>
 ```
-
-Until profile 21.01 `parameter_name` was sufficient (https://github.com/galaxyproject/galaxy/pull/9493/files).
 
 Note that references to other parameters in the `<inputs>` section are only possible if the reference is in the same section or its parents (and is defined earlier), therefore only `parameter_name` is used.
 
@@ -3726,31 +3728,33 @@ parameters a ``metadata`` validator is added automatically.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
 a given range.
-- ``dataset_metadata_in_file``: Check if a metadata value is contained in a
-specific column of another data set.
-- ``dataset_metadata_in_data_table`` (``dataset_metadata_not_in_data_table``):
-Check if a metadata value is contained in a column of a data table.
+- ``dataset_metadata_in_data_table``: Check if a metadata value is contained in a column of a data table.
+- ``dataset_metadata_not_in_data_table``: Equivalent to ``dataset_metadata_in_data_table`` with ``negate="true"``.
+
+Deprecated data validators:
+
+- ``dataset_metadata_in_file``: Use data tables with ``dataset_metadata_in_data_table``.
+Check if a metadata value is contained in a specific column of a file in the ``tool_data_path``
+(which is set in Galaxy's config).
 
 ### Validators for textual inputs (``text``, ``select``, ...)
 
-``regex``: Check if a regular expression **matches** the value, i.e. appears
+- ``regex``: Check if a regular expression **matches** the value, i.e. appears
 at the beginning of the value. To enforce a match of the complete value use
 ``$`` at the end of the expression. The expression is given is the content 
 of the validator tag. Note that for ``selects`` each option is checked
 separately.
+- ``length``: Check if the length of the value is within a range.
+- ``empty_field``: Check if the string is not empty
+- ``value_in_data_table``: Check if the value is
+contained in a column of a given data table.
+- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 For selects (in particular with dynamically defined options) the following
 validator is useful:
 
 ``no_options``: Check if options are available for a ``select`` parameter.
 Useful for parameters with dynamically defined options.
-
-For ``text`` inputs the following validators are useful:
-
-- ``length``: Check if the length of the value is within a range.
-- ``empty_field``: Check if the string is not empty
-- ``value_in_data_table`` (``value_not_in_data_table``): Check if the value is
-contained in a column of a given data table.
 
 ### Validators for numeric inputs (``integer``, ``float``)
 
@@ -3808,21 +3812,29 @@ use in filenames may not contain ``..``.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ValidatorType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[The list of supported
-validators is in the ``validator_types`` dictionary in
-[/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
-Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
+            <xs:documentation xml:lang="en"><![CDATA[
+Valid values are: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``,
 ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
 ``value_in_data_table``, ``value_not_in_data_table``,
-``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
+``dataset_ok_validator``, ``dataset_metadata_in_range``.
+Deprecated validator: ``dataset_metadata_in_file``.
+The list of supported
+validators is in the ``validator_types`` dictionary in
+[/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
+]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="message" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">
-The error message displayed on the tool form if validation fails.</xs:documentation>
+The error message displayed on the tool form if validation fails. A placeholder string ``%s`` will be repaced by the ``value``</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="negate" type="xs:boolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">
+Negates the result of the validator.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="check" type="xs:string">
@@ -3844,7 +3856,7 @@ more information.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Tool data filename to check against
+            <xs:documentation xml:lang="en">Deprecated: use ``dataset_metadata_in_data_table``. Tool data filename to check against
 if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
 ``tool-data`` directory.</xs:documentation>
           </xs:annotation>
@@ -3860,13 +3872,6 @@ if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
             <xs:documentation xml:lang="en">Target column for metadata attribute
 in ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``value_in_data_table``, ``value_not_in_data_table``, and ``dataset_metadata_in_file`` options.
 This can be an integer index to the column or a column name.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="line_startswith" type="xs:string">
-          <xs:annotation>
-            <xs:documentation xml:lang="en">Used to indicate lines in the file
-being used for validation start with a this attribute value.
-For use with validators of type ``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``value_in_data_table``, ``value_not_in_data_tabl``</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:decimal">
@@ -3906,6 +3911,18 @@ not be modified.</xs:documentation>
             <xs:documentation xml:lang="en">Comma-seperated list of metadata
 fields to skip if type is ``metadata``. If not specified, all non-optional
 metadata fields will be checked unless ``check`` attribute is specified.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="line_startswith" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated. Used to indicate lines in the file
+being used for validation start with a this attribute value.
+For use with validator ``dataset_metadata_in_file``</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="substitute_value_in_message" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Deprecated. This is now always done.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -5500,7 +5517,7 @@ Examples are included in the test tools directory including:
       <xs:extension base="xs:string">
         <xs:attribute name="interpreter" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the version command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the version command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

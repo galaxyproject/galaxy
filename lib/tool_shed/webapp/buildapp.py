@@ -248,8 +248,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
     sentry_dsn = conf.get('sentry_dsn', None)
     if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn,))
+        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)

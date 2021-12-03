@@ -6,14 +6,14 @@
         :title="tooltipText"
         href="javascript:void(0)"
         role="button"
-        aria-label="Show favorite tools"
-    >
+        aria-label="Show favorite tools">
         <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
         <font-awesome-icon v-else :icon="['far', 'star']" />
     </a>
 </template>
 
 <script>
+import _l from "utils/localization";
 import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -34,7 +34,7 @@ export default {
     data() {
         return {
             searchKey: "#favorites",
-            tooltipToggle: "Show favorites",
+            tooltipToggle: _l("Show favorites"),
             tooltipUntoggle: "Clear",
             toggle: false,
         };

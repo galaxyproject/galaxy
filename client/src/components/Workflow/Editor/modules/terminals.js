@@ -169,6 +169,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping() {
         this.mapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        this.node.mapOver = undefined;
         this.emit("change");
     }
     resetCollectionTypeSource() {
@@ -340,6 +341,11 @@ class BaseInputTerminal extends Terminal {
                     this._isSubType(cat_outputs[other_datatype_i], thisDatatype)
                 ) {
                     return new ConnectionAcceptable(true, null);
+                } else if (!this.datatypesMapper.datatypes.includes(other_datatype)) {
+                    return new ConnectionAcceptable(
+                        false,
+                        `Effective output data type [${other_datatype}] unknown. This tool cannot be executed on this Galaxy Server at this moment, please contact the Administrator.`
+                    );
                 }
             }
         }
@@ -590,6 +596,9 @@ class BaseOutputTerminal extends Terminal {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
+        if (this.node.mapOver) {
+            this.setMapOver(this.node.mapOver);
+        }
     }
     get force_datatype() {
         const changeOutputDatatype = this.node.postJobActions["ChangeDatatypeAction" + this.name];

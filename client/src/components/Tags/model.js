@@ -5,6 +5,10 @@
 
 import { keyedColorScheme } from "utils/color";
 
+// Valid tag regex. The basic format here is a tag name with optional subtags
+// separated by a period, and then an optional value after a colon.
+export const VALID_TAG_RE = /^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$/;
+
 function TagModel(props = {}) {
     this.text = "";
 
@@ -49,10 +53,7 @@ function TagModel(props = {}) {
     Object.defineProperty(this, "valid", {
         enumerable: false,
         get: function () {
-            if (!this.text.length) {
-                return false;
-            }
-            return this.text != "name:";
+            return VALID_TAG_RE.test(this.text);
         },
     });
 }

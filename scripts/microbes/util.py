@@ -116,7 +116,7 @@ def get_bed_from_genbank(gb_file, chrom, feature_list):
             if not name:
                 name = "unknown"
 
-            features[feature_type].append("{}\t{}\t{}\t{}\t{}\t{}".format(chrom, feature.start, feature.end, name, 0, feature.strand))  # append new bed field here
+            features[feature_type].append(f"{chrom}\t{feature.start}\t{feature.end}\t{name}\t{0}\t{feature.strand}")  # append new bed field here
     return features
 
 

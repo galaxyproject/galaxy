@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import re
+from abc import abstractmethod
 from json import dumps
-
+from typing import Any, cast, Dict, List, Set, Union
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
@@ -51,12 +52,12 @@ class ToolAction:
     been converted and validated).
     """
 
-    def execute(self, tool, trans, incoming=None, set_output_hid=True):
-        incoming = incoming or {}
-        raise TypeError("Abstract method")
+    @abstractmethod
+    def execute(self, tool, trans, incoming=None, set_output_hid=True, **kwargs):
+        pass
 
 
-class DefaultToolAction:
+class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
     produces_real_jobs = True
 
@@ -69,7 +70,7 @@ class DefaultToolAction:
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = {}
-        all_permissions = {}
+        all_permissions: Dict[str, Set[str]] = {}
 
         def record_permission(action, role_id):
             if action not in all_permissions:
@@ -84,8 +85,6 @@ class DefaultToolAction:
                 if formats is None:
                     formats = input.formats
 
-                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                trans.sa_session.refresh(data)
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
@@ -213,7 +212,7 @@ class DefaultToolAction:
                 the_dict[key] = []
             the_dict[key].append(value)
 
-        input_dataset_collections = dict()
+        input_dataset_collections: Dict[str, str] = {}
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -230,7 +229,7 @@ class DefaultToolAction:
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        if hasattr(value, 'child_collection'):
+                        if isinstance(value, model.DatasetCollectionElement):
                             # if we are mapping a collection over a tool, we only require the child_collection
                             dataset_instances = value.child_collection.dataset_instances
                         else:
@@ -475,7 +474,10 @@ class DefaultToolAction:
                         # Output collection is mapped over and has already been copied from original job
                         continue
                     collections_manager = app.dataset_collection_manager
-                    element_identifiers = []
+                    element_identifiers: List[
+                        Dict[str, Union[str, List[Dict[str, Union[str, List[Any]]]]]]
+                    ] = []
+                    # mypy doesn't yet support recursive type definitions
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
@@ -499,7 +501,19 @@ class DefaultToolAction:
                                     ))
                                 else:
                                     index = name_to_index[parent_id]
-                            current_element_identifiers = current_element_identifiers[index]["element_identifiers"]
+                            current_element_identifiers = cast(
+                                List[
+                                    Dict[
+                                        str,
+                                        Union[
+                                            str, List[Dict[str, Union[str, List[Any]]]]
+                                        ],
+                                    ]
+                                ],
+                                current_element_identifiers[index][
+                                    "element_identifiers"
+                                ],
+                            )
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
@@ -539,6 +553,7 @@ class DefaultToolAction:
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 history.stage_addition(data)
+        history.add_pending_items(set_output_hid=set_output_hid)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -560,13 +575,16 @@ class DefaultToolAction:
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # We need a flush here and get hids in order to rewrite jobs parameter,
-            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_items(set_output_hid=set_output_hid)
-            trans.sa_session.flush()
+            # Need to flush here so that referencing outputs by id works
+            session = trans.sa_session()
+            try:
+                session.expire_on_commit = False
+                session.flush()
+            finally:
+                session.expire_on_commit = True
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
@@ -597,14 +615,10 @@ class DefaultToolAction:
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
-                # Dispatch to a job handler. enqueue() is responsible for flushing the job
-                app.job_manager.enqueue(job, tool=tool)
-                trans.log_event(f"Added job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
@@ -660,6 +674,9 @@ class DefaultToolAction:
                     for job in hdca.implicit_collection_jobs.jobs:
                         if job.job_id == old_job.id:
                             job.job_id = current_job.id
+            for jtoidca in old_job.output_dataset_collections:
+                jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
+            current_job.hide_outputs(flush=False)
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
 
@@ -721,7 +738,7 @@ class DefaultToolAction:
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
-        reductions = {}
+        reductions: Dict[str, List[str]] = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
             for (dataset_collection, reduced) in dataset_collection_info_pairs:
                 if reduced:
@@ -817,6 +834,7 @@ class OutputCollections:
 
     def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
+        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
         self.history = history
         self.tool = tool
         self.tool_action = tool_action

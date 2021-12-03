@@ -1,13 +1,26 @@
 <template>
-    <div ref="form" />
+    <FormInputs
+        :key="id"
+        :inputs="formInputs"
+        :prefix="prefix"
+        :sustain-repeats="sustainRepeats"
+        :sustain-conditionals="sustainConditionals"
+        :collapsed-enable-text="collapsedEnableText"
+        :collapsed-enable-icon="collapsedEnableIcon"
+        :collapsed-disable-text="collapsedDisableText"
+        :collapsed-disable-icon="collapsedDisableIcon"
+        :errors="errors"
+        :on-change="onChange"
+        :on-change-form="onChangeForm" />
 </template>
 
 <script>
-import _ from "underscore";
-import Form from "mvc/form/form-view";
-import { visitInputs } from "components/Form/utilities";
-
+import FormInputs from "./FormInputs";
+import { visitInputs, validateInputs, matchErrors, getElementId } from "./utilities";
 export default {
+    components: {
+        FormInputs,
+    },
     props: {
         id: {
             type: String,
@@ -21,6 +34,10 @@ export default {
             type: Object,
             default: null,
         },
+        prefix: {
+            type: String,
+            default: "",
+        },
         sustainRepeats: {
             type: Boolean,
             default: false,
@@ -29,13 +46,21 @@ export default {
             type: Boolean,
             default: false,
         },
-        textEnable: {
+        collapsedEnableText: {
             type: String,
-            default: null,
+            default: "Enable",
         },
-        textDisable: {
+        collapsedDisableText: {
             type: String,
-            default: null,
+            default: "Disable",
+        },
+        collapsedEnableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-down",
+        },
+        collapsedDisableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-up",
         },
         validationScrollTo: {
             type: Array,
@@ -46,14 +71,32 @@ export default {
             default: null,
         },
     },
+    created() {
+        this.onCloneInputs();
+    },
     data() {
         return {
             formData: {},
+            formIndex: {},
+            formInputs: [],
         };
     },
     watch: {
         id() {
-            this.onRender();
+            this.onCloneInputs();
+        },
+        inputs() {
+            const newAttributes = {};
+            visitInputs(this.inputs, (input, name) => {
+                newAttributes[name] = input;
+            });
+            visitInputs(this.formInputs, (input, name) => {
+                const newValue = newAttributes[name];
+                if (newValue != undefined) {
+                    input.attributes = newValue;
+                }
+            });
+            this.onChangeForm();
         },
         validationScrollTo() {
             this.onHighlight(this.validationScrollTo);
@@ -62,128 +105,94 @@ export default {
             this.onHighlight(this.validation, true);
             this.$emit("onValidation", this.validation);
         },
-        inputs() {
-            this.$nextTick(() => {
-                this.form.update(this.inputs);
-            });
-        },
         errors() {
-            this.$nextTick(() => {
-                this.form.errors(this.errors);
-            });
+            this.resetError();
+            if (this.errors) {
+                const errorMessages = matchErrors(this.errors, this.formIndex);
+                for (const inputId in errorMessages) {
+                    this.setError(inputId, errorMessages[inputId]);
+                }
+            }
         },
         replaceParams() {
             this.onReplaceParams();
         },
     },
-    mounted() {
-        this.onRender();
-    },
-    beforeDestroy() {
-        this.form.off();
-    },
     computed: {
         validation() {
-            let batch_n = -1;
-            let batch_src = null;
-            for (const job_input_id in this.formData) {
-                const input_value = this.formData[job_input_id];
-                const input_id = this.form.data.match(job_input_id);
-                const input_field = this.form.field_list[input_id];
-                const input_def = this.form.input_list[input_id];
-                if (!input_id || !input_def || !input_field || input_def.step_linked) {
-                    continue;
-                }
-                if (
-                    input_value &&
-                    Array.isArray(input_value.values) &&
-                    input_value.values.length == 0 &&
-                    !input_def.optional
-                ) {
-                    return [job_input_id, "Please provide data for this input."];
-                }
-                if (input_value == null && !input_def.optional && input_def.type != "hidden") {
-                    return [job_input_id, "Please provide a value for this option."];
-                }
-                if (input_def.wp_linked && input_def.text_value == input_value) {
-                    return [job_input_id, "Please provide a value for this workflow parameter."];
-                }
-                if (input_field.validate) {
-                    const message = input_field.validate();
-                    if (message) {
-                        return [job_input_id, message];
-                    }
-                }
-                if (input_value && input_value.batch) {
-                    const n = input_value.values.length;
-                    const src = n > 0 && input_value.values[0] && input_value.values[0].src;
-                    if (src) {
-                        if (batch_src === null) {
-                            batch_src = src;
-                        } else if (batch_src !== src) {
-                            return [
-                                job_input_id,
-                                "Please select either dataset or dataset list fields for all batch mode fields.",
-                            ];
-                        }
-                    }
-                    if (batch_n === -1) {
-                        batch_n = n;
-                    } else if (batch_n !== n) {
-                        return [
-                            job_input_id,
-                            `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`,
-                        ];
-                    }
-                }
-            }
-            return null;
+            return validateInputs(this.formIndex, this.formData);
         },
     },
     methods: {
         onReplaceParams() {
-            if (this.replaceParams) {
-                this.params = {};
-                visitInputs(this.inputs, (input, name) => {
-                    this.params[name] = input;
-                });
-                _.each(this.params, (input, name) => {
-                    const newValue = this.replaceParams[name];
-                    if (newValue) {
-                        const field = this.form.field_list[this.form.data.match(name)];
-                        field.value(newValue);
-                    }
-                });
-                this.form.trigger("change");
-            }
+            let refreshOnChange = false;
+            Object.entries(this.replaceParams).forEach(([key, value]) => {
+                const input = this.formIndex[key];
+                if (input) {
+                    input.value = value;
+                    refreshOnChange = refreshOnChange || input.refresh_on_change;
+                }
+            });
+            this.onChange(refreshOnChange);
         },
-        onChange(refreshRequest) {
-            this.formData = this.form.data.create();
-            this.$emit("onChange", this.formData, refreshRequest);
-        },
-        onRender() {
-            this.$nextTick(() => {
-                const el = this.$refs["form"];
-                this.form = new Form({
-                    el,
-                    inputs: this.inputs,
-                    text_enable: this.textEnable,
-                    text_disable: this.textDisable,
-                    sustain_repeats: this.sustainRepeats,
-                    sustain_conditionals: this.sustainConditionals,
-                    onchange: (refreshRequest) => {
-                        this.onChange(refreshRequest);
-                    },
-                });
-                this.onChange();
+        onCreateIndex() {
+            this.formIndex = {};
+            visitInputs(this.formInputs, (input, name) => {
+                this.formIndex[name] = input;
             });
         },
-        onHighlight(validation, silent = false) {
-            this.form.trigger("reset");
-            if (validation && validation.length == 2) {
-                const input_id = this.form.data.match(validation[0]);
-                this.form.highlight(input_id, validation[1], silent);
+        onChangeForm() {
+            this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
+            this.onChange(true);
+        },
+        onCloneInputs() {
+            this.formInputs = JSON.parse(JSON.stringify(this.inputs));
+            this.onCreateIndex();
+        },
+        onChange(refreshOnChange) {
+            this.onCreateIndex();
+            const params = {};
+            Object.entries(this.formIndex).forEach(([key, input]) => {
+                params[key] = input.value;
+            });
+            if (JSON.stringify(params) != JSON.stringify(this.formData)) {
+                this.formData = params;
+                this.resetError();
+                this.$emit("onChange", params, refreshOnChange);
             }
+        },
+        getOffsetTop(element, padding = 100) {
+            let offsetTop = 0;
+            while (element) {
+                offsetTop += element.offsetTop;
+                element = element.offsetParent;
+            }
+            return offsetTop - padding;
+        },
+        onHighlight(validation, silent = false) {
+            if (validation && validation.length == 2) {
+                const inputId = validation[0];
+                const message = validation[1];
+                this.setError(inputId, message);
+                if (!silent && inputId) {
+                    const elementId = getElementId(inputId);
+                    const element = this.$el.querySelector(`#${elementId}`);
+                    if (element) {
+                        document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));
+                    }
+                }
+            }
+        },
+        setError(inputId, message) {
+            const input = this.formIndex[inputId];
+            if (input) {
+                input.error = message;
+            }
+        },
+        resetError() {
+            Object.values(this.formIndex).forEach((input) => {
+                input.error = null;
+            });
         },
     },
 };

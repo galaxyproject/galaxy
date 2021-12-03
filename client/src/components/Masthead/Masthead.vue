@@ -11,8 +11,7 @@
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
-            >
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)">
             </masthead-item>
         </b-navbar-nav>
         <div ref="quota-meter-container" class="quota-meter-container" />

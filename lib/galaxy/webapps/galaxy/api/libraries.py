@@ -17,7 +17,6 @@ from fastapi import (
 
 from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.libraries import LibrariesService
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryPayload,
@@ -37,6 +36,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
+from galaxy.webapps.galaxy.services.libraries import LibrariesService
 from . import (
     BaseGalaxyAPIController,
     depends,

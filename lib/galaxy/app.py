@@ -4,10 +4,6 @@ import sys
 import time
 from typing import Any, Callable, List, Tuple
 
-from sqlalchemy.orm.scoping import (
-    scoped_session,
-)
-
 import galaxy.model
 import galaxy.model.security
 import galaxy.queues
@@ -38,6 +34,10 @@ from galaxy.managers.workflows import (
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import (
+    galaxy_scoped_session,
+    install_model_scoped_session,
+)
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
@@ -72,7 +72,7 @@ from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicApp, MinimalManagerApp, StructuredApp
+from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
@@ -97,7 +97,31 @@ class HaltableContainer(Container):
             raise exception
 
 
-class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
+class SentryClientMixin:
+    def configure_sentry_client(self):
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+            event_level = self.config.sentry_event_level.upper()
+            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
+
+            def postfork_sentry_client():
+                import sentry_sdk
+                from sentry_sdk.integrations.logging import LoggingIntegration
+
+                sentry_logging = LoggingIntegration(
+                    level=logging.INFO,  # Capture info and above as breadcrumbs
+                    event_level=getattr(logging, event_level)  # Send errors as events
+                )
+                self.sentry_client = sentry_sdk.init(
+                    self.config.sentry_dsn,
+                    release=f"{self.config.version_major}.{self.config.version_minor}",
+                    integrations=[sentry_logging]
+                )
+
+            self.application_stack.register_postfork_function(postfork_sentry_client)
+
+
+class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
 
     def __init__(self, fsmon=False, configure_logging=True, **kwargs) -> None:
@@ -106,7 +130,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
         ]
-        self._register_singleton(BasicApp, self)
+        self._register_singleton(BasicSharedApp, self)
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
             # configured.  The handler added here gets dumped and replaced with
@@ -132,7 +156,8 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         self._register_singleton(IdEncodingHelper, self.security)
         self._register_singleton(SharedModelMapping, self.model)
         self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(scoped_session, self.model.context)
+        self._register_singleton(galaxy_scoped_session, self.model.context)
+        self._register_singleton(install_model_scoped_session, self.install_model.context)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -190,15 +215,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._configure_datatypes_registry(self.installed_repository_manager)
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
-        self.sentry_client = None
-        if self.config.sentry_dsn:
-
-            def postfork_sentry_client():
-                import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
-
-            self.application_stack.register_postfork_function(postfork_sentry_client)
+        self.configure_sentry_client()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):
@@ -270,9 +287,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
         self.toolbox.persist_cache(register_postfork=True)
-        # If app is not job handler but uses mule messaging.
-        # Can be removed when removing mule support.
-        self.job_manager._check_jobs_at_startup()
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(VisualizationsRegistry, VisualizationsRegistry(
             self,
@@ -281,7 +295,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
-        self[ToursRegistry] = tour_registry  # type: ignore
+        self[ToursRegistry] = tour_registry  # type: ignore[misc]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         # Load security policy.
@@ -313,6 +327,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                                                          self.config.oidc_config_file,
                                                          self.config.oidc_backends_config_file)
 
+        self.containers = {}
+        if self.config.enable_beta_containers_interface:
+            self.containers = build_container_interfaces(
+                self.config.containers_config_file,
+                containers_conf=self.config.containers_conf
+            )
+
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
             self.prune_history_audit_task = IntervalTask(
                 func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
@@ -324,6 +345,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
+        # If app is not job handler but uses mule messaging.
+        # Can be removed when removing mule support.
+        self.job_manager._check_jobs_at_startup()
         self.proxy_manager = ProxyManager(self.config)
 
         from galaxy.workflow import scheduling_manager
@@ -335,13 +359,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # it becomes more commonly needed we could create a prefork function registration method like we do with
         # postfork functions.
         self.application_stack.init_late_prefork()
-
-        self.containers = {}
-        if self.config.enable_beta_containers_interface:
-            self.containers = build_container_interfaces(
-                self.config.containers_config_file,
-                containers_conf=self.config.containers_conf
-            )
 
         self.interactivetool_manager = InteractiveToolManager(self)
 

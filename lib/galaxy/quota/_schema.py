@@ -126,7 +126,7 @@ class QuotaSummaryList(BaseModel):
 
 class QuotaDetails(QuotaBase):
     description: str = QuotaDescriptionField
-    bytes: str = Field(
+    bytes: int = Field(
         ...,
         title="Bytes",
         description="The amount, expressed in bytes, of this Quota.",

@@ -10,7 +10,7 @@
  */
 
 import SkipList from "proper-skip-list";
-import { pipe, take, filter } from "iter-tools/es2018";
+import { pipe, take, filter } from "iter-tools";
 import { SEEK } from "../../caching/enums";
 import { SearchParams } from "../../model";
 

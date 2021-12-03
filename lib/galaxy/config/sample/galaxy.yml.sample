@@ -242,6 +242,11 @@ galaxy:
   # <data_dir>.
   #new_file_path: tmp
 
+  # Maximum size of uploadable files, specified in bytes (default:
+  # 100GB). This value is ignored if an external upload server is
+  # configured.
+  #maximum_upload_file_size: 107374182400
+
   # Tool config files, defines what tools are available in Galaxy. Tools
   # can be locally developed or installed from Galaxy tool sheds.
   # (config/tool_conf.xml.sample will be used if left unset and
@@ -765,8 +770,16 @@ galaxy:
   # list. This is the address used to subscribe to the list. Uncomment
   # and leave empty if you want to remove this option from the user
   # registration form.
-  # Example value 'galaxy-announce-join@bx.psu.edu'
+  # Example value 'galaxy-announce-join@lists.galaxyproject.org'
   #mailing_join_addr: null
+
+  # The subject of the email sent to the mailing list join address. See
+  # the `mailing_join_addr` option for more information.
+  #mailing_join_subject: Join Mailing List
+
+  # The body of the email sent to the mailing list join address. See the
+  # `mailing_join_addr` option for more information.
+  #mailing_join_body: Join Mailing List
 
   # Datasets in an error state include a link to report the error.
   # Those reports will be sent to this address.  Error reports are
@@ -1174,8 +1187,8 @@ galaxy:
 
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
-  # chunk size is specified in bytes (default: 100MB).
-  #chunk_upload_size: 104857600
+  # chunk size is specified in bytes (default: 10MB).
+  #chunk_upload_size: 10485760
 
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
@@ -1380,12 +1393,9 @@ galaxy:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
-  # Sentry slow request logging.  Requests slower than the threshold
-  # indicated below will be sent as events to the configured Sentry
-  # server (above, sentry_dsn).  A value of '0' is disabled.  For
-  # example, you would set this to .005 to log all queries taking longer
-  # than 5 milliseconds.
-  #sentry_sloreq_threshold: 0.0
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
@@ -1902,6 +1912,13 @@ galaxy:
   # see dataset paths.
   #expose_dataset_path: false
 
+  # This option allows users to view the tool wrapper source code. This
+  # is safe to enable if you have not hardcoded any secrets in any of
+  # the tool wrappers installed on this Galaxy server. If you have only
+  # installed tool wrappers from  public tool sheds and tools shipped
+  # with Galaxy there you can enable this option.
+  #enable_tool_source_display: false
+
   # XML config file that contains the job metric collection
   # configuration.
   # The value of this option will be resolved with respect to
@@ -1999,11 +2016,22 @@ galaxy:
   # for production servers yet.
   #local_task_queue_workers: 2
 
-  # Enable job recovery (if Galaxy is restarted while cluster jobs are
-  # running, it can "recover" them when it starts).  This is not safe to
-  # use if you are running more than one Galaxy server using the same
-  # database.
-  #enable_job_recovery: true
+  # Each Galaxy job handler process runs one thread responsible for
+  # discovering jobs and dispatching them to runners. This thread
+  # operates in a loop and sleeps for the given number of seconds at the
+  # end of each iteration. This can be decreased if extremely high job
+  # throughput is necessary, but doing so can increase CPU usage of
+  # handler processes. Float values are allowed.
+  #job_handler_monitor_sleep: 1.0
+
+  # Each Galaxy job handler process runs one thread per job runner
+  # plugin responsible for checking the state of queued and running
+  # jobs.  This thread operates in a loop and sleeps for the given
+  # number of seconds at the end of each iteration. This can be
+  # decreased if extremely high job throughput is necessary, but doing
+  # so can increase CPU usage of handler processes. Float values are
+  # allowed.
+  #job_runner_monitor_sleep: 1.0
 
   # Determines how metadata will be set. Valid values are `directory`
   # and `extended`. In extended mode jobs will decide if a tool run
@@ -2046,6 +2074,16 @@ galaxy:
   # may want to try the -noac mount option (Linux) or -actimeo=0
   # (Solaris).
   #retry_job_output_collection: 0
+
+  # Determines which process will evaluate the tool command line. If set
+  # to "local" the tool command line, configuration files and other
+  # dynamic values will be templated in the job handler process. If set
+  # to ``remote`` the tool command line will be built as part of the
+  # submitted job. Note that ``remote`` is a beta setting that will be
+  # useful for materializing deferred datasets as part of the submitted
+  # job. Note also that you have to set ``metadata_strategy`` to
+  # ``extended`` if you set this option to ``remote``.
+  #tool_evaluation_strategy: local
 
   # In the past Galaxy would preserve its Python environment when
   # running jobs ( and still does for internal tools packaged with
@@ -2326,4 +2364,9 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #tool_destinations_config_file: tool_destinations.yml
+
+  # Location of New User Welcome data, a single directory containing the
+  # images and JSON of Topics/Subtopics/Slides as export. This location
+  # is relative to galaxy/static
+  #welcome_directory: plugins/welcome_page/new_user/static/topics/
 

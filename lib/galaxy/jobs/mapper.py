@@ -1,10 +1,11 @@
 import importlib
 import logging
+from inspect import getfullargspec
+from types import ModuleType
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
-from galaxy.util.getargspec import getfullargspec
 from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
 
@@ -48,6 +49,7 @@ class JobRunnerMapper:
     This class is responsible to managing the mapping of jobs
     (in the form of job_wrappers) to job runner url strings.
     """
+    rules_module: ModuleType
 
     def __init__(self, job_wrapper, url_to_destination, job_config):
         self.job_wrapper = job_wrapper

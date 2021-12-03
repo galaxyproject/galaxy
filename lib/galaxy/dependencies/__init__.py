@@ -2,6 +2,7 @@
 Determine what optional dependencies are needed.
 """
 
+import os
 import sys
 from os.path import dirname, exists, join
 
@@ -42,15 +43,12 @@ class ConditionalDependencies:
     def parse_configs(self):
 
         def load_job_config_dict(job_conf_dict):
-            for runner in job_conf_dict.get("runners"):
+            runners = job_conf_dict.get("runners", {})
+            for runner in runners.values():
                 if "load" in runner:
                     self.job_runners.append(runner.get("load"))
                 if "rules_module" in runner:
-                    self.job_rule_modules.append(plugin.text)
-                if "params" in runner:
-                    runner_params = runner["params"]
-                    if "rules_module" in runner_params:
-                        self.job_rule_modules.append(plugin.text)
+                    self.job_rule_modules.append(runner.get("rules_module"))
 
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
@@ -75,7 +73,7 @@ class ConditionalDependencies:
                     pass
             else:
                 try:
-                    with open("job_conf_path") as f:
+                    with open(job_conf_path) as f:
                         job_conf_dict = yaml.safe_load(f)
                     load_job_config_dict(job_conf_dict)
                 except OSError:
@@ -191,7 +189,7 @@ class ConditionalDependencies:
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
-    def check_raven(self):
+    def check_sentry_sdk(self):
         return self.config.get("sentry_dsn", None) is not None
 
     def check_statsd(self):
@@ -258,6 +256,10 @@ class ConditionalDependencies:
 
     def check_tensorflow(self):
         return asbool(self.config["enable_tool_recommendations"])
+
+    def check_weasyprint(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
 
 
 def optional(config_file=None):

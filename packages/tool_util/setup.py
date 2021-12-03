@@ -99,6 +99,9 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
+        'cwl': [
+            'cwltool==3.1.20211107152837',
+        ],
         'mulled': [
             'conda',
             'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI

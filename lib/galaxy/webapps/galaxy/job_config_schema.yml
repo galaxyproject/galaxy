@@ -72,6 +72,10 @@ mapping:
                         type: str
                       handler:
                         type: str
+              metadata_strategy:
+                type: str
+              tool_evaluation_strategy:
+                type: str
 
   tools: 
     type: seq

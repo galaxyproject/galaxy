@@ -1,16 +1,20 @@
 import os
-import tempfile
 
 import pytest
 
-from galaxy.datatypes import sniff
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
 )
+from galaxy.files.unittest_utils import (
+    setup_root,
+    TestConfiguredFileSources,
+    write_file_fixtures,
+)
 from ._util import (
     assert_realizes_as,
+    assert_realizes_throws_exception,
     find,
     find_file_a,
     list_dir,
@@ -62,11 +66,7 @@ def test_posix():
 
 def test_posix_link_security():
     file_sources = _configured_file_sources()
-    e = None
-    try:
-        sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
-    except Exception as ex:
-        e = ex
+    e = assert_realizes_throws_exception(file_sources, "gxfiles://test1/unsafe")
     _assert_access_prohibited(e)
 
 
@@ -82,12 +82,7 @@ def test_posix_link_security_write():
 
 def test_posix_link_security_allowlist():
     file_sources = _configured_file_sources(include_allowlist=True)
-    tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
-    try:
-        with open(tmp_name) as f:
-            assert f.read() == "b\n"
-    finally:
-        os.remove(tmp_name)
+    assert_realizes_as(file_sources, "gxfiles://test1/unsafe", "b\n")
 
 
 def test_posix_link_security_allowlist_write():
@@ -99,12 +94,7 @@ def test_posix_link_security_allowlist_write():
 
 def test_posix_disable_link_security():
     file_sources = _configured_file_sources(plugin_extra_config={"enforce_symlink_security": False})
-    tmp_name = sniff.stream_url_to_file("gxfiles://test1/unsafe", file_sources=file_sources)
-    try:
-        with open(tmp_name) as f:
-            assert f.read() == "b\n"
-    finally:
-        os.remove(tmp_name)
+    assert_realizes_as(file_sources, "gxfiles://test1/unsafe", "b\n")
 
 
 def test_posix_nonexistent_parent_write():
@@ -159,10 +149,10 @@ def test_user_ftp_explicit_config():
     plugin = {
         'type': 'gxftp',
     }
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
     user_context = user_context_fixture(user_ftp_dir=root)
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
 
@@ -177,14 +167,14 @@ def test_user_ftp_explicit_config():
 
 
 def test_user_ftp_implicit_config():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=False,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
     user_context = user_context_fixture(user_ftp_dir=root)
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
     assert os.path.exists(os.path.join(root, "a"))
 
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
@@ -195,32 +185,32 @@ def test_user_ftp_implicit_config():
 
 
 def test_user_ftp_respects_upload_purge_off():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=True,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
     user_context = user_context_fixture(user_ftp_dir=root)
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
     assert not os.path.exists(os.path.join(root, "a"))
 
 
 def test_user_ftp_respects_upload_purge_on_by_default():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         ftp_upload_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
     user_context = user_context_fixture(user_ftp_dir=root)
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
     assert not os.path.exists(os.path.join(root, "a"))
 
 
 def test_import_dir_explicit_config():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         library_import_dir=root,
     )
@@ -228,30 +218,30 @@ def test_import_dir_explicit_config():
         'type': 'gximport',
     }
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
 
 
 def test_import_dir_implicit_config():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         library_import_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
-    _write_file_fixtures(tmp, root)
+    write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
 
 
 def test_user_import_dir_implicit_config():
-    tmp, root = _setup_root()
+    tmp, root = setup_root()
     file_sources_config = ConfiguredFileSourcesConfig(
         user_library_import_dir=root,
     )
     file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
 
-    _write_file_fixtures(tmp, os.path.join(root, EMAIL))
+    write_file_fixtures(tmp, os.path.join(root, EMAIL))
 
     user_context = user_context_fixture()
     assert_realizes_as(file_sources, "gxuserimport://a", "a\n", user_context=user_context)
@@ -267,7 +257,7 @@ def test_posix_user_access_requires_role():
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -281,7 +271,7 @@ def test_posix_user_access_requires_group():
     user_context = user_context_fixture()
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(group_names={allowed_group_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -308,13 +298,13 @@ def test_posix_user_access_requires_role_and_group():
     }
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
-    user_context = user_context_fixture(group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(group_names={allowed_group_name})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name})
     _assert_user_access_prohibited(file_sources, user_context)
 
-    user_context = user_context_fixture(role_names=set([allowed_role_name]), group_names=set([allowed_group_name]))
+    user_context = user_context_fixture(role_names={allowed_role_name}, group_names={allowed_group_name})
     _assert_user_access_granted(file_sources, user_context)
 
 
@@ -326,32 +316,32 @@ def test_posix_user_access_using_boolean_rules():
     file_sources = _configured_file_sources(writable=True, plugin_extra_config=plugin_extra_config)
 
     user_context = user_context_fixture(
-        role_names=set([]),
-        group_names=set([])
+        role_names=set(),
+        group_names=set()
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1"]),
-        group_names=set(["group1", "group2"])
+        role_names={"role1"},
+        group_names={"group1", "group2"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role3"]),
-        group_names=set(["group1", "group2", "group3"])
+        role_names={"role1", "role3"},
+        group_names={"group1", "group2", "group3"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role2"]),
-        group_names=set(["group3", "group5"])
+        role_names={"role1", "role2"},
+        group_names={"group3", "group5"}
     )
     _assert_user_access_prohibited(file_sources, user_context)
 
     user_context = user_context_fixture(
-        role_names=set(["role1", "role3"]),
-        group_names=set(["group1", "group2"])
+        role_names={"role1", "role3"},
+        group_names={"group1", "group2"}
     )
     _assert_user_access_granted(file_sources, user_context)
 
@@ -380,8 +370,8 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True):
-    tmp, root = _setup_root()
+def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True) -> TestConfiguredFileSources:
+    tmp, root = setup_root()
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
@@ -399,49 +389,13 @@ def _configured_file_sources(include_allowlist=False, plugin_extra_config=None, 
     else:
         plugin['root'] = root
     plugin.update(plugin_extra_config or {})
-    _write_file_fixtures(tmp, root)
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin})
-    file_sources.test_root = root
+    write_file_fixtures(tmp, root)
+    file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
     return file_sources
 
 
-def _setup_root():
-    tmp = os.path.realpath(tempfile.mkdtemp())
-    root = os.path.join(tmp, "root")
-    os.mkdir(root)
-    return tmp, root
-
-
-def _write_file_fixtures(tmp, root):
-    if not os.path.exists(root):
-        os.mkdir(root)
-    os.symlink(os.path.join(tmp, "b"), os.path.join(root, "unsafe"))
-    with open(os.path.join(root, "a"), "w") as f:
-        f.write("a\n")
-    with open(os.path.join(tmp, "b"), "w") as f:
-        f.write("b\n")
-
-    subdir1 = os.path.join(root, "subdir1")
-    os.mkdir(subdir1)
-    with open(os.path.join(subdir1, "c"), "w") as f:
-        f.write("c\n")
-
-    subdir2 = os.path.join(subdir1, "subdir2")
-    os.mkdir(subdir2)
-    with open(os.path.join(subdir2, "d"), "w") as f:
-        f.write("d\n")
-
-    os.symlink(subdir1, os.path.join(root, "unsafe_dir"))
-    return tmp, root
-
-
 def _download_and_check_file(file_sources):
-    tmp_name = sniff.stream_url_to_file("gxfiles://test1/a", file_sources=file_sources)
-    try:
-        a_contents = open(tmp_name).read()
-        assert a_contents == "a\n"
-    finally:
-        os.remove(tmp_name)
+    assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n")
 
 
 def _assert_access_prohibited(e):

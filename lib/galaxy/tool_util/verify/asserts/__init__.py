@@ -1,8 +1,8 @@
 import logging
 import sys
+from inspect import getfullargspec
 
 from galaxy.util import unicodify
-from galaxy.util.getargspec import getfullargspec
 
 log = logging.getLogger(__name__)
 

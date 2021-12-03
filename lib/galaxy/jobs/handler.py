@@ -9,6 +9,7 @@ from queue import (
     Empty,
     Queue,
 )
+from typing import Dict, List, Tuple
 
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
@@ -28,6 +29,7 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -64,6 +66,7 @@ class JobHandler(JobHandlerI):
         self.job_stop_queue = JobHandlerStopQueue(app, self.dispatcher)
 
     def start(self):
+        self.dispatcher.start()
         self.job_queue.start()
         self.job_stop_queue.start()
 
@@ -160,7 +163,7 @@ class JobHandlerQueue(Monitors):
     """
     STOP_SIGNAL = object()
 
-    def __init__(self, app, dispatcher):
+    def __init__(self, app: MinimalManagerApp, dispatcher):
         """Initializes the Job Handler Queue, creates (unstarted) monitoring thread"""
         self.app = app
         self.dispatcher = dispatcher
@@ -174,12 +177,12 @@ class JobHandlerQueue(Monitors):
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
-        # Contains new jobs. Note this is not used if track_jobs_in_database is True
-        self.queue = Queue()
-        # Contains jobs that are waiting (only use from monitor thread)
-        self.waiting_jobs = []
+        # Contains a tuple of new new job and tool id. Note this is not used if track_jobs_in_database is True
+        self.queue: Queue[Tuple[int, str]] = Queue()
+        # Contains job ids for jobs that are waiting (only use from monitor thread)
+        self.waiting_jobs: List[int] = []
         # Contains wrappers of jobs that are limited or ready (so they aren't created unnecessarily/multiple times)
-        self.job_wrappers = {}
+        self.job_wrappers: Dict[int, JobWrapper] = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
         self.job_grabber = None
@@ -309,7 +312,7 @@ class JobHandlerQueue(Monitors):
                 # With sqlite backends we can run into locked databases occasionally
                 # To avoid that the monitor step locks again we backoff a little longer.
                 self._monitor_sleep(5)
-            self._monitor_sleep(1)
+            self._monitor_sleep(self.app.config.job_handler_monitor_sleep)
 
     def __monitor_step(self):
         """
@@ -355,8 +358,8 @@ class JobHandlerQueue(Monitors):
             job_filter_conditions = (
                 (model.Job.state == model.Job.states.NEW),
                 (model.Job.handler == self.app.config.server_name),
-                ~model.Job.table.c.id.in_(hda_not_ready),
-                ~model.Job.table.c.id.in_(ldda_not_ready))
+                ~model.Job.table.c.id.in_(select(hda_not_ready)),
+                ~model.Job.table.c.id.in_(select(ldda_not_ready)))
             if self.app.config.user_activation_on:
                 job_filter_conditions = job_filter_conditions + (
                     or_((model.Job.user_id == null()), (model.User.active == true())),)
@@ -891,7 +894,7 @@ class JobHandlerStopQueue(Monitors):
     """
     STOP_SIGNAL = object()
 
-    def __init__(self, app, dispatcher):
+    def __init__(self, app: MinimalManagerApp, dispatcher):
         self.app = app
         self.dispatcher = dispatcher
 
@@ -900,11 +903,11 @@ class JobHandlerStopQueue(Monitors):
         # Keep track of the pid that started the job manager, only it
         # has valid threads
         self.parent_pid = os.getpid()
-        # Contains new jobs. Note this is not used if track_jobs_in_database is True
-        self.queue = Queue()
+        # Contains a tuple of job_id and error message. Note this is not used if track_jobs_in_database is True
+        self.queue: Queue[Tuple[int, str]] = Queue()
 
-        # Contains jobs that are waiting (only use from monitor thread)
-        self.waiting = []
+        # Contains job ids that are waiting (only use from monitor thread)
+        self.waiting: List[int] = []
 
         name = "JobHandlerStopQueue.monitor_thread"
         self._init_monitor_thread(name, config=app.config)
@@ -1024,6 +1027,10 @@ class DefaultJobDispatcher:
         # dict by the plugin.
         self.app.job_config.convert_legacy_destinations(self.job_runners)
         log.debug(f"Loaded job runners plugins: {':'.join(self.job_runners.keys())}")
+
+    def start(self):
+        for runner in self.job_runners.values():
+            runner.start()
 
     def __get_runner_name(self, job_wrapper):
         if job_wrapper.can_split():

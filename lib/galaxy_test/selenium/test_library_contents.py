@@ -161,8 +161,9 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.wait_for_selector_clickable(".toolbtn-show-locinfo").click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_selector_clickable(".ui-modal #button-0").click()
-        self.wait_for_overlays_cleared()
         self.screenshot("libraries_show_details")
+        self.wait_for_overlays_cleared()
+        self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
     def _select_history_option(self, select_id, label_text):

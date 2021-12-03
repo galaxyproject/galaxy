@@ -456,8 +456,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 # We'll end up creating a new galaxy_session
                 session_key = None
         # If remote user is in use it can invalidate the session and in some
-        # cases won't have a cookie set above, so we need to to check some
-        # things now.
+        # cases won't have a cookie set above, so we need to check some things
+        # now.
         if self.app.config.use_remote_user:
             remote_user_email = self.environ.get(self.app.config.remote_user_header, None)
             if galaxy_session:

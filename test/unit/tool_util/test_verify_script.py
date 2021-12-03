@@ -13,6 +13,10 @@ from galaxy.tool_util.verify.script import (
 
 VT_PATH = 'galaxy.tool_util.verify.script.verify_tool'
 NEW_HISTORY = object()
+NEW_HISTORY_ID = 'new'
+EXISTING_HISTORY = {'id': 'existing'}
+EXISTING_SUITE_NAME = "existing suite"
+EXISTING_HISTORY_NAME = f"History for {EXISTING_SUITE_NAME}"
 
 
 def test_arg_parse():
@@ -102,6 +106,81 @@ def test_test_tools_no_history_cleanup():
         assert not interactor.history_deleted
 
 
+def test_test_tools_history_reuse():
+    interactor = MockGalaxyInteractor()
+    f = NamedTemporaryFile()
+    results = Results(EXISTING_SUITE_NAME, f.name)
+    test_references = [
+        TestReference("cat", "0.1.0", 0),
+    ]
+    with mock.patch(VT_PATH) as mock_verify:
+        assert_results_not_written(results)
+        run(
+            interactor,
+            test_references,
+            results,
+            no_history_reuse=False,
+        )
+        calls = mock_verify.call_args_list
+        assert len(calls) == 1
+        assert len(results.test_exceptions) == 0
+        assert_results_written(results)
+        assert interactor.history_id == EXISTING_HISTORY['id']
+        assert interactor.history_name == EXISTING_HISTORY_NAME
+        assert not interactor.history_created
+        assert not interactor.history_deleted
+
+
+def test_test_tools_no_history_reuse():
+    interactor = MockGalaxyInteractor()
+    f = NamedTemporaryFile()
+    results = Results("existing suite", f.name)
+    test_references = [
+        TestReference("cat", "0.1.0", 0),
+    ]
+    with mock.patch(VT_PATH) as mock_verify:
+        assert_results_not_written(results)
+        run(
+            interactor,
+            test_references,
+            results,
+            no_history_reuse=True,
+        )
+        calls = mock_verify.call_args_list
+        assert len(calls) == 1
+        assert len(results.test_exceptions) == 0
+        assert_results_written(results)
+        assert interactor.history_id == NEW_HISTORY_ID
+        assert interactor.history_name == EXISTING_HISTORY_NAME
+        assert interactor.history_created
+        assert interactor.history_deleted
+
+
+def test_test_tools_history_name():
+    interactor = MockGalaxyInteractor()
+    f = NamedTemporaryFile()
+    results = Results("my suite", f.name)
+    test_references = [
+        TestReference("cat", "0.1.0", 0),
+    ]
+    with mock.patch(VT_PATH) as mock_verify:
+        assert_results_not_written(results)
+        run(
+            interactor,
+            test_references,
+            results,
+            history_name="testfoo",
+        )
+        calls = mock_verify.call_args_list
+        assert len(calls) == 1
+        assert len(results.test_exceptions) == 0
+        assert_results_written(results)
+        assert interactor.history_id == NEW_HISTORY_ID
+        assert interactor.history_name == "testfoo"
+        assert interactor.history_created
+        assert interactor.history_deleted
+
+
 def test_test_tool_per_test_history():
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
@@ -184,13 +263,13 @@ def test_test_tools_records_retry_exception():
 
 
 def test_results():
-    f = NamedTemporaryFile()
-    results = Results("my suite", f.name)
+    tf = NamedTemporaryFile()
+    results = Results("my suite", tf.name)
     results.register_result({"id": "foo", "has_data": True, "data": {"status": "success"}})
     results.write()
     message = results.info_message()
 
-    with open(f.name) as f:
+    with open(tf.name) as f:
         report_obj = json.load(f)
     assert "tests" in report_obj
     assert len(report_obj["tests"]) == 1
@@ -205,7 +284,7 @@ def test_results():
     results.write()
     message = results.info_message()
 
-    with open(f.name) as f:
+    with open(tf.name) as f:
         report_obj = json.load(f)
     assert len(report_obj["tests"]) == 2
     assert report_obj["results"]["skips"] == 1
@@ -266,9 +345,21 @@ class MockGalaxyInteractor:
     def __init__(self):
         self.history_deleted = False
         self.history_created = False
+        self.history_name = None
+        self.history_id = None
+
+    def get_history(self, history_name=""):
+        if history_name == EXISTING_HISTORY_NAME:
+            self.history_name = history_name
+            self.history_id = EXISTING_HISTORY['id']
+            return EXISTING_HISTORY
+        else:
+            return None
 
     def new_history(self, history_name="", publish_history=False):
         self.history_created = True
+        self.history_name = history_name
+        self.history_id = NEW_HISTORY_ID
         return NEW_HISTORY
 
     def delete_history(self, history):

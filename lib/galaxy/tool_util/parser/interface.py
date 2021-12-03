@@ -19,6 +19,7 @@ class ToolSource(metaclass=ABCMeta):
     information from.
     """
     default_is_multi_byte = False
+    language: str
 
     @abstractmethod
     def parse_id(self):
@@ -305,7 +306,7 @@ class PageSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_input_sources(self):
+    def parse_input_sources(self) -> List:
         """ Return a list of InputSource objects. """
 
 

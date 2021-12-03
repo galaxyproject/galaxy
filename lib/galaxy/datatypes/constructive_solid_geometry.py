@@ -1,11 +1,11 @@
 # TODO: revisit ignoring type and write some tests for this, the multi-inheritance in this
 # this file is challenging, it should be broken into true mixins.
-# type: ignore
 """
 Constructive Solid Geometry file formats.
 """
 
 import abc
+from typing import List
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -13,7 +13,10 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -43,7 +46,7 @@ class Ply:
     def __init__(self, **kwd):
         raise NotImplementedError
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
@@ -67,8 +70,8 @@ class Ply:
         if line.find(subtype) < 0:
             return False
         stop_index = 0
-        while True:
-            line = get_next_line(fh)
+        for line in util.iter_start_of_line(fh, MAX_LINE_LEN):
+            line = line.strip()
             stop_index += 1
             if line == 'end_header':
                 return True
@@ -119,7 +122,7 @@ class Ply:
             return f"Ply file ({nice_size(dataset.get_size())})"
 
 
-class PlyAscii(Ply, data.Text):
+class PlyAscii(Ply, data.Text):  # type: ignore[misc]
     file_ext = "plyascii"
     subtype = 'ascii'
 
@@ -127,7 +130,7 @@ class PlyAscii(Ply, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class PlyBinary(Ply, Binary):
+class PlyBinary(Ply, Binary):  # type: ignore[misc]
     file_ext = "plybinary"
     subtype = 'binary'
 
@@ -205,7 +208,7 @@ class Vtk:
     def __init__(self, **kwd):
         raise NotImplementedError
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         VTK files can be either ASCII or binary, with two different
         styles of file formats: legacy or XML.  We'll assume if the
@@ -310,7 +313,7 @@ class Vtk:
                                 # FIELD FieldData 2
                                 processing_field_section = True
                                 num_fields = int(items[-1])
-                                fields_processed = []
+                                fields_processed: List[str] = []
                             elif processing_field_section:
                                 if len(fields_processed) == num_fields:
                                     processing_field_section = False
@@ -442,7 +445,7 @@ class Vtk:
             return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
-class VtkAscii(Vtk, data.Text):
+class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
     file_ext = "vtkascii"
     subtype = 'ASCII'
 
@@ -450,7 +453,7 @@ class VtkAscii(Vtk, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class VtkBinary(Vtk, Binary):
+class VtkBinary(Vtk, Binary):   # type: ignore[misc]
     file_ext = "vtkbinary"
     subtype = 'BINARY'
 
@@ -465,4 +468,7 @@ class STL(data.Data):
 # Utility functions
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)
+    if not line.endswith("\n"):
+        # Discard the rest of the line
+        fh.readline()
     return line.strip()

@@ -45,8 +45,8 @@ class TestMissingEnvSh(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_package_repository(self):
-        '''Create and populate package_env_sh_1_0_1440.'''
-        '''
+        '''Create and populate package_env_sh_1_0_1440.
+
         This is step 1 - Create repository package_env_sh_1_0_1440.
 
         Create and populate a repository that is designed to fail a tool dependency installation. This tool dependency should
@@ -71,8 +71,8 @@ class TestMissingEnvSh(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_filter_repository(self):
-        '''Create and populate filter_1440.'''
-        '''
+        '''Create and populate filter_1440.
+
         This is step 2 - Create a repository that defines a complex repository dependency on the repository created in
         step 1, with prior_install_required and set_environment_for_install.
         '''
@@ -104,8 +104,8 @@ class TestMissingEnvSh(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_install_filter_repository(self):
-        '''Install the filter_1440 repository to galaxy.'''
-        '''
+        '''Install the filter_1440 repository to galaxy.
+
         This is step 3 - Attempt to install the second repository into a galaxy instance, verify that it is installed but
         missing tool dependencies.
         '''

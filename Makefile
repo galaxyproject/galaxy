@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=21.09
+RELEASE_CURR:=22.01
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -13,6 +13,12 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
+	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
+	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -130,6 +136,24 @@ update-lint-requirements:
 update-dependencies: update-lint-requirements ## update pinned and dev dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
+$(CWL_TARGETS):
+	./scripts/update_cwl_conformance_tests.sh
+
+generate-cwl-conformance-tests: $(CWL_TARGETS)  ## Initialise CWL conformance tests
+
+clean-cwl-conformance-tests:  ## Clean CWL conformance tests
+	for f in $(CWL_TARGETS); do \
+		if [ $$(basename "$$f") = conformance_tests.yaml ]; then \
+			rm -rf $$(dirname "$$f"); \
+		else \
+			rm -f "$$f"; \
+		fi \
+	done
+
+update-cwl-conformance-tests: ## update CWL conformance tests
+	$(MAKE) clean-cwl-conformance-tests
+	$(MAKE) generate-cwl-conformance-tests
+
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
@@ -155,7 +179,7 @@ client-watch: node-deps ## A useful target for parallel development building.  S
 	cd client && yarn run watch
 
 client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run webpack-dev-server
+	cd client && yarn run serve
 
 client-test: node-deps  ## Run JS unit tests
 	cd client && yarn run test

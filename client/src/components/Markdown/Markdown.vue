@@ -10,8 +10,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="onDownload"
-                >
+                    @click="onDownload">
                     <font-awesome-icon icon="download" />
                 </b-button>
                 <b-button
@@ -21,8 +20,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="$emit('onEdit')"
-                >
+                    @click="$emit('onEdit')">
                     <font-awesome-icon icon="edit" />
                 </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
@@ -64,20 +62,17 @@
                 <HistoryDatasetCollectionDisplay
                     v-else-if="obj.name == 'history_dataset_collection_display'"
                     :args="obj.args"
-                    :collections="historyDatasetCollections"
-                />
+                    :collections="historyDatasetCollections" />
                 <ToolStd
                     v-else-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
                     :args="obj.args"
                     :name="obj.name"
-                    :jobs="jobs"
-                />
+                    :jobs="jobs" />
                 <HistoryDatasetDisplay
                     v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
                     :args="obj.args"
                     :datasets="historyDatasets"
-                    :embedded="obj.name == 'history_dataset_embedded'"
-                />
+                    :embedded="obj.name == 'history_dataset_embedded'" />
                 <HistoryDatasetDetails
                     v-else-if="
                         [
@@ -89,8 +84,7 @@
                     "
                     :name="obj.name"
                     :args="obj.args"
-                    :datasets="historyDatasets"
-                />
+                    :datasets="historyDatasets" />
             </div>
         </div>
     </div>
@@ -293,10 +287,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-.markdown-export {
-    bottom: 0;
-    right: 0;
-    opacity: 0.5;
-}
-</style>

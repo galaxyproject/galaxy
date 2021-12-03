@@ -455,6 +455,12 @@
                (e.g. discovered datasets <discover_datasets>, unpopulated collections, etc)
                happens as part of the job.
           -->
+          <param id="tool_evaluation_strategy">local</param>
+          <!-- If set, overwrites tool_evaluation_strategy (configurable in galaxy.yml).
+               Valid values are `local` (default) and `remote`.
+               Setting tool_evaluation_strategy to `remote` also requires metadata_strategy to be
+               set to `extended`.
+          -->
           <job_metrics />
           <!-- Above element demonstrates embedded job metrics definition - see
                job_metrics_conf.xml.sample for full documentation on possible nested

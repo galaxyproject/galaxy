@@ -3,6 +3,10 @@
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
 
+  <explicit_singularity />
+  <!-- explicit: resolves container URI for a job through explict container
+       tags in the tool XML wrapper. -->
+       
   <!-- All mulled flavors below work by default unless enable_mulled_containers is
        set to false in the galaxy.yaml config file. -->
 

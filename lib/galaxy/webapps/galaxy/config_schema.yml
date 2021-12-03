@@ -225,6 +225,14 @@ mapping:
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
 
+      maximum_upload_file_size:
+        type: int
+        default: 107374182400
+        required: false
+        desc: |
+          Maximum size of uploadable files, specified in bytes (default: 100GB).
+          This value is ignored if an external upload server is configured.
+
       tool_config_file:
         type: any
         default: tool_conf.xml
@@ -508,10 +516,11 @@ mapping:
         type: str
         required: false
         desc: |
-          Container resolvers configuration (beta). Set up a file describing
+          Container resolvers configuration. Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
           this is set to None, the default container resolvers loaded is
           determined by enable_mulled_containers.
+          For available options see config/container_resolvers_conf.xml.sample.
 
       container_resolvers:
         type: seq
@@ -521,11 +530,7 @@ mapping:
           Rather than specifying a container_resolvers_config_file, the definition of the
           resolvers to enable can be embedded into Galaxy's config with this option.
           This has no effect if a container_resolvers_config_file is used.
-
-          The syntax, available resolvers, and documentation of their options is explained in detail in the
-          documentation:
-
-          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+          Takes the same options that can be set in container_resolvers_config_file.
 
       involucro_path:
         type: str
@@ -985,7 +990,23 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Example value 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@lists.galaxyproject.org'
+
+      mailing_join_subject:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The subject of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
+
+      mailing_join_body:
+        type: str
+        default: Join Mailing List
+        required: false
+        desc: |
+          The body of the email sent to the mailing list join address. See the
+          `mailing_join_addr` option for more information.
 
       error_email_to:
         type: str
@@ -1681,12 +1702,12 @@ mapping:
 
       chunk_upload_size:
         type: int
-        default: 104857600
+        default: 10485760
         required: false
         desc: |
           Galaxy can upload user files in chunks without using nginx. Enable the chunk
           uploader by specifying a chunk size larger than 0. The chunk size is specified
-          in bytes (default: 100MB).
+          in bytes (default: 10MB).
 
       dynamic_proxy_manage:
         type: bool
@@ -2013,16 +2034,13 @@ mapping:
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
 
-      sentry_sloreq_threshold:
-        type: float
-        default: 0.0
+      sentry_event_level:
+        type: str
+        default: ERROR
         required: false
         desc: |
-          Sentry slow request logging.  Requests slower than the threshold
-          indicated below will be sent as events to the configured Sentry
-          server (above, sentry_dsn).  A value of '0' is disabled.  For
-          example, you would set this to .005 to log all queries taking longer
-          than 5 milliseconds.
+          Determines the minimum log level that will be sent as an event to Sentry.
+          Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 
       statsd_host:
         type: str
@@ -2567,42 +2585,6 @@ mapping:
           Default format for the export of workflows. Possible values are 'ga'
           or 'format2'.
 
-      force_beta_workflow_scheduled_min_steps:
-        type: int
-        default: 250
-        required: false
-        desc: |
-          Following options only apply to workflows scheduled using the legacy workflow
-          run API (running workflows via a POST to /api/workflows).
-          Force usage of Galaxy's beta workflow scheduler under certain circumstances -
-          this workflow scheduling forces Galaxy to schedule workflows in the background
-          so initial submission of the workflows is significantly sped up. This does
-          however force the user to refresh their history manually to see newly scheduled
-          steps (for "normal" workflows - steps are still scheduled far in advance of
-          them being queued and scheduling here doesn't refer to actual cluster job
-          scheduling).
-          Workflows containing more than the specified number of steps will always use
-          the Galaxy's beta workflow scheduling.
-
-      force_beta_workflow_scheduled_for_collections:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Following options only apply to workflows scheduled using the legacy workflow
-          run API (running workflows via a POST to /api/workflows).
-          Force usage of Galaxy's beta workflow scheduler under certain circumstances -
-          this workflow scheduling forces Galaxy to schedule workflows in the background
-          so initial submission of the workflows is significantly sped up. This does
-          however force the user to refresh their history manually to see newly scheduled
-          steps (for "normal" workflows - steps are still scheduled far in advance of
-          them being queued and scheduling here doesn't refer to actual cluster job
-          scheduling).
-          Workflows containing more than the specified number of steps will always use
-          the Galaxy's beta workflow scheduling.
-          Switch to using Galaxy's beta workflow scheduling for all workflows involving
-          collections.
-
       parallelize_workflow_scheduling_within_histories:
         type: bool
         default: false
@@ -2839,6 +2821,17 @@ mapping:
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
 
+      enable_tool_source_display:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          This option allows users to view the tool wrapper source code. This is
+          safe to enable if you have not hardcoded any secrets in any of the tool
+          wrappers installed on this Galaxy server. If you have only installed tool
+          wrappers from  public tool sheds and tools shipped with Galaxy there you
+          can enable this option.
+
       job_metrics_config_file:
         type: str
         default: job_metrics_conf.xml
@@ -2998,14 +2991,27 @@ mapping:
           config.
           This is a new feature and not recommended for production servers yet.
 
-      enable_job_recovery:
-        type: bool
-        default: true
+      job_handler_monitor_sleep:
+        type: float
+        default: 1.0
         required: false
         desc: |
-          Enable job recovery (if Galaxy is restarted while cluster jobs are running,
-          it can "recover" them when it starts).  This is not safe to use if you are
-          running more than one Galaxy server using the same database.
+          Each Galaxy job handler process runs one thread responsible for discovering jobs and
+          dispatching them to runners. This thread operates in a loop and sleeps for the given
+          number of seconds at the end of each iteration. This can be decreased if extremely high
+          job throughput is necessary, but doing so can increase CPU usage of handler processes.
+          Float values are allowed.
+
+      job_runner_monitor_sleep:
+        type: float
+        default: 1.0
+        required: false
+        desc: |
+          Each Galaxy job handler process runs one thread per job runner plugin responsible for
+          checking the state of queued and running jobs.  This thread operates in a loop and
+          sleeps for the given number of seconds at the end of each iteration. This can be
+          decreased if extremely high job throughput is necessary, but doing so can increase CPU
+          usage of handler processes. Float values are allowed.
 
       metadata_strategy:
         type: str
@@ -3064,6 +3070,18 @@ mapping:
           these files.  The job runner will retry the number of times specified below,
           waiting 1 second between tries.  For NFS, you may want to try the -noac mount
           option (Linux) or -actimeo=0 (Solaris).
+
+      tool_evaluation_strategy:
+        type: str
+        default: local
+        required: false
+        desc: |
+          Determines which process will evaluate the tool command line. If set to "local" the tool command
+          line, configuration files and other dynamic values will be templated in the job
+          handler process. If set to ``remote`` the tool command line will be built as part of the
+          submitted job. Note that ``remote`` is a beta setting that will be useful for materializing
+          deferred datasets as part of the submitted job. Note also that you have to set ``metadata_strategy``
+          to ``extended`` if you set this option to ``remote``.
 
       preserve_python_environment:
         type: str
@@ -3465,3 +3483,12 @@ mapping:
         required: false
         desc: |
           Path to dynamic tool destinations configuration file.
+
+      welcome_directory:
+        type: str
+        default: plugins/welcome_page/new_user/static/topics/
+        required: false
+        desc: |
+          Location of New User Welcome data, a single directory containing the
+          images and JSON of Topics/Subtopics/Slides as export. This location
+          is relative to galaxy/static

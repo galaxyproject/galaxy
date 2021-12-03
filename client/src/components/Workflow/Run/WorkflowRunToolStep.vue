@@ -1,17 +1,20 @@
 <template>
     <div :step-label="model.step_label">
-        <FormCard :title="model.fixed_title" icon="fa-wrench" :collapsible="true" :collapsed.sync="collapsed">
+        <FormCard :title="model.fixed_title" icon="fa-wrench" :collapsible="true" :expanded.sync="expanded">
             <template v-slot:body>
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormDisplay
-                    :inputs="formConfig.inputs"
+                    :inputs="modelInputs"
                     :sustain-repeats="true"
                     :sustain-conditionals="true"
                     :replace-params="replaceParams"
                     :validation-scroll-to="validationScrollTo"
+                    collapsed-enable-text="Edit"
+                    collapsed-enable-icon="fa fa-edit"
+                    collapsed-disable-text="Undo"
+                    collapsed-disable-icon="fa fa-undo"
                     @onChange="onChange"
-                    @onValidation="onValidation"
-                />
+                    @onValidation="onValidation" />
             </template>
         </FormCard>
     </div>
@@ -56,10 +59,11 @@ export default {
     },
     data() {
         return {
-            collapsed: this.model.collapsed,
-            formConfig: this.model,
-            replaceParams: {},
+            expanded: this.model.expanded,
             errorText: null,
+            modelIndex: {},
+            modelInputs: this.model.inputs,
+            replaceParams: {},
         };
     },
     watch: {
@@ -71,11 +75,17 @@ export default {
         },
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
-                this.collapsed = false;
+                this.expanded = true;
             }
         },
     },
     methods: {
+        onCreateIndex() {
+            this.modelIndex = {};
+            visitInputs(this.modelInputs, (input, name) => {
+                this.modelIndex[name] = input;
+            });
+        },
         onReplaceParams() {
             const params = {};
             visitInputs(this.model.inputs, (input, name) => {
@@ -84,21 +94,21 @@ export default {
             this.replaceParams = {};
             _.each(params, (input, name) => {
                 if (input.wp_linked || input.step_linked) {
-                    let newValue;
+                    let newValue = null;
                     if (input.step_linked) {
-                        newValue = { values: [] };
                         _.each(input.step_linked, (sourceStep) => {
                             if (isDataStep(sourceStep)) {
                                 const sourceData = this.stepData[sourceStep.index];
                                 const value = sourceData && sourceData.input;
                                 if (value) {
+                                    newValue = { values: [] };
                                     _.each(value.values, (v) => {
                                         newValue.values.push(v);
                                     });
                                 }
                             }
                         });
-                        if (!input.multiple && newValue.values.length > 0) {
+                        if (!input.multiple && newValue && newValue.values.length > 0) {
                             newValue = {
                                 values: [newValue.values[0]],
                             };
@@ -124,8 +134,14 @@ export default {
         onChange(data, refreshRequest) {
             if (refreshRequest) {
                 getTool(this.model.id, this.model.version, data, this.historyId).then(
-                    (formConfig) => {
-                        this.formConfig = formConfig;
+                    (newModel) => {
+                        this.onCreateIndex();
+                        visitInputs(newModel.inputs, (newInput, name) => {
+                            const input = this.modelIndex[name];
+                            input.options = newInput.options;
+                            input.textable = newInput.textable;
+                        });
+                        this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
                     },
                     (errorText) => {
                         this.errorText = errorText;

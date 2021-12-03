@@ -2,8 +2,8 @@
     <base-grid :is-loaded="isLoaded" :columns="columns" id="data-tables-grid">
         <template v-slot:title> Current data table registry contains {{ rows.length }} data tables </template>
         <template v-slot:rows>
-            <template v-for="(row, index) in rows">
-                <tr :key="row.id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+            <template v-for="row in rows">
+                <tr :key="row.id">
                     <td>
                         <a href="javascript:void(0)" @click="handleTableNameClick">{{ row.name }}</a>
                     </td>

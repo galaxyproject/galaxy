@@ -3,8 +3,9 @@ Accessible models can be read and copied but not modified or deleted.
 
 Owned models can be modified and deleted.
 """
+from typing import Type
 
-from galaxy import exceptions
+from galaxy import exceptions, model
 
 
 class AccessibleManagerMixin:
@@ -13,6 +14,12 @@ class AccessibleManagerMixin:
 
     This can also be thought of as 'read but not modify' privileges.
     """
+
+    # declare what we are using from base ModelManager
+    model_class: Type[model._HasTable]
+
+    def by_id(self, id: int):
+        ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
     def is_accessible(self, item, user, **kwargs):
@@ -74,6 +81,11 @@ class OwnableManagerMixin:
 
     This can also be thought of as write/edit privileges.
     """
+    # declare what we are using from base ModelManager
+    model_class: Type[model._HasTable]
+
+    def by_id(self, id: int):
+        ...
 
     def is_owner(self, item, user, **kwargs):
         """

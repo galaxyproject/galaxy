@@ -26,7 +26,7 @@ class GitContentBiotoolsMetadataSource(BiotoolsMetadataSource):
         path = os.path.join(self._content_directory, "data", biotools_reference, f"{biotools_reference}.biotools.json")
         if not os.path.exists(path):
             return None
-        with open(path, "r") as f:
+        with open(path) as f:
             content_json = json.load(f)
             return BiotoolsEntry.from_json(content_json)
 

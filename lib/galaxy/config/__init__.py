@@ -19,7 +19,19 @@ import tempfile
 import threading
 import time
 from datetime import timedelta
-from typing import Dict, Optional, Set
+from typing import (
+    Any,
+    Callable,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Set,
+    SupportsInt,
+    TYPE_CHECKING,
+    TypeVar,
+    Union,
+)
 
 import yaml
 from beaker.cache import CacheManager
@@ -31,6 +43,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
 from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -39,23 +52,28 @@ from galaxy.util import (
 )
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dbkeys import GenomeBuilds
+from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.properties import (
     find_config_file,
     read_properties_from_file,
     running_from_source,
 )
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web_stack import (
-    get_stack_facts,
-    register_postfork_function
-)
+from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
+
+if TYPE_CHECKING:
+    from galaxy.jobs import JobConfiguration
+    from galaxy.tool_util.deps.containers import ContainerFinder
+    from galaxy.tools import ToolBox
+    from galaxy.tools.cache import ToolCache
+    from galaxy.tools.search import ToolBoxSearch
 
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
 GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
-LOGGING_CONFIG_DEFAULT = {
+LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     'disable_existing_loggers': False,
     'version': 1,
     'root': {
@@ -115,7 +133,10 @@ def find_root(kwargs):
     return os.path.abspath(kwargs.get('root_dir', '.'))
 
 
-class BaseAppConfiguration:
+OptStr = TypeVar("OptStr", None, str)
+
+
+class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options: Optional[Dict[str, str]] = None
@@ -123,6 +144,7 @@ class BaseAppConfiguration:
     paths_to_check_against_root: Set[str] = set()  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
     add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
+    object_store_store_by: str
 
     def __init__(self, **kwargs):
         self._preprocess_kwargs(kwargs)
@@ -307,6 +329,13 @@ class BaseAppConfiguration:
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
+        type_converters: Dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
+            "bool": string_as_bool,
+            "int": int,
+            "float": float,
+            "str": str,
+        }
+
         def convert_datatype(key, value):
             datatype = self.schema.app_schema[key].get('type')
             # check for `not None` explicitly (value can be falsy)
@@ -338,8 +367,6 @@ class BaseAppConfiguration:
                     return paths
                 return ','.join(paths)
             return value
-
-        type_converters = {'bool': string_as_bool, 'int': int, 'float': float, 'str': str}
 
         for key, value in kwargs.items():
             if key in self.schema.app_schema:
@@ -426,27 +453,32 @@ class BaseAppConfiguration:
             if path != current_value:
                 setattr(self, key, path)  # update if path has changed
 
-    def _in_root_dir(self, path):
+    def _in_root_dir(self, path: OptStr) -> OptStr:
         return self._in_dir(self.root, path)
 
-    def _in_managed_config_dir(self, path):
+    def _in_managed_config_dir(self, path: OptStr) -> OptStr:
         return self._in_dir(self.managed_config_dir, path)
 
-    def _in_config_dir(self, path):
+    def _in_config_dir(self, path: OptStr) -> OptStr:
         return self._in_dir(self.config_dir, path)
 
-    def _in_sample_dir(self, path):
+    def _in_sample_dir(self, path: OptStr) -> OptStr:
         return self._in_dir(self.sample_config_dir, path)
 
-    def _in_data_dir(self, path):
+    def _in_data_dir(self, path: OptStr) -> OptStr:
         return self._in_dir(self.data_dir, path)
 
-    def _in_dir(self, _dir, path):
-        return os.path.join(_dir, path) if path else None
+    def _in_dir(self, _dir: str, path: OptStr) -> OptStr:
+        if path is not None:
+            return os.path.join(_dir, path)
+        return None
 
 
 class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
+
+    sentry_dsn: str
+    config_dict: Dict[str, str]
 
     @property
     def admin_users(self):
@@ -549,6 +581,41 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         'tool_data_table_config_path',
         'tool_config_file',
     }
+    database_connection: str
+    tool_path: str
+    tool_data_path: str
+    builds_file_path: str
+    len_file_path: str
+    integrated_tool_panel_config: str
+    toolbox_filter_base_modules: List[str]
+    tool_filters: List[str]
+    tool_label_filters: List[str]
+    tool_section_filters: List[str]
+    user_tool_filters: List[str]
+    user_tool_section_filters: List[str]
+    user_tool_label_filters: List[str]
+    password_expiration_period: timedelta
+    shed_tool_data_path: str
+    hours_between_check: int
+    galaxy_data_manager_data_path: str
+    use_remote_user: bool
+    cluster_files_directory: str
+    preserve_python_environment: str
+    email_from: str
+    workflow_resource_params_mapper: str
+    sanitize_allowlist_file: str
+    allowed_origin_hostnames: List[str]
+    trust_jupyter_notebook_conversion: bool
+    user_library_import_symlink_allowlist: List[str]
+    user_library_import_dir_auto_creation: bool
+    container_resolvers_config_file: str
+    tool_dependency_dir: Optional[str]
+    involucro_path: str
+    mulled_channels: List[str]
+    nginx_upload_store: str
+    pretty_datetime_format: str
+    visualization_plugins_directory: str
+    galaxy_infrastructure_url: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -560,6 +627,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
         if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
             config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
+        elif not os.path.exists(config_schema_path):
+            # Not a package, but cwd is not galaxy_root
+            config_schema_path = os.path.join(self.root, GALAXY_CONFIG_SCHEMA_PATH)
         return AppSchema(config_schema_path, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
@@ -630,7 +700,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.user_tool_section_filters = listify(self.user_tool_section_filters, do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.password_expiration_period = timedelta(days=int(self.password_expiration_period))
+        self.password_expiration_period = timedelta(
+            days=int(cast(SupportsInt, self.password_expiration_period))
+        )
 
         if self.shed_tool_data_path:
             self.shed_tool_data_path = self._in_root_dir(self.shed_tool_data_path)
@@ -754,7 +826,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.involucro_path = self._in_data_dir(os.path.join(target_dir, "involucro"))
         self.involucro_path = self._in_root_dir(self.involucro_path)
         if self.mulled_channels:
-            self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
+            self.mulled_channels = [c.strip() for c in self.mulled_channels.split(",")]  # type: ignore[attr-defined]
 
         default_job_resubmission_condition = kwargs.get('default_job_resubmission_condition', '')
         if not default_job_resubmission_condition.strip():
@@ -936,8 +1008,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._set_alt_paths('file_path', self._in_data_dir('files'))  # this is called BEFORE guessing id/uuid
         ID, UUID = 'id', 'uuid'
         if self.is_set('object_store_store_by'):
-            assert self.object_store_store_by in [ID, UUID], f"Invalid value for object_store_store_by [{self.object_store_store_by}]"
-        elif os.path.basename(self.file_path) == 'objects':
+            if self.object_store_store_by not in [ID, UUID]:
+                raise Exception(
+                    f"Invalid value for object_store_store_by [{self.object_store_store_by}]"
+                )
+        elif os.path.basename(self.file_path) == "objects":
             self.object_store_store_by = UUID
         else:
             self.object_store_store_by = ID
@@ -972,14 +1047,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []
-        try:
-            with open(self.sanitize_allowlist_file) as f:
-                for line in f.readlines():
-                    if not line.startswith("#"):
-                        self.sanitize_allowlist.append(line.strip())
-        except OSError:
+        if not os.path.exists(self.sanitize_allowlist_file):
             if explicit:
                 log.warning("Sanitize log file explicitly specified as '%s' but does not exist, continuing with no tools allowlisted.", self.sanitize_allowlist_file)
+        else:
+            with open(self.sanitize_allowlist_file) as f:
+                self.sanitize_allowlist = sorted(line.strip() for line in f.readlines() if not line.startswith('#'))
 
     def ensure_tempdir(self):
         self._ensure_directory(self.new_file_path)
@@ -1054,7 +1127,7 @@ def get_database_engine_options(kwargs, model_prefix=''):
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions = {
+    conversions: Dict[str, Callable[[Any], Union[bool, int]]] = {
         'convert_unicode': string_as_bool,
         'pool_timeout': int,
         'echo': string_as_bool,
@@ -1108,7 +1181,6 @@ def configure_logging(config):
     """
     # Get root logger
     logging.addLevelName(LOGLV_TRACE, "TRACE")
-    root = logging.getLogger()
     # PasteScript will have already configured the logger if the
     # 'loggers' section was found in the config file, otherwise we do
     # some simple setup using the 'log_*' values from the config.
@@ -1131,15 +1203,17 @@ def configure_logging(config):
                 conf['filename'] = conf.pop('filename_template').format(**get_stack_facts(config=config))
                 logging_conf['handlers'][name] = conf
         logging.config.dictConfig(logging_conf)
-    if getattr(config, "sentry_dsn", None):
-        from raven.handlers.logging import SentryHandler
-        sentry_handler = SentryHandler(config.sentry_dsn)
-        sentry_handler.setLevel(logging.WARN)
-        register_postfork_function(root.addHandler, sentry_handler)
 
 
 class ConfiguresGalaxyMixin:
     """Shared code for configuring Galaxy-like app objects."""
+
+    config: GalaxyAppConfiguration
+    tool_cache: "ToolCache"
+    job_config: "JobConfiguration"
+    toolbox: "ToolBox"
+    toolbox_search: "ToolBoxSearch"
+    container_finder: "ContainerFinder"
 
     def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
         self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
@@ -1174,10 +1248,14 @@ class ConfiguresGalaxyMixin:
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
+        if not isinstance(self, BasicSharedApp):
+            raise Exception("Must inherit from BasicSharedApp")
+
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         from galaxy.managers.tools import DynamicToolManager
+
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)

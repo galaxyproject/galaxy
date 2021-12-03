@@ -4,6 +4,7 @@ define({
     // ----------------------------------------------------------------------------- masthead
 
     "Analyze Data": "Analizar Datos",
+    "Tools and Current History": "Herramientas e Historial Actual",
 
     Workflow: "Flujo de Trabajo",
 
@@ -45,6 +46,10 @@ define({
 
     "Interactive Tours": "Tours Interactivos",
 
+    "Galaxy Help": "Ayuda de Galaxy",
+
+    "Terms and Conditions": "Términos y Condiciones",
+
     User: "Usuario",
 
     Login: "Iniciar sesión",
@@ -59,6 +64,10 @@ define({
 
     "Custom Builds": "Construcciones personalizadas",
 
+    "Workflow Invocations": "Invocaciones de Flujos de Trabajo",
+
+    "Active InteractiveTools": "Activar Herramientas Interactivas",
+
     Logout: "Cerrar Sesión",
 
     "Saved Histories": "Historiales Guardados",
@@ -66,6 +75,8 @@ define({
     "Saved Datasets": "Conjuntos de Datos Guardados",
 
     "Saved Pages": "Páginas Guardadas",
+
+    "Using ": "Utilizando ",
 
     //Tooltip
 
@@ -85,11 +96,26 @@ define({
 
     "Analysis home view": "Vista de inicio del análisis",
 
+    // ---------------------------------------------------------------------------- toolbox
+    Tools: "Herramientas",
+
+    "Show favorites": "Mostrar favoritos",
+
+    "search tools": "Buscar herramientas",
+
+    "All workflows": "Todos los flujos de trabajo",
+
+    "Upload Data": "Cargar Datos",
     // ---------------------------------------------------------------------------- histories
 
     // ---- history/options-menu
+    History: "Historial",
 
     "History Lists": "Listas de historiales",
+
+    "History Actions": "Acciones del historial",
+
+    "(empty)": "(vacío)",
 
     // Saved histories is defined above.
 
@@ -102,14 +128,23 @@ define({
     "Current History": "Historial actual",
 
     "Create New": "Crear nuevo",
+    "Create new history": "Crear historial huevo",
 
-    "Copy History": "Copiar Historial",
+    Copy: "Copiar",
 
     "Share or Publish": "Compartir o Publicar",
 
     "Show Structure": "Mostrar Estructura",
 
     "Extract Workflow": "Extraer Flujo de Trabajo",
+
+    "Set Permissions": "Establecer permisos",
+
+    "Make Private": "Hacer privado",
+
+    "Beta Features": "Características Beta",
+
+    "Use Beta History Panel": "Utilizar el panel de historial Beta",
 
     // Delete is defined elsewhere, but is also in this menu.
 
@@ -146,6 +181,7 @@ define({
     "Import from File": "Importar desde Archivo",
 
     Webhooks: "WebHooks",
+    "See Galaxy Training Materials": "Ver materiales de entrenamiento de Galaxy",
 
     // ---- history-model
 
@@ -168,6 +204,12 @@ define({
     //false,
 
     "search datasets": "buscar conjuntos de datos",
+    "search all datasets": "buscar todos los conjuntos de datos",
+    "search histories": "buscar los historiales",
+    "Search tips": "Consejos de búsqueda",
+
+    "clear search (esc)": "limpiar búsqueda (esc)",
+    "clear search": "limpiar búsqueda",
 
     "You are currently viewing a deleted history!": "¡Estás viendo un historial eliminado!",
 
@@ -180,15 +222,19 @@ define({
 
     None: "Ninguna",
 
-    "For all selected": "Para todos los seleccionados",
+    "For all selected": "Para los seleccionados",
 
     // ---- history-view-edit
 
     "Edit history tags": "Editar etiquetas de historial",
 
-    "Edit history Annotation": "Editar anotación del historial",
+    "Edit history annotation": "Editar anotación del historial",
 
     "Click to rename history": "Haz clic para cambiar el nombre del historial",
+
+    "Rename history...": "Cambiar el nombre del historial",
+
+    "Switch to": "Cambiar a",
 
     // multi operations
 
@@ -243,6 +289,22 @@ define({
     //"Include Hidden Datasets" :
 
     //false,
+
+    // ---------------------------------------------------------------------------- workflow list
+    "Search Workflows": "Buscar Flujos de Trabajo",
+    // Defined elsewhere
+    //"Name"
+    //"Tags"
+    //
+    Updated: "Actualizado",
+
+    Sharing: "Compartir",
+
+    Bookmarked: "Página marcada",
+
+    Create: "Crear",
+
+    Import: "Importar",
 
     // ---------------------------------------------------------------------------- datasets
 
@@ -340,6 +402,10 @@ define({
 
     "This dataset has been hidden": "Este conjunto de datos ha sido ocultado",
 
+    "Copy link": "Copiar vínculo",
+
+    "Visualize this data": "Visualizar estos datos",
+
     format: "formato",
 
     database: "base de datos",
@@ -383,6 +449,35 @@ define({
     "Edit dataset tags": "Editar etiquetas del conjunto de datos",
 
     "Edit dataset annotation": "Editar anotación del conjunto de datos",
+
+    // ---------------------------------------------------------------------------- viz
+
+    "Create Visualization": "Crear Visualización",
+
+    "search visualizations": "buscar visualizaciones",
+
+    // ---------------------------------------------------------------------------- Data library
+
+    Library: "Biblioteca",
+
+    "exclude restricted": "Excluir restringidos",
+
+    "include deleted": "incluir eliminada",
+
+    // Name is elsewhere
+    Description: "Descripción",
+
+    Synopsis: "Sinopsis",
+
+    "per page": "por página",
+
+    total: "total",
+
+    Cancel: "Cancelar",
+
+    Edit: "Editar",
+
+    Manage: "Administrar",
 
     // ---------------------------------------------------------------------------- misc. MVC
 
@@ -440,7 +535,7 @@ define({
     "Convert the datatype to a new format.": "Convertir el tipo de datos a un formato nuevo",
     "Save attributes of the dataset.": "Guardar los atributos del conjunto de datos",
     "Change data type": "Cambiar el tipo de datos",
-    "Edit dataset attributes": "Editar atributos del conjunto de datos",
+    "Edit Dataset Attributes": "Editar atributos del conjunto de datos",
     "Save permissions": "Guardar permisos",
     "Manage dataset permissions": "Administrar permisos del conjunto de datos",
     "Change datatype": "Cambiar tipo de datos",
@@ -451,6 +546,21 @@ define({
     Datatypes: false,
     Convert: false,
     Attributes: false,
+
+    "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.":
+        "Esto cambiará el tipo de datos del conjunto de datos existente pero no modificará su contenido. Utilícelo si Galaxy identificó incorrectamente el tipo de su conjunto de datos",
+    Attributes: "Atributos",
+    Convert: "Convertir",
+    Datatypes: "Tipos de datos",
+    Permissions: "Permisos",
+    "Auto-detect": "Autodetectar",
+    Save: "Guardar",
+    Name: "Nombre",
+    Info: "Información",
+    Annotation: "Anotación",
+    "Add an annotation or notes to a dataset; annotations are available when a history is viewed.":
+        "Agregar una anotación o notas al conjunto de datos; las anotaciones están disponibles cuando se visualiza un historial",
+
     // ---------------------------------------------------------------------------- library-dataset-view
     "Import into History": "Importar al historial",
     // ---------------------------------------------------------------------------- library-foldertoolbar-view
@@ -473,15 +583,90 @@ define({
         "Personalizar Toolbox para mostrar u omitir conjuntos de herramientas",
     "Access your current API key or create a new one.": "Acceder a su clave API actual o crear una nueva",
     "Allows you to change your login credentials.": "Permitir modificar tus credenciales de inicio de sesión ",
-    "User Preferences": "Preferencias de usuario",
+    "Edit your email, addresses and custom parameters or change your public name.":
+        "Edita tus direcciones de correo y personaliza los parámetros o cambia tu nombre público.",
+    "User preferences": "Preferencias de usuario",
+    "You are logged in as": "Iniciaste sesión como",
     "Sign out": "Cerrar sesión",
     "Manage custom builds": "Administrar construcciones personalizadas",
     "Manage OpenIDs": "Administrar OpenIDs",
     "Manage Toolbox filters": "Administrar filtros de Toolbox",
-    "Manage API key": "Administrar clave API",
+    "Manage API Key": "Administrar clave API",
     "Set dataset permissions for new histories": "Establecer permisos de conjuntos de datos para historiales nuevos",
-    "Change password": "Cambiar contraseña",
-    "Manage information": "Administrar información",
+    "Change Password": "Cambiar contraseña",
+    "Manage Information": "Administrar información",
+    "Manage Third-Party Identities": "Manejar identidades de terceros",
+    "Connect or disconnect access to your third-party identities.":
+        "Conectar o desconectar el acceso a tus identidades de terceros.",
+    "Set Dataset Permissions for New Histories":
+        "Establecer los permisos de los conjuntos de datos para los nuevos historiales",
+    "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.":
+        "Otorga a otras personas acceso predeterminado a los historiales recién creados. Los cambios que aquí realices solo afectarán a los historiales creados después de que se hayan almacenado estos ajustes.",
+    "Make All Data Private": "Privatizar todos mis datos",
+    "Click here to make all data private.": "Haz clic aquí para privatizar todos tus datos",
+    "Manage Cloud Authorization": "Manejar autorización para la nube",
+    "Add or modify the configuration that grants Galaxy to access your cloud-based resources":
+        "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
+
+    "Manage Toolbox Filters": "Manejar filtros de la caja de herramientas",
+    "Manage Custom Builds": "Administrar compilaciones personalizadas",
+
+    "Enable notifications": "Habilitar notificaciones",
+    "Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser.":
+        "Permitir las notificaciones automáticas y de pestaña al completar un trabajo. Para deshabilitar, en tu navegador revoca los privilegios de notificaciones de sitio",
+    "Delete Account": "Eliminar cuenta",
+    "Delete your account on this Galaxy server.": "Eliminar tu cuenta del servidor Galaxy.",
+
+    "You are using": "Estás utilizando",
+    "of disk space in this Galaxy instance.": "de espacio de disco en esta instancia de Galaxy.",
+    "Is your usage more than expected? See the": "¿Utilizarás más espacio del que planeabas originalmente? Ve la",
+    documentation: "documentación",
+    "for tips on how to find all of the data in your account.":
+        "para consultar consejos sobre el cómo encontrar todos los datos de tu cuenta",
+
+    // ---------------------------------------------------------------------------- user-prefs/manage information
+    "Manage Information": "Manejar información",
+    "Email address": "Dirección de correo electrónico",
+    "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.":
+        "Si cambias tu dirección de correo electrónico recibirás un vínculo de activación en tu nuevo correo. Debes activar tu cuenta recurriendo a esta notificación.",
+    "Public name": "Nombre público",
+    'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.':
+        'Tu nombre público es un identificador que será utilizado para generar direcciones de información que compartas al público. Los nombres públicos deben contener al menos tres caracteres de longitud, solo letras minúsculas, números o el símbolo "-". ',
+    Address: "Dirección",
+    "Insert address": "Escribir dirección",
+    "Do you want to be able to re-use equivalent jobs ?": "¿Deseas poder reutilizar trabajos equivalentes?",
+    No: "No",
+    Yes: "Sí",
+    "If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.":
+        "Si seleccionas ‘sí’, podrás seleccionar si deseas utilizar esta función para cada herramienta y ejecución de flujo de trabajo.",
+    Localization: "Ubicación",
+    "Prefered language": "Idioma de preferencia",
+    "Use distributed compute resources": "Utilizar recursos de cómputo distribuido",
+    "Remote resource id": "Identificador de recurso remoto",
+    "default - Galaxy will decide where to put your jobs":
+        "Por defecto - Galaxy decidirá en donde colocar tus trabajos",
+    "Your EGA (European Genome Archive) Account": "Tu cuenta EGA (European Genome Archive)",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
+    "Your Dropbox Account": "Tu cuenta Dropbox",
+    "Dropbox access token": "Token de acceso de Dropbox",
+    "Your B2DROP Account": "Tu cuenta B2DROP",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
+    "Your OMERO instance connection details": "Detalles de conección de tu instancia OMERO",
+    Username: "Nombre de usuario",
+    Password: "Contraseña",
+    "Your ENA Webin account details": "Detalles de tu cuenta Webin de ENA",
+    "ENA Webin ID": "Identificador Webin de ENA",
+    Password: "Contraseña",
+    "Your CDS API Key": "Tu llave CDS API",
+    Key: "Llave",
+    Save: "Guardar",
+
+    //X GB  Tu cuota de disco es: X GB.
+    //
+    //
+
     // ---------------------------------------------------------------------------- shed-list-view
     "Configured Tool Sheds": "Tool Sheds configurados",
     // ---------------------------------------------------------------------------- repository-queue-view
@@ -579,6 +764,7 @@ define({
     Remove: false,
     // ---------------------------------------------------------------------------- visualization
     "Select datasets for new tracks": "Seleccionar conjuntos de datos para nuevas pistas",
+    "Select a dataset to visualize:": "Seleccionar un conjunto de datos para visualizar",
     Libraries: false,
     // ---------------------------------------------------------------------------- phyloviz
     "Zoom out": "Alejar",
@@ -623,7 +809,18 @@ define({
     "Multiple datasets": "Varios conjuntos de datos",
     "Single dataset": "Conjunto de datos único",
     // ---------------------------------------------------------------------------- upload-button
-    "Download from URL or upload files from disk": "Descargar desde URL o descargar desde disco",
+    "Download from URL or upload files from disk": "Descargar desde URL o cargar archivos desde disco",
+
+    // This feels awkward structure wise.
+    "You can load your own data": "Puedes cargar tus propios datos",
+    or: "u",
+    "get data from an external source": "obtenerlos de una fuente externa",
+
+    // But wait, there's more! An old version of this is still in use with a different structure
+    "You can ": "Puedes ",
+    "load your own data": "cargar tus propios datos",
+    " or ": " u ",
+
     // ---------------------------------------------------------------------------- workflow_editor_tests
     "tool tooltip": "Mensaje de información sobre herramientas",
     // ----------------------------------------------------------------------------

@@ -8,6 +8,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 
 
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -179,7 +180,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     @skip_without_tool("collection_paired_test")
     def test_extract_workflows_with_dataset_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -190,7 +191,7 @@ steps:
         $link: text_input1
 test_data:
   text_input1:
-    type: paired
+    collection_type: paired
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
@@ -213,7 +214,7 @@ test_data:
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -229,7 +230,7 @@ steps:
         $link: noop/out_file1
 test_data:
   text_input1:
-    type: "list:paired"
+    collection_type: "list:paired"
         """)
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
@@ -254,7 +255,7 @@ test_data:
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_dynamic_nested")
     def test_subcollection_reduction(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   creates_nested_list:
@@ -276,7 +277,7 @@ steps:
 
     @skip_without_tool("collection_split_on_column")
     def test_extract_workflow_with_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -323,7 +324,7 @@ test_data:
     @skip_without_tool("collection_creates_pair")
     @summarize_instance_history_on_error
     def test_extract_with_mapped_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -349,7 +350,7 @@ steps:
         $link: cat_pairs/out_file1
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "samp1\t10.0\nsamp2\t20.0\n"
@@ -466,8 +467,8 @@ test_data:
 
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
-        workflow_request, history_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)

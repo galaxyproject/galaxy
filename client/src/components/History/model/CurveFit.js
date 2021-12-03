@@ -5,7 +5,7 @@
  */
 
 import { linear, polynomial } from "regression";
-import { map, pipe, filter, leadingWindow } from "iter-tools";
+import { map, pipe, filter, windowAhead } from "iter-tools";
 
 class CurveFitInputError extends Error {}
 class CurveFitSampleError extends Error {}
@@ -121,7 +121,7 @@ export class CurveFit extends Map {
     // finds the data points to the left and right of indicated xval
     getPointWiseFilter(x) {
         return pipe(
-            leadingWindow(2),
+            windowAhead(2),
             map((w) => Array.from(isDefined(w))),
             filter((pts) => {
                 if (pts.length == 2) {

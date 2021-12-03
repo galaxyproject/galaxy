@@ -29,8 +29,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_bed_to_gff_repository(self):
-        '''Create and populate bed_to_gff_0130.'''
-        '''
+        '''Create and populate bed_to_gff_0130.
+
         We are at step 1 - Create and populate the bed_to_gff_0130 repository.
         Create the bed_to_gff_0130 repository and populate it with the files needed for this test.
         '''
@@ -55,8 +55,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_verify_tool_and_datatype(self):
-        '''Verify that a valid tool and datatype are contained within the repository.'''
-        '''
+        '''Verify that a valid tool and datatype are contained within the repository.
+
         We are at step 2 - Visit the manage repository page and make sure there is the appropriate valid tool and datatype.
         There should be a 'Convert BED to GFF' tool and a 'galaxy.datatypes.interval:Bed' datatype with extension 'bed'
         '''
@@ -66,8 +66,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0015_verify_tool_panel_display(self):
-        '''Verify that the tool is configured not to be displayed in the tool panel.'''
-        '''
+        '''Verify that the tool is configured not to be displayed in the tool panel.
+
         We are at step 3
         Datatype converters that are associated with a datatype should have display in tool panel = False in the tool metadata.
         '''

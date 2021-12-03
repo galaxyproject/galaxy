@@ -1,5 +1,5 @@
 import sys
-from typing import Type
+from typing import Dict, Optional, Type
 
 try:
     import statsd
@@ -49,8 +49,8 @@ class VanillaGalaxyStatsdClient:
             return ''
 
 
-CURRENT_TEST = None
-CURRENT_TEST_METRICS = None
+CURRENT_TEST: Optional[str] = None
+CURRENT_TEST_METRICS: Optional[Dict[str, Dict]] = None
 
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):

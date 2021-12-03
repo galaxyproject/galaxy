@@ -26,3 +26,4 @@ def _verify_tree(tree: Dict[str, Any]):
     assert tree["topic_3974"]["label"] == "Epistasis"
     assert tree["topic_3974"]["parents"] == ['topic_0622', 'topic_3295']
     assert tree["topic_3974"]["path"] == [['topic_3391', 'topic_0003'], ['topic_3070', 'topic_0003']]
+    assert tree["topic_3974"]["definition"] == "The study of the epigenetic modifications of a whole cell, tissue, organism etc."
