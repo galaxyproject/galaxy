@@ -4,7 +4,12 @@ import uuid
 
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.engine import make_url
 
+from .common import get_connection_url
+
+
+# Fixture, fixture factory used to generate urls for postgres and sqlite databases
 
 @pytest.fixture(scope='module')
 def tmp_directory():
@@ -14,12 +19,32 @@ def tmp_directory():
 
 @pytest.fixture
 def url_factory(tmp_directory):
-    """Return factory producing unique sqlalchemy db-urls within tmp_directory."""
+    """explain why this is what it is"""  # TODO edit comment
     def url():
-        database_file = f'galaxytest_{uuid.uuid4().hex}'
-        path = os.path.join(tmp_directory, database_file)
-        return f'sqlite:///{path}'
+        database = _generate_unique_database_name()
+        connection_url = get_connection_url()
+        if connection_url:
+            return _make_postgres_db_url(connection_url, database)
+        else:
+            return _make_sqlite_db_url(tmp_directory, database)
     return url
+
+
+def _make_postgres_db_url(connection_url, database):
+    """Return connection_url that has a unique database name."""
+    url = make_url(connection_url)
+    url = url.set(database=database)
+    return str(url)
+
+
+def _make_sqlite_db_url(tmpdir, database):
+    """Return a unique sqlalchemy db-url within tmp_directory."""
+    path = os.path.join(tmpdir, database)
+    return f'sqlite:///{path}'
+
+
+def _generate_unique_database_name():
+    return f'galaxytest_{uuid.uuid4().hex}'
 
 
 # Fixtures: metadata containing one or more tables and representing database state.
