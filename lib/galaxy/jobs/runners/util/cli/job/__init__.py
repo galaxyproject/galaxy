@@ -22,11 +22,11 @@ except ImportError:
 
 class BaseJobExec(metaclass=ABCMeta):
 
-    @abstractmethod
     def __init__(self, **params):
         """
         Constructor for CLI job executor.
         """
+        self.params = params.copy()
 
     def job_script_kwargs(self, ofile, efile, job_name):
         """ Return extra keyword argument for consumption by job script

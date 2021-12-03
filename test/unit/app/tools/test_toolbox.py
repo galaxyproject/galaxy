@@ -281,7 +281,9 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
-        self._init_tool(filename="new_tool.xml", version="2.0", profile="27.01", tool_id="test_new_tool_profile")
+        with self.assertRaisesRegex(Exception, r"The tool \[test_new_tool_profile\] targets version 37\.01 of Galaxy"):
+            # This will write the file but fail to load the tool
+            self._init_tool(filename="new_tool.xml", version="2.0", profile="37.01", tool_id="test_new_tool_profile")
         self._add_config("""<toolbox><tool file="old_tool.xml"/><tool file="new_tool.xml"/></toolbox>""")
         toolbox = self.toolbox
         assert toolbox.get_tool("test_old_tool_profile") is not None

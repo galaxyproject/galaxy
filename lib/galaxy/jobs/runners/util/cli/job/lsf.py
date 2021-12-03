@@ -19,11 +19,6 @@ argmap = {
 
 class LSF(BaseJobExec):
 
-    def __init__(self, **params):
-        self.params = {}
-        for k, v in params.items():
-            self.params[k] = v
-
     def job_script_kwargs(self, ofile, efile, job_name):
         scriptargs = {'-o': ofile,
                       '-e': efile,
