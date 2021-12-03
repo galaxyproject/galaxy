@@ -21,8 +21,8 @@ def upgrade():
     # this migration will be applied twice to the same database, so we ignore
     # the error that happens on the second run when the table has been dropped.
     try:
-        op.drop_table('migrate_version')
-    except sa.exc.OperationalError:
+        op.drop_table('migrate_version', must_exist=True)
+    except sa.exc.InvalidRequestError:
         pass
 
 
