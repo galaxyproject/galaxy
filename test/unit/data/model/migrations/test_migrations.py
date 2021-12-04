@@ -318,7 +318,7 @@ class TestNoDatabaseState:
             assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
 
-class TestDatabaseState0:  # TODO: this exposes the bug in DatabaseVerifier
+class TestDatabaseState0:
     """
     Initial state: database is empty.
     Expect: database created, initialized, versioned w/alembic.
@@ -329,7 +329,7 @@ class TestDatabaseState0:  # TODO: this exposes the bug in DatabaseVerifier
             with disposing_engine(db_url) as engine:
                 db = DatabaseVerifier(engine)
                 assert database_exists(db_url)
-                assert db._is_database_empty(GXY)
+                assert database_is_empty(db_url)
                 db.verify()
                 assert database_is_up_to_date(db_url, metadata_state6_combined)
 
@@ -340,8 +340,8 @@ class TestDatabaseState0:  # TODO: this exposes the bug in DatabaseVerifier
                 db = DatabaseVerifier(engine1, engine2)
                 assert database_exists(db1_url)
                 assert database_exists(db2_url)
-                assert db._is_database_empty(GXY)
-                assert db._is_database_empty(TSI)
+                assert database_is_empty(db1_url)
+                assert database_is_empty(db2_url)
                 db.verify()
                 assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
                 assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
@@ -648,6 +648,23 @@ def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):  # no
                 load_sqlalchemymigrate_version(db_url, version)
                 result = conn.execute(sql).scalar()
                 assert result == version
+
+
+def database_is_empty(db_url):
+    with disposing_engine(db_url) as engine:
+        with engine.connect() as conn:
+            metadata = MetaData()
+            metadata.reflect(bind=conn)
+            return not bool(metadata.tables)
+
+
+def test_database_is_empty(url_factory, metadata_state1_gxy):  # noqa F811
+    db_url = url_factory()
+    with create_and_drop_database(db_url):
+        with disposing_engine(db_url) as engine:
+            assert database_is_empty(db_url)
+            load_metadata(metadata_state1_gxy, engine)
+            assert not database_is_empty(db_url)
 
 
 def database_is_up_to_date(db_url, current_state_metadata, model=None):

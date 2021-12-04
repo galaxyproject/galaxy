@@ -148,7 +148,7 @@ class DatabaseVerifier:
         self.app_config = app_config
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
-        self.db_state = self._load_database_state()
+        self.db_state = None  # Loaded after missing databases are created.
 
     def _load_database_state(self):
         db = {}
@@ -161,10 +161,15 @@ class DatabaseVerifier:
 
     def verify(self):
         # 1. Check if database exists; if not, create new database.
-        self._handle_no_databases()
-        # 2. If database is empty, initialize it, upgrade to current, and mark as done.
+        is_gxy_new, is_tsi_new = self._handle_no_databases()
+
+        # 2. Now we can load database state.
+        self.db_state = self._load_database_state()
+
+        # 3. If database is empty, initialize it, upgrade to current, and mark as done.
         gxy_done, tsi_done = self._handle_empty_databases()
-        # 3: Handle nonempty databases that were not initialized in the previous step.
+
+        # 4: Handle nonempty databases that were not initialized in the previous step.
         if not gxy_done:
             self._handle_nonempty_database(GXY)
         if not tsi_done:
@@ -174,16 +179,22 @@ class DatabaseVerifier:
                 self._handle_nonempty_database(TSI)
 
     def _handle_no_databases(self):
-        # If galaxy-model database doesn't exist: create it.
-        # If database not combined and install-model database doesn't exist: create it.
+        # If galaxy-model database doesn't exist: create it and set is_gxy_new.
+        # If database not combined and install-model database doesn't exist: create it and set is_tsi_new.
+        # Return "is new" status for both databases
         gxy_url = str(self.gxy_engine.url)
         tsi_url = str(self.tsi_engine.url)
+        is_gxy_new = is_tsi_new = False
+
         if not database_exists(gxy_url):
             template = self.app_config.database_template if self.app_config else None
             encoding = self.app_config.database_encoding if self.app_config else None
             self._create_database(gxy_url, template, encoding)
+            is_gxy_new = True
         if not self.is_combined and not database_exists(tsi_url):
             self._create_database(tsi_url)
+            is_tsi_new = True
+        return is_gxy_new, is_tsi_new
 
     def _handle_empty_databases(self):
         # For each database: True if it has been initialized.
