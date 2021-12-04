@@ -20,9 +20,10 @@ from galaxy.model.migrations import (
     TSI,
     VersionTooOldError,
 )
-from .common import (
+from .common import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
+    url_factory,
 )
 
 # Revision numbers from test versions directories
@@ -36,7 +37,7 @@ TSI_REVISION_2 = '0e28bf2fb7b5'  # current/head
 
 class TestAlembicManager:
 
-    def test_is_at_revision__one_head_one_revision(self, url_factory):
+    def test_is_at_revision__one_head_one_revision(self, url_factory):  # noqa: F811
         """ Use case: Check if separate tsi database is at a given revision."""
         db_url = url_factory()
         with create_and_drop_database(db_url):
@@ -47,7 +48,7 @@ class TestAlembicManager:
                 am.stamp(revision)
                 assert am.is_at_revision(revision)
 
-    def test_is_at_revision__two_heads_one_revision(self, url_factory):
+    def test_is_at_revision__two_heads_one_revision(self, url_factory):  # noqa: F811
         """ Use case: Check if combined gxy and tsi database is at a given gxy revision."""
         db_url = url_factory()
         with create_and_drop_database(db_url):
@@ -59,7 +60,7 @@ class TestAlembicManager:
                 am.stamp(revisions)
                 assert am.is_at_revision(revision)
 
-    def test_is_at_revision__two_heads_two_revisions(self, url_factory):
+    def test_is_at_revision__two_heads_two_revisions(self, url_factory):  # noqa: F811
         """ Use case: Check if combined gxy and tsi database is at given gxy and tsi revisions."""
         db_url = url_factory()
         with create_and_drop_database(db_url):
@@ -70,7 +71,7 @@ class TestAlembicManager:
                 am.stamp(revisions)
                 assert am.is_at_revision(revisions)
 
-    def test_is_up_to_date_single_revision(self, url_factory):
+    def test_is_up_to_date_single_revision(self, url_factory):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -82,7 +83,7 @@ class TestAlembicManager:
                 am.stamp(GXY_REVISION_2)
                 assert am.is_up_to_date(model)
 
-    def test_not_is_up_to_date_wrong_model(self, url_factory):
+    def test_not_is_up_to_date_wrong_model(self, url_factory):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -93,7 +94,7 @@ class TestAlembicManager:
                 assert am.is_up_to_date(GXY)
                 assert not am.is_up_to_date(TSI)
 
-    def test_is_up_to_date_multiple_revisions(self, url_factory):
+    def test_is_up_to_date_multiple_revisions(self, url_factory):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -103,7 +104,7 @@ class TestAlembicManager:
                 assert am.is_up_to_date(GXY)  # True: both are up-to-date
                 assert am.is_up_to_date(TSI)  # True: both are up-to-date
 
-    def test_is_not_up_to_date_multiple_revisions_both(self, url_factory):
+    def test_is_not_up_to_date_multiple_revisions_both(self, url_factory):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -112,7 +113,7 @@ class TestAlembicManager:
                 assert not am.is_up_to_date(GXY)  # False: both are not up-to-date
                 assert not am.is_up_to_date(TSI)  # False: both are not up-to-date
 
-    def test_is_not_up_to_date_multiple_revisions_one(self, url_factory):
+    def test_is_not_up_to_date_multiple_revisions_one(self, url_factory):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -124,7 +125,7 @@ class TestAlembicManager:
 
 class TestDatabaseStateCache:
 
-    def test_is_empty(self, url_factory, metadata_state1_gxy):
+    def test_is_empty(self, url_factory, metadata_state1_gxy):  # noqa: F811
         db_url, metadata = url_factory(), metadata_state1_gxy
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -133,7 +134,7 @@ class TestDatabaseStateCache:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
 
-    def test_has_alembic_version_table(self, url_factory, metadata_state4_gxy):
+    def test_has_alembic_version_table(self, url_factory, metadata_state4_gxy):  # noqa: F811
         db_url, metadata = url_factory(), metadata_state4_gxy
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -142,7 +143,7 @@ class TestDatabaseStateCache:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_alembic_version_table()
 
-    def test_has_sqlalchemymigrate_version_table(self, url_factory, metadata_state2_gxy):
+    def test_has_sqlalchemymigrate_version_table(self, url_factory, metadata_state2_gxy):  # noqa: F811
         db_url, metadata = url_factory(), metadata_state2_gxy
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -151,7 +152,7 @@ class TestDatabaseStateCache:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_sqlalchemymigrate_version_table()
 
-    def test_is_last_sqlalchemymigrate_version(self, url_factory, metadata_state2_gxy):
+    def test_is_last_sqlalchemymigrate_version(self, url_factory, metadata_state2_gxy):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -298,7 +299,7 @@ class TestNoDatabaseState:
     Expect: database created, initialized, versioned w/alembic.
     (we use `metadata_state6_{gxy|tsi|combined}` for final database schema)
     """
-    def test_combined_database(self, url_factory, metadata_state6_combined):
+    def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
         db_url = url_factory()
         assert not database_exists(db_url)
         with disposing_engine(db_url) as engine:
@@ -306,7 +307,7 @@ class TestNoDatabaseState:
             db.verify()
             assert database_is_up_to_date(db_url, metadata_state6_combined)
 
-    def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):
+    def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):  # noqa: F811
         db1_url, db2_url = url_factory(), url_factory()
         assert not database_exists(db1_url)
         assert not database_exists(db2_url)
@@ -322,7 +323,7 @@ class TestDatabaseState0:  # TODO: this exposes the bug in DatabaseVerifier
     Initial state: database is empty.
     Expect: database created, initialized, versioned w/alembic.
     """
-    def test_combined_database(self, url_factory, metadata_state6_combined):
+    def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -332,7 +333,7 @@ class TestDatabaseState0:  # TODO: this exposes the bug in DatabaseVerifier
                 db.verify()
                 assert database_is_up_to_date(db_url, metadata_state6_combined)
 
-    def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):
+    def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):  # noqa: F811
         db1_url, db2_url = url_factory(), url_factory()
         with create_and_drop_database(db1_url), create_and_drop_database(db2_url):
             with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
@@ -634,7 +635,7 @@ def load_sqlalchemymigrate_version(db_url, version):
             conn.execute(sql_insert)
 
 
-def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):
+def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):  # noqa F811
     db_url = url_factory()
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -677,7 +678,7 @@ def database_is_up_to_date(db_url, current_state_metadata, model=None):
             return is_loaded and is_gxy_subset and is_tsi_subset and am.is_up_to_date(GXY) and am.is_up_to_date(TSI)
 
 
-def test_database_is_up_to_date(url_factory, metadata_state6_gxy):
+def test_database_is_up_to_date(url_factory, metadata_state6_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state6_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -688,7 +689,7 @@ def test_database_is_up_to_date(url_factory, metadata_state6_gxy):
             assert database_is_up_to_date(db_url, metadata, GXY)
 
 
-def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_state6_gxy):
+def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_state6_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state6_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -701,7 +702,7 @@ def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_stat
             assert not database_is_up_to_date(db_url, metadata, TSI)
 
 
-def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, metadata_state6_combined):
+def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, metadata_state6_combined):  # noqa F811
     db_url, metadata = url_factory(), metadata_state6_combined
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -712,7 +713,7 @@ def test_database_is_up_to_date_checks_both_if_no_model_passed(url_factory, meta
             assert database_is_up_to_date(db_url, metadata)
 
 
-def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, metadata_state5_gxy):
+def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, metadata_state5_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state5_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -722,7 +723,7 @@ def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, m
             assert not database_is_up_to_date(db_url, metadata, GXY)
 
 
-def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata_state6_gxy):
+def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata_state6_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state6_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -731,7 +732,7 @@ def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata
             assert not database_is_up_to_date(db_url, metadata, GXY)
 
 
-def test_database_is_not_up_to_date_if_alembic_not_added(url_factory, metadata_state6_gxy):
+def test_database_is_not_up_to_date_if_alembic_not_added(url_factory, metadata_state6_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state6_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -760,7 +761,7 @@ def _get_tablenames(metadata):
     return tables
 
 
-def test_is_metadata_loaded(url_factory, metadata_state1_gxy):
+def test_is_metadata_loaded(url_factory, metadata_state1_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state1_gxy
     with create_and_drop_database(db_url):
         assert not is_metadata_loaded(db_url, metadata)
@@ -770,7 +771,7 @@ def test_is_metadata_loaded(url_factory, metadata_state1_gxy):
         assert is_metadata_loaded(db_url, metadata)
 
 
-def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_state1_tsi):
+def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_state1_tsi):  # noqa F811
     db_url = url_factory()
     metadata = [metadata_state1_gxy, metadata_state1_tsi]
     with create_and_drop_database(db_url):
@@ -782,7 +783,7 @@ def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_
         assert is_metadata_loaded(db_url, metadata)
 
 
-def test_load_metadata(url_factory, metadata_state1_gxy):
+def test_load_metadata(url_factory, metadata_state1_gxy):  # noqa F811
     db_url, metadata = url_factory(), metadata_state1_gxy
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
@@ -804,17 +805,17 @@ Each fixture is constructed as follows:
 
 # state 1
 @pytest.fixture
-def db_state1_gxy(url_factory, metadata_state1_gxy):
+def db_state1_gxy(url_factory, metadata_state1_gxy):  # noqa F811
     yield from _setup_db_state1(url_factory(), metadata_state1_gxy)
 
 
 @pytest.fixture
-def db_state1_tsi(url_factory, metadata_state1_tsi):
+def db_state1_tsi(url_factory, metadata_state1_tsi):  # noqa F811
     yield from _setup_db_state1(url_factory(), metadata_state1_tsi)
 
 
 @pytest.fixture
-def db_state1_combined(url_factory, metadata_state1_combined):
+def db_state1_combined(url_factory, metadata_state1_combined):  # noqa F811
     yield from _setup_db_state1(url_factory(), metadata_state1_combined)
 
 
@@ -827,17 +828,17 @@ def _setup_db_state1(db_url, metadata):
 
 # state 2
 @pytest.fixture
-def db_state2_gxy(url_factory, metadata_state2_gxy):
+def db_state2_gxy(url_factory, metadata_state2_gxy):  # noqa F811
     yield from _setup_db_state2(url_factory(), metadata_state2_gxy)
 
 
 @pytest.fixture
-def db_state2_tsi(url_factory, metadata_state2_tsi):
+def db_state2_tsi(url_factory, metadata_state2_tsi):  # noqa F811
     yield from _setup_db_state2(url_factory(), metadata_state2_tsi)
 
 
 @pytest.fixture
-def db_state2_combined(url_factory, metadata_state2_combined):
+def db_state2_combined(url_factory, metadata_state2_combined):  # noqa F811
     yield from _setup_db_state2(url_factory(), metadata_state2_combined)
 
 
@@ -850,17 +851,17 @@ def _setup_db_state2(db_url, metadata):
 
 # state 3
 @pytest.fixture
-def db_state3_gxy(url_factory, metadata_state3_gxy):
+def db_state3_gxy(url_factory, metadata_state3_gxy):  # noqa F811
     yield from _setup_db_state3(url_factory(), metadata_state3_gxy)
 
 
 @pytest.fixture
-def db_state3_tsi(url_factory, metadata_state3_tsi):
+def db_state3_tsi(url_factory, metadata_state3_tsi):  # noqa F811
     yield from _setup_db_state3(url_factory(), metadata_state3_tsi)
 
 
 @pytest.fixture
-def db_state3_combined(url_factory, metadata_state3_combined):
+def db_state3_combined(url_factory, metadata_state3_combined):  # noqa F811
     yield from _setup_db_state3(url_factory(), metadata_state3_combined)
 
 
@@ -874,17 +875,17 @@ def _setup_db_state3(db_url, metadata):
 
 # state 4
 @pytest.fixture
-def db_state4_gxy(url_factory, metadata_state4_gxy):
+def db_state4_gxy(url_factory, metadata_state4_gxy):  # noqa F811
     yield from _setup_db_state4(url_factory(), metadata_state4_gxy, GXY)
 
 
 @pytest.fixture
-def db_state4_tsi(url_factory, metadata_state4_tsi):
+def db_state4_tsi(url_factory, metadata_state4_tsi):  # noqa F811
     yield from _setup_db_state4(url_factory(), metadata_state4_tsi, TSI)
 
 
 @pytest.fixture
-def db_state4_combined(url_factory, metadata_state4_combined):
+def db_state4_combined(url_factory, metadata_state4_combined):  # noqa F811
     yield from _setup_db_state4(url_factory(), metadata_state4_combined)
 
 
@@ -909,17 +910,17 @@ def _setup_db_state4(db_url, metadata, model=None):
 
 # state 5
 @pytest.fixture
-def db_state5_gxy(url_factory, metadata_state5_gxy):
+def db_state5_gxy(url_factory, metadata_state5_gxy):  # noqa F811
     yield from _setup_db_state5(url_factory(), metadata_state5_gxy, GXY)
 
 
 @pytest.fixture
-def db_state5_tsi(url_factory, metadata_state5_tsi):
+def db_state5_tsi(url_factory, metadata_state5_tsi):  # noqa F811
     yield from _setup_db_state5(url_factory(), metadata_state5_tsi, TSI)
 
 
 @pytest.fixture
-def db_state5_combined(url_factory, metadata_state5_combined):
+def db_state5_combined(url_factory, metadata_state5_combined):  # noqa F811
     yield from _setup_db_state5(url_factory(), metadata_state5_combined)
 
 
@@ -943,17 +944,17 @@ def _setup_db_state5(db_url, metadata, model=None):
 
 # state 6
 @pytest.fixture
-def db_state6_gxy(url_factory, metadata_state6_gxy):
+def db_state6_gxy(url_factory, metadata_state6_gxy):  # noqa F811
     yield from _setup_db_state6(url_factory(), metadata_state6_gxy, GXY)
 
 
 @pytest.fixture
-def db_state6_tsi(url_factory, metadata_state6_tsi):
+def db_state6_tsi(url_factory, metadata_state6_tsi):  # noqa F811
     yield from _setup_db_state6(url_factory(), metadata_state6_tsi, TSI)
 
 
 @pytest.fixture
-def db_state6_combined(url_factory, metadata_state6_combined):
+def db_state6_combined(url_factory, metadata_state6_combined):  # noqa F811
     yield from _setup_db_state6(url_factory(), metadata_state6_combined)
 
 

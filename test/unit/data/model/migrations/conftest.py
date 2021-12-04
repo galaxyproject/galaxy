@@ -1,51 +1,15 @@
-import os
 import tempfile
-import uuid
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.engine import make_url
-
-from .common import get_connection_url
 
 
-# Fixture, fixture factory used to generate urls for postgres and sqlite databases
+# Helper fixtures
 
 @pytest.fixture(scope='module')
 def tmp_directory():
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield tmp_dir
-
-
-@pytest.fixture
-def url_factory(tmp_directory):
-    """explain why this is what it is"""  # TODO edit comment
-    def url():
-        database = _generate_unique_database_name()
-        connection_url = get_connection_url()
-        if connection_url:
-            return _make_postgres_db_url(connection_url, database)
-        else:
-            return _make_sqlite_db_url(tmp_directory, database)
-    return url
-
-
-def _make_postgres_db_url(connection_url, database):
-    """Return connection_url that has a unique database name."""
-    url = make_url(connection_url)
-    url = url.set(database=database)
-    return str(url)
-
-
-def _make_sqlite_db_url(tmpdir, database):
-    """Return a unique sqlalchemy db-url within tmp_directory."""
-    path = os.path.join(tmpdir, database)
-    return f'sqlite:///{path}'
-
-
-def _generate_unique_database_name():
-    return f'galaxytest_{uuid.uuid4().hex}'
-
 
 # Fixtures: metadata containing one or more tables and representing database state.
 # Used to load a database with a given state.
@@ -70,6 +34,7 @@ def _generate_unique_database_name():
 #          (Most recent state versioned with Alembic. This is the current state)
 #
 # (State 0 assumes an empty database, so it needs no state fixtures.)
+
 
 # state 1
 @pytest.fixture
