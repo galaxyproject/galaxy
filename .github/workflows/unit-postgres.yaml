@@ -1,0 +1,56 @@
+name: Unit w/postgres tests
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+env:
+  GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/postgres?client_encoding=utf8'  # using postgres as the db
+concurrency:
+  group: py-unit-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.6', '3.9']
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+      - name: Cache pip dir
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v2
+        with:
+          path: .venv
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unitdb
+      - name: Run tests
+        run: ./run_tests.sh -unit test/unit/data/model/migrations/test_migrations.py
+        working-directory: 'galaxy root'
