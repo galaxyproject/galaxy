@@ -27,12 +27,14 @@ from galaxy.jobs.runners.util.pykube_util import (
     find_pod_object_by_name,
     find_service_object_by_name,
     galaxy_instance_id,
+    get_volume_mounts_for_job,
     HTTPError,
     Ingress,
     ingress_object_dict,
     is_pod_unschedulable,
     Job,
     job_object_dict,
+    parse_pvc_param_line
     Pod,
     produce_k8s_job_prefix,
     pull_policy,
@@ -105,48 +107,40 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.setup_base_volumes()
+
 
     def setup_base_volumes(self):
         if self.runner_params.get('k8s_persistent_volume_claims'):
-            volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
+            pvc_params = [parse_pvc_param_line(each) for each in self.runner_params['k8s_persistent_volume_claims'].split(',')]
         else:
-            volume_claims = {}
-        mountable_volumes = list({claim_name if "/" not in claim_name else claim_name.split("/")[0] for claim_name in volume_claims})
-        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in mountable_volumes]
+            pvc_params = []
+
+        mountable_volumes = []
+        for each in pvc_params:
+            if each["claim"] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+                mountable_volumes.append({'name': each["claim"], 'persistentVolumeClaim': {'claimName': each["claim"]}})
         self.runner_params['k8s_mountable_volumes'] = mountable_volumes
-        volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
-        for each in volume_mounts:
-            vmount = each.get("name")
-            if "/" in vmount:
-                name = vmount.split("/")[0]
-                subpath = vmount.split("/")[1]
-                each["name"] = name
-                each["subPath"] = subpath
+
+        volume_mounts = []
+        for each in pvc_params:
+            if each["mountpath"] not in [v.get('mountPath') for v in volume_mounts]:
+                vmount = {'name': each['claim'], 'mountPath': each['mountpath']}
+                if each.get("subpath"):
+                    vmount["subPath"] = each["subpath"]
+                volume_mounts.append(vmount)
         self.runner_params['k8s_volume_mounts'] = volume_mounts
+
         if self.runner_params.get('k8s_data_volume_claim'):
-            try:
-                param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
-                data_claim_name = param_claim[0]
-            except Exception as e:
-                log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
-                raise e
-            data_volume_name = data_claim_name if "/" not in data_claim_name else data_claim_name.split("/")[0]
-            data_volume = {'name': data_volume_name, 'persistentVolumeClaim': {'claimName': data_volume_name}}
-            if data_volume_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+            param_claim = parse_pvc_param_line(self.runner_params['k8s_data_volume_claim'])
+            data_volume = {'name': param_claim['claim'], 'persistentVolumeClaim': {'claimName': param_claim['claim']}}
+            if param_claim['claim'] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in self.runner_params['k8s_mountable_volumes']]:
                 self.runner_params['k8s_mountable_volumes'].append(data_volume)
+
         if self.runner_params.get('k8s_working_volume_claim'):
-            try:
-                param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
-                working_claim_name = param_claim[0]
-            except Exception as e:
-                log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
-                raise e
-            working_volume_name = working_claim_name if "/" not in working_claim_name else working_claim_name.split("/")[0]
-            working_volume = {'name': working_volume_name, 'persistentVolumeClaim': {'claimName': working_volume_name}}
-            if working_volume_name not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
+            param_claim = parse_pvc_param_line(self.runner_params['k8s_working_volume_claim'])
+            working_volume = {'name': param_claim['claim'], 'persistentVolumeClaim': {'claimName': param_claim['claim']}}
+            if param_claim['claim'] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in self.runner_params['k8s_mountable_volumes']]:
                 self.runner_params['k8s_mountable_volumes'].append(working_volume)
 
 
@@ -478,65 +472,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """The default Kubernetes restart policy for Jobs"""
         return "Never"
 
-    def __get_volume_mounts_for_job(self, job_wrapper):
-        DATA_BASE_PATH = "objects/"
-        volume_mounts = []
-        if self.runner_params.get('k8s_data_volume_claim'):
-            try:
-                param_claim = self.runner_params['k8s_data_volume_claim'].split(":")
-                claim_name = param_claim[0]
-                base_subpath = ""
-                if "/" in claim_name:
-                    base_subpath = claim_name.split("/")[1]
-                    claim_name = claim_name.split("/")[0]
-                base_mount = param_claim[1]
-            except Exception as e:
-                log.debug('Failed to parse `k8s_data_volume_claim` parameter in the kubernetes runner configuration')
-                raise e
-            inputs = job_wrapper.get_input_fnames()
-            for i in list(inputs):
-                file_path = str(i)
-                subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
-                if base_subpath:
-                    subpath = "{}/{}".format(base_subpath, subpath)
-                if file_path not in [each['mountPath'] for each in volume_mounts]:
-                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
-            outputs = job_wrapper.get_output_fnames()
-            for o in list(outputs):
-                file_path = str(o).rstrip('/').split('/')
-                file_path = "/".join(file_path[:-1])
-                subpath = str(file_path).lstrip(base_mount).lstrip('/')
-                # Avoid mounting the same output directory twice for two output files using same dir
-                if DATA_BASE_PATH in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
-                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
-        if self.runner_params.get('k8s_working_volume_claim'):
-            try:
-                param_claim = self.runner_params['k8s_working_volume_claim'].split(":")
-                claim_name = param_claim[0]
-                wd_base_subpath = ""
-                if "/" in claim_name:
-                    wd_base_subpath = claim_name.split("/")[1]
-                    claim_name = claim_name.split("/")[0]
-                base_mount = param_claim[1]
-            except Exception as e:
-                log.debug('Failed to parse `k8s_working_volume_claim` parameter in the kubernetes runner configuration')
-                raise e
-            wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
-            if wd_base_subpath:
-                wd_subpath = "{}/{}".format(wd_base_subpath, wd_subpath)
-            volume_mounts.append({'name': claim_name,
-                                  'mountPath': str(job_wrapper.working_directory),
-                                  'subPath': wd_subpath})
-            outputs = job_wrapper.get_output_fnames()
-            for o in list(outputs):
-                file_path = str(o).rstrip('/').split('/')
-                file_path = "/".join(file_path[:-1])
-                subpath = str(file_path).lstrip(base_mount).lstrip('/')
-                # Avoid mounting the same output directory twice for two output files using same dir
-                if wd_subpath not in subpath and DATA_BASE_PATH not in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
-                    volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
-        return volume_mounts
-
     def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
@@ -547,7 +482,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
         container = self._find_container(ajs.job_wrapper)
 
-        mounts = self.__get_volume_mounts_for_job(ajs.job_wrapper)
+        mounts = get_volume_mounts_for_job(ajs.job_wrapper, self.runner_params.get('k8s_data_volume_claim'), self.runner_params.get('k8s_working_volume_claim'))
         mounts.extend(self.runner_params['k8s_volume_mounts'])
 
         k8s_container = {

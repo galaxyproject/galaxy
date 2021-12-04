@@ -183,6 +183,76 @@ def ingress_object_dict(params, ingress_name, spec):
     k8s_ingress_obj.update(spec)
     return k8s_ingress_obj
 
+# takes "pvc-name/subpath/desired:/mountpath/desired[:r]"
+# and returns {"claim": "pvc-name",
+#              "subpath": "subpath/desired",
+#              "mountpath": "/mountpath/desired",
+#              "readonly": false}
+def parse_pvc_param_line(paramstring):
+    retdict = {}
+    claim = paramstring.split(":")[0]
+    if "/" in claim:
+        subpath = "/".join(claim.split("/")[1:])
+        retdict["subpath"] = subpath
+        claim = claim.split("/")[0]
+    retdict["claim"] = claim
+    mountpath = ":".join(paramstring.split(":")[1:])
+    readonly = False
+    if ":" in mountpath:
+        read = mountpath.split(":")[1]
+        if read == "r":
+            readonly = True
+        mountpath = mountpath.split(":")[0]
+    retdict["mountpath"] = mountpath
+    retdict["readonly"] = readonly
+    return retdict
+
+def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
+    DATA_BASE_PATH = "objects/"
+    volume_mounts = []
+    if data_claim:
+        param_claim = _parse_pvc_param_line(data_claim)
+        claim_name = param_claim['claim']
+        base_subpath = param_claim.get('subpath', "")
+        base_mount = param_claim["mountpath"]
+
+        inputs = job_wrapper.get_input_fnames()
+        for i in list(inputs):
+            file_path = str(i)
+            subpath = file_path.lstrip(base_mount).lstrip('/').rstrip('/')
+            if base_subpath:
+                subpath = "{}/{}".format(base_subpath, subpath)
+            if file_path not in [each['mountPath'] for each in volume_mounts]:
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+        outputs = job_wrapper.get_output_fnames()
+        for o in list(outputs):
+            file_path = str(o).rstrip('/').split('/')
+            file_path = "/".join(file_path[:-1])
+            subpath = str(file_path).lstrip(base_mount).lstrip('/')
+            # Avoid mounting the same output directory twice for two output files using same dir
+            if DATA_BASE_PATH in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+
+    if working_claim:
+        param_claim = _parse_pvc_param_line(working_claim)
+        claim_name = param_claim['claim']
+        wd_base_subpath = param_claim.get('subpath', "")
+        base_mount = param_claim["mountpath"]
+        wd_subpath = str(job_wrapper.working_directory).lstrip(base_mount).lstrip('/').rstrip('/')
+        if wd_base_subpath:
+            wd_subpath = "{}/{}".format(wd_base_subpath, wd_subpath)
+        volume_mounts.append({'name': claim_name,
+                              'mountPath': str(job_wrapper.working_directory),
+                              'subPath': wd_subpath})
+        outputs = job_wrapper.get_output_fnames()
+        for o in list(outputs):
+            file_path = str(o).rstrip('/').split('/')
+            file_path = "/".join(file_path[:-1])
+            subpath = str(file_path).lstrip(base_mount).lstrip('/')
+            # Avoid mounting the same output directory twice for two output files using same dir
+            if wd_subpath not in subpath and DATA_BASE_PATH not in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+                volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
+    return volume_mounts
 
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
@@ -230,4 +300,6 @@ __all__ = (
     "delete_job",
     "delete_service",
     "delete_ingress",
+    "get_volume_mounts_for_job",
+    "parse_pvc_param_line"
 )
