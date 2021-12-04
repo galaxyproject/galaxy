@@ -148,7 +148,7 @@ class DatabaseVerifier:
         self.app_config = app_config
         self.gxy_metadata = get_gxy_metadata()
         self.tsi_metadata = get_tsi_metadata()
-        self.db_state = None  # Loaded after missing databases are created.
+        # self.db_state is loaded after missing databases are created.
 
     def _load_database_state(self):
         db = {}
