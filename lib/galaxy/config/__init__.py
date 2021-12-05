@@ -1397,6 +1397,17 @@ class ConfiguresGalaxyMixin:
             self.install_model = install_mapping.configure_model_mapping(install_engine)
             log.info(f"Install database using its own connection {install_db_url}")
 
+    def _this_should_be_inlined(self, engine, combined_install_database):
+        # TODO this is WIP: see comments in method above.
+        return mapping.configure_model_mapping(
+            self.config.file_path,
+            self.object_store,
+            self.config.use_pbkdf2,
+            engine,
+            combined_install_database,
+            self.config.thread_local_log
+        )
+
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
