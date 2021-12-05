@@ -587,6 +587,11 @@ class TestDatabaseState6:
 
 # Test helpers + their tests, misc. fixtures
 
+@pytest.fixture(autouse=True)  # always override AlembicManager
+def set_create_additional(monkeypatch):
+    monkeypatch.setattr(DatabaseVerifier, '_create_additional_database_objects', lambda *_: None)
+
+
 @pytest.fixture
 def set_automigrate(monkeypatch):
     monkeypatch.setattr(DatabaseVerifier, '_is_automigrate_set', lambda _: True)

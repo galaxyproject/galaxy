@@ -8,9 +8,8 @@ from sqlalchemy import MetaData
 
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import create_database, database_exists
-from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
+from galaxy.model.mapping import create_additional_database_objects
 from galaxy.model.tool_shed_install import Base as tsi_base
-from galaxy.model.view.utils import install_views
 
 # These identifiers are used throughout the migrations system to distinquish
 # between the two models; they refer to version directories, branch labels, etc.
@@ -272,13 +271,13 @@ class DatabaseVerifier:
 
         if model == GXY:
             initialize_database(self.gxy_metadata, self.gxy_engine)
-            # TODO: this should be improved (implement as revisions? if not, at least remove duplication with mapping.py)
-            install_timestamp_triggers(self.gxy_engine)
-            install_views(self.gxy_engine)
-
+            self._create_additional_database_objects(self.gxy_engine)
         elif model == TSI:
             initialize_database(self.tsi_metadata, self.tsi_engine)
         return True
+
+    def _create_additional_database_objects(self, engine):
+        create_additional_database_objects(engine)
 
     def _is_database_empty(self, model):
         return self.db_state[model].is_database_empty()

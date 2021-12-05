@@ -38,7 +38,8 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
 
     # Create tables if needed
     if create_tables:
-        create_database_objects(engine)
+        mapper_registry.metadata.create_all(bind=engine)
+        create_additional_database_objects(engine)
         if map_install_models:
             from galaxy.model.tool_shed_install import mapping as install_mapping  # noqa: F401
             install_mapping.create_database_objects(engine)
@@ -48,8 +49,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
         file_path, object_store, use_pbkdf2, engine, map_install_models, thread_local_log)
 
 
-def create_database_objects(engine):
-    mapper_registry.metadata.create_all(bind=engine)
+def create_additional_database_objects(engine):
     install_timestamp_triggers(engine)
     install_views(engine)
 
