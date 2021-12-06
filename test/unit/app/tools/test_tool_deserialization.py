@@ -2,7 +2,6 @@ import pytest
 
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tools import create_tool_from_source
 
 XML_TOOL = """
@@ -101,9 +100,3 @@ def test_deserialize_user_defined_tool(tool_app):
     assert tool.name == "samtools reference"
     assert tool.inputs["alignment"].type == "data"
     assert tool.outputs["output1"].format == "fasta.gz"
-
-
-def test_deserialize_cwl_tool(tool_app):
-    # Can't verify much about cwl tools at this point
-    tool_source = get_tool_source(tool_app, tool_source_class="CwlToolSource", raw_tool_source=CWL_TOOL)
-    assert isinstance(tool_source, CwlToolSource)
