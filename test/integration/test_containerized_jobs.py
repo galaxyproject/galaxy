@@ -9,7 +9,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
 )
 from galaxy_test.driver import integration_util
-from .test_job_environments import RunsEnvironmentJobs
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.yml")
@@ -62,9 +62,8 @@ def skip_if_container_type_unavailable(cls):
         raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
 
 
-class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
+class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
-    framework_tool_and_types = True
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled'
     container_type = 'docker'
@@ -83,7 +82,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
 
     def setUp(self):
         super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     def test_container_job_environment(self):
