@@ -2,7 +2,6 @@ import pytest
 
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tools import create_tool_from_source
 
 XML_TOOL = """
@@ -66,9 +65,3 @@ def test_deserialize_yaml_tool(tool_app):
     tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=YAML_TOOL)
     assert tool.id == "simple_constructs_y"
     assert tool.name == "simple_constructs_y"
-
-
-def test_deserialize_cwl_tool(tool_app):
-    # Can't verify much about cwl tools at this point
-    tool_source = get_tool_source(tool_app, tool_source_class="CwlToolSource", raw_tool_source=CWL_TOOL)
-    assert isinstance(tool_source, CwlToolSource)
