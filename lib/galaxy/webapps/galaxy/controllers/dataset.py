@@ -554,7 +554,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
         # Get annotation.
         dataset.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        return trans.stream_template_mako("/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated)
+        return trans.fill_template_mako("/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated)
 
     @web.expose
     def annotate_async(self, trans, id, new_annotation=None, **kwargs):

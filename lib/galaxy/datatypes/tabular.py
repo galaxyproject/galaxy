@@ -103,9 +103,9 @@ class TabularData(data.Text):
                 return open(dataset.file_name, mode='rb'), headers
             else:
                 headers["content-type"] = "text/html"
-                return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
-                                                  data=dataset), headers
+                return trans.fill_template_mako("/dataset/large_file.mako",
+                                                truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                data=dataset), headers
         else:
             column_names = 'null'
             if dataset.metadata.column_names:

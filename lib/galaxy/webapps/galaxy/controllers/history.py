@@ -635,7 +635,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             view='dev-detailed', user=trans.user, trans=trans)
         history_dictionary['annotation'] = self.get_item_annotation_str(trans.sa_session, history.user, history)
 
-        return trans.stream_template_mako("history/display.mako", item=history, item_data=[],
+        return trans.fill_template_mako("history/display.mako", item=history, item_data=[],
             user_is_owner=user_is_owner, history_dict=history_dictionary,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
 

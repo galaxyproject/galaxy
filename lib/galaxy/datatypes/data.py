@@ -474,9 +474,9 @@ class Data(metaclass=DataMeta):
             return self._yield_user_file_content(trans, data, data.file_name, headers), headers
         else:
             headers["content-type"] = "text/html"
-            return trans.stream_template_mako("/dataset/large_file.mako",
-                                              truncated_data=open(data.file_name, 'rb').read(max_peek_size),
-                                              data=data), headers
+            return trans.fill_template_mako("/dataset/large_file.mako",
+                                            truncated_data=open(data.file_name, 'rb').read(max_peek_size),
+                                            data=data), headers
 
     def display_as_markdown(self, dataset_instance, markdown_format_helpers):
         """Prepare for embedding dataset into a basic Markdown document.
