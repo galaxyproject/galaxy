@@ -11,9 +11,9 @@ from typing import Optional, Type
 from galaxy import model
 from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
-from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
