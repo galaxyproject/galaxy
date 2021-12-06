@@ -1155,6 +1155,24 @@ def get_database_url(config):
     return db_url
 
 
+def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
+    db_url = get_database_url(config)
+    model = mapping.init(
+        config.file_path,
+        db_url,
+        config.database_engine_options,
+        map_install_models=map_install_models,
+        database_query_profiling_proxy=config.database_query_profiling_proxy,
+        object_store=object_store,
+        trace_logger=trace_logger,
+        use_pbkdf2=config.get_bool('use_pbkdf2', True),
+        slow_query_log_threshold=config.slow_query_log_threshold,
+        thread_local_log=config.thread_local_log,
+        log_query_counts=config.database_log_query_counts,
+    )
+    return model
+
+
 def configure_logging(config):
     """Allow some basic logging configuration to be read from ini file.
 
