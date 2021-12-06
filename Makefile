@@ -4,6 +4,7 @@ VENV?=.venv
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=22.01
 RELEASE_UPSTREAM:=upstream
+TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -36,6 +37,9 @@ docs-develop: ## Fast doc generation and more warnings (for development)
 
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
+
+diff-format:
+	$(IN_VENV) darker -r $(TARGET_BRANCH)
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
