@@ -72,6 +72,7 @@ from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
+CWL_TOOL_TYPES = ("galactic_cwl", "cwl")
 
 
 class ToolErrorLog:
@@ -625,10 +626,9 @@ class ToolEvaluator:
         if not command:
             return
 
-        # TODO: do not allow normal jobs to set this in this fashion
         # TODO: this approach replaces specifies a command block as $__cwl_command_state
         #  and that other approach needs to be unraveled.
-        if "__cwl_command" in param_dict:
+        if self.tool.tool_type in CWL_TOOL_TYPES and "__cwl_command" in param_dict:
             command_line = param_dict["__cwl_command"]
         else:
             try:
@@ -667,8 +667,11 @@ class ToolEvaluator:
         """
         Build temporary file for file based parameter transfer if needed
         """
+        config_filenames: List[str] = []
+        if self.tool.tool_type in CWL_TOOL_TYPES:
+            # will never happen for cwl tools
+            return config_filenames
         param_dict = self.param_dict
-        config_filenames = []
         for name, filename, content in self.tool.config_files:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
@@ -722,7 +725,8 @@ class ToolEvaluator:
                     environment_variable_template = ""
                 is_template = False
             else:
-                is_template = True
+                # cwl tools should not template out values
+                is_template = self.tool.tool_type not in CWL_TOOL_TYPES
             with tempfile.NamedTemporaryFile(dir=directory, prefix="tool_env_", delete=False) as temp:
                 config_filename = temp.name
             self.__write_workdir_file(
