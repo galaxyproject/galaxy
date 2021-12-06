@@ -47,3 +47,8 @@ jobs:
       - name: Run tests
         run: tox -e unit
         working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: Unit test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_unit_tests.html'

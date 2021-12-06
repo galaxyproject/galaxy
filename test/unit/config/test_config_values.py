@@ -72,9 +72,10 @@ class ExpectedValues:
             'amqp_internal_connection': self.get_expected_amqp_internal_connection,
             'database_connection': self.get_expected_database_connection,
             'disable_library_comptypes': [''],  # TODO: we can do better
+            'file_path': self.get_expected_file_path,
             'ftp_upload_dir_template': self.get_expected_ftp_upload_dir_template,
             'mulled_channels': listify_strip,
-            'object_store_store_by': 'uuid',
+            'object_store_store_by': self.get_expected_object_store_store_by,
             'password_expiration_period': timedelta,
             'pretty_datetime_format': expand_pretty_datetime_format,
             'statsd_host': '',  # TODO: do we need '' as the default?
@@ -116,7 +117,6 @@ class ExpectedValues:
             'dynamic_proxy_session_map': self._in_data_dir('session_map.sqlite'),
             'edam_toolbox_ontology_path': self._in_data_dir('EDAM.tsv'),
             'error_report_file': self._in_config_dir('error_report.yml'),
-            'file_path': self._in_data_dir('objects'),
             'file_sources_config_file': self._in_config_dir('file_sources_conf.yml'),
             'galaxy_data_manager_data_path': self._in_root_dir('tool-data'),
             'integrated_tool_panel_config': self._in_managed_config_dir('integrated_tool_panel.xml'),
@@ -212,6 +212,18 @@ class ExpectedValues:
     def get_expected_amqp_internal_connection(self, value):
         return f'sqlalchemy+sqlite:///{self._config.data_dir}/control.sqlite?isolation_level=IMMEDIATE'
 
+    def get_expected_file_path(self, value):
+        for dir in ('files', 'objects'):
+            dir_path = self._in_data_dir(dir)
+            if os.path.exists(dir_path):
+                return dir_path
+        return dir_path
+
+    def get_expected_object_store_store_by(self, value):
+        if os.path.exists(self._in_data_dir('files')):
+            return 'id'
+        return 'uuid'
+
 
 def get_config_data():
     config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
@@ -231,4 +243,5 @@ def get_key(test_data):
 
 @pytest.mark.parametrize('test_data', get_config_data(), ids=get_key)
 def test_config_defaults(test_data):
-    assert test_data.expected == test_data.loaded
+    assert test_data.expected == test_data.loaded, \
+        f"Default value of option [{test_data.key}] is [{test_data.loaded}] instead of expected [{test_data.expected}]"
