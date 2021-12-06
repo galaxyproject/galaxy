@@ -7,6 +7,10 @@
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
        
+  <cached_explicit_singularity />
+  <!-- cached_explicit_singularity: stores an explicit container on the
+       filesystem and use the stored image to run the jobs.  -->
+
   <!-- All mulled flavors below work by default unless enable_mulled_containers is
        set to false in the galaxy.yaml config file. -->
 
