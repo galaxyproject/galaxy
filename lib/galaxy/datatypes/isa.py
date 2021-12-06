@@ -141,7 +141,7 @@ class _Isa(data.Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)

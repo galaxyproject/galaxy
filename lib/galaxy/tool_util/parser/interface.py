@@ -18,7 +18,6 @@ class ToolSource(metaclass=ABCMeta):
     """ This interface represents an abstract source to parse tool
     information from.
     """
-    default_is_multi_byte = False
     language: str
 
     @abstractmethod
@@ -70,12 +69,6 @@ class ToolSource(metaclass=ABCMeta):
 
     def parse_xrefs(self) -> List[Dict[str, str]]:
         """Parse list of external resource URIs and types."""
-
-    def parse_is_multi_byte(self):
-        """ Parse is_multi_byte from tool - TODO: figure out what this is and
-        document.
-        """
-        return self.default_is_multi_byte
 
     def parse_display_interface(self, default):
         """ Parse display_interface - fallback to default for the tool type

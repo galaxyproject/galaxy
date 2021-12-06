@@ -19,7 +19,7 @@ class FCS(Binary):
     """Class describing an FCS binary file"""
     file_ext = "fcs"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "Binary FCS file"
             dataset.blurb = data.nice_size(dataset.get_size())

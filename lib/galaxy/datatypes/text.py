@@ -34,7 +34,7 @@ class Html(Text):
     edam_format = "format_2331"
     file_ext = "html"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -70,7 +70,7 @@ class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
@@ -148,7 +148,7 @@ class ExpressionJson(Json):
 class Ipynb(Json):
     file_ext = "ipynb"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
@@ -225,7 +225,7 @@ class Biom1(Json):
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="table_column_metadata_headers", default=[], desc="table_column_metadata_headers", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
@@ -321,7 +321,7 @@ class ImgtJson(Json):
 
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
@@ -386,7 +386,7 @@ class GeoJson(Json):
     """
     file_ext = "geojson"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
@@ -435,7 +435,7 @@ class Obo(Text):
     edam_format = "format_2549"
     file_ext = "obo"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
@@ -474,7 +474,7 @@ class Arff(Text):
     MetadataElement(name="comment_lines", default=0, desc="Number of comment lines", readonly=True, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
@@ -704,7 +704,7 @@ class SnpSiftDbNSFP(Text):
         except Exception as e:
             log.warning("set_meta fname: %s  %s", dataset.file_name if dataset and dataset.file_name else 'Unkwown', unicodify(e))
 
-        def set_peek(self, dataset, is_multi_byte=False):
+        def set_peek(self, dataset):
             if not dataset.dataset.purged:
                 dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
                 dataset.blurb = f'{dataset.metadata.reference_name}'

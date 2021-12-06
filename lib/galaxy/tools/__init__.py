@@ -844,8 +844,6 @@ class Tool(Dictifiable):
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
 
-        # Support multi-byte tools
-        self.is_multi_byte = tool_source.parse_is_multi_byte()
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
 

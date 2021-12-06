@@ -259,12 +259,9 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
-
-        :param is_multi_byte: deprecated
-        :type  is_multi_byte: bool
         """
         if not dataset.dataset.purged:
             dataset.peek = ''
@@ -893,7 +890,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
+    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -1090,12 +1087,9 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
+def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH.
-
-    :param is_multi_byte: deprecated
-    :type  is_multi_byte: bool
 
     >>> def assert_peek_is(file_name, expected, *args, **kwd):
     ...     path = get_test_fname(file_name)

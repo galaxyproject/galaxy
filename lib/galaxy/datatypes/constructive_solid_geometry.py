@@ -107,7 +107,7 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
@@ -430,7 +430,7 @@ class Vtk:
             blurb += str(dataset.metadata.dataset_type)
         return blurb or 'VTK data'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)

@@ -17,7 +17,7 @@ class SnapHmm(Text):
     file_ext = "snaphmm"
     edam_data = "data_1364"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "SNAP HMM model"
@@ -46,7 +46,7 @@ class Augustus(CompressedArchive):
     edam_data = "data_0950"
     compressed = True
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = "Augustus model"
             dataset.blurb = nice_size(dataset.get_size())
