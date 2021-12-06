@@ -2,16 +2,11 @@
 import logging
 import os
 
-from ..container_resolvers import ContainerResolver
-from ..container_classes import SingularityContainer
-
-from .mulled import CliContainerResolver
-
-from ..singularity_util import pull_singularity_command
-
-from ..requirements import ContainerDescription
-
 from galaxy.util.commands import shell
+from .mulled import CliContainerResolver
+from ..container_classes import SingularityContainer
+from ..container_resolvers import ContainerResolver
+from ..requirements import ContainerDescription
 
 log = logging.getLogger(__name__)
 

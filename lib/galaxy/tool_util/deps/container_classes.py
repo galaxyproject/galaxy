@@ -402,8 +402,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
     def build_singularity_pull_command(self, cache_path):
         return singularity_util.pull_singularity_command(
-            image_identifier = self.container_id,
-            cache_path = cache_path,
+            image_identifier=self.container_id,
+            cache_path=cache_path,
             **self.get_singularity_target_kwds()
         )
 
