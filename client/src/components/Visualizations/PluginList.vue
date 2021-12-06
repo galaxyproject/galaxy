@@ -67,6 +67,12 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 
 export default {
+    props: {
+        datasetId: {
+            type: String,
+            default: null,
+        },
+    },
     data() {
         return {
             plugins: [],
@@ -82,13 +88,11 @@ export default {
         };
     },
     created() {
-        const Galaxy = getGalaxyInstance();
         let url = `${getAppRoot()}api/plugins`;
-        const dataset_id = Galaxy.params.dataset_id;
-        if (dataset_id) {
+        if (this.datasetId) {
             this.fixed = true;
-            this.selected = dataset_id;
-            url += `?dataset_id=${dataset_id}`;
+            this.selected = this.datasetId;
+            url += `?dataset_id=${this.datasetId}`;
         }
         axios
             .get(url)
