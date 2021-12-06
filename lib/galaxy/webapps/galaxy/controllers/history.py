@@ -30,7 +30,7 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.web import (
-    expose_api,
+    expose_api_anonymous,
     url_for
 )
 from galaxy.web.framework.helpers import (
@@ -546,7 +546,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             'template': html_template
         }
 
-    @expose_api
+    @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
         View a history. If a history is importable, then it is viewable by any user.
