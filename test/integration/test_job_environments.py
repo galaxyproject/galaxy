@@ -46,10 +46,8 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self._check_completed_history(history_id)
             job_env_properties = self._environment_properties(history_id)
-            # TODO: Remove the `if` after the Pulsar PR is merged
-            if not isinstance(self, EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase):
-                # Check that the job hasn't inherited env variables from Galaxy
-                assert job_env_properties.some_env != "Value from env"
+            # Check that the job hasn't inherited env variables from Galaxy
+            assert job_env_properties.some_env != "Value from env"
             return job_env_properties
 
     def _environment_properties(self, history_id):

@@ -15,7 +15,7 @@ kombu
 lagom
 Mako
 Markdown
-pulsar-galaxy-lib>=0.14.12
+pulsar-galaxy-lib>=0.14.13
 pykwalify
 refgenconf>=0.12.0
 sqlitedict
