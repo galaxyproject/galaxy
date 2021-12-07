@@ -78,8 +78,7 @@ uwsgi:
 """)
 
 DEFAULT_LOCALES = "en"
-CAN_BUILD_ASGI_APP = sys.version_info[:2] >= (3, 7)
-USE_UVICORN = asbool(os.environ.get('GALAXY_TEST_USE_UVICORN', CAN_BUILD_ASGI_APP))
+USE_UVICORN = asbool(os.environ.get('GALAXY_TEST_USE_UVICORN', True))
 
 log = logging.getLogger("test_driver")
 

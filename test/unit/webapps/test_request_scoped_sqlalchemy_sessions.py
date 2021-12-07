@@ -1,7 +1,6 @@
 import asyncio
 import concurrent.futures
 import functools
-import sys
 import threading
 import time
 import uuid
@@ -149,10 +148,7 @@ async def test_request_scoped_sa_session_concurrent_requests_async():
 @pytest.mark.asyncio
 async def test_request_scoped_sa_session_concurrent_requests_and_background_thread():
     add_request_id_middleware(app)
-    if sys.version_info > (3, 6):
-        loop = asyncio.get_running_loop()
-    else:
-        loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
     target = functools.partial(assert_scoped_session_is_thread_local, GX_APP)
     with concurrent.futures.ThreadPoolExecutor() as pool:
         background_pool = loop.run_in_executor(pool, target)

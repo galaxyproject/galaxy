@@ -27,7 +27,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -85,7 +85,7 @@ jobs:
             - ~/repo
   validate_test_tools:
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -95,7 +95,7 @@ jobs:
       - run: tox -e validate_test_tools
   test_galaxy_release:
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -104,7 +104,7 @@ jobs:
       - run: tox -e test_galaxy_release
   test_galaxy_packages:
     docker:
-      - image: circleci/python:3.6
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
