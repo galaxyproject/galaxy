@@ -136,7 +136,7 @@
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
   <tool file="validation_metadata_in_datatable.xml"/>
-  <tool file="validation_metadata_in_file.xml"/>
+  <tool file="validation_dataset_metadata_in_file.xml"/>
   <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
