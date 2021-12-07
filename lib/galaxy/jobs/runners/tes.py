@@ -358,7 +358,18 @@ class TESJobRunner(AsynchronousJobRunner):
                 remote_job_directory=job_wrapper.working_directory)
 
         env_var = self.env_variables(job_wrapper)
-        staging_out_command = self.staging_out_command(script_path, output_files, client_args['files_endpoint'], job_wrapper.working_directory)
+        staging_out_url = None
+        if(hasattr(job_wrapper.job_destination, "params")):
+            if("stage_out_url" in job_wrapper.job_destination.params):
+                encoded_job_id = self.app.security.encode_id(job_wrapper.job_id)
+                job_key = self.app.security.encode_id(job_wrapper.job_id, kind="jobs_files")
+                endpoint_base = "%sapi/jobs/%s/files?job_key=%s"
+                staging_out_url = endpoint_base % (job_wrapper.job_destination.params.get("stage_out_url"), encoded_job_id, job_key)
+
+        if(staging_out_url is None):
+            staging_out_url = client_args['files_endpoint']
+
+        staging_out_command = self.staging_out_command(script_path, output_files, staging_out_url, job_wrapper.working_directory)
 
         job_script = self.base_job_script(mount_path, work_dir, output_files, job_wrapper.tool.description)
 
