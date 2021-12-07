@@ -93,15 +93,6 @@ jobs:
       - run: sudo apt-get install -y libxml2-utils
       - *install_tox
       - run: tox -e validate_test_tools
-  test_galaxy_release:
-    docker:
-      - image: circleci/python:3.7
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - *install_deb_reqs
-      - run: tox -e test_galaxy_release
   test_galaxy_packages:
     docker:
       - image: circleci/python:3.7
