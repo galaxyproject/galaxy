@@ -1347,9 +1347,8 @@ outer_input:
             assert sum(1 for step in steps if step['subworkflow_invocation_id'] is None) == 3
             subworkflow_invocation_id = [step['subworkflow_invocation_id'] for step in steps if step['subworkflow_invocation_id']][0]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-            # inner_input should be step 0, random_lines should be step 1, but step order gets lost on python < 3.6
-            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'inner_input']
-            assert [step for step in subworkflow_invocation['steps'] if step['workflow_step_label'] == 'random_lines']
+            assert [step for step in subworkflow_invocation['steps'] if step['order_index'] == 0][0]['workflow_step_label'] == 'inner_input'
+            assert [step for step in subworkflow_invocation['steps'] if step['order_index'] == 1][0]['workflow_step_label'] == 'random_lines'
 
             bco = self.workflow_populator.get_biocompute_object(invocation_id)
             self.workflow_populator.validate_biocompute_object(bco)
