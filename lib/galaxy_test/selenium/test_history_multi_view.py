@@ -86,7 +86,7 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         # click on purge button with corresponding history_id
         self.components.multi_history_view.history_dropdown_menu.purge(history_id=history_id).wait_for_and_click()
 
-        self.driver.switch_to_alert().accept()
+        self.driver.switch_to.alert.accept()
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_history(history_id, should_exist=False)
