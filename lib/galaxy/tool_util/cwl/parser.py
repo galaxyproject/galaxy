@@ -337,7 +337,13 @@ class JobProxy:
 
             args = [RuntimeContext(job_args)]
             kwargs: Dict[str, str] = {}
-            self._cwl_job = next(self._tool_proxy._tool.job(self._input_dict, self._output_callback, *args, **kwargs))
+            # The job method modifies inputs_record_schema in place to match the job definition
+            # This breaks subsequent use with other job definitions, so create a shallow copy of
+            # the CommandLineTool instance and add a deepcopy of the inputs_record_schema
+            # (instead of globally manipulating self._tool_proxy._tool, which is likely not thread-safe).
+            cwl_tool_instance = copy.copy(self._tool_proxy._tool)
+            cwl_tool_instance.inputs_record_schema = copy.deepcopy(cwl_tool_instance.inputs_record_schema)
+            self._cwl_job = next(cwl_tool_instance.job(self._input_dict, self._output_callback, *args, **kwargs))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
     def _normalize_job(self):
