@@ -104,7 +104,7 @@ https://sites.google.com/a/chromium.org/chromedriver/.
 By default Galaxy will check the PATH for these and pick
 whichever it finds. This can be overridden by setting
 GALAXY_TEST_SELENIUM_BROWSER to either FIREFOX, CHROME, or something
-more esoteric (including OPERA and PHANTOMJS).
+more esoteric (including OPERA).
 
 If PyVirtualDisplay is installed Galaxy will attempt to run this
 browser in a headless mode. This can be disabled by setting
