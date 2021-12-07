@@ -69,7 +69,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
     def _init_cache_directory(self):
         os.makedirs(self.cache_directory_path, exist_ok=True)
 
-    def resolve(self, enabled_container_types, tool_info, **kwds):
+    def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -88,7 +88,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
                 return container_description
             image_id = container_description.identifier
             cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
-            if not os.path.exists(cache_path):
+            if install and not os.path.exists(cache_path):
                 destination_info = {}
                 destination_for_container_type = kwds.get(
                     'destination_for_container_type')
