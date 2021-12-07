@@ -180,13 +180,13 @@ class TESJobRunner(AsynchronousJobRunner):
             referenced_files.update(findall(pattern, input_contents))
         return list(referenced_files)
 
-    def file_creation_executor(self, mounted_dir: str, work_dir: str):
+    def file_creation_executor(self, mounted_dir: str, docker_image: str, work_dir: str):
         """
         Returns the executor for creation of files
         """
         file_executor = {
             "workdir": mounted_dir,
-            "image": "vipchhabra99/pulsar-lib",
+            "image": docker_image,
             "command": ["/bin/bash", os.path.join(work_dir, 'createfiles.sh')]
         }
         return file_executor
@@ -203,13 +203,13 @@ class TESJobRunner(AsynchronousJobRunner):
         }
         return job_executor
 
-    def file_staging_out_executor(self, mounted_dir: str, command: list):
+    def file_staging_out_executor(self, mounted_dir: str, docker_image: str, command: list):
         """
         Returns the executor for staging out of the files
         """
         staging_out_executor = {
             "workdir": mounted_dir,
-            "image": "vipchhabra99/pulsar-lib",
+            "image": docker_image,
             "command": command
         }
         return staging_out_executor
@@ -309,18 +309,29 @@ class TESJobRunner(AsynchronousJobRunner):
         """
         remote_container = self._find_container(job_wrapper)
         remote_image = None
+        staging_docker_image = None
 
         if(hasattr(job_wrapper.job_destination, "params")):
             if("default_docker_image" in job_wrapper.job_destination.params):
                 remote_image = job_wrapper.job_destination.params.get("default_docker_image")
 
+        if(hasattr(job_wrapper.job_destination, "params")):
+            if("staging_docker_image" in job_wrapper.job_destination.params):
+                staging_docker_image = job_wrapper.job_destination.params.get("staging_docker_image")
+
+            else:
+                staging_docker_image = remote_image
+
         if(hasattr(remote_container, "container_id")):
             remote_image = remote_container.container_id
+
+        if(staging_docker_image is None):
+            staging_docker_image = remote_image
 
         if(remote_image is None):
             raise Exception("default_docker_image not specified")
         else:
-            return remote_image
+            return remote_image, staging_docker_image
 
     def build_script(self, job_wrapper: JobWrapper, client_args: dict):
         """
@@ -337,7 +348,7 @@ class TESJobRunner(AsynchronousJobRunner):
         extra_files = job_wrapper.extra_filenames
         tool_files = self.find_referenced_subfiles(tool_dir, job_wrapper.command_line, extra_files)
 
-        remote_image = self.get_docker_image(job_wrapper)
+        remote_image, staging_out_image = self.get_docker_image(job_wrapper)
 
         command_line = build_command(self,
                 job_wrapper=job_wrapper,
@@ -356,9 +367,9 @@ class TESJobRunner(AsynchronousJobRunner):
         job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], self.get_job_directory_files(work_dir)))
         job_script["inputs"].extend(self.input_descriptors(client_args['files_endpoint'], input_files))
 
-        job_script["executors"].append(self.file_creation_executor(mount_path, work_dir))
+        job_script["executors"].append(self.file_creation_executor(mount_path, staging_out_image, work_dir))
         job_script["executors"].append(self.job_executor(mount_path, remote_image, command_line, env_var))
-        job_script["executors"].append(self.file_staging_out_executor(mount_path, staging_out_command))
+        job_script["executors"].append(self.file_staging_out_executor(mount_path, staging_out_image, staging_out_command))
 
         return job_script
 
@@ -442,10 +453,11 @@ class TESJobRunner(AsynchronousJobRunner):
         logs_data = data.get('logs')
         log_lines = []
         for log in logs_data:
-            for log_output in log.get('logs'):
-                log_line = log_output.get(key)
-                if log_line is not None:
-                    log_lines.append(log_line)
+            if('logs' in log):
+                for log_output in log.get('logs'):
+                    log_line = log_output.get(key)
+                    if log_line is not None:
+                        log_lines.append(log_line)
         return "\n".join(log_lines)
 
     def _get_exit_codes(self, data: dict):
