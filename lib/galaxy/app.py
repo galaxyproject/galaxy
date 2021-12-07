@@ -566,6 +566,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.installed_repository_manager = self._register_singleton(
             InstalledRepositoryManager, InstalledRepositoryManager(self)
         )
+        self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self._configure_datatypes_registry(
             self.installed_repository_manager,
             use_converters=use_converters,
@@ -612,7 +613,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.test_data_resolver = self._register_singleton(
             TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         )
-        self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
         # Tool Data Tables

@@ -99,6 +99,7 @@ class MinimalManagerApp(MinimalApp):
     job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
     job_metrics: "JobMetrics"
+    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
 
     @property
     def is_job_handler(self) -> bool:
@@ -141,7 +142,6 @@ class StructuredApp(MinimalManagerApp):
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
