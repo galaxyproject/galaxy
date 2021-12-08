@@ -31,8 +31,7 @@
                 v-if="historyHistory"
                 :id="'history-' + historyHistory['id']"
                 class="history-panel unified-panel-body"
-                style="overflow: auto"
-            ></div>
+                style="overflow: auto"></div>
         </div>
     </div>
 </template>
