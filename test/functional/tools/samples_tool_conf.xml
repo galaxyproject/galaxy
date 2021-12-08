@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
-  <tool file="export_remote.xml"/>
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
     <tool file="paths_as_file.xml" />
@@ -53,7 +52,6 @@
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
-  <tool file="dbkey_filter_paired_collection.xml" />
   <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
@@ -137,7 +135,7 @@
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
   <tool file="validation_metadata_in_datatable.xml"/>
-  <tool file="validation_metadata_in_file.xml"/>
+  <tool file="validation_dataset_metadata_in_file.xml"/>
   <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />

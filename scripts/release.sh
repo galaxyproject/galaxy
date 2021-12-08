@@ -19,6 +19,7 @@ shopt -s extglob
 
 # Only use this for dev/testing/CI to ignore forward merge conflicts, skip confirmation and package builds, etc.
 : ${TEST_MODE:=false}
+$TEST_MODE && MERGE_STRATEGY_OPTIONS='-X ours' || MERGE_STRATEGY_OPTIONS=
 
 VERIFY_PACKAGES=(wheel packaging)
 
@@ -258,7 +259,6 @@ function _test_forward_merge() {
     local curr_local_branch="__release_merge_test_${curr}"
     local next_local_branch="__release_merge_test_${next}"
     local recurse=true
-    local strategy=
     log "Testing forward merge of ${curr} to ${next}"
     if ! branch_exists "$curr_local_branch"; then
         branch_exists "$curr_branch" || { log_error "No existing branch for merge test: ${curr_branch}"; exit 1; }
@@ -270,8 +270,7 @@ function _test_forward_merge() {
     fi
     git_checkout_temp "$next_local_branch" "$next_branch"
     # Test the merge even if ignoring just to test the code path
-    $TEST_MODE && strategy='-X ours'
-    log_exec git merge $strategy -m 'test merge; please ignore' "$curr_local_branch" || { 
+    log_exec git merge $MERGE_STRATEGY_OPTIONS -m 'test merge; please ignore' "$curr_local_branch" || { 
         log_error "Merging unmodified ${curr} to ${next} failed, resolve upstream first!"; exit 1; }
     if $recurse; then
         _test_forward_merge "$next"
@@ -295,7 +294,7 @@ function perform_stable_merge() {
     local stable_int=$(echo "$stable" | tr -d .)
     if [ "$curr_int" -ge "$stable_int" ]; then
         log "Release '${RELEASE_CURR}' >= stable branch release '${stable}', merging 'release_${RELEASE_CURR}' to '${STABLE_BRANCH}'"
-        log_exec git merge -m "Merge branch 'release_${RELEASE_CURR}' into '${STABLE_BRANCH}'" "__release_${RELEASE_CURR}"
+        log_exec git merge $MERGE_STRATEGY_OPTIONS -m "Merge branch 'release_${RELEASE_CURR}' into '${STABLE_BRANCH}'" "__release_${RELEASE_CURR}"
         PUSH_BRANCHES+=("__stable:${STABLE_BRANCH}")
     else
         log "Release '${RELEASE_CURR}' < stable branch release '${stable}', skipping merge to '${STABLE_BRANCH}'"

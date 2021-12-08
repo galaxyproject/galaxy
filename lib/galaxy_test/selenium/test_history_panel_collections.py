@@ -162,7 +162,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         else:
             back = self.components.history_panel.collection_view.back
         back.wait_for_and_click()
-        self.wait(WAIT_TYPES.UX_RENDER)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     @selenium_test
     def test_rename_collection(self):

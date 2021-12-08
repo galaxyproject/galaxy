@@ -4,7 +4,7 @@ set -e
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
 LINT_VENV=$(mktemp -d "${TMPDIR:-/tmp}/lint_venv.XXXXXXXXXX")
-python3 -m venv "${LINT_VENV}"
+python3.7 -m venv "${LINT_VENV}"
 . "${LINT_VENV}/bin/activate"
 pip install --upgrade pip setuptools
 pip install -r "${THIS_DIRECTORY}/lint-requirements.txt"
