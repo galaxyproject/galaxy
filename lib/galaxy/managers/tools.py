@@ -119,8 +119,9 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                     )
                 assert dynamic_tool.uuid == uuid
         if not dynamic_tool:
+            target_object = None
             if tool_payload.src == "from_path":
-                tool_format, representation, _ = artifact_class(None, tool_payload.model_dump())
+                tool_format, representation, _, target_object = artifact_class(None, tool_payload.model_dump())
             else:
                 representation = tool_payload.representation.model_dump(by_alias=True, exclude_unset=True)
                 if not representation:
@@ -142,7 +143,10 @@ class DynamicToolManager(ModelManager[model.DynamicTool]):
                     tool_id = str(uuid)
             elif tool_format in ("CommandLineTool", "ExpressionTool"):
                 # CWL tools
-                if tool_path:
+                if target_object is not None:
+                    representation = {"raw_process_reference": target_object, "uuid": str(uuid), "class": tool_format}
+                    proxy = tool_proxy(tool_object=target_object, tool_directory=tool_directory, uuid=uuid)
+                elif tool_path:
                     proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
                 else:
                     # Build a tool proxy so that we can convert to the persistable
