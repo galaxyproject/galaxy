@@ -390,7 +390,9 @@ class ToolEvaluator:
                 wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
                 input_values[input.name] = wrapper
             elif isinstance(input, FieldTypeToolParameter):
-                field_wrapper: Optional[Union[InputValueWrapper, DatasetFilenameWrapper]] = None
+                field_wrapper: Optional[Union[InputValueWrapper, DatasetFilenameWrapper, DatasetCollectionWrapper]] = (
+                    None
+                )
                 if value:
                     assert "value" in value, value
                     assert "src" in value, value
@@ -404,8 +406,16 @@ class ToolEvaluator:
                             tool=self.tool,
                             name=input.name,
                         )
+                    elif src == "hdca":
+                        field_wrapper = DatasetCollectionWrapper(
+                            job_working_directory=job_working_directory,
+                            has_collection=value["value"],
+                            datatypes_registry=self.app.datatypes_registry,
+                            tool=self.tool,
+                            name=input.name,
+                        )
                     else:
-                        raise ValueError(f"src should be 'json' or 'hda' but is '{src}'")
+                        raise ValueError(f"src should be 'json' or 'hda' or 'hdca' but is '{src}'")
                 input_values[input.name] = field_wrapper
             elif isinstance(input, SelectToolParameter):
                 if input.multiple:

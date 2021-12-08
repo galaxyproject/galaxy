@@ -278,10 +278,10 @@ def galactic_flavored_to_cwl_job(tool, param_dict, local_working_directory):
             else:
                 # Is DatasetCollectionWrapper
                 hdca_wrapper = param_dict_value
-                if hdca_wrapper.collection_type == "list":
+                if hdca_wrapper.collection.collection_type == "list":
                     # TODO: generalize to lists of lists and lists of non-files...
                     return collection_wrapper_to_array(inputs_dir, hdca_wrapper)
-                elif hdca_wrapper.collection_type.collection_type == "record":
+                elif hdca_wrapper.collection.collection_type.collection_type == "record":
                     return collection_wrapper_to_record(inputs_dir, hdca_wrapper)
 
         elif type_representation.name == "array":
@@ -388,10 +388,10 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             else:
                 # Is DatasetCollectionWrapper
                 hdca_wrapper = param_dict_value
-                if hdca_wrapper.collection_type == "list":
+                if hdca_wrapper.collection.collection_type == "list":
                     # TODO: generalize to lists of lists and lists of non-files...
                     return collection_wrapper_to_array(inputs_dir, hdca_wrapper)
-                elif hdca_wrapper.collection_type.collection_type == "record":
+                elif hdca_wrapper.collection.collection_type == "record":
                     return collection_wrapper_to_record(inputs_dir, hdca_wrapper)
 
         elif type_representation.name == "array":
