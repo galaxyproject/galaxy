@@ -29,10 +29,10 @@ def artifact_class(trans, as_dict: Dict[str, Any], allow_in_directory: Optional[
             as_dict = yaml.safe_load(f)
 
     artifact_class = as_dict.get("class", None)
+    target_object = None
     if artifact_class is None and "$graph" in as_dict:
         object_id = object_id or "main"
         graph = as_dict["$graph"]
-        target_object = None
         if isinstance(graph, dict):
             target_object = graph.get(object_id)
         else:
@@ -40,11 +40,14 @@ def artifact_class(trans, as_dict: Dict[str, Any], allow_in_directory: Optional[
                 found_id = item.get("id")
                 if found_id == object_id or found_id == f"#{object_id}":
                     target_object = item
+                    break
 
         if target_object and target_object.get("class"):
             artifact_class = target_object["class"]
+            if artifact_class in ("CommandLineTool", "ExpressionTool"):
+                target_object["cwlVersion"] = as_dict["cwlVersion"]
 
-    return artifact_class, as_dict, object_id
+    return artifact_class, as_dict, object_id, target_object
 
 
 __all__ = ("artifact_class",)
