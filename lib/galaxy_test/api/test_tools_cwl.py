@@ -238,6 +238,7 @@ class TestCwlTools(ApiTestCase):
             },
             test_data_directory="test/functional/tools/cwl_tools/v1.0_custom",
             history_id=run_object.history_id,
+            skip_input_staging=True,
         )
         output1_content = self.dataset_populator.get_history_dataset_content(run_object.history_id)
         assert "call: 1\n" in output1_content, output1_content
