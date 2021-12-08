@@ -68,9 +68,10 @@ class DynamicToolManager(ModelManager):
         if not dynamic_tool:
             src = tool_payload.get("src", "representation")
             is_path = src == "from_path"
+            target_object = None
 
             if is_path:
-                tool_format, representation, _ = artifact_class(None, tool_payload)
+                tool_format, representation, _, target_object = artifact_class(None, tool_payload)
             else:
                 assert src == "representation"
                 representation = tool_payload.get("representation")
@@ -92,7 +93,10 @@ class DynamicToolManager(ModelManager):
                     tool_id = str(uuid)
             elif tool_format in ("CommandLineTool", "ExpressionTool"):
                 # CWL tools
-                if is_path:
+                if target_object is not None:
+                    representation = {"raw_process_reference": target_object, "uuid": str(uuid), "class": tool_format}
+                    proxy = tool_proxy(tool_object=target_object, tool_directory=tool_directory, uuid=uuid)
+                elif is_path:
                     tool_path = tool_payload.get("path")
                     proxy = tool_proxy(tool_path=tool_path, uuid=uuid)
                 else:
