@@ -158,7 +158,7 @@ def handle_outputs(job_directory=None):
 
         return {"created_from_basename": output["basename"], "ext": "data"}
 
-    def handle_known_output(output, output_key, output_name):
+    def handle_known_output(output, output_name):
         # if output["class"] != "File":
         #    # This case doesn't seem like it would be reached - why is this here?
         #    provided_metadata[output_name] = {
@@ -188,13 +188,13 @@ def handle_outputs(job_directory=None):
     for output_name, output in outputs.items():
         handled_outputs.append(output_name)
         if isinstance(output, dict) and "location" in output:
-            handle_known_output(output, output_name, output_name)
+            handle_known_output(output, output_name)
         elif isinstance(output, dict):
             prefix = f"{output_name}|__part__|"
             for record_key, record_value in output.items():
                 record_value_output_key = f"{prefix}{record_key}"
                 if isinstance(record_value, dict) and "class" in record_value:
-                    handle_known_output(record_value, record_value_output_key, output_name)
+                    handle_known_output(record_value, record_value_output_key)
                 else:
                     # param_evaluation_noexpr
                     handle_known_output_json(output, output_name)
