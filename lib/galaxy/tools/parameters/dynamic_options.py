@@ -157,6 +157,7 @@ class DataMetaFilter(Filter):
             self.column = d_option.column_spec_to_index(self.column)
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
+        log.error(f"data_meta.init: ref_name {self.ref_name} key {self.key} column {self.column} multiple {self.multiple} separator {self.separator}")
 
     def get_dependency_name(self):
         return self.ref_name
@@ -275,10 +276,17 @@ class ParamValueFilter(Filter):
             if not hasattr(ref, ref_attribute):
                 return []  # ref does not have attribute, so we cannot filter, return empty list
             ref = getattr(ref, ref_attribute)
-        ref = str(ref)
+        log.error(f"ParamValue ref {ref}")
+        if ref is None:
+            ref = []
+        elif isinstance(ref, list):
+            ref = [str(_) for _ in ref]
+        else:
+            ref = [str(ref)]
+        log.error(f"ParamValue ref {ref}")
         rval = []
         for fields in options:
-            if self.keep == (fields[self.column] == ref):
+            if self.keep == (fields[self.column] in ref):
                 rval.append(fields)
         return rval
 
@@ -666,10 +674,10 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
+                log.warning(f"{self.tool_param.name} could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
                 return []
             except ValueError:  # not a valid dataset
-                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
+                log.warning(f"{self.tool_param.name} could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
                 return []
 
             options = []
