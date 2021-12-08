@@ -18,7 +18,7 @@
 import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
 import { Dataset } from "../../model";
 import { deleteContent, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching";
+import { cacheContent } from "components/providers/History/caching";
 
 export default {
     components: {

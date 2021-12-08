@@ -1,9 +1,9 @@
 import { map } from "rxjs/operators";
 import { watchUntil, getLocalVue } from "jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { cacheContent, cacheCollectionContent, wipeDatabase, loadDscContent } from "../../caching";
-import { bulkCacheDscContent } from "../../caching/db/observables";
-import { summarizeCacheOperation } from "../../caching/loadHistoryContents";
+import { cacheContent, cacheCollectionContent, wipeDatabase, loadDscContent } from "components/providers/History/caching";
+import { bulkCacheDscContent } from "components/providers/History/caching/db/observables";
+import { summarizeCacheOperation } from "components/providers/History/caching/loadHistoryContents";
 import { SearchParams } from "../../model/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
 import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
@@ -13,7 +13,7 @@ import { defaultPayload } from "../ContentProvider";
 
 // mocking
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 
 // fake server call
 // prettier-ignore

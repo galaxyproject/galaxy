@@ -4,9 +4,9 @@ import { ObserverSpy } from "@hirez_io/observer-spy";
 import { untilNthEmission } from "jest/helpers";
 
 import { SearchParams } from "../../model/SearchParams";
-import { buildContentId } from "../../caching/db/observables";
+import { buildContentId } from "components/providers/History/caching/db/observables";
 import { watchHistoryContents } from "./watchHistoryContents";
-import { cacheContent, getCachedContent, bulkCacheContent, wipeDatabase } from "../../caching";
+import { cacheContent, getCachedContent, bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 
 import historyContent from "../../test/json/historyContent.json";
 
@@ -15,7 +15,7 @@ import historyContent from "../../test/json/historyContent.json";
 // call expose() on the main thread, so we mock the adapter functions which
 // generate observables from the worker.
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 
 beforeEach(async () => {
     await wipeDatabase();

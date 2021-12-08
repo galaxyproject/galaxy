@@ -1,7 +1,7 @@
 import JobOutputs from "./JobOutputs";
 import { shallowMount } from "@vue/test-utils";
 
-jest.mock("components/History/caching");
+jest.mock("components/providers/History/caching");
 jest.mock("components/providers/DatasetCollectionProvider");
 
 describe("JobInformation/JobOutputs.vue", () => {

@@ -2,7 +2,7 @@
 // having a hard time making jest manually mock this properly
 
 import { map } from "rxjs/operators";
-import { getPropRange } from "../../../caching/loadHistoryContents";
+import { getPropRange } from "components/providers/History/caching/loadHistoryContents";
 import { serverContent } from "../../../test/testHistory";
 
 export const loadContents = jest.fn().mockImplementation((config) => {

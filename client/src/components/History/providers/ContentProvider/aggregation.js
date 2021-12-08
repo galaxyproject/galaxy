@@ -11,7 +11,7 @@
 
 import SkipList from "proper-skip-list";
 import { pipe, take, filter } from "iter-tools";
-import { SEEK } from "../../caching/enums";
+import { SEEK } from "components/providers/History/caching/enums";
 import { SearchParams } from "../../model";
 
 // utils for buildContentResult

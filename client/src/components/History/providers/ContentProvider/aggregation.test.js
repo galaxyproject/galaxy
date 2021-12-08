@@ -1,9 +1,9 @@
 import SkipList from "proper-skip-list";
 import { buildContentResult } from "./aggregation";
-import { SEEK } from "../../caching/enums";
+import { SEEK } from "components/providers/History/caching/enums";
 
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 
 describe("buildContentResult", () => {
     describe("query history content from aggregate storage", () => {

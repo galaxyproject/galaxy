@@ -2,7 +2,7 @@ import { BehaviorSubject, timer } from "rxjs";
 import { takeUntil, share } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { ScrollPos } from "../../model";
-import { bulkCacheContent, wipeDatabase } from "../../caching";
+import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { contentPayload } from "./contentPayload";
 import { loadContents } from "./loadContents";
 import { serverContent, testHistory, testHistoryContent } from "../../test/testHistory";
@@ -10,7 +10,7 @@ import { untilNthEmission } from "jest/helpers";
 // import { reportPayload } from "../../test/providerTestHelpers";
 
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 jest.mock("./loadContents");
 
 // Create a history and a set of filters then wire up a scrollPos to

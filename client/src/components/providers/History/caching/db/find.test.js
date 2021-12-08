@@ -8,8 +8,8 @@ import { content$, dscContent$, buildContentId } from "./observables";
 import { find } from "./find";
 
 // test data
-import historyContent from "../../test/json/historyContent.json";
-import collectionContent from "../../test/json/collectionContent.json";
+import historyContent from "components/History/test/json/historyContent.json";
+import collectionContent from "components/History/test/json/collectionContent.json";
 
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);

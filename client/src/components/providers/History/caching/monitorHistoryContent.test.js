@@ -5,14 +5,14 @@ import { wipeDatabase } from "./db/wipeDatabase";
 import { wait } from "jest/helpers";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 
-import { SearchParams } from "../model/SearchParams";
-import { content$ } from "../caching/db/observables";
-import { bulkCacheContent, cacheContent } from "../caching/db/promises";
-import { find } from "../caching/db/find";
+import { SearchParams } from "components/History/model/SearchParams";
+import { content$ } from "./db/observables";
+import { bulkCacheContent, cacheContent } from "./db/promises";
+import { find } from "./db/find";
 import { buildContentPouchRequest, monitorHistoryContent } from "./monitorHistoryContent";
 
 // test data
-import historyContent from "../test/json/historyContent.json";
+import historyContent from "components/History/test/json/historyContent.json";
 // import collectionContent from "../../test/json/collectionContent.json";
 
 jest.mock("app");

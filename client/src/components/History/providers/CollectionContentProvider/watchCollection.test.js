@@ -2,7 +2,7 @@ import { of, timer } from "rxjs";
 import { takeUntil, share } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { watchCollection } from "./watchCollection";
-import { cacheCollectionContent, bulkCacheDscContent, wipeDatabase } from "../../caching";
+import { cacheCollectionContent, bulkCacheDscContent, wipeDatabase } from "components/providers/History/caching";
 import { testCollectionContent, testCollection } from "../../test/testCollection";
 import { untilNthEmission } from "jest/helpers";
 
@@ -11,7 +11,7 @@ import { untilNthEmission } from "jest/helpers";
 // call expose() on the main thread, so we mock the adapter functions which
 // generate observables from the worker.
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 
 const debouncePeriod = 250;
 const safetyTimeout = 1000;

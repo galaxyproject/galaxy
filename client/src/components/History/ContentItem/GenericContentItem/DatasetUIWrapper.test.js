@@ -3,7 +3,7 @@ import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
 import { shallowMount } from "@vue/test-utils";
 import raw from "components/History/test/json/Dataset.json";
 
-jest.mock("components/History/caching");
+jest.mock("components/providers/History/caching");
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
     let wrapper;

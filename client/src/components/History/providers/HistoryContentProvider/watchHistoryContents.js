@@ -1,8 +1,8 @@
 import { of } from "rxjs";
 import { map } from "rxjs/operators";
 import { aggregateCacheUpdates } from "../ContentProvider";
-import { monitorHistoryContent } from "../../caching";
-import { SEEK } from "../../caching/enums";
+import { monitorHistoryContent } from "components/providers/History/caching";
+import { SEEK } from "components/providers/History/caching/enums";
 import { SearchParams } from "../../model";
 
 // prettier-ignore

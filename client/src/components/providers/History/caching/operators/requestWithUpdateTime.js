@@ -2,7 +2,7 @@ import moment from "moment";
 import { of, pipe } from "rxjs";
 import { tap, map, mergeMap } from "rxjs/operators";
 import { ajax } from "rxjs/ajax";
-import { createDateStore } from "../../model/DateStore";
+import { createDateStore } from "components/History/model/DateStore";
 
 /**
  * Global url date-store, keeps track of the last time a specific url was

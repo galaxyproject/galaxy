@@ -13,7 +13,7 @@
 import { of } from "rxjs";
 import { map, pluck, switchMap, distinctUntilChanged } from "rxjs/operators";
 import { whenAny } from "utils/observable/whenAny";
-import { monitorContentQuery, monitorDscQuery } from "../../caching";
+import { monitorContentQuery, monitorDscQuery } from "components/providers/History/caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import deepEqual from "deep-equal";
 

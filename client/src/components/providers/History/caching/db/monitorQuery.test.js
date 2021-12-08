@@ -9,8 +9,8 @@ import { content$, dscContent$ } from "./observables";
 import { cacheContent, cacheCollectionContent, bulkCacheContent, bulkCacheDscContent } from "./promises";
 
 // test data
-import historyContent from "../../test/json/historyContent.json";
-import collectionContent from "../../test/json/collectionContent.json";
+import historyContent from "components/History/test/json/historyContent.json";
+import collectionContent from "components/History/test/json/collectionContent.json";
 
 jest.mock("app");
 jest.mock("../../caching");

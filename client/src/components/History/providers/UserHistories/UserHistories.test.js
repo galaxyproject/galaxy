@@ -35,7 +35,7 @@ import {
 } from "../../model/queries";
 
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 jest.mock("../../model/queries");
 
 const maxServerDelay = 60;

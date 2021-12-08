@@ -1,8 +1,8 @@
 import { of } from "rxjs";
 import { map } from "rxjs/operators";
 import { aggregateCacheUpdates } from "../ContentProvider";
-import { monitorCollectionContent } from "../../caching";
-import { SEEK } from "../../caching/enums";
+import { monitorCollectionContent } from "components/providers/History/caching";
+import { SEEK } from "components/providers/History/caching/enums";
 import { SearchParams } from "../../model";
 // import { show } from "utils/observable";
 

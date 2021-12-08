@@ -3,7 +3,7 @@ import { watchUntil, getLocalVue } from "jest/helpers";
 import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
 import HistoryContentProvider from "./HistoryContentProvider";
 import { SearchParams } from "../../model";
-import { bulkCacheContent, wipeDatabase } from "../../caching";
+import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { defaultPayload } from "../ContentProvider";
 import { serverContent, testHistory, testHistoryContent } from "../../test/testHistory";
 // import { reportPayload } from "../../test/providerTestHelpers";
@@ -14,7 +14,7 @@ const localVue = getLocalVue();
 
 // mocking
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 jest.mock("./loadContents");
 
 afterEach(() => wipeDatabase());

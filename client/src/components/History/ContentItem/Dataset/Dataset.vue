@@ -15,7 +15,7 @@
 import DatasetUI from "./DatasetUI";
 import { Dataset } from "../../model";
 import { deleteContent, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching";
+import { cacheContent } from "components/providers/History/caching";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
 

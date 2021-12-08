@@ -1,6 +1,6 @@
 import { of, race, pipe, concat, iif } from "rxjs";
 import { filter, map, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
-import { cacheContent, monitorContentQuery, loadHistoryContents } from "components/History/caching";
+import { cacheContent, monitorContentQuery, loadHistoryContents } from "components/providers/History/caching";
 import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "./fetch";
 
 // prettier-ignore

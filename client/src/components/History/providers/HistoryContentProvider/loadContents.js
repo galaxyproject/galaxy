@@ -2,7 +2,7 @@ import { defer, of, throwError } from "rxjs";
 import { switchMap, debounceTime, startWith, repeatWhen } from "rxjs/operators";
 import { decay } from "utils/observable";
 import { monitorXHR } from "utils/observable/monitorXHR";
-import { loadHistoryContents } from "../../caching";
+import { loadHistoryContents } from "components/providers/History/caching";
 import { SearchParams } from "../../model";
 
 // prettier-ignore

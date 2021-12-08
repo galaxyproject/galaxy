@@ -55,7 +55,7 @@
 <script>
 import { History } from "../model";
 import { updateContentFields } from "../model/queries";
-import { cacheContent } from "../caching";
+import { cacheContent } from "components/providers/History/caching";
 
 import { DscProvider, CollectionContentProvider, ExpandedItems } from "../providers";
 import Layout from "../Layout";

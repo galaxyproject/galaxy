@@ -17,7 +17,7 @@ import {
 import { show, debounceBurst, shareButDie } from "utils/observable";
 import { SearchParams } from "../../model/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "./aggregation";
-import { SEEK } from "../../caching/enums";
+import { SEEK } from "components/providers/History/caching/enums";
 import { reportPayload } from "./helpers";
 
 // prettier-ignore

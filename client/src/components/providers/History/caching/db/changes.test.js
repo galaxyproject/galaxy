@@ -14,8 +14,8 @@ import { changes, feeds } from "./changes";
 import { wait } from "jest/helpers";
 
 // test data
-import historyContent from "../../test/json/historyContent.json";
-import collectionContent from "../../test/json/collectionContent.json";
+import historyContent from "components/History/test/json/historyContent.json";
+import collectionContent from "components/History/test/json/collectionContent.json";
 
 // https://github.com/hirezio/observer-spy/blob/master/README.md
 import { ObserverSpy } from "@hirez_io/observer-spy";

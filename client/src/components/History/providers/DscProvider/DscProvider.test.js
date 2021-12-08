@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { mountRenderless, watchUntil, watchForChange } from "jest/helpers";
-import { wipeDatabase } from "../../caching";
-import { cacheContent, getCachedContent, cacheCollectionContent, getCachedCollectionContent } from "../../caching";
+import { mountRenderless, watchForChange } from "jest/helpers";
+import { wipeDatabase } from "components/providers/History/caching";
+import { cacheContent, cacheCollectionContent } from "components/providers/History/caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscProvider from "./DscProvider";
 
@@ -15,7 +15,7 @@ import { testCollection, testNestedCollection } from "../../test/testCollection"
 
 // Imports dependencies without firing up worker because that blows with Jest
 jest.mock("app");
-jest.mock("../../caching");
+jest.mock("components/providers/History/caching");
 
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);

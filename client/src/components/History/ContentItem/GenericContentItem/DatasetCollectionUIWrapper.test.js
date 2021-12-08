@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import datasetCollectionRaw from "components/History/test/json/DatasetCollection.json";
 import datasetCollectionContent from "components/History/test/json/DatasetCollection.nested.json";
 
-jest.mock("components/History/caching");
+jest.mock("components/providers/History/caching");
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
     let wrapper;
