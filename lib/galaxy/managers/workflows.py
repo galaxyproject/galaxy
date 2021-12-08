@@ -610,7 +610,7 @@ class WorkflowContentsManager(UsesAnnotations):
         trans = WorkRequestContext(app=self.app, user=user)
 
         as_dict = {"src": "from_path", "path": path}
-        workflow_class, as_dict, object_id = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
+        workflow_class, as_dict, object_id, _ = artifact_class(trans, as_dict, allow_in_directory=allow_in_directory)
         assert workflow_class == "GalaxyWorkflow"
         # Format 2 Galaxy workflow.
         galaxy_interface = Format2ConverterGalaxyInterface()
@@ -640,7 +640,7 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_path = as_dict.get("path")
             workflow_directory = os.path.normpath(os.path.dirname(workflow_path))
 
-        workflow_class, as_dict, object_id = artifact_class(trans, as_dict)
+        workflow_class, as_dict, object_id, _ = artifact_class(trans, as_dict)
         if workflow_class == "GalaxyWorkflow" or "yaml_content" in as_dict:
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
