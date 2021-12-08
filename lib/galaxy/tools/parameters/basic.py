@@ -2863,7 +2863,7 @@ class FieldTypeToolParameter(ToolParameter):
         src = value["src"]
         if src in ["hda", "hdca", "dce"]:
             id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
-            value = {"src": "hda", "id": id}
+            value = {"src": src, "id": id}
 
         return json.dumps(value)
 
