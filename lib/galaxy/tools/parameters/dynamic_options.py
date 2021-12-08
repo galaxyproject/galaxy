@@ -276,14 +276,12 @@ class ParamValueFilter(Filter):
             if not hasattr(ref, ref_attribute):
                 return []  # ref does not have attribute, so we cannot filter, return empty list
             ref = getattr(ref, ref_attribute)
-        log.error(f"ParamValue ref {ref}")
         if ref is None:
             ref = []
         elif isinstance(ref, list):
             ref = [str(_) for _ in ref]
         else:
             ref = [str(ref)]
-        log.error(f"ParamValue ref {ref}")
         rval = []
         for fields in options:
             if self.keep == (fields[self.column] in ref):
@@ -674,10 +672,10 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warning(f"{self.tool_param.name} could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
                 return []
             except ValueError:  # not a valid dataset
-                log.warning(f"{self.tool_param.name} could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
                 return []
 
             options = []
