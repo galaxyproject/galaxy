@@ -3164,7 +3164,7 @@ class CwlCommandBindingTool(Tool):
         for name, dataset in out_data.items():
             output_dict[name] = {
                 "id": str(getattr(dataset.dataset, dataset.dataset.store_by)),
-                "path": dataset.file_name,
+                "path": dataset.get_file_name(),
             }
 
         # prevent unset optional file to trigger 'ValidationException' exception

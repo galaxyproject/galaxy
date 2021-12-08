@@ -563,7 +563,7 @@ class TestMappings(BaseModelTestCase):
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
+        # assert hist1.datasets[0].get_file_name() == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
