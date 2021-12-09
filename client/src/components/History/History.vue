@@ -95,7 +95,8 @@
 
 <script>
 import { History, SearchParams } from "./model";
-import { HistoryContentProvider, ExpandedItems, SelectedItems } from "./providers";
+import { HistoryContentProvider, ExpandedItems } from "./providers";
+import SelectedItems from "./SelectedItems";
 import Layout from "./Layout";
 import HistoryMessages from "./HistoryMessages";
 import HistoryDetails from "./HistoryDetails";
