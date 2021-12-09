@@ -32,11 +32,11 @@
     <tests>
         <test expect_failure="false">
             <param name="select1" value="hg18_value,hg19_value"/>
-            <param name="select2" value="hg38_value" />
+            <param name="select2" value="mm10_value" />
             <output name="output">
                 <assert_contents>
                     <has_line line="hg18_value,hg19_value" />    
-                    <has_line line="hg38_value" />    
+                    <has_line line="mm10_value" />    
                 </assert_contents>
             </output>
         </test>
