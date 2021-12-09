@@ -543,6 +543,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "file_name",
                 "display_apps",
                 "display_types",
+                "cwl_formats",
                 "validated_state",
                 "validated_state_message",
                 # 'url',
