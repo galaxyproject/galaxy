@@ -1,7 +1,7 @@
 import { BehaviorSubject, timer } from "rxjs";
 import { takeUntil, share } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
-import { ScrollPos } from "../../model";
+import { ScrollPos } from "components/History/model/ScrollPos";
 import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { contentPayload } from "./contentPayload";
 import { loadContents } from "./loadContents";

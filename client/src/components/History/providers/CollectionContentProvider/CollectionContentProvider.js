@@ -1,4 +1,4 @@
-import { DatasetCollection } from "../../model";
+import { DatasetCollection } from "components/History/model/DatasetCollection";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { ContentProvider, processContentStreams } from "../ContentProvider";
 import { collectionPayload } from "./collectionPayload";

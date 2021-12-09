@@ -1,8 +1,8 @@
 import Vuex from "vuex";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue, wait, waitForLifecyleEvent, watchForChange } from "jest/helpers";
-import { historyStore } from "../../model/historyStore";
-import { History } from "../../model";
+import { historyStore } from "components/History/model/historyStore";
+import { History } from "components/History/model/History";
 import UserHistories from "./UserHistories";
 
 // #region Test Data
@@ -32,11 +32,11 @@ import {
     createNewHistory,
     updateHistoryFields,
     deleteHistoryById,
-} from "../../model/queries";
+} from "components/History/model/queries";
 
 jest.mock("app");
 jest.mock("components/providers/History/caching");
-jest.mock("../../model/queries");
+jest.mock("components/History/model/queries");
 
 const maxServerDelay = 60;
 const serverDelay = async (min = 0, max = maxServerDelay) => {

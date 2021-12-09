@@ -2,7 +2,7 @@
 import { mountRenderless, watchForChange } from "jest/helpers";
 import { wipeDatabase } from "components/providers/History/caching";
 import { cacheContent, cacheCollectionContent } from "components/providers/History/caching";
-import { DatasetCollection } from "../../model/DatasetCollection";
+import { DatasetCollection } from "components/History/model/DatasetCollection";
 import DscProvider from "./DscProvider";
 
 // test data as root-level collections
