@@ -184,6 +184,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     # Verify it isn't a NoneDataset
     if dataset_wrapper.unsanitized:
         raw_file_object["size"] = int(dataset_wrapper.get_size())
+        raw_file_object["format"] = str(dataset_wrapper.cwl_formats[0])
 
     set_basename_and_derived_properties(
         raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name)

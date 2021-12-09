@@ -63,6 +63,11 @@ class BaseUploadToolAction(ToolAction):
         assert dataset_upload_inputs, Exception("No dataset upload groups were found.")
 
         persisting_uploads_timer = ExecutionTimer()
+        if incoming.get("file_type") == "auto" and incoming.get("cwl_format"):
+            cwl_format = incoming["cwl_format"]
+            ext = trans.app.datatypes_registry.get_datatype_ext_by_format_ontology(cwl_format, only_uploadable=True)
+            if ext:
+                incoming["file_type"] = ext
         incoming = upload_common.persist_uploads(incoming, trans)
         log.debug(f"Persisted uploads {persisting_uploads_timer}")
         rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history)
