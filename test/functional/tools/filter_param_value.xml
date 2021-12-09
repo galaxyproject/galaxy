@@ -13,11 +13,13 @@
             <options from_data_table="test_fasta_indexes">
                 <column name="value" index="0"/>
                 <column name="name" index="1"/>
-                <!-- <filter type="param_value" column="0" ref="select2" keep="false"/> -->
+                <!-- unfortunatelly this does not work (bug?): at the moment ane can
+                     not refer to other inputs that are defined below)
+                    <filter type="param_value" column="0" ref="select2" keep="false"/> -->
             </options>
         </param>
         <param name="select2" type="select">
-            <options  from_data_table="test_fasta_indexes">
+            <options from_data_table="test_fasta_indexes">
                 <column name="value" index="0"/>
                 <column name="name" index="1"/>
                 <filter type="param_value" column="0" ref="select1" keep="false"/>

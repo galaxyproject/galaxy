@@ -272,19 +272,31 @@ class ParamValueFilter(Filter):
         if trans is not None and trans.workflow_building_mode:
             return []
         ref = other_values.get(self.ref_name, None)
-        for ref_attribute in self.ref_attribute:
-            if not hasattr(ref, ref_attribute):
-                return []  # ref does not have attribute, so we cannot filter, return empty list
-            ref = getattr(ref, ref_attribute)
         if ref is None:
             ref = []
-        elif isinstance(ref, list):
-            ref = [str(_) for _ in ref]
-        else:
-            ref = [str(ref)]
+
+        # - for HDCAs the list of contained HDAs is extracted
+        # - single values are transformed in a single eleent list
+        # - remaining cases are already lists (select and data parameters with multiple=true)
+        if isinstance(ref, HistoryDatasetCollectionAssociation):
+            ref = ref.to_hda_representative(multiple=True)
+        elif not isinstance(ref, list):
+            ref = [ref]
+
+        ref_values = []
+        for r in ref:
+            for ref_attribute in self.ref_attribute:
+                # ref does not have attribute, so we cannot filter,
+                # but other refs might have it
+                if not hasattr(r, ref_attribute):
+                    break
+                r = getattr(r, ref_attribute)
+            ref_values.append(r)
+        ref_values = [str(_) for _ in ref_values]
+
         rval = []
         for fields in options:
-            if self.keep == (fields[self.column] in ref):
+            if self.keep == (fields[self.column] in ref_values):
                 rval.append(fields)
         return rval
 
