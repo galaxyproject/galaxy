@@ -175,12 +175,13 @@ class StagingInterface(metaclass=abc.ABCMeta):
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
-                file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
+                file_type = DEFAULT_FILE_TYPE
                 dbkey = upload_target.properties.get("dbkey", None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(
                     history_id,
                     file_type=file_type,
                     to_posix_lines=dbkey,
+                    cwl_format=upload_target.properties.get("filetype"),
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -320,6 +321,8 @@ def _upload_payload(
         tool_input["files_0|space_to_tab"] = "Yes"
     if "file_name" in kwd:
         tool_input["files_0|NAME"] = kwd["file_name"]
+    if kwd.get("cwl_format"):
+        tool_input["cwl_format"] = kwd["cwl_format"]
     tool_input["files_0|type"] = "upload_dataset"
     payload["inputs"] = tool_input
     payload["__files"] = {}
