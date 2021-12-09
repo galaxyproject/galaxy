@@ -13,7 +13,7 @@
             <options from_data_table="test_fasta_indexes">
                 <column name="value" index="0"/>
                 <column name="name" index="1"/>
-                <filter type="param_value" column="0" ref="select2" keep="false"/>
+                <!-- <filter type="param_value" column="0" ref="select2" keep="false"/> -->
             </options>
         </param>
         <param name="select2" type="select">
