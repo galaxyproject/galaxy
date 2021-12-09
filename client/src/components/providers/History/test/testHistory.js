@@ -1,4 +1,4 @@
-import { History } from "../model";
+import { History } from "components/History/model";
 import { SearchParams } from "components/providers/History/SearchParams";
 import rawHistory from "./json/History.json";
 import rawHistoryContent from "./json/historyContent.json";

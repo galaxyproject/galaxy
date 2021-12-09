@@ -14,7 +14,7 @@ import {
 } from "./promises";
 
 // test data
-import historyContent from "components/History/test/json/historyContent.json";
+import historyContent from "components/providers/History/test/json/historyContent.json";
 import collectionContent from "components/providers/History/test/json/collectionContent.json";
 
 beforeEach(wipeDatabase);

@@ -5,7 +5,7 @@ import HistoryContentProvider from "./HistoryContentProvider";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { defaultPayload } from "../ContentProvider";
-import { serverContent, testHistory, testHistoryContent } from "components/History/test/testHistory";
+import { serverContent, testHistory, testHistoryContent } from "components/providers/History/test/testHistory";
 
 // reads hids
 const payloadHids = (payload) => payload.contents?.map((o) => o.hid) || [];

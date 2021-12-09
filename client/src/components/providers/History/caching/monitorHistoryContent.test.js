@@ -12,7 +12,7 @@ import { find } from "./db/find";
 import { buildContentPouchRequest, monitorHistoryContent } from "./monitorHistoryContent";
 
 // test data
-import historyContent from "components/History/test/json/historyContent.json";
+import historyContent from "components/providers/History/test/json/historyContent.json";
 
 jest.mock("app");
 jest.mock("../caching");

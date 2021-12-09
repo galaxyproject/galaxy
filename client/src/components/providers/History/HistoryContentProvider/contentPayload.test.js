@@ -5,7 +5,7 @@ import { ScrollPos } from "components/History/model/ScrollPos";
 import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { contentPayload } from "./contentPayload";
 import { loadContents } from "./loadContents";
-import { serverContent, testHistory, testHistoryContent } from "components/History/test/testHistory";
+import { serverContent, testHistory, testHistoryContent } from "components/providers/History/test/testHistory";
 import { untilNthEmission } from "jest/helpers";
 
 jest.mock("app");
