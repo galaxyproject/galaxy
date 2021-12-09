@@ -13,7 +13,6 @@ import { buildContentPouchRequest, monitorHistoryContent } from "./monitorHistor
 
 // test data
 import historyContent from "components/History/test/json/historyContent.json";
-// import collectionContent from "../../test/json/collectionContent.json";
 
 jest.mock("app");
 jest.mock("../caching");

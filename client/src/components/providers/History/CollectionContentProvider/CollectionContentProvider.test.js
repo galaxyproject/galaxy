@@ -6,8 +6,8 @@ import { bulkCacheDscContent } from "components/providers/History/caching/db/obs
 import { summarizeCacheOperation } from "components/providers/History/caching/loadHistoryContents";
 import { SearchParams } from "components/providers/History/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
-import { sameVueObj, payloadChange } from "components/History/test/providerTestHelpers";
-import { testCollection, testCollectionContent } from "components/History/test/testCollection";
+import { sameVueObj, payloadChange } from "components/providers/History/test/providerTestHelpers";
+import { testCollection, testCollectionContent } from "components/providers/History/test/testCollection";
 import { defaultPayload } from "../ContentProvider";
 
 // mocking

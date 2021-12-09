@@ -5,13 +5,7 @@ import { cacheContent, cacheCollectionContent } from "components/providers/Histo
 import { DatasetCollection } from "components/History/model/DatasetCollection";
 import DscProvider from "./DscProvider";
 
-// test data as root-level collections
-// import rootContents from "../../test/json/historyContentWithCollection.json";
-
-// test data for a nested collection
-// import nestedContents from "../../test/json/collectionContent.json";
-
-import { testCollection, testNestedCollection } from "components/History/test/testCollection";
+import { testCollection, testNestedCollection } from "components/providers/History/test/testCollection";
 
 // Imports dependencies without firing up worker because that blows with Jest
 jest.mock("app");

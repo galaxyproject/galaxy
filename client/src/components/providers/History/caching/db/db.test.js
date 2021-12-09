@@ -15,7 +15,7 @@ import {
 
 // test data
 import historyContent from "components/History/test/json/historyContent.json";
-import collectionContent from "components/History/test/json/collectionContent.json";
+import collectionContent from "components/providers/History/test/json/collectionContent.json";
 
 beforeEach(wipeDatabase);
 afterEach(wipeDatabase);

@@ -3,7 +3,7 @@ import { takeUntil, share } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { watchCollection } from "./watchCollection";
 import { cacheCollectionContent, bulkCacheDscContent, wipeDatabase } from "components/providers/History/caching";
-import { testCollectionContent, testCollection } from "components/History/test/testCollection";
+import { testCollectionContent, testCollection } from "components/providers/History/test/testCollection";
 import { untilNthEmission } from "jest/helpers";
 
 // need to mock monitorHistoryContent which is instantiated inside the worker,

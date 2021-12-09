@@ -2,7 +2,6 @@ import { NEVER } from "rxjs";
 import { ScrollPos } from "components/History/model/ScrollPos";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { isValidNumber } from "utils/validation";
-// import { reportPayload } from "../../test/providerTestHelpers";
 
 // first emission, emitted when parent (history) or filters changes to reset the view
 export const defaultPayload = {
