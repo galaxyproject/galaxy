@@ -57,6 +57,7 @@ OutputPropertiesType = TypedDict(
         "secondaryFiles": List[Any],
         "checksum": str,
         "size": int,
+        "format": Optional[str],
     },
     total=False,
 )
@@ -67,6 +68,7 @@ def output_properties(
     content: Optional[bytes] = None,
     basename=None,
     pseudo_location=False,
+    cwl_formats: Optional[List[str]] = None,
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
@@ -90,6 +92,7 @@ def output_properties(
         f.close()
     properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
+    properties["format"] = cwl_formats[0] if cwl_formats else None
     set_basename_and_derived_properties(properties, basename)
     _handle_pseudo_location(properties, pseudo_location)
     return properties
@@ -516,7 +519,9 @@ def output_to_cwl_json(
 
             if file_or_directory == "File":
                 dataset_dict = get_dataset(output_metadata)
-                properties = output_properties(pseudo_location=pseudo_location, **dataset_dict)
+                properties = output_properties(
+                    pseudo_location=pseudo_location, cwl_formats=output_metadata["cwl_formats"], **dataset_dict
+                )
                 basename = properties["basename"]
                 extra_files = get_extra_files(output_metadata)
                 found_index = False
