@@ -11,7 +11,7 @@ import DscProvider from "./DscProvider";
 // test data for a nested collection
 // import nestedContents from "../../test/json/collectionContent.json";
 
-import { testCollection, testNestedCollection } from "../../test/testCollection";
+import { testCollection, testNestedCollection } from "components/History/test/testCollection";
 
 // Imports dependencies without firing up worker because that blows with Jest
 jest.mock("app");

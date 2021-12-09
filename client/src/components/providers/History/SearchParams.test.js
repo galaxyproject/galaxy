@@ -4,10 +4,8 @@
 import { SearchParams } from "./SearchParams";
 import { matchesSelector } from "pouchdb-selector-core";
 import { STATES } from "components/History/model/states";
-// import { show } from "jest/helpers";
 
 // #region Test generators
-
 const testPouchSelector = (userField, searchVal, goodDoc, badDoc) => {
     let pouchFieldName;
     let params;

@@ -57,14 +57,14 @@ import { History } from "../model";
 import { updateContentFields } from "../model/queries";
 import { cacheContent } from "components/providers/History/caching";
 
-import { DscProvider, CollectionContentProvider, ExpandedItems } from "../providers";
+import { DscProvider, CollectionContentProvider, ExpandedItems } from "components/providers/History";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
 import Details from "./Details";
 import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
-import { reportPayload } from "../providers/ContentProvider/helpers";
+import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import IconButton from "components/IconButton";
 
 export default {

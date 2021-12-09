@@ -8,7 +8,7 @@ import { buildContentId } from "components/providers/History/caching/db/observab
 import { watchHistoryContents } from "./watchHistoryContents";
 import { cacheContent, getCachedContent, bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 
-import historyContent from "../../test/json/historyContent.json";
+import historyContent from "components/History/test/json/historyContent.json";
 
 // need to mock monitorHistoryContent which is instantiated inside the worker,
 // but we can't actually fire up threads.js in a unit test because you can't

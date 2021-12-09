@@ -96,7 +96,7 @@
 <script>
 import { History } from "./model";
 import { SearchParams } from "components/providers/History/SearchParams";
-import { HistoryContentProvider } from "./providers";
+import { HistoryContentProvider } from "components/providers/History/";
 import ExpandedItems from "./ExpandedItems";
 import SelectedItems from "./SelectedItems";
 import Layout from "./Layout";
@@ -107,7 +107,7 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
-import { reportPayload } from "./providers/ContentProvider/helpers";
+import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
 
 export default {

@@ -1,5 +1,5 @@
 import { watchForChange } from "jest/helpers";
-import { defaultPayload } from "../providers/ContentProvider";
+import { defaultPayload } from "components/providers/History/ContentProvider";
 
 /**
  *  Vue adds a bunch of setters and getters so we need to create our own comparison fn

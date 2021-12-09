@@ -6,10 +6,9 @@ import { bulkCacheDscContent } from "components/providers/History/caching/db/obs
 import { summarizeCacheOperation } from "components/providers/History/caching/loadHistoryContents";
 import { SearchParams } from "components/providers/History/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
-import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
-import { testCollection, testCollectionContent } from "../../test/testCollection";
+import { sameVueObj, payloadChange } from "components/History/test/providerTestHelpers";
+import { testCollection, testCollectionContent } from "components/History/test/testCollection";
 import { defaultPayload } from "../ContentProvider";
-// import { reportPayload } from "../../test/providerTestHelpers";
 
 // mocking
 jest.mock("app");

@@ -1,12 +1,11 @@
 import { shallowMount } from "@vue/test-utils";
 import { watchUntil, getLocalVue } from "jest/helpers";
-import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
+import { sameVueObj, payloadChange } from "components/History/test/providerTestHelpers";
 import HistoryContentProvider from "./HistoryContentProvider";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { bulkCacheContent, wipeDatabase } from "components/providers/History/caching";
 import { defaultPayload } from "../ContentProvider";
-import { serverContent, testHistory, testHistoryContent } from "../../test/testHistory";
-// import { reportPayload } from "../../test/providerTestHelpers";
+import { serverContent, testHistory, testHistoryContent } from "components/History/test/testHistory";
 
 // reads hids
 const payloadHids = (payload) => payload.contents?.map((o) => o.hid) || [];

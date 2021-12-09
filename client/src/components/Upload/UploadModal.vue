@@ -32,7 +32,7 @@ Provides user and current history to modal because it currently has initializati
 
 <script>
 import CurrentUser from "../providers/CurrentUser";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import UploadModalContent from "./UploadModalContent";
 import { commonProps } from "./helpers";
 

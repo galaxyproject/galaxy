@@ -3,7 +3,7 @@
 
 import { map } from "rxjs/operators";
 import { getPropRange } from "components/providers/History/caching/loadHistoryContents";
-import { serverContent } from "../../../test/testHistory";
+import { serverContent } from "components/History/test/testHistory";
 
 export const loadContents = jest.fn().mockImplementation((config) => {
     const { filters } = config;
