@@ -5174,6 +5174,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return None
 
     @property
+    def cwl_formats(self):
+        return [f"http://edamontology.org/{self.datatype.edam_format}"]
+
+    @property
     def state(self):
         # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
@@ -6049,6 +6053,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
             hid=hda.hid,
             file_ext=hda.ext,
+            cwl_formats=hda.cwl_formats,
             peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != "no peek" else None,
             model_class=self.__class__.__name__,
             name=hda.name,
