@@ -1,18 +1,17 @@
-<tool id="CONVERTER_tar_to_directory" name="Convert tar to directory" version="1.0.1" profile="17.05">
+<tool id="CONVERTER_tar_to_directory" name="Convert tar to directory" version="1.0.1" profile="21.09">
     <!-- Don't use tar directly so we can verify safety of results - tar -xzf '$input1'; -->
     <requirements>
         <requirement type="package" version="23.1">galaxy-util</requirement>
     </requirements>
-    <command>
-        cp '$provided_metadata' 'galaxy.json';
-        mkdir '$output1.files_path';
-        cd '$output1.files_path';
-        python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');"
-        ls '$output1.files_path'
-    </command>
+    <command detect_errors="exit_code"><![CDATA[
+cp '$provided_metadata' 'galaxy.json' &&
+mkdir '$output1.files_path' &&
+cd '$output1.files_path' &&
+python -c "from galaxy.util.compression_utils import CompressedFile; CompressedFile('$input1').extract('.');"
+    ]]></command>
     <configfiles>
         <configfile name="provided_metadata">{"output1": {"created_from_basename": "${input1.created_from_basename}"}}
-        </configfile>
+</configfile>
     </configfiles>
     <inputs>
         <param format="tar" name="input1" type="data"/>
@@ -26,6 +25,6 @@
             <output name="output1" ftype="directory" value="testdir1.tar.directory"/>
         </test>
     </tests>
-    <help>
-    </help>
+    <help><![CDATA[
+    ]]></help>
 </tool>
