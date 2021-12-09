@@ -3,7 +3,7 @@ import { map } from "rxjs/operators";
 import { aggregateCacheUpdates } from "../ContentProvider";
 import { monitorCollectionContent } from "components/providers/History/caching";
 import { SEEK } from "components/providers/History/caching/enums";
-import { SearchParams } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 // import { show } from "utils/observable";
 
 // prettier-ignore

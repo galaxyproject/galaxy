@@ -3,7 +3,7 @@
 
 import { SearchParams } from "./SearchParams";
 import { matchesSelector } from "pouchdb-selector-core";
-import { STATES } from "../model/states";
+import { STATES } from "components/History/model/states";
 // import { show } from "jest/helpers";
 
 // #region Test generators

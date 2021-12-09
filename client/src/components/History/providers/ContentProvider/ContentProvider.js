@@ -1,5 +1,6 @@
 import { NEVER } from "rxjs";
-import { SearchParams, ScrollPos } from "../../model";
+import { ScrollPos } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { isValidNumber } from "utils/validation";
 // import { reportPayload } from "../../test/providerTestHelpers";
 

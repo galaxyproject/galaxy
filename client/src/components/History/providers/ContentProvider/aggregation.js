@@ -12,7 +12,7 @@
 import SkipList from "proper-skip-list";
 import { pipe, take, filter } from "iter-tools";
 import { SEEK } from "components/providers/History/caching/enums";
-import { SearchParams } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 
 // utils for buildContentResult
 const distance = (a, b) => Math.abs(+a - +b);

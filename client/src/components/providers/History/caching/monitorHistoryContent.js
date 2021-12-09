@@ -2,7 +2,7 @@ import { merge } from "rxjs";
 import { map, distinctUntilChanged, publish, withLatestFrom, share } from "rxjs/operators";
 import { content$, dscContent$, buildContentId, buildCollectionId } from "./db/observables";
 import { monitorQuery } from "./db/monitorQuery";
-import { SearchParams } from "components/History/model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { deepEqual } from "deep-equal";
 import { hydrate } from "utils/observable";
 import { SEEK } from "./enums";

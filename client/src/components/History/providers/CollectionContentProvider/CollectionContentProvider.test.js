@@ -4,7 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import { cacheContent, cacheCollectionContent, wipeDatabase, loadDscContent } from "components/providers/History/caching";
 import { bulkCacheDscContent } from "components/providers/History/caching/db/observables";
 import { summarizeCacheOperation } from "components/providers/History/caching/loadHistoryContents";
-import { SearchParams } from "../../model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import CollectionContentProvider from "./CollectionContentProvider";
 import { sameVueObj, payloadChange } from "../../test/providerTestHelpers";
 import { testCollection, testCollectionContent } from "../../test/testCollection";

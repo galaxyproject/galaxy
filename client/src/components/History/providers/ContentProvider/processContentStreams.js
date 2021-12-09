@@ -6,7 +6,8 @@
 import { distinctUntilChanged, share, startWith, switchMap } from "rxjs/operators";
 import { activity, whenAny, show } from "utils/observable";
 import { propMatch } from "./helpers";
-import { SearchParams, ScrollPos } from "../../model";
+import { ScrollPos } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { defaultPayload } from "../ContentProvider";
 import { Subject } from "rxjs";
 

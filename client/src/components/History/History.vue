@@ -94,7 +94,8 @@
 </template>
 
 <script>
-import { History, SearchParams } from "./model";
+import { History } from "./model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { HistoryContentProvider } from "./providers";
 import ExpandedItems from "./ExpandedItems";
 import SelectedItems from "./SelectedItems";

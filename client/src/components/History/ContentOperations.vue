@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { SearchParams } from "./model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,

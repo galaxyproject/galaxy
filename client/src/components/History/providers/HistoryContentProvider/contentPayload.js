@@ -18,7 +18,8 @@ import {
 } from "rxjs/operators";
 import { chunk, show } from "utils/observable";
 import { isValidNumber } from "utils/validation";
-import { SearchParams, CurveFit, ScrollPos } from "../../model";
+import { CurveFit, ScrollPos } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { loadContents } from "./loadContents";
 import { watchHistoryContents } from "./watchHistoryContents";
 import { default as store } from "store/index";

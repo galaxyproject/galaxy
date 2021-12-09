@@ -7,7 +7,7 @@ import { map, pluck, withLatestFrom, publish } from "rxjs/operators";
 import { nth } from "utils/observable";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { bulkCacheDscContent } from "./db";
-import { SearchParams } from "components/History/model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { prependPath } from "utils/redirect";
 import { summarizeCacheOperation, dateStore } from "./loadHistoryContents";
 import { show } from "utils/observable";

@@ -1,7 +1,7 @@
 import { of, Observable, Subject, partition, merge } from "rxjs";
 import { tap, map, pluck, switchMap, publish, distinctUntilChanged, share, throttleTime } from "rxjs/operators";
 import { chunk } from "utils/observable";
-import { SearchParams } from "../../model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { loadDscContent } from "components/providers/History/caching";
 import { watchCollection } from "./watchCollection";
 

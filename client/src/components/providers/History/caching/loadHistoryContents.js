@@ -5,7 +5,7 @@ import { areDefined } from "utils/validation";
 import { requestWithUpdateTime } from "./operators/requestWithUpdateTime";
 import { prependPath } from "utils/redirect";
 import { bulkCacheContent } from "./db";
-import { SearchParams } from "components/History/model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { createDateStore } from "components/History/model/DateStore";
 
 // Shared datestore for the request opertor for both loading and polling

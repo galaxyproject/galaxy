@@ -1,4 +1,4 @@
-import { SearchParams } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 
 // match object props
 export const propMatch = (name) => (a, b) => {

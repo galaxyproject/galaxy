@@ -3,7 +3,7 @@ import { switchMap, debounceTime, startWith, repeatWhen } from "rxjs/operators";
 import { decay } from "utils/observable";
 import { monitorXHR } from "utils/observable/monitorXHR";
 import { loadHistoryContents } from "components/providers/History/caching";
-import { SearchParams } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 
 // prettier-ignore
 export const loadContents = (cfg = {}) => {

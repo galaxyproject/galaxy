@@ -3,7 +3,7 @@ import { take, takeUntil } from "rxjs/operators";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 import { untilNthEmission } from "jest/helpers";
 
-import { SearchParams } from "../../model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { buildContentId } from "components/providers/History/caching/db/observables";
 import { watchHistoryContents } from "./watchHistoryContents";
 import { cacheContent, getCachedContent, bulkCacheContent, wipeDatabase } from "components/providers/History/caching";

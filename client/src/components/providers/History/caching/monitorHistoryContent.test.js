@@ -5,7 +5,7 @@ import { wipeDatabase } from "./db/wipeDatabase";
 import { wait } from "jest/helpers";
 import { ObserverSpy } from "@hirez_io/observer-spy";
 
-import { SearchParams } from "components/History/model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { content$ } from "./db/observables";
 import { bulkCacheContent, cacheContent } from "./db/promises";
 import { find } from "./db/find";

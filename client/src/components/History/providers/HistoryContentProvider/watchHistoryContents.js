@@ -3,7 +3,7 @@ import { map } from "rxjs/operators";
 import { aggregateCacheUpdates } from "../ContentProvider";
 import { monitorHistoryContent } from "components/providers/History/caching";
 import { SEEK } from "components/providers/History/caching/enums";
-import { SearchParams } from "../../model";
+import { SearchParams } from "components/providers/History/SearchParams";
 
 // prettier-ignore
 export const watchHistoryContents = (cfg = {}) => hid$ => {
@@ -16,7 +16,7 @@ export const watchHistoryContents = (cfg = {}) => hid$ => {
         keyDirection = SEEK.DESC,
         ...otherConfig 
     } = cfg;
-    
+
     // builds a monitor observable based on a hid
     const monitor = (hid) => of([history.id, filters, hid]).pipe(
         monitorHistoryContent({ pageSize, debug, keyField })

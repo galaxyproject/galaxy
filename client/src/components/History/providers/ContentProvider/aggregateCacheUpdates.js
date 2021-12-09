@@ -15,7 +15,7 @@ import {
     ignoreElements,
 } from "rxjs/operators";
 import { show, debounceBurst, shareButDie } from "utils/observable";
-import { SearchParams } from "../../model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { processContentUpdate, newUpdateMap, buildContentResult, getKeyForUpdateMap } from "./aggregation";
 import { SEEK } from "components/providers/History/caching/enums";
 import { reportPayload } from "./helpers";
