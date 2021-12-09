@@ -156,7 +156,7 @@ def handle_outputs(job_directory=None):
             with open(os.path.join(secondary_files_dir, "..", SECONDARY_FILES_INDEX_PATH), "w") as f:
                 json.dump(index_contents, f)
 
-        return {"created_from_basename": output["basename"], "ext": "data"}
+        return {"created_from_basename": output["basename"], "ext": "data", "format": output.get("format")}
 
     def handle_known_output(output, output_name):
         # if output["class"] != "File":
