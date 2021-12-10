@@ -192,7 +192,7 @@ export class UploadQueue {
         this.queue_stop = false;
 
         // element
-        this.uploadinput = $(options.$uploadBox).uploadinput({
+        this.uploadinput = options.$uploadBox.uploadinput({
             multiple: this.opts.multiple,
             onchange: (files) => {
                 _.each(files, (file) => {
