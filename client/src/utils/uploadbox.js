@@ -1,5 +1,5 @@
 /*
-    galaxy upload plugins - requires FormData and XMLHttpRequest
+    galaxy upload utilities - requires FormData and XMLHttpRequest
 */
 
 import _ from "underscore";
@@ -66,47 +66,45 @@ function tusUpload(data, index, tusEndpoint, cnf) {
     });
 }
 
+// Posts chunked files to the API.
+export function submitUpload(config) {
+    // set options
+    var cnf = $.extend(
+        {},
+        {
+            data: {},
+            success: () => {},
+            error: () => {},
+            warning: () => {},
+            progress: () => {},
+            attempts: 70000,
+            timeout: 5000,
+            url: null,
+            error_file: "File not provided.",
+            error_attempt: "Maximum number of attempts reached.",
+            error_tool: "Tool submission failed.",
+            chunkSize: 10485760,
+        },
+        config
+    );
+
+    // initial validation
+    var data = cnf.data;
+    if (data.error_message) {
+        cnf.error(data.error_message);
+        return;
+    }
+    if (!data.files.length) {
+        // No files attached, don't need to use TUS uploader
+        return submitPayload(data, cnf);
+    }
+    const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
+    tusUpload(data, 0, tusEndpoint, cnf);
+};
+
 (($) => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
-
-    /**
-        Posts chunked files to the API.
-    */
-    $.uploadchunk = function (config) {
-        // parse options
-        var cnf = $.extend(
-            {},
-            {
-                data: {},
-                success: () => {},
-                error: () => {},
-                warning: () => {},
-                progress: () => {},
-                attempts: 70000,
-                timeout: 5000,
-                url: null,
-                error_file: "File not provided.",
-                error_attempt: "Maximum number of attempts reached.",
-                error_tool: "Tool submission failed.",
-                chunkSize: 10485760,
-            },
-            config
-        );
-
-        // initial validation
-        var data = cnf.data;
-        if (data.error_message) {
-            cnf.error(data.error_message);
-            return;
-        }
-        if (!data.files.length) {
-            // No files attached, don't need to use TUS uploader
-            return submitPayload(data, cnf);
-        }
-        const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
-        tusUpload(data, 0, tusEndpoint, cnf);
-    };
 
     /**
         Handles the upload events drag/drop etc.
@@ -159,14 +157,12 @@ function tusUpload(data, index, tusEndpoint, cnf) {
             },
         };
     };
+})(jQuery);
 
-    /**
-        Handles the upload queue and events such as drag/drop etc.
-    */
-    $.fn.uploadbox = function (options) {
-        // parse options
-        var opts = $.extend(
-            {},
+export class UploadQueue {
+    constructor(options) {
+        // set options
+        this.opts = Object.assign(
             {
                 dragover: () => {},
                 dragleave: () => {},
@@ -185,157 +181,131 @@ function tusUpload(data, index, tusEndpoint, cnf) {
         );
 
         // file queue
-        var queue = {};
+        this.queue = {};
 
         // queue index/length counter
-        var queue_index = 0;
-        var queue_length = 0;
+        this.queue_index = 0;
+        this.queue_length = 0;
 
         // indicates if queue is currently running
-        var queue_running = false;
-        var queue_stop = false;
+        this.queue_running = false;
+        this.queue_stop = false;
 
         // element
-        var uploadinput = $(this).uploadinput({
-            multiple: opts.multiple,
+        this.uploadinput = $(options.$uploadBox).uploadinput({
+            multiple: this.opts.multiple,
             onchange: (files) => {
                 _.each(files, (file) => {
                     file.chunk_mode = true;
                 });
-                add(files);
+                this.add(files);
             },
             ondragover: options.ondragover,
             ondragleave: options.ondragleave,
         });
+    }
 
-        // add new files to upload queue
-        function add(files) {
-            if (files && files.length && !queue_running) {
-                var index = undefined;
-                _.each(files, (file, key) => {
-                    if (
-                        file.mode !== "new" &&
-                        _.filter(queue, (f) => f.name === file.name && f.size === file.size).length
-                    ) {
-                        file.duplicate = true;
-                    }
-                });
-                _.each(files, (file) => {
-                    if (!file.duplicate) {
-                        index = String(queue_index++);
-                        queue[index] = file;
-                        opts.announce(index, queue[index]);
-                        queue_length++;
-                    }
-                });
-                return index;
-            }
+    // open file browser for selection
+    select() {
+        this.uploadinput.dialog()
+    }
+
+    // remove all entries from queue
+    reset() {
+        for (index in this.queue) {
+            this.remove(index);
         }
+    }
 
-        // remove file from queue
-        function remove(index) {
-            if (queue[index]) {
-                delete queue[index];
-                queue_length--;
-            }
+    // initiate upload process
+    start() {
+        if (!this.queue_running) {
+            this.queue_running = true;
+            this._process();
         }
+    }
 
-        // process an upload, recursive
-        function process() {
-            // validate
-            if (queue_length == 0 || queue_stop) {
-                queue_stop = false;
-                queue_running = false;
-                opts.complete();
-                return;
-            } else {
-                queue_running = true;
-            }
+    // stop upload process
+    stop() {
+        this.queue_stop = true;
+    }
 
-            // get an identifier from the queue
-            var index = -1;
-            for (const key in queue) {
-                index = key;
-                break;
-            }
+    // set options
+    configure(options) {
+        this.opts = Object.assign(
+            this.opts,
+            options
+        );
+        return this.opts;
+    }
 
-            // remove from queue
-            remove(index);
+    // verify browser compatibility
+    compatible() {
+        return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
+    }
 
-            // create and submit data
-            var submitter = $.uploadchunk;
-            var requestData = opts.initialize(index);
-
-            submitter({
-                url: opts.initUrl(index),
-                data: requestData,
-                success: (message) => {
-                    opts.success(index, message);
-                    process();
-                },
-                warning: (message) => {
-                    opts.warning(index, message);
-                },
-                error: (message) => {
-                    opts.error(index, message);
-                    process();
-                },
-                progress: (percentage) => {
-                    opts.progress(index, percentage);
-                },
+    // add new files to upload queue
+    add(files) {
+        if (files && files.length && !this.queue_running) {
+            files.forEach((file) => {
+                if (_.filter(this.queue, (f) => f.name === file.name && f.size === file.size).length == 0) {
+                    const index = String(this.queue_index++);
+                    this.queue[index] = file;
+                    this.opts.announce(index, this.queue[index]);
+                    this.queue_length++;
+                }
             });
         }
+    }
 
-        /*
-            public interface
-        */
+    // remove file from queue
+    remove(index) {
+        if (this.queue[index]) {
+            delete this.queue[index];
+            this.queue_length--;
+        }
+    }
 
-        // open file browser for selection
-        function select() {
-            uploadinput.dialog();
+    // process an upload, recursive
+    _process() {
+        // validate
+        if (this.queue_length == 0 || this.queue_stop) {
+            this.queue_stop = false;
+            this.queue_running = false;
+            this.opts.complete();
+            return;
+        } else {
+            this.queue_running = true;
         }
 
-        // remove all entries from queue
-        function reset(index) {
-            for (index in queue) {
-                remove(index);
-            }
+        // get an identifier from the queue
+        var index = -1;
+        for (const key in this.queue) {
+            index = key;
+            break;
         }
 
-        // initiate upload process
-        function start() {
-            if (!queue_running) {
-                queue_running = true;
-                process();
-            }
-        }
+        // remove from queue
+        this.remove(index);
 
-        // stop upload process
-        function stop() {
-            queue_stop = true;
-        }
-
-        // set options
-        function configure(options) {
-            opts = $.extend({}, opts, options);
-            return opts;
-        }
-
-        // verify browser compatibility
-        function compatible() {
-            return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
-        }
-
-        // export functions
-        return {
-            select: select,
-            add: add,
-            remove: remove,
-            start: start,
-            stop: stop,
-            reset: reset,
-            configure: configure,
-            compatible: compatible,
-        };
-    };
-})(jQuery);
+        // create and submit data
+        submitUpload({
+            url: this.opts.url,
+            data: this.opts.initialize(index),
+            success: (message) => {
+                this.opts.success(index, message);
+                this._process();
+            },
+            warning: (message) => {
+                this.opts.warning(index, message);
+            },
+            error: (message) => {
+                this.opts.error(index, message);
+                this._process();
+            },
+            progress: (percentage) => {
+                this.opts.progress(index, percentage);
+            },
+        });
+    }
+}
