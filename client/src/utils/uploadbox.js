@@ -212,7 +212,7 @@ export class UploadQueue {
 
     // remove all entries from queue
     reset() {
-        for (index in this.queue) {
+        for (let index in this.queue) {
             this.remove(index);
         }
     }
