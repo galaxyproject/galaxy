@@ -13,9 +13,7 @@ FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "googledrive_file_sources_con
 
 skip_if_no_google_drive_access_token = pytest.mark.skipif(
     not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN')
-    and not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN')
-    and not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID')
-    and not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET'),
+    or not os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN'),
     reason="GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN and related vars not set"
 )
 

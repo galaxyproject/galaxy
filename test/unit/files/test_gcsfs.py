@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
 from ._util import (
     assert_realizes_contains,
@@ -9,7 +11,16 @@ from ._util import (
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "gcsfs_file_sources_conf.yml")
 
+skip_if_no_gcs_access_token = pytest.mark.skipif(
+    not os.environ.get('GALAXY_TEST_GCS_PROJECT')
+    or not os.environ.get('GALAXY_TEST_GCS_BUCKET')
+    or not os.environ.get('GALAXY_TEST_GCS_ACCESS_TOKEN')
+    or not os.environ.get('GALAXY_TEST_GCS_REFRESH_TOKEN'),
+    reason="GALAXY_TEST_GCS_ACCESS_TOKEN and related vars not set"
+)
 
+
+@skip_if_no_gcs_access_token
 def test_file_source():
     user_context = user_context_fixture()
     file_sources = _configured_file_sources()

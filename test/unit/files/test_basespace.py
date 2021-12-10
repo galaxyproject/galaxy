@@ -13,9 +13,9 @@ FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "basespace_file_sources_conf.
 
 skip_if_no_basespace_access_token = pytest.mark.skipif(
     not os.environ.get('GALAXY_TEST_BASESPACE_CLIENT_ID')
-    and not os.environ.get('GALAXY_TEST_BASESPACE_CLIENT_SECRET')
-    and not os.environ.get('GALAXY_TEST_BASESPACE_ACCESS_TOKEN')
-    and not os.environ.get('GALAXY_TEST_BASESPACE_TEST_FILE_PATH'),
+    or not os.environ.get('GALAXY_TEST_BASESPACE_CLIENT_SECRET')
+    or not os.environ.get('GALAXY_TEST_BASESPACE_ACCESS_TOKEN')
+    or not os.environ.get('GALAXY_TEST_BASESPACE_TEST_FILE_PATH'),
     reason="GALAXY_TEST_BASESPACE_CLIENT_ID and related vars not set"
 )
 
@@ -28,7 +28,7 @@ def test_file_source():
 
     assert file_source_pair.path == "/"
     file_source = file_source_pair.file_source
-    test_file = os.environ.get('GALAXY_TEST_BASESPACE_TEST_FILE_PATH')
+    test_file = os.environ.get('GALAXY_TEST_BASESPACE_TEST_FILE_PATH', "")
     res = file_source.list(os.path.dirname(test_file), recursive=False, user_context=user_context)
     a_file = find(res, class_="File", name=os.path.basename(test_file))
     assert a_file
