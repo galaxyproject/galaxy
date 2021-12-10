@@ -1,0 +1,41 @@
+<tool id="select_optional" name="Optional select" version="1.0.0" profile="20.01">
+    <command><![CDATA[
+        echo $select_opt > '$output1' &&
+        echo $select_mult_opt
+    ]]></command>
+    <inputs>
+        <!-- verify that it is possible to have an optional column parameter 
+             an specify no options-->
+        <param name="select_opt" type="select" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg19_value"/>
+                <filter type="remove_value" value="mm10_value"/>
+            </options>
+        </param>
+        <param name="select_mult_opt" type="select" multiple="true" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="remove_value" value="hg18_value"/>
+                <filter type="remove_value" value="hg19_value"/>
+                <filter type="remove_value" value="mm10_value"/>
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output1" format="tabular" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="None" />
+                    <has_line line="" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
