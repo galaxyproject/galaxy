@@ -55,7 +55,6 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
