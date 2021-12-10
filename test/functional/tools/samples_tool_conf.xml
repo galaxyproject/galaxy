@@ -121,7 +121,6 @@
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
-  <tool file="column_param_optional_ref.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional.xml"/>
   <tool file="hidden_param.xml" />
