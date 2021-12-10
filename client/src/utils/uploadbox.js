@@ -69,7 +69,7 @@ function tusUpload(data, index, tusEndpoint, cnf) {
 // Posts chunked files to the API.
 export function submitUpload(config) {
     // set options
-    var cnf = $.extend(
+    const cnf = Object.assign(
         {},
         {
             data: {},
