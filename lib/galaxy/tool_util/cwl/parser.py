@@ -35,7 +35,6 @@ from .cwltool_deps import (
     beta_relaxed_fmt_check,
     ensure_cwltool_available,
     getdefault,
-    normalizeFilesDirs,
     pathmapper,
     process,
     ref_resolver,
@@ -359,7 +358,6 @@ class JobProxy:
         process.fill_in_defaults(self._tool_proxy._tool.tool["inputs"], self._input_dict, fs_access)
         visit_class(self._input_dict, ("File", "Directory"), pathToLoc)
         # TODO: Why doesn't fillInDefault fill in locations instead of paths?
-        normalizeFilesDirs(self._input_dict)
         # TODO: validate like cwltool process _init_job.
         #    validate.validate_ex(self.names.get_name("input_record_schema", ""), builder.job,
         #                         strict=False, logger=_logger_validation_warnings)
