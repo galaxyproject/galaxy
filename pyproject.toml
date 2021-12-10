@@ -86,6 +86,7 @@ zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
 cwltest = "2.2.20210901154959"
+darker = "*"
 fluent-logger = "*"
 gunicorn = "*"
 httpx = "*"
