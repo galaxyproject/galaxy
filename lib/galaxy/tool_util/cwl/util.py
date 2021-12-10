@@ -8,6 +8,8 @@ import hashlib
 import io
 import json
 import os
+import pathlib
+import shutil
 import tarfile
 import tempfile
 import urllib.parse
@@ -283,17 +285,36 @@ def galactic_job_json(
 
     def replacement_directory(value: Dict[str, Any]) -> Dict[str, Any]:
         file_path = value.get("location", None) or value.get("path", None)
-        if file_path is None:
-            return value
+        temp_dir = None
+        try:
+            if file_path is None:
+                # Probably a directory literal
+                # Make directory, create tar, put listing
+                temp_dir = tempfile.mkdtemp(prefix="file_literal_upload_dir")
+                base_dir = pathlib.Path(temp_dir) / value["basename"]
+                base_dir.mkdir()
+                for entry in value["listing"]:
+                    if entry["class"] == "File":
+                        if "contents" in entry:
+                            with open(base_dir / entry["basename"], "w") as fh:
+                                fh.write(entry["contents"])
+                        elif "path" in entry:
+                            # if path is abspath test_data_directory is ignored, so no need to check if path is abspath
+                            entry_path = os.path.join(test_data_directory, entry["path"])
+                            os.symlink(entry_path, str((base_dir / entry["path"]).resolve()))
+                    else:
+                        raise Exception(f"{entry['class']} unimplemented")
+                file_path = str(base_dir.resolve())
 
-        if not os.path.isabs(file_path):
             file_path = os.path.join(test_data_directory, file_path)
 
-        tmp = tempfile.NamedTemporaryFile(delete=False)
-        tf = tarfile.open(fileobj=tmp, mode="w:")
-        tf.add(file_path, ".")
-        tf.close()
-
+            tmp = tempfile.NamedTemporaryFile(delete=False)
+            tf = tarfile.open(fileobj=tmp, mode="w:", dereference=True)
+            tf.add(file_path, ".")
+            tf.close()
+        finally:
+            if temp_dir:
+                shutil.rmtree(temp_dir)
         return upload_tar(tmp.name)
 
     def replacement_list(value) -> Dict[str, str]:
