@@ -100,7 +100,7 @@ export function submitUpload(config) {
     }
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
     tusUpload(data, 0, tusEndpoint, cnf);
-};
+}
 
 (($) => {
     // add event properties
@@ -207,7 +207,7 @@ export class UploadQueue {
 
     // open file browser for selection
     select() {
-        this.uploadinput.dialog()
+        this.uploadinput.dialog();
     }
 
     // remove all entries from queue
@@ -232,10 +232,7 @@ export class UploadQueue {
 
     // set options
     configure(options) {
-        this.opts = Object.assign(
-            this.opts,
-            options
-        );
+        this.opts = Object.assign(this.opts, options);
         return this.opts;
     }
 
@@ -278,12 +275,7 @@ export class UploadQueue {
             this.queue_running = true;
         }
 
-        // get an identifier from the queue
-        var index = -1;
-        for (const key in this.queue) {
-            index = key;
-            break;
-        }
+        const index = this._nextIndex();
 
         // remove from queue
         this.remove(index);
@@ -307,5 +299,14 @@ export class UploadQueue {
                 this.opts.progress(index, percentage);
             },
         });
+    }
+
+    _nextIndex() {
+        var index = -1;
+        for (const key in this.queue) {
+            index = key;
+            break;
+        }
+        return index;
     }
 }
