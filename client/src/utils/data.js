@@ -8,6 +8,7 @@ import { mountUploadModal } from "components/Upload";
 import { uploadModelsToPayload } from "components/Upload/helpers";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
+import { submitUpload } from "utils/uploadbox";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
@@ -93,7 +94,7 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        $.uploadchunk({
+        submitUpload({
             url: `${getAppRoot()}api/tools/fetch`,
             success: (response) => {
                 if (history_panel) {
