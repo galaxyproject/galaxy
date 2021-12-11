@@ -3009,5 +3009,7 @@ def history_item_to_json(value, app, use_security):
         src = "hda"
     if src is not None:
         object_id = cached_id(value)
-        rval = {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
+        rval = getattr(value, "extra_params", {})
+        rval["id"] = app.security.encode_id(object_id) if use_security else object_id
+        rval["src"] = src
         return rval
