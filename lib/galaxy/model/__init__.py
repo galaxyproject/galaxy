@@ -2410,6 +2410,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
+        self._item_by_hid_cache = None
 
     @reconstructor
     def init_on_load(self):
@@ -2566,7 +2567,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         else:
             hdcas = self.active_dataset_collections
         for hdca in hdcas:
-            new_hdca = hdca.copy(flush=False)
+            new_hdca = hdca.copy(flush=False, element_destination=new_history, set_hid=False, minimize_copies=True)
             new_history.add_dataset_collection(new_hdca, set_hid=False)
             db_session.add(new_hdca)
 
@@ -2578,6 +2579,11 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, RepresentByI
         db_session.flush()
 
         return new_history
+
+    def get_dataset_by_hid(self, hid):
+        if self._item_by_hid_cache is None:
+            self._item_by_hid_cache = {dataset.hid: dataset for dataset in self.datasets}
+        return self._item_by_hid_cache.get(hid)
 
     @property
     def has_possible_members(self):
@@ -5377,7 +5383,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         error_message = f"Dataset collection has no {get_by_attribute} with key {key}."
         raise KeyError(error_message)
 
-    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+    def copy(self, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True, minimize_copies=False):
         new_collection = DatasetCollection(
             collection_type=self.collection_type,
             element_count=self.element_count
@@ -5388,7 +5394,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
                 destination=destination,
                 element_destination=element_destination,
                 dataset_instance_attributes=dataset_instance_attributes,
-                flush=flush
+                flush=flush,
+                minimize_copies=minimize_copies,
             )
         object_session(self).add(new_collection)
         if flush:
@@ -5702,7 +5709,7 @@ class HistoryDatasetCollectionAssociation(
                 break
         return matching_collection
 
-    def copy(self, element_destination=None, dataset_instance_attributes=None, flush=True):
+    def copy(self, element_destination=None, dataset_instance_attributes=None, flush=True, set_hid=True, minimize_copies=False):
         """
         Create a copy of this history dataset collection association. Copy
         underlying collection.
@@ -5725,11 +5732,12 @@ class HistoryDatasetCollectionAssociation(
             element_destination=element_destination,
             dataset_instance_attributes=dataset_instance_attributes,
             flush=False,
+            minimize_copies=minimize_copies,
         )
         hdca.collection = collection_copy
         object_session(self).add(hdca)
         hdca.copy_tags_from(self.history.user, self)
-        if element_destination:
+        if element_destination and set_hid:
             element_destination.stage_addition(hdca)
             element_destination.add_pending_items()
         if flush:
@@ -5925,7 +5933,7 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
         else:
             return [element_object]
 
-    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True):
+    def copy_to_collection(self, collection, destination=None, element_destination=None, dataset_instance_attributes=None, flush=True, minimize_copies=False):
         dataset_instance_attributes = dataset_instance_attributes or {}
         element_object = self.element_object
         if element_destination:
@@ -5934,21 +5942,28 @@ class DatasetCollectionElement(Base, Dictifiable, RepresentById):
                     destination=destination,
                     element_destination=element_destination,
                     dataset_instance_attributes=dataset_instance_attributes,
-                    flush=flush
+                    flush=flush,
+                    minimize_copies=minimize_copies,
                 )
             else:
-                new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
-                for attribute, value in dataset_instance_attributes.items():
-                    setattr(new_element_object, attribute, value)
+                new_element_object = None
+                if minimize_copies:
+                    new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
+                if new_element_object and new_element_object.dataset and new_element_object.dataset.id == element_object.dataset_id:
+                    element_object = new_element_object
+                else:
+                    new_element_object = element_object.copy(flush=flush, copy_tags=element_object.tags)
+                    for attribute, value in dataset_instance_attributes.items():
+                        setattr(new_element_object, attribute, value)
 
-                new_element_object.visible = False
-                if destination is not None and element_object.hidden_beneath_collection_instance:
-                    new_element_object.hidden_beneath_collection_instance = destination
-                # Ideally we would not need to give the following
-                # element an HID and it would exist in the history only
-                # as an element of the containing collection.
-                element_destination.stage_addition(new_element_object)
-                element_object = new_element_object
+                    new_element_object.visible = False
+                    if destination is not None and element_object.hidden_beneath_collection_instance:
+                        new_element_object.hidden_beneath_collection_instance = destination
+                    # Ideally we would not need to give the following
+                    # element an HID and it would exist in the history only
+                    # as an element of the containing collection.
+                    element_destination.stage_addition(new_element_object)
+                    element_object = new_element_object
 
         new_element = DatasetCollectionElement(
             element=element_object,
