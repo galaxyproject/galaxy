@@ -333,7 +333,9 @@ def galactic_job_json(
             if temp_dir:
                 shutil.rmtree(temp_dir)
         file_type = value.get("filetype", None) or value.get("format", None) or "directory"
-        return upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
+        upload_response = upload_tar(tmp.name, file_type=file_type, name=os.path.basename(file_path))
+        upload_response.update(value)
+        return upload_response
 
     def replacement_list(value) -> Dict[str, str]:
         collection_element_identifiers = []
