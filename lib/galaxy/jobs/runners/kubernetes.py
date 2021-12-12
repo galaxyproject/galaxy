@@ -34,7 +34,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     is_pod_unschedulable,
     Job,
     job_object_dict,
-    parse_pvc_param_line
+    parse_pvc_param_line,
     Pod,
     produce_k8s_job_prefix,
     pull_policy,
@@ -109,7 +109,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         self.setup_base_volumes()
 
-
     def setup_base_volumes(self):
         if self.runner_params.get('k8s_persistent_volume_claims'):
             pvc_params = [parse_pvc_param_line(each) for each in self.runner_params['k8s_persistent_volume_claims'].split(',')]
@@ -142,7 +141,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             working_volume = {'name': param_claim['claim'], 'persistentVolumeClaim': {'claimName': param_claim['claim']}}
             if param_claim['claim'] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in self.runner_params['k8s_mountable_volumes']]:
                 self.runner_params['k8s_mountable_volumes'].append(working_volume)
-
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""

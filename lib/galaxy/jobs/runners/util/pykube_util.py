@@ -183,6 +183,7 @@ def ingress_object_dict(params, ingress_name, spec):
     k8s_ingress_obj.update(spec)
     return k8s_ingress_obj
 
+
 # takes "pvc-name/subpath/desired:/mountpath/desired[:r]"
 # and returns {"claim": "pvc-name",
 #              "subpath": "subpath/desired",
@@ -207,11 +208,12 @@ def parse_pvc_param_line(paramstring):
     retdict["readonly"] = readonly
     return retdict
 
+
 def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
     DATA_BASE_PATH = "objects/"
     volume_mounts = []
     if data_claim:
-        param_claim = _parse_pvc_param_line(data_claim)
+        param_claim = parse_pvc_param_line(data_claim)
         claim_name = param_claim['claim']
         base_subpath = param_claim.get('subpath', "")
         base_mount = param_claim["mountpath"]
@@ -230,11 +232,12 @@ def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
             file_path = "/".join(file_path[:-1])
             subpath = str(file_path).lstrip(base_mount).lstrip('/')
             # Avoid mounting the same output directory twice for two output files using same dir
-            if DATA_BASE_PATH in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+            if (DATA_BASE_PATH in subpath and subpath not in
+                    [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]):
                 volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
 
     if working_claim:
-        param_claim = _parse_pvc_param_line(working_claim)
+        param_claim = parse_pvc_param_line(working_claim)
         claim_name = param_claim['claim']
         wd_base_subpath = param_claim.get('subpath', "")
         base_mount = param_claim["mountpath"]
@@ -250,9 +253,11 @@ def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
             file_path = "/".join(file_path[:-1])
             subpath = str(file_path).lstrip(base_mount).lstrip('/')
             # Avoid mounting the same output directory twice for two output files using same dir
-            if wd_subpath not in subpath and DATA_BASE_PATH not in subpath and subpath not in [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]:
+            if (wd_subpath not in subpath and DATA_BASE_PATH not in subpath and subpath not in
+                    [v.get('subPath') for v in [v for v in volume_mounts if v.get('name') == claim_name]]):
                 volume_mounts.append({'name': claim_name, 'mountPath': file_path, 'subPath': subpath})
     return volume_mounts
+
 
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
