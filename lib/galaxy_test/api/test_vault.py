@@ -12,7 +12,7 @@ from ._framework import ApiTestCase
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
-class VaultApiTestCase(ApiTestCase):
+class ExtraUserPreferencesApiTestCase(ApiTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

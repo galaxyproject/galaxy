@@ -2,7 +2,7 @@ import abc
 import logging
 import os
 import re
-from typing import Optional
+from typing import List, Optional
 
 import yaml
 from cryptography.fernet import Fernet, MultiFernet
@@ -27,7 +27,7 @@ log = logging.getLogger(__name__)
 VAULT_KEY_INVALID_REGEX = re.compile(r"\s\/|\/\s|\/\/")
 
 
-class UnknownVaultTypeException(Exception):
+class InvalidVaultConfigException(Exception):
     pass
 
 
@@ -36,30 +36,61 @@ class InvalidVaultKeyException(Exception):
 
 
 class Vault(abc.ABC):
+    """
+    A simple abstraction for reading/writing from external vaults.
+    """
 
     @abc.abstractmethod
     def read_secret(self, key: str) -> Optional[str]:
+        """
+        Reads a secret from the vault.
+
+        :param key: The key to read. Typically a hierarchical path such as `/galaxy/user/1/preferences/editor`
+        :return: The string value stored at the key, such as 'ace_editor'.
+        """
         pass
 
     @abc.abstractmethod
     def write_secret(self, key: str, value: str) -> None:
+        """
+        Write a secret to the vault.
+
+        :param key: The key to write to. Typically a hierarchical path such as `/galaxy/user/1/preferences/editor`
+        :param value: The value to write, such as 'vscode'
+        :return:
+        """
+        pass
+
+    @abc.abstractmethod
+    def list_secrets(self, key: str) -> List[str]:
+        """
+        Lists secrets at a given path.
+
+        :param key: The key prefix to list. e.g. `/galaxy/user/1/preferences`. A trailing slash is optional.
+        :return: The list of subkeys at path. e.g.
+                 ['/galaxy/user/1/preferences/editor`, '/galaxy/user/1/preferences/storage`]
+                 Note that only immediate subkeys are returned.
+        """
         pass
 
 
 class NullVault(Vault):
 
     def read_secret(self, key: str) -> Optional[str]:
-        raise UnknownVaultTypeException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
+        raise InvalidVaultConfigException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
 
     def write_secret(self, key: str, value: str) -> None:
-        raise UnknownVaultTypeException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
+        raise InvalidVaultConfigException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
+
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
 
 
 class HashicorpVault(Vault):
 
     def __init__(self, config):
         if not hvac:
-            raise UnknownVaultTypeException("Hashicorp vault library 'hvac' is not available. Make sure hvac is installed.")
+            raise InvalidVaultConfigException("Hashicorp vault library 'hvac' is not available. Make sure hvac is installed.")
         self.vault_address = config.get('vault_address')
         self.vault_token = config.get('vault_token')
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
@@ -73,6 +104,9 @@ class HashicorpVault(Vault):
 
     def write_secret(self, key: str, value: str) -> None:
         self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={'value': value})
+
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
 
 
 class DatabaseVault(Vault):
@@ -114,12 +148,15 @@ class DatabaseVault(Vault):
         token = f.encrypt(value.encode('utf-8'))
         self._update_or_create(key=key, value=token.decode('utf-8'))
 
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
+
 
 class CustosVault(Vault):
 
     def __init__(self, config):
         if not custos_sdk_available:
-            raise UnknownVaultTypeException("Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed.")
+            raise InvalidVaultConfigException("Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed.")
         custos_settings = CustosServerClientSettings(custos_host=config.get('custos_host'),
                                                      custos_port=config.get('custos_port'),
                                                      custos_client_id=config.get('custos_client_id'),
@@ -136,6 +173,9 @@ class CustosVault(Vault):
     def write_secret(self, key: str, value: str) -> None:
         self.client.set_kv_credential(key=key, value=value)
 
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
+
 
 class UserVaultWrapper(Vault):
 
@@ -149,8 +189,11 @@ class UserVaultWrapper(Vault):
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"user/{self.user.id}/{key}", value)
 
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
 
-class VaultKeyValidationDecorator(Vault):
+
+class VaultKeyValidationWrapper(Vault):
     """
     A decorator to standardize and validate vault key paths
     """
@@ -181,8 +224,11 @@ class VaultKeyValidationDecorator(Vault):
         key = self.normalize_key(key)
         return self.vault.write_secret(key, value)
 
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
 
-class VaultKeyPrefixDecorator(Vault):
+
+class VaultKeyPrefixWrapper(Vault):
     """
     Adds a prefix to all vault keys, such as the galaxy instance id
     """
@@ -196,6 +242,9 @@ class VaultKeyPrefixDecorator(Vault):
 
     def write_secret(self, key: str, value: str) -> None:
         return self.vault.write_secret(f"/{self.prefix}/{key}", value)
+
+    def list_secrets(self, key: str) -> List[str]:
+        raise NotImplementedError()
 
 
 class VaultFactory(object):
@@ -217,9 +266,9 @@ class VaultFactory(object):
         elif vault_type == "custos":
             vault = CustosVault(cfg)
         else:
-            raise UnknownVaultTypeException(f"Unknown vault type: {vault_type}")
+            raise InvalidVaultConfigException(f"Unknown vault type: {vault_type}")
         vault_prefix = cfg.get('path_prefix') or "/galaxy"
-        return VaultKeyValidationDecorator(VaultKeyPrefixDecorator(vault, prefix=vault_prefix))
+        return VaultKeyValidationWrapper(VaultKeyPrefixWrapper(vault, prefix=vault_prefix))
 
     @staticmethod
     def from_app(app) -> Vault:
