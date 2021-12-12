@@ -1,7 +1,12 @@
 import { map } from "rxjs/operators";
 import { watchUntil, getLocalVue } from "jest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { cacheContent, cacheCollectionContent, wipeDatabase, loadDscContent } from "components/providers/History/caching";
+import {
+    cacheContent,
+    cacheCollectionContent,
+    wipeDatabase,
+    loadDscContent,
+} from "components/providers/History/caching";
 import { bulkCacheDscContent } from "components/providers/History/caching/db/observables";
 import { summarizeCacheOperation } from "components/providers/History/caching/loadHistoryContents";
 import { SearchParams } from "components/providers/History/SearchParams";
