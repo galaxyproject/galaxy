@@ -78,7 +78,7 @@ function make_forks() {
     [ -n "$REPO_ROOT" ] || REPO_ROOT=$(get_repo_root)
 
     # Use a "work" clone to prevent modifications to current clone
-    git clone --no-checkout "${REPO_ROOT}" "${FORK_ROOT}/work"
+    log_exec git clone --no-checkout "${REPO_ROOT}" "${FORK_ROOT}/work"
     (
         cd_fork work
         # A username and email address are needed to commit
@@ -88,9 +88,11 @@ function make_forks() {
         if [ -z "$(git config --get user.email)" ]; then
             log_exec git config user.email "test@example.org"
         fi
-        CURRENT_COMMIT=$(git rev-parse HEAD)
-        log "Checking out ref '${CURRENT_COMMIT}' as 'dev'"
-        log_exec git checkout --no-track -b dev "$CURRENT_COMMIT"
+        if [ "$(git rev-parse --abbrev-ref HEAD)" != dev ]; then
+            CURRENT_COMMIT=$(git rev-parse HEAD)
+            log "Checking out ref '${CURRENT_COMMIT}' as 'dev'"
+            log_exec git checkout --no-track -b dev "$CURRENT_COMMIT"
+        fi
     )
 
     # Create bare origin and upstream repos 
@@ -105,7 +107,7 @@ function make_forks() {
     # Set remotes on work repo
     (
         cd_fork work
-        git remote remove origin
+        log_exec git remote remove origin
         for repo in origin upstream; do
             log_exec git remote add "$repo" "file://${FORK_ROOT}/${repo}"
         done
@@ -120,7 +122,7 @@ function make_forks() {
     # Set current (previous) stable release from stable branch
     (
         cd_fork work
-        git fetch --no-tags upstream
+        log_exec git fetch --no-tags upstream
     )
     TEST_RELEASE_PREV=$(get_stable_version MAJOR)
     TEST_RELEASE_PREV_MINOR=$(get_stable_version MINOR)
