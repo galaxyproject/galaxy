@@ -10,8 +10,7 @@
             :options="items"
             :searchable="true"
             :allow-empty="false"
-            @select="onSelectItem"
-        />
+            @select="onSelectItem" />
     </div>
 </template>
 

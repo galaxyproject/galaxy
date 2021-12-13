@@ -7,8 +7,7 @@
                 title="Download dataset"
                 class="mr-1 mb-2"
                 @click="download(datasetDownloadFormat, dataset_id)"
-                data-test-id="download-btn"
-            >
+                data-test-id="download-btn">
                 <font-awesome-icon icon="download" />
                 Download
             </b-button>
@@ -16,8 +15,7 @@
                 @click="importToHistory"
                 title="Import dataset into history"
                 class="mr-1 mb-2"
-                data-test-id="import-history-btn"
-            >
+                data-test-id="import-history-btn">
                 <font-awesome-icon icon="book" />
                 to History
             </b-button>
@@ -26,8 +24,7 @@
                     @click="isEditMode = true"
                     title="Modify library item"
                     class="mr-1 mb-2"
-                    data-test-id="modify-btn"
-                >
+                    data-test-id="modify-btn">
                     <font-awesome-icon icon="pencil-alt" />
                     Modify
                 </b-button>
@@ -35,8 +32,7 @@
                     title="Attempt to detect the format of dataset"
                     @click="detectDatatype"
                     class="mr-1 mb-2"
-                    data-test-id="auto-detect-btn"
-                >
+                    data-test-id="auto-detect-btn">
                     <font-awesome-icon icon="redo" />
                     Auto-detect datatype
                 </b-button>
@@ -49,8 +45,7 @@
                     name: 'LibraryFolderDatasetPermissions',
                     params: { folder_id: folder_id, dataset_id: dataset_id },
                 }"
-                data-test-id="permissions-btn"
-            >
+                data-test-id="permissions-btn">
                 <font-awesome-icon icon="users" />
                 Permissions
             </b-button>
@@ -60,8 +55,7 @@
             <copy-to-clipboard
                 message="A link to current dataset was copied to your clipboard"
                 :text="currentRouteName"
-                title="Copy link to this dataset "
-            />
+                title="Copy link to this dataset " />
         </div>
         <!-- Table -->
         <b-table
@@ -72,8 +66,7 @@
             thead-class="d-none"
             striped
             small
-            data-test-id="dataset-table"
-        >
+            data-test-id="dataset-table">
             <template v-slot:cell(name)="row">
                 <strong>{{ row.item.name }}</strong>
             </template>
@@ -82,42 +75,35 @@
                     <b-form-input
                         v-if="row.item.name === fieldTitles.name"
                         :value="row.item.value"
-                        v-model="modifiedDataset.name"
-                    />
+                        v-model="modifiedDataset.name" />
                     <DatatypesProvider
                         v-else-if="row.item.name === fieldTitles.file_ext"
-                        v-slot="{ item: datatypes, loading: loadingDatatypes }"
-                    >
+                        v-slot="{ item: datatypes, loading: loadingDatatypes }">
                         <SingleItemSelector
                             collection-name="Data Types"
                             :loading="loadingDatatypes"
                             :items="datatypes"
                             :current-item-id="dataset.file_ext"
-                            @update:selected-item="onSelectedDatatype"
-                        />
+                            @update:selected-item="onSelectedDatatype" />
                     </DatatypesProvider>
                     <GenomeProvider
                         v-else-if="row.item.name === fieldTitles.genome_build"
-                        v-slot="{ item: genomes, loading: loadingGenomes }"
-                    >
+                        v-slot="{ item: genomes, loading: loadingGenomes }">
                         <SingleItemSelector
                             collection-name="Genomes"
                             :loading="loadingGenomes"
                             :items="genomes"
                             :current-item-id="dataset.genome_build"
-                            @update:selected-item="onSelectedGenome"
-                        />
+                            @update:selected-item="onSelectedGenome" />
                     </GenomeProvider>
                     <b-form-input
                         v-else-if="row.item.name === fieldTitles.message"
                         :value="row.item.value"
-                        v-model="modifiedDataset.message"
-                    />
+                        v-model="modifiedDataset.message" />
                     <b-form-input
                         v-else-if="row.item.name === fieldTitles.misc_info"
                         :value="row.item.value"
-                        v-model="modifiedDataset.misc_info"
-                    />
+                        v-model="modifiedDataset.misc_info" />
                     <div v-else>{{ row.item.value }}</div>
                 </div>
                 <div v-else>

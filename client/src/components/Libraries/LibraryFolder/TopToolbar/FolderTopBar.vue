@@ -121,8 +121,7 @@
         <LibraryBreadcrumb
             v-if="metadata && metadata.full_path"
             :full_path="metadata.full_path"
-            :current-id="folder_id"
-        />
+            :current-id="folder_id" />
     </div>
 </template>
 <script>
