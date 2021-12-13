@@ -24,7 +24,7 @@
                             title="Go to Dataset Details"
                             variant="secondary"
                             type="button"
-                            :href="`${root}library/list#folders/${folder_id}/datasets/${dataset_id}`">
+                            :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
                             <font-awesome-icon :icon="['far', 'file']" />
                             &nbsp;Dataset Details
                         </b-button>
