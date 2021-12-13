@@ -220,6 +220,21 @@ IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    "circos": {"required": REQUIRE_FULL_DIRECTORY},
+    "cp_image_math": {"required": {"includes": [{"path": "cp_common_functions.py", "path_type": "literal"}]}},
+    "enumerate_charges": {"required": {"includes": [{"path": "site_substructures.smarts", "path_type": "literal"}]}},
+    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "maxquant": {"required": {"includes": [{"path": "mqparam.py", "path_type": "literal"}]}},
+    "maxquant_mqpar": {"required": {"includes": [{"path": "mqparam.py", "path_type": "literal"}]}},
+    "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
+    "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "sucos_max_score": {"required": {"includes": [{"path": "utils.py", "path_type": "literal"}]}},
 }
 
 
@@ -817,7 +832,7 @@ class Tool(Dictifiable):
             raise Exception(f"Missing tool 'id' for tool at '{tool_source}'")
 
         profile = packaging.version.parse(str(self.profile))
-        if profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
+        if self.app.name == 'galaxy' and profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
             message = f"The tool [{self.id}] targets version {self.profile} of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             raise Exception(message)
 

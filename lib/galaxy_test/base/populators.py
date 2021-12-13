@@ -650,6 +650,9 @@ class BaseDatasetPopulator(BasePopulator):
         history_id = create_history_response.json()["id"]
         return history_id
 
+    def copy_history(self, history_id, name="API Test Copied History", **kwds) -> Response:
+        return self._post("histories", data={"name": name, "history_id": history_id, **kwds})
+
     def upload_payload(self, history_id: str, content: Optional[str] = None, **kwds) -> dict:
         name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
