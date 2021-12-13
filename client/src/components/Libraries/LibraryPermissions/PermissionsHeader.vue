@@ -34,6 +34,6 @@ export default {
 
 <style scoped>
 .header {
-    font-size: 45px;
+    font-size: 25px;
 }
 </style>
