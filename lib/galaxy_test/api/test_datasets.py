@@ -107,8 +107,7 @@ class DatasetsApiTestCase(ApiTestCase):
         self.dataset_populator.make_private(history_id=self.history_id, dataset_id=hda['id'])
         with self._different_user():
             show_response = self._get(f"datasets/{hda['id']}")
-            self._assert_status_code_is(show_response, 400)
-            assert show_response.json()['err_msg'] == 'You are not allowed to access this dataset'
+            self._assert_status_code_is(show_response, 403)
 
     def test_admin_can_update_permissions(self):
         # Create private dataset
