@@ -154,8 +154,10 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid=None):
-    if uuid is None:
+def get_uuid(uuid: Optional[Union[UUID, str]] = None):
+    if isinstance(uuid, UUID):
+        return uuid
+    if not uuid:
         return uuid4()
     return UUID(str(uuid))
 
