@@ -29,7 +29,6 @@ EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER = os.path.join(SCRIPT_DIRECTORY, "embedde
 class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
     framework_tool_and_types = True
     container_type = "docker"
-    require_uwsgi = True
     enable_realtime_mapping = True
 
     def setUp(self):
@@ -143,7 +142,7 @@ class InteractiveToolsPulsarIntegrationTestCase(BaseInteractiveToolsIntegrationT
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
-        config["galaxy_infrastructure_url"] = "http://localhost:$UWSGI_PORT"
+        config["galaxy_infrastructure_url"] = "http://localhost:$GALAXY_WEB_PORT"
         disable_dependency_resolution(config)
 
 
@@ -189,8 +188,6 @@ class KubeInteractiveToolsRemoteProxyIntegrationTestCase(
     $ cd back/to/galaxy
     $ GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST="localhost:9002" GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP="$HOME/gxitk8proxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::KubeInteractiveToolsRemoteProxyIntegrationTestCase
     """
-
-    require_uwsgi = True
 
     @classmethod
     def setUpClass(cls):

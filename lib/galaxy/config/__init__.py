@@ -1171,14 +1171,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 {"GALAXY_WEB_PORT": port}
             )
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
-            import uwsgi
-
-            http = unicodify(uwsgi.opt["http"])
-            host, port = http.split(":", 1)
-            assert port, "galaxy_infrastructure_url depends on dynamic PORT determination but port unknown"
-            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute(
-                {"UWSGI_PORT": port}
-            )
+            raise Exception("UWSGI_PORT is not supported anymore")
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []

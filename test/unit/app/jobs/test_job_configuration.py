@@ -14,10 +14,7 @@ from galaxy.util import (
     galaxy_directory,
     galaxy_samples_directory,
 )
-from galaxy.web_stack import (
-    ApplicationStack,
-    UWSGIApplicationStack,
-)
+from galaxy.web_stack import ApplicationStack
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 
 # File would be slightly more readable if contents were embedded directly, but
@@ -30,11 +27,6 @@ HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_tem
 
 
 class TestApplicationStack(ApplicationStack):
-    def get_preferred_handler_assignment_method(self):
-        return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
-
-
-class TestUWSGIApplicationStack(UWSGIApplicationStack):
     def get_preferred_handler_assignment_method(self):
         return HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED
 
@@ -58,7 +50,6 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         self._application_stack = None
         self._job_configuration = None
         self._job_configuration_base_pools = None
-        self._uwsgi_opt = None
 
     def tearDown(self):
         shutil.rmtree(self.temp_directory)
@@ -82,18 +73,9 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     @property
     def job_config(self):
         if not self._job_configuration:
-            base_handler_pools = self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
-            mock_uwsgi = mock.Mock()
-            mock_uwsgi.mule_id = lambda: 1
-            with mock.patch("galaxy.web_stack.uwsgi", mock_uwsgi), mock.patch(
-                "galaxy.web_stack.uwsgi.opt", self._uwsgi_opt
-            ), mock.patch("galaxy.jobs.JobConfiguration.DEFAULT_BASE_HANDLER_POOLS", base_handler_pools):
-                self._job_configuration = JobConfiguration(self.app)
+            self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
+            self._job_configuration = JobConfiguration(self.app)
         return self._job_configuration
-
-    def _with_uwsgi_application_stack(self, **uwsgi_opt):
-        self._uwsgi_opt = uwsgi_opt
-        self._application_stack = TestUWSGIApplicationStack()
 
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
         handlers = handlers or []
@@ -185,22 +167,6 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.default_handler_id is None
         assert sorted(self.job_config.handlers["_default_"]) == ["handler0", "handler1"]
 
-    def test_implict_uwsgi_mule_message_handler_assign(self):
-        self._with_uwsgi_application_stack(mule="lib/galaxy/main.py", farm="job-handlers:1")
-        assert self.job_config.handler_assignment_methods == ["uwsgi-mule-message", "db-skip-locked"]
-        assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers["_default_"] == ["main.job-handlers.1"]
-
-    def test_implict_uwsgi_mule_message_handler_assign_with_explicit_handlers(self):
-        self._with_handlers_config(handlers=[{"id": "handler0"}, {"id": "handler1"}])
-        self._with_uwsgi_application_stack(mule="lib/galaxy/main.py", farm="job-handlers:1")
-        assert self.job_config.handler_assignment_methods == [
-            "uwsgi-mule-message",
-            "db-skip-locked",
-        ], self.job_config.handler_assignment_methods
-        assert self.job_config.default_handler_id is None
-        assert sorted(self.job_config.handlers["_default_"]) == ["handler0", "handler1", "main.job-handlers.1"]
-
     def test_explicit_mem_self_handler_assign(self):
         self._with_handlers_config(assign_with="mem-self")
         assert self.job_config.handler_assignment_methods == ["mem-self"]
@@ -214,55 +180,17 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers["_default_"] == ["handler0"]
 
-    def test_explicit_db_preassign_handler_assign_with_uwsgi(self):
-        self._with_handlers_config(assign_with="db-preassign", handlers=[{"id": "handler0"}])
-        self._with_uwsgi_application_stack(mule="lib/galaxy/main.py", farm="job-handlers:1")
-        assert self.job_config.handler_assignment_methods == ["db-preassign"]
-        assert self.job_config.default_handler_id is None
-        assert sorted(self.job_config.handlers["_default_"]) == ["handler0", "main.job-handlers.1"]
-
     def test_explicit_db_transaction_isolation_handler_assign(self):
         self._with_handlers_config(assign_with="db-transaction-isolation")
         assert self.job_config.handler_assignment_methods == ["db-transaction-isolation"]
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers == {}
 
-    def test_explicit_db_transaction_isolation_handler_assign_with_uwsgi(self):
-        self._with_handlers_config(assign_with="db-transaction-isolation", handlers=[{"id": "handler0"}])
-        self._with_uwsgi_application_stack(mule="lib/galaxy/main.py", farm="job-handlers:1")
-        assert self.job_config.handler_assignment_methods == ["db-transaction-isolation"]
-        assert self.job_config.default_handler_id is None
-        assert sorted(self.job_config.handlers["_default_"]) == ["handler0", "main.job-handlers.1"]
-
     def test_explicit_db_skip_locked_handler_assign(self):
         self._with_handlers_config(assign_with="db-skip-locked")
         assert self.job_config.handler_assignment_methods == ["db-skip-locked"]
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers == {}
-
-    def test_explicit_db_skip_locked_handler_assign_with_uwsgi(self):
-        self._with_handlers_config(assign_with="db-skip-locked", handlers=[{"id": "handler0"}])
-        self._with_uwsgi_application_stack(mule="lib/galaxy/main.py", farm="job-handlers:1")
-        assert self.job_config.handler_assignment_methods == ["db-skip-locked"]
-        assert self.job_config.default_handler_id is None
-        assert sorted(self.job_config.handlers["_default_"]) == ["handler0", "main.job-handlers.1"]
-
-    def test_uwsgi_farms_as_handler_tags(self):
-        self._with_uwsgi_application_stack(
-            mule=["lib/galaxy/main.py"] * 2, farm=["job-handlers:1", "job-handlers.foo:2"]
-        )
-        assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers["_default_"] == ["main.job-handlers.1"]
-        assert self.job_config.handlers["foo"] == ["main.job-handlers.foo.1"]
-
-    def test_uwsgi_overlapping_pools(self):
-        self._with_handlers_config(base_pools=("workflow-schedulers", "job-handlers"))
-        self._with_uwsgi_application_stack(
-            mule=["lib/galaxy/main.py"] * 3, farm=["job-handlers:1", "workflow-schedulers:2", "job-handlers.foo:3"]
-        )
-        assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers["_default_"] == ["main.workflow-schedulers.1"]
-        assert self.job_config.handlers["foo"] == ["main.job-handlers.foo.1"]
 
     def test_load_simple_destination(self):
         local_dest = self.job_config.destinations["local"][0]

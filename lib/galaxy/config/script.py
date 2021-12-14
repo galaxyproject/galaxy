@@ -50,6 +50,7 @@ Start Galaxy by running the command from directory [{}]:
 # The sample is used as the default config file for Galaxy started without a config, and we don't want to duplicate the
 # whole thing into galaxy.config for templating, so for now just substitute some lines. In the future we will build
 # configs differently.
+# TODO: @natefoo, do we need to do updates here for fastAPI ?
 GALAXY_CONFIG_SUBSTITUTIONS = {
     "  http: 127.0.0.1:8080": "  ${uwsgi_transport}: ${host}:${port}",
     "  static-map: /static=static": "  static-map: /static=${static_path}",

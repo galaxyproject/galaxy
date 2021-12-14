@@ -14,9 +14,6 @@ from typing import (
 
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
-from .transport import (
-    ApplicationStackTransport,
-)
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +26,6 @@ class ApplicationStackLogFilter(logging.Filter):
 class ApplicationStack:
     name: Optional[str] = None
     prohibited_middleware: FrozenSet[str] = frozenset()
-    transport_class = ApplicationStackTransport
     log_filter_class: Type[logging.Filter] = ApplicationStackLogFilter
     log_format = "%(name)s %(levelname)s %(asctime)s [pN:%(processName)s,p:%(process)d,tN:%(threadName)s] %(message)s"
     # TODO: this belongs in the pool configuration
@@ -188,21 +184,12 @@ class ApplicationStack:
         multiprocessing.current_process().name = app.config.server_name = new_server_name
         log.debug("server_name set to: %s", new_server_name)
 
-    def register_message_handler(self, func, name=None):
-        pass
-
-    def deregister_message_handler(self, func=None, name=None):
-        pass
-
-    def send_message(self, dest, msg=None, target=None, params=None, **kwargs):
-        pass
-
     def shutdown(self):
         pass
 
 
 class WebApplicationStack(ApplicationStack):
-    name = 'Web'
+    name = "Web"
 
 
 class GunicornApplicationStack(ApplicationStack):
