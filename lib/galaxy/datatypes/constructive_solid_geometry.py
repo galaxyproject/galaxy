@@ -123,6 +123,15 @@ class Ply:
 
 
 class PlyAscii(Ply, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.plyascii')
+    >>> PlyAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> PlyAscii().sniff(fname)
+    False
+    """
     file_ext = "plyascii"
     subtype = 'ascii'
 
@@ -226,8 +235,7 @@ class Vtk:
         data_kind) or the 4th line consists of the data_kind (in
         which case the 5th line is blank).
         """
-
-        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID']
+        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID', 'STRUCTURED_POINTS', 'RECTILINEAR_GRID']
 
         def check_data_kind(line):
             for data_kind in data_kinds:
@@ -446,6 +454,15 @@ class Vtk:
 
 
 class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkAscii().sniff(fname)
+    False
+    """
     file_ext = "vtkascii"
     subtype = 'ASCII'
 
@@ -454,6 +471,16 @@ class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
 
 
 class VtkBinary(Vtk, Binary):   # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkBinary().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkBinary().sniff(fname)
+    False
+    """
+
     file_ext = "vtkbinary"
     subtype = 'BINARY'
 
