@@ -360,6 +360,14 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         to provide the extra information, otherwise, it will be None by default."""
         return None
 
+    def make_members_public(self, trans, item):
+        """ Make potential elements of this item public.
+
+        This method must be overridden in managers that need to change permissions of internal elements
+        contained associated with the given item.
+        """
+        pass
+
     def update_current_sharing_with_users(self, item, new_users_shared_with: Set[User], flush=True):
         """Updates the currently list of users this item is shared with by adding new
         users and removing missing ones."""
@@ -672,7 +680,11 @@ class ShareableService:
         return self._get_sharing_status(trans, item)
 
     def enable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        """Makes this item accessible by link.
+        If this item contains other elements they will be publicly accessible too.
+        """
         item = self._get_item_by_id(trans, id)
+        self.manager.make_members_public(trans, item)
         self.manager.make_importable(item)
         return self._get_sharing_status(trans, item)
 
@@ -682,7 +694,11 @@ class ShareableService:
         return self._get_sharing_status(trans, item)
 
     def publish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        """Makes this item publicly accessible.
+        If this item contains other elements they will be publicly accessible too.
+        """
         item = self._get_item_by_id(trans, id)
+        self.manager.make_members_public(trans, item)
         self.manager.publish(item)
         return self._get_sharing_status(trans, item)
 
