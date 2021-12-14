@@ -17,9 +17,10 @@ describe("UploadQueue", () => {
         return new UploadQueue(stubOptions);
     }
 
-    function StubFile(name = null, size = 0) {
+    function StubFile(name = null, size = 0, mode = null) {
         this.name = name;
         this.size = size;
+        this.mode = mode;
     }
 
     test("a queue is initialized to correct state", () => {
@@ -146,13 +147,17 @@ describe("UploadQueue", () => {
             expect(q.nextIndex).toEqual(2);
         });
 
-        test("duplicate files are not added to the queue", () => {
+        test("duplicate files are not added to the queue, unless the mode is set to 'new'", () => {
             const q = TestUploadQueue();
             const file1 = new StubFile("a", 1);
             const file2 = new StubFile("a", 1);
+            const file3 = new StubFile("a", 1, "new");
             q.add([file1, file2]); // file2 is a duplicate of file1, so only 1 file is added
             expect(q.size).toEqual(1); // queue size incremented by 1
             expect(q.nextIndex).toEqual(1); // next index value incremented by 1
+            q.add([file3]); // file3 is a duplicate of file1 and file2, but its mode is "new"
+            expect(q.size).toEqual(2); // queue size incremented by 1
+            expect(q.nextIndex).toEqual(2); // next index value incremented by 1
         });
 
         test("adding a file calls opts.announce with correct arguments", () => {
