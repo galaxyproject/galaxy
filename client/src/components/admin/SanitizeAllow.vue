@@ -35,7 +35,14 @@
                             <template v-slot:rows>
                                 <template v-for="(row, allowedIdx) in toolshedAllowed">
                                     <tr :key="allowedIdx">
-                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <span v-if="row.tool_name">
+                                                {{ row.tool_name }}
+                                            </span>
+                                            <span v-else>
+                                                <i>Not installed</i>
+                                            </span>
+                                        </td>
                                         <td>
                                             <template v-for="(part, part_idx) in row.tool_id">
                                                 <template v-if="part_idx > 0">/</template><span :key="part_idx">{{ part }}</span>
@@ -73,7 +80,14 @@
                             <template v-slot:rows>
                                 <template v-for="(row, localAllowedIdx) in localAllowed">
                                     <tr :key="localAllowedIdx">
-                                        <td>{{ row.tool_name }}</td>
+                                        <td>
+                                            <span v-if="row.tool_name">
+                                                {{ row.tool_name }}
+                                            </span>
+                                            <span v-else>
+                                                <i>Not installed</i>
+                                            </span>
+                                        </td>
                                         <td>{{ row.tool_id[0] }}</td>
                                         <td>
                                             <button @click="sanitizeHTML(row.ids.allowed)">Sanitize HTML</button>
