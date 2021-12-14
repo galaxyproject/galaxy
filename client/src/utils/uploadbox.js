@@ -69,24 +69,21 @@ function tusUpload(data, index, tusEndpoint, cnf) {
 // Posts chunked files to the API.
 export function submitUpload(config) {
     // set options
-    const cnf = Object.assign(
-        {},
-        {
-            data: {},
-            success: () => {},
-            error: () => {},
-            warning: () => {},
-            progress: () => {},
-            attempts: 70000,
-            timeout: 5000,
-            url: null,
-            error_file: "File not provided.",
-            error_attempt: "Maximum number of attempts reached.",
-            error_tool: "Tool submission failed.",
-            chunkSize: 10485760,
-        },
-        config
-    );
+    const cnf = {
+        data: {},
+        success: () => {},
+        error: () => {},
+        warning: () => {},
+        progress: () => {},
+        attempts: 70000,
+        timeout: 5000,
+        url: null,
+        error_file: "File not provided.",
+        error_attempt: "Maximum number of attempts reached.",
+        error_tool: "Tool submission failed.",
+        chunkSize: 10485760,
+        ...config,
+    };
 
     // initial validation
     var data = cnf.data;
@@ -161,24 +158,21 @@ export function submitUpload(config) {
 
 export class UploadQueue {
     constructor(options) {
-        this.opts = Object.assign(
-            {
-                dragover: () => {},
-                dragleave: () => {},
-                announce: (d) => {},
-                initialize: (d) => {},
-                progress: (d, m) => {},
-                success: (d, m) => {},
-                warning: (d, m) => {},
-                error: (d, m) => {
-                    alert(m);
-                },
-                complete: () => {},
-                multiple: true,
+        this.opts = {
+            dragover: () => {},
+            dragleave: () => {},
+            announce: (d) => {},
+            initialize: (d) => {},
+            progress: (d, m) => {},
+            success: (d, m) => {},
+            warning: (d, m) => {},
+            error: (d, m) => {
+                alert(m);
             },
-            options
-        );
-
+            complete: () => {},
+            multiple: true,
+            ...options,
+        };
         this.queue = new Map(); // items stored by key (referred to as index)
         this.nextIndex = 0;
         this.fileSet = new Set(); // Used for fast duplicate checking
