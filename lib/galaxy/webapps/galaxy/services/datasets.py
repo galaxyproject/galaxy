@@ -26,6 +26,7 @@ from galaxy import (
 from galaxy.datatypes import dataproviders
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.datasets import DatasetAssociationManager
 from galaxy.managers.hdas import (
     HDAManager,
     HDASerializer,
@@ -187,6 +188,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def serializer_by_type(self) -> Dict[str, ModelSerializer]:
         return {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
 
+    @property
+    def dataset_manager_by_type(self) -> Dict[str, DatasetAssociationManager]:
+        return {'hda': self.hda_manager, 'ldda': self.ldda_manager}
+
     def index(
         self,
         trans: ProvidesHistoryContext,
@@ -221,7 +226,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def show(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        dataset_id: EncodedDatabaseIdField,
         hda_ldda: DatasetSourceType,
         serialization_params: SerializationParams,
         data_type: Optional[RequestDataType] = None,
@@ -230,7 +235,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Displays information about and/or content of a dataset.
         """
-        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
 
         # Use data type to return particular type of data.
         rval: Any
@@ -278,7 +284,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Display user-facing storage details related to the objectstore a
         dataset resides in.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         dataset = dataset_instance.dataset
         object_store = trans.app.object_store
         object_store_id = dataset.object_store_id
@@ -307,7 +314,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Display inheritance chain for the given dataset.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
@@ -326,14 +334,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
+        decoded_dataset_id = self.decode_id(dataset_id)
         payload_dict = payload.dict(by_alias=True)
-        dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
-        if hda_ldda == "hda":
-            self.hda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
-            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
-        else:
-            self.ldda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
-            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(decoded_dataset_id, trans.user)
+        dataset_manager.update_permissions(trans, dataset, **payload_dict)
+        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
 
     def extra_files(
         self,
