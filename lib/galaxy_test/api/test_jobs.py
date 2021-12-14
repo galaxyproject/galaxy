@@ -547,7 +547,7 @@ steps:
         # We first copy the datasets, so that the update time is lower than the job creation time
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload, json=True)
         self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
@@ -654,7 +654,7 @@ steps:
         # We test that a job can be found even if the collection has been copied to another history
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
-        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload, json=True)
         self._assert_status_code_is(copy_response, 200)
         new_list_a = copy_response.json()['id']
         copied_inputs = json.dumps({

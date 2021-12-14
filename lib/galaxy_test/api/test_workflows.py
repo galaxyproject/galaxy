@@ -2845,7 +2845,7 @@ steps:
             new_ds_map = json.loads(new_workflow_request['ds_map'])
             for key, input_values in invocation_1['inputs'].items():
                 copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
-                copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload).json()
+                copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload, json=True).json()
                 new_ds_map[key]['id'] = copy_response['id']
             new_workflow_request['ds_map'] = json.dumps(new_ds_map, sort_keys=True)
             new_workflow_request['history'] = f"hist_id={history_id_two}"
@@ -2882,7 +2882,7 @@ outer_input:
             dataset_type = inputs['outer_input']['src']
             dataset_id = inputs['outer_input']['id']
             copy_payload = {"content": dataset_id, "source": dataset_type, "type": "dataset"}
-            copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload)
+            copy_response = self._post(f"histories/{history_id_two}/contents", data=copy_payload, json=True)
             self._assert_status_code_is(copy_response, 200)
             new_dataset_id = copy_response.json()['id']
             inputs['outer_input']['id'] = new_dataset_id

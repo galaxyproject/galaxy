@@ -672,13 +672,17 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['output_collections'].append(output_dict)
 
         for output_name, collection_instance in vars.get('implicit_collections', {}).items():
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
 

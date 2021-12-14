@@ -454,14 +454,14 @@ test_data:
                 source="hda",
                 content=content["id"]
             )
-            response = self._post(f"histories/{history_id}/contents/datasets", payload)
+            response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
 
         else:
             payload = dict(
                 source="hdca",
                 content=content["id"]
             )
-            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload)
+            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload, json=True)
         self._assert_status_code_is(response, 200)
         return response.json()
 

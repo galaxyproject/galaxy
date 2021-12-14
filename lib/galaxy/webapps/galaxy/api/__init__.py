@@ -16,21 +16,23 @@ from fastapi import (
     Form,
     Header,
     Query,
+    Request,
     Response,
 )
 from fastapi.params import Depends
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from pydantic.main import BaseModel
+from starlette.routing import NoMatchFound
 try:
     from starlette_context import context as request_context
 except ImportError:
     request_context = None
-from starlette.requests import Request
 
 from galaxy import (
     app as galaxy_app,
     model,
+    web,
 )
 from galaxy.exceptions import (
     AdminRequiredException,
@@ -147,9 +149,13 @@ class UrlBuilder:
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
-        if qualified:
-            return self.request.url_for(name, **path_params)
-        return self.request.app.url_path_for(name, **path_params)
+        try:
+            if qualified:
+                return self.request.url_for(name, **path_params)
+            return self.request.app.url_path_for(name, **path_params)
+        except NoMatchFound:
+            # Fallback to legacy url_for
+            return web.url_for(name, **path_params)
 
 
 class GalaxyASGIRequest(GalaxyAbstractRequest):
