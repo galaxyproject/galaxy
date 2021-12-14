@@ -132,11 +132,11 @@ function searchInput(parentNode, options) {
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, and state</em>."
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>."
                 ),
                 "<br/>",
                 _l("To learn more visit "),
-                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
+                "<a href='https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/history/tutorial.html#basic-searching' target='_blank'>",
                 _l("the Hub"),
                 '.</a></p>" title="',
                 _l("Search tips"),
