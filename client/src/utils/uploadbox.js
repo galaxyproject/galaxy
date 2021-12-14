@@ -243,7 +243,7 @@ export class UploadQueue {
         if (files && files.length && !this.isRunning) {
             files.forEach((file) => {
                 const fileSetKey = file.name + file.size; // Concat name and size to create a "file signature".
-                if (!this.fileSet.has(fileSetKey)) {
+                if (file.mode === "new" || !this.fileSet.has(fileSetKey)) {
                     this.fileSet.add(fileSetKey);
                     const index = this.nextIndex++;
                     this.queue.set(index, file);
