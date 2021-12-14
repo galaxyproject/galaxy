@@ -56,7 +56,7 @@ class ConfigurationManager:
             with open(json_file) as f:
                 extra_info = json.load(f)
         except OSError:
-            log.info('Galaxy JSON version file not loaded')
+            log.warning('Galaxy JSON version file %s not loaded.' % json_file)
         else:
             version_info['extra'] = extra_info
         return version_info
