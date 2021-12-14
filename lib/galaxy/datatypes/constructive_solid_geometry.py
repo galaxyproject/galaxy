@@ -86,7 +86,7 @@ class Ply:
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for line in fh:
                     line = line.strip()
                     if not line:
@@ -271,7 +271,7 @@ class Vtk:
             field_components = {}
             dataset_structure_complete = False
             processing_field_section = False
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line:
