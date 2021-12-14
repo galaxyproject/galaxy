@@ -576,6 +576,28 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert len(sharing_response["users_shared_with"]) == 1
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
+    def test_sharing_private_history_makes_datasets_public(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self.dataset_populator.make_private(history_id, hda_id)
+
+        # Other users cannot access the dataset
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 400)
+
+        sharing_response = self._set_resource_sharing(history_id, "publish")
+        assert sharing_response["published"] is True
+
+        # Other users can access the dataset after publishing
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 200)
+            hda = show_response.json()
+            assert hda["id"] == hda_id
+
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
         self._assert_status_code_is(sharing_response, 200)
