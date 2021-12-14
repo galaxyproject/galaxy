@@ -55,11 +55,11 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
+import { submitUpload } from "utils/uploadbox";
 
 export default {
     mixins: [UploadBoxMixin],
@@ -138,7 +138,7 @@ export default {
                     extension: this.extension,
                 });
             });
-            $.uploadchunk({
+            submitUpload({
                 url: this.app.uploadPath,
                 data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
                 success: (message) => {

@@ -12,6 +12,7 @@ import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog } from "utils/data";
 import { getAppRoot } from "onload";
+import { UploadQueue } from "utils/uploadbox";
 import axios from "axios";
 
 const localize = _l;
@@ -69,7 +70,8 @@ export default {
         },
         initUploadbox(options) {
             const $uploadBox = this.$uploadBox();
-            this.uploadbox = $uploadBox.uploadbox(options);
+            options.$uploadBox = $uploadBox;
+            this.uploadbox = new UploadQueue(options);
             if (this.lazyLoadMax !== null) {
                 const $uploadBox = this.$uploadBox();
                 this.loader = new LazyLimited({
