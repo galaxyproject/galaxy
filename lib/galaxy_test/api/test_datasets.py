@@ -110,6 +110,22 @@ class DatasetsApiTestCase(ApiTestCase):
             self._assert_status_code_is(show_response, 400)
             assert show_response.json()['err_msg'] == 'You are not allowed to access this dataset'
 
+    def test_admin_can_update_permissions(self):
+        # Create private dataset
+        hda = self.dataset_populator.new_dataset(self.history_id)
+        dataset_id = hda['id']
+        self.dataset_populator.make_private(history_id=self.history_id, dataset_id=dataset_id)
+
+        # Admin removes restrictions
+        payload = {"action": "remove_restrictions"}
+        update_response = self._put(f"datasets/{dataset_id}/permissions", payload, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
+
+        # Other users can access the dataset
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is_ok(show_response)
+
     def __assert_matches_hda(self, input_hda, query_hda):
         self._assert_has_keys(query_hda, "id", "name")
         assert input_hda["name"] == query_hda["name"]
