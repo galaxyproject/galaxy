@@ -1013,15 +1013,7 @@ class GalaxyTestDriver(TestDriver):
             self.else_use_uvicorn = False
 
         # Allow controlling the log format
-        log_format = os.environ.get("GALAXY_TEST_LOG_FORMAT", None)
-        if not log_format and use_uwsgi:
-            log_format = (
-                "%(name)s %(levelname)-5.5s %(asctime)s "
-                "[p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] "
-                "[%(threadName)s] %(message)s"
-            )
-
-        self.log_format = log_format
+        self.log_format = os.environ.get('GALAXY_TEST_LOG_FORMAT')
 
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
