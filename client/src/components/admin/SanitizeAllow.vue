@@ -146,7 +146,7 @@ export default {
     methods: {
         allowHTML(tool_id) {
             axios
-                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${tool_id}`, {
+                .put(`${getAppRoot()}api/sanitize_allow?tool_id=${encodeURIComponent(tool_id)}`, {
                     params: {
                         tool_id: tool_id,
                     },
