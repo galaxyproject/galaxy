@@ -51,7 +51,7 @@ class Ply:
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
         """
-        if not self._is_ply_header(file_prefix.string_io(), self.subtype):
+        if not self._is_ply_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return False
         return True
 
@@ -223,7 +223,7 @@ class Vtk:
         styles of file formats: legacy or XML.  We'll assume if the
         file contains a valid VTK header, then it is a valid VTK file.
         """
-        if self._is_vtk_header(file_prefix.string_io(), self.subtype):
+        if self._is_vtk_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return True
         return False
 

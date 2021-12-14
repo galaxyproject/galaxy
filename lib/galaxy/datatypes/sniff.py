@@ -555,6 +555,9 @@ class FilePrefix:
         rval = io.StringIO(self.contents_header)
         return rval
 
+    def text_io(self, *args, **kwargs) -> io.TextIOWrapper:
+        return io.TextIOWrapper(io.BytesIO(self.contents_header_bytes), *args, **kwargs)
+
     def startswith(self, prefix):
         return self.string_io().read(len(prefix)) == prefix
 
