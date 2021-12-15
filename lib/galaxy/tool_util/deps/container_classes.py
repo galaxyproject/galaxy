@@ -400,6 +400,13 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             **self.get_singularity_target_kwds()
         )
 
+    def build_singularity_pull_command(self, cache_path):
+        return singularity_util.pull_singularity_command(
+            image_identifier=self.container_id,
+            cache_path=cache_path,
+            **self.get_singularity_target_kwds()
+        )
+
     def containerize_command(self, command):
 
         env = []

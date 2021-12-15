@@ -1,9 +1,11 @@
 """This module describes the :class:`ExplicitContainerResolver` ContainerResolver plugin."""
 import logging
+import os
 
-from ..container_resolvers import (
-    ContainerResolver,
-)
+from galaxy.util.commands import shell
+from .mulled import CliContainerResolver
+from ..container_classes import SingularityContainer
+from ..container_resolvers import ContainerResolver
 from ..requirements import ContainerDescription
 
 log = logging.getLogger(__name__)
@@ -52,6 +54,64 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
                 return container_description
 
         return None
+
+
+class CachedExplicitSingularityContainerResolver(CliContainerResolver):
+    resolver_type = 'cached_explicit_singularity'
+    container_type = 'singularity'
+    cli = 'singularity'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cache_directory_path = kwargs.get("cache_directory", os.path.join(kwargs['app_info'].container_image_cache_path, "singularity", "explicit"))
+        self._init_cache_directory()
+
+    def _init_cache_directory(self):
+        os.makedirs(self.cache_directory_path, exist_ok=True)
+
+    def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
+        """Find a container explicitly mentioned in tool description.
+
+        This ignores the tool requirements and assumes the tool author crafted
+        a correct container. We use singularity here to fetch docker containers,
+        hence the container_description hack here.
+        """
+        for container_description in tool_info.container_descriptions:  # type: ContainerDescription
+            if container_description.type == 'docker':
+                desc_dict = container_description.to_dict()
+                desc_dict['type'] = self.container_type
+                desc_dict['identifier'] = f"docker://{container_description.identifier}"
+                container_description = container_description.from_dict(desc_dict)
+            if not self._container_type_enabled(container_description, enabled_container_types):
+                return None
+            if not self.cli_available:
+                return container_description
+            image_id = container_description.identifier
+            cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
+            if install and not os.path.exists(cache_path):
+                destination_info = {}
+                destination_for_container_type = kwds.get(
+                    'destination_for_container_type')
+                if destination_for_container_type:
+                    destination_info = destination_for_container_type(
+                        self.container_type)
+                container = SingularityContainer(
+                    container_description.identifier,
+                    self.app_info,
+                    tool_info,
+                    destination_info,
+                    {},
+                    container_description)
+                command = container.build_singularity_pull_command(cache_path=cache_path)
+                shell(command)
+            # Point to container in the cache in stead.
+            container_description.identifier = cache_path
+            return container_description
+        else:  # No container descriptions found
+            return None
+
+    def __str__(self):
+        return f"CachedExplicitSingularityContainerResolver[cache_directory={self.cache_directory_path}]"
 
 
 class BaseAdminConfiguredContainerResolver(ContainerResolver):
@@ -162,6 +222,7 @@ class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
 __all__ = (
     "ExplicitContainerResolver",
     "ExplicitSingularityContainerResolver",
+    "CachedExplicitSingularityContainerResolver",
     "FallbackContainerResolver",
     "FallbackSingularityContainerResolver",
     "FallbackNoRequirementsContainerResolver",
