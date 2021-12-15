@@ -10,11 +10,7 @@ import sys
 import threading
 import time
 from inspect import ismodule
-try:
-    from math import inf
-except ImportError:
-    # python 2 doesn't have math.inf, but can use float('inf')
-    inf = float('inf')
+from math import inf
 
 from kombu import (
     Consumer,
