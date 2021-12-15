@@ -89,9 +89,15 @@
                             :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }"
                             >{{ row.item.name }}</b-link
                         >
-                        <a v-else :href="`${root}library/list#folders/${current_folder_id}/datasets/${row.item.id}`">{{
-                            row.item.name
-                        }}</a>
+
+                        <b-link
+                            v-else
+                            :to="{
+                                name: `LibraryDataset`,
+                                params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
+                            }"
+                            >{{ row.item.name }}</b-link
+                        >
                     </div>
                     <!-- Deleted Item-->
                     <div v-else>
@@ -211,7 +217,7 @@
                             Manage
                         </b-button>
                         <button
-                            @click="undelete(row.item)"
+                            @click="undelete(row.item, folder_id)"
                             v-if="row.item.deleted"
                             :title="'Undelete ' + row.item.name"
                             class="lib-btn primary-button btn-sm undelete_dataset_btn"
@@ -538,7 +544,7 @@ export default {
                 );
             }
         },
-        undelete: function (element) {
+        undelete: function (element, parent_folder) {
             const onError = (response) => {
                 const message = `${element.type === "folder" ? "Folder" : "Dataset"}`;
                 if (typeof response.responseJSON !== "undefined") {
@@ -563,11 +569,11 @@ export default {
                     (response) => {
                         element.deleted = response.deleted;
                         this.refreshTable();
-                        Toast.success("Dataset undeleted. Click this to see it.", "", {
+                        Toast.success("Dataset undeleted. Click here to see it.", "", {
                             onclick: function () {
-                                window.location = `${getAppRoot()}library/list#folders/${
-                                    this.current_folder_id
-                                }/datasets/${element.id}`;
+                                window.location = `${getAppRoot()}libraries/folders/${parent_folder}/dataset/${
+                                    element.id
+                                }`;
                             },
                         });
                     },

@@ -2,6 +2,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueRouter from "vue-router";
 import LibraryFolderPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions.vue";
+import LibraryDataset from "components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue";
 import LibraryFolder from "components/Libraries/LibraryFolder/LibraryFolder.vue";
 import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions.vue";
 import LibrariesList from "components/Libraries/LibrariesList.vue";
@@ -39,6 +40,12 @@ export default new VueRouter({
             },
         },
         {
+            path: "/folders/:folder_id/dataset/:dataset_id",
+            name: "LibraryDataset",
+            component: LibraryDataset,
+            props: true,
+        },
+        {
             path: "/folders/:folder_id/permissions",
             name: "LibraryFolder",
             component: LibraryFolderPermissions,
@@ -46,7 +53,7 @@ export default new VueRouter({
         },
         {
             path: "/folders/:folder_id/dataset/:dataset_id/permissions",
-            name: "LibraryFolder",
+            name: "LibraryFolderDatasetPermissions",
             component: LibraryFolderDatasetPermissions,
             props: true,
         },

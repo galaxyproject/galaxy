@@ -131,9 +131,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.header {
-    font-size: 45px;
-}
-</style>

@@ -92,7 +92,6 @@
 
                                 <div class="share_with_view">
                                     <multiselect
-                                        class="multiselect-users"
                                         v-model="multiselectValues.sharingCandidates"
                                         :options="multiselectValues.userOptions"
                                         :clear-on-select="true"
@@ -556,24 +555,6 @@ export default {
     padding-top: 1.1rem;
 }
 
-.multiselect-users {
-    font-weight: normal;
-}
-.multiselect-users::v-deep .multiselect__option--highlight {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag-icon:after {
-    color: white;
-}
-.multiselect__tag-icon:focus,
-.multiselect__tag-icon:hover {
-    background: #132c40;
-}
 .success-alert {
     margin: 0.3rem 2rem 0.9rem;
 }

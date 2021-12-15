@@ -2,44 +2,20 @@
     <div>
         <b-container fluid>
             <div v-if="dataset">
-                <b-breadcrumb>
-                    <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }">
-                        Libraries
-                    </b-breadcrumb-item>
-                    <template v-for="path_item in this.dataset.full_path">
-                        <b-breadcrumb-item
-                            :key="path_item[0]"
-                            :to="{ path: `/folders/${path_item[0]}` }"
-                            :active="path_item[0] === dataset_id"
-                            href="#"
-                            >{{ path_item[1] }}</b-breadcrumb-item
-                        >
-                    </template>
-                </b-breadcrumb>
-                <b-row>
-                    <b-col>
-                        <b-button
-                            data-toggle="tooltip"
-                            data-placement="top"
-                            title="Go to Dataset Details"
-                            variant="secondary"
-                            type="button"
-                            :href="`${root}library/list#folders/${folder_id}/datasets/${dataset_id}`">
-                            <font-awesome-icon :icon="['far', 'file']" />
-                            &nbsp;Dataset Details
-                        </b-button>
-                    </b-col>
-                    <b-col>
-                        <div>
-                            <div class="header text-center">{{ dataset.name }}</div>
-                        </div>
-                    </b-col>
-                    <b-col />
-                </b-row>
+                <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
+                <b-button
+                    data-toggle="tooltip"
+                    data-placement="top"
+                    title="Go to Dataset Details"
+                    variant="secondary"
+                    type="button"
+                    :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
+                    <font-awesome-icon :icon="['far', 'file']" />
+                    &nbsp;Dataset Details
+                </b-button>
+                <PermissionsHeader :name="dataset.name" />
             </div>
 
-            <LibraryPermissionsWarning :is_admin="is_admin" />
-            <hr class="my-4" />
             <h2 class="text-center">Library-related permissions</h2>
             <PermissionsInputField
                 v-if="modify_item_roles"
@@ -115,10 +91,11 @@ import { Services } from "components/Libraries/LibraryPermissions/services";
 import { Toast } from "ui/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
+import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import { initPermissionsIcons } from "components/Libraries/icons";
-import LibraryPermissionsWarning from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryPermissionsWarning";
 import { extractRoles } from "components/Libraries/library-utils";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 
 import "vue-multiselect/dist/vue-multiselect.min.css";
 import VueObserveVisibility from "vue-observe-visibility";
@@ -140,8 +117,9 @@ export default {
     },
     components: {
         PermissionsInputField,
-        LibraryPermissionsWarning,
         FontAwesomeIcon,
+        LibraryBreadcrumb,
+        PermissionsHeader,
     },
     data() {
         return {
@@ -227,9 +205,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.header {
-    font-size: 45px;
-}
-</style>
