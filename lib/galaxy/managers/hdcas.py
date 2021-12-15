@@ -294,6 +294,7 @@ class HDCASerializer(
             'populated',
             'populated_state',
             'populated_state_message',
+            'homogeneous_datatype',
         ])
 
     def add_serializers(self):
@@ -314,7 +315,8 @@ class HDCASerializer(
                                                              id=self.app.security.encode_id(item.id),
                                                              type=self.hdca_manager.model_class.content_type),
             'contents_url': self.generate_contents_url,
-            'job_state_summary': self.serialize_job_state_summary
+            'job_state_summary': self.serialize_job_state_summary,
+            'homogeneous_datatype': self.serialize_homogeneous_datatype,
         }
         self.serializers.update(serializers)
 
@@ -332,3 +334,8 @@ class HDCASerializer(
         del states['_sa_instance_state']
         del states['hdca_id']
         return states
+
+    def serialize_homogeneous_datatype(self, item, key, **context):
+        extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
+        homogeneous_datatype = next(iter(extensions_set)) if len(extensions_set) == 1 else None
+        return homogeneous_datatype
