@@ -5,11 +5,8 @@ Examples
 
 Produce a mulled hash with:
 
-    mulled-hash 'samtools=1.3.1--4,bedtools=2.22'
+    mulled-hash samtools=1.3.1,bedtools=2.22
 """
-
-import logging
-import sys
 
 from ._cli import arg_parser
 from .mulled_build import target_str_to_targets
@@ -17,8 +14,6 @@ from .util import (
     v1_image_name,
     v2_image_name,
 )
-
-log = logging.getLogger(__name__)
 
 
 def main(argv=None):
@@ -29,12 +24,10 @@ def main(argv=None):
     args = parser.parse_args()
     targets = target_str_to_targets(args.targets)
     image_name = v2_image_name if args.hash == 'v2' else v1_image_name
-    sys.stdout.write(image_name(targets))
-    sys.stdout.write('\n')
+    print(image_name(targets))
 
 
 __all__ = ("main", )
-
 
 if __name__ == '__main__':
     main()
