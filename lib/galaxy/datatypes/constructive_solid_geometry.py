@@ -51,7 +51,7 @@ class Ply:
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
         """
-        if not self._is_ply_header(file_prefix.string_io(), self.subtype):
+        if not self._is_ply_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return False
         return True
 
@@ -86,7 +86,7 @@ class Ply:
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for line in fh:
                     line = line.strip()
                     if not line:
@@ -123,6 +123,15 @@ class Ply:
 
 
 class PlyAscii(Ply, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.plyascii')
+    >>> PlyAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> PlyAscii().sniff(fname)
+    False
+    """
     file_ext = "plyascii"
     subtype = 'ascii'
 
@@ -214,7 +223,7 @@ class Vtk:
         styles of file formats: legacy or XML.  We'll assume if the
         file contains a valid VTK header, then it is a valid VTK file.
         """
-        if self._is_vtk_header(file_prefix.string_io(), self.subtype):
+        if self._is_vtk_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return True
         return False
 
@@ -226,8 +235,7 @@ class Vtk:
         data_kind) or the 4th line consists of the data_kind (in
         which case the 5th line is blank).
         """
-
-        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID']
+        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID', 'STRUCTURED_POINTS', 'RECTILINEAR_GRID']
 
         def check_data_kind(line):
             for data_kind in data_kinds:
@@ -263,7 +271,7 @@ class Vtk:
             field_components = {}
             dataset_structure_complete = False
             processing_field_section = False
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line:
@@ -446,6 +454,15 @@ class Vtk:
 
 
 class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkAscii().sniff(fname)
+    False
+    """
     file_ext = "vtkascii"
     subtype = 'ASCII'
 
@@ -454,6 +471,16 @@ class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
 
 
 class VtkBinary(Vtk, Binary):   # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkBinary().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkBinary().sniff(fname)
+    False
+    """
+
     file_ext = "vtkbinary"
     subtype = 'BINARY'
 
