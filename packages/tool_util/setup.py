@@ -57,6 +57,7 @@ ENTRY_POINTS = '''
         mulled-build-files=galaxy.tool_util.deps.mulled.mulled_build_files:main
         mulled-list=galaxy.tool_util.deps.mulled.mulled_list:main
         mulled-update-singularity-containers=galaxy.tool_util.deps.mulled.mulled_update_singularity_containers:main
+        mulled-hash=galaxy.tool_util.deps.mulled.mulled_hash:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
