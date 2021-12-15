@@ -11,8 +11,8 @@ export function saveSet(key, setObject) {
 
 export function loadSet(key) {
     try {
-        const arrJson = sessionStorage.getItem(key) || [];
-        const cachedArray = JSON.parse(arrJson);
+        const arrJson = sessionStorage.getItem(key);
+        const cachedArray = arrJson ? JSON.parse(arrJson) : null;
         return Array.isArray(cachedArray) ? new Set(cachedArray) : new Set();
     } catch (err) {
         console.warn("Error loading cached list.", key, err);

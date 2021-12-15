@@ -57,7 +57,8 @@ import { History } from "../model";
 import { updateContentFields } from "../model/queries";
 import { cacheContent } from "components/providers/History/caching";
 
-import { DscProvider, CollectionContentProvider, ExpandedItems } from "components/providers/History";
+import { DscProvider, CollectionContentProvider } from "components/providers/History";
+import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
 import Details from "./Details";
