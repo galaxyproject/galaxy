@@ -43,7 +43,7 @@ class Users(BaseUIController, ReportQueryBuilder):
                       group_by=self.group_by_month(galaxy.model.User.table.c.create_time),
                       order_by=[_order])
         users = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             users.append((row.date.strftime("%Y-%m"),
                           row.num_users,
                           row.date.strftime("%B"),
@@ -74,7 +74,7 @@ class Users(BaseUIController, ReportQueryBuilder):
                       group_by=self.group_by_day(galaxy.model.User.table.c.create_time),
                       order_by=[sa.desc('date')])
         users = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             users.append((row.date.strftime("%Y-%m-%d"),
                           row.date.strftime("%d"),
                           row.num_users,
@@ -105,7 +105,7 @@ class Users(BaseUIController, ReportQueryBuilder):
                       from_obj=[galaxy.model.User.table],
                       order_by=[galaxy.model.User.table.c.email])
         users = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             users.append(row.email)
         return trans.fill_template('/webapps/reports/registered_users_specified_date.mako',
                                    specified_date=start_date,
@@ -211,7 +211,7 @@ class Users(BaseUIController, ReportQueryBuilder):
             group_by=['username'],
             order_by=[sa.desc('username'), 'history'])
 
-        histories = [(_.username if _.username is not None else "Unknown", _.history) for _ in req.execute()]
+        histories = [(_.username if _.username is not None else "Unknown", _.history) for _ in trans.sa_session.execute(req)]
         histories.sort(key=sort_keys[sorting], reverse=reverse)
         if user_cutoff != 0:
             histories = histories[:user_cutoff]

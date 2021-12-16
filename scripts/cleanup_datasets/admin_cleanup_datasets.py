@@ -189,7 +189,7 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
     # Add all datasets associated with Histories to our list
     hda_ids = []
     hda_ids.extend(
-        [row.id for row in hda_ids_query.execute()])
+        [row.id for row in app.sa_session.execute(hda_ids_query)])
 
     # Now find the tool_id that generated the dataset (even if it was copied)
     tool_matched_ids = []
@@ -215,7 +215,7 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
                               app.model.History.table)
                       .join(app.model.HistoryDatasetAssociation.table)],
             use_labels=True)
-        for result in user_query.execute():
+        for result in app.sa_session.execute(user_query):
             user_notifications[result[app.model.User.table.c.email]].append(
                 (result[app.model.HistoryDatasetAssociation.table.c.name],
                  result[app.model.History.table.c.name]))

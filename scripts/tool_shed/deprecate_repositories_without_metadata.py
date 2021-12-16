@@ -106,20 +106,24 @@ def deprecate_repositories(app, cutoff_time, days=14, info_only=False, verbose=F
     repository_ids_to_not_check = []
     # Get a unique list of repository ids from the repository_metadata table. Any repository ID found in this table is not
     # empty, and will not be checked.
-    metadata_records = sa.select([distinct(app.model.RepositoryMetadata.table.c.repository_id)],
-                                 from_obj=app.model.RepositoryMetadata.table) \
-        .execute()
+    metadata_records = app.sa_session.execute(sa.select([distinct(app.model.RepositoryMetadata.table.c.repository_id)],
+                                 from_obj=app.model.RepositoryMetadata.table))
     for metadata_record in metadata_records:
         repository_ids_to_not_check.append(metadata_record.repository_id)
     # Get the repositories that are A) not present in the above list, and b) older than the specified time.
     # This will yield a list of repositories that have been created more than n days ago, but never populated.
-    repository_query = sa.select([app.model.Repository.table.c.id],
-                                 whereclause=and_(app.model.Repository.table.c.create_time < cutoff_time,
-                                                  app.model.Repository.table.c.deprecated == false(),
-                                                  app.model.Repository.table.c.deleted == false(),
-                                                  not_(app.model.Repository.table.c.id.in_(repository_ids_to_not_check))),
-                                 from_obj=[app.model.Repository.table])
-    query_result = repository_query.execute()
+    query_result = app.sa_session.execute(
+        sa.select(
+            [app.model.Repository.table.c.id],
+            whereclause=and_(
+                app.model.Repository.table.c.create_time < cutoff_time,
+                app.model.Repository.table.c.deprecated == false(),
+                app.model.Repository.table.c.deleted == false(),
+                not_(app.model.Repository.table.c.id.in_(repository_ids_to_not_check)),
+            ),
+            from_obj=[app.model.Repository.table],
+        )
+    )
     repositories = []
     repositories_by_owner = {}
     repository_ids = [row.id for row in query_result]
