@@ -5,16 +5,12 @@ reloading the toolbox, etc., across multiple processes.
 
 import importlib
 import logging
+import math
 import socket
 import sys
 import threading
 import time
 from inspect import ismodule
-try:
-    from math import inf
-except ImportError:
-    # python 2 doesn't have math.inf, but can use float('inf')
-    inf = float('inf')
 
 from kombu import (
     Consumer,
@@ -382,7 +378,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    if message.headers.get('epoch', inf) > self.epoch:
+                    if message.headers.get('epoch', math.inf) > self.epoch:
                         # Message was created after QueueWorker was started, execute
                         log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
                         result = f(self.app, **body['kwargs'])

@@ -4,6 +4,7 @@ Sequence classes
 
 import json
 import logging
+import math
 import os
 import re
 import string
@@ -1020,7 +1021,7 @@ class MafCustomTrack(data.Text):
         """
         max_block_check = 10
         chrom = None
-        forward_strand_start = float('inf')
+        forward_strand_start = math.inf
         forward_strand_end = 0
         try:
             maf_file = open(dataset.file_name)

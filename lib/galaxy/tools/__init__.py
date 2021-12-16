@@ -4,6 +4,7 @@ Classes encapsulating galaxy tools and tool configuration.
 import itertools
 import json
 import logging
+import math
 import os
 import re
 import tarfile
@@ -1358,8 +1359,8 @@ class Tool(Dictifiable):
                 group_r.inputs = self.parse_input_elem(page_source, enctypes, context)
                 group_r.default = int(input_source.get("default", 0))
                 group_r.min = int(input_source.get("min", 0))
-                # Use float instead of int so that 'inf' can be used for no max
-                group_r.max = float(input_source.get("max", "inf"))
+                # Use float instead of int so that math.inf can be used for no max
+                group_r.max = float(input_source.get("max", math.inf))
                 assert group_r.min <= group_r.max, ValueError(
                     f"Tool with id '{self.id}': min repeat count must be less-than-or-equal to the max."
                 )
