@@ -1615,15 +1615,32 @@ class LudwigModel(CompressedZipArchive):
     """
     Composite datatype that encloses multiple files for a Ludwig trained model.
     """
-    composite_type = 'basic'
+    composite_type = 'auto_primary_file'
     file_ext = "ludwig_model.zip"
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
+        self.add_composite_file('model_hyperparameters.json', description='Model hyperparameters', is_binary=False)
+        self.add_composite_file('model_weights', description='Model weights', is_binary=True)
         self.add_composite_file('training_set_metadata.json', description='Training set metadata', is_binary=False)
-        self.add_composite_file('model_hyperparameters', description='Model hyperparameters', is_binary=False)
-        self.add_composite_file('training_progress', description='Training progress', is_binary=False)
+        self.add_composite_file('training_progress.json', description='Training progress', is_binary=False, optional=True)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>']
+        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            opt_text = ''
+            if composite_file.optional:
+                opt_text = ' (optional)'
+            if composite_file.get('description'):
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
+            else:
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)
+
 
 class HexrdMaterials(H5):
     """
