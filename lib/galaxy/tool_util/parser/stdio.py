@@ -1,3 +1,6 @@
+import math
+
+
 class StdioErrorLevel:
     """
     These determine stdio-based error levels from matching on regular expressions
@@ -36,8 +39,8 @@ class ToolStdioExitCode:
 
     def __init__(self, as_dict=None):
         as_dict = as_dict or {}
-        self.range_start = as_dict.get("range_start", float("-inf"))
-        self.range_end = as_dict.get("range_end", float("inf"))
+        self.range_start = as_dict.get("range_start", -math.inf)
+        self.range_end = as_dict.get("range_end", math.inf)
         self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
         self.desc = as_dict.get("desc", "")
 
@@ -89,13 +92,13 @@ def error_on_exit_code(out_of_memory_exit_code=None):
         exit_codes.append(exit_code_oom)
 
     exit_code_lower = ToolStdioExitCode()
-    exit_code_lower.range_start = float("-inf")
+    exit_code_lower.range_start = -math.inf
     exit_code_lower.range_end = -1
     _set_fatal(exit_code_lower)
     exit_codes.append(exit_code_lower)
     exit_code_high = ToolStdioExitCode()
     exit_code_high.range_start = 1
-    exit_code_high.range_end = float("inf")
+    exit_code_high.range_end = math.inf
     _set_fatal(exit_code_high)
     exit_codes.append(exit_code_high)
     return exit_codes, []
