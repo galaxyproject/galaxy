@@ -211,16 +211,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
-    # Close any pooled database connections before forking
-    try:
-        app.model.engine.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    try:
-        app.install_model.engine.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled toolshed install model database connections.")
-
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():

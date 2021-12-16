@@ -12,8 +12,6 @@ from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
-import tool_shed.webapp.model
-import tool_shed.webapp.model.mapping
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -196,12 +194,6 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=kwargs)
-    # Close any pooled database connections before forking
-    try:
-        tool_shed.webapp.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled tool_shed model database connections.")
-    # Return
     return webapp
 
 

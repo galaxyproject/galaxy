@@ -72,12 +72,6 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=kwargs)
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    # Return
     return webapp
 
 
