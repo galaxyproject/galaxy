@@ -337,4 +337,4 @@ class HDCASerializer(
 
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
-        return extensions_set
+        return list(extensions_set)
