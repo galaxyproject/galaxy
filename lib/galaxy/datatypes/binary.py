@@ -37,6 +37,7 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.text import Html
 from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
@@ -1611,12 +1612,12 @@ class H5MLM(H5):
         return f"<pre>{repr_}</pre><pre>{rval}</pre>", headers
 
 
-class LudwigModel(CompressedZipArchive):
+class LudwigModel(Html):
     """
     Composite datatype that encloses multiple files for a Ludwig trained model.
     """
     composite_type = 'auto_primary_file'
-    file_ext = "ludwig_model.zip"
+    file_ext = "ludwig_model"
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
@@ -1628,7 +1629,7 @@ class LudwigModel(CompressedZipArchive):
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        rval.append('<div>This model dataset is composed of the following items:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
