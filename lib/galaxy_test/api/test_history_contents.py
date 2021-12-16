@@ -738,6 +738,32 @@ class HistoryContentsApiTestCase(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
 
+    def test_homogeneous_datatype_field(self):
+        history_id = self.dataset_populator.new_history()
+        # List with all elements of txt datatype (homogeneous)
+        homogeneous_collection_name = "homogeneous"
+        create_homogeneous_response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
+            {"name": "test0", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+            {"name": "test1", "src": "pasted", "paste_content": "cba", "ext": "txt"},
+        ], name=homogeneous_collection_name)
+        self._assert_status_code_is_ok(create_homogeneous_response)
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={homogeneous_collection_name}")
+        self._assert_status_code_is(contents_response, 200)
+        homogeneous_collection = contents_response.json()[0]
+        assert homogeneous_collection["homogeneous_datatype"] == "txt"
+
+        # List with txt and csv datatype (heterogeneous)
+        heterogeneous_collection_name = "heterogeneous"
+        create_heterogeneous_response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
+            {"name": "test0", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+            {"name": "test1", "src": "pasted", "paste_content": "a,b,c", "ext": "csv"},
+        ], name=heterogeneous_collection_name)
+        self._assert_status_code_is_ok(create_heterogeneous_response)
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={heterogeneous_collection_name}")
+        self._assert_status_code_is(contents_response, 200)
+        homogeneous_collection = contents_response.json()[0]
+        assert homogeneous_collection["homogeneous_datatype"] is None
+
 
 class HistoryContentsApiNearTestCase(ApiTestCase):
     """
