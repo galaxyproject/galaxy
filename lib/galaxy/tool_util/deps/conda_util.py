@@ -431,7 +431,7 @@ def install_conda(conda_context, force_conda_build=False):
     with tempfile.NamedTemporaryFile(suffix=".sh", prefix="conda_install", delete=False) as temp:
         script_path = temp.name
     download_cmd = commands.download_command(conda_link(), to=script_path)
-    install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
+    install_cmd = ['bash', script_path, '-b', '-p', shlex.quote(conda_context.conda_prefix)]
     package_targets = [
         f"conda={CONDA_VERSION}",
     ]
