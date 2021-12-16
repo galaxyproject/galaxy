@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 
 import RecentInvocations from "./RecentInvocations.vue";
 
-jest.mock("components/History/caching");
+jest.mock("components/providers/History/caching");
 jest.mock("./UserServices");
 
 const localVue = getLocalVue();

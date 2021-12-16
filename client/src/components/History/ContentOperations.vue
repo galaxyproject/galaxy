@@ -161,7 +161,7 @@
 </template>
 
 <script>
-import { SearchParams } from "./model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,
@@ -174,7 +174,7 @@ import {
     purgeAllDeletedContent,
 } from "./model";
 import { createDatasetCollection } from "./model/queries";
-import { cacheContent } from "./caching";
+import { cacheContent } from "components/providers/History/caching";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 import ContentFilters from "./ContentFilters";

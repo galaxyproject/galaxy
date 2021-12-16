@@ -1,7 +1,7 @@
 import { Content } from "./Content";
 import { Dataset } from "./Dataset";
 
-import raw from "../test/json/Dataset.json";
+import raw from "components/providers/History/test/json/Dataset.json";
 
 const elementIdentifier = "collection_element1";
 

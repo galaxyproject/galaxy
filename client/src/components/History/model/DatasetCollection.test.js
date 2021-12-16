@@ -3,13 +3,13 @@ import { DatasetCollection } from "./DatasetCollection";
 import { STATES } from "./states";
 
 // test data
-import raw from "../test/json/DatasetCollection.json";
+import raw from "components/providers/History/test/json/DatasetCollection.json";
 
 // error on load
-import rawError from "../test/json/DatasetCollection.error.json";
+import rawError from "components/providers/History/test/json/DatasetCollection.error.json";
 
 // mixed bag
-import rawProcessing from "../test/json/DatasetCollection.processing.json";
+import rawProcessing from "components/providers/History/test/json/DatasetCollection.processing.json";
 
 describe("DatasetCollection", () => {
     const model = new DatasetCollection(raw);

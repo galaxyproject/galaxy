@@ -11,13 +11,11 @@ selected datset collections -->
             <slot :name="name" v-bind="slotData" :history="history" />
         </template>
     </HistoryComponent>
-
     <CurrentCollection
         v-else-if="breadcrumbs.length"
         :history="history"
         :selected-collections.sync="breadcrumbs"
         @viewCollection="drillDown" />
-
     <div v-else>
         <span class="sr-only">Loading...</span>
     </div>

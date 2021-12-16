@@ -19,7 +19,7 @@
 </template>
 <script>
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching";
+import { cacheContent } from "components/providers/History/caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
 import { DatasetCollectionContentProvider } from "components/providers";
