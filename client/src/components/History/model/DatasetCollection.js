@@ -28,12 +28,6 @@ export class DatasetCollection extends Content {
     }
 
     // text for UI
-    get collectionCountDescription() {
-        const ct = this.totalElements;
-        return ct == 1 ? "with 1 item" : `with ${ct} items`;
-    }
-
-    // text for UI
     get collectionType() {
         if (this.collection_type) {
             switch (this.collection_type) {
