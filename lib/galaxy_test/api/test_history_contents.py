@@ -1,6 +1,10 @@
 import time
 import urllib
 from datetime import datetime
+from typing import (
+    Any,
+    List,
+)
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
 from galaxy_test.base.populators import (
@@ -738,31 +742,37 @@ class HistoryContentsApiTestCase(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?types=dataset_collection").json()
         assert len(contents_response) == expected_num_collections
 
-    def test_homogeneous_datatype_field(self):
+    def test_elements_datatypes_field(self):
         history_id = self.dataset_populator.new_history()
-        # List with all elements of txt datatype (homogeneous)
-        homogeneous_collection_name = "homogeneous"
-        create_homogeneous_response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
-            {"name": "test0", "src": "pasted", "paste_content": "abc", "ext": "txt"},
-            {"name": "test1", "src": "pasted", "paste_content": "cba", "ext": "txt"},
-        ], name=homogeneous_collection_name)
-        self._assert_status_code_is_ok(create_homogeneous_response)
-        contents_response = self._get(f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={homogeneous_collection_name}")
-        self._assert_status_code_is(contents_response, 200)
-        homogeneous_collection = contents_response.json()[0]
-        assert homogeneous_collection["homogeneous_datatype"] == "txt"
+        collection_name = "homogeneous"
+        expected_datatypes = ["txt"]
+        elements = [  # List with all elements of txt datatype (homogeneous)
+            {"name": "test1", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+            {"name": "test2", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+        ]
+        self._upload_collection_list_with_elements(history_id, collection_name, elements)
+        self._assert_collection_has_expected_elements_datatypes(history_id, collection_name, expected_datatypes)
 
-        # List with txt and csv datatype (heterogeneous)
-        heterogeneous_collection_name = "heterogeneous"
-        create_heterogeneous_response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
-            {"name": "test0", "src": "pasted", "paste_content": "abc", "ext": "txt"},
-            {"name": "test1", "src": "pasted", "paste_content": "a,b,c", "ext": "csv"},
-        ], name=heterogeneous_collection_name)
-        self._assert_status_code_is_ok(create_heterogeneous_response)
-        contents_response = self._get(f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={heterogeneous_collection_name}")
+        collection_name = "heterogeneous"
+        expected_datatypes = ["txt", "tabular"]
+        elements = [  # List with txt and tabular datatype (heterogeneous)
+            {"name": "test2", "src": "pasted", "paste_content": "abc", "ext": "txt"},
+            {"name": "test3", "src": "pasted", "paste_content": "a,b,c\n", "ext": "tabular"},
+        ]
+        self._upload_collection_list_with_elements(history_id, collection_name, elements)
+        self._assert_collection_has_expected_elements_datatypes(history_id, collection_name, expected_datatypes)
+
+    def _upload_collection_list_with_elements(self, history_id: str, collection_name: str, elements: List[Any]):
+        create_homogeneous_response = self.dataset_collection_populator.upload_collection(
+            history_id, "list", elements=elements, name=collection_name
+        )
+        self._assert_status_code_is_ok(create_homogeneous_response)
+
+    def _assert_collection_has_expected_elements_datatypes(self, history_id, collection_name, expected_datatypes):
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={collection_name}")
         self._assert_status_code_is(contents_response, 200)
-        homogeneous_collection = contents_response.json()[0]
-        assert homogeneous_collection["homogeneous_datatype"] is None
+        collection = contents_response.json()[0]
+        self.assertCountEqual(collection["elements_datatypes"], expected_datatypes)
 
 
 class HistoryContentsApiNearTestCase(ApiTestCase):

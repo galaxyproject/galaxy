@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Union,
 )
 
@@ -1187,12 +1188,9 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
         title="Job State Summary",
         description="Overview of the job states working inside the dataset collection.",
     )
-    homogeneous_datatype: Optional[str] = Field(
-        None,
-        description=(
-            "If the collection is homogeneous all elements will be of this type. "
-            "An empty value indicates that the elements have heterogeneous types."
-        )
+    elements_datatypes: Set[str] = Field(
+        ...,
+        description="A set containing all the different element datatypes in the collection."
     )
 
 
