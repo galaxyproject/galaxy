@@ -17,6 +17,7 @@ from galaxy.jobs.runners import (
     JobState
 )
 from galaxy.jobs.runners.util.pykube_util import (
+    deduplicate_entries,
     DEFAULT_JOB_API_VERSION,
     delete_ingress,
     delete_job,
@@ -110,37 +111,23 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.setup_base_volumes()
 
     def setup_base_volumes(self):
-        if self.runner_params.get('k8s_persistent_volume_claims'):
-            pvc_params = [parse_pvc_param_line(each) for each in self.runner_params['k8s_persistent_volume_claims'].split(',')]
-        else:
-            pvc_params = []
 
-        mountable_volumes = []
-        for each in pvc_params:
-            if each["claim"] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in mountable_volumes]:
-                mountable_volumes.append({'name': each["claim"], 'persistentVolumeClaim': {'claimName': each["claim"]}})
-        self.runner_params['k8s_mountable_volumes'] = mountable_volumes
+        def generate_volumes(pvc_list):
+            return [{'name': pvc["name"], 'persistentVolumeClaim': {'claimName': pvc["name"]}} for pvc in pvc_list]
 
-        volume_mounts = []
-        for each in pvc_params:
-            if each["mountpath"] not in [v.get('mountPath') for v in volume_mounts]:
-                vmount = {'name': each['claim'], 'mountPath': each['mountpath']}
-                if each.get("subpath"):
-                    vmount["subPath"] = each["subpath"]
-                volume_mounts.append(vmount)
-        self.runner_params['k8s_volume_mounts'] = volume_mounts
+        def get_volume_mounts_for(claim):
+            if self.runner_params.get(claim):
+                volume_mounts = [parse_pvc_param_line(pvc) for pvc in self.runner_params[claim].split(',')]
+                # generate default list of volumes for all jobs
+                volumes = generate_volumes(volume_mounts)
+                return volumes, volume_mounts
+            return [], []
 
-        if self.runner_params.get('k8s_data_volume_claim'):
-            param_claim = parse_pvc_param_line(self.runner_params['k8s_data_volume_claim'])
-            data_volume = {'name': param_claim['claim'], 'persistentVolumeClaim': {'claimName': param_claim['claim']}}
-            if param_claim['claim'] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in self.runner_params['k8s_mountable_volumes']]:
-                self.runner_params['k8s_mountable_volumes'].append(data_volume)
-
-        if self.runner_params.get('k8s_working_volume_claim'):
-            param_claim = parse_pvc_param_line(self.runner_params['k8s_working_volume_claim'])
-            working_volume = {'name': param_claim['claim'], 'persistentVolumeClaim': {'claimName': param_claim['claim']}}
-            if param_claim['claim'] not in [v.get('persistentVolumeClaim', {}).get('claimName') for v in self.runner_params['k8s_mountable_volumes']]:
-                self.runner_params['k8s_mountable_volumes'].append(working_volume)
+        self.runner_params['k8s_volumes'], self.runner_params['k8s_volume_mounts'] = \
+            get_volume_mounts_for('k8s_persistent_volume_claims')
+        # ignore volume mounts for the following two, as they are generated per job
+        self.runner_params['k8s_volumes'].extend(get_volume_mounts_for('k8s_data_volume_claim')[0])
+        self.runner_params['k8s_volumes'].extend(get_volume_mounts_for('k8s_working_volume_claim')[0])
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
@@ -349,7 +336,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 }
             },
             "spec": {
-                "volumes": self.runner_params['k8s_mountable_volumes'],
+                "volumes": deduplicate_entries(self.runner_params['k8s_volumes']),
                 "restartPolicy": self.__get_k8s_restart_policy(ajs.job_wrapper),
                 "containers": self.__get_k8s_containers(ajs),
                 "priorityClassName": self.runner_params['k8s_pod_priority_class'],
@@ -492,7 +479,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "command": [ajs.job_wrapper.shell],
             "args": ["-c", ajs.job_file],
             "workingDir": ajs.job_wrapper.working_directory,
-            "volumeMounts": mounts
+            "volumeMounts": deduplicate_entries(mounts)
         }
 
         resources = self.__get_resources(ajs.job_wrapper)

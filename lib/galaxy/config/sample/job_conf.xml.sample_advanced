@@ -198,9 +198,11 @@
                  -->
             <param id="k8s_data_volume_claim">galaxy_pvc:/mount_point</param>
             <!-- Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+                 If specified, the job inputs will be individually mounted from this PVC. -->
 
-                 Typically this is used for the PVC used for data inputs and outputs for each job -->
-
+            <param id="k8s_working_volume_claim">galaxy_pvc:/mount_point</param>
+            <!-- Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+                 If specified, the job's working directory will be mounted from this PVC. -->
 
             <param id="k8s_persistent_volume_claims">galaxy_pvc1:/mount_point1,galaxy_pvc2:/mount_point2</param>
             <!-- Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
