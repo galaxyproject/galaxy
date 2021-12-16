@@ -1611,6 +1611,20 @@ class H5MLM(H5):
         return f"<pre>{repr_}</pre><pre>{rval}</pre>", headers
 
 
+class LudwigModel(CompressedZipArchive):
+    """
+    Composite datatype that encloses multiple files for a Ludwig trained model.
+    """
+    composite_type = 'basic'
+    file_ext = "ludwig_model.zip"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+        self.add_composite_file('training_set_metadata.json', description='Training set metadata', is_binary=False)
+        self.add_composite_file('model_hyperparameters', description='Model hyperparameters', is_binary=False)
+        self.add_composite_file('training_progress', description='Training progress', is_binary=False)
+
 class HexrdMaterials(H5):
     """
     Class describing a Hexrd Materials file: https://github.com/HEXRD/hexrd
