@@ -916,7 +916,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         back_populates='job', lazy=True)
     output_dataset_collections = relationship('JobToImplicitOutputDatasetCollectionAssociation',
         back_populates='job', lazy=True)
-    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy=False)
+    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy=True)
     input_library_datasets = relationship('JobToInputLibraryDatasetAssociation',
         back_populates='job')
     output_library_datasets = relationship('JobToOutputLibraryDatasetAssociation',
