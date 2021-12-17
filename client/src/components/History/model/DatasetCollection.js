@@ -28,12 +28,6 @@ export class DatasetCollection extends Content {
     }
 
     // text for UI
-    get collectionCountDescription() {
-        const ct = this.totalElements;
-        return ct == 1 ? "with 1 item" : `with ${ct} items`;
-    }
-
-    // text for UI
     get collectionType() {
         if (this.collection_type) {
             switch (this.collection_type) {
@@ -57,6 +51,21 @@ export class DatasetCollection extends Content {
 
     get jobSummary() {
         return Object.freeze(new JobStateSummary(this));
+    }
+
+    /** Whether all elements in the collection have the same datatype.
+     *  @return {Boolean}
+     */
+    get isHomogeneous() {
+        return this.elements_datatypes.length == 1;
+    }
+
+    /** Gets the datatype shared by all elements or an empty
+     * string if the collection has mixed types of datasets.
+     *  @return {String}
+     */
+    get homogeneousDatatype() {
+        return this.isHomogeneous ? this.elements_datatypes[0] : "";
     }
 
     clone() {
