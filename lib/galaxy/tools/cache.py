@@ -17,6 +17,8 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
+from galaxy import config
+from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
@@ -287,9 +289,9 @@ class ToolShedRepositoryCache:
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, session: sessionmaker):
-        engine = session().bind
-        self.session = scoped_session(sessionmaker(engine))
+    def __init__(self, config: config.Configuration): 
+        self.engine = self._build_engine(config)
+        self.session = scoped_session(sessionmaker(self.engine))
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
         # Repositories loaded from database
@@ -328,3 +330,13 @@ class ToolShedRepositoryCache:
 
     def shutdown(self) -> None:
         self.session.close()
+
+    def _build_engine(self, config):
+        # This is a temporary fix, to be replace with 22.01
+        db_url = config.database_connection
+        install_db_url = config.install_database_connection
+        combined_install_database = not(install_db_url and install_db_url != db_url)
+        install_db_url = install_db_url or db_url
+        install_database_options = config.database_engine_options if combined_install_database else config.install_database_engine_options
+        return build_engine(install_db_url, install_database_options)
+
