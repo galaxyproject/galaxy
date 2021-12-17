@@ -186,11 +186,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             missing_config = []
             if provider == "aws":
                 akey = auth_element.get("access_key")
-                if akey is None:
-                    missing_config.append("access_key")
                 skey = auth_element.get("secret_key")
-                if skey is None:
-                    missing_config.append("secret_key")
 
                 config["auth"] = {
                     "access_key": akey,
