@@ -1,4 +1,7 @@
-from tempfile import mkdtemp
+from tempfile import (
+    mkdtemp,
+    NamedTemporaryFile,
+)
 
 import pytest
 
@@ -12,13 +15,16 @@ from galaxy.util import bunch
 @pytest.fixture
 def mock_app():
     app = bunch.Bunch()
-    app.install_model = mapping.init("sqlite:///:memory:", create_tables=True)
-    return app
+    with NamedTemporaryFile(suffix='test.sqlite') as db_file:
+        install_database_connection = f"sqlite:///{db_file.name}"
+        app.config = bunch.Bunch(database_connection="sqlite:///:memory:", install_database_connection=install_database_connection, database_engine_options={}, install_database_engine_options={})
+        app.install_model = mapping.init(install_database_connection, create_tables=True)
+        yield app
 
 
 @pytest.fixture
 def tool_shed_repository_cache(mock_app):
-    tool_shed_repository_cache = ToolShedRepositoryCache(session=mock_app.install_model.context)
+    tool_shed_repository_cache = ToolShedRepositoryCache(config=mock_app.config)
     return tool_shed_repository_cache
 
 
