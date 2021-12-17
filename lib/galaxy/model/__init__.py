@@ -135,6 +135,7 @@ JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
 AUTO_PROPAGATED_TAGS = ["name"]
+YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
