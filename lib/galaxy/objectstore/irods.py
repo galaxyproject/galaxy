@@ -662,6 +662,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
+                    source_file = cache_file
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
