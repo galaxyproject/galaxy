@@ -4,8 +4,7 @@
             class="details-btn"
             title="Show location details"
             v-b-modal.details-modal
-            data-testid="loc-details-btn"
-        >
+            data-testid="loc-details-btn">
             <font-awesome-icon icon="info-circle" /> {{ detailsCaption }}
         </b-button>
 
@@ -15,8 +14,7 @@
             :title="titleLocationDetails"
             @show="getDetails"
             title-tag="h3"
-            ok-only
-        >
+            ok-only>
             <div>
                 <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
                 <div v-if="libraryDetails">
@@ -27,8 +25,7 @@
                         small
                         caption-top
                         thead-class="d-none"
-                        data-testid="library-table"
-                    >
+                        data-testid="library-table">
                         <template v-slot:table-caption>
                             <h4>
                                 <b>{{ libraryHeader }}</b>
@@ -44,8 +41,7 @@
                         small
                         caption-top
                         thead-class="d-none"
-                        data-testid="folder-table"
-                    >
+                        data-testid="folder-table">
                         <template v-slot:table-caption>
                             <h4>
                                 <b>{{ folderHeader }}</b>
@@ -72,20 +68,9 @@ import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
+import { buildFields } from "components/Libraries/library-utils";
 
 library.add(faInfoCircle);
-
-/** Maps the title in `fieldTitles` to the value of that property from the object `data`.
- * @param {Object} fieldTitles   Contains property/title pairs.
- * @param {Object} data     Contains property/value pairs.
- * @returns An array with name/value pairs with the corresponding title and the actual value
- * of the property contained in `data`.
- */
-function buildFields(fieldTitles, data) {
-    return Object.entries(fieldTitles).flatMap(([property, title]) =>
-        data[property] ? { name: title, value: data[property] } : []
-    );
-}
 
 export default {
     components: {
