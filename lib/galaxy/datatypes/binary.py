@@ -2494,12 +2494,18 @@ class RDS(CompressedArchive):
     '4.1.1'
     >>> dataset.metadata.minrversion
     '3.5.0'
+    >>> dataset.metadata.rdatatype
+    None
     """
     file_ext = 'rds'
 
     MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
     MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=False, optional=False, no_value=None)
     MetadataElement(name="minrversion", default=None, desc="minimum R version", param=MetadataParameter, readonly=False, visible=True, optional=False, no_value=None)
+    # the datatype metadata is supposed to be set/checked by tools and should be
+    # used to distinguish rds datasets used by different tools in favor of
+    # subclassing RDS
+    MetadataElement(name="rdatatype", default=None, desc="datatype of the contained R object", param=MetadataParameter, readonly=False, visible=True, optional=True, no_value=None)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
@@ -2546,6 +2552,22 @@ class RDS(CompressedArchive):
         rversion = ".".join(str(rversion))
         minrversion = ".".join(str(minrversion))
         return mode, version, rversion, minrversion
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "RDS file"
+            if dataset.metadata.rdatatype:
+                dataset.peek += " (containing {self.metadata.rdatatype})"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Compressed binary file ({nice_size(dataset.get_size())})"
 
 
 class OxliBinary(Binary):
