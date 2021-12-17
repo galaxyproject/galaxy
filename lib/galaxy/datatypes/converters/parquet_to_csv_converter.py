@@ -5,8 +5,11 @@ Output: csv
 """
 import os
 import sys
-from pyarrow import csv
-from pyarrow import parquet
+try:
+    from pyarrow import csv
+    from pyarrow import parquet
+except ImportError:
+    csv = parquet = None
 
 def __main__():
     infile = sys.argv[1]
@@ -16,6 +19,8 @@ def __main__():
         sys.stderr.write(f"Input file {infile!r} not found\n")
         sys.exit(1)
 
+    if csv is None or parquet is None:
+        raise Exception("Cannot run conversion, pyarrow is not installed.")
     csv.write_csv(parquet.read_table(infile), outfile)
 
 if __name__ == "__main__":
