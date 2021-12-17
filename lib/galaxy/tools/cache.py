@@ -289,7 +289,7 @@ class ToolShedRepositoryCache:
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, config: config.Configuration): 
+    def __init__(self, config: config.Configuration):
         self.engine = self._build_engine(config)
         self.session = scoped_session(sessionmaker(self.engine))
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
@@ -339,4 +339,3 @@ class ToolShedRepositoryCache:
         install_db_url = install_db_url or db_url
         install_database_options = config.database_engine_options if combined_install_database else config.install_database_engine_options
         return build_engine(install_db_url, install_database_options)
-
