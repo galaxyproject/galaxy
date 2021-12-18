@@ -57,6 +57,13 @@ TEXT_HAS_TEXT_MATCHING_ASSERTION = """
         <has_text_matching expression="te[sx]t"/>
     </assert_contents>
 """
+
+TEXT_HAS_TEXT_MATCHING_ASSERTION_N = """
+    <assert_contents>
+        <has_text_matching expression="te[sx]t" n="4"/>
+    </assert_contents>
+"""
+
 TEXT_HAS_LINE_ASSERTION = """
     <assert_contents>
         <has_line line="test text"/>
@@ -85,6 +92,11 @@ TEXT_HAS_N_LINES_ASSERTION_DELTA_FRAC = """
 TEXT_HAS_LINE_MATCHING_ASSERTION = """
     <assert_contents>
         <has_line_matching expression="te[sx]t te[sx]t"/>
+    </assert_contents>
+"""
+TEXT_HAS_LINE_MATCHING_ASSERTION_N = """
+    <assert_contents>
+        <has_line_matching expression="te[sx]t te[sx]t" n="2"/>
     </assert_contents>
 """
 
@@ -168,7 +180,7 @@ TESTS = [
     # test has_text with n .. negative test
     (
         TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 2 matches for 'test text' in output file (output 'test text\n'); found 1" in x
+        lambda x: "Expected 2 occurences of 'test text' in output file (output 'test text\n'); found 1" in x
     ),
     # test not_has_text
     (
@@ -199,6 +211,16 @@ TESTS = [
     (
         TEXT_HAS_TEXT_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
         lambda x: "No text matching expression 'te[sx]t' was found in output file" in x
+    ),
+    # test has_text_matching with n
+    (
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        lambda x: len(x) == 0
+    ),
+    # test has_text_matching with n .. negative test (using the test text where "te[sx]st" appears twice)
+    (
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected 4 (non-overlapping) matches for 'te[sx]t' in output file (output 'test text\n'); found 2" in x
     ),
     # test has_line
     (
@@ -250,6 +272,16 @@ TESTS = [
         TEXT_HAS_LINE_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
         lambda x: "No line matching expression 'te[sx]t te[sx]t' was found in output file" in x
     ),
+    # test has_line_matching n
+    (
+        TEXT_HAS_LINE_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        lambda x: len(x) == 0
+    ),
+    # test has_line_matching n .. negative test
+    (
+        TEXT_HAS_LINE_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected 2 lines matching for 'te[sx]t te[sx]t' in output file (output 'test text\n'); found 1" in x
+    ),
     # test has_size
     (
         SIZE_HAS_SIZE_ASSERTION, TEXT_DATA_HAS_TEXT,
@@ -289,6 +321,8 @@ TEST_IDS = [
     'not_has_text empty output',
     'has_text_matching success',
     'has_text_matching failure',
+    'has_text_matching n success',
+    'has_text_matching n failure',
     'has_line success',
     'has_line failure',
     'has_line n success',
@@ -299,6 +333,8 @@ TEST_IDS = [
     'has_n_lines delta_frac',
     'has_line_matching success',
     'has_line_matching failure',
+    'has_line_matching n success',
+    'has_line_matching n failure',
     'has_size success',
     'has_size failure',
     'has_size delta',

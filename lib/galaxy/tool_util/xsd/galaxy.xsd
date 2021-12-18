@@ -2121,6 +2121,11 @@ module.
         <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="n" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of non-overlapping matches of the expression</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="AssertHasLine">
     <xs:annotation>
@@ -2164,6 +2169,11 @@ module.
     <xs:attribute name="expression" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="n" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number of lines matching the expression</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

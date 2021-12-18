@@ -10,7 +10,7 @@ def assert_has_text(output, text, n: int = None):
         assert output.find(text) >= 0, f"Output file did not contain expected text '{text}' (output '{output}')"
     else:
         matches = re.findall(re.escape(text), output)
-        assert len(matches) == int(n), f"Expected {n} matches for '{text}' in output file (output '{output}'); found {len(matches)}"
+        assert len(matches) == int(n), f"Expected {n} occurences of '{text}' in output file (output '{output}'); found {len(matches)}"
 
 
 def assert_not_has_text(output, text):
@@ -52,15 +52,27 @@ def assert_has_n_lines(output, n, delta: int = 0, delta_frac: float = None):
         assert (n - (n * delta_frac) <= int(n_lines_found) <= n + (n * delta_frac)), f"Expected {n}+-{n * delta_frac} lines in the output, found {n_lines_found} lines"
 
 
-def assert_has_text_matching(output, expression):
+def assert_has_text_matching(output, expression, n: int = None):
     """ Asserts the specified output contains text matching the
-    regular expression specified by the argument expression"""
-    match = re.search(expression, output)
-    assert match is not None, f"No text matching expression '{expression}' was found in output file"
+    regular expression specified by the argument expression.
+    If n is given the assertion checks for exacly n (nonoverlapping)
+    occurences.
+    """
+    if n is None:
+        match = re.search(expression, output)
+        assert match is not None, f"No text matching expression '{expression}' was found in output file"
+    else:
+        matches = re.findall(expression, output)
+        assert len(matches) == int(n), f"Expected {n} (non-overlapping) matches for '{expression}' in output file (output '{output}'); found {len(matches)}"
 
 
-def assert_has_line_matching(output, expression):
+def assert_has_line_matching(output, expression, n: int = None):
     """ Asserts the specified output contains a line matching the
-    regular expression specified by the argument expression"""
-    match = re.search(f"^{expression}$", output, flags=re.MULTILINE)
-    assert match is not None, f"No line matching expression '{expression}' was found in output file"
+    regular expression specified by the argument expression. If n is given
+    the assertion checks for exactly n occurences."""
+    if n is None:
+        match = re.search(f"^{expression}$", output, flags=re.MULTILINE)
+        assert match is not None, f"No line matching expression '{expression}' was found in output file"
+    else:
+        matches = re.findall(f"^{expression}$", output, flags=re.MULTILINE)
+        assert len(matches) == int(n), f"Expected {n} lines matching for '{expression}' in output file (output '{output}'); found {len(matches)}"
