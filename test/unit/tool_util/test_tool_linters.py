@@ -990,13 +990,13 @@ TESTS = [
     (
         ASSERTS, tests.lint_tsts,
         lambda x:
-            'Test 0: unknown assertion invalid' in x.error_messages
-            and 'Test 0: unknown attribute invalid_attrib for has_text' in x.error_messages
-            and 'Test 0: missing attribute text for has_text' in x.error_messages
-            and 'Test 0: attribute value for has_size needs to be int got 500k' in x.error_messages
-            and 'Test 0: attribute delta for has_size needs to be int got 1O' in x.error_messages
-            and 'Test 0: attribute delta_frac for has_size needs to be float got 10,0' in x.error_messages
-            and 'Test 0: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
+            'Test 1: unknown assertion invalid' in x.error_messages
+            and 'Test 1: unknown attribute invalid_attrib for has_text' in x.error_messages
+            and 'Test 1: missing attribute text for has_text' in x.error_messages
+            and 'Test 1: attribute value for has_size needs to be int got 500k' in x.error_messages
+            and 'Test 1: attribute delta for has_size needs to be int got 1O' in x.error_messages
+            and 'Test 1: attribute delta_frac for has_size needs to be float got 10,0' in x.error_messages
+            and 'Test 1: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
             and len(x.warn_messages) == 0 and len(x.error_messages) == 7
     ),
 ]
