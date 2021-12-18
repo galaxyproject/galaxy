@@ -523,7 +523,7 @@ class NeperTess(data.Text):
         >>> NeperTess().sniff(fname)
         False
         """
-        return file_prefix.startswith("***tess")
+        return file_prefix.text_io(errors='ignore').readline(10).startswith('***tess')
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
@@ -583,10 +583,10 @@ class NeperTesr(Binary):
         Neper tesr format startswith:***tesr
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.neper.tesr')
-        >>> NeperTess().sniff(fname)
+        >>> NeperTesr().sniff(fname)
         True
         >>> fname = get_test_fname('test.neper.tess')
-        >>> NeperTess().sniff(fname)
+        >>> NeperTesr().sniff(fname)
         False
         """
         return file_prefix.text_io(errors='ignore').readline(10).startswith('***tesr')
@@ -717,7 +717,7 @@ class GmshMsh(Binary):
         >>> GmshMsh().sniff(fname)
         False
         """
-        return file_prefix.startswith('$MeshFormat')
+        return file_prefix.text_io(errors='ignore').readline().startswith('$MeshFormat')
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
