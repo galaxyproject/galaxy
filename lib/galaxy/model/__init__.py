@@ -6710,6 +6710,10 @@ class Workflow(Base, Dictifiable, RepresentById):
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),
         back_populates="workflows",
     )
+    default_dataset_associations = relationship(
+        "DefaultDatasetAssociation",
+        primaryjoin=(lambda: Workflow.id == DefaultDatasetAssociation.workflow_id),  # type: ignore[has-type]
+    )
 
     step_count: column_property
 
@@ -7073,6 +7077,35 @@ class WorkflowStep(Base, RepresentById):
                 delattr(self, module_attribute)
             except AttributeError:
                 pass
+
+
+class DefaultDatasetAssociation(DatasetInstance):
+    __tablename__ = "default_dataset_association"
+
+    def __init__(
+        self,
+        copied_from_history_dataset_association=None,
+        copied_from_library_dataset_dataset_association=None,
+        dataset_id=None,
+        dataset=None,
+        workflow_id=None,
+        workflow=None,
+        sa_session=None,
+        **kwd,
+    ):
+        """
+        Create a a new DDA and associate it with the given workflow.
+        """
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
+        # parameter is True so that the new object can be flushed.  Is there a better way?
+        DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
+        self.workflow_id = workflow_id
+        self.workflow = workflow
+        if not kwd.get("create_dataset"):
+            self.dataset_id = dataset_id
+            self.dataset = dataset
+        # self.copied_from_history_dataset_association_id = copied_from_history_dataset_association_id
+        # self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association_id
 
 
 class WorkflowStepInput(Base, RepresentById):
@@ -9450,6 +9483,41 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("message", TrimmedString(255)),
 )
 
+DefaultDatasetAssociation.table = Table(
+    "default_dataset_association",
+    mapper_registry.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
+    Column("state", TrimmedString(64), index=True, key="_state"),
+    Column(
+        "copied_from_history_dataset_association_id",
+        Integer,
+        ForeignKey("history_dataset_association.id"),
+        nullable=True,
+    ),
+    Column(
+        "copied_from_library_dataset_dataset_association_id",
+        Integer,
+        ForeignKey("library_dataset_dataset_association.id"),
+        nullable=True,
+    ),
+    Column("name", TrimmedString(255)),
+    Column("info", TrimmedString(255)),
+    Column("blurb", TrimmedString(255)),
+    Column("peek", TEXT, key="_peek"),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", JSONType, key="_metadata"),
+    Column("deleted", Boolean, index=True, default=False),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("purged", Boolean, index=True, default=False),
+    Column("validated_state", TrimmedString(64), default="unvalidated", nullable=False),
+    Column("validated_state_message", TEXT),
+)
+
+
 mapper_registry.map_imperatively(
     Dataset,
     Dataset.table,
@@ -9491,6 +9559,21 @@ mapper_registry.map_imperatively(
         ),
     ),
 )
+
+mapper_registry.map_imperatively(
+    DefaultDatasetAssociation,
+    DefaultDatasetAssociation.table,
+    properties=dict(
+        workflow=relationship(
+            "Workflow",
+            primaryjoin=(lambda: Workflow.id == DefaultDatasetAssociation.workflow_id),
+            back_populates="default_dataset_associations",
+        ),
+        dataset=relationship("Dataset", primaryjoin=(lambda: Dataset.id == DefaultDatasetAssociation.dataset_id)),
+        _metadata=deferred(DefaultDatasetAssociation.table.c._metadata),
+    ),
+)
+
 
 mapper_registry.map_imperatively(
     HistoryDatasetAssociation,
