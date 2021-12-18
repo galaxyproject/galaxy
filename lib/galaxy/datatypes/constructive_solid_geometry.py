@@ -492,6 +492,270 @@ class STL(data.Data):
     file_ext = "stl"
 
 
+@build_sniff_from_prefix
+class NeperTess(data.Text):
+    """
+    Neper Tessellation File
+    ***tess
+      **format
+        format
+      **general
+        dim type
+      **cell
+        number_of_cells
+    """
+    file_ext = "neper.tess"
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True, no_value=None)
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper tess format startswith:***tess
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.neper.tess')
+        >>> NeperTess().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> NeperTess().sniff(fname)
+        False
+        """
+        return file_prefix.startswith("***tess")
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 6:
+                        break
+                    if i == 0 and not line.startswith('***tess'):
+                        break
+                    if i == 2:
+                        dataset.metadata.format = line
+                    if i == 4:
+                        dataset.metadata.dimension = int(line.split()[0])
+                    if i == 6:
+                        dataset.metadata.cells = int(line)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=7)
+            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+@build_sniff_from_prefix
+class NeperTesr(Binary):
+    """
+    Neper Raster Tessellation File
+    ***tesr
+      **format
+        format
+      **general
+        dimension
+        size_x size_y [size_z]
+        voxsize_x voxsize_y [voxsize_z]
+       [*origin
+        origin_x origin_y [origin_z]]
+       [*hasvoid has_void]
+      [**cell
+        number_of_cells
+    """
+    file_ext = "neper.tesr"
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="size", default=[], desc="size", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="voxsize", default=[], desc="voxsize", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="origin", default=[], desc="origin", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True, no_value=None)
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper tesr format startswith:***tesr
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> NeperTess().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tess')
+        >>> NeperTess().sniff(fname)
+        False
+        """
+        return file_prefix.text_io(errors='ignore').readline(10).startswith('***tesr')
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                field = ''
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 12:
+                        break
+                    if i == 0 and not line.startswith('***tesr'):
+                        break
+                    if line.startswith('*'):
+                        field = line
+                        continue
+                    if i == 2:
+                        dataset.metadata.format = line.split()[0]
+                        continue
+                    if i == 4:
+                        dataset.metadata.dimension = line.split()[0]
+                        continue
+                    if i == 5:
+                        dataset.metadata.size = line.split()
+                        continue
+                    if i == 6:
+                        dataset.metadata.voxsize = line.split()
+                        continue
+                    if field.startswith('*origin'):
+                        dataset.metadata.origin = line.split()
+                        continue
+                    if field.startswith('**cell'):
+                        dataset.metadata.cells = int(line)
+                        break
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=9)
+            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+@build_sniff_from_prefix
+class NeperPoints(data.Text):
+    """
+    Neper Position File
+    """
+    file_ext = "neper.points"
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper position format has 1 - 3 floats per line separated by white space.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.neper.points')
+        >>> NeperPoints().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tess')
+        >>> NeperPoints().sniff(fname)
+        False
+        """
+        return self._get_dimension(file_prefix.text_io(errors='ignore')) is not None
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                dataset.metadata.dimension = self._get_dimension(fh)
+
+    def _get_dimension(self, fh, maxlines=100):
+        dim = None
+        try:
+            for i, line in enumerate(fh):
+                if not line:
+                    break
+                pts = len([float(x) for x in line.strip().split()])
+                if dim and pts != dim:
+                    return None
+                elif 1 <= pts <= 3:
+                    dim = pts
+                else:
+                    return None
+                if i > maxlines:
+                    break
+        except Exception:
+            return None
+        return dim
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=9)
+            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+class NeperMultiScaleCell(data.Text):
+    """
+    Neper Multiscale Cell File
+    """
+    file_ext = "neper.mscell"
+
+
+@build_sniff_from_prefix
+class GmshMsh(Binary):
+    """Gmsh Mesh File"""
+    file_ext = "gmsh.msh"
+    MetadataElement(name="version", default=None, desc="version", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Gmsh msh format startswith:$MeshFormat
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.gmsh.msh')
+        >>> GmshMsh().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> GmshMsh().sniff(fname)
+        False
+        """
+        return file_prefix.startswith('$MeshFormat')
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 1:
+                        break
+                    if i == 0 and not line.startswith('$MeshFormat'):
+                        break
+                    if i == 1:
+                        fields = line.split()
+                        if len(fields) > 0:
+                            dataset.metadata.version = fields[0]
+                        if len(fields) > 1:
+                            dataset.metadata.format = 'ASCII' if fields[1] == '0' else 'binary'
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=3)
+            dataset.blurb = f'Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+class GmshGeo(data.Text):
+    """Gmsh geometry File"""
+    file_ext = "gmsh.geo"
+
+
+class ZsetGeof(data.Text):
+    """
+    Z-set geof File
+    """
+    file_ext = "zset.geof"
+
+
 # Utility functions
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)
