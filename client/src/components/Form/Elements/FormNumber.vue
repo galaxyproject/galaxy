@@ -21,7 +21,7 @@
             v-if="errorMessage"
             :show="dismissCountDown"
             dismissible
-            variant="danger"
+            variant="info"
             @dismissed="dismissCountDown = 0"
         >
             {{ errorMessage }}
