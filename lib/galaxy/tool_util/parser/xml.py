@@ -1124,12 +1124,31 @@ class XmlInputSource(InputSource):
         return options_elem
 
     def parse_static_options(self):
+        """
+        >>> from galaxy.util import parse_xml_string_to_etree
+        >>> xml = '<param><option value="a">A</option><option value="b">B</option></param>'
+        >>> xis = XmlInputSource(parse_xml_string_to_etree(xml).getroot())
+        >>> xis.parse_static_options()
+        [('A', 'a', False), ('B', 'b', False)]
+        >>> xml = '<param><option value="a"/><option value="b"/><option value="a" selected="true"/></param>'
+        >>> xis = XmlInputSource(parse_xml_string_to_etree(xml).getroot())
+        >>> xis.parse_static_options()
+        [('a', 'a', True), ('b', 'b', False)]
+        """
         static_options = list()
         elem = self.input_elem
         for option in elem.findall("option"):
             value = option.get("value")
+            text = option.text or value
             selected = string_as_bool(option.get("selected", False))
-            static_options.append((option.text or value, value, selected))
+            present = False
+            for i, o in enumerate(static_options):
+                if o[1] == value:
+                    present = True
+                    static_options[i] = (text, value, selected)
+                    break
+            if not present:
+                static_options.append((text, value, selected))
         return static_options
 
     def parse_optional(self, default=None):

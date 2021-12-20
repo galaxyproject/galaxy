@@ -3365,17 +3365,23 @@ value is ``select`` (i.e. ``<param type="select" ...>``).
 ```
 
 An option can also be annotated with ``selected="true"`` to specify a
-default option.
+default option (note that the first option is selected automatically
+if ``optional="false"``).
 
 ```xml
 <param name="col" type="select" label="From">
-    <option value="0" selected="true">Column 1 / Sequence name</option>
-    <option value="1">Column 2 / Source</option>
+    <option value="0">Column 1 / Sequence name</option>
+    <option value="1" selected="true">Column 2 / Source</option>
     <option value="2">Column 3 / Feature</option>
     <option value="6">Column 7 / Strand</option>
     <option value="7">Column 8 / Frame</option>
 </param>
 ```
+
+In general the values and the texts for the options need to be unique,
+but it is possible to specify an option two times if the 2nd has a different
+value for the ``selected`` attribute. This is handy if an option list is
+defined in a macro and different default value(s) are used.
 ]]>
 </xs:documentation>
     </xs:annotation>
