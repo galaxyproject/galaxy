@@ -196,12 +196,20 @@
                  Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
                  plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
                  -->
+            <param id="k8s_data_volume_claim">galaxy_pvc:/mount_point</param>
+            <!-- Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+                 If specified, the job inputs will be individually mounted from this PVC. -->
+
+            <param id="k8s_working_volume_claim">galaxy_pvc:/mount_point</param>
+            <!-- Persistent Volume Claim (PVC) to container mount point mappings, in the format 'PVC:mount_path'
+                 If specified, the job's working directory will be mounted from this PVC. -->
+
             <param id="k8s_persistent_volume_claims">galaxy_pvc1:/mount_point1,galaxy_pvc2:/mount_point2</param>
             <!-- Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
                  PVC:mount point
 
-                 Typical mount paths are the file_path, job_working_directory, all paths containing tools and scripts
-                 and all library paths set in galaxy.yml (or equivalent general galaxy config file). -->
+                 Typical mount paths are extra mounts that are expected to be mounted for all jobs, such as 
+                 tool scripts, the CVMFS, and all library paths set in galaxy.yml (or equivalent general galaxy config file). -->
 
             <!-- <param id="k8s_namespace">default</param> -->
             <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set

@@ -1,0 +1,56 @@
+name: Reports startup
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+env:
+  YARN_INSTALL_OPTS: --frozen-lockfile
+concurrency:
+  group: reports-startup-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+
+  test:
+    name: Reports startup test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7', '3.10']
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        path: 'galaxy root'
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Get full Python version
+      id: full-python-version
+      shell: bash
+      run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+    - name: Cache pip dir
+      uses: actions/cache@v1
+      id: pip-cache
+      with:
+        path: ~/.cache/pip
+        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Cache tox env
+      uses: actions/cache@v2
+      with:
+        path: .tox
+        key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-reports-startup
+    - uses: mvdbeek/gha-yarn-cache@master
+      with:
+        yarn-lock-file: 'galaxy root/client/yarn.lock'
+    - name: Install tox
+      run: pip install tox
+    - name: run tests
+      run: tox -e reports_startup
+      working-directory: 'galaxy root'

@@ -2,6 +2,7 @@
 import logging
 import os
 import re
+from pathlib import PurePath
 
 try:
     from pykube.config import KubeConfig
@@ -184,6 +185,103 @@ def ingress_object_dict(params, ingress_name, spec):
     return k8s_ingress_obj
 
 
+def parse_pvc_param_line(pvc_param):
+    """
+    Takes a pvc mount in the format: "pvc-name/subpath/desired:/mountpath/desired[:r]"
+    and returns {"name": "pvc-name",
+                 "subPath": "subpath/desired",
+                 "mountPath": "/mountpath/desired",
+                 "readOnly": False}
+
+    :param pvc_param: the pvc mount param in the format "pvc-name/subpath:/mountpath[:r]"
+    :return: a dict containing the elements claim, subpath, mountpath and readonly
+    """
+    claim, _, rest = pvc_param.partition(":")
+    mount_path, _, mode = rest.partition(":")
+    read_only = mode == "r"
+    claim_name, _, subpath = claim.partition("/")
+    return {
+        'name': claim_name.strip(),
+        'subPath': subpath.strip(),
+        'mountPath': mount_path.strip(),
+        'readOnly': read_only
+    }
+
+
+def generate_relative_mounts(pvc_param, files):
+    """
+    Maps a list of files as mounts, relative to the base volume mount.
+    For example, given the pvc mount:
+    {
+        'name': 'my_pvc',
+        'mountPath': '/galaxy/database/jobs',
+        'subPath': 'data',
+        'readOnly': False
+    }
+
+    and files: ['/galaxy/database/jobs/01/input.txt', '/galaxy/database/jobs/01/working']
+
+    returns each file as a relative mount as follows:
+    [
+        {
+          'name': 'my_pvc',
+          'mountPath': '/galaxy/database/jobs/01/input.txt',
+          'subPath': 'data/01/input.txt',
+          'readOnly': False
+        },
+        {
+          'name': 'my_pvc',
+          'mountPath': '/galaxy/database/jobs/01/working',
+          'subPath': 'data/01/working',
+          'readOnly': False
+        }
+    ]
+
+    :param pvc_param: the pvc claim dict
+    :param files: a list of file or folder names
+    :return: A list of volume mounts
+    """
+    if not pvc_param:
+        return
+    param_claim = parse_pvc_param_line(pvc_param)
+    claim_name = param_claim['name']
+    base_subpath = PurePath(param_claim.get('subPath', ""))
+    base_mount = PurePath(param_claim["mountPath"])
+    read_only = param_claim["readOnly"]
+    volume_mounts = []
+    for f in files:
+        file_path = PurePath(str(f))
+        if base_mount not in file_path.parents:
+            # force relative directory, needed for the job working directory in particular
+            file_path = base_mount.joinpath(file_path.relative_to("/") if file_path.is_absolute() else file_path)
+        relpath = file_path.relative_to(base_mount)
+        subpath = base_subpath.joinpath(relpath)
+        volume_mounts.append(
+            {'name': claim_name, 'mountPath': str(file_path), 'subPath': str(subpath), 'readOnly': read_only})
+    return volume_mounts
+
+
+def deduplicate_entries(obj_list):
+    # remove duplicate entries in a list of dictionaries
+    # based on: https://stackoverflow.com/a/9428041
+    return [i for n, i in enumerate(obj_list) if i not in obj_list[n + 1:]]
+
+
+def get_volume_mounts_for_job(job_wrapper, data_claim=None, working_claim=None):
+    volume_mounts = []
+    if data_claim:
+        volume_mounts.extend(generate_relative_mounts(data_claim, job_wrapper.job_io.get_input_fnames()))
+        # for individual output files, mount the parent folder of each output as there could be wildcard outputs
+        output_folders = deduplicate_entries(
+            [str(PurePath(str(f)).parent) for f in job_wrapper.job_io.get_output_fnames()])
+        volume_mounts.extend(generate_relative_mounts(data_claim, output_folders))
+
+    if working_claim:
+        volume_mounts.extend(generate_relative_mounts(working_claim, [job_wrapper.working_directory]))
+
+    return deduplicate_entries(volume_mounts)
+
+
 def galaxy_instance_id(params):
     """Parse and validate the id of the Galaxy instance from supplied dict.
 
@@ -230,4 +328,6 @@ __all__ = (
     "delete_job",
     "delete_service",
     "delete_ingress",
+    "get_volume_mounts_for_job",
+    "parse_pvc_param_line"
 )
