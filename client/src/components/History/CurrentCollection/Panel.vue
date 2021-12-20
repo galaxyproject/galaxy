@@ -13,11 +13,12 @@
                     </template>
 
                     <template v-slot:localNav>
-                        <IconButton
-                            icon="download"
-                            title="Download Collection"
-                            :href="downloadCollectionUrl"
-                            download />
+                        <!-- Empty -->
+                        <div />
+                    </template>
+
+                    <template v-slot:listcontrols>
+                        <CollectionOperations :collection="selectedCollection" :is-root="isRoot" />
                     </template>
 
                     <template v-slot:details>
@@ -61,12 +62,12 @@ import { DscProvider, CollectionContentProvider } from "components/providers/His
 import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
+import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
 import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
-import IconButton from "components/IconButton";
 
 export default {
     filters: {
@@ -81,7 +82,7 @@ export default {
         Scroller,
         CollectionContentItem,
         ExpandedItems,
-        IconButton,
+        CollectionOperations,
     },
     props: {
         history: { type: History, required: true },
@@ -94,7 +95,7 @@ export default {
             return selected;
         },
         isRoot() {
-            return this.selectedCollection == this.selectedCollections[0];
+            return this.selectedCollection == this.rootCollection;
         },
         writable() {
             return this.isRoot;
