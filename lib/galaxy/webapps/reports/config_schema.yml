@@ -26,7 +26,7 @@ mapping:
 
       file_path:
         type: str
-        default: database/files
+        default: database/objects
         desc: |
           Where dataset files are stored.
 
