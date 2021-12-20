@@ -11,6 +11,7 @@ try:
 except ImportError:
     csv = parquet = None
 
+
 def __main__():
     infile = sys.argv[1]
     outfile = sys.argv[2]
@@ -22,6 +23,7 @@ def __main__():
     if csv is None or parquet is None:
         raise Exception("Cannot run conversion, pyarrow is not installed.")
     csv.write_csv(parquet.read_table(infile), outfile)
+
 
 if __name__ == "__main__":
     __main__()
