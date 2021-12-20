@@ -402,7 +402,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'history_id': self.serialize_id,
 
             # remapped
-            'misc_info': self._remap_from('info'),
+            'misc_info': lambda i, k, **c: i.misc_info,
             'misc_blurb': self._remap_from('blurb'),
             'file_ext': self._remap_from('extension'),
             'file_path': self._remap_from('file_name'),

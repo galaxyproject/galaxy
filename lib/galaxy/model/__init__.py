@@ -3525,6 +3525,17 @@ class DatasetInstance:
     def ext(self):
         return self.extension
 
+    @property
+    def misc_info(self):
+        creating_job = self.creating_job
+        stdout_stderr_combined = ''
+        if creating_job:
+            tool_stdout = f"{creating_job.tool_stdout.rstrip()}\n" if creating_job.tool_stdout else ""
+            tool_stderr = f"{creating_job.tool_stderr.rstrip()}" if creating_job.tool_stderr else ""
+            info = f"{self.info.rstrip()}\n" if self.info else ""
+            stdout_stderr_combined = f"{info}{tool_stdout}{tool_stderr}"
+        return stdout_stderr_combined[:255]
+
     def get_dataset_state(self):
         # self._state is currently only used when setting metadata externally
         # leave setting the state as-is, we'll currently handle this specially in the external metadata code
@@ -4276,7 +4287,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     genome_build=hda.dbkey,
                     validated_state=hda.validated_state,
                     validated_state_message=hda.validated_state_message,
-                    misc_info=hda.info.strip() if isinstance(hda.info, str) else hda.info,
+                    misc_info=hda.misc_info,
                     misc_blurb=hda.blurb)
 
         rval.update(original_rval)
@@ -4714,7 +4725,7 @@ class LibraryDataset(Base, RepresentById):
                     file_ext=ldda.ext,
                     data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
-                    misc_info=ldda.info,
+                    misc_info=ldda.misc_info,
                     misc_blurb=ldda.blurb,
                     peek=(lambda ldda: ldda.display_peek() if ldda.peek and ldda.peek != 'no peek' else None)(ldda))
         if ldda.dataset.uuid is None:
@@ -4859,7 +4870,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                     file_ext=ldda.ext,
                     data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
                     genome_build=ldda.dbkey,
-                    misc_info=ldda.info,
+                    misc_info=ldda.misc_info,
                     misc_blurb=ldda.blurb,
                     created_from_basename=ldda.created_from_basename)
         if ldda.dataset.uuid is None:
