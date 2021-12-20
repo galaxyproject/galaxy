@@ -79,9 +79,7 @@ Fernet key, use the following Python code:
 
 ```python
 from cryptography.fernet import Fernet
-Fernet.generate_key()
-```
-which would result in a byte string such as `b'pZDP8_baVs3oWT4597HJWCysm49j-XELONQ-EdoU0DE='`. Copy the string value as the encryption key.
+Fernet.generate_key().decode('utf-8')
 
 If multiple encryption keys are defined, only the first key is used to encrypt secrets. The remaining keys are tried in turn during decryption. This is useful for key rotation.
 We recommend periodically generating a new fernet key and rotating old keys.

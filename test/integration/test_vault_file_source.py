@@ -1,8 +1,10 @@
+import json
 import os
 import tempfile
 
 from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base import api_asserts
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
@@ -20,6 +22,10 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
         config["file_sources_config_file"] = FILE_SOURCES_VAULT_CONF
         config["vault_config_file"] = VAULT_CONF
         config["user_library_import_symlink_allowlist"] = os.path.realpath(tempfile.mkdtemp())
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_vault_secret_per_user_in_file_source(self):
         """
@@ -88,3 +94,33 @@ class VaultFileSourceIntegrationTestCase(integration_util.IntegrationTestCase):
             api_asserts.assert_status_code_is_ok(list_response)
             remote_files = list_response.json()
             print(remote_files)
+
+    def test_upload_file_from_remote_source(self):
+        with self._different_user(email=self.USER_1_APP_VAULT_ENTRY):
+            app = self._app
+            user = app.model.context.query(app.model.User).filter(
+                app.model.User.email == self.USER_1_APP_VAULT_ENTRY).first()
+            user_vault = UserVaultWrapper(self._app.vault, user)
+            # use a valid symlink path so the posix list succeeds
+            user_vault.write_secret('posix/root_path', app.config.user_library_import_symlink_allowlist[0])
+            data = {"target": "gxfiles://test_user_vault"}
+            with open(os.path.join(app.config.user_library_import_symlink_allowlist[0], 'a_file'), 'w') as fh:
+                fh.write('I require access to the vault')
+            list_response = self.galaxy_interactor.get("remote_files", data)
+            api_asserts.assert_status_code_is_ok(list_response)
+            remote_files = list_response.json()
+            assert len(remote_files) == 1
+            with self.dataset_populator.test_history() as history_id:
+                element = dict(src="url", url="gxfiles://test_user_vault/a_file")
+                target = {
+                    "destination": {"type": "hdas"},
+                    "elements": [element],
+                }
+                targets = json.dumps([target])
+                payload = {
+                    "history_id": history_id,
+                    "targets": targets,
+                }
+                new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
+                content = self.dataset_populator.get_history_dataset_content(history_id, dataset=new_dataset)
+                assert content == "I require access to the vault", content
