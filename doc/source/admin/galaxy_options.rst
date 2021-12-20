@@ -341,10 +341,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Tool config maintained by tool migration scripts.  If you use the
-    migration scripts to install tools that have been migrated to the
-    tool shed upon a new release, they will be added to this tool
-    config file.
+    This option is deprecated. In previous releases this file was
+    maintained by tool migration scripts that are no longer part of
+    the code base. The option remains as a placeholder for deployments
+    where these scripts were previously run and such a file exists.
     The value of this option will be resolved with respect to
     <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
