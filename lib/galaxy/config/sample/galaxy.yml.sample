@@ -993,6 +993,10 @@ galaxy:
   # user_preferences_extra_conf.yml
   #default_locale: auto
 
+  # URL prefix for Galaxy application. If Galaxy should be served under
+  # a prefix set this to the desired prefix value.
+  #galaxy_url_prefix: /
+
   # URL (with schema http/https) of the Galaxy instance as accessible
   # within your local network - if specified used as a default by pulsar
   # file staging and Jupyter Docker container for communicating back
@@ -1020,7 +1024,7 @@ galaxy:
   #logo_url: /
 
   # The brand image source.
-  #logo_src: /static/favicon.png
+  #logo_src: static/favicon.png
 
   # The custom brand image source.
   #logo_src_secondary: null

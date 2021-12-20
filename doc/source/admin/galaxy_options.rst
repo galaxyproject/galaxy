@@ -1885,6 +1885,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``galaxy_url_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL prefix for Galaxy application. If Galaxy should be served
+    under a prefix set this to the desired prefix value.
+:Default: ``/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1946,7 +1957,7 @@
 
 :Description:
     The brand image source.
-:Default: ``/static/favicon.png``
+:Default: ``static/favicon.png``
 :Type: str
 
 

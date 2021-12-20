@@ -976,36 +976,3 @@ def build_native_uwsgi_app(paste_factory, config_section):
     app_kwds = get_app_kwds(config_section)
     uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
     return uwsgi_app
-
-
-def build_url_map(app, global_conf, local_conf):
-    from paste.urlmap import URLMap
-    from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
-    urlmap = URLMap()
-    # Merge the global and local configurations
-    conf = global_conf.copy()
-    conf.update(local_conf)
-    # Get cache time in seconds
-    cache_time = conf.get("static_cache_time", None)
-    if cache_time is not None:
-        cache_time = int(cache_time)
-    # Send to dynamic app by default
-    urlmap["/"] = app
-
-    def get_static_from_config(option_name, default_path):
-        config_val = conf.get(option_name, default_url_path(default_path))
-        per_host_config_option = f"{option_name}_by_host"
-        per_host_config = conf.get(per_host_config_option)
-        return Static(config_val, cache_time, directory_per_host=per_host_config)
-
-    # Define static mappings from config
-    urlmap["/static"] = get_static_from_config("static_dir", "static/")
-    urlmap["/images"] = get_static_from_config("static_images_dir", "static/images")
-    urlmap["/static/scripts"] = get_static_from_config("static_scripts_dir", "static/scripts/")
-    urlmap["/static/welcome.html"] = get_static_from_config("static_welcome_html", "static/welcome.html")
-    urlmap["/favicon.ico"] = get_static_from_config("static_favicon_dir", "static/favicon.ico")
-    urlmap["/robots.txt"] = get_static_from_config("static_robots_txt", "static/robots.txt")
-
-    if 'static_local_dir' in conf:
-        urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)
-    return urlmap, cache_time

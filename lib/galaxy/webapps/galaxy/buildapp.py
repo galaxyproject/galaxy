@@ -207,10 +207,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # Wrap the webapp in some useful middleware
     if kwargs.get('middleware', True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
-    if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
-                                 args=(global_conf,),
-                                 kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
@@ -1399,8 +1395,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
         app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
-
-
-def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap
