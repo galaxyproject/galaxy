@@ -1631,14 +1631,10 @@ class LudwigModel(Html):
         rval = ['<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>']
         rval.append('<div>This model dataset is composed of the following items:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
-            fn = composite_name
-            opt_text = ''
-            if composite_file.optional:
-                opt_text = ' (optional)'
-            if composite_file.get('description'):
-                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
-            else:
-                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
+            description = composite_file.get('description')
+            link_text = f'{composite_name} ({description})' if description else composite_name
+            opt_text = ' (optional)' if composite_file.optional else ''
+            rval.append(f'<li><a href="{composite_name}" type="text/plain">{link_text}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
