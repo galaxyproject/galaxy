@@ -4,6 +4,7 @@ import tempfile
 
 from galaxy.files import (
     ConfiguredFileSources,
+    ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
 
@@ -78,43 +79,43 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
     return user_context
 
 
-def assert_realizes_as(file_sources, uri, expected, user_context=None):
+def realize_to_temp_file(file_sources, uri, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
     with tempfile.NamedTemporaryFile(mode='r') as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
         with open(temp.name) as f:
             realized_contents = f.read()
-        if realized_contents != expected:
-            message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
-                uri,
-                expected,
-                realized_contents,
-            )
-            raise AssertionError(message)
+            return realized_contents
+
+
+def assert_realizes_as(file_sources, uri, expected, user_context=None):
+    realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
+    if realized_contents != expected:
+        message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
+            uri,
+            expected,
+            realized_contents,
+        )
+        raise AssertionError(message)
 
 
 def assert_realizes_contains(file_sources, uri, expected, user_context=None):
-    file_source_path = file_sources.get_file_source_path(uri)
-    with tempfile.NamedTemporaryFile(mode='r') as temp:
-        file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
-        realized_contents = temp.read()
-        if expected not in realized_contents:
-            message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
-                uri,
-                expected,
-                realized_contents,
-            )
-            raise AssertionError(message)
+    realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
+    if expected not in realized_contents:
+        message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
+            uri,
+            expected,
+            realized_contents,
+        )
+        raise AssertionError(message)
 
 
 def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Exception:
-    file_source_path = file_sources.get_file_source_path(uri)
     exception = None
-    with tempfile.NamedTemporaryFile(mode='r') as temp:
-        try:
-            file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
-        except Exception as e:
-            exception = e
+    try:
+        realize_to_temp_file(file_sources, uri, user_context=user_context)
+    except Exception as e:
+        exception = e
     assert exception
     return exception
 
@@ -125,3 +126,25 @@ def write_from(file_sources, uri, content, user_context=None):
         f.write(content)
         f.flush()
         file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)
+
+
+def configured_file_sources(conf_file):
+    file_sources_config = ConfiguredFileSourcesConfig()
+    return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
+
+
+def assert_simple_file_realize(conf_file, recursive=False, filename="a", contents="a\n", contains=False):
+    user_context = user_context_fixture()
+    file_sources = configured_file_sources(conf_file)
+    file_source_pair = file_sources.get_file_source_path("gxfiles://test1")
+
+    assert file_source_pair.path == "/"
+    file_source = file_source_pair.file_source
+    res = file_source.list("/", recursive=recursive, user_context=user_context)
+    a_file = find(res, class_="File", name=filename)
+    assert a_file
+
+    if contains:
+        assert_realizes_contains(file_sources, f"gxfiles://test1/{filename}", contents, user_context=user_context)
+    else:
+        assert_realizes_as(file_sources, f"gxfiles://test1/{filename}", contents, user_context=user_context)

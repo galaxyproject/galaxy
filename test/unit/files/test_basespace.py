@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
 from ._util import (
     assert_realizes_as,
+    configured_file_sources,
     find,
     user_context_fixture,
 )
@@ -23,7 +23,7 @@ skip_if_no_basespace_access_token = pytest.mark.skipif(
 @skip_if_no_basespace_access_token
 def test_file_source():
     user_context = user_context_fixture()
-    file_sources = _configured_file_sources()
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
     file_source_pair = file_sources.get_file_source_path("gxfiles://test1")
 
     assert file_source_pair.path == "/"
@@ -34,8 +34,3 @@ def test_file_source():
     assert a_file
 
     assert_realizes_as(file_sources, a_file['uri'], "a\n", user_context=user_context)
-
-
-def _configured_file_sources(conf_file=FILE_SOURCES_CONF):
-    file_sources_config = ConfiguredFileSourcesConfig()
-    return ConfiguredFileSources(file_sources_config, conf_file=conf_file)
