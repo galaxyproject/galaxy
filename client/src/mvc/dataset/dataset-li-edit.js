@@ -177,7 +177,8 @@ var DatasetListItemEdit = _super.extend(
                 classes: "icon-btn",
                 href: "#",
                 faIcon: "fa-question",
-                onclick: function () {
+                onclick: function (ev) {
+                    ev.preventDefault();
                     if (self.$el.find(".toolhelp").length > 0) {
                         self.$el.find(".toolhelp").toggle();
                     } else {
