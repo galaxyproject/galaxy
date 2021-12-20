@@ -18,7 +18,7 @@ export class DatasetCollection extends Content {
     }
 
     get totalElements() {
-        if ("element_count" in this) {
+        if ("element_count" in this && this.element_count) {
             return this.element_count;
         }
         if (this.collection_type == "paired") {
