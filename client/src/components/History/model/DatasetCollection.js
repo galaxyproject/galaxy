@@ -57,7 +57,7 @@ export class DatasetCollection extends Content {
      *  @return {Boolean}
      */
     get isHomogeneous() {
-        return this.elements_datatypes.length == 1;
+        return this.elements_datatypes?.length == 1;
     }
 
     /** Gets the datatype shared by all elements or an empty
