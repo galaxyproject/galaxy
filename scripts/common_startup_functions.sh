@@ -43,7 +43,7 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                circusd_args="$circusd_args --daemon --log-output $GALAXY_LOG"
+                circusd_args="$circusd_args --daemon --log-output $LOG_FILE"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
                 GALAXY_DAEMON_LOG="$GALAXY_LOG"
