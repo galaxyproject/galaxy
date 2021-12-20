@@ -568,10 +568,17 @@ ASSERTS = """
             </assert_command>
             <output name="outname">
                 <assert_contents>
-                    <has_size value="500k" delta="1O" delta_frac="10,0"/>
+                    <has_size value="500k" delta="1O"/>
                     <has_archive_member path=".*/my-file.txt">
                         <not_has_text invalid_attrib_also_checked_in_nested_asserts="Blah" text="EDK72998.1" />
                     </has_archive_member>
+                </assert_contents>
+            </output>
+            <output name="outname">
+                <assert_contents>
+                    <has_size/>
+                    <has_n_columns/>
+                    <has_n_lines/>
                 </assert_contents>
             </output>
         </test>
@@ -995,9 +1002,11 @@ TESTS = [
             and 'Test 1: missing attribute text for has_text' in x.error_messages
             and 'Test 1: attribute value for has_size needs to be int got 500k' in x.error_messages
             and 'Test 1: attribute delta for has_size needs to be int got 1O' in x.error_messages
-            and 'Test 1: attribute delta_frac for has_size needs to be float got 10,0' in x.error_messages
             and 'Test 1: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 7
+            and "Test 1: has_size needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and "Test 1: has_n_columns needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and "Test 1: has_n_lines needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 9
     ),
 ]
 

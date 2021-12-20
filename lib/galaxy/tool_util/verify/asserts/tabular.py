@@ -1,5 +1,7 @@
 import re
 
+from ._util import _assert_number
+
 
 def get_first_line(output, comment):
     """
@@ -10,18 +12,18 @@ def get_first_line(output, comment):
     else:
         match = re.search("^(.+)$", output, flags=re.MULTILINE)
     if match is None:
-        return None
+        return ""
     else:
         return match.group(1)
 
 
-def assert_has_n_columns(output, n: int, sep='\t', comment=""):
+def assert_has_n_columns(output, n: int = None, delta: int = 0, min: int = None, max: int = None, sep='\t', comment=""):
     """ Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns. The optional comment argument specifies
     comment characters"""
-    n = int(n)
     first_line = get_first_line(output, comment)
-    assert first_line is not None, "Was expecting output with %d columns, but output was empty" % n
     n_columns = len(first_line.split(sep))
-    assert n_columns == n, f"Expected {n} columns in output, found {n_columns} columns"
+    _assert_number(n_columns, n, delta, min, max,
+        "Expected {n}+-{delta} columns in output",
+        "Expected the number of columns in output to be in [{min}:{max}]")

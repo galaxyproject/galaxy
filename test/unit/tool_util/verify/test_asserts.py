@@ -11,7 +11,7 @@ TABULAR_ASSERTION = """
 """
 TABULAR_CSV_ASSERTION = """
     <assert_contents>
-        <has_n_columns n="3" sep=","/>
+        <has_n_columns sep="," min="3"/>
     </assert_contents>
 """
 TABULAR_ASSERTION_COMMENT = """
@@ -46,6 +46,18 @@ TEXT_HAS_TEXT_ASSERTION_N = """
     </assert_contents>
 """
 
+TEXT_HAS_TEXT_ASSERTION_N_DELTA = """
+    <assert_contents>
+        <has_text text="test text" n="3" delta="1"/>
+    </assert_contents>
+"""
+
+TEXT_HAS_TEXT_ASSERTION_MIN_MAX = """
+    <assert_contents>
+        <has_text text="test text" min="2" max="4"/>
+    </assert_contents>
+"""
+
 TEXT_NOT_HAS_TEXT_ASSERTION = """
     <assert_contents>
         <not_has_text text="not here"/>
@@ -61,6 +73,12 @@ TEXT_HAS_TEXT_MATCHING_ASSERTION = """
 TEXT_HAS_TEXT_MATCHING_ASSERTION_N = """
     <assert_contents>
         <has_text_matching expression="te[sx]t" n="4"/>
+    </assert_contents>
+"""
+
+TEXT_HAS_TEXT_MATCHING_ASSERTION_MINMAX = """
+    <assert_contents>
+        <has_text_matching expression="te[sx]t" min="3" max="5"/>
     </assert_contents>
 """
 
@@ -84,11 +102,6 @@ TEXT_HAS_N_LINES_ASSERTION_DELTA = """
         <has_n_lines n="3" delta="1"/>
     </assert_contents>
 """
-TEXT_HAS_N_LINES_ASSERTION_DELTA_FRAC = """
-    <assert_contents>
-        <has_n_lines n="3" delta="100" delta_frac="0.334"/>
-    </assert_contents>
-"""
 TEXT_HAS_LINE_MATCHING_ASSERTION = """
     <assert_contents>
         <has_line_matching expression="te[sx]t te[sx]t"/>
@@ -108,11 +121,6 @@ SIZE_HAS_SIZE_ASSERTION = """
 SIZE_HAS_SIZE_ASSERTION_DELTA = """
     <assert_contents>
         <has_size value="10" delta="10"/>
-    </assert_contents>
-"""
-SIZE_HAS_SIZE_ASSERTION_DELTA_FRAC = """
-    <assert_contents>
-        <has_size value="10" delta="100" delta_frac="0.2"/>
     </assert_contents>
 """
 
@@ -140,12 +148,12 @@ TESTS = [
     # test wrong number of columns
     (
         TABULAR_ASSERTION, TABULAR_DATA_NEG,
-        lambda x: 'Expected 3 columns in output, found 4 columns' in x
+        lambda x: 'Expected 3+-0 columns in output found 4' in x
     ),
     # test wrong number of columns for csv data
     (
         TABULAR_CSV_ASSERTION, TABULAR_CSV_DATA,
-        lambda x: 'Expected 3 columns in output, found 2 columns' in x
+        lambda x: 'Expected the number of columns in output to be in [3:inf] found 2' in x
     ),
     # test tabular data with comments
     (
@@ -180,7 +188,27 @@ TESTS = [
     # test has_text with n .. negative test
     (
         TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 2 occurences of 'test text' in output file (output 'test text\n'); found 1" in x
+        lambda x: "Expected 2+-0 occurences of 'test text' in output file (output 'test text\n') found 1" in x
+    ),
+    # test has_text with n
+    (
+        TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT_TWO,
+        lambda x: len(x) == 0
+    ),
+    # test has_text with n .. negative test
+    (
+        TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected 3+-1 occurences of 'test text' in output file (output 'test text\n') found 1" in x
+    ),
+    # test has_text with min max
+    (
+        TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT_TWO,
+        lambda x: len(x) == 0
+    ),
+    # test has_text with min max .. negative test
+    (
+        TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected that the number of occurences of 'test text' in output file is in [2:4] (output 'test text\n') found 1" in x
     ),
     # test not_has_text
     (
@@ -210,7 +238,7 @@ TESTS = [
     # test has_text_matching .. negative test
     (
         TEXT_HAS_TEXT_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
-        lambda x: "No text matching expression 'te[sx]t' was found in output file" in x
+        lambda x: "No text matching expression 'te[sx]t' was found in output file (output 'desired content\nis not here\n')" in x
     ),
     # test has_text_matching with n
     (
@@ -220,7 +248,17 @@ TESTS = [
     # test has_text_matching with n .. negative test (using the test text where "te[sx]st" appears twice)
     (
         TEXT_HAS_TEXT_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 4 (non-overlapping) matches for 'te[sx]t' in output file (output 'test text\n'); found 2" in x
+        lambda x: "Expected 4+-0 (non-overlapping) matches for 'te[sx]t' in output file (output 'test text\n') found 2" in x
+    ),
+    # test has_text_matching with n
+    (
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_MINMAX, TEXT_DATA_HAS_TEXT_TWO,
+        lambda x: len(x) == 0
+    ),
+    # test has_text_matching with n .. negative test (using the test text where "te[sx]st" appears twice)
+    (
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_MINMAX, TEXT_DATA_HAS_TEXT,
+        lambda x: "Expected that the number of (non-overlapping) matches for 'te[sx]t' in output file is in [3:5] (output 'test text\n') found 2" in x
     ),
     # test has_line
     (
@@ -240,7 +278,7 @@ TESTS = [
     # test has_line with n .. negative test
     (
         TEXT_HAS_LINE_ASSERTION_N, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 2 lines matching 'test text' in output file (output was 'test text\n'); found 1" in x
+        lambda x: "Expected 2+-0 lines 'test text' in output file (output was 'test text\n') found 1" in x
     ),
     # test has_n_lines
     (
@@ -250,17 +288,12 @@ TESTS = [
     # test has_n_lines .. negative test
     (
         TEXT_HAS_N_LINES_ASSERTION, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 2 lines in output, found 1 lines" in x
+        lambda x: "Expected 2+-0 lines in the output found 1" in x
     ),
     # test has_n_lines ..delta
     (
         TEXT_HAS_N_LINES_ASSERTION_DELTA, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 3+-1 lines in the output, found 1 lines" in x
-    ),
-    # test has_n_lines ..delta_frac
-    (
-        TEXT_HAS_N_LINES_ASSERTION_DELTA_FRAC, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 3+-1.002 lines in the output, found 1 lines" in x
+        lambda x: "Expected 3+-1 lines in the output found 1" in x
     ),
     # test has_line_matching
     (
@@ -270,7 +303,7 @@ TESTS = [
     # test has_line_matching .. negative test
     (
         TEXT_HAS_LINE_MATCHING_ASSERTION, TEXT_DATA_HAS_TEXT_NEG,
-        lambda x: "No line matching expression 'te[sx]t te[sx]t' was found in output file" in x
+        lambda x: "No line matching expression 'te[sx]t te[sx]t' was found in output file (output 'desired content\nis not here\n')" in x
     ),
     # test has_line_matching n
     (
@@ -280,7 +313,7 @@ TESTS = [
     # test has_line_matching n .. negative test
     (
         TEXT_HAS_LINE_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT,
-        lambda x: "Expected 2 lines matching for 'te[sx]t te[sx]t' in output file (output 'test text\n'); found 1" in x
+        lambda x: "Expected 2+-0 lines matching for 'te[sx]t te[sx]t' in output file (output 'test text\n') found 1" in x
     ),
     # test has_size
     (
@@ -290,17 +323,12 @@ TESTS = [
     # test has_size .. negative test
     (
         SIZE_HAS_SIZE_ASSERTION, TEXT_DATA_HAS_TEXT_TWO,
-        lambda x: "Expected file size of 10+-0, actual file size is 20" in x
+        lambda x: "Expected file size of 10+-0 found 20" in x
     ),
     # test has_size .. delta
     (
         SIZE_HAS_SIZE_ASSERTION_DELTA, TEXT_DATA_HAS_TEXT_TWO,
         lambda x: len(x) == 0
-    ),
-    # test has_size .. delta
-    (
-        SIZE_HAS_SIZE_ASSERTION_DELTA_FRAC, TEXT_DATA_HAS_TEXT_TWO,
-        lambda x: "Expected file size of 10+-2.0, actual file size is 20" in x
     ),
 ]
 
@@ -315,6 +343,10 @@ TEST_IDS = [
     'has_text empty output',
     'has_text n success',
     'has_text n failure',
+    'has_text n delta success',
+    'has_text n delta failure',
+    'has_text min/max delta success',
+    'has_text min/max delta failure',
     'not_has_text success',
     'not_has_text failure',
     'not_has_text None output',
@@ -323,6 +355,8 @@ TEST_IDS = [
     'has_text_matching failure',
     'has_text_matching n success',
     'has_text_matching n failure',
+    'has_text_matching min/max success',
+    'has_text_matching min/max failure',
     'has_line success',
     'has_line failure',
     'has_line n success',
@@ -330,7 +364,6 @@ TEST_IDS = [
     'has_n_lines success',
     'has_n_lines failure',
     'has_n_lines delta',
-    'has_n_lines delta_frac',
     'has_line_matching success',
     'has_line_matching failure',
     'has_line_matching n success',
@@ -338,7 +371,6 @@ TEST_IDS = [
     'has_size success',
     'has_size failure',
     'has_size delta',
-    'has_size delta_frac',
 ]
 
 

@@ -116,6 +116,7 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: unknown assertion {a.tag}")
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
+            # check type of the attributes (int, float ...)
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
                     lint_ctx.error(f"Test {test_idx}: unknown attribute {attrib} for {a.tag}")
@@ -125,11 +126,19 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                         assert_function_sig.parameters[attrib].annotation(a.attrib[attrib])
                     except ValueError:
                         lint_ctx.error(f"Test {test_idx}: attribute {attrib} for {a.tag} needs to be {assert_function_sig.parameters[attrib].annotation.__name__} got {a.attrib[attrib]}")
+            # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:
                     continue
                 if assert_function_sig.parameters[p].default is Parameter.empty and p not in a.attrib:
                     lint_ctx.error(f"Test {test_idx}: missing attribute {p} for {a.tag}")
+            # has_n_lines, has_n_columns, and has_size need to specify n/value, min, or max
+            if a.tag in ["has_n_lines", "has_n_columns"]:
+                if "n" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
+                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
+            if a.tag == "has_size":
+                if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
+                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
 
 
 def _collect_output_names(tool_xml):
