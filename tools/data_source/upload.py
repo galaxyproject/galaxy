@@ -52,6 +52,7 @@ def file_err(msg, dataset):
             os.remove(dataset.path)
         except Exception:
             pass
+    print(msg, file=sys.stderr)
     return dict(type='dataset',
                 ext='data',
                 dataset_id=dataset.dataset_id,
