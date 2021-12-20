@@ -3,8 +3,6 @@ import JobStep from "./JobStep";
 import { mount } from "@vue/test-utils";
 import jobs from "./test/json/jobs.json";
 
-jest.mock("components/providers/History/caching");
-
 import { createLocalVue } from "@vue/test-utils";
 
 // create an extended `Vue` constructor

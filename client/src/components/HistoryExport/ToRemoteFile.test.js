@@ -12,7 +12,6 @@ const TEST_JOB_ID = "job123789";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 
 jest.mock("components/JobStates/wait");
-jest.mock("components/providers/History/caching");
 
 describe("ToRemoteFile.vue", () => {
     let axiosMock;

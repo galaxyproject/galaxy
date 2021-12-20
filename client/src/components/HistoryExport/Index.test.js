@@ -4,8 +4,6 @@ import { getLocalVue } from "jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
-jest.mock("components/providers/History/caching");
-
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
 const localVue = getLocalVue();
