@@ -1,5 +1,14 @@
 <template>
     <div>
+        <b-alert
+            class="mt-2"
+            v-if="errorMessage"
+            :show="dismissCountDown"
+            variant="info"
+            @dismissed="dismissCountDown = 0"
+        >
+            {{ errorMessage }}
+        </b-alert>
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
@@ -16,15 +25,6 @@
                 <b-form-input v-model="currentValue" :min="min" :max="max" type="range" />
             </b-col>
         </b-row>
-        <b-alert
-            class="mt-2"
-            v-if="errorMessage"
-            :show="dismissCountDown"
-            variant="info"
-            @dismissed="dismissCountDown = 0"
-        >
-            {{ errorMessage }}
-        </b-alert>
     </div>
 </template>
 
