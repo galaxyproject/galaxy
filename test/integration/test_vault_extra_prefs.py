@@ -7,12 +7,12 @@ from requests import (
     put
 )
 
-from ._framework import ApiTestCase
+from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
-class ExtraUserPreferencesApiTestCase(ApiTestCase):
+class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
