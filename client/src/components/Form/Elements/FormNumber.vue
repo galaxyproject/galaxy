@@ -20,7 +20,6 @@
             class="mt-2"
             v-if="errorMessage"
             :show="dismissCountDown"
-            dismissible
             variant="info"
             @dismissed="dismissCountDown = 0"
         >
