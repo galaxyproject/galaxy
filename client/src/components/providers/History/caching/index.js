@@ -16,4 +16,3 @@ export {
 } from "./CacheApi";
 
 export { wipeDatabase, clearHistoryDateStore } from "./CacheApi";
-
