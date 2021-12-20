@@ -280,15 +280,16 @@ export var DatasetListItemView = _super.extend(
                 faIcon: "fa-info-circle",
                 onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
+                    const showDetailsUrl = `/datasets/${this.model.get("id")}/details`;
                     if (Galaxy.frame && Galaxy.frame.active) {
                         ev.preventDefault();
                         Galaxy.frame.add({
-                            url: this.model.urls.show_params,
+                            url: showDetailsUrl,
                             title: `Dataset Details of ${this.model.get("name")}`,
                         });
                     } else if (Galaxy.router) {
                         ev.preventDefault();
-                        Galaxy.router.push(this.model.urls.show_params);
+                        Galaxy.router.push(showDetailsUrl);
                         Galaxy.trigger("activate-hda", this.model.get("id"));
                     }
                 },
