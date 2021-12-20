@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" ftype="parquet" value="1.parquet"/>
-            <output name="output" ftype="csv" value="1.csv"/>
+            <param name="input" ftype="parquet" value="parq_conv.parquet"/>
+            <output name="output" ftype="csv" value="parq_conv.csv"/>
         </test>
     </tests>
     <help>
