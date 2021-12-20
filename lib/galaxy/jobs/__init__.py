@@ -1549,13 +1549,6 @@ class JobWrapper(HasResourceParameters):
             dataset.visible = False
         dataset.blurb = 'done'
         dataset.peek = 'no peek'
-        dataset.info = (dataset.info or '')
-        if context['stdout'].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-        if context['stderr'].strip():
-            # Ensure white space between entries
-            dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
         dataset.set_size()
         if 'uuid' in context:

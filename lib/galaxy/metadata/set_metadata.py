@@ -323,13 +323,6 @@ def set_metadata_portable():
                     context = expression_context
                 dataset.blurb = 'done'
                 dataset.peek = 'no peek'
-                dataset.info = (dataset.info or '')
-                if context['stdout'].strip():
-                    # Ensure white space between entries
-                    dataset.info = f"{dataset.info.rstrip()}\n{context['stdout'].strip()}"
-                if context['stderr'].strip():
-                    # Ensure white space between entries
-                    dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
                 dataset.tool_version = version_string
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
