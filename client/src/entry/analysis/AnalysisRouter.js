@@ -53,6 +53,7 @@ import Confirmation from "components/login/Confirmation";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
+import { StorageDashboard } from "components/User/DiskUsage";
 
 import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 
@@ -109,9 +110,17 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets(/)(:dataset_id)/show_params": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
+            "(/)storage": "show_storage_dashboard",
         },
 
-        require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth", "show_external_ids"],
+        require_login: [
+            "show_user",
+            "show_user_form",
+            "show_workflows",
+            "show_cloud_auth",
+            "show_external_ids",
+            "show_storage_dashboard",
+        ],
 
         authenticate: function (args, name) {
             const Galaxy = getGalaxyInstance();
@@ -165,6 +174,14 @@ export const getAnalysisRouter = (Galaxy) => {
             this.page.toolPanel?.component.hide(0);
             this.page.panels.right.hide();
             this._display_vue_helper(Libraries);
+        },
+
+        show_storage_dashboard: function () {
+            const Galaxy = getGalaxyInstance();
+            this._display_vue_helper(StorageDashboard, {
+                quotasEnabled: Galaxy.config.enable_quotas,
+                userId: Galaxy.user.id,
+            });
         },
 
         show_cloud_auth: function () {
