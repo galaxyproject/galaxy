@@ -1,7 +1,7 @@
 <template>
     <div class="description">
-        A {{ dsc.collectionType | localize }} of {{ dsc.totalElements
-        }}<b v-if="isHomogeneous"> {{ homogeneousDatatype }}</b> datasets.
+        {{ dsc.collectionType | localize }} of {{ dsc.totalElements }}
+        <b v-if="isHomogeneous">{{ homogeneousDatatype }} </b>datasets
     </div>
 </template>
 

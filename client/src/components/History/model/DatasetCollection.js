@@ -18,7 +18,7 @@ export class DatasetCollection extends Content {
     }
 
     get totalElements() {
-        if ("element_count" in this) {
+        if ("element_count" in this && this.element_count) {
             return this.element_count;
         }
         if (this.collection_type == "paired") {
@@ -57,7 +57,7 @@ export class DatasetCollection extends Content {
      *  @return {Boolean}
      */
     get isHomogeneous() {
-        return this.elements_datatypes.length == 1;
+        return this.elements_datatypes?.length == 1;
     }
 
     /** Gets the datatype shared by all elements or an empty
