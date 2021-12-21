@@ -1,5 +1,6 @@
 import io
 import ast
+import html
 import uuid as _uuid
 import zipfile
 
@@ -7,22 +8,11 @@ import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.tabular import Tabular
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 
 
-def strip_properties(expression):
-    try:
-        expression_tree = ast.parse(expression)
-        reconstructer = PredicateRemover()
-        reconstructer.visit(expression_tree)
-        return reconstructer.expression
-    # If we have any problems stripping properties just use the full expression
-    # this punts the error off to q2galaxy so if we error we do so there and
-    # not here
-    except Exception:
-        return expression
-
-
-class QIIME2Result(CompressedZipArchive):
+class _QIIME2Result(CompressedZipArchive):
     MetadataElement(name="semantic_type", readonly=True)
     MetadataElement(name="semantic_type_simple", readonly=True, visible=False)
     MetadataElement(name="uuid", readonly=True)
@@ -36,7 +26,7 @@ class QIIME2Result(CompressedZipArchive):
                 setattr(dataset.metadata, key, value)
 
         dataset.metadata.semantic_type_simple = \
-            strip_properties(dataset.metadata.semantic_type)
+            _strip_properties(dataset.metadata.semantic_type)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if dataset.metadata.semantic_type == 'Visualization':
@@ -48,7 +38,8 @@ class QIIME2Result(CompressedZipArchive):
 
     def display_peek(self, dataset):
         def make_row(item):
-            return '<tr><th>%s</th><td>%s</td></td>' % item
+            return ('<tr><th>%s</th><td>%s</td></td>'
+                    % tuple(html.escape(x) for x in item))
 
         table = ['<table cellspacing="0" cellpadding="2">']
         table += list(map(make_row, self._peek(dataset, simple=True)))
@@ -75,7 +66,7 @@ class QIIME2Result(CompressedZipArchive):
             return False
 
 
-class QIIME2Artifact(QIIME2Result):
+class QIIME2Artifact(_QIIME2Result):
     file_ext = "qza"
 
     def sniff(self, filename):
@@ -83,7 +74,7 @@ class QIIME2Artifact(QIIME2Result):
         return metadata and metadata['semantic_type'] != 'Visualization'
 
 
-class QIIME2Visualization(QIIME2Result):
+class QIIME2Visualization(_QIIME2Result):
     file_ext = "qzv"
 
     def sniff(self, filename):
@@ -91,10 +82,92 @@ class QIIME2Visualization(QIIME2Result):
         return metadata and metadata['semantic_type'] == 'Visualization'
 
 
+@build_sniff_from_prefix
+class QIIME2Metadata(Tabular):
+    """
+    QIIME 2 supports overriding the type of a column to Categorical when
+    a specific directive `#Q2:types` is present under the ID row.
+
+    Galaxy already understands column types quite well, however we sometimes
+    want to override its inferred type.
+
+    For Galaxy, we are going to require that if a directive occurs, it happens
+    on the second line (after the header). This is the most typical location
+    and interacts best with the current implementation of Tabular.
+    """
+    file_ext = "qiime2.tabular"
+    _TYPES_DIRECTIVE = '#q2:types'
+    is_subclass = False
+
+
+    def get_column_names(self, first_line=None):
+        if first_line is None:
+            return None
+        return first_line.strip().split('\t')
+
+
+    def set_meta(self, dataset, **kwargs):
+        """
+        Let Galaxy's Tabular format handle most of this. We will just jump
+        in at the last minute to (potentially) override some column types.
+        """
+        super().set_meta(dataset, **kwargs)
+
+        if dataset.has_data():
+            with open(dataset.file_name) as dataset_fh:
+                line = None
+                for line, _ in zip(dataset_fh, range(2)):
+                    if line.startswith(self._TYPES_DIRECTIVE):
+                        break
+                if line is None:
+                    return
+
+            q2_types = line.strip().split('\t')
+            # The first column (q2:types) is always the IDs
+            q2_types[0] = 'index'
+
+            if len(q2_types) < dataset.metadata.columns:
+                # this is probably malformed, but easy to fix
+                q2_types.extend([''] * (dataset.metadata.columns
+                                        - len(q2_types)))
+
+            for idx, (q2_type, col_type) in enumerate(
+                    zip(q2_types, dataset.metadata.column_types)):
+                if q2_type == '':
+                    if col_type in ('float', 'int'):
+                        q2_types[idx] = 'numeric'
+                    else:
+                        q2_types[idx] = 'categorical'
+                else:
+                    if (q2_type == 'categorical'
+                            and col_type in ('float', 'int', 'list')):
+                        dataset.metadata.column_types[idx] = 'str'
+
+    def sniff_prefix(self, file_prefix):
+        for _, line in zip(range(4), file_prefix.line_iterator()):
+            if line.startswith(self._TYPES_DIRECTIVE):
+                return True
+
+        return False
+
+
+def _strip_properties(expression):
+    try:
+        expression_tree = ast.parse(expression)
+        reconstructer = _PredicateRemover()
+        reconstructer.visit(expression_tree)
+        return reconstructer.expression
+    # If we have any problems stripping properties just use the full expression
+    # this punts the error off to q2galaxy so if we error we do so there and
+    # not here
+    except Exception:
+        return expression
+
+
 # Python 3.9 has a built in unparse. We can probably use this in the future
 # when we are using 3.9
 # https://docs.python.org/3.9/library/ast.html#ast.unparse
-class PredicateRemover(ast.NodeVisitor):
+class _PredicateRemover(ast.NodeVisitor):
     binops = {
         ast.Add: ' + ',
         ast.Sub: ' - ',

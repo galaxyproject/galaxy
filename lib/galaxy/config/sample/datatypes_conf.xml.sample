@@ -257,6 +257,7 @@
     <datatype extension="qzv" type="galaxy.datatypes.qiime2:QIIME2Visualization" mimetype="application/octet-stream" display_in_upload="true">
       <display file="qiime/qiime2/q2view.xml"/>
     </datatype>
+    <datatype extension='qiime2.tabular' type="galaxy.datatypes.qiime2:QIIME2Metadata" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
     <datatype extension="ncbi_genome_dataset.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
@@ -1017,6 +1018,7 @@
     <sniffer type="galaxy.datatypes.binary:Edr"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
     <sniffer type="galaxy.datatypes.binary:Xlsx"/>
+    <sniffer type="galaxy.datatypes.qiime2:QIIME2Metadata"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Artifact"/>
     <sniffer type="galaxy.datatypes.qiime2:QIIME2Visualization"/>
     <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>
