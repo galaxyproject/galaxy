@@ -6,7 +6,8 @@ Output: csv
 import os
 import sys
 try:
-    import pyarrow
+    import pyarrow.csv
+    import pyarrow.parquet
 except ImportError:
     pyarrow = None
 
