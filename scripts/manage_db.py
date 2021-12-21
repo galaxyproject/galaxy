@@ -1,28 +1,32 @@
-""" This script parses Galaxy or Tool Shed config file for database connection
-and then delegates to sqlalchemy_migrate shell main function in
-migrate.versioning.shell. """
+"""This script invokes the Alembic console runner."""
 import logging
 import os.path
 import sys
 
-from migrate.versioning.shell import main
+import alembic.config
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-from galaxy.model.orm.scripts import get_config
+from galaxy.model.migrations import GXY, TSI
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
-def invoke_migrate_main():
-    # Migrate has its own args, so cannot use argparse
-    config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
-    db_url = config['db_url']
-    repo = config['repo']
+def invoke_alembic():
+    # Accept 'heads' as the target revision argument to enable upgrading both gxy and tsi in one command.
+    # This is consistent with Alembic's CLI, which allows `upgrade heads`. However, this would not work for
+    # separate gxy and tsi databases: we can't attach a database url to a revision after Alembic has been
+    # invoked with the 'upgrade' command and the 'heads' argument. So, instead we invoke Alembic for each head.
+    if 'heads' in sys.argv and 'upgrade' in sys.argv:
+        i = sys.argv.index('heads')
+        sys.argv[i] = f'{GXY}@head'
+        alembic.config.main()
+        sys.argv[i] = f'{TSI}@head'
+        alembic.config.main()
+    else:
+        alembic.config.main()
 
-    main(repository=repo, url=db_url)
 
-
-if __name__ == "__main__":
-    invoke_migrate_main()
+if __name__ == '__main__':
+    invoke_alembic()

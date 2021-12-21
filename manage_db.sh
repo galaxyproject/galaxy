@@ -2,8 +2,14 @@
 
 #######
 # NOTE: To downgrade to a specific version, use something like:
-# sh manage_db.sh downgrade --version=3 <tool_shed if using that webapp - galaxy is the default>
+# TODO add instructions
+# To create a revision for galaxy:
+# ./manage_db.sh revision --head=gxy@head
+# To create a revision for tool_shed_install:
+# ./manage_db.sh revision --head=tsi@head
 #######
+
+ALEMBIC_CONFIG='lib/galaxy/model/migrations/alembic.ini'
 
 cd `dirname $0`
 
@@ -11,5 +17,5 @@ cd `dirname $0`
 
 setup_python
 
-find lib/galaxy/model/migrate/versions -name '*.pyc' -delete
-python ./scripts/manage_db.py $@
+find lib/galaxy/model/migrations/alembic -name '*.pyc' -delete
+python ./scripts/manage_db.py --config "$ALEMBIC_CONFIG" "$@"

@@ -220,6 +220,36 @@ def metadata_state6_combined(
     return metadata
 
 
+@pytest.fixture
+def metadata_state6_combined(
+    gxy_table1, gxy_table2, gxy_table3, tsi_table1, tsi_table2, tsi_table3, alembic_table
+):
+    metadata = sa.MetaData()
+    gxy_table1(metadata)
+    gxy_table2(metadata)
+    gxy_table3(metadata)
+    tsi_table1(metadata)
+    tsi_table2(metadata)
+    tsi_table3(metadata)
+    alembic_table(metadata)
+    return metadata
+
+
+@pytest.fixture
+def metadata_state6_gxy_state3_tsi_no_sam(
+    gxy_table1, gxy_table2, gxy_table3, tsi_table1, tsi_table2, tsi_table3, alembic_table
+    ):
+    # This does NOT include sqlalchemymigrate_table (sam)
+    metadata = sa.MetaData()
+    gxy_table1(metadata)
+    gxy_table2(metadata)
+    gxy_table3(metadata)
+    tsi_table1(metadata)
+    tsi_table2(metadata)
+    alembic_table(metadata)
+    return metadata
+
+
 # Fixture factories: metadata containing one table each.
 # Used to compose metadata representing database state.
 # (The `_factory` suffix is ommitted to keep the code less verbose)

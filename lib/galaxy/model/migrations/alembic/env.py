@@ -1,67 +1,107 @@
+import re
+
 from alembic import context
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from alembic import script
+from sqlalchemy import create_engine
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.model.migrations import GXY, TSI
+
 config = context.config
+target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
-target_metadata = None  # TODO need this for reflection (not critical for prototype)
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+galaxy_config = GalaxyAppConfiguration()
+URLS = {
+    GXY: galaxy_config.database_connection,
+    TSI: galaxy_config.install_database_connection or galaxy_config.database_connection,
+}
 
 
 def run_migrations_offline():
-    """Run migrations in 'offline' mode.
+    """Run migrations in offline mode; database url required."""
+    if not config.cmd_opts:  # invoked programmatically
+        url = _get_url_from_config()
+        _configure_and_run_migrations_offline(url)
+    else:  # invoked via script
+        f = _configure_and_run_migrations_offline
+        _run_migrations_invoked_via_script(f)
 
-    This configures the context with just a URL
-    and not an Engine, though an Engine is acceptable
-    here as well.  By skipping the Engine creation
-    we don't even need a DBAPI to be available.
 
-    Calls to context.execute() here emit the given string to the
-    script output.
+def run_migrations_online():
+    """Run migrations in online mode: engine and connection required."""
+    if not config.cmd_opts:  # invoked programmatically
+        url = _get_url_from_config()
+        _configure_and_run_migrations_online(url)
+    else:  # invoked via script
+        f = _configure_and_run_migrations_online
+        # Special case: runs online; config.cmd_opts has no revision property
+        if config.cmd_opts.cmd[0].__name__ == 'current':
+            for url in URLS.values():
+                f(url)
+            return
+        _run_migrations_invoked_via_script(f)
 
-    """
-    url = config.get_main_option("sqlalchemy.url")
+
+def _run_migrations_invoked_via_script(run_migrations):
+    revision_str = config.cmd_opts.revision
+
+    if revision_str.startswith(f'{GXY}@'):
+        url = URLS[GXY]
+    elif revision_str.startswith(f'{TSI}@'):
+        url = URLS[TSI]
+    else:
+        revision = _get_revision(revision_str)
+        if GXY in revision.branch_labels:
+            url = URLS[GXY]
+        elif TSI in revision.branch_labels:
+            url = URLS[TSI]
+
+    run_migrations(url)
+
+
+def _get_revision(revision_str):
+    revision_id = _get_revision_id(revision_str)
+    script_directory = script.ScriptDirectory.from_config(config)
+    revision = script_directory.get_revision(revision_id)
+    if not revision:
+        raise Exception(f'Revision not found: "{revision}"')
+    return revision
+
+
+def _get_revision_id(revision_str):
+    # Match a full or partial revision (GUID) or a relative migration identifier
+    p = re.compile(r'([0-9A-Fa-f]+)([+-]\d)?')
+    m = p.match(revision_str)
+    if not m:
+        raise Exception(f'Invalid revision or migration identifier: "{revision_str}"')
+    return m.group(1)
+
+
+def _configure_and_run_migrations_offline(url):
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
 
-def run_migrations_online():
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
-    with connectable.connect() as connection:
+def _configure_and_run_migrations_online(url):
+    engine = create_engine(url)
+    with engine.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata
         )
-
         with context.begin_transaction():
             context.run_migrations()
+    engine.dispose()
+
+
+def _get_url_from_config():
+    return config.get_main_option("sqlalchemy.url")
 
 
 if context.is_offline_mode():

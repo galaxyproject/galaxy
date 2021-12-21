@@ -27,12 +27,6 @@ DATABASE = {
             'default_sqlite_file': 'universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },
-    "tools":
-        {
-            'repo': 'galaxy/model/tool_shed_install/migrate',
-            'default_sqlite_file': 'universe.sqlite',
-            'config_override': 'GALAXY_CONFIG_',
-        },
     "tool_shed":
         {
             'repo': 'tool_shed/webapp/model/migrate',
@@ -140,8 +134,8 @@ def get_config(argv, use_argparse=True, cwd=None):
 
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database, install_database_connection=install_database_connection)
 
-
 def manage_db():
+    # TODO is this used?
     # Migrate has its own args, so cannot use argparse
     config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
     migrate_main(repository=config['repo'], url=config['db_url'])
