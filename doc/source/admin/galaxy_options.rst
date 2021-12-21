@@ -336,31 +336,15 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``check_migrate_tools``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable / disable checking if any tools defined in the above
-    non-shed tool_config_files (i.e., tool_conf.xml) have been
-    migrated from the Galaxy code distribution to the Tool Shed. This
-    functionality is largely untested in modern Galaxy releases and
-    has serious issues such as #7273 and the possibility of slowing
-    down Galaxy startup, so the default and recommended value is
-    false.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``migrated_tools_config``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Tool config maintained by tool migration scripts.  If you use the
-    migration scripts to install tools that have been migrated to the
-    tool shed upon a new release, they will be added to this tool
-    config file.
+    This option is deprecated. In previous releases this file was
+    maintained by tool migration scripts that are no longer part of
+    the code base. The option remains as a placeholder for deployments
+    where these scripts were previously run and such a file exists.
     The value of this option will be resolved with respect to
     <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
@@ -696,10 +680,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Container resolvers configuration (beta). Set up a file describing
+    Container resolvers configuration. Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default container resolvers loaded is
-    determined by enable_mulled_containers.
+    determined by enable_mulled_containers. For available options see
+    config/container_resolvers_conf.xml.sample.
 :Default: ``None``
 :Type: str
 
@@ -712,10 +697,8 @@
     Rather than specifying a container_resolvers_config_file, the
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
-    container_resolvers_config_file is used.
-    The syntax, available resolvers, and documentation of their
-    options is explained in detail in the documentation:
-    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+    container_resolvers_config_file is used. Takes the same options
+    that can be set in container_resolvers_config_file.
 :Default: ``None``
 :Type: seq
 
@@ -3533,49 +3516,6 @@
     'ga' or 'format2'.
 :Default: ``ga``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_min_steps``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling.
-:Default: ``250``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_for_collections``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling. Switch to using Galaxy's
-    beta workflow scheduling for all workflows involving collections.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

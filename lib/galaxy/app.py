@@ -149,8 +149,7 @@ class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, Hal
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
-        check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
         # Security helper
         self._configure_security()
         self._register_singleton(IdEncodingHelper, self.security)

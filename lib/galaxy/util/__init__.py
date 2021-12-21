@@ -1748,26 +1748,6 @@ class classproperty:
         return self.f(owner)
 
 
-def get_executable():
-    exe = sys.executable
-    if exe.endswith('uwsgi'):
-        virtualenv = None
-        if uwsgi is not None:
-            for name in ('home', 'virtualenv', 'venv', 'pyhome'):
-                if name in uwsgi.opt:
-                    virtualenv = unicodify(uwsgi.opt[name])
-                    break
-        if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
-            virtualenv = os.environ['VIRTUAL_ENV']
-        if virtualenv is not None:
-            exe = os.path.join(virtualenv, 'bin', 'python')
-        else:
-            exe = os.path.join(os.path.dirname(exe), 'python')
-            if not os.path.exists(exe):
-                exe = 'python'
-    return exe
-
-
 class ExecutionTimer:
 
     def __init__(self):
