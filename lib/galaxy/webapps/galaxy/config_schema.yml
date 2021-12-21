@@ -261,17 +261,6 @@ mapping:
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
 
-      check_migrate_tools:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable / disable checking if any tools defined in the above non-shed
-          tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed. This functionality is largely untested
-          in modern Galaxy releases and has serious issues such as #7273 and the possibility
-          of slowing down Galaxy startup, so the default and recommended value is false.
-
       migrated_tools_config:
         type: str
         default: migrated_tools_conf.xml
