@@ -17,6 +17,7 @@ from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
+from galaxy.datatypes.tabular import Tabular
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -636,6 +637,14 @@ class NeperTesr(Binary):
 class NeperPoints(data.Text):
     """
     Neper Position File
+    Neper position format has 1 - 3 floats per line separated by white space.
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.neper.points')
+    >>> NeperPoints().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.neper.tess')
+    >>> NeperPoints().sniff(fname)
+    False
     """
     file_ext = "neper.points"
     MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
@@ -646,13 +655,6 @@ class NeperPoints(data.Text):
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Neper position format has 1 - 3 floats per line separated by white space.
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('test.neper.points')
-        >>> NeperPoints().sniff(fname)
-        True
-        >>> fname = get_test_fname('test.neper.tess')
-        >>> NeperPoints().sniff(fname)
-        False
         """
         return self._get_dimension(file_prefix.text_io(errors='ignore')) is not None
 
@@ -661,14 +663,14 @@ class NeperPoints(data.Text):
             with open(dataset.file_name, errors='ignore') as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def _get_dimension(self, fh, maxlines=100):
+    def _get_dimension(self, fh, maxlines=100, sep=None):
         dim = None
         try:
             for i, line in enumerate(fh):
                 if not line:
                     break
-                pts = len([float(x) for x in line.strip().split()])
-                if dim and pts != dim:
+                pts = len([float(x) for x in line.strip().split(sep=sep)])
+                if dim is None and pts != dim:
                     return None
                 elif 1 <= pts <= 3:
                     dim = pts
@@ -687,6 +689,23 @@ class NeperPoints(data.Text):
         else:
             dataset.peek = 'File does not exist'
             dataset.blurb = 'File purged from disc'
+
+
+@build_sniff_from_prefix
+class NeperPointsTabular(NeperPoints, Tabular):
+    """
+    Neper Position File
+    """
+    file_ext = "neper.points.tsv"
+
+    def __init__(self, **kwd):
+        Tabular.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper position format has 1 - 3 floats per line separated by white space.
+        """
+        return self._get_dimension(file_prefix.text_io(errors='ignore'), sep='\t') is not None
 
 
 class NeperMultiScaleCell(data.Text):

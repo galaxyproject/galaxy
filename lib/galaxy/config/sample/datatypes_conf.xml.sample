@@ -889,6 +889,7 @@
     <datatype extension="neper.tess" type="galaxy.datatypes.constructive_solid_geometry:NeperTess" display_in_upload="true"/>
     <datatype extension="neper.tesr" type="galaxy.datatypes.constructive_solid_geometry:NeperTesr" display_in_upload="true"/>
     <datatype extension="neper.points" type="galaxy.datatypes.constructive_solid_geometry:NeperPoints" display_in_upload="true"/>
+    <datatype extension="neper.points.tsv" type="galaxy.datatypes.constructive_solid_geometry:NeperPointsTabular" display_in_upload="true"/>
     <datatype extension="neper.mscell" type="galaxy.datatypes.constructive_solid_geometry:NeperMultiScaleCell" display_in_upload="true"/>
     <datatype extension="gmsh.msh" type="galaxy.datatypes.constructive_solid_geometry:GmshMsh" display_in_upload="true"/>
     <datatype extension="gmsh.geo" type="galaxy.datatypes.constructive_solid_geometry:GmshGeo" display_in_upload="true"/>
@@ -1096,6 +1097,7 @@
     <sniffer type="galaxy.datatypes.metacyto:mStats"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.tabular:MatrixMarket"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperPointsTabular"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperPoints"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer3"/>
