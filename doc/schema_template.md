@@ -81,6 +81,7 @@ $tag:tool|outputs|collection|discover_datasets://complexType[@name='OutputCollec
 $tag:tool|tests://complexType[@name='Tests']
 $tag:tool|tests|test://complexType[@name='Test']
 $tag:tool|tests|test|param://complexType[@name='TestParam']
+$tag:tool|tests|test|param|metadata://complexType[@name='TestParamMetadata']
 $tag:tool|tests|test|param|collection://complexType[@name='TestCollection']
 $tag:tool|tests|test|repeat://complexType[@name='TestRepeat']
 $tag:tool|tests|test|section://complexType[@name='TestSection']
