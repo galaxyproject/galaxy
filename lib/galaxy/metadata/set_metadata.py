@@ -66,6 +66,9 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
+MAX_STDIO_READ_BYTES = 100 * 10 ** 6  # 100 MB
+
+
 def set_validated_state(dataset_instance):
     datatype_validation = validate(dataset_instance)
 
@@ -162,46 +165,40 @@ def set_metadata_portable():
             outputs_directory = tool_job_working_directory
 
         # TODO: constants...
-        if os.path.exists(os.path.join(outputs_directory, "tool_stdout")):
-            with open(os.path.join(outputs_directory, "tool_stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(outputs_directory, "tool_stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(tool_job_working_directory, "stdout")):
-            with open(os.path.join(tool_job_working_directory, "stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(tool_job_working_directory, "stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(outputs_directory, "stdout")):
-            # Puslar style output directory? Was this ever used - did this ever work?
-            with open(os.path.join(outputs_directory, "stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
-            # We have a task splitting job
-            tool_stdout = b''
-            tool_stderr = b''
-            paths = Path(tool_job_working_directory).glob('task_*')
-            for path in paths:
-                with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
-                    task_stdout = f.read()
-                    if task_stdout:
-                        tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
-                with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
-                    task_stderr = f.read()
-                    if task_stderr:
-                        tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+        locations = [
+            (outputs_directory, 'tool_'),
+            (tool_job_working_directory, ''),
+            (outputs_directory, ''),  # # Pulsar style output directory? Was this ever used - did this ever work?
+        ]
+        for directory, prefix in locations:
+            if os.path.exists(os.path.join(directory, f"{prefix}stdout")):
+                with open(os.path.join(directory, f"{prefix}stdout"), 'rb') as f:
+                    tool_stdout = f.read(MAX_STDIO_READ_BYTES)
+                with open(os.path.join(directory, f"{prefix}stderr"), 'rb') as f:
+                    tool_stderr = f.read(MAX_STDIO_READ_BYTES)
+                break
         else:
-            wdc = os.listdir(tool_job_working_directory)
-            odc = os.listdir(outputs_directory)
-            error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
-            error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-            log.warn(f"{error_desc}. {error_extra}")
-            raise Exception(error_desc)
+            if os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
+                # We have a task splitting job
+                tool_stdout = b''
+                tool_stderr = b''
+                paths = Path(tool_job_working_directory).glob('task_*')
+                for path in paths:
+                    with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
+                        task_stdout = f.read(MAX_STDIO_READ_BYTES)
+                        if task_stdout:
+                            tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                    with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
+                        task_stderr = f.read(MAX_STDIO_READ_BYTES)
+                        if task_stderr:
+                            tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+            else:
+                wdc = os.listdir(tool_job_working_directory)
+                odc = os.listdir(outputs_directory)
+                error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
+                error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
+                log.warn(f"{error_desc}. {error_extra}")
+                raise Exception(error_desc)
 
         job_id_tag = metadata_params["job_id_tag"]
 
@@ -217,7 +214,7 @@ def set_metadata_portable():
         version_string_path = os.path.join('outputs', COMMAND_VERSION_FILENAME)
         version_string = collect_shrinked_content_from_path(version_string_path)
 
-        expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
+        expression_context = ExpressionContext(dict(stdout=tool_stdout[:255], stderr=tool_stderr[:255]))
 
         # Load outputs.
         export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
