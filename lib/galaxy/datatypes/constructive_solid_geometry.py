@@ -659,6 +659,7 @@ class NeperPoints(data.Text):
         return self._get_dimension(file_prefix.text_io(errors='ignore')) is not None
 
     def set_meta(self, dataset, **kwd):
+        data.Text.set_meta(self, dataset, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors='ignore') as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
@@ -683,18 +684,23 @@ class NeperPoints(data.Text):
         return dim
 
     def set_peek(self, dataset):
+        data.Text.set_peek(self, dataset)
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=9)
-            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
-        else:
-            dataset.peek = 'File does not exist'
-            dataset.blurb = 'File purged from disc'
+            dataset.blurb += f' dim: {str(dataset.metadata.dimension)}'
 
 
 @build_sniff_from_prefix
 class NeperPointsTabular(NeperPoints, Tabular):
     """
     Neper Position File
+    Neper position format has 1 - 3 floats per line separated by white space.
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.neper.points.tsv')
+    >>> NeperPoints().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.neper.points')
+    >>> NeperPoints().sniff(fname)
+    False
     """
     file_ext = "neper.points.tsv"
 
@@ -706,6 +712,17 @@ class NeperPointsTabular(NeperPoints, Tabular):
         Neper position format has 1 - 3 floats per line separated by white space.
         """
         return self._get_dimension(file_prefix.text_io(errors='ignore'), sep='\t') is not None
+
+    def set_meta(self, dataset, **kwd):
+        Tabular.set_meta(self, dataset, **kwd)
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                dataset.metadata.dimension = self._get_dimension(fh)
+
+    def set_peek(self, dataset):
+        Tabular.set_peek(self, dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb += f' dim: {str(dataset.metadata.dimension)}'
 
 
 class NeperMultiScaleCell(data.Text):
