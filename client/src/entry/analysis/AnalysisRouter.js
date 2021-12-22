@@ -179,7 +179,7 @@ export const getAnalysisRouter = (Galaxy) => {
         show_storage_dashboard: function () {
             const Galaxy = getGalaxyInstance();
             this._display_vue_helper(StorageDashboard, {
-                quotasEnabled: Galaxy.config.enable_quotas,
+                config: Galaxy.config,
                 userId: Galaxy.user.id,
             });
         },
