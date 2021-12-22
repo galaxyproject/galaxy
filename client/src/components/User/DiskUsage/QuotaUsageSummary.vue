@@ -1,27 +1,19 @@
 <template>
     <div class="quota-summary">
-        <h2 class="text-center my-3">
+        <h2 class="text-center mt-5">
             You've got <b>{{ totalQuotaString }}</b> of disk quota.
         </h2>
-        <h4 class="text-center my-3">
+        <h4 class="text-center mb-5">
             {{ quotaDescriptionSummary }}
         </h4>
 
-        <div class="m-5">
-            <h4>
+        <div class="w-75 mx-auto my-5">
+            <h3>
                 <b>{{ usedQuotaString }}</b> of {{ totalQuotaString }} used
-            </h4>
-            <h6>{{ usedQuotaPercent }}% of total disk quota used</h6>
+            </h3>
+            <h5>{{ usedQuotaPercent }}% of total disk quota used</h5>
             <b-progress :value="usedQuotaPercent" max="100"></b-progress>
         </div>
-        <h4 class="text-center my-3">
-            {{ quotaUsageHelp }}
-        </h4>
-        <b-row class="justify-content-md-center mb-3">
-            <b-button :href="quotaSettings.quotasHelpUrl" target="_blank" variant="primary">
-                Go to documentation
-            </b-button>
-        </b-row>
     </div>
 </template>
 
@@ -44,10 +36,6 @@ export default {
     data() {
         return {
             quotaDescriptionSummary: _l("This is the maximum disk space that you can use."),
-            quotaUsageHelp: _l(
-                "Is your usage more than expected? See the documentation" +
-                    " for tips on how to find all of the data in your account."
-            ),
         };
     },
     computed: {
