@@ -671,7 +671,7 @@ class NeperPoints(data.Text):
                 if not line:
                     break
                 pts = len([float(x) for x in line.strip().split(sep=sep)])
-                if dim is None and pts != dim:
+                if dim is not None and pts != dim:
                     return None
                 elif 1 <= pts <= 3:
                     dim = pts
