@@ -696,10 +696,10 @@ class NeperPointsTabular(NeperPoints, Tabular):
     Neper position format has 1 - 3 floats per line separated by white space.
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.neper.points.tsv')
-    >>> NeperPoints().sniff(fname)
+    >>> NeperPointsTabular().sniff(fname)
     True
     >>> fname = get_test_fname('test.neper.points')
-    >>> NeperPoints().sniff(fname)
+    >>> NeperPointsTabular().sniff(fname)
     False
     """
     file_ext = "neper.points.tsv"
