@@ -10,15 +10,13 @@
             :current-page="currentPage"
             :busy.sync="isBusy"
             @row-clicked="clicked"
-            @filtered="filtered"
-        >
+            @filtered="filtered">
             <template v-slot:head(select_icon)="">
                 <font-awesome-icon
                     @click="$emit('toggleSelectAll')"
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
-                    :icon="selectionIcon(selectAllIcon)"
-                />
+                    :icon="selectionIcon(selectAllIcon)" />
             </template>
             <template v-slot:cell(select_icon)="data">
                 <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
@@ -27,8 +25,7 @@
                 <div style="cursor: pointer">
                     <pre
                         v-if="isEncoded"
-                        :title="`label-${data.item.labelTitle}`"
-                    ><code>{{ data.value ? data.value : "-" }}</code></pre>
+                        :title="`label-${data.item.labelTitle}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                     <span v-else>
                         <div v-if="data.item.isLeaf">
                             <i :class="leafIcon" />
@@ -67,8 +64,7 @@
             v-if="nItems > perPage"
             v-model="currentPage"
             :per-page="perPage"
-            :total-rows="nItems"
-        />
+            :total-rows="nItems" />
     </div>
 </template>
 

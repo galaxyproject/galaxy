@@ -2,8 +2,8 @@ import os
 from unittest import TestCase
 
 from galaxy.app_unittest_utils.tools_support import UsesApp
+from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
-from galaxy.jobs import SimpleComputeEnvironment
 from galaxy.model import (
     Dataset,
     History,
@@ -178,6 +178,13 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         command_line, extra_filenames, _ = self.evaluator.build()
         self.assertEqual(command_line, "prog1 /new/path/human")
 
+    def test_version_command(self):
+        self.tool.version_string_cmd = "echo v.1.1"
+        self._setup_test_bwa_job()
+        self._set_compute_environment()
+        command_line, extra_filenames, _ = self.evaluator.build()
+        assert self.tool.version_string_cmd in command_line
+
     def test_template_property_app(self):
         self._assert_template_property_is("$__app__.config.new_file_path", self.app.config.new_file_path)
 
@@ -203,7 +210,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
             kwds["working_directory"] = self.test_directory
         if "new_file_path" not in kwds:
             kwds["new_file_path"] = self.app.config.new_file_path
-        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))
+        self.evaluator.set_compute_environment(ComputeEnvironment(**kwds))  # type: ignore[arg-type]
         assert "exec_before_job" in self.tool.hooks_called
 
     def _setup_test_bwa_job(self):
@@ -285,6 +292,12 @@ class ComputeEnvironment(SimpleComputeEnvironment):
     def galaxy_url(self):
         return TEST_GALAXY_URL
 
+    def version_path(self):
+        return "tool_version"
+
+    def get_file_sources_dict(self):
+        return {}
+
 
 class MockTool:
 
@@ -299,6 +312,7 @@ class MockTool:
         self._params = {"thresh": self.test_thresh_param()}
         self.options = Bunch(sanitize=False)
         self.check_values = True
+        self.version_string_cmd = ""
 
     def test_thresh_param(self):
         elem = XML('<param name="thresh" type="integer" value="5" />')

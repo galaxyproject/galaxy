@@ -22,8 +22,7 @@ class CancelsJob:
             "cat_data_and_sleep",
             running_inputs,
             history_id,
-            assert_ok=False,
-        ).json()
+        )
         job_dict = running_response["jobs"][0]
         return job_dict["id"]
 

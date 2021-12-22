@@ -13,12 +13,13 @@ import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
 from os.path import abspath
-from typing import Any, Iterator, TYPE_CHECKING, Union
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Union
 
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
@@ -32,6 +33,7 @@ from galaxy.util.json import safe_dumps
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
     from galaxy.model.none_like import NoneDataset
+    from galaxy.model.store import SessionlessContext
 
 log = logging.getLogger(__name__)
 
@@ -71,8 +73,9 @@ class MetadataCollection(Mapping):
     retrieved, returning default values in cases when metadata is not set.
     """
 
-    def __init__(self, parent: Union["DatasetInstance", "NoneDataset"]) -> None:
+    def __init__(self, parent: Union["DatasetInstance", "NoneDataset"], session: Optional[Union[galaxy_scoped_session, 'SessionlessContext']] = None) -> None:
         self.parent = parent
+        self._session = session
         # initialize dict if needed
         if self.parent._metadata is None:
             self.parent._metadata = {}
@@ -92,6 +95,9 @@ class MetadataCollection(Mapping):
     @property
     def spec(self):
         return self.parent.datatype.metadata_spec
+
+    def _object_session(self, item):
+        return self._session if self._session else object_session(item)
 
     def __iter__(self) -> Iterator[Any]:
         yield from self.spec.keys()
@@ -124,8 +130,8 @@ class MetadataCollection(Mapping):
     def __getattr__(self, name):
         if name in self.spec:
             if name in self.parent._metadata:
-                return self.spec[name].wrap(self.parent._metadata[name], object_session(self.parent))
-            return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
+                return self.spec[name].wrap(self.parent._metadata[name], self._object_session(self.parent))
+            return self.spec[name].wrap(self.spec[name].default, self._object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
         # Instead of raising an AttributeError for non-existing metadata, we return None
@@ -134,6 +140,8 @@ class MetadataCollection(Mapping):
     def __setattr__(self, name, value):
         if name == "parent":
             return self.set_parent(value)
+        elif name == '_session':
+            super().__setattr__(name, value)
         else:
             if name in self.spec:
                 self.parent._metadata[name] = self.spec[name].unwrap(value)
@@ -301,7 +309,7 @@ class MetadataParameter:
     def to_safe_string(self, value):
         return sanitize_lists_to_string(self.to_string(value))
 
-    def make_copy(self, value, target_context=None, source_context=None):
+    def make_copy(self, value, target_context: MetadataCollection, source_context):
         return copy.deepcopy(value)
 
     @classmethod
@@ -569,19 +577,20 @@ class FileParameter(MetadataParameter):
         else:
             return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
 
-    def make_copy(self, value, target_context, source_context):
-        value = self.wrap(value, object_session(target_context.parent))
+    def make_copy(self, value, target_context: MetadataCollection, source_context):
+        session = target_context._object_session(target_context.parent)
+        value = self.wrap(value, session=session)
         target_dataset = target_context.parent.dataset
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,
             # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
-            object_session(target_context.parent).add(new_value)
+            session.add(new_value)
             try:
                 shutil.copy(value.file_name, new_value.file_name)
             except AssertionError:
-                object_session(target_context.parent).flush()
+                session(target_context.parent).flush()
                 shutil.copy(value.file_name, new_value.file_name)
             return self.unwrap(new_value)
         return None

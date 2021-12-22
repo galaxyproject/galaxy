@@ -4,12 +4,12 @@ Classes encapsulating galaxy tools and tool configuration.
 import itertools
 import json
 import logging
+import math
 import os
 import re
 import tarfile
 import tempfile
 import threading
-from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -68,6 +68,7 @@ from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.cache import ToolDocumentCache
+from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper
 from galaxy.tools.parameters import (
     check_param,
@@ -220,6 +221,21 @@ IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
     # minimum example:
     # "foobar": {"required": REQUIRE_FULL_DIRECTORY}
     # if no version is specified, all versions without explicit RequiredFiles will be selected
+    "circos": {"required": REQUIRE_FULL_DIRECTORY},
+    "cp_image_math": {"required": {"includes": [{"path": "cp_common_functions.py", "path_type": "literal"}]}},
+    "enumerate_charges": {"required": {"includes": [{"path": "site_substructures.smarts", "path_type": "literal"}]}},
+    "fasta_compute_length": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "fasta_concatenate0": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "filter_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "flanking_features_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "gops_intersect_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "gops_subtract_1": {"required": {"includes": [{"path": "utils/*", "path_type": "glob"}]}},
+    "maxquant": {"required": {"includes": [{"path": "mqparam.py", "path_type": "literal"}]}},
+    "maxquant_mqpar": {"required": {"includes": [{"path": "mqparam.py", "path_type": "literal"}]}},
+    "query_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "shasta": {"required": {"includes": [{"path": "configs/*", "path_type": "glob"}]}},
+    "sqlite_to_tabular": {"required": {"includes": [{"path": "*.py", "path_type": "glob"}]}},
+    "sucos_max_score": {"required": {"includes": [{"path": "utils.py", "path_type": "literal"}]}},
 }
 
 
@@ -239,25 +255,6 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     'Show tail1': safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     'sort1': safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
 }
-
-
-class ToolErrorLog:
-    def __init__(self):
-        self.error_stack = []
-        self.max_errors = 100
-
-    def add_error(self, file, phase, exception):
-        self.error_stack.insert(0, {
-            "file": file,
-            "time": str(datetime.now()),
-            "phase": phase,
-            "error": unicodify(exception)
-        })
-        if len(self.error_stack) > self.max_errors:
-            self.error_stack.pop()
-
-
-global_tool_errors = ToolErrorLog()
 
 
 class ToolNotFoundException(Exception):
@@ -542,15 +539,15 @@ class Tool(Dictifiable):
     job_search: 'JobSearch'
     version: str
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
+    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False, tool_dir=None):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         if config_file is not None:
             self.config_file = config_file
-            self.tool_dir = os.path.dirname(config_file)
+            self.tool_dir = tool_dir or os.path.dirname(config_file)
         else:
             self.config_file = None
-            self.tool_dir = None
+            self.tool_dir = tool_dir
 
         self.app = app
         self.repository_id = repository_id
@@ -836,9 +833,8 @@ class Tool(Dictifiable):
             raise Exception(f"Missing tool 'id' for tool at '{tool_source}'")
 
         profile = packaging.version.parse(str(self.profile))
-        if profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
-            template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
-            message = template % (self.id, self.profile)
+        if self.app.name == 'galaxy' and profile >= packaging.version.parse("16.04") and packaging.version.parse(VERSION_MAJOR) < profile:
+            message = f"The tool [{self.id}] targets version {self.profile} of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             raise Exception(message)
 
         self.python_template_version = tool_source.parse_python_template_version()
@@ -864,8 +860,6 @@ class Tool(Dictifiable):
             else:
                 raise Exception(f"Missing tool 'version' for tool with id '{self.id}' at '{tool_source}'")
 
-        # Support multi-byte tools
-        self.is_multi_byte = tool_source.parse_is_multi_byte()
         # Legacy feature, ignored by UI.
         self.force_history_refresh = False
 
@@ -1365,8 +1359,8 @@ class Tool(Dictifiable):
                 group_r.inputs = self.parse_input_elem(page_source, enctypes, context)
                 group_r.default = int(input_source.get("default", 0))
                 group_r.min = int(input_source.get("min", 0))
-                # Use float instead of int so that 'inf' can be used for no max
-                group_r.max = float(input_source.get("max", "inf"))
+                # Use float instead of int so that math.inf can be used for no max
+                group_r.max = float(input_source.get("max", math.inf))
                 assert group_r.min <= group_r.max, ValueError(
                     f"Tool with id '{self.id}': min repeat count must be less-than-or-equal to the max."
                 )
@@ -2790,7 +2784,7 @@ class SetMetadataTool(Tool):
     tool_action: "SetMetadataToolAction"
 
     def regenerate_imported_metadata_if_needed(self, hda, history, job):
-        if len(hda.metadata_file_types) > 0:
+        if hda.has_metadata_files:
             job, *_ = self.tool_action.execute_via_app(
                 self, self.app, job.session_id,
                 history.id, job.user, incoming={'input1': hda}, overwrite=False

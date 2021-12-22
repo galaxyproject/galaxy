@@ -5,8 +5,7 @@
                 class="mr-1 btn btn-secondary"
                 :to="{ path: `/` }"
                 data-toggle="tooltip"
-                title="Go to libraries list"
-            >
+                title="Go to libraries list">
                 <font-awesome-icon icon="home" />
             </b-button>
             <div>
@@ -17,16 +16,14 @@
                         title="Create new folder"
                         class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                         type="button"
-                        @click="newFolder"
-                    >
+                        @click="newFolder">
                         <font-awesome-icon icon="plus" />
                         Folder
                     </button>
                     <div v-if="metadata.can_add_library_item">
                         <div
                             title="Add datasets to current folder"
-                            class="dropdown add-library-items add-library-items-datasets mr-1"
-                        >
+                            class="dropdown add-library-items add-library-items-datasets mr-1">
                             <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                                 <span class="fa fa-plus"></span> Datasets <span class="caret" />
                             </button>
@@ -37,8 +34,7 @@
                                 <a
                                     v-if="user_library_import_dir_available"
                                     class="dropdown-item cursor-pointer"
-                                    @click="addDatasets('userdir')"
-                                >
+                                    @click="addDatasets('userdir')">
                                     from User Directory
                                 </a>
                                 <div v-if="library_import_dir || allow_library_path_paste">
@@ -46,15 +42,13 @@
                                     <a
                                         v-if="library_import_dir"
                                         class="dropdown-item cursor-pointer"
-                                        @click="addDatasets('importdir')"
-                                    >
+                                        @click="addDatasets('importdir')">
                                         from Import Directory
                                     </a>
                                     <a
                                         v-if="allow_library_path_paste"
                                         class="dropdown-item cursor-pointer"
-                                        @click="addDatasets('path')"
-                                    >
+                                        @click="addDatasets('path')">
                                         from Path
                                     </a>
                                 </div>
@@ -65,8 +59,7 @@
                         <button
                             type="button"
                             class="primary-button dropdown-toggle add-to-history"
-                            data-toggle="dropdown"
-                        >
+                            data-toggle="dropdown">
                             <font-awesome-icon icon="book" />
                             Export to History <span class="caret"></span>
                         </button>
@@ -75,16 +68,14 @@
                                 href="javascript:void(0)"
                                 role="button"
                                 class="toolbtn-bulk-import add-to-history-datasets dropdown-item"
-                                @click="importToHistoryModal(false)"
-                            >
+                                @click="importToHistoryModal(false)">
                                 as Datasets
                             </a>
                             <a
                                 href="javascript:void(0)"
                                 role="button"
                                 class="toolbtn-collection-import add-to-history-collection dropdown-item"
-                                @click="importToHistoryModal(true)"
-                            >
+                                @click="importToHistoryModal(true)">
                                 as a Collection
                             </a>
                         </div>
@@ -92,8 +83,7 @@
                     <div
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1"
-                        v-if="dataset_manipulation"
-                    >
+                        v-if="dataset_manipulation">
                         <button type="button" id="download--btn" class="primary-button" @click="downloadData('zip')">
                             <font-awesome-icon icon="download" />
                             Download
@@ -105,8 +95,7 @@
                         title="Mark items deleted"
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                         type="button"
-                        @click="deleteSelected"
-                    >
+                        @click="deleteSelected">
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
@@ -121,8 +110,7 @@
                             id="checkbox-1"
                             :checked="include_deleted"
                             @input="toggle_include_deleted($event)"
-                            name="checkbox-1"
-                        >
+                            name="checkbox-1">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -130,21 +118,10 @@
             </div>
         </div>
 
-        <b-breadcrumb>
-            <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/` }">
-                Libraries
-            </b-breadcrumb-item>
-            <template v-for="path_item in this.metadata.full_path">
-                <b-breadcrumb-item
-                    :key="path_item[0]"
-                    :title="isCurrentFolder(path_item[0]) ? `You are in this folder` : `Return to this folder`"
-                    :active="isCurrentFolder(path_item[0])"
-                    :to="{ name: `LibraryFolder`, params: { folder_id: `${path_item[0]}` } }"
-                    href="#"
-                    >{{ path_item[1] }}</b-breadcrumb-item
-                >
-            </template>
-        </b-breadcrumb>
+        <LibraryBreadcrumb
+            v-if="metadata && metadata.full_path"
+            :full_path="metadata.full_path"
+            :current-id="folder_id" />
     </div>
 </template>
 <script>
@@ -164,6 +141,7 @@ import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
 import SearchField from "../SearchField";
 import { Services } from "../services";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 
 initTopBarIcons();
 
@@ -204,6 +182,7 @@ export default {
     components: {
         SearchField,
         FontAwesomeIcon,
+        LibraryBreadcrumb,
     },
     data() {
         return {
@@ -327,9 +306,6 @@ export default {
                     });
                 }
             });
-        },
-        isCurrentFolder(id) {
-            return this.folder_id === id;
         },
         /*
             Slightly adopted Bootstrap code

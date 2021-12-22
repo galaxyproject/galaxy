@@ -7,8 +7,7 @@
             :labels="labels"
             :label-title="selectedLabelTitle"
             @onOk="onOk"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <MarkdownVisualization
             v-else-if="visualizationShow"
             :argument-name="argumentName"
@@ -17,16 +16,14 @@
             :use-labels="useLabels"
             :history="dataHistoryId"
             @onOk="onVisualization"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <DataDialog v-else-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
             v-else-if="dataCollectionShow"
             :history="dataHistoryId"
             format="id"
             @onOk="onDataCollection"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
             v-else-if="jobShow"
             :get-data="getJobs"
@@ -34,8 +31,7 @@
             title="Job"
             label-key="id"
             @onOk="onJob"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
             v-else-if="invocationShow"
             :get-data="getInvocations"
@@ -43,8 +39,7 @@
             title="Invocation"
             label-key="id"
             @onOk="onInvocation"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
             v-else-if="workflowShow"
             :get-data="getWorkflows"
@@ -52,16 +47,14 @@
             leaf-icon="fa fa-sitemap fa-rotate-270"
             label-key="name"
             @onOk="onWorkflow"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
             v-else-if="historyShow"
             :get-data="getHistories"
             title="History"
             label-key="name"
             @onOk="onHistory"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
     </span>
 </template>
 

@@ -442,15 +442,15 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
             encoded_visualization_id = trans.security.encode_id(visualization.id)
-            return trans.stream_template_mako('visualization/display_in_frame.mako',
-                                              item=visualization, encoded_visualization_id=encoded_visualization_id,
-                                              user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                              content_only=True)
+            return trans.fill_template_mako('visualization/display_in_frame.mako',
+                                            item=visualization, encoded_visualization_id=encoded_visualization_id,
+                                            user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                            content_only=True)
 
         visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.stream_template_mako("visualization/display.mako", item=visualization, item_data=visualization_config,
-                                          user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
-                                          content_only=True)
+        return trans.fill_template_mako("visualization/display.mako", item=visualization, item_data=visualization_config,
+                                        user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                        content_only=True)
 
     @web.expose
     @web.json

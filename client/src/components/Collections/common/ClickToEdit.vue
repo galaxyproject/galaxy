@@ -5,8 +5,7 @@
         contenteditable
         v-model="localValue"
         @blur="editable = false"
-        @keyup.enter="editable = false"
-    />
+        @keyup.enter="editable = false" />
     <label v-else @click="editable = true">
         {{ localValue }}
     </label>

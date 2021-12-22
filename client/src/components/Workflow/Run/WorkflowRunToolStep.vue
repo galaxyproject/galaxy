@@ -14,8 +14,7 @@
                     collapsed-disable-text="Undo"
                     collapsed-disable-icon="fa fa-undo"
                     @onChange="onChange"
-                    @onValidation="onValidation"
-                />
+                    @onValidation="onValidation" />
             </template>
         </FormCard>
     </div>

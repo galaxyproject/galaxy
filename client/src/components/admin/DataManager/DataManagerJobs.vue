@@ -14,8 +14,7 @@
                                 <b-form-input
                                     v-model="filter"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''"
-                                />
+                                    @keyup.esc.native="filter = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -38,8 +37,7 @@
                 hover
                 responsive
                 striped
-                id="jobs-table"
-            >
+                id="jobs-table">
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
@@ -49,15 +47,13 @@
                             v-b-tooltip.hover
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }"
-                            :id="'job-' + jobs[row.index]['encId']"
-                        >
+                            :id="'job-' + jobs[row.index]['encId']">
                             <span class="fa fa-info-circle" />
                         </b-button>
                         <b-button
                             v-if="!showCommandLine"
                             @click.stop="row.toggleDetails()"
-                            :pressed.sync="row.detailsShowing"
-                        >
+                            :pressed.sync="row.detailsShowing">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </b-button>
                     </b-button-group>

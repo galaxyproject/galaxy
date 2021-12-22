@@ -42,7 +42,7 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
-    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer):
+    def __init__(self, manager: SharableModelManager, serializer: SharableModelSerializer) -> None:
         self.manager = manager
         self.serializer = serializer
 
@@ -56,7 +56,11 @@ class ShareableService:
         return self._get_sharing_status(trans, item)
 
     def enable_link_access(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        """Makes this item accessible by link.
+        If this item contains other elements they will be publicly accessible too.
+        """
         item = self._get_item_by_id(trans, id)
+        self.manager.make_members_public(trans, item)
         self.manager.make_importable(item)
         return self._get_sharing_status(trans, item)
 
@@ -66,7 +70,11 @@ class ShareableService:
         return self._get_sharing_status(trans, item)
 
     def publish(self, trans, id: EncodedDatabaseIdField) -> SharingStatus:
+        """Makes this item publicly accessible.
+        If this item contains other elements they will be publicly accessible too.
+        """
         item = self._get_item_by_id(trans, id)
+        self.manager.make_members_public(trans, item)
         self.manager.publish(item)
         return self._get_sharing_status(trans, item)
 

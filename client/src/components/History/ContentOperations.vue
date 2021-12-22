@@ -7,22 +7,19 @@
                     icon="check-square"
                     :disabled="!totalMatches"
                     :pressed="hasSelection"
-                    @click="toggleSelectAll"
-                />
+                    @click="toggleSelectAll" />
                 <IconButton
                     title="Filter History Content"
                     icon="filter"
                     :disabled="!totalMatches"
                     :pressed="showFilter"
                     @click="showFilter = !showFilter"
-                    data-description="content filter toggle"
-                />
+                    data-description="content filter toggle" />
                 <IconButton
                     title="Collapse Expanded Items"
                     icon="compress"
                     :disabled="!expandedCount"
-                    @click="$emit('collapseAllContent')"
-                />
+                    @click="$emit('collapseAllContent')" />
             </b-button-group>
 
             <b-button-group>
@@ -31,8 +28,7 @@
                     size="sm"
                     text="Selection"
                     :disabled="!hasSelection"
-                    data-description="selected content menu"
-                >
+                    data-description="selected content menu">
                     <b-dropdown-text id="history-op-selected-content">
                         <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
                         <span v-localize v-else>You don't have any selected content.</span>
@@ -57,40 +53,35 @@
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         v-b-modal:purge-selected-content
-                        :disabled="!hasSelection"
-                    >
+                        :disabled="!hasSelection">
                         <span v-localize>Permanently Delete</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildDatasetList"
-                        data-description="build list"
-                    >
+                        data-description="build list">
                         <span v-localize>Build Dataset List</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildDatasetPair"
-                        data-description="build pair"
-                    >
+                        data-description="build pair">
                         <span v-localize>Build Dataset Pair</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildListOfPairs"
-                        data-description="build list of pairs"
-                    >
+                        data-description="build list of pairs">
                         <span v-localize>Build List of Dataset Pairs</span>
                     </b-dropdown-item>
 
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildCollectionFromRules"
-                        data-description="build collection from rules"
-                    >
+                        data-description="build collection from rules">
                         <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
@@ -100,8 +91,7 @@
                     size="sm"
                     text="History"
                     :disabled="!totalMatches"
-                    data-description="history action menu"
-                >
+                    data-description="history action menu">
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
@@ -109,8 +99,7 @@
                     <b-dropdown-item
                         aria-describedby="history-op-all-content"
                         @click="iframeRedirect('/dataset/copy_datasets')"
-                        data-description="copy datasets"
-                    >
+                        data-description="copy datasets">
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
 
@@ -172,7 +161,7 @@
 </template>
 
 <script>
-import { SearchParams } from "./model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,
@@ -185,7 +174,7 @@ import {
     purgeAllDeletedContent,
 } from "./model";
 import { createDatasetCollection } from "./model/queries";
-import { cacheContent } from "./caching";
+import { cacheContent } from "components/providers/History/caching";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 import ContentFilters from "./ContentFilters";

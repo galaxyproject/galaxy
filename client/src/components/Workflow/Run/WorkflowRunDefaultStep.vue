@@ -7,8 +7,7 @@
                     :inputs="inputs"
                     :validation-scroll-to="validationScrollTo"
                     @onChange="onChange"
-                    @onValidation="onValidation"
-                />
+                    @onValidation="onValidation" />
                 <div v-else class="py-2">No options available.</div>
             </template>
         </FormCard>

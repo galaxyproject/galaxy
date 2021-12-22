@@ -3,8 +3,7 @@
         :id="idString"
         :name="name"
         :node-label="label"
-        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }"
-    >
+        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -13,8 +12,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="onRemove"
-            >
+                @click="onRemove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
@@ -23,8 +21,7 @@
                 class="node-recommendations py-0 float-right"
                 variant="primary"
                 size="sm"
-                aria-label="tool recommendations"
-            >
+                aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
@@ -32,8 +29,7 @@
                     :get-node="getNode"
                     :get-manager="getManager"
                     :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate"
-                />
+                    @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -43,8 +39,7 @@
                 aria-label="clone node"
                 v-b-tooltip.hover
                 title="Duplicate"
-                @click="onClone"
-            >
+                @click="onClone">
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
@@ -64,8 +59,7 @@
                 :datatypes-mapper="datatypesMapper"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
-                @onChange="onChange"
-            />
+                @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
@@ -76,8 +70,7 @@
                 @onAdd="onAddOutput"
                 @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
-                @onChange="onChange"
-            />
+                @onChange="onChange" />
         </div>
     </div>
 </template>
@@ -240,6 +233,7 @@ export default {
     },
     methods: {
         onChange() {
+            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -322,9 +316,6 @@ export default {
             this.label = data.label;
             this.setData(data);
             this.showLoading = false;
-        },
-        labelOutput(outputName, label) {
-            return this.activeOutputs.labelOutput(outputName, label);
         },
         onScrollTo() {
             this.scrolledTo = true;

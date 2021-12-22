@@ -312,7 +312,7 @@ class BaseJobRunner:
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
-        for dataset_path in job_wrapper.get_output_fnames():
+        for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
             if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
                 path = dataset_path.false_path
@@ -356,10 +356,10 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.output_paths:
+        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.job_io.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.get_output_fnames(),
+            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.job_io.get_output_fnames(),
                                                                            set_extension=True,
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
@@ -412,8 +412,8 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path, contents):
-        write_script(path, contents, self.app.config)
+    def write_executable_script(self, path, contents, job_io):
+        write_script(path, contents, job_io)
 
     def _find_container(
         self,

@@ -39,7 +39,6 @@ class ModelMapping(Bunch):
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
-        self._SessionLocal = SessionLocal
         self.session = context
         self.scoped_registry = context.registry
 

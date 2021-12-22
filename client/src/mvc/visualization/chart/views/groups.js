@@ -70,19 +70,27 @@ var GroupView = Backbone.View.extend({
                             value: data_columns,
                         });
                         self.chart.state("ok", "Metadata initialized...");
+                        const params = {};
+                        visitInputs(inputs, (input, name) => {
+                            params[name] = input.value;
+                        });
+                        self.redraw(params);
                         const instance = appendVueComponent(self.$el, FormDisplay, {
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {
-                            self.group.set(data);
-                            self.chart.set("modified", true);
-                            self.chart.trigger("redraw");
+                            self.redraw(data);
                         });
                         process.resolve();
                     },
                 });
             });
         }
+    },
+    redraw(data) {
+        this.group.set(data);
+        this.chart.set("modified", true);
+        this.chart.trigger("redraw");
     },
 });
 

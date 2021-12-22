@@ -57,6 +57,7 @@ ENTRY_POINTS = '''
         mulled-build-files=galaxy.tool_util.deps.mulled.mulled_build_files:main
         mulled-list=galaxy.tool_util.deps.mulled.mulled_list:main
         mulled-update-singularity-containers=galaxy.tool_util.deps.mulled.mulled_update_singularity_containers:main
+        mulled-hash=galaxy.tool_util.deps.mulled.mulled_hash:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
@@ -126,10 +127,10 @@ setup(
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
         "Programming Language :: Python :: 3",
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements

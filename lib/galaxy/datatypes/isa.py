@@ -141,7 +141,7 @@ class _Isa(data.Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -250,6 +250,7 @@ class _Isa(data.Data):
            if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
            The preview is triggered when user clicks on the eye icon of the composite dataset."""
 
+        headers = kwd.get("headers", {})
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
@@ -295,9 +296,9 @@ class _Isa(data.Data):
 
         # Set mime type
         mime = 'text/html'
-        self._clean_and_set_mime_type(trans, mime)
+        self._clean_and_set_mime_type(trans, mime, headers)
 
-        return sanitize_html(html).encode('utf-8')
+        return sanitize_html(html).encode('utf-8'), headers
 
 
 # ISA-Tab class {{{1

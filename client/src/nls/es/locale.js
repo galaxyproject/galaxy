@@ -222,7 +222,7 @@ define({
 
     None: "Ninguna",
 
-    "For all selected": "Para todos los seleccionados",
+    "For all selected": "Para los seleccionados",
 
     // ---- history-view-edit
 

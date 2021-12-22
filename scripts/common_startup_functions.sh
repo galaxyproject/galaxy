@@ -43,7 +43,7 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                circusd_args="$circusd_args --daemon --log-output $GALAXY_LOG"
+                circusd_args="$circusd_args --daemon --log-output $LOG_FILE"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
                 GALAXY_DAEMON_LOG="$GALAXY_LOG"
@@ -113,7 +113,7 @@ setup_python() {
         set_conda_exe
         if [ -n "$CONDA_EXE" ] && \
                 check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_"}; then
-            # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
+            # You almost surely have the required minimum pip version and running `conda install ... pip>=<min_ver>` every time is slow
             REPLACE_PIP=0
             [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then

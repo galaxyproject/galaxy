@@ -9,7 +9,6 @@ from pydantic import (
 )
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import aliased
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -22,6 +21,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
@@ -98,7 +98,7 @@ class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
     def __init__(
         self,
-        sa_session: scoped_session,
+        sa_session: galaxy_scoped_session,
         hda_manager: HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
         ldda_manager: LDDAManager,
@@ -742,15 +742,11 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
     possible_outputs = (
         ('hda', 'dataset_id', job.output_datasets),
         ('ldda', 'ldda_id', job.output_library_datasets),
-        ('hdca', 'dataset_collection_id', job.output_dataset_collections),
         ('hdca', 'dataset_collection_id', job.output_dataset_collection_instances),
     )
     for src, attribute, output_associations in possible_outputs:
         for output_association in output_associations:
             output_name = output_association.name
-            if src == 'hdca' and output_name in outputs:
-                # Is a mapped over output, don't want to display both (for now?)
-                continue
             if output_name not in output_labels and tool:
                 tool_output = tool.output_collections if src == 'hdca' else tool.outputs
                 output_labels[output_name] = get_output_name(tool=tool, output=tool_output.get(output_name), params=params)

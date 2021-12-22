@@ -18,19 +18,13 @@ export class DatasetCollection extends Content {
     }
 
     get totalElements() {
-        if ("element_count" in this) {
+        if ("element_count" in this && this.element_count) {
             return this.element_count;
         }
         if (this.collection_type == "paired") {
             return 2;
         }
         return undefined;
-    }
-
-    // text for UI
-    get collectionCountDescription() {
-        const ct = this.totalElements;
-        return ct == 1 ? "with 1 item" : `with ${ct} items`;
     }
 
     // text for UI
@@ -57,6 +51,21 @@ export class DatasetCollection extends Content {
 
     get jobSummary() {
         return Object.freeze(new JobStateSummary(this));
+    }
+
+    /** Whether all elements in the collection have the same datatype.
+     *  @return {Boolean}
+     */
+    get isHomogeneous() {
+        return this.elements_datatypes?.length == 1;
+    }
+
+    /** Gets the datatype shared by all elements or an empty
+     * string if the collection has mixed types of datasets.
+     *  @return {String}
+     */
+    get homogeneousDatatype() {
+        return this.isHomogeneous ? this.elements_datatypes[0] : "";
     }
 
     clone() {

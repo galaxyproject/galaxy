@@ -6,8 +6,7 @@
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History export job ended in error"
-                :job="jobError"
-            />
+                :job="jobError" />
         </b-alert>
         <div v-if="loadingExports">
             <loading-span message="Loading history export information from Galaxy server." />

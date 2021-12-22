@@ -15,7 +15,6 @@ from galaxy.model import (
     Task,
     User
 )
-from galaxy.tools import evaluation
 from galaxy.util.bunch import Bunch
 
 TEST_TOOL_ID = "cufftest"
@@ -49,9 +48,9 @@ class BaseWrapperTestCase(UsesApp):
     @contextmanager
     def _prepared_wrapper(self):
         wrapper = self._wrapper()
-        with _mock_tool_evaluator(MockEvaluator):
-            wrapper.prepare()
-            yield wrapper
+        wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
+        wrapper.prepare()
+        yield wrapper
 
     def test_version_path(self):
         wrapper = self._wrapper()
@@ -75,11 +74,7 @@ class BaseWrapperTestCase(UsesApp):
 class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
 
     def _wrapper(self):
-        return JobWrapper(self.job, self.queue)
-
-    def test_prepare_sets_version_command(self):
-        with self._prepared_wrapper() as wrapper:
-            assert TEST_VERSION_COMMAND in wrapper.write_version_cmd, wrapper.write_version_cmd
+        return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
 
 class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
@@ -93,10 +88,6 @@ class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
     def _wrapper(self):
         return TaskWrapper(self.task, self.queue)
 
-    def test_prepare_sets_no_version_command(self):
-        with self._prepared_wrapper() as wrapper:
-            assert wrapper.write_version_cmd is None
-
 
 class MockEvaluator:
 
@@ -106,6 +97,9 @@ class MockEvaluator:
         self.job = job
         self.local_working_directory = local_working_directory
         self.param_dict = {}
+
+    def populate_interactivetools(self):
+        return []
 
     def set_compute_environment(self, *args, **kwds):
         pass
@@ -171,6 +165,12 @@ class MockTool:
         self.dependencies = []
         self.requires_galaxy_python_environment = False
         self.id = 'mock_id'
+        self.home_target = None
+        self.tmp_target = None
+        self.tool_source = Bunch(to_string=lambda: '')
+
+    def get_job_destination(self, params):
+        return Bunch(runner='local', id='local', params={})
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS
@@ -206,16 +206,3 @@ class MockObjectStore:
         if kwds.get("base_dir", "") == "job_work":
             return self.working_directory
         return None
-
-
-# Poor man's mocking. Need to get a real mocking library as real Galaxy development
-# dependnecy.
-@contextmanager
-def _mock_tool_evaluator(mock_constructor):
-    name = evaluation.ToolEvaluator.__name__
-    real_classs = getattr(evaluation, name)
-    try:
-        setattr(evaluation, name, mock_constructor)
-        yield
-    finally:
-        setattr(evaluation, name, real_classs)

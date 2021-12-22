@@ -1,23 +1,14 @@
 <template>
     <FormCard :title="outputTitle" collapsible :expanded.sync="expanded">
         <template v-slot:body>
-            <FormElement
-                :id="outputLabelId"
-                :value="outputLabel"
-                :error="outputLabelError"
-                title="Label"
-                type="text"
-                help="This will provide a short name to describe the output - this must be unique across workflows."
-                @input="onLabel"
-            />
+            <FormOutputLabel :name="outputName" :active-outputs="activeOutputs" />
             <FormElement
                 :id="actionNames.RenameDatasetAction__newname"
                 :value="formData[actionNames.RenameDatasetAction__newname]"
                 :help="renameHelp"
                 title="Rename dataset"
                 type="text"
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormElement
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
@@ -26,24 +17,21 @@
                 type="select"
                 backbonejs
                 help="This action will change the datatype of the output to the indicated datatype."
-                @input="onDatatype"
-            />
+                @input="onDatatype" />
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
                 title="Add Tags"
                 type="text"
                 help="This action will set tags for the dataset."
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
                 :value="formData[actionNames.RemoveTagDatasetAction__tags]"
                 title="Remove Tags"
                 type="text"
                 help="This action will remove tags for the dataset."
-                @input="onInput"
-            />
+                @input="onInput" />
             <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumn">
                 <template v-slot:body>
                     <FormElement
@@ -53,8 +41,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the chromosome column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__startCol"
                         :value="formData[actionNames.ColumnSetAction__startCol]"
@@ -62,8 +49,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the start column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__endCol"
                         :value="formData[actionNames.ColumnSetAction__endCol]"
@@ -71,8 +57,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the end column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__strandCol"
                         :value="formData[actionNames.ColumnSetAction__strandCol]"
@@ -80,8 +65,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the strand column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                     <FormElement
                         :id="actionNames.ColumnSetAction__nameCol"
                         :value="formData[actionNames.ColumnSetAction__nameCol]"
@@ -89,8 +73,7 @@
                         type="integer"
                         backbonejs
                         help="This action will set the name column."
-                        @input="onInput"
-                    />
+                        @input="onInput" />
                 </template>
             </FormCard>
         </template>
@@ -100,6 +83,7 @@
 <script>
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
+import FormOutputLabel from "./FormOutputLabel";
 
 const actions = [
     "RenameDatasetAction__newname",
@@ -120,6 +104,7 @@ export default {
     components: {
         FormCard,
         FormElement,
+        FormOutputLabel,
     },
     props: {
         outputName: {
@@ -146,6 +131,10 @@ export default {
             type: Object,
             required: true,
         },
+        activeOutputs: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -161,9 +150,6 @@ export default {
         outputTitle() {
             const title = this.outputLabel || this.outputName;
             return `Configure Output: '${title}'`;
-        },
-        outputLabelId() {
-            return `__label__${this.outputName}`;
         },
         actionNames() {
             const index = {};
@@ -224,9 +210,6 @@ export default {
         },
         onInput(value, pjaKey) {
             this.$emit("onInput", value, pjaKey);
-        },
-        onLabel(newLabel) {
-            this.$emit("onLabel", this.outputLabelId, this.outputName, newLabel);
         },
         onDatatype(newDatatype) {
             this.$emit("onDatatype", this.actionNames.ChangeDatatypeAction__newtype, this.outputName, newDatatype);

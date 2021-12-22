@@ -1,4 +1,4 @@
-import router from "./LibraryFolderRouter";
+import router from "./LibraryRouter.js";
 
 export const Libraries = {
     router,

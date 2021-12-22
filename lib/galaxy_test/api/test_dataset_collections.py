@@ -443,7 +443,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         actual: List[str] = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
-        assert sorted(actual) == sorted([])
+        assert actual == []
 
     def test_collection_tools_tag_propagation(self):
         elements = [{"src": "files", "tags": ["name:element_tag"]}]

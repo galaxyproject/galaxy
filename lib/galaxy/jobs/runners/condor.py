@@ -108,7 +108,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             shell=job_wrapper.shell,
         )
         try:
-            self.write_executable_script(executable, script)
+            self.write_executable_script(executable, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
             log.exception(f"({galaxy_id_tag}) failure preparing job script")

@@ -36,8 +36,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         self.create_category(name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.')
 
     def test_0010_create_freebayes_repository_and_upload_tool_xml(self):
-        '''Create freebayes repository and upload only freebayes.xml.'''
-        '''
+        '''Create freebayes repository and upload only freebayes.xml.
+
         We are at step 1 - Create repository freebayes_0020 and upload only the tool XML.
         Uploading only the tool XML file should result in an invalid tool and an error message on
         upload, as well as on the manage repository page.
@@ -65,8 +65,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         self.check_repository_invalid_tools_for_changeset_revision(repository, tip, strings_displayed=strings_displayed)
 
     def test_0015_upload_missing_tool_data_table_conf_file(self):
-        '''Upload the missing tool_data_table_conf.xml.sample file to the repository.'''
-        '''
+        '''Upload the missing tool_data_table_conf.xml.sample file to the repository.
+
         We are at step 2 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         '''
@@ -86,8 +86,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         self.check_repository_invalid_tools_for_changeset_revision(repository, tip, strings_displayed=strings_displayed)
 
     def test_0020_upload_missing_sample_loc_file(self):
-        '''Upload the missing sam_fa_indices.loc.sample file to the repository.'''
-        '''
+        '''Upload the missing sam_fa_indices.loc.sample file to the repository.
+
         We are at step 3 - Upload the tool_data_table_conf.xml.sample file.
         Uploading the tool_data_table_conf.xml.sample alone should not make the tool valid, but the error message should change.
         '''
@@ -103,8 +103,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0025_upload_malformed_tool_dependency_xml(self):
-        '''Upload tool_dependencies.xml with bad characters in the readme tag.'''
-        '''
+        '''Upload tool_dependencies.xml with bad characters in the readme tag.
+
         We are at step 4 - Upload a tool_dependencies.xml file that should not parse correctly.
         Upload a tool_dependencies.xml file that contains <> in the text of the readme tag. This should show an error message about malformed xml.
         '''
@@ -120,8 +120,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0030_upload_invalid_tool_dependency_xml(self):
-        '''Upload tool_dependencies.xml defining version 0.9.5 of the freebayes package.'''
-        '''
+        '''Upload tool_dependencies.xml defining version 0.9.5 of the freebayes package.
+
         We are at step 5 - Upload a tool_dependencies.xml file that specifies a version that does not match the tool's requirements.
         This should result in a message about the tool dependency configuration not matching the tool's requirements.
         '''
@@ -137,8 +137,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0035_upload_valid_tool_dependency_xml(self):
-        '''Upload tool_dependencies.xml defining version 0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8 of the freebayes package.'''
-        '''
+        '''Upload tool_dependencies.xml defining version 0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8 of the freebayes package.
+
         We are at step 6 - Upload a valid tool_dependencies.xml file.
         At this stage, there should be no errors on the upload page, as every missing or invalid file has been corrected.
         '''
@@ -154,8 +154,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0040_verify_tool_dependencies(self):
-        '''Verify that the uploaded tool_dependencies.xml specifies the correct package versions.'''
-        '''
+        '''Verify that the uploaded tool_dependencies.xml specifies the correct package versions.
+
         We are at step 7 - Check for the appropriate strings on the manage repository page.
         Verify that the manage repository page now displays the valid tool dependencies, and that there are no invalid tools shown on the manage page.
         '''

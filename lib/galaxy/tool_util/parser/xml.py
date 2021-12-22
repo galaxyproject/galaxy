@@ -1,8 +1,8 @@
 import json
 import logging
+import math
 import re
 import uuid
-from math import isinf
 from typing import Optional
 
 import packaging.version
@@ -49,6 +49,8 @@ log = logging.getLogger(__name__)
 class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
+
+    language = 'xml'
 
     def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
@@ -114,9 +116,6 @@ class XmlToolSource(ToolSource):
 
     def parse_description(self):
         return xml_text(self.root, "description")
-
-    def parse_is_multi_byte(self):
-        return self._get_attribute_as_bool("is_multi_byte", self.default_is_multi_byte)
 
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
@@ -932,11 +931,11 @@ class StdioParser:
                 code_ranges = re.split(r":", code_range)
                 if (len(code_ranges) == 2):
                     if (code_ranges[0] is None or '' == code_ranges[0]):
-                        exit_code.range_start = float("-inf")
+                        exit_code.range_start = -math.inf
                     else:
                         exit_code.range_start = int(code_ranges[0])
                     if (code_ranges[1] is None or '' == code_ranges[1]):
-                        exit_code.range_end = float("inf")
+                        exit_code.range_end = math.inf
                     else:
                         exit_code.range_end = int(code_ranges[1])
                 # If we got more than one colon, then ignore the exit code.
@@ -958,7 +957,7 @@ class StdioParser:
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if isinf(exit_code.range_start) and isinf(exit_code.range_end):
+                if math.isinf(exit_code.range_start) and math.isinf(exit_code.range_end):
                     log.warning(f"Tool exit_code range {code_range} will match on all exit codes")
                 self.stdio_exit_codes.append(exit_code)
         except Exception:

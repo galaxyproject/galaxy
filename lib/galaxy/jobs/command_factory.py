@@ -7,7 +7,6 @@ from os.path import (
 
 from galaxy import util
 from galaxy.jobs.runners.util.job_script import (
-    check_script_integrity,
     INTEGRITY_INJECTION,
     write_script,
 )
@@ -55,22 +54,14 @@ def build_command(
     base_command_line = job_wrapper.get_command_line()
     # job_id = job_wrapper.job_id
     # log.debug( 'Tool evaluation for job (%s) produced command-line: %s' % ( job_id, base_command_line ) )
-    if not base_command_line:
-        raise Exception("Attempting to run a tool with empty command definition.")
 
     commands_builder = CommandsBuilder(base_command_line)
 
-    # All job runners currently handle this case which should never occur
-    if not commands_builder.commands:
-        return None
-
-    # Version, dependency resolution, and task splitting are prepended to the
+    # Dependency resolution and task splitting are prepended to the
     # command - so they need to appear in the following order to ensure that
     # the underlying application used by version command is available in the
     # environment after dependency resolution, but the task splitting command
     # is still executed in Galaxy's Python environment.
-
-    __handle_version_command(commands_builder, job_wrapper)
 
     # One could imagine also allowing dependencies inside of the container but
     # that is too sophisticated for a first crack at this - build your
@@ -111,6 +102,9 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command(PREPARE_DIRS)
 
+    for_pulsar = 'script_directory' in remote_command_params
+    __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
+
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
         commands_builder.prepend_command(container_monitor_command)
@@ -133,14 +127,13 @@ def build_command(
 def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh", container=None):
     local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
-    config = job_wrapper.app.config
     integrity_injection = ""
     # Setting shell to none in job_conf.xml disables creating a tool command script,
     # set -e doesn't work for composite commands but this is necessary for Windows jobs
     # for instance.
     if shell and shell.lower() == 'none':
         return tool_commands
-    if check_script_integrity(config):
+    if job_wrapper.job_io.check_job_script_integrity:
         integrity_injection = INTEGRITY_INJECTION
     set_e = ""
     if job_wrapper.strict_shell:
@@ -155,7 +148,11 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         source_command,
         tool_commands,
     )
-    write_script(local_container_script, script_contents, config)
+    write_script(
+        local_container_script,
+        script_contents,
+        job_io=job_wrapper.job_io,
+    )
     commands = f"{shell} {local_container_script}"
     # TODO: Cleanup for_pulsar hack.
     # - Integrate Pulsar sending tool_stdout/tool_stderr back
@@ -165,21 +162,24 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     #   doesn't need to mount the job directory (rw) and then eliminate this hack
     #   (or restrict to older Pulsar versions).
     #   https://github.com/galaxyproject/galaxy/pull/8449
-    for_pulsar = False
-    if 'script_directory' in remote_command_params:
+    for_pulsar = 'script_directory' in remote_command_params
+    if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
-        for_pulsar = True
-    if not for_pulsar:
+    else:
         commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
 
-def __handle_version_command(commands_builder, job_wrapper):
-    # Prepend version string
-    write_version_cmd = job_wrapper.write_version_cmd
-    if write_version_cmd:
-        commands_builder.prepend_command(write_version_cmd)
+def __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=False):
+    if getattr(job_wrapper, 'remote_command_line', False):
+        sep = "" if for_pulsar else "&&"
+        command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
+        if for_pulsar:
+            # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
+            # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
+            command = f"{command} && bash ../tool_script.sh"
+        commands_builder.prepend_command(command, sep=sep)
 
 
 def __handle_task_splitting(commands_builder, job_wrapper):
@@ -214,7 +214,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     exec_dir = metadata_kwds.get('exec_dir', abspath(getcwd()))
     tmp_dir = metadata_kwds.get('tmp_dir', job_wrapper.working_directory)
     dataset_files_path = metadata_kwds.get('dataset_files_path', runner.app.model.Dataset.file_path)
-    output_fnames = metadata_kwds.get('output_fnames', job_wrapper.get_output_fnames())
+    output_fnames = metadata_kwds.get('output_fnames', job_wrapper.job_io.get_output_fnames())
     config_root = metadata_kwds.get('config_root', None)
     config_file = metadata_kwds.get('config_file', None)
     datatypes_config = metadata_kwds.get('datatypes_config', None)
@@ -254,7 +254,8 @@ class CommandsBuilder:
     def __init__(self, initial_command=''):
         # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
-        initial_command = util.unicodify(initial_command)
+        self.raw_command = initial_command
+        initial_command = util.unicodify(initial_command or '')
         commands = initial_command.rstrip("; ")
         self.commands = commands
 

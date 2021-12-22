@@ -12,8 +12,7 @@
                         aria-label="View all Options"
                         class="tool-dropdown float-right"
                         size="sm"
-                        v-b-tooltip.hover
-                    >
+                        v-b-tooltip.hover>
                         <template v-slot:button-content>
                             <span class="fa fa-caret-down" />
                         </template>
@@ -26,6 +25,7 @@
                         <b-dropdown-item v-if="showDownload" @click="onDownload"
                             ><span class="fa fa-download" /><span v-localize>Download</span>
                         </b-dropdown-item>
+                        <ToolSourceMenuItem :tool-id="id" />
                         <b-dropdown-item v-if="showLink" @click="onLink"
                             ><span class="fa fa-external-link" /><span v-localize
                                 >See in Tool Shed</span
@@ -45,8 +45,7 @@
                         aria-label="Select Versions"
                         class="float-right tool-versions"
                         size="sm"
-                        v-b-tooltip.hover
-                    >
+                        v-b-tooltip.hover>
                         <template v-slot:button-content>
                             <span class="fa fa-cubes" />
                         </template>
@@ -62,8 +61,7 @@
                         size="sm"
                         class="float-right"
                         v-b-tooltip.hover
-                        @click="onAddFavorite"
-                    >
+                        @click="onAddFavorite">
                         <span class="fa fa-star-o" />
                     </b-button>
                     <b-button
@@ -74,8 +72,7 @@
                         size="sm"
                         class="float-right"
                         v-b-tooltip.hover
-                        @click="onRemoveFavorite"
-                    >
+                        @click="onRemoveFavorite">
                         <span class="fa fa-star" />
                     </b-button>
                 </div>
@@ -87,6 +84,7 @@
                     </span>
                 </div>
             </div>
+
             <div class="portlet-content">
                 <FormMessage :message="errorText" variant="danger" :persistent="true" />
                 <FormMessage :message="messageText" :variant="messageVariant" />
@@ -103,8 +101,7 @@
                 :xrefs="options.xrefs"
                 :license="options.license"
                 :creators="options.creator"
-                :requirements="options.requirements"
-            />
+                :requirements="options.requirements" />
         </div>
     </div>
 </template>
@@ -114,6 +111,7 @@ import { copyLink, downloadTool, openLink } from "./utilities";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
+import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import Webhooks from "mvc/webhooks";
 import { addFavorite, removeFavorite } from "components/Tool/services";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -128,6 +126,7 @@ export default {
         FormMessage,
         ToolFooter,
         ToolHelp,
+        ToolSourceMenuItem,
     },
     props: {
         id: {

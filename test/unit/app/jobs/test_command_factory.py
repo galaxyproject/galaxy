@@ -175,7 +175,6 @@ class MockJobWrapper:
 
     def __init__(self, job_dir):
         self.strict_shell = False
-        self.write_version_cmd = None
         self.command_line = MOCK_COMMAND_LINE
         self.dependency_shell_commands = []
         self.metadata_line = None
@@ -205,5 +204,6 @@ class MockJobWrapper:
         self.configured_external_metadata_kwds = kwds
         return self.metadata_line
 
-    def get_output_fnames(self):
-        return ["output1"]
+    @property
+    def job_io(self):
+        return Bunch(get_output_fnames=lambda: ['output1'], check_job_script_integrity=False)

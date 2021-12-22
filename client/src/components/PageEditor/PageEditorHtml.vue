@@ -9,8 +9,7 @@
                         variant="link"
                         role="button"
                         v-b-tooltip.hover.bottom
-                        @click="saveContent(false)"
-                    >
+                        @click="saveContent(false)">
                         <span class="fa fa-save" />
                     </b-button>
                     <b-button
@@ -19,8 +18,7 @@
                         variant="link"
                         role="button"
                         v-b-tooltip.hover.bottom
-                        @click="saveContent(true)"
-                    >
+                        @click="saveContent(true)">
                         <span class="fa fa-eye" />
                     </b-button>
                 </div>

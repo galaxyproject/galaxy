@@ -5,8 +5,7 @@
             :title="title"
             v-b-tooltip.topright.hover
             @mouseover="hover = true"
-            @mouseleave="hover = false"
-        >
+            @mouseleave="hover = false">
             <a class="title-link" @click="toggleMenu()" href="javascript:void(0)">
                 <span class="name">
                     {{ this.name }}
@@ -28,8 +27,7 @@
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
                         @onOperation="onOperation"
-                        @onClick="onClick"
-                    />
+                        @onClick="onClick" />
                 </template>
             </div>
         </transition>
@@ -43,8 +41,7 @@
             :operation-title="operationTitle"
             :operation-icon="operationIcon"
             @onOperation="onOperation"
-            @onClick="onClick"
-        />
+            @onClick="onClick" />
     </div>
 </template>
 

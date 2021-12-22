@@ -136,7 +136,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
 
         dataset_collection_instance = self.collection_manager.create(trans=trans, **create_params)
         rval = dictify_dataset_collection_instance(
-            dataset_collection_instance, security=trans.security, parent=create_params["parent"]
+            dataset_collection_instance, security=trans.security, url_builder=trans.url_builder, parent=create_params["parent"]
         )
         return rval
 
@@ -203,6 +203,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         rval = dictify_dataset_collection_instance(
             dataset_collection_instance,
             security=trans.security,
+            url_builder=trans.url_builder,
             parent=parent,
             view='element'
         )

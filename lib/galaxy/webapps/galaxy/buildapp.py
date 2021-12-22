@@ -211,18 +211,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    try:
-        # This model may not actually be bound.
-        if galaxy.model.tool_shed_install.mapping.metadata.bind:
-            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled toolshed install model database connections.")
-
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
@@ -436,6 +424,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{tool_id:.+?}/convert', action='conversion', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/raw_tool_source', action='raw_tool_source', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))

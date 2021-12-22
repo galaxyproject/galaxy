@@ -1,7 +1,7 @@
 try:
     from fs.ftpfs import FTPFS
 except ImportError:
-    FTPFS = None  # type: ignore
+    FTPFS = None  # type: ignore[misc,assignment]
 
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 

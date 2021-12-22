@@ -9,6 +9,7 @@ from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers,
     iter_headers
 )
@@ -77,7 +78,7 @@ class Otu(Text):
             dataset.metadata.labels = sorted(label_names)
             dataset.metadata.otulabels = sorted(otulabel_names)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is otu (operational taxonomic unit) format
 
@@ -121,7 +122,7 @@ class Sabund(Otu):
     def init_meta(self, dataset, copy_from=None):
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is otu (operational taxonomic unit) format
         label<TAB>count[<TAB>value(1..n)]
@@ -195,7 +196,7 @@ class GroupAbund(Otu):
             dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
-    def sniff_prefix(self, file_prefix, vals_are_int=False):
+    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False):
         """
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format
@@ -243,7 +244,7 @@ class SecondaryStructureMap(Tabular):
         super().__init__(**kwd)
         self.column_names = ['Map']
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a secondary structure map format
         A single column with an integer value which indicates the row that this
@@ -317,7 +318,7 @@ class AlignReport(Tabular):
 
 class DistanceMatrix(Text):
     file_ext = 'mothur.dist'
-    """Add metadata elements"""
+
     MetadataElement(name="sequence_count", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value='?')
 
     def init_meta(self, dataset, copy_from=None):
@@ -348,7 +349,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
     def init_meta(self, dataset, copy_from=None):
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
@@ -413,7 +414,7 @@ class SquareDistanceMatrix(DistanceMatrix):
     def init_meta(self, dataset, copy_from=None):
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a square distance matrix (Column-formatted distance matrix) format
         The first line has the number of sequences in the matrix.
@@ -479,7 +480,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
     def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
@@ -589,7 +590,7 @@ class AccNos(Tabular):
 class Oligos(Text):
     file_ext = 'mothur.oligos'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         http://www.mothur.org/wiki/Oligos_File
         Determines whether the file is a otu (operational taxonomic unit) format
@@ -630,7 +631,7 @@ class Frequency(Tabular):
         self.column_names = ['position', 'frequency']
         self.column_types = ['int', 'float']
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a frequency tabular format for chimera analysis
 
@@ -695,7 +696,7 @@ class Quantile(Tabular):
         self.column_names = ['num', 'ten', 'twentyfive', 'fifty', 'seventyfive', 'ninetyfive', 'ninetynine']
         self.column_types = ['int', 'float', 'float', 'float', 'float', 'float', 'float']
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a quantiles tabular format for chimera analysis
 
@@ -741,7 +742,7 @@ class Quantile(Tabular):
 class LaneMask(Text):
     file_ext = 'mothur.filter'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
 
@@ -815,7 +816,7 @@ class RefTaxonomy(Tabular):
         super().__init__(**kwd)
         self.column_names = ['name', 'taxonomy']
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a Reference Taxonomy
 
@@ -902,7 +903,7 @@ class Axes(Tabular):
         """Initialize axes datatype"""
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is an axes format
         The first line may have column headings.
@@ -964,28 +965,29 @@ class Axes(Tabular):
 
 
 class SffFlow(Tabular):
+    """
+    https://mothur.org/wiki/flow_file/
+    The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
+    Following lines contain:
+
+    - SequenceName
+    - the number of useable flows as defined by 454's software
+    - the flow intensity for each base going in the order of TACG.
+
+    Example:
+
+    .. code-block::
+
+        800
+        GQY1XT001CQL4K 85 1.04 0.00 1.00 0.02 0.03 1.02 0.05 ...
+        GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
+        GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
+
+    """
+    file_ext = 'mothur.sff.flow'
+
     MetadataElement(name="flow_values", default="", no_value="", optional=True, desc="Total number of flow values", readonly=True)
     MetadataElement(name="flow_order", default="TACG", no_value="TACG", desc="Total number of flow values", readonly=False)
-    file_ext = 'mothur.sff.flow'
-    """
-        https://mothur.org/wiki/flow_file/
-        The first line is the total number of flow values - 800 for Titanium data. For GS FLX it would be 400.
-        Following lines contain:
-
-        - SequenceName
-        - the number of useable flows as defined by 454's software
-        - the flow intensity for each base going in the order of TACG.
-
-        Example:
-
-        .. code-block::
-
-          800
-          GQY1XT001CQL4K 85 1.04 0.00 1.00 0.02 0.03 1.02 0.05 ...
-          GQY1XT001CQIRF 84 1.02 0.06 0.98 0.06 0.09 1.05 0.07 ...
-          GQY1XT001CF5YW 88 1.02 0.02 1.01 0.04 0.06 1.02 0.03 ...
-
-    """
 
     def __init__(self, **kwd):
         super().__init__(**kwd)

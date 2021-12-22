@@ -64,7 +64,7 @@ def render_hda_copied_from_library(trans, hda, children):
     id = trans.security.encode_id(hda.id)
     folder = hda.copied_from_library_dataset_dataset_association.library_dataset.folder
     folder_id = f"F{trans.security.encode_id(folder.id)}"
-    url = url_for(f"/library/list#folders/{folder_id}")
+    url = url_for(f"/libraries/folders/{folder_id}")
     template = '<div class="copied-from">'
     template += '<div class="header">'
     template += '<div>'

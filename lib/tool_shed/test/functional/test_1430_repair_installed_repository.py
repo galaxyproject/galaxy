@@ -51,8 +51,8 @@ class TestRepairRepository(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_filter_repository(self):
-        '''Create and populate the filter_1430 repository.'''
-        '''
+        '''Create and populate the filter_1430 repository.
+
         This is step 1 - Create and populate the filter_1430 repository.
 
         This repository will be depended on by the column_1430 repository.
@@ -75,8 +75,8 @@ class TestRepairRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_column_repository(self):
-        '''Create and populate the column_1430 repository.'''
-        '''
+        '''Create and populate the column_1430 repository.
+
         This is step 2 - Create and populate the column_1430 repository.
 
         This repository will depend on the filter_1430 repository.
@@ -99,8 +99,8 @@ class TestRepairRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_repository_dependency(self):
-        '''Create a dependency on filter_1430.'''
-        '''
+        '''Create a dependency on filter_1430.
+
         This is step 3 - Upload a repository_dependencies.xml file to the column_1430 repository that creates a repository
         dependency on the filter_1430 repository.
         '''
@@ -115,8 +115,8 @@ class TestRepairRepository(ShedTwillTestCase):
         self.create_repository_dependency(column_repository, [repository_dependency_tuple], filepath=filepath)
 
     def test_0020_install_column_repository(self):
-        '''Install the column_1430 repository into Galaxy.'''
-        '''
+        '''Install the column_1430 repository into Galaxy.
+
         This is step 1 (galaxy side) - Install the column_1430 repository, making sure to check the checkbox to
         handle repository dependencies so that the filter_1430 repository is also installed. Make sure to install
         the repositories in a specified section of the tool panel.
@@ -132,8 +132,8 @@ class TestRepairRepository(ShedTwillTestCase):
                                 install_repository_dependencies=True)
 
     def test_0025_uninstall_filter_repository(self):
-        '''Uninstall the filter_1430 repository from Galaxy.'''
-        '''
+        '''Uninstall the filter_1430 repository from Galaxy.
+
         This is step 2 - Uninstall the filter_1430 repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner('filter_1430', common.test_user_1_name)

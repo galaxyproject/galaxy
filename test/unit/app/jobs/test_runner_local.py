@@ -127,7 +127,6 @@ class MockJobWrapper:
         self.environment_variables = []
         self.commands_in_new_shell = False
         self.prepare_called = False
-        self.write_version_cmd = None
         self.dependency_shell_commands = None
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory
@@ -189,8 +188,9 @@ class MockJobWrapper:
     def change_state(self, state, job=None):
         self.state = state
 
-    def get_output_fnames(self):
-        return []
+    @property
+    def job_io(self):
+        return bunch.Bunch(get_output_fnames=lambda: [], check_job_script_integrity=False)
 
     def get_job(self):
         return self.job

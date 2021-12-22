@@ -11,6 +11,7 @@ import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
 from galaxy import auth
+from galaxy.app import SentryClientMixin
 from galaxy.config import configure_logging
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
@@ -18,7 +19,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.quota import NoQuotaAgent, QuotaAgent
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
@@ -28,12 +29,12 @@ from . import config
 log = logging.getLogger(__name__)
 
 
-class UniverseApplication(BasicApp):
+class UniverseApplication(BasicSharedApp, SentryClientMixin):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwd) -> None:
         super().__init__()
-        self[BasicApp] = self
+        self[BasicSharedApp] = self
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "tool_shed"
         # will be overwritten when building WSGI app
@@ -93,6 +94,8 @@ class UniverseApplication(BasicApp):
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         # Initialize the repository registry.
         self.repository_registry = tool_shed.repository_registry.Registry(self)
+        # Configure Sentry client if configured
+        self.configure_sentry_client()
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
         log.debug("Tool shed hgweb.config file is: %s", self.hgweb_config_manager.hgweb_config)

@@ -71,21 +71,43 @@ class GalaxyAbstractRequest:
         """The host address."""
 
 
+class GalaxyAbstractResponse:
+    """Abstract interface to provide access to some response utilities."""
+
+    @abc.abstractproperty
+    def headers(self) -> dict:
+        """The response headers."""
+
+    def set_content_type(self, content_type: str):
+        """
+        Sets the Content-Type header
+        """
+        self.headers["content-type"] = content_type
+
+    def get_content_type(self):
+        return self.headers.get("content-type", None)
+
+
 class SessionRequestContext(WorkRequestContext):
     """Like WorkRequestContext, but provides access to galaxy session and request."""
 
     def __init__(self, **kwargs):
         self.galaxy_session = kwargs.pop('galaxy_session', None)
-        self._request: GalaxyAbstractRequest = kwargs.pop("request")
+        self.__request: GalaxyAbstractRequest = kwargs.pop("request")
+        self.__response: GalaxyAbstractResponse = kwargs.pop("response")
         super().__init__(**kwargs)
 
     @property
     def host(self):
-        return self._request.host
+        return self.__request.host
 
     @property
     def request(self) -> GalaxyAbstractRequest:
-        return self._request
+        return self.__request
+
+    @property
+    def response(self) -> GalaxyAbstractResponse:
+        return self.__response
 
     def get_galaxy_session(self):
         return self.galaxy_session

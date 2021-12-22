@@ -51,7 +51,7 @@ def main(argv=None):
     uuid = str(uuid4())
     workflow_struct = _workflow_struct(args, uuid)
 
-    has_input = any([s.get("type", "tool") == "input_collection" for s in workflow_struct])
+    has_input = any(s.get("type", "tool") == "input_collection" for s in workflow_struct)
     if not has_input:
         uuid = None
 

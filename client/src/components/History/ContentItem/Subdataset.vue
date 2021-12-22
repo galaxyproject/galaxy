@@ -10,13 +10,12 @@ cache first to see if we already have the data -->
         :dataset="dataset"
         :writable="false"
         :selectable="false"
-        @update:expanded="onExpand"
-    />
+        @update:expanded="onExpand" />
 </template>
 
 <script>
 import { Dataset } from "../model";
-import { getContentByTypeId, cacheContent } from "../caching";
+import { getContentByTypeId, cacheContent } from "components/providers/History/caching";
 import { getContentDetails } from "../model/queries";
 import DatasetUI from "./Dataset/DatasetUI";
 

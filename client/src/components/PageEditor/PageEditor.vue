@@ -6,8 +6,7 @@
         :page-id="pageId"
         :public-url="publicUrl"
         :content="content"
-        :content-data="contentData"
-    />
+        :content-data="contentData" />
     <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
 </template>
 

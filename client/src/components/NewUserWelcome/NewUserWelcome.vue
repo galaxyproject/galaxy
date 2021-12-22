@@ -6,8 +6,7 @@
                 v-bind="currentNode"
                 @select="down"
                 @back="up"
-                :image-loc="config.welcome_directory"
-            >
+                :image-loc="config.welcome_directory">
             </component>
         </ConfigProvider>
     </div>

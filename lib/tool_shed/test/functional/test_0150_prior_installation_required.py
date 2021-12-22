@@ -80,8 +80,8 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_repository_dependency(self):
-        '''Create a repository dependency specifying convert_chars.'''
-        '''
+        '''Create a repository dependency specifying convert_chars.
+
         Column maker repository dependency:
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         '''

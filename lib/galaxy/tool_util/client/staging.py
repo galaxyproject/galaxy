@@ -57,7 +57,7 @@ class StagingInterace(metaclass=abc.ABCMeta):
     def _handle_job(self, job_response):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
-    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH, to_posix_lines=True):
+    def stage(self, tool_or_workflow, history_id, job=None, job_path=None, use_path_paste=LOAD_TOOLS_FROM_PATH, to_posix_lines=True, job_dir="."):
         files_attached = [False]
 
         def upload_func_fetch(upload_target):
@@ -223,8 +223,7 @@ class StagingInterace(metaclass=abc.ABCMeta):
             job_dir = os.path.dirname(os.path.abspath(job_path))
         else:
             assert job is not None
-            # Figure out what "." should be here instead.
-            job_dir = "."
+            assert job_dir is not None
 
         if self.use_fetch_api:
             upload = upload_func_fetch

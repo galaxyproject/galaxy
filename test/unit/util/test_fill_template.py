@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 from Cheetah.NameMapper import NotFound
 
@@ -50,12 +48,8 @@ def test_fill_simple_template():
 
 
 def test_fill_list_comprehension_template():
-    if sys.version_info.major > 2:
-        with pytest.raises(NotFound):
-            fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
-    else:
-        template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
-        assert template_str == 'echo 1\n'
+    with pytest.raises(NotFound):
+        fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
 
 
 def test_fill_list_comprehension_template_2():

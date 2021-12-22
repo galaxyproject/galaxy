@@ -45,15 +45,13 @@
             ref="libraries_list"
             @filtered="onFiltered"
             :filter="filter"
-            :filter-included-fields="filterOn"
-        >
+            :filter-included-fields="filterOn">
             <template v-slot:cell(name)="row">
                 <textarea
                     v-if="row.item.editMode"
                     class="form-control input_library_name"
                     v-model="row.item.name"
-                    rows="3"
-                />
+                    rows="3" />
 
                 <div class="deleted-item" v-else-if="row.item.deleted && include_deleted">{{ row.item.name }}</div>
                 <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
@@ -65,8 +63,7 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.description"
-                    :changed-value.sync="item[newDescriptionProperty]"
-                />
+                    :changed-value.sync="item[newDescriptionProperty]" />
             </template>
             <template v-slot:cell(synopsis)="{ item }">
                 <LibraryEditField
@@ -75,15 +72,13 @@
                     :is-expanded="item.isExpanded"
                     :is-edit-mode="item.editMode"
                     :text="item.synopsis"
-                    :changed-value.sync="item[newSynopsisProperty]"
-                />
+                    :changed-value.sync="item[newSynopsisProperty]" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
                 <font-awesome-icon
                     v-if="row.item.public && !row.item.deleted"
                     title="Unrestricted dataset"
-                    icon="globe"
-                />
+                    icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button @click="undelete(row.item)" v-if="row.item.deleted" :title="'Undelete ' + row.item.name">
@@ -96,8 +91,7 @@
                         size="sm"
                         class="lib-btn permission_folder_btn"
                         :title="'Permissions of ' + row.item.name"
-                        @click="saveChanges(row.item)"
-                    >
+                        @click="saveChanges(row.item)">
                         <font-awesome-icon :icon="['far', 'save']" />
                         {{ titleSave }}
                     </b-button>
@@ -106,8 +100,7 @@
                         size="sm"
                         class="lib-btn edit_library_btn save_library_btn"
                         :title="`Edit ${row.item.name}`"
-                        @click="toggleEditMode(row.item)"
-                    >
+                        @click="toggleEditMode(row.item)">
                         <div v-if="!row.item.editMode">
                             <font-awesome-icon icon="pencil-alt" />
                             {{ titleEdit }}
@@ -122,8 +115,7 @@
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/${row.item.id}/permissions` }"
-                    >
+                        :to="{ path: `/${row.item.id}/permissions` }">
                         <font-awesome-icon icon="users" />
                         Manage
                     </b-button>
@@ -132,8 +124,7 @@
                         size="sm"
                         class="lib-btn delete-lib-btn"
                         :title="`Delete ${row.item.name}`"
-                        @click="deleteLibrary(row.item)"
-                    >
+                        @click="deleteLibrary(row.item)">
                         <font-awesome-icon icon="trash" />
                         {{ titleDelete }}
                     </b-button>
@@ -148,8 +139,7 @@
                         v-model="currentPage"
                         :total-rows="rows"
                         :per-page="perPage"
-                        aria-controls="libraries_list"
-                    >
+                        aria-controls="libraries_list">
                     </b-pagination>
                 </b-col>
                 <b-col cols="1.5">
@@ -162,8 +152,7 @@
                                     autocomplete="off"
                                     type="number"
                                     onkeyup="this.value|=0;if(this.value<1)this.value=1"
-                                    v-model="perPage"
-                                />
+                                    v-model="perPage" />
                             </td>
                             <td class="text-muted ml-1 paginator-text">
                                 <span class="pagination-total-pages-text"

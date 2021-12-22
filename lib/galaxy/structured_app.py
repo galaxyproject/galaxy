@@ -1,5 +1,5 @@
 """Typed description of Galaxy's app object."""
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from kombu import Connection
 
@@ -10,8 +10,10 @@ from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
 from galaxy.model.base import ModelMapping, SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.security import HostAgent
+from galaxy.model.store import SessionlessContext
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.quota import QuotaAgent
@@ -24,15 +26,22 @@ from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
+if TYPE_CHECKING:
+    from galaxy.tools.data import ToolDataTableManager
+
 
 class BasicApp(Container):
+    name: str
+    config: Any  # 'galaxy.config.BaseAppConfiguration'
+    datatypes_registry: Registry
+
+
+class BasicSharedApp(BasicApp):
     """Stripped down version of the ``app`` shared between Galaxy and ToolShed.
 
     Code that is shared between Galaxy and the Tool Shed should be annotated as
-    using BasicApp instead of StructuredApp below.
+    using BasicSharedApp instead of StructuredApp below.
     """
-    name: str
-    config: Any  # 'galaxy.config.BaseAppConfiguration'
     application_stack: ApplicationStack
     model: SharedModelMapping
     security: IdEncodingHelper
@@ -40,10 +49,17 @@ class BasicApp(Container):
     toolbox: Any  # 'galaxy.tools.ToolBox'
     security_agent: Any
     quota_agent: QuotaAgent
+
+
+class MinimalToolApp(BasicApp):
+    sa_session: Union[galaxy_scoped_session, SessionlessContext]
     datatypes_registry: Registry
+    object_store: ObjectStore
+    tool_data_table_manager: 'ToolDataTableManager'
+    file_sources: ConfiguredFileSources
 
 
-class MinimalApp(BasicApp):
+class MinimalApp(BasicSharedApp):
     is_webapp: bool  # is_webapp will be set to true when building WSGI app
     new_installation: bool
     tag_handler: GalaxyTagHandler
@@ -67,6 +83,7 @@ class MinimalManagerApp(MinimalApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     user_manager: Any
+    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     job_manager: Any  # galaxy.jobs.manager.JobManager
 
     @property
@@ -112,16 +129,16 @@ class StructuredApp(MinimalManagerApp):
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
-    tool_data_tables: Any  # 'galaxy.tools.data.ToolDataTableManager'
+    tool_data_tables: 'ToolDataTableManager'
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
     error_reports: Any  # 'galaxy.tools.error_reports.ErrorReports'
-    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
     tool_shed_repository_cache: Any  # 'galaxy.tools.cache.ToolShedRepositoryCache'
     watchers: Any  # 'galaxy.config_watchers.ConfigWatchers'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any
+    job_config: Any  # 'galaxy.jobs.JobConfiguration'
     job_manager: Any  # galaxy.jobs.manager.JobManager
     user_manager: Any
     api_keys_manager: Any  # 'galaxy.managers.api_keys.ApiKeyManager'

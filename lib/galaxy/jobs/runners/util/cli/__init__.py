@@ -1,14 +1,8 @@
 """
 """
-import importlib
 import json
-import pkgutil
-from glob import glob
-from os import getcwd
-from os.path import (
-    basename,
-    join
-)
+
+from galaxy.util.plugin_config import plugins_dict
 
 DEFAULT_SHELL_PLUGIN = 'LocalShell'
 
@@ -22,45 +16,13 @@ class CliInterface:
     them to specified parameters.
     """
 
-    def __init__(self, code_dir='lib'):
+    def __init__(self):
         """
         """
-        def __load_from_code_dir(module_path):
-            module_pattern = join(join(getcwd(), code_dir, *module_path.split('.')), '*.py')
-            for file in glob(module_pattern):
-                if basename(file).startswith('_'):
-                    continue
-                module_name = f"{module_path}.{basename(file).rsplit('.py', 1)[0]}"
-                module = __import__(module_name)
-                for comp in module_name.split(".")[1:]:
-                    module = getattr(module, comp)
-                yield module
-
-        def __load_from_path(module_path):
-            base_module = importlib.import_module(module_path)
-            for module_info in pkgutil.iter_modules(base_module.__path__):
-                module = importlib.import_module(f'{module_path}.{module_info.name}')
-                yield module
-
-        def __load(module_path, d):
-            if code_dir is not None:
-                module_generator = __load_from_code_dir
-            else:
-                module_generator = __load_from_path
-            for module in module_generator(module_path):
-                for name in module.__all__:
-                    try:
-                        d[name] = getattr(module, name)
-                    except TypeError:
-                        raise TypeError(f"Invalid type for name {name}")
-
-        self.cli_shells = {}
-        self.cli_job_interfaces = {}
-        self.active_cli_shells = {}
-
         module_prefix = self.__module__
-        __load(f'{module_prefix}.shell', self.cli_shells)
-        __load(f'{module_prefix}.job', self.cli_job_interfaces)
+        self.cli_shells = plugins_dict(f"{module_prefix}.shell", "__name__")
+        self.cli_job_interfaces = plugins_dict(f"{module_prefix}.job", "__name__")
+        self.active_cli_shells = {}
 
     def get_plugins(self, shell_params, job_params):
         """
@@ -75,19 +37,20 @@ class CliInterface:
         shell_plugin = shell_params.get('plugin', DEFAULT_SHELL_PLUGIN)
         requested_shell_settings = json.dumps(shell_params, sort_keys=True)
         if requested_shell_settings not in self.active_cli_shells:
-            self.active_cli_shells[requested_shell_settings] = self.cli_shells[shell_plugin](**shell_params)
+            shell_plugin_class = self.cli_shells.get(shell_plugin)
+            if not shell_plugin_class:
+                raise ValueError(f"Unknown shell_plugin [{shell_plugin}], available plugins are {list(self.cli_shells.keys())}")
+            self.active_cli_shells[requested_shell_settings] = shell_plugin_class(**shell_params)
         return self.active_cli_shells[requested_shell_settings]
 
     def get_job_interface(self, job_params):
-        job_plugin = job_params.get('plugin', None)
+        job_plugin = job_params.get('plugin')
         if not job_plugin:
             raise ValueError(ERROR_MESSAGE_NO_JOB_PLUGIN)
-        job_plugin_class = self.cli_job_interfaces.get(job_plugin, None)
+        job_plugin_class = self.cli_job_interfaces.get(job_plugin)
         if not job_plugin_class:
             raise ValueError(ERROR_MESSAGE_NO_SUCH_JOB_PLUGIN % (job_plugin, list(self.cli_job_interfaces.keys())))
-        job_interface = job_plugin_class(**job_params)
-
-        return job_interface
+        return job_plugin_class(**job_params)
 
 
 def split_params(params):

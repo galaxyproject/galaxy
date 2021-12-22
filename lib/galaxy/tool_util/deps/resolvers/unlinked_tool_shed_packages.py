@@ -120,26 +120,6 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
         log.debug("Picking dependency at '%s' as it was the last modified", latest_candidate.path)
         return latest_candidate
 
-    """
-    #Currently no need has been found for expand the verionsless method
-    #This is an example of how it could be done
-    def _find_dep_default( self, name, type='package', **kwds ):
-        try:
-            possibles = TODO
-            if len(possibles) == 0:
-                log.debug("Unable to find dependency,'%s' default '%s'", name, type)
-                return NullDependency(version=None, name=name)
-            elif len(possibles) == 1:
-                #Only one candidate found so ignore any preference rules
-                return possibles[0].dependency
-            else:
-                #Pick the preferred one
-                return self._select_preferred_dependency(possibles, by_owner=False).dependency
-        except Exception:
-            log.exception("Unexpected error hunting for dependency '%s' default '%s'", name, type)
-            return NullDependency(version=None, name=name)
-    """
-
 
 class CandidateDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['dependency', 'path', 'owner']

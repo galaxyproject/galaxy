@@ -7,9 +7,7 @@
                 {{ dscName || "(Collection Name)" }}
             </h3>
             <p class="mt-1">
-                <i class="fas fa-folder"></i>
-                a {{ dsc.collectionType | localize }}
-                {{ dsc.collectionCount | localize }}
+                <DscDescription :dsc="dsc" />
             </p>
 
             <div v-if="isEditing" class="mt-3" @keydown.esc="revertAndCancel" data-description="edit form">
@@ -18,8 +16,7 @@
                     placeholder="Collection Name"
                     trim
                     max-rows="4"
-                    data-description="name input"
-                ></b-textarea>
+                    data-description="name input"></b-textarea>
                 <StatelessTags v-model="tags" class="mt-3 tags" />
             </div>
 
@@ -37,8 +34,7 @@
             :valid="valid"
             :dirty="dirty"
             @save="save"
-            @revert="revert"
-        />
+            @revert="revert" />
     </section>
 </template>
 
@@ -47,12 +43,14 @@ import { DatasetCollection } from "../model";
 import { Nametag } from "components/Nametags";
 import EditorMenu from "../EditorMenu";
 import { StatelessTags } from "components/Tags";
+import DscDescription from "components/History/ContentItem/DatasetCollection/DscDescription";
 
 export default {
     components: {
         Nametag,
         EditorMenu,
         StatelessTags,
+        DscDescription,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },

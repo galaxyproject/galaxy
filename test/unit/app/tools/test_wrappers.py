@@ -6,8 +6,8 @@ from unittest.mock import Mock
 import pytest
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
-from galaxy.jobs import ComputeEnvironment
 from galaxy.model import DatasetInstance
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,

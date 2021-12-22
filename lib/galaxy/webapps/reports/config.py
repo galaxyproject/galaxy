@@ -28,7 +28,7 @@ class Configuration:
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
         # Where dataset files are stored
-        self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        self.file_path = resolve_path(kwargs.get("file_path", "database/objects"), self.root)
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False"))

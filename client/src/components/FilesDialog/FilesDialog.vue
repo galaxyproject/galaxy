@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
-    >
+        :hide-modal="() => (modalShow = false)">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -21,8 +20,7 @@
                 :is-busy="isBusy"
                 @clicked="clicked"
                 @open="open"
-                @toggleSelectAll="toggleSelectAll"
-            />
+                @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
             <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="load()">
@@ -36,8 +34,7 @@
                 variant="primary"
                 id="ok-btn"
                 @click="fileMode ? finalize() : selectLeaf(currentDirectory)"
-                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
-            >
+                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </b-btn>
         </template>

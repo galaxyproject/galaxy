@@ -93,16 +93,16 @@ class User(Base, Dictifiable, _HasTable):
     deleted = Column(Boolean, index=True, default=False)
     purged = Column(Boolean, index=True, default=False)
     active_repositories = relationship('Repository',
-        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore
+        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore[has-type]
         back_populates='user',
-        order_by=lambda: desc(Repository.name))  # type: ignore
+        order_by=lambda: desc(Repository.name))  # type: ignore[has-type]
     galaxy_sessions = relationship('GalaxySession',
         back_populates='user',
-        order_by=lambda: desc(GalaxySession.update_time))  # type: ignore
+        order_by=lambda: desc(GalaxySession.update_time))  # type: ignore[has-type]
     api_keys = relationship(
         'APIKeys',
         back_populates='user',
-        order_by=lambda: desc(APIKeys.create_time))  # type: ignore
+        order_by=lambda: desc(APIKeys.create_time))
     reset_tokens = relationship('PasswordResetToken', back_populates='user')
     groups = relationship('UserGroupAssociation', back_populates='user')
 
@@ -114,9 +114,9 @@ class User(Base, Dictifiable, _HasTable):
         'UserRoleAssociation',
         viewonly=True,
         primaryjoin=(lambda:
-            (User.id == UserRoleAssociation.user_id)  # type: ignore
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore
-            & not_(Role.name == User.email))  # type: ignore
+            (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
+            & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
+            & not_(Role.name == User.email))  # type: ignore[has-type]
     )
     repository_reviews = relationship('RepositoryReview', back_populates='user')
 
@@ -156,7 +156,7 @@ class User(Base, Dictifiable, _HasTable):
         message = validate_password_str(cleartext)
         if message:
             raise Exception(f"Invalid password: {message}")
-        """Set 'self.password' to the digest of 'cleartext'."""
+        # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_secure_hash(text_type=cleartext)
 
 
@@ -343,14 +343,14 @@ class Repository(Base, Dictifiable, _HasTable):
     deprecated = Column(Boolean, default=False)
     categories = relationship('RepositoryCategoryAssociation', back_populates='repository')
     ratings = relationship('RepositoryRatingAssociation',
-        order_by=lambda: desc(RepositoryRatingAssociation.update_time), back_populates='repository')  # type: ignore
+        order_by=lambda: desc(RepositoryRatingAssociation.update_time), back_populates='repository')
     user = relationship('User', back_populates='active_repositories')
     downloadable_revisions = relationship('RepositoryMetadata',
-        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore
+        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[attr-defined,has-type]
         viewonly=True,
-        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore
+        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore[attr-defined]
     metadata_revisions = relationship('RepositoryMetadata',
-        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore
+        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
         back_populates='repository')
     roles = relationship('RepositoryRoleAssociation', back_populates='repository')
     reviews = relationship('RepositoryReview', back_populates='repository')
@@ -520,22 +520,22 @@ class RepositoryReview(Base, Dictifiable, _HasTable):
     # reset on a repository!
     repository_metadata = relationship('RepositoryMetadata',
         viewonly=True,
-        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],  # type: ignore
-        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore
+        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
+        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore[has-type]
+            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore[has-type]
         back_populates='reviews')
     user = relationship('User', back_populates='repository_reviews')
 
     component_reviews = relationship('ComponentReview',
         viewonly=True,
-        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
-            & (ComponentReview.deleted == false())),  # type: ignore
+        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
+            & (ComponentReview.deleted == false())),  # type: ignore[has-type]
         back_populates='repository_review')
 
     private_component_reviews = relationship('ComponentReview',
         viewonly=True,
-        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore
-            & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))  # type: ignore
+        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
+            & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))  # type: ignore[has-type]
 
     dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
@@ -735,9 +735,9 @@ mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, p
     repository=relationship(Repository, back_populates='metadata_revisions'),
     reviews=relationship(RepositoryReview,
         viewonly=True,
-        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],  # type: ignore
-        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore
+        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
+        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)
+            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),
         back_populates='repository_metadata')))
 
 

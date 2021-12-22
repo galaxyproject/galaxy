@@ -9,11 +9,9 @@
             class="copy-export-link"
             icon="link"
             style="cursor: pointer"
-            @click="copyUrl"
-        />
+            @click="copyUrl" />
         <i
-            title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator."
-        >
+            title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)
         </i>
         <b-modal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>

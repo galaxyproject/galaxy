@@ -11,8 +11,7 @@
         v-b-tooltip.hover.bottom
         :title="tab.tooltip"
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
-        @click="open(tab, $event)"
-    >
+        @click="open(tab, $event)">
         <template v-if="tab.icon">
             <span :class="iconClasses" />
             <span v-if="tab.show_note" :class="['nav-note', tab.note_cls]">{{ tab.note }}</span>
@@ -32,8 +31,7 @@
         v-b-tooltip.hover.bottom
         :title="tab.tooltip"
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
-        @show="open(tab, $event)"
-    >
+        @show="open(tab, $event)">
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" class="dropdown-divider" :key="`divider-${idx}`" />
             <b-dropdown-item
@@ -43,8 +41,7 @@
                 :target="item.target || '_parent'"
                 role="menuitem"
                 @click="open(item, $event)"
-                :disabled="item.disabled === true"
-            >
+                :disabled="item.disabled === true">
                 {{ item.title }}
             </b-dropdown-item>
         </template>

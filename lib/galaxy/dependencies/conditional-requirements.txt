@@ -20,6 +20,10 @@ fs.sshfs  # type: ssh
 fs-s3fs  # type: s3
 s3fs  # type: s3fs
 fs.anvilfs # type: anvil
+fs.googledrivefs # type: googledrive
+fs-gcsfs # type: googlecloudstorage
+fs-onedatafs # type: onedata
+fs-basespace # type: basespace
 
 # Vault backend
 hvac

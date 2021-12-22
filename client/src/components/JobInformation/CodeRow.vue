@@ -4,8 +4,7 @@
         @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
         @mouseup="toggleExpanded()"
         v-b-tooltip.hover
-        :title="`click to ${action}`"
-    >
+        :title="`click to ${action}`">
         <td>
             {{ codeLabel }}
         </td>

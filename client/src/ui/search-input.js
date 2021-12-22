@@ -124,7 +124,6 @@ function searchInput(parentNode, options) {
                 '<a tabindex="0" ',
                 'class="search-advanced fa fa-question-circle" ',
                 'data-toggle="advSearchPopover" ',
-                'data-trigger="focus" ',
                 'data-placement="bottom" ',
                 'data-content="',
                 _l(
@@ -132,12 +131,12 @@ function searchInput(parentNode, options) {
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, and state</em>."
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>."
                 ),
                 "<br/>",
                 _l("To learn more visit "),
-                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
-                _l("the Hub"),
+                "<a href='https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/history/tutorial.html#basic-searching' target='_blank'>",
+                _l("the Training Material"),
                 '.</a></p>" title="',
                 _l("Search tips"),
                 '"></a>',
@@ -147,7 +146,6 @@ function searchInput(parentNode, options) {
             .click(function () {
                 $(this)
                     .popover({
-                        trigger: "focus",
                         html: true,
                         container: "body",
                     })

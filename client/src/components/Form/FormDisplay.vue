@@ -11,8 +11,7 @@
         :collapsed-disable-icon="collapsedDisableIcon"
         :errors="errors"
         :on-change="onChange"
-        :on-change-form="onChangeForm"
-    />
+        :on-change-form="onChangeForm" />
 </template>
 
 <script>

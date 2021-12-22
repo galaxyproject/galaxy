@@ -12,8 +12,6 @@ from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
-import tool_shed.webapp.model
-import tool_shed.webapp.model.mapping
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
@@ -196,12 +194,6 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=kwargs)
-    # Close any pooled database connections before forking
-    try:
-        tool_shed.webapp.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled tool_shed model database connections.")
-    # Return
     return webapp
 
 
@@ -248,8 +240,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
     sentry_dsn = conf.get('sentry_dsn', None)
     if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn,))
+        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)

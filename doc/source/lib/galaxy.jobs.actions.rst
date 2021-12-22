@@ -1,7 +1,7 @@
-galaxy.jobs.actions package
+galaxy.job_execution.actions package
 ===========================
 
-.. automodule:: galaxy.jobs.actions
+.. automodule:: galaxy.job_execution.actions
    :members:
    :undoc-members:
    :show-inheritance:
@@ -9,10 +9,10 @@ galaxy.jobs.actions package
 Submodules
 ----------
 
-galaxy.jobs.actions.post module
+galaxy.job_execution.actions.post module
 -------------------------------
 
-.. automodule:: galaxy.jobs.actions.post
+.. automodule:: galaxy.job_execution.actions.post
    :members:
    :undoc-members:
    :show-inheritance:

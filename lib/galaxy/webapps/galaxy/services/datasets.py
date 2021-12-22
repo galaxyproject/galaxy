@@ -12,10 +12,13 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
+from galaxy import exceptions as galaxy_exceptions
 from galaxy import (
-    exceptions as galaxy_exceptions,
     model,
     util,
     web,
@@ -23,12 +26,22 @@ from galaxy import (
 from galaxy.datatypes import dataproviders
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.hdas import HDAManager, HDASerializer
+from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.hdas import (
+    HDAManager,
+    HDASerializer,
+)
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers.history_contents import HistoryContentsFilters, HistoryContentsManager
+from galaxy.managers.history_contents import (
+    HistoryContentsFilters,
+    HistoryContentsManager,
+)
 from galaxy.managers.lddas import LDDAManager
-from galaxy.schema import FilterQueryParams, SerializationParams
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
@@ -40,19 +53,19 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.types import RelativeUrl
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util.path import (
-    safe_walk
-)
+from galaxy.util.path import safe_walk
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
     FeatureLocationIndexDataProvider,
-    SamDataProvider
+    SamDataProvider,
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+DEFAULT_LIMIT = 500
 
 
 class RequestDataType(str, Enum):
@@ -118,32 +131,21 @@ class DatasetTextContentDetails(Model):
     )
 
 
-ConvertedDatasetsMap = Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
+class ConvertedDatasetsMap(BaseModel):
+    """Map of `file extension` -> `converted dataset encoded id`"""
+    __root__: Dict[str, EncodedDatabaseIdField]  # extension -> dataset ID
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "csv": "dataset_id",
+            }
+        }
 
 
 class DataMode(str, Enum):
     Coverage = "Coverage"
     Auto = "Auto"
-
-
-class DatasetShowParams(BaseModel):
-    hda_ldda: DatasetSourceType = Field(default=DatasetSourceType.hda)
-    data_type: Optional[RequestDataType] = Field(default=None)
-    provider: Optional[str] = Field(default=None)
-    # Converted
-    chrom: Optional[str] = Field(default=None)
-    retry: bool = Field(default=False)
-    # Data
-    low: Optional[int] = Field(default=None)
-    high: Optional[int] = Field(default=None)
-    start_val: int = Field(default=0)
-    max_vals: Optional[int] = Field(default=None)
-    mode: Optional[DataMode] = Field(default=DataMode.Auto)
-    query: Optional[str] = Field(default=None)
-    dbkey: Optional[str] = Field(default=None)
-
-    class Config:
-        extra = Extra.allow
 
 
 class DataResult(BaseModel):
@@ -186,12 +188,14 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def serializer_by_type(self) -> Dict[str, ModelSerializer]:
         return {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
 
+    @property
+    def dataset_manager_by_type(self) -> Dict[str, DatasetAssociationManager]:
+        return {'hda': self.hda_manager, 'ldda': self.ldda_manager}
+
     def index(
         self,
         trans: ProvidesHistoryContext,
-        limit: Optional[int],
-        offset: Optional[int],
-        history_id: EncodedDatabaseIdField,
+        history_id: Optional[EncodedDatabaseIdField],
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ) -> List[AnyHistoryContentItem]:
@@ -207,7 +211,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if history_id:
             container = self.history_manager.get_accessible(self.decode_id(history_id), user)
         contents = self.history_contents_manager.contents(
-            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=user.id,
+            container=container,
+            filters=filters,
+            limit=filter_query_params.limit or DEFAULT_LIMIT,
+            offset=filter_query_params.offset,
+            order_by=order_by,
+            user_id=user.id,
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=user, trans=trans, view=view)
@@ -217,39 +226,43 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def show(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
-        params: DatasetShowParams,
+        dataset_id: EncodedDatabaseIdField,
+        hda_ldda: DatasetSourceType,
         serialization_params: SerializationParams,
+        data_type: Optional[RequestDataType] = None,
+        **extra_params,
     ):
         """
         Displays information about and/or content of a dataset.
         """
-        # Get dataset.
-        dataset = self.get_hda_or_ldda(trans, hda_ldda=params.hda_ldda, dataset_id=id)
-        params_dict = params.dict(exclude_unset=True)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
 
         # Use data type to return particular type of data.
-        data_type = params.data_type
         rval: Any
         if data_type == RequestDataType.state:
             rval = self._dataset_state(dataset)
         elif data_type == RequestDataType.converted_datasets_state:
-            rval = self._converted_datasets_state(trans, dataset, params.chrom, params.retry)
+            rval = self._converted_datasets_state(
+                trans, dataset,
+                chrom=extra_params.get("chrom", None),
+                retry=extra_params.get("retry", False),
+            )
         elif data_type == RequestDataType.data:
-            rval = self._data(trans, dataset, **params_dict)
+            rval = self._data(trans, dataset, **extra_params)
         elif data_type == RequestDataType.features:
-            rval = self._search_features(trans, dataset, params.query)
+            rval = self._search_features(trans, dataset, query=extra_params.get("query", None))
         elif data_type == RequestDataType.raw_data:
-            rval = self._raw_data(trans, dataset, **params_dict)
+            rval = self._raw_data(trans, dataset, **extra_params)
         elif data_type == RequestDataType.track_config:
             rval = self.get_new_track_config(trans, dataset)
         elif data_type == RequestDataType.genome_data:
-            rval = self._get_genome_data(trans, dataset, params.dbkey)
+            rval = self._get_genome_data(trans, dataset, dbkey=extra_params.get("dbkey", None))
         elif data_type == RequestDataType.in_use_state:
             rval = self._dataset_in_use_state(dataset)
         else:
             # Default: return dataset as dict.
-            if params.hda_ldda == DatasetSourceType.hda:
+            if hda_ldda == DatasetSourceType.hda:
                 return self.hda_serializer.serialize_to_view(
                     dataset,
                     view=serialization_params.view or 'detailed',
@@ -271,7 +284,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Display user-facing storage details related to the objectstore a
         dataset resides in.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         dataset = dataset_instance.dataset
         object_store = trans.app.object_store
         object_store_id = dataset.object_store_id
@@ -300,7 +314,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         Display inheritance chain for the given dataset.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
@@ -319,14 +334,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
+        decoded_dataset_id = self.decode_id(dataset_id)
         payload_dict = payload.dict(by_alias=True)
-        dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
-        if hda_ldda == "hda":
-            self.hda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
-            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
-        else:
-            self.ldda_manager.update_permissions(trans, dataset_assoc, **payload_dict)
-            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(decoded_dataset_id, trans.user)
+        dataset_manager.update_permissions(trans, dataset, **payload_dict)
+        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
 
     def extra_files(
         self,
@@ -367,6 +380,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         datatype prior to display (the defult if raw is unspecified or explicitly false.
         """
         decoded_content_id = self.decode_id(history_content_id)
+        headers = {}
         rval: Any = ''
         try:
             hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
@@ -381,24 +395,21 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     file_path = hda.file_name
                 rval = open(file_path, 'rb')
             else:
-                display_kwd = kwd.copy()
-                if 'key' in display_kwd:
-                    del display_kwd["key"]
-                rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
+                rval, headers = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **kwd)
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
             log.exception("Server error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
             raise galaxy_exceptions.InternalServerError(f"Could not get display data for dataset: {util.unicodify(e)}")
-        return rval
+        return rval, headers
 
     def get_content_as_text(
         self,
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
     ) -> DatasetTextContentDetails:
-        """ Returns item content as Text. """
+        """ Returns dataset content as Text. """
         user = self.get_authenticated_user(trans)
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, user)
@@ -418,9 +429,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         history_content_id: EncodedDatabaseIdField,
         metadata_file: Optional[str] = None,
+        open_file: bool = False,
     ):
         """
         Gets the associated metadata file.
+
+        The `open_file` parameter determines if we return the path of the file or the opened file handle.
+        TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         decoded_content_id = self.decode_id(history_content_id)
         hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
@@ -429,30 +444,43 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        return open(hda.metadata.get(metadata_file).file_name, 'rb'), headers
+        file_path = hda.metadata.get(metadata_file).file_name
+        if open_file:
+            return open(file_path, 'rb'), headers
+        return file_path, headers
 
-    def converted(
+    def converted_ext(
         self,
         trans: ProvidesHistoryContext,
         dataset_id: EncodedDatabaseIdField,
-        ext: Optional[str],
+        ext: str,
         serialization_params: SerializationParams,
-    ) -> Union[AnyHDA, ConvertedDatasetsMap]:
+    ) -> AnyHDA:
         """
         Return information about datasets made by converting this dataset to a new format
         """
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, trans.user)
-        if ext:
-            serialization_params.default_view = "detailed"
-            converted = self._get_or_create_converted(trans, hda, ext)
-            return self.hda_serializer.serialize_to_view(
-                converted,
-                user=trans.user,
-                trans=trans,
-                **serialization_params.dict()
-            )
+        serialization_params.default_view = "detailed"
+        converted = self._get_or_create_converted(trans, hda, ext)
+        return self.hda_serializer.serialize_to_view(
+            converted,
+            user=trans.user,
+            trans=trans,
+            **serialization_params.dict()
+        )
 
+    def converted(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: EncodedDatabaseIdField,
+    ) -> ConvertedDatasetsMap:
+        """
+        Return a `file extension` -> `converted dataset encoded id` map
+        with all the existing converted datasets associated with this instance.
+        """
+        decoded_id = self.decode_id(dataset_id)
+        hda = self.hda_manager.get_accessible(decoded_id, trans.user)
         return self.hda_serializer.serialize_converted_datasets(hda, 'converted')
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):

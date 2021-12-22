@@ -139,8 +139,9 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         elements = self.find_elements(self.navigation.libraries.dataset.selectors.table_rows)
         table_as_dict = {}
         for element in elements:
-            key = element.find_element_by_tag_name("th").text
-            value = element.find_element_by_tag_name("td").text
+            row_values = element.text.split("\n")
+            key = row_values[0]
+            value = row_values[1]
             table_as_dict[key] = value
 
         assert table_as_dict["Name"] == "1.txt", table_as_dict

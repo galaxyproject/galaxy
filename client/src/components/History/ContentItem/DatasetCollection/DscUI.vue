@@ -8,8 +8,7 @@
         :id="typedId"
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
-        @keydown.space.self.stop.prevent="$emit('update:selected', !selected)"
-    >
+        @keydown.space.self.stop.prevent="$emit('update:selected', !selected)">
         <nav class="content-top-menu p-1 d-flex cursor-pointer">
             <div class="d-flex flex-grow-1 overflow-hidden">
                 <div class="pl-1" v-if="showSelection">
@@ -17,16 +16,14 @@
                         class="selector"
                         :checked="selected"
                         @click.stop
-                        @change="$emit('update:selected', $event)"
-                    />
+                        @change="$emit('update:selected', $event)" />
                 </div>
 
                 <StatusIcon
                     v-if="dsc.state != 'ok'"
                     class="status-icon px-1"
                     :state="dsc.state"
-                    @click.stop="onStatusClick"
-                />
+                    @click.stop="onStatusClick" />
 
                 <IconButton
                     v-if="!dsc.visible"
@@ -34,8 +31,7 @@
                     state="hidden"
                     title="Unhide"
                     icon="eye-slash"
-                    @click.stop="$emit('unhide')"
-                />
+                    @click.stop="$emit('unhide')" />
 
                 <IconButton
                     v-if="dsc.deleted"
@@ -43,26 +39,14 @@
                     state="deleted"
                     title="Undelete"
                     icon="trash-restore"
-                    @click.stop="$emit('undelete')"
-                />
-
-                <IconButton
-                    class="px-1"
-                    state="ok"
-                    title="Collection"
-                    icon="folder"
-                    @click.stop="$emit('viewCollection')"
-                    variant="link"
-                />
+                    @click.stop="$emit('undelete')" />
 
                 <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
                         <span class="hid">{{ dsc.hid }}</span>
                         <span class="name">{{ dsc.name }}</span>
-                        <span class="description">
-                            ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                        </span>
                     </h5>
+                    <DscDescription :dsc="dsc" />
                 </div>
             </div>
 
@@ -86,6 +70,7 @@
 import { DatasetCollection } from "../../model/DatasetCollection";
 import StatusIcon from "../../StatusIcon";
 import JobStateProgress from "./JobStateProgress";
+import DscDescription from "./DscDescription";
 import DscMenu from "./DscMenu";
 import { Nametag } from "components/Nametags";
 import IconButton from "components/IconButton";
@@ -97,6 +82,7 @@ export default {
         DscMenu,
         Nametag,
         IconButton,
+        DscDescription,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },

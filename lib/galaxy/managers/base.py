@@ -53,7 +53,7 @@ from galaxy import model
 from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import BasicApp, MinimalManagerApp
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
 from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicApp, id: Any):
+def decode_id(app: BasicSharedApp, id: Any):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
     return decode_with_security(app.security, id)
@@ -190,9 +190,9 @@ class ModelManager:
     """
     model_class: Type[model._HasTable]
     foreign_key_name: str
-    app: BasicApp
+    app: BasicSharedApp
 
-    def __init__(self, app: BasicApp):
+    def __init__(self, app: BasicSharedApp):
         self.app = app
 
     def session(self) -> scoped_session:

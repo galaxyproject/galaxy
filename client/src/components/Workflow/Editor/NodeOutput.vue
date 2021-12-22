@@ -5,8 +5,7 @@
             :class="['callout-terminal', output.name]"
             @click="onToggle"
             v-b-tooltip
-            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
-        >
+            title="Unchecked outputs will be hidden and are not available as subworkflow outputs.">
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
@@ -70,7 +69,13 @@ export default {
         },
     },
     watch: {
-        output: function (newOutput) {
+        label() {
+            // See discussion at: https://github.com/vuejs/vue/issues/8030
+            this.$nextTick(() => {
+                this.$emit("onChange");
+            });
+        },
+        output(newOutput) {
             const oldTerminal = this.terminal;
             if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
                 oldTerminal.update(newOutput);

@@ -9,7 +9,6 @@ export TEST_MODE=true
 
 REPO_ROOT=
 FORK_ROOT=$(mktemp -d -t galaxy_release_test_XXXXXXXX)
-DEV_BRANCH="$(git branch --show-current)"
 
 TEST_RELEASE_PREV=
 TEST_RELEASE_PREV_MINOR=
@@ -19,8 +18,6 @@ TEST_RELEASE_NEXT_NEXT='99.09'
 
 : ${VENV:=${FORK_ROOT}/venv}
 export VENV
-
-[ -n "$DEV_BRANCH" ] || { echo 'ERROR: Cannot determine current branch'; exit 1; }
 
 
 function trap_handler() {
@@ -81,11 +78,21 @@ function make_forks() {
     [ -n "$REPO_ROOT" ] || REPO_ROOT=$(get_repo_root)
 
     # Use a "work" clone to prevent modifications to current clone
-    git clone --no-checkout "${REPO_ROOT}" "${FORK_ROOT}/work"
+    log_exec git clone --no-checkout "${REPO_ROOT}" "${FORK_ROOT}/work"
     (
         cd_fork work
-        log "Checking out ref '${DEV_BRANCH}' as 'dev'"
-        log_exec git checkout --no-track -b dev "$DEV_BRANCH"
+        # A username and email address are needed to commit
+        if [ -z "$(git config --get user.name)" ]; then
+            log_exec git config user.name "Test User"
+        fi
+        if [ -z "$(git config --get user.email)" ]; then
+            log_exec git config user.email "test@example.org"
+        fi
+        if [ "$(git rev-parse --abbrev-ref HEAD)" != dev ]; then
+            CURRENT_COMMIT=$(git rev-parse HEAD)
+            log "Checking out ref '${CURRENT_COMMIT}' as 'dev'"
+            log_exec git checkout --no-track -b dev "$CURRENT_COMMIT"
+        fi
     )
 
     # Create bare origin and upstream repos 
@@ -100,7 +107,7 @@ function make_forks() {
     # Set remotes on work repo
     (
         cd_fork work
-        git remote remove origin
+        log_exec git remote remove origin
         for repo in origin upstream; do
             log_exec git remote add "$repo" "file://${FORK_ROOT}/${repo}"
         done
@@ -109,13 +116,13 @@ function make_forks() {
     # Fetch release branches to upstream repo
     (
         cd_fork upstream
-        log_exec git fetch --no-tags "${REPO_ROOT}" refs/remotes/upstream/${STABLE_BRANCH}:${STABLE_BRANCH}
+        log_exec git fetch --no-tags "${REPO_ROOT}" refs/remotes/origin/${STABLE_BRANCH}:${STABLE_BRANCH}
     )
 
     # Set current (previous) stable release from stable branch
     (
         cd_fork work
-        git fetch --no-tags upstream
+        log_exec git fetch --no-tags upstream
     )
     TEST_RELEASE_PREV=$(get_stable_version MAJOR)
     TEST_RELEASE_PREV_MINOR=$(get_stable_version MINOR)

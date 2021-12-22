@@ -13,8 +13,7 @@
                                     v-model="filterText"
                                     placeholder="Type to Search"
                                     @keyup.native="filter('filterByText')"
-                                    @keyup.esc.native="filterText = ''"
-                                />
+                                    @keyup.esc.native="filterText = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -28,8 +27,7 @@
                 :options="isoOptions"
                 :list="buffer"
                 style="margin: 0 auto"
-                @filter="filterOption = arguments[2]"
-            >
+                @filter="filterOption = arguments[2]">
                 <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem">
                     <template v-slot:header>
                         <div>
@@ -55,8 +53,7 @@
                         @rendered="layout"
                         @show="show(index)"
                         @shown="shown(index)"
-                        @hidden="hidden(index)"
-                    />
+                        @hidden="hidden(index)" />
                 </b-card>
             </isotope>
         </div>

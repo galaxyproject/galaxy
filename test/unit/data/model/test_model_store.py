@@ -5,6 +5,8 @@ import pathlib
 import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
 
+import pytest
+
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
@@ -181,6 +183,19 @@ def test_finalize_job_state():
     imported_job = datasets[1].creating_job
     assert imported_job
     assert imported_job.state == model.Job.states.ERROR
+
+
+def test_import_traceback_handling():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": False})
+    u = h.user
+    traceback_message = "Oh no, a traceback here!!!"
+
+    with open(os.path.join(temp_directory, store.TRACEBACK), "w") as f:
+        f.write(traceback_message)
+
+    with pytest.raises(store.FileTracebackException) as exc:
+        _perform_import_from_directory(temp_directory, app, u, import_history)
+    assert exc.value.traceback == traceback_message
 
 
 def test_import_export_edit_datasets():
@@ -494,7 +509,7 @@ def _mock_app(store_by="id"):
     app = GalaxyDataTestApp()
     test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
-    app.model.Dataset.object_store = app.object_store  # type: ignore
+    app.model.Dataset.object_store = app.object_store
     return app
 
 

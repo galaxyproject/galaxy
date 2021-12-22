@@ -6,29 +6,24 @@
             title="Email notification"
             type="boolean"
             help="An email notification will be sent when the job has completed."
-            @input="onInput"
-        />
+            @input="onInput" />
         <FormElement
             :id="deleteActionKey"
             :value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
             help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
-            @input="onInput"
-        />
+            @input="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"
             :key="index"
             :output-name="output.name"
-            :output-label="getOutputLabel(output)"
-            :output-label-error="outputLabelError"
+            :active-outputs="node.activeOutputs"
             :inputs="node.inputs"
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
-            @onLabel="onLabel"
-            @onDatatype="onDatatype"
-        />
+            @onDatatype="onDatatype" />
     </div>
 </template>
 
@@ -58,7 +53,6 @@ export default {
     data() {
         return {
             formData: {},
-            outputLabelError: null,
         };
     },
     created() {
@@ -70,9 +64,6 @@ export default {
         },
         postJobActions() {
             return this.node.postJobActions;
-        },
-        activeOutputs() {
-            return this.node.activeOutputs;
         },
         outputs() {
             return this.node.outputs;
@@ -124,10 +115,6 @@ export default {
                 delete pjas[this.emailPayloadKey];
             }
         },
-        getOutputLabel(output) {
-            const activeOutput = this.activeOutputs.get(output.name);
-            return activeOutput && activeOutput.label;
-        },
         onInput(value, pjaKey) {
             let changed = false;
             const exists = pjaKey in this.formData;
@@ -144,15 +131,7 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
-                this.$emit("onChange", this.formData, true);
-            }
-        },
-        onLabel(pjaKey, outputName, newLabel) {
-            if (this.node.labelOutput(outputName, newLabel)) {
-                this.outputLabelError = null;
-                this.onInput(newLabel, pjaKey);
-            } else {
-                this.outputLabelError = `Duplicate output label '${newLabel}' will be ignored.`;
+                this.$emit("onChange", this.formData);
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {

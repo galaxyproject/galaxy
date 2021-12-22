@@ -20,8 +20,7 @@
                 striped
                 caption-top
                 :busy="loading"
-                fixed
-            >
+                fixed>
                 <template v-slot:row-details="row">
                     <b-card>
                         <small class="float-right" :data-invocation-id="row.item.id">
@@ -29,8 +28,7 @@
                         </small>
                         <workflow-invocation-state
                             :invocation-id="row.item.id"
-                            @invocation-cancelled="$emit('reload-invocations')"
-                        />
+                            @invocation-cancelled="$emit('reload-invocations')" />
                     </b-card>
                 </template>
                 <template v-slot:cell(workflow_id)="data">
@@ -39,8 +37,7 @@
                         v-b-tooltip
                         title="Show Invocation details"
                         href="#"
-                        @click.stop="swapRowDetails(data)"
-                    >
+                        @click.stop="swapRowDetails(data)">
                         <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
                     </b-link>
                 </template>
@@ -50,8 +47,7 @@
                         v-b-tooltip
                         title="Switch to History"
                         href="#"
-                        @click.stop="switchHistory(data.item.history_id)"
-                    >
+                        @click.stop="switchHistory(data.item.history_id)">
                         <b>{{ getHistoryNameById(data.item.history_id) }}</b>
                     </b-link>
                 </template>
@@ -67,8 +63,7 @@
                         id="run-workflow"
                         title="Run Workflow"
                         class="workflow-run btn-sm btn-primary fa fa-play"
-                        @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)"
-                    />
+                        @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)" />
                 </template>
             </b-table>
         </div>

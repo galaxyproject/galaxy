@@ -1,0 +1,25 @@
+name: Test Galaxy release script
+on:
+  push:
+    paths:
+      - lib/galaxy/version.py
+      - scripts/release.sh
+      - test/release.sh
+  pull_request:
+    paths:
+      - lib/galaxy/version.py
+      - scripts/release.sh
+      - test/release.sh
+concurrency:
+  group: test-galaxy-release-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Run tests
+        run: ./test/release.sh

@@ -108,6 +108,8 @@ var ImportDatasetModal = Backbone.View.extend({
             historyItem.source = "library";
             items_to_import.push(historyItem);
         }
+
+        checked_items.folder_ids = checked_items.folder_ids ? checked_items.folder_ids : [];
         // prepare the folder objects to be imported
         for (let i = checked_items.folder_ids.length - 1; i >= 0; i--) {
             const library_folder_id = checked_items.folder_ids[i];

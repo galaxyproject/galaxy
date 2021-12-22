@@ -4,16 +4,14 @@
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
-            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
-        />
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
         <RefactorConfirmationModal
             :workflow-id="id"
             :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
-            @onShow="hideModal"
-        />
+            @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <MarkdownEditor
             v-if="!isCanvas"
@@ -21,8 +19,7 @@
             :markdown-config="markdownConfig"
             :title="'Workflow Report: ' + name"
             :get-manager="getManager"
-            @onUpdate="onReportUpdate"
-        >
+            @onUpdate="onReportUpdate">
             <template v-slot:buttons>
                 <b-button
                     id="workflow-canvas-button"
@@ -30,8 +27,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="onEdit"
-                >
+                    @click="onEdit">
                     <span class="fa fa-times" />
                 </b-button>
             </template>
@@ -46,8 +42,7 @@
                         @onInsertTool="onInsertTool"
                         @onInsertModule="onInsertModule"
                         @onInsertWorkflow="onInsertWorkflow"
-                        @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                    />
+                        @onInsertWorkflowSteps="onInsertWorkflowSteps" />
                 </template>
             </SidePanel>
             <div id="center" class="workflow-center">
@@ -78,8 +73,7 @@
                                 @onCreate="onInsertTool"
                                 @onChange="onChange"
                                 @onActivate="onActivate"
-                                @onRemove="onRemove"
-                            />
+                                @onRemove="onRemove" />
                         </div>
                     </div>
                     <div class="workflow-overview" aria-hidden="true">
@@ -108,12 +102,11 @@
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
                                     @onLint="onLint"
-                                    @onUpgrade="onUpgrade"
-                                />
+                                    @onUpgrade="onUpgrade" />
                             </div>
                         </div>
                         <div class="unified-panel-body workflow-right" ref="right-panel">
-                            <div class="m-1">
+                            <div class="m-2">
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
@@ -122,8 +115,7 @@
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
-                                    @onSetData="onSetData"
-                                />
+                                    @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
                                     :get-manager="getManager"
@@ -133,8 +125,7 @@
                                     @onLabel="onLabel"
                                     @onEditSubworkflow="onEditSubworkflow"
                                     @onAttemptRefactor="onAttemptRefactor"
-                                    @onSetData="onSetData"
-                                />
+                                    @onSetData="onSetData" />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
                                     :id="id"
@@ -150,8 +141,7 @@
                                     :creator="creator"
                                     @onVersion="onVersion"
                                     @onLicense="onLicense"
-                                    @onCreator="onCreator"
-                                />
+                                    @onCreator="onCreator" />
                                 <WorkflowLint
                                     v-else-if="showLint"
                                     :untyped-parameters="parameters"
@@ -163,8 +153,7 @@
                                     @onHighlight="onHighlight"
                                     @onUnhighlight="onUnhighlight"
                                     @onRefactor="onAttemptRefactor"
-                                    @onScrollTo="onScrollTo"
-                                />
+                                    @onScrollTo="onScrollTo" />
                             </div>
                         </div>
                     </div>

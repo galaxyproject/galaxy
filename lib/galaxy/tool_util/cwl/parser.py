@@ -257,13 +257,13 @@ def check_requirements(rec, tool=True):
             check_requirements(d, tool=tool)
 
 
-class ToolProxy(ABCMeta):
+class ToolProxy(metaclass=ABCMeta):
 
     _class: str
 
     def __init__(self, tool, uuid, raw_process_reference=None, tool_path=None):
         self._tool = tool
-        self._uuid = uuid
+        self.uuid = uuid
         self._tool_path = tool_path
         self._raw_process_reference = raw_process_reference
         # remove input parameter formats from CWL files so that cwltool
@@ -284,7 +284,7 @@ class ToolProxy(ABCMeta):
         raw_id = self._tool.tool.get("id", None)
         return raw_id
 
-    def galaxy_id(self):
+    def galaxy_id(self) -> str:
         raw_id = self.id
         tool_id = None
         # don't reduce "search.cwl#index" to search
@@ -292,8 +292,7 @@ class ToolProxy(ABCMeta):
             tool_id = os.path.basename(raw_id)
             # tool_id = os.path.splitext(os.path.basename(raw_id))[0]
         if not tool_id:
-            return self._uuid
-        assert tool_id
+            return str(self.uuid)
         if tool_id.startswith("#"):
             tool_id = tool_id[1:]
         return tool_id
@@ -330,7 +329,7 @@ class ToolProxy(ABCMeta):
         return {
             "class": self._class,
             "pickle": unicodify(base64.b64encode(pickle.dumps(persisted_obj, pickle.HIGHEST_PROTOCOL))),
-            "uuid": self._uuid,
+            "uuid": self.uuid,
         }
 
     @staticmethod
@@ -1044,7 +1043,7 @@ class ToolStepProxy(BaseStepProxy):
 
     @property
     def tool_proxy(self):
-        # Neeeds to be cached so UUID that is loaded matches UUID generated with to_dict.
+        # Needs to be cached so UUID that is loaded matches UUID generated with to_dict.
         if self._tool_proxy is None:
             self._tool_proxy = _cwl_tool_object_to_proxy(self.cwl_tool_object, uuid=str(uuid4()))
         return self._tool_proxy
@@ -1064,7 +1063,7 @@ class ToolStepProxy(BaseStepProxy):
         outputs = self.galaxy_workflow_outputs_list()
         return {
             "id": self._index,
-            "tool_uuid": self.tool_proxy._uuid,  # TODO: make sure this is respected...
+            "tool_uuid": self.tool_proxy.uuid,  # TODO: make sure this is respected...
             "label": self.label,
             "position": {"left": 0, "top": 0},
             "type": "tool",

@@ -6,8 +6,7 @@
             v-if="status !== 'error'"
             v-bind="currentProps"
             @changeview="showDataManager"
-            @reloaddatamanager="reloadDataManager"
-        >
+            @reloaddatamanager="reloadDataManager">
         </component>
     </div>
 </template>

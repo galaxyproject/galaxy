@@ -10,8 +10,7 @@
             :api-root-url="apiRootUrl"
             alert="User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>."
             title="Roles that can access the library"
-            @input="setUserPermissionsPreferences"
-        />
+            @input="setUserPermissionsPreferences" />
         <PermissionsInputField
             v-if="manage_library_role_list"
             :id="library_id"
@@ -20,8 +19,7 @@
             :api-root-url="apiRootUrl"
             alert="User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access)."
             title="Roles that can manage permissions on this library"
-            @input="setUserPermissionsPreferences"
-        />
+            @input="setUserPermissionsPreferences" />
 
         <PermissionsInputField
             v-if="add_library_item_role_list"
@@ -32,8 +30,7 @@
             class="add_perm"
             alert="User with <strong>any</strong> of these roles can add items to this library (folders and datasets)."
             title="Roles that can add items to this library"
-            @input="setUserPermissionsPreferences"
-        />
+            @input="setUserPermissionsPreferences" />
         <PermissionsInputField
             v-if="modify_library_role_list"
             :id="library_id"
@@ -42,8 +39,7 @@
             :api-root-url="apiRootUrl"
             alert="User with  <strong>any</strong> of these roles can modify this library (name, synopsis, etc.)."
             title="Roles that can modify this library"
-            @input="setUserPermissionsPreferences"
-        />
+            @input="setUserPermissionsPreferences" />
         <button title="Save modifications" class="toolbtn_save_permissions" @click="postPermissions">
             <font-awesome-icon :icon="['far', 'save']" />
             Save
@@ -135,9 +131,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.header {
-    font-size: 45px;
-}
-</style>

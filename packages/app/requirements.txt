@@ -6,18 +6,19 @@ galaxy-tool-util[cwl]
 galaxy-web-framework
 galaxy-web-stack
 
+Beaker
 celery
 cloudauthz==0.6.0
-kombu
-Beaker
-pykwalify
-pulsar-galaxy-lib>=0.14.12
+Fabric3
 gxformat2
+kombu
+lagom
 Mako
+Markdown
+pulsar-galaxy-lib>=0.14.13
+pykwalify
+refgenconf>=0.12.0
 sqlitedict
 svgwrite
-Markdown
-refgenconf>=0.12.0
-Fabric3
-lagom
 tuswsgi
+typing-extensions

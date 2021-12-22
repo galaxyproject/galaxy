@@ -17,7 +17,6 @@ export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
-import GalaxyLibrary from "galaxy.library";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
@@ -42,10 +41,6 @@ export function trackster(options) {
 
 export function circster(options) {
     new Circster.GalaxyApp(options);
-}
-
-export function library(options) {
-    new GalaxyLibrary.GalaxyApp(options);
 }
 
 export function multiHistory(options) {

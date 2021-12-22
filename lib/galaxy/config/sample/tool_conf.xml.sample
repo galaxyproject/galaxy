@@ -5,6 +5,7 @@
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <!-- <tool file="data_source/ucsc_tablebrowser_test.xml" /> -->
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
+    <tool file="data_source/ncbi_datasets.xml" />
     <tool file="data_source/sra.xml" />
     <tool file="data_source/ebi_sra.xml" />
     <tool file="data_source/fly_modencode.xml" />

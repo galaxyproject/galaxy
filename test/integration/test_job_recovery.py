@@ -30,12 +30,11 @@ class JobRecoveryBeforeHandledIntegerationTestCase(integration_util.IntegrationT
 
     def test_recovery(self):
         history_id = self.dataset_populator.new_history()
-        self.dataset_populator.run_tool(
+        self.dataset_populator.run_tool_raw(
             "exit_code_oom",
             {},
             history_id,
-            assert_ok=False,
-        ).json()
+        )
         self.restart(handle_reconfig=self.handle_reconfigure_galaxy_config_kwds)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -57,12 +56,11 @@ class JobRecoveryAfterHandledIntegerationTestCase(integration_util.IntegrationTe
 
     def test_recovery(self):
         history_id = self.dataset_populator.new_history()
-        self.dataset_populator.run_tool(
+        self.dataset_populator.run_tool_raw(
             "exit_code_oom",
             {},
             history_id,
-            assert_ok=False,
-        ).json()
+        )
         self.restart(handle_reconfig=self.handle_reconfigure_galaxy_config_kwds)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)

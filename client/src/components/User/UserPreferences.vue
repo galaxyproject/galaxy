@@ -48,8 +48,7 @@
                         title-tag="h2"
                         @show="resetModal"
                         @hidden="resetModal"
-                        @ok="handleOk"
-                    >
+                        @ok="handleOk">
                         <p>
                             <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
                             <b>
@@ -62,8 +61,7 @@
                                 :state="nameState"
                                 label="Enter your user email for this account as confirmation."
                                 label-for="Email"
-                                invalid-feedback="Incorrect email"
-                            >
+                                invalid-feedback="Incorrect email">
                                 <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
                             </b-form-group>
                         </b-form>

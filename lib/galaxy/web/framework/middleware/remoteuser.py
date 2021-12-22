@@ -172,10 +172,10 @@ class RemoteUser:
                 # requests.
                 pass
             elif environ[self.remote_user_header] in self.admin_users and \
-                    any([path_info.startswith(prefix) for prefix in admin_accessible_paths]):
+                    any(path_info.startswith(prefix) for prefix in admin_accessible_paths):
                 # If the user is an admin user, and any of the admin accessible paths match..., allow them to execute that action.
                 pass
-            elif any([path_info.startswith(prefix) for prefix in user_accessible_paths]):
+            elif any(path_info.startswith(prefix) for prefix in user_accessible_paths):
                 # If the user is allowed to access the path, pass
                 pass
             elif path_info == '/user' or path_info == '/user/':

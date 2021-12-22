@@ -6,8 +6,6 @@ import shutil
 import tempfile
 from typing import Any
 
-from sqlalchemy.orm.scoping import scoped_session
-
 from galaxy import (
     di,
     quota,
@@ -19,10 +17,12 @@ from galaxy.managers.users import UserManager
 from galaxy.model import tags
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp, GalaxyDataTestConfig
 from galaxy.security import idencoding
-from galaxy.structured_app import BasicApp, MinimalManagerApp, StructuredApp
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
@@ -66,14 +66,14 @@ class MockApp(di.Container, GalaxyDataTestApp):
         super().__init__()
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
-        self[BasicApp] = self
+        self[BasicSharedApp] = self
         self[MinimalManagerApp] = self
         self[StructuredApp] = self
         self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get('name', 'galaxy')
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
-        self[scoped_session] = self.model.context
+        self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self[tags.GalaxyTagHandler] = self.tag_handler
@@ -84,7 +84,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
             use_messaging=False,
             assign_handler=lambda *args, **kwargs: None
         )
-        self.tool_data_tables = {}
+        self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path)
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
@@ -95,6 +95,8 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
+        self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         rebind_container_to_task(self)
 
@@ -127,8 +129,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.use_remote_user = kwargs.get('use_remote_user', False)
         self.enable_celery_tasks = False
         self.tool_data_path = os.path.join(self.root, 'tool-data')
+        self.galaxy_data_manager_data_path = self.tool_data_path
         self.tool_dependency_dir = None
-        self.metadata_strategy = 'legacy'
+        self.metadata_strategy = 'directory'
 
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
@@ -164,6 +167,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.tool_cache_data_dir = os.path.join(self.root, 'tool_cache')
         self.delay_tool_initialization = True
         self.external_chown_script = None
+        self.check_job_script_integrity = False
+        self.check_job_script_integrity_count = 0
+        self.check_job_script_integrity_sleep = 0
 
         self.default_panel_view = "default"
         self.panel_views_dir = ''

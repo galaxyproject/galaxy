@@ -22,6 +22,9 @@ class ZipstreamWrapper:
         else:
             yield iter(self.archive)
 
+    def get_iterator(self):
+        return iter(self.archive)
+
     def get_headers(self):
         headers = {}
         if self.archive_name:

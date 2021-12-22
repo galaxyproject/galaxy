@@ -22,7 +22,7 @@ class Xgmml(xml.GenericXml):
     """
     file_ext = "xgmml"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """
@@ -68,7 +68,7 @@ class Sif(tabular.Tabular):
     """
     file_ext = "sif"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """

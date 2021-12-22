@@ -1,4 +1,4 @@
-<tool id="interactive_tool_pyiron" tool_type="interactive" name="PyIron Interactive Jupyter Notebook" version="0.2">
+<tool id="interactive_tool_pyiron" tool_type="interactive" name="PyIron Interactive Jupyter Notebook" version="0.2.1" profile="21.09">
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:pyiron</container>
     </requirements>
@@ -29,7 +29,7 @@
 
         ## change into the directory where the notebooks are located
         export HOME=/home/jovyan &&
-        export PATH=${HOME}/.local/bin:\${PATH} &&
+        export PATH=\${HOME}/.local/bin:\${PATH} &&
         cd ./jupyter/ &&
         cp \${HOME}/examples/* ./ &&
 

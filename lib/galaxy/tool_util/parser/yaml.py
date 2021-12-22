@@ -1,3 +1,5 @@
+import json
+
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -22,6 +24,8 @@ from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
+
+    language = 'yaml'
 
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
@@ -53,9 +57,6 @@ class YamlToolSource(ToolSource):
     def parse_xrefs(self):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
-
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -189,6 +190,10 @@ class YamlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
+
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
 
 
 def _parse_test(i, test_dict):

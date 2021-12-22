@@ -38,8 +38,7 @@
                 striped
                 caption-top
                 @row-clicked="showRowDetails"
-                :busy="searching"
-            >
+                :busy="searching">
                 <template v-slot:row-details="row">
                     <b-card>
                         <trs-tool :trs-tool="row.item.data" @onImport="importVersion(row.item.data.id, $event)" />
