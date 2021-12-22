@@ -1,5 +1,7 @@
 import re
 
+from lxml.etree import XMLSyntaxError
+
 from galaxy.util import (
     parse_xml_string,
     unicodify,
@@ -27,8 +29,7 @@ def assert_is_valid_xml(output):
     is valid XML."""
     try:
         to_xml(output)
-    except Exception as e:
-        # TODO: Narrow caught exception to just parsing failure
+    except XMLSyntaxError as e:
         raise AssertionError(f"Expected valid XML, but could not parse output. {unicodify(e)}")
 
 
@@ -36,10 +37,9 @@ def assert_has_element_with_path(output, path):
     """ Asserts the specified output has at least one XML element with a
     path matching the specified path argument. Valid paths are the
     simplified subsets of XPath implemented by lxml.etree;
-    http://effbot.org/zone/element-xpath.htm for more information."""
-    if xml_find(output, path) is None:
-        errmsg = f"Expected to find XML element matching expression {path}, not such match was found."
-        raise AssertionError(errmsg)
+    https://lxml.de/xpathxslt.html for more information."""
+    print(xml_find(output, path))
+    assert xml_find(output, path) is not None, f"Expected to find XML element matching expression {path}, not such match was found."
 
 
 def assert_has_n_elements_with_path(output, path, n):
@@ -48,18 +48,14 @@ def assert_has_n_elements_with_path(output, path, n):
     xml = to_xml(output)
     n = int(n)
     num_elements = len(xml.findall(path))
-    if num_elements != n:
-        errmsg = "Expected to find %d elements with path %s, but %d were found." % (n, path, num_elements)
-        raise AssertionError(errmsg)
+    assert num_elements == n, f"Expected to find {n} elements with path {path}, but {num_elements} were found."
 
 
 def assert_element_text_matches(output, path, expression):
     """ Asserts the text of the first element matching the specified
     path matches the specified regular expression."""
     text = xml_find_text(output, path)
-    if re.match(expression, text) is None:
-        errmsg = f"Expected element with path '{path}' to contain text matching '{expression}', instead text '{text}' was found."
-        raise AssertionError(errmsg)
+    assert re.match(expression, text), f"Expected element with path '{path}' to contain text matching '{expression}', instead text '{text}' was found."
 
 
 def assert_element_text_is(output, path, text):
@@ -73,9 +69,7 @@ def assert_attribute_matches(output, path, attribute, expression):
     the specified path matches the specified regular expression."""
     xml = xml_find(output, path)
     attribute_value = xml.attrib[attribute]
-    if re.match(expression, attribute_value) is None:
-        errmsg = f"Expected attribute '{attribute}' on element with path '{path}' to match '{expression}', instead attribute value was '{attribute_value}'."
-        raise AssertionError(errmsg)
+    assert re.match(expression, attribute_value), f"Expected attribute '{attribute}' on element with path '{path}' to match '{expression}', instead attribute value was '{attribute_value}'."
 
 
 def assert_attribute_is(output, path, attribute, text):

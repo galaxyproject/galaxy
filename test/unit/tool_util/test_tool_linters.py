@@ -552,7 +552,8 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
 ASSERTS = """
 <tool>
     <outputs>
-        <data name="outname"/>
+        <data name="out_archive"/>
+        <data name="out_tabular"/>
     </outputs>
     <tests>
         <test>
@@ -566,7 +567,7 @@ ASSERTS = """
             <assert_command>
                 <has_text invalid_attrib="blah"/>
             </assert_command>
-            <output name="outname">
+            <output name="out_archive">
                 <assert_contents>
                     <has_size value="500k" delta="1O"/>
                     <has_archive_member path=".*/my-file.txt">
@@ -574,7 +575,7 @@ ASSERTS = """
                     </has_archive_member>
                 </assert_contents>
             </output>
-            <output name="outname">
+            <output name="out_tabular">
                 <assert_contents>
                     <has_size/>
                     <has_n_columns/>

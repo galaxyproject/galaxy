@@ -2010,84 +2010,110 @@ module.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:sequence>
-      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsText" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsArchive" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:choice>
   </xs:complexType>
-  <xs:group name="TestAssertion">
+  <xs:group name="TestAssertionsGeneral">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[General asserions]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_size" type="AssertHasSize"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for text data]]></xs:documentation>
+    </xs:annotation>
     <xs:choice>
       <xs:element name="has_text" type="AssertHasText"/>
       <xs:element name="not_has_text" type="AssertNotHasText"/>
       <xs:element name="has_text_matching" type="AssertHasTextMatching"/>
       <xs:element name="has_line" type="AssertHasLine"/>
-      <xs:element name="has_n_lines" type="AssertHasNLines"/>
       <xs:element name="has_line_matching" type="AssertHasLineMatching"/>
-      <xs:element name="has_n_columns" type="AssertHasNColumns"/>
-      <xs:element name="is_valid_xml" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_element_with_path" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains at least one element (or tag) with the specified XPath-like ``path`` (e.g. ``<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_n_elements_with_path" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML output contains the specified number (``n``) of elements (or tags) with the specified XPath-like ``path`` (e.g. ``<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text_is" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<element_text_is path="BlastOutput_program" text="blastp" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text_matches">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the text of the XML element with the specified XPath-like ``path`` matches the regular expression defined by ``expression`` (e.g. ``<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*" />``).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="attribute_is" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />`` ).]]>
-          </xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="attribute_matches" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Asserts the XML ``attribute`` for the element (or tag) with the specified XPath-like ``path`` matches the regular expression specified by ``expression`` (e.g. ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).]]></xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="element_text" type="xs:anyType">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
-        </xs:annotation>
-      </xs:element>
-      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
-      </xs:element>
-      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
-      </xs:element>
-      <xs:element name="has_archive_member" type="AssertHasArchiveMember">
-      </xs:element>
-      <xs:element name="has_size" type="AssertHasSize"/>
+      <xs:element name="has_n_lines" type="AssertHasNLines"/>
     </xs:choice>
   </xs:group>
-
-  <xs:complexType name="AssertHasText">
+  <xs:group name="TestAssertionsTabular">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for tabular data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_n_columns" type="AssertHasNColumns"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsArchive">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for archives (zip/tar)]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_archive_member" type="AssertHasArchiveMember"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsXml">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for XML data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="is_valid_xml" type="AssertIsValidXML"/>
+      <xs:element name="has_element_with_path" type="AssertHasElementWithPath"/>
+      <xs:element name="has_n_elements_with_path" type="AssertHasNElementsWithPath"/>
+      <xs:element name="element_text_matches" type="AssertElementTextMatches"/>
+      <xs:element name="element_text_is" type="AssertElementTextIs"/>
+      <xs:element name="attribute_matches" type="AssertAttributeMatches"/>
+      <xs:element name="attribute_is" type="AssertAttributeIs"/>
+      <xs:element name="element_text" type="AssertElementText"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsH5">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for H5 data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_h5_keys" type="AssertHasH5Keys"/>
+      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute"/>
+    </xs:choice>
+  </xs:group>
+  <xs:complexType name="AssertHasSize">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the specified ``text`` appears in the output (e.g. ``<has_text
-text="chr7">``). If the ``text`` is expected to occur a particular number of
-times, this value can be specified using ``n``. Optionally also with a certain
-``delta``. Alternatively the range of expected occurences can be specified by
-``min`` and/or ``max``.
+Asserts the output has a specific size (in bytes) of ``value`` plus minus
+``delta``, e.g. ``<has_size value="10000" delta="100" />``.
+Alternatively the range of the expected size can be specified by ``min`` and/or
+``max``.
 ]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="value" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired size of the outpyt (in bytes)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum expected size</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum expected size</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``. Optionally also with a certain ``delta``. Alternatively the range of expected occurences can be specified by ``min`` and/or ``max``.]]>
       </xs:documentation>
     </xs:annotation>
     <xs:attribute name="text" type="xs:string" use="required">
@@ -2313,34 +2339,155 @@ number of columns.
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="AssertHasSize">
+  <xs:complexType name="AssertHasArchiveMember">
+    <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsText" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType> 
+  <xs:complexType name="AssertIsValidXML">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output has a specific size (in bytes) of ``value`` plus minus
-``delta``, e.g. ``<has_size value="10000" delta="100" />``.
-Alternatively the range of the expected size can be specified by ``min`` and/or
-``max``.
+Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:string" use="optional">
+  </xs:complexType>
+  <xs:complexType name="AssertHasElementWithPath">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML output contains at least one element (or tag) with the specified
+XPath-like ``path`` (e.g. ``<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />``).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Desired size of the outpyt (in bytes)</xs:documentation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
+  </xs:complexType>
+  <xs:complexType name="AssertHasNElementsWithPath">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML output contains the specified number (``n``) of elements (or
+tags) with the specified XPath-like ``path`` (e.g. ``<has_n_elements_with_path
+n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />``).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``.</xs:documentation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
+    <xs:attribute name="n" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum expected size</xs:documentation>
+        <xs:documentation xml:lang="en">The number of times the path should appear.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
+  </xs:complexType>
+  <xs:complexType name="AssertElementTextMatches">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the text of the XML element with the specified XPath-like ``path``
+matches the regular expression defined by ``expression`` (e.g.
+``<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"
+/>``).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum expected size</xs:documentation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertElementTextIs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the text of the XML element with the specified XPath-like ``path`` is
+the specified ``text`` (e.g. ``<element_text_is path="BlastOutput_program" text="blastp" />``).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertAttributeMatches">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` matches the regular expression specified by ``expression``
+(e.g. ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="expression" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertAttributeIs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the XML ``attribute`` for the element (or tag) with the specified
+XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />`` ).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertElementText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertionsText" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2366,19 +2513,6 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected value of HDF5 attribute to check.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="AssertHasArchiveMember">
-    <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-    <xs:attribute name="path" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
