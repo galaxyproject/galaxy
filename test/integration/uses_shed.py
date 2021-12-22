@@ -96,10 +96,10 @@ class UsesShed:
         model.context.flush()
 
     def delete_repo_request(self, payload):
-        return self.galaxy_interactor._delete('/tool_shed_repositories', data=payload, admin=True)
+        return self.galaxy_interactor._delete('tool_shed_repositories', data=payload, admin=True)
 
     def install_repo_request(self, payload):
-        return self.galaxy_interactor._post('/tool_shed_repositories/new/install_repository_revision', data=payload, admin=True)
+        return self.galaxy_interactor._post('tool_shed_repositories/new/install_repository_revision', data=payload, admin=True)
 
     def repository_operation(self, operation, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         payload = {
