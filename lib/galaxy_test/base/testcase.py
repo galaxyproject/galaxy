@@ -28,6 +28,11 @@ class FunctionalTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)
         self.host, self.port, self.url = target_url_parts()
+        server_wrapper = self._test_driver and self._test_driver.server_wrappers[0]
+        if server_wrapper:
+            self.host = server_wrapper.host
+            self.port = server_wrapper.port
+            self.url = f"http://{self.host}:{self.port}{server_wrapper.prefix}"
         self.test_data_resolver = TestDataResolver()
         self.keepOutdir = setup_keep_outdir()
 

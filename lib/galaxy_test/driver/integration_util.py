@@ -116,7 +116,8 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
-        self.url = f"http://{host}:{port}"
+        prefix = server_wrapper.prefix or ''
+        self.url = f"http://{host}:{port}{prefix}"
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):
