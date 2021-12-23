@@ -53,7 +53,10 @@ export default {
     },
     methods: {
         goToStorageManager() {
-            console.log("TODO: go to storage manager");
+            this.$router.push({
+                name: "StorageManager",
+                params: { userId: this.userId, quotaSettings: this.quotaSettings },
+            });
         },
     },
 };
