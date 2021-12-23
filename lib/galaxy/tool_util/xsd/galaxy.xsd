@@ -2262,7 +2262,17 @@ number of columns.
   </xs:complexType>
   <xs:complexType name="AssertHasArchiveMember">
     <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+This tag allows to check if ``path`` is contained in a compressed file. The path
+is a regular expression that is matched against the full paths of the objects in
+the compressed file. Valid archive formats include ``.zip``, ``.tar``, and
+``.tar.gz``. In addition the tag can contain recursively additional assertions
+as child elements about the first member in the archive matching the regular
+expression ``path`` (e.g. ``<has_archive_member
+path=".*/my-file.txt"><not_has_text text="EDK72998.1"
+/></has_archive_member>``). Note that if this member is a directory then it is
+considered like an empty file.
+]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
@@ -2400,7 +2410,13 @@ XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerE
   </xs:complexType>
   <xs:complexType name="AssertElementText">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]>
+      <xs:documentation xml:lang="en"><![CDATA[
+This tag allows the developer to recurisively specify additional assertions as
+child elements about just the text contained in the element specified by the
+XPath-like ``path`` (e.g. ``<element_text
+path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text
+text="EDK72998.1" /></element_text>``).
+]]>
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
