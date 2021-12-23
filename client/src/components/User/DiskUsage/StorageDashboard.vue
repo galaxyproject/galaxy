@@ -20,6 +20,7 @@
 
 <script>
 import _l from "utils/localization";
+import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "./model";
 import DiskUsageSummary from "components/User/DiskUsage/DiskUsageSummary";
 import IconCard from "components/IconCard";
@@ -29,20 +30,11 @@ export default {
         DiskUsageSummary,
         IconCard,
     },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        config: {
-            type: Object,
-            required: true,
-        },
-    },
     data() {
         return {
             title: _l("Storage Dashboard"),
             subtitle: _l("Here you can see an overview of your disk usage status."),
+            userId: null,
             quotaSettings: null,
             freeSpaceData: {
                 title: _l("Is your usage more than expected?"),
@@ -55,7 +47,9 @@ export default {
         };
     },
     created() {
-        this.quotaSettings = QuotaSettings.create(this.config);
+        const Galaxy = getGalaxyInstance();
+        this.userId = Galaxy.user.id;
+        this.quotaSettings = QuotaSettings.create(Galaxy.config);
     },
     methods: {
         goToStorageManager() {

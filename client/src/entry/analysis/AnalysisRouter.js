@@ -53,7 +53,7 @@ import Confirmation from "components/login/Confirmation";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import Libraries from "components/Libraries";
 import { mountVueComponent } from "utils/mountVueComponent";
-import { StorageDashboard } from "components/User/DiskUsage";
+import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 import { newUserDict } from "../../../../static/plugins/welcome_page/new_user/dist/static/topics/index";
 
@@ -110,7 +110,7 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)datasets(/)(:dataset_id)/show_params": "show_dataset_details",
             "(/)interactivetool_entry_points(/)list": "show_interactivetool_list",
             "(/)libraries*path": "show_library_folder",
-            "(/)storage": "show_storage_dashboard",
+            "(/)storage*path": "show_storage_dashboard",
         },
 
         require_login: [
@@ -177,11 +177,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_storage_dashboard: function () {
-            const Galaxy = getGalaxyInstance();
-            this._display_vue_helper(StorageDashboard, {
-                config: Galaxy.config,
-                userId: Galaxy.user.id,
-            });
+            this._display_vue_helper(StorageDashboardRouter);
         },
 
         show_cloud_auth: function () {

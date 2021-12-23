@@ -1,1 +1,8 @@
-export { default as StorageDashboard } from "./StorageDashboard.vue";
+import router from "./StorageDashboardRouter.js";
+
+export const StorageDashboardRouter = {
+    router,
+    render: (h) => h("router-view"),
+};
+
+export default StorageDashboardRouter;
