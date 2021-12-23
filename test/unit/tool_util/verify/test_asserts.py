@@ -1,3 +1,6 @@
+import tempfile
+
+import h5py
 import pytest
 
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
@@ -259,6 +262,56 @@ VALID_XML = '''<root>
 '''
 INVALID_XML = '<root><elem name="foo"></root>'
 
+with tempfile.NamedTemporaryFile() as tmp:
+    with h5py.File(tmp.name, "w") as h5fh:
+        h5fh.attrs['myfileattr'] = "myfileattrvalue"
+        h5fh.attrs['myfileattrint'] = 1
+        dset = h5fh.create_dataset("myint", (100,), dtype='i')
+        dset.attrs['myintattr'] = "myintattrvalue"
+        grp = h5fh.create_group("mygroup")
+        grp.attrs['mygroupattr'] = "mygroupattrvalue"
+        grp.create_dataset("myfloat", (50,), dtype='f')
+        dset.attrs['myfloatattr'] = "myfloatattrvalue"
+    H5BYTES = open(tmp.name, "rb").read()
+
+H5_HAS_H5_KEYS = """
+    <assert_contents>
+        <has_h5_keys keys="myint,mygroup,mygroup/myfloat"/>
+    </assert_contents>
+"""
+H5_HAS_H5_KEYS_NEGATIVE = """
+    <assert_contents>
+        <has_h5_keys keys="absent"/>
+    </assert_contents>
+"""
+H5_HAS_ATTRIBUTE = """
+    <assert_contents>
+        <has_h5_attribute key="myfileattr" value="myfileattrvalue" />
+        <has_h5_attribute key="myfileattrint" value="1" />
+    </assert_contents>
+"""
+H5_HAS_ATTRIBUTE_NEGATIVE = """
+    <assert_contents>
+        <has_h5_attribute key="myfileattr" value="wrong" />
+        <has_h5_attribute key="myfileattrint" value="also_wrong" />
+    </assert_contents>
+"""
+
+with open("test-data/example-bag.zip", "rb") as zipfh:
+    ZIPBYTES = zipfh.read()
+with open("test-data/testdir1.tar.gz", "rb") as tarfh:
+    TARBYTES = tarfh.read()
+with open("test-data/1.bed", "rb") as fh:
+    NONARCHIVE = fh.read()
+
+ARCHIVE_HAS_ARCHIVE_MEMBER = """
+    <assert_contents>
+        <has_archive_member path="{path}">
+            {content_assert}
+        </has_archive_member>
+    </assert_contents>
+"""
+
 TESTS = [
     # test successful assertion
     (
@@ -280,9 +333,6 @@ TESTS = [
         TABULAR_ASSERTION_COMMENT, TABULAR_DATA_COMMENT,
         lambda x: len(x) == 0
     ),
-
-
-
     # test has_text
     (
         TEXT_HAS_TEXT_ASSERTION, TEXT_DATA_HAS_TEXT,
@@ -567,6 +617,71 @@ TESTS = [
         XML_ELEMENT_TEXT_NEGATIVE, VALID_XML,
         lambda x: "Expected text 'NOTBAR' in output ('BAR')" in x
     ),
+    # test has_h5_keys
+    (
+        H5_HAS_H5_KEYS, H5BYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_h5_keys .. negative
+    (
+        H5_HAS_H5_KEYS_NEGATIVE, H5BYTES,
+        lambda x: "Not a HDF5 file or H5 keys missing:\n\t['mygroup', 'mygroup/myfloat', 'myint']\n\t['absent']" in x
+    ),
+    # test has_attribute
+    (
+        H5_HAS_ATTRIBUTE, H5BYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_attribute .. negative
+    (
+        H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES,
+        lambda x: "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)" in x
+    ),
+    # test has_archive_member with zip
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/bag-info.txt", content_assert=""), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1/file3", content_assert=""), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with non archive
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="irrelevant", content_assert=""), NONARCHIVE,
+        lambda x: "Expected path 'irrelevant' to be an archive" in x
+    ),
+    # test has_archive_member with zip on absent member
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert=""), ZIPBYTES,
+        lambda x: "Expected path 'absent' in archive" in x
+    ),
+    # test has_archive_member with tar on absent member
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert=""), TARBYTES,
+        lambda x: "Expected path 'absent' in archive" in x
+    ),
+    # test has_archive_member with zip on a dir member
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/", content_assert=""), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar on a dir member
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1", content_assert=""), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/bag-info.txt", content_assert='<has_text text="Bag-Software-Agent"/>'), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1/file3", content_assert='<has_text text="subdirfile"/>'), TARBYTES,
+        lambda x: len(x) == 0
+    ),
 ]
 
 TEST_IDS = [
@@ -630,6 +745,19 @@ TEST_IDS = [
     'attribute_matches failure',
     'element_text sucess',
     'element_text failure',
+    'has_h5_keys',
+    'has_h5_keys failure',
+    'has_h5_attribute',
+    'has_h5_attribute failure',
+    'has_archive_member zip',
+    'has_archive_member tar',
+    'has_archive_member non-archive',
+    'has_archive_member zip absent member',
+    'has_archive_member tar absent member',
+    'has_archive_member zip non-file member',
+    'has_archive_member tar non-file member',
+    'has_archive_member zip with content assertion',
+    'has_archive_member tar with content assertion',
 ]
 
 
