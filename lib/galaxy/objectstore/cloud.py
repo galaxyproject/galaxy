@@ -445,7 +445,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 self.transfer_progress = 0  # Reset transfer progress counter
-                with open(self._get_cache_path(rel_path), "w+") as downloaded_file_handle:
+                with open(self._get_cache_path(rel_path), "wb+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
                 return True
         except Exception:
