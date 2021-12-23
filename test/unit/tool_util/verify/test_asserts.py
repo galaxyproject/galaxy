@@ -1,6 +1,9 @@
 import tempfile
 
-import h5py
+try:
+    import h5py
+except ImportError:
+    h5py = None
 import pytest
 
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
@@ -254,40 +257,41 @@ VALID_XML = '''<root>
 '''
 INVALID_XML = '<root><elem name="foo"></root>'
 
-with tempfile.NamedTemporaryFile() as tmp:
-    with h5py.File(tmp.name, "w") as h5fh:
-        h5fh.attrs['myfileattr'] = "myfileattrvalue"
-        h5fh.attrs['myfileattrint'] = 1
-        dset = h5fh.create_dataset("myint", (100,), dtype='i')
-        dset.attrs['myintattr'] = "myintattrvalue"
-        grp = h5fh.create_group("mygroup")
-        grp.attrs['mygroupattr'] = "mygroupattrvalue"
-        grp.create_dataset("myfloat", (50,), dtype='f')
-        dset.attrs['myfloatattr'] = "myfloatattrvalue"
-    H5BYTES = open(tmp.name, "rb").read()
+if h5py is not None:
+    with tempfile.NamedTemporaryFile() as tmp:
+        with h5py.File(tmp.name, "w") as h5fh:
+            h5fh.attrs['myfileattr'] = "myfileattrvalue"
+            h5fh.attrs['myfileattrint'] = 1
+            dset = h5fh.create_dataset("myint", (100,), dtype='i')
+            dset.attrs['myintattr'] = "myintattrvalue"
+            grp = h5fh.create_group("mygroup")
+            grp.attrs['mygroupattr'] = "mygroupattrvalue"
+            grp.create_dataset("myfloat", (50,), dtype='f')
+            dset.attrs['myfloatattr'] = "myfloatattrvalue"
+        H5BYTES = open(tmp.name, "rb").read()
 
-H5_HAS_H5_KEYS = """
-    <assert_contents>
-        <has_h5_keys keys="myint,mygroup,mygroup/myfloat"/>
-    </assert_contents>
-"""
-H5_HAS_H5_KEYS_NEGATIVE = """
-    <assert_contents>
-        <has_h5_keys keys="absent"/>
-    </assert_contents>
-"""
-H5_HAS_ATTRIBUTE = """
-    <assert_contents>
-        <has_h5_attribute key="myfileattr" value="myfileattrvalue" />
-        <has_h5_attribute key="myfileattrint" value="1" />
-    </assert_contents>
-"""
-H5_HAS_ATTRIBUTE_NEGATIVE = """
-    <assert_contents>
-        <has_h5_attribute key="myfileattr" value="wrong" />
-        <has_h5_attribute key="myfileattrint" value="also_wrong" />
-    </assert_contents>
-"""
+    H5_HAS_H5_KEYS = """
+        <assert_contents>
+            <has_h5_keys keys="myint,mygroup,mygroup/myfloat"/>
+        </assert_contents>
+    """
+    H5_HAS_H5_KEYS_NEGATIVE = """
+        <assert_contents>
+            <has_h5_keys keys="absent"/>
+        </assert_contents>
+    """
+    H5_HAS_ATTRIBUTE = """
+        <assert_contents>
+            <has_h5_attribute key="myfileattr" value="myfileattrvalue" />
+            <has_h5_attribute key="myfileattrint" value="1" />
+        </assert_contents>
+    """
+    H5_HAS_ATTRIBUTE_NEGATIVE = """
+        <assert_contents>
+            <has_h5_attribute key="myfileattr" value="wrong" />
+            <has_h5_attribute key="myfileattrint" value="also_wrong" />
+        </assert_contents>
+    """
 
 with open("test-data/example-bag.zip", "rb") as zipfh:
     ZIPBYTES = zipfh.read()
@@ -619,26 +623,6 @@ TESTS = [
         XML_ELEMENT_TEXT.format(path="./elem/more", content_assert='<has_text text="NOTBAR"/>'), VALID_XML,
         lambda x: "Expected text 'NOTBAR' in output ('BAR')" in x
     ),
-    # test has_h5_keys
-    (
-        H5_HAS_H5_KEYS, H5BYTES,
-        lambda x: len(x) == 0
-    ),
-    # test has_h5_keys .. negative
-    (
-        H5_HAS_H5_KEYS_NEGATIVE, H5BYTES,
-        lambda x: "Not a HDF5 file or H5 keys missing:\n\t['mygroup', 'mygroup/myfloat', 'myint']\n\t['absent']" in x
-    ),
-    # test has_attribute
-    (
-        H5_HAS_ATTRIBUTE, H5BYTES,
-        lambda x: len(x) == 0
-    ),
-    # test has_attribute .. negative
-    (
-        H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES,
-        lambda x: "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)" in x
-    ),
     # test has_archive_member with zip
     (
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/bag-info.txt", content_assert=""), ZIPBYTES,
@@ -685,6 +669,32 @@ TESTS = [
         lambda x: len(x) == 0
     ),
 ]
+
+if h5py is not None:
+    H5PY_TESTS = [
+        # test has_h5_keys
+        (
+            H5_HAS_H5_KEYS, H5BYTES,
+            lambda x: len(x) == 0
+        ),
+        # test has_h5_keys .. negative
+        (
+            H5_HAS_H5_KEYS_NEGATIVE, H5BYTES,
+            lambda x: "Not a HDF5 file or H5 keys missing:\n\t['mygroup', 'mygroup/myfloat', 'myint']\n\t['absent']" in x
+        ),
+        # test has_attribute
+        (
+            H5_HAS_ATTRIBUTE, H5BYTES,
+            lambda x: len(x) == 0
+        ),
+        # test has_attribute .. negative
+        (
+            H5_HAS_ATTRIBUTE_NEGATIVE, H5BYTES,
+            lambda x: "Not a HDF5 file or H5 attributes do not match:\n\t[('myfileattr', 'myfileattrvalue'), ('myfileattrint', 1)]\n\n\t(myfileattr : wrong)" in x
+        ),
+    ]
+    TESTS.extend(H5PY_TESTS)
+
 
 TEST_IDS = [
     'has_n_columns success',
@@ -749,10 +759,6 @@ TEST_IDS = [
     'element_text failure',
     'element_text with subassertion sucess',
     'element_text with subassertion failure',
-    'has_h5_keys',
-    'has_h5_keys failure',
-    'has_h5_attribute',
-    'has_h5_attribute failure',
     'has_archive_member zip',
     'has_archive_member tar',
     'has_archive_member non-archive',
@@ -763,6 +769,15 @@ TEST_IDS = [
     'has_archive_member zip with content assertion',
     'has_archive_member tar with content assertion',
 ]
+
+if h5py is not None:
+    H5PY_TEST_IDS = [
+        'has_h5_keys',
+        'has_h5_keys failure',
+        'has_h5_attribute',
+        'has_h5_attribute failure',
+    ]
+    TEST_IDS.extend(H5PY_TEST_IDS)
 
 
 @pytest.mark.parametrize('assertion_xml,data,assert_func', TESTS, ids=TEST_IDS)
