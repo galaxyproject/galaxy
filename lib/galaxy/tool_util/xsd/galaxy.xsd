@@ -2092,7 +2092,7 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
     </xs:annotation>
     <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Desired size of the outpyt (in bytes)</xs:documentation>
+        <xs:documentation xml:lang="en">Desired size of the output (in bytes)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="xs:integer" use="optional">
@@ -2110,10 +2110,49 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
         <xs:documentation xml:lang="en">Maximum expected size</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
+  
+  <xs:attributeGroup name="AssertAttributeNegate">
+    <xs:attribute name="negate" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Negate the outcome of the assertion.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  
+  <xs:attributeGroup name="AssertAttributeN">
+    <xs:attribute name="n" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum number (default: -infinity)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum number (default: infinity)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
   <xs:complexType name="AssertHasText">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` appears in the output (e.g. ``<has_text text="chr7">``). If the ``text`` is expected to occur a particular number of times, this value can be specified using ``n``. Optionally also with a certain ``delta``. Alternatively the range of expected occurences can be specified by ``min`` and/or ``max``.]]>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the specified ``text`` appears in the output (e.g. ``<has_text
+text="chr7">``). If the ``text`` is expected to occur a particular number of
+times, this value can be specified using ``n``. Optionally also with a certain
+``delta``. Alternatively the range of expected occurences can be specified by
+``min`` and/or ``max``.
+]]>
       </xs:documentation>
     </xs:annotation>
     <xs:attribute name="text" type="xs:string" use="required">
@@ -2121,26 +2160,8 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
         <xs:documentation xml:lang="en">Text to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of occurences of the text</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference wrt. n</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertNotHasText">
     <xs:annotation>
@@ -2169,26 +2190,8 @@ occurences can be specified by ``min`` and/or ``max``.
         <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of non-overlapping matches of the expression</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference wrt. n</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasLine">
     <xs:annotation>
@@ -2206,26 +2209,8 @@ occurences can be specified by ``min`` and/or ``max``.
         <xs:documentation xml:lang="en">The line to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of occurences of the line</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference wrt. n</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of occurences</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasNLines">
     <xs:annotation>
@@ -2237,26 +2222,8 @@ and/or ``max``.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of lines</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference in the number of lines. The observed number of lines has to be in the range ``n +- delta``.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of lines</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of lines</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasLineMatching">
     <xs:annotation>
@@ -2274,26 +2241,8 @@ of expected occurences can be specified by ``min`` and/or ``max``.
         <xs:documentation xml:lang="en">Regular expression to check for</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of lines matching the expression</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference in the number of matching lines. The observed number of matching lines has to be in the range ``n +- delta``.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of matching lines</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of matching lines</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasNColumns">
     <xs:annotation>
@@ -2308,36 +2257,8 @@ number of columns.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="n" type="xs:integer">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number of columns</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="sep" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Column separator</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="comment" type="xs:string" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Comment character(s)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference in the number of columns. The observed number of columns has to be in the range ``n +- delta``.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number of columns</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number of columns</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasArchiveMember">
     <xs:annotation>
@@ -2503,7 +2424,7 @@ XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerE
   </xs:complexType>
   <xs:complexType name="AssertHasH5Attribute">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_h5_attribute key="nchroms" value="15" />``).]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
@@ -2516,6 +2437,7 @@ XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerE
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
