@@ -237,16 +237,8 @@ XML_ATTRIBUTE_MATCHES_NEGATIVE = """
 XML_ELEMENT_TEXT = """
     <assert_contents>
         <is_valid_xml/>
-        <element_text path="./elem/more">
-            <has_text text="BAR"/>
-        </element_text>
-    </assert_contents>
-"""
-XML_ELEMENT_TEXT_NEGATIVE = """
-    <assert_contents>
-        <is_valid_xml/>
-        <element_text path="./elem/more">
-            <has_text text="NOTBAR"/>
+        <element_text path="{path}">
+            {content_assert}
         </element_text>
     </assert_contents>
 """
@@ -609,12 +601,22 @@ TESTS = [
     ),
     # test element_text
     (
-        XML_ELEMENT_TEXT, VALID_XML,
+        XML_ELEMENT_TEXT.format(path="./elem/more", content_assert=''), VALID_XML,
         lambda x: len(x) == 0
     ),
-    # test element_text
+    # test element_text .. negative
     (
-        XML_ELEMENT_TEXT_NEGATIVE, VALID_XML,
+        XML_ELEMENT_TEXT.format(path="./absent", content_assert=''), VALID_XML,
+        lambda x: "Expected path './absent' in xml" in x
+    ),
+    # test element_text with sub-assertion
+    (
+        XML_ELEMENT_TEXT.format(path="./elem/more", content_assert='<has_text text="BAR"/>'), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test element_text with sub-assertion .. negative
+    (
+        XML_ELEMENT_TEXT.format(path="./elem/more", content_assert='<has_text text="NOTBAR"/>'), VALID_XML,
         lambda x: "Expected text 'NOTBAR' in output ('BAR')" in x
     ),
     # test has_h5_keys
@@ -743,8 +745,10 @@ TEST_IDS = [
     'element_text_matches failure',
     'attribute_matches sucess',
     'attribute_matches failure',
-    'element_text sucess',
+    'element_text success',
     'element_text failure',
+    'element_text with subassertion sucess',
+    'element_text with subassertion failure',
     'has_h5_keys',
     'has_h5_keys failure',
     'has_h5_attribute',

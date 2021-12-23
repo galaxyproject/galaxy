@@ -82,4 +82,5 @@ def assert_element_text(output, path, verify_assertions_function, children):
     """ Recursively checks the specified assertions against the text of
     the first element matching the specified path."""
     text = xml_find_text(output, path)
+    assert text is not None, f"Expected path '{path}' in xml"
     verify_assertions_function(text, children)
