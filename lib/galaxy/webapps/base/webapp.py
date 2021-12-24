@@ -642,7 +642,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     @property
     def cookie_path(self):
-        return self.app.config.cookie_path or url_for('/')
+        # Cookies for non-root paths should not end with `/` -> https://stackoverflow.com/questions/36131023/setting-a-slash-on-cookie-path
+        return (self.app.config.cookie_path or url_for('/')).rstrip('/') or '/'
 
     def __update_session_cookie(self, name='galaxysession'):
         """
