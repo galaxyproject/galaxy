@@ -723,6 +723,8 @@ def test_config_parse_cloud():
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
+            _assert_key_has_value(as_dict, "enable_cache_monitor", False)
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 
