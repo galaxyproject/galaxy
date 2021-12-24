@@ -869,7 +869,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     port = attempt_ports(port)
     server_wrapper = attempt_port_bind(port)
     try:
-        set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
+        set_and_wait_for_http_target(prefix, host, port, url_prefix="/", sleep_tries=50)
         log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
         return server_wrapper
     except Exception:
@@ -922,7 +922,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         webapp,
         host=host, port=port
     )
-    set_and_wait_for_http_target(prefix, host, port)
+    set_and_wait_for_http_target(prefix, host, port, url_prefix="/")
     log.info(f"Embedded paste web server for {name} started at {host}:{port}")
     return EmbeddedServerWrapper(
         app, server, name, host, port
