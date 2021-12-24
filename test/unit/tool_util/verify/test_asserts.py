@@ -1,4 +1,7 @@
+import os
+import tarfile
 import tempfile
+import zipfile
 
 try:
     import h5py
@@ -258,7 +261,8 @@ VALID_XML = '''<root>
 INVALID_XML = '<root><elem name="foo"></root>'
 
 if h5py is not None:
-    with tempfile.NamedTemporaryFile() as tmp:
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        h5name = tmp.name
         with h5py.File(tmp.name, "w") as h5fh:
             h5fh.attrs['myfileattr'] = "myfileattrvalue"
             h5fh.attrs['myfileattrint'] = 1
@@ -268,7 +272,9 @@ if h5py is not None:
             grp.attrs['mygroupattr'] = "mygroupattrvalue"
             grp.create_dataset("myfloat", (50,), dtype='f')
             dset.attrs['myfloatattr'] = "myfloatattrvalue"
-        H5BYTES = open(tmp.name, "rb").read()
+    with open(h5name, "rb") as h5fh:
+        H5BYTES = h5fh.read()
+    os.remove(h5name)
 
     H5_HAS_H5_KEYS = """
         <assert_contents>
@@ -293,12 +299,33 @@ if h5py is not None:
         </assert_contents>
     """
 
-with open("test-data/example-bag.zip", "rb") as zipfh:
-    ZIPBYTES = zipfh.read()
-with open("test-data/testdir1.tar.gz", "rb") as tarfh:
-    TARBYTES = tarfh.read()
-with open("test-data/1.bed", "rb") as fh:
-    NONARCHIVE = fh.read()
+with tempfile.NamedTemporaryFile(delete=False) as ziptmp:
+    zipname = ziptmp.name
+    with zipfile.ZipFile(ziptmp, mode='w') as zipfh:
+        for f in ["file1", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
+            zipfh.writestr(f, f)
+with open(zipname, "rb") as zfh:
+    ZIPBYTES = zfh.read()
+os.remove(zipname)
+
+with tempfile.NamedTemporaryFile(delete=False) as tartmp:
+    tarname = tartmp.name
+    with tarfile.open(name=None, mode='w:gz', fileobj=tartmp) as tarfh:
+        for f in ["file1", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
+            with tempfile.NamedTemporaryFile("w") as tmptmp:
+                tmptmpname = tmptmp.name
+                tmptmp.write(f)
+                tarfh.add(tmptmpname, arcname=f)
+with open(tarname, "rb") as tfh:
+    TARBYTES = tfh.read()
+os.remove(tarname)
+
+
+with tempfile.NamedTemporaryFile(mode="w", delete=False) as nonarchivetmp:
+    nonarchivename = nonarchivetmp.name
+    nonarchivetmp.write("some text")
+with open(nonarchivename, "rb") as ntmp:
+    NONARCHIVE = ntmp.read()
 
 ARCHIVE_HAS_ARCHIVE_MEMBER = """
     <assert_contents>
@@ -625,12 +652,12 @@ TESTS = [
     ),
     # test has_archive_member with zip
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/bag-info.txt", content_assert=""), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert=""), ZIPBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with tar
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1/file3", content_assert=""), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert=""), TARBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with non archive
@@ -650,22 +677,22 @@ TESTS = [
     ),
     # test has_archive_member with zip on a dir member
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/", content_assert=""), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/", content_assert=""), ZIPBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with tar on a dir member
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1", content_assert=""), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/", content_assert=""), TARBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with zip
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="test-bag-fetch-http/bag-info.txt", content_assert='<has_text text="Bag-Software-Agent"/>'), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='testdir/file1.txt'), ZIPBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with tar
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir1/dir1/file3", content_assert='<has_text text="subdirfile"/>'), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='testdir/file1.txt'), TARBYTES,
         lambda x: len(x) == 0
     ),
 ]
