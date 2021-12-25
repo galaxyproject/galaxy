@@ -125,7 +125,7 @@ class GalaxyStaticFiles(StaticFiles):
 
         try:
             full_path, stat_result = await anyio.to_thread.run_sync(
-                self.lookup_path, path, headers.get("host")
+                self._lookup_path, path, headers.get("host")
             )
         except PermissionError:
             raise HTTPException(status_code=401)
@@ -138,7 +138,7 @@ class GalaxyStaticFiles(StaticFiles):
 
         raise HTTPException(status_code=404)
 
-    def lookup_path(
+    def _lookup_path(
         self, path: str, host: typing.Optional[str] = None
     ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
         directory = self.directory_per_host.get(host, self.directory)
