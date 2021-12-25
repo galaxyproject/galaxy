@@ -3,7 +3,9 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)">
+        :hide-modal="() => (modalShow = false)"
+        :back-func="() => load()"
+        :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -261,7 +263,10 @@ export default {
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
-            if (this.urlTracker.atRoot()) {
+            if (this.urlTracker.atRoot() || this.errorMessage) {
+                if (this.errorMessage) {
+                  this.errorMessage = null
+                }
                 this.services
                     .getFileSources()
                     .then((items) => {
