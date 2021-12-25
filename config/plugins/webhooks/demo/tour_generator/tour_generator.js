@@ -5,45 +5,46 @@ import * as _ from "underscore";
 /* global $ */
 
 window.TourGenerator = Backbone.View.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         var me = this;
         me.toolId = options.toolId;
         me.toolVersion = options.toolVersion;
+
+        const Galaxy = window.bundleEntries.getGalaxyInstance();
 
         // Add attribute 'tour_id' to the execution button
         $("#execute").attr("tour_id", "execute");
 
         Toastr.info("Tour generation might take some time.");
         $.getJSON(
-            "/api/webhooks/tour_generator/data/",
+            `${Galaxy.root}api/webhooks/tour_generator/data/`,
             {
                 tool_id: me.toolId,
-                tool_version: me.toolVersion
+                tool_version: me.toolVersion,
             },
-            function(obj) {
+            function (obj) {
                 if (obj.success) {
                     if (obj.data.useDatasets) {
-                        var Galaxy = window.bundleEntries.getGalaxyInstance();
                         Galaxy.currHistoryPanel.refreshContents(); // Refresh history panel
 
                         // Add a delay because of the history panel refreshing
-                        setTimeout(function() {
+                        setTimeout(function () {
                             var datasets = [],
                                 numUploadedDatasets = 0;
 
-                            _.each(obj.data.hids, function(hid) {
+                            _.each(obj.data.hids, function (hid) {
                                 var dataset = Galaxy.currHistoryPanel.collection.where({
-                                    hid: hid
+                                    hid: hid,
                                 })[0];
                                 if (dataset) datasets.push(dataset);
                             });
 
                             if (datasets.length === obj.data.hids.length) {
-                                _.each(datasets, function(dataset) {
+                                _.each(datasets, function (dataset) {
                                     if (dataset.get("state") === "ok") {
                                         numUploadedDatasets++;
                                     } else {
-                                        dataset.on("change:state", function(model) {
+                                        dataset.on("change:state", function (model) {
                                             if (model.get("state") === "ok") numUploadedDatasets++;
                                             // Make sure that all test datasets have been successfully uploaded
                                             if (numUploadedDatasets === datasets.length)
@@ -67,14 +68,14 @@ window.TourGenerator = Backbone.View.extend({
         );
     },
 
-    _generateTour: function(data) {
+    _generateTour: function (data) {
         var Galaxy = window.bundleEntries.getGalaxyInstance();
         var tour = Galaxy.giveTourWithData(data);
         // Force ending the tour when pressing the Execute button
-        $("#execute").on("mousedown", function() {
+        $("#execute").on("mousedown", function () {
             if (tour) {
                 tour.end();
             }
         });
-    }
+    },
 });
