@@ -18,7 +18,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
             base = self.target_url_from_selenium
         else:
             base = self.url
-        return urljoin(f"{base}/", url)
+        return urljoin(base, url)
 
     @property
     def driver(self):

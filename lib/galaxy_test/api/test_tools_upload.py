@@ -1,5 +1,6 @@
 import json
 import os
+import urllib.parse
 
 import pytest
 from tusclient import client
@@ -908,7 +909,7 @@ class ToolsUploadTestCase(ApiTestCase):
             return uploader.url.rsplit('/', 1)[1]
 
         with self.dataset_populator.test_history() as history_id:
-            session_id = upload_file(url=f"{self.url}/api/upload/resumable_upload", path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
+            session_id = upload_file(url=urllib.parse.urljoin(self.url, "api/upload/resumable_upload"), path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
             hda = self._upload_and_get_details(content=json.dumps({'session_id': session_id}), api='fetch', ext='fastqsanger.gz', name='1.fastqsanger.gz')
             assert hda['name'] == '1.fastqsanger.gz'
             assert hda['file_ext'] == 'fastqsanger.gz'

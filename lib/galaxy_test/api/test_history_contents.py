@@ -1,5 +1,5 @@
 import time
-import urllib
+import urllib.parse
 from datetime import datetime
 from typing import (
     Any,
@@ -262,7 +262,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         return hda1
 
     def _set_edit_update(self, data):
-        update_response = self._put(f"{self.url}/dataset/set_edit", data=data, json=True)
+        update_response = self._put(urllib.parse.urljoin(self.url, "dataset/set_edit"), data=data, json=True)
         return update_response
 
     def _update(self, item_id, data, admin=False, history_id=None):
@@ -288,7 +288,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def test_delete_anon(self):
         with self._different_user(anon=True):
-            history_id = self._get(f"{self.url}/history/current_history_json").json()['id']
+            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()['id']
             hda1 = self.dataset_populator.new_dataset(history_id)
             self.dataset_populator.wait_for_history(history_id)
             assert str(self.__show(hda1).json()["deleted"]).lower() == "false"

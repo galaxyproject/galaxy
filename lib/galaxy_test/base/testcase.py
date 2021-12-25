@@ -32,7 +32,7 @@ class FunctionalTestCase(unittest.TestCase):
         if server_wrapper:
             self.host = server_wrapper.host
             self.port = server_wrapper.port
-            self.url = f"http://{self.host}:{self.port}{server_wrapper.prefix}"
+            self.url = f"http://{self.host}:{self.port}{server_wrapper.prefix}/"
         self.test_data_resolver = TestDataResolver()
         self.keepOutdir = setup_keep_outdir()
 
