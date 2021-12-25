@@ -960,7 +960,7 @@ class BaseDatasetPopulator(BasePopulator):
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
-        download_url = response["download_url"]
+        download_url = urllib.parse.urljoin(self.galaxy_interactor.api_url, response["download_url"].strip('/'))
 
         if check_download:
             self.get_export_url(download_url, api_key)
@@ -1028,7 +1028,7 @@ class BaseDatasetPopulator(BasePopulator):
         download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
 
         # Create download for history
-        full_download_url = f"{url}{download_path}?key={api_key}"
+        full_download_url = urllib.parse.urljoin(download_path, f"?key={api_key}")
 
         import_data = dict(archive_source=full_download_url, archive_type="url")
 
