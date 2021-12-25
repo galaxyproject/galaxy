@@ -8,6 +8,12 @@
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
+        <b-alert v-if="showFtpHelper" variant="info" show>
+          This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
+          <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials.
+          For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
+          <span v-if="oidcEnabled"><br/>If you are signed-in to Galaxy using a third-party identity and you <strong>do not have a Galaxy password</strong> please use the reset password option in the login form with your email to create a password for your account.</span>
+        </b-alert>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
             <slot name="options" v-if="optionsShow"> </slot>
@@ -33,6 +39,7 @@
 
 <script>
 import Vue from "vue";
+import { getGalaxyInstance } from "app";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
@@ -72,9 +79,19 @@ export default {
           type: Boolean,
           required: true,
         },
+        showFtpHelper: {
+          type: Boolean,
+          required: false,
+        },
     },
     components: {
       FontAwesomeIcon,
+    },
+    data() {
+      return {
+        ftpUploadSite: getGalaxyInstance().config.ftp_upload_site,
+        oidcEnabled: getGalaxyInstance().config.enable_oidc,
+      }
     },
 };
 </script>

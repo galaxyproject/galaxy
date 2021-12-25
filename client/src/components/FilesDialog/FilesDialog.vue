@@ -5,7 +5,8 @@
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
         :back-func="() => load()"
-        :undo-show="undoShow">
+        :undo-show="undoShow"
+        :show-ftp-helper="showFTPHelper">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -91,6 +92,7 @@ export default {
             showDetails: true,
             isBusy: false,
             currentDirectory: undefined,
+            showFTPHelper: false,
             selectAllIcon: selectionStates.unselected,
         };
     },
@@ -260,6 +262,7 @@ export default {
         /** Performs server request to retrieve data records **/
         load: function (record) {
             this.currentDirectory = this.urlTracker.getUrl(record);
+            this.showFTPHelper = record?.url === 'gxftp://';
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
