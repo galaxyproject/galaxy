@@ -1,18 +1,17 @@
 <template>
-    <b-modal
-        modal-class="selection-dialog-modal"
-        v-if="modalShow"
-        visible
-        :static="modalStatic"
-        @hide="hideModal">
+    <b-modal modal-class="selection-dialog-modal" v-if="modalShow" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
         <b-alert v-if="showFtpHelper" variant="info" show>
-          This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
-          <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials.
-          For help visit the <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-          <span v-if="oidcEnabled"><br/>If you are signed-in to Galaxy using a third-party identity and you <strong>do not have a Galaxy password</strong> please use the reset password option in the login form with your email to create a password for your account.</span>
+            This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
+            <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
+            <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
+            <span v-if="oidcEnabled"
+                ><br />If you are signed-in to Galaxy using a third-party identity and you
+                <strong>do not have a Galaxy password</strong> please use the reset password option in the login form
+                with your email to create a password for your account.</span
+            >
         </b-alert>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
@@ -25,13 +24,11 @@
                 <b-btn size="sm" class="float-right selection-dialog-modal-cancel" @click="hideModal"> Cancel </b-btn>
             </div>
             <div v-else class="w-100">
-              <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="backFunc()">
-                <font-awesome-icon :icon="['fas', 'caret-left']"/>
-                Back
-              </b-btn>
-              <b-btn size="sm" class="float-right" variant="primary" id="close-btn" @click="hideModal">
-                Close
-              </b-btn>
+                <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="backFunc()">
+                    <font-awesome-icon :icon="['fas', 'caret-left']" />
+                    Back
+                </b-btn>
+                <b-btn size="sm" class="float-right" variant="primary" id="close-btn" @click="hideModal"> Close </b-btn>
             </div>
         </template>
     </b-modal>
@@ -72,26 +69,26 @@ export default {
             required: true,
         },
         backFunc: {
-          type: Function,
-          required: true,
+            type: Function,
+            required: true,
         },
         undoShow: {
-          type: Boolean,
-          required: true,
+            type: Boolean,
+            required: true,
         },
         showFtpHelper: {
-          type: Boolean,
-          required: false,
+            type: Boolean,
+            required: false,
         },
     },
     components: {
-      FontAwesomeIcon,
+        FontAwesomeIcon,
     },
     data() {
-      return {
-        ftpUploadSite: getGalaxyInstance().config.ftp_upload_site,
-        oidcEnabled: getGalaxyInstance().config.enable_oidc,
-      }
+        return {
+            ftpUploadSite: getGalaxyInstance().config.ftp_upload_site,
+            oidcEnabled: getGalaxyInstance().config.enable_oidc,
+        };
     },
 };
 </script>

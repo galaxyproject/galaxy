@@ -262,13 +262,13 @@ export default {
         /** Performs server request to retrieve data records **/
         load: function (record) {
             this.currentDirectory = this.urlTracker.getUrl(record);
-            this.showFTPHelper = record?.url === 'gxftp://';
+            this.showFTPHelper = record?.url === "gxftp://";
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
             if (this.urlTracker.atRoot() || this.errorMessage) {
                 if (this.errorMessage) {
-                  this.errorMessage = null
+                    this.errorMessage = null;
                 }
                 this.services
                     .getFileSources()
