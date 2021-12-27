@@ -117,7 +117,7 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         host = server_wrapper.host
         port = server_wrapper.port
         prefix = server_wrapper.prefix or ''
-        self.url = f"http://{host}:{port}{prefix}/"
+        self.url = f"http://{host}:{port}{prefix.rstrip('/')}/"
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):
