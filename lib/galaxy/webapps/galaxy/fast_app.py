@@ -1,23 +1,14 @@
-import os
-import stat
 import typing
 from pathlib import Path
 from typing import cast
 
-import anyio
 from fastapi import FastAPI, Request
 from fastapi.middleware.wsgi import WSGIMiddleware
-from fastapi.staticfiles import StaticFiles
-from starlette.datastructures import Headers
-from starlette.exceptions import HTTPException
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
-    RedirectResponse,
     Response,
 )
-from starlette.staticfiles import PathLike
-from starlette.types import Scope
 
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -26,8 +17,6 @@ from galaxy.webapps.base.api import (
 )
 from galaxy.webapps.base.webapp import config_allows_origin
 
-if typing.TYPE_CHECKING:
-    from galaxy.config import Configuration
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -68,90 +57,6 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
 ]
-
-
-def get_static_from_config(conf, option_name, default_path):
-    config_val = conf.get(option_name, default_path)
-    per_host_config_option = f"{option_name}_by_host"
-    per_host_config = conf.get(per_host_config_option)
-    return (config_val, per_host_config or {})
-
-
-class GalaxyStaticFiles(StaticFiles):
-    def __init__(
-        self, *, config: "Configuration", html: bool = False, check_dir: bool = True
-    ) -> None:
-        self.config = config
-        self.directory, self.directory_per_host = get_static_from_config(
-            config, "static_dir", "static/"
-        )
-        super().__init__(
-            directory=self.directory, packages=None, html=html, check_dir=check_dir
-        )
-
-    def get_directories(
-        self, directory: PathLike = None, packages: typing.List[str] = None
-    ) -> typing.List[PathLike]:
-        pass
-
-    async def check_config(self) -> None:
-        """
-        Perform a one-off configuration check that GalaxyStaticFiles is actually
-        pointed at directories, so that we can raise loud errors rather than
-        just returning 404 responses.
-        """
-        for directory in (self.directory, *self.directory_per_host.values()):
-            try:
-                stat_result = await anyio.to_thread.run_sync(os.stat, directory)
-            except FileNotFoundError:
-                raise RuntimeError(
-                    f"StaticFiles directory '{directory}' does not exist."
-                )
-            if not (
-                stat.S_ISDIR(stat_result.st_mode) or stat.S_ISLNK(stat_result.st_mode)
-            ):
-                raise RuntimeError(
-                    f"StaticFiles path '{directory}' is not a directory."
-                )
-
-    async def get_response(self, path: str, scope: Scope) -> Response:
-        """
-        Returns an HTTP response, given the incoming path, method and request headers.
-        """
-        if scope["method"] not in ("GET", "HEAD"):
-            raise HTTPException(status_code=405)
-
-        headers = Headers(scope=scope)
-
-        try:
-            full_path, stat_result = await anyio.to_thread.run_sync(
-                self._lookup_path, path, headers.get("host")
-            )
-        except PermissionError:
-            raise HTTPException(status_code=401)
-        except OSError:
-            raise
-
-        if stat_result and stat.S_ISREG(stat_result.st_mode):
-            # We have a static file to serve.
-            return self.file_response(full_path, stat_result, scope)
-
-        raise HTTPException(status_code=404)
-
-    def _lookup_path(
-        self, path: str, host: typing.Optional[str] = None
-    ) -> typing.Tuple[str, typing.Optional[os.stat_result]]:
-        directory = self.directory_per_host.get(host, self.directory)
-        full_path = os.path.realpath(os.path.join(directory, path))
-        directory = os.path.realpath(directory)
-        if os.path.commonprefix([full_path, directory]) != directory:
-            # Don't allow misbehaving clients to break out of the static files
-            # directory.
-            return "", None
-        try:
-            return full_path, os.stat(full_path)
-        except (FileNotFoundError, NotADirectoryError):
-            return "", None
 
 
 class GalaxyCORSMiddleware(CORSMiddleware):
@@ -225,12 +130,6 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
-    # app.mount("/static", GalaxyStaticFiles(config=gx_app.config), name="static")
-
-    @app.get("/favicon.ico")
-    async def favicon():
-        return RedirectResponse(url="static/favicon.ico")
-
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount('/', wsgi_handler)
     if gx_app.config.galaxy_url_prefix != '/':
