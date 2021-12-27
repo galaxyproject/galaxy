@@ -3482,3 +3482,11 @@ mapping:
           Location of New User Welcome data, a single directory containing the
           images and JSON of Topics/Subtopics/Slides as export. This location
           is relative to galaxy/static
+
+      vault_config_file:
+        type: str
+        default: vault_conf.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Vault config file.

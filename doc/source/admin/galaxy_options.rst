@@ -4781,5 +4781,13 @@
 :Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``vault_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-
+:Description:
+    Vault configuration
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``vault_conf.yml``
+:Type: str

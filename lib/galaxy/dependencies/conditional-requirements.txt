@@ -25,6 +25,10 @@ fs-gcsfs # type: googlecloudstorage
 fs-onedatafs # type: onedata
 fs-basespace # type: basespace
 
+# Vault backend
+hvac
+custos-sdk
+
 # Chronos client
 chronos-python==1.2.1
 

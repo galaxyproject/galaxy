@@ -49,6 +49,7 @@ from galaxy.model import (
 from galaxy.model.base import ModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
 
@@ -196,6 +197,11 @@ class ProvidesUserContext(ProvidesAppContext):
     @abc.abstractproperty
     def user(self):
         """Provide access to the user object."""
+
+    @property
+    def user_vault(self):
+        """Provide access to a user's personal vault."""
+        return UserVaultWrapper(self.app.vault, self.user)
 
     @property
     def anonymous(self) -> bool:

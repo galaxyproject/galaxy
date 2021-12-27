@@ -2332,3 +2332,7 @@ galaxy:
   # is relative to galaxy/static
   #welcome_directory: plugins/welcome_page/new_user/static/topics/
 
+  # Vault config file
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  vault_config_file: vault_conf.yml
