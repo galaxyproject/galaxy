@@ -32,6 +32,8 @@
                 </b-card-group>
             </b-row>
         </div>
+
+        <PurgeableDetailsModal :items="purgeableItems" />
     </b-container>
 </template>
 
@@ -41,10 +43,12 @@ import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
 import { fetchDiscardedDatasets } from "./services";
 import PurgeableItemsSummary from "./PurgeableItemsSummary";
+import PurgeableDetailsModal from "./PurgeableDetailsModal";
 
 export default {
     components: {
         PurgeableItemsSummary,
+        PurgeableDetailsModal,
     },
     props: {
         userId: {
@@ -80,6 +84,7 @@ export default {
         onReview(items) {
             console.log("Review datasets:", items);
             this.purgeableItems = items;
+            this.$bvModal.show("purgeable-details-modal");
         },
         loadCategories() {
             this.purgeableCategories = [
