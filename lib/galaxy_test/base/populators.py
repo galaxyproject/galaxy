@@ -432,6 +432,8 @@ class CwlPopulator:
 
 class BasePopulator(metaclass=ABCMeta):
 
+    galaxy_interactor: ApiTestInteractor
+
     @abstractmethod
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         """POST data to target Galaxy instance on specified route."""
