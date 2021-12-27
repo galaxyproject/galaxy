@@ -29,6 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    HistoryDatasetAssociation,
     PostJobAction,
     Workflow,
     WorkflowStepConnection,
@@ -58,6 +59,7 @@ from galaxy.tools.parameters.basic import (
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
+    DefaultDatasetToolParameter,
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
@@ -906,6 +908,7 @@ class InputParameterModule(WorkflowModule):
             {"value": "float", "label": "Float"},
             {"value": "boolean", "label": "Boolean (True or False)"},
             {"value": "color", "label": "Color"},
+            {"value": "default_file", "label": "File"},
         ]
         input_parameter_type = SelectToolParameter(None, select_source)
         # encode following loop in description above instead
@@ -921,7 +924,7 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.test_param = input_parameter_type
         cases = []
 
-        for param_type in ["text", "integer", "float", "boolean", "color"]:
+        for param_type in ["text", "integer", "float", "boolean", "color", "default_file"]:
             default_source: Dict[str, Union[int, float, bool, str]] = dict(
                 name="default", label="Default Value", type=param_type
             )
@@ -932,6 +935,7 @@ class InputParameterModule(WorkflowModule):
                     text_default = ""
                 default_source["value"] = text_default
                 input_default_value: Union[
+                    DefaultDatasetToolParameter,
                     TextToolParameter,
                     IntegerToolParameter,
                     FloatToolParameter,
@@ -967,6 +971,12 @@ class InputParameterModule(WorkflowModule):
                     color_default = "#000000"
                 default_source["value"] = color_default
                 input_default_value = ColorToolParameter(None, default_source)
+            elif param_type == "default_file":
+                default_file = None
+                if parameter_type == "default_file":
+                    default_file = parameter_def.get("default")
+                default_source["value"] = default_file
+                input_default_value = DefaultDatasetToolParameter(None, default_source)
 
             optional_value = optional_param(optional)
             optional_cond = Conditional()
@@ -1153,7 +1163,7 @@ class InputParameterModule(WorkflowModule):
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
         default_value = parameter_def.get("default", self.default_default_value)
-        if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
+        if parameter_type not in ["text", "boolean", "integer", "float", "color" "default_file"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
@@ -1304,6 +1314,11 @@ class InputParameterModule(WorkflowModule):
         export_state = self._parse_state_into_dict()
         return export_state
 
+    def default_to_dict(self, default):
+        if isinstance(default, HistoryDatasetAssociation):
+            default = {"id": default.id, "src": "hda"}
+        return default
+
     def _parse_state_into_dict(self):
         inputs = self.state.inputs
         rval = {}
@@ -1317,7 +1332,7 @@ class InputParameterModule(WorkflowModule):
                 optional_state = parameters_def["optional"]
                 optional = bool(optional_state["optional"])
                 if "specify_default" in optional_state and bool(optional_state["specify_default"]["specify_default"]):
-                    rval["default"] = optional_state["specify_default"]["default"]
+                    rval["default"] = self.default_to_dict(optional_state["specify_default"]["default"])
             else:
                 optional = False
             restrictions_cond_values = parameters_def.get("restrictions")

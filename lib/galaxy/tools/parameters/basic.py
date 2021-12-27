@@ -2021,6 +2021,7 @@ class DataToolParameter(BaseDataToolParameter):
                         self.name,
                     )
                 self.conversions.append((name, conv_extension, [conv_type]))
+        self.value = None
 
     def from_json(self, value, trans, other_values=None):
         other_values = other_values or {}
@@ -2189,6 +2190,12 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
+    def get_history_context(self, trans):
+        history = trans.history
+        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return None
+        return history
+
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         # create dictionary and fill default parameters
@@ -2212,8 +2219,8 @@ class DataToolParameter(BaseDataToolParameter):
         d["tag"] = self.tag
 
         # return dictionary without options if context is unavailable
-        history = trans.history
-        if history is None or trans.workflow_building_mode is workflow_building_modes.ENABLED:
+        history = self.get_history_context(trans)
+        if not history:
             return d
 
         # prepare dataset/collection matching
@@ -2286,6 +2293,43 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_collection_type_descriptions = trans.app.dataset_collection_manager.collection_type_descriptions
         # If multiple data parameter, treat like a list parameter.
         return history_query.HistoryQuery.from_collection_type("list", dataset_collection_type_descriptions)
+
+
+class DefaultDatasetToolParameter(DataToolParameter):
+    def __init__(self, tool, input_source, trans=None):
+        super().__init__(tool, input_source, trans=None)
+        self.value = input_source.get("value")
+
+    def to_dict(self, trans, other_values=None):
+        rval = super().to_dict(trans, other_values)
+        if self.value and not is_runtime_value(self.value):
+            dataset_matcher_factory = get_dataset_matcher_factory(trans)
+            dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
+            hda = trans.sa_session.query(HistoryDatasetAssociation).get(self.value["id"])
+            match = dataset_matcher.hda_match(hda)
+            if match:
+                m = match.hda
+                m_name = f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else m.name
+                rval["options"]["hda"].insert(
+                    0,
+                    {
+                        "id": trans.security.encode_id(hda.id),
+                        "hid": hda.hid if hda.hid is not None else -1,
+                        "name": f"Default Value: {m_name}",
+                        "src": self.value["src"],
+                        "keep": True,  # What is keep ?
+                        "selected": True,
+                    },
+                )
+            rval["value"] = {"values": [rval["options"]["hda"][0]]}
+        return rval
+
+    def get_history_context(self, trans):
+        # Allow selection of dataset also when building workflow
+        history = trans.history
+        if history is None:
+            return None
+        return history
 
 
 class DataCollectionToolParameter(BaseDataToolParameter):
@@ -2665,6 +2709,7 @@ parameter_types = dict(
     hidden=HiddenToolParameter,
     hidden_data=HiddenDataToolParameter,
     baseurl=BaseURLToolParameter,
+    default_file=DefaultDatasetToolParameter,
     file=FileToolParameter,
     ftpfile=FTPFileToolParameter,
     data=DataToolParameter,
