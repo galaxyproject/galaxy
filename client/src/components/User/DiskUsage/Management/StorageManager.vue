@@ -14,20 +14,24 @@
             </b-col>
         </b-row>
 
-        <b-row class="justify-content-md-center mb-2">
-            <h3>
-                <b>Discarded Items</b>
-            </h3>
-        </b-row>
-        <b-row class="justify-content-md-center mb-5">
-            <b-card-group deck>
-                <FreeableItemsSummary
-                    :title="discardedDatasetsTitle"
-                    :description="discardedDatasetsDescription"
-                    :provider-callback="discardedDatasetProvider"
-                    @onReviewItems="onDiscardedDatasetsReview" />
-            </b-card-group>
-        </b-row>
+        <div v-for="(category, categoryIndex) in purgeableCategories" :key="categoryIndex">
+            <b-row class="justify-content-md-center mb-2">
+                <h3>
+                    <b>{{ category.title }}</b>
+                </h3>
+            </b-row>
+            <b-row class="justify-content-md-center mb-5">
+                <b-card-group deck>
+                    <PurgeableItemsSummary
+                        v-for="(provider, providerIndex) in category.providers"
+                        :key="providerIndex"
+                        :title="provider.title"
+                        :description="provider.description"
+                        :provider-callback="provider.fetchCallback"
+                        @onReviewItems="provider.reviewCallback" />
+                </b-card-group>
+            </b-row>
+        </div>
     </b-container>
 </template>
 
@@ -35,12 +39,12 @@
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
-import FreeableItemsSummary from "./FreeableItemsSummary";
-import { getDiscardedDatasets } from "./services";
+import { fetchDiscardedDatasets } from "./services";
+import PurgeableItemsSummary from "./PurgeableItemsSummary";
 
 export default {
     components: {
-        FreeableItemsSummary,
+        PurgeableItemsSummary,
     },
     props: {
         userId: {
@@ -62,35 +66,38 @@ export default {
             title: _l("Manage your account storage"),
             whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
-            discardedDatasetsTitle: _l("Deleted datasets"),
-            discardedDatasetsDescription: _l(
-                "Datasets that you have marked as deleted but that haven't been permanently deleted." +
-                    " You can restore these datasets or you can permanently remove them to free some space"
-            ),
-            largeDatasetsTitle: _l("Large datasets"),
-            largeDatasetsDescription: _l("Datasets that haven't been deleted but are considerably large."),
-            oldIDatasetsTitle: _l("Old datasets"),
-            oldIDatasetsDescription: _l("Datasets that haven't been deleted but were not modified in quite some time."),
-            intermediateDatasetsTitle: _l("Intermediate datasets"),
-            intermediateDatasetsDescription: _l(
-                "Datasets that were created as intermediate outputs by running a workflow." +
-                    " Since these datasets can be easily recreated it may be safe to delete them"
-            ),
+            purgeableCategories: [],
+            purgeableItems: [],
         };
     },
     created() {
         const Galaxy = getGalaxyInstance();
         this.userIdLocal = this.userId || Galaxy.user.id;
         this.quotaSettingsLocal = this.quotaSettings || QuotaSettings.create(Galaxy.config);
-    },
-    computed: {
-        discardedDatasetProvider() {
-            return getDiscardedDatasets;
-        },
+        this.loadCategories();
     },
     methods: {
-        onDiscardedDatasetsReview(datasets) {
-            console.log("Review datasets:", datasets);
+        onReview(items) {
+            console.log("Review datasets:", items);
+            this.purgeableItems = items;
+        },
+        loadCategories() {
+            this.purgeableCategories = [
+                {
+                    title: _l("Discarded Items"),
+                    providers: [
+                        {
+                            title: _l("Deleted datasets"),
+                            description: _l(
+                                "Datasets that you have marked as deleted but that haven't been permanently deleted." +
+                                    " You can restore these datasets or you can permanently remove them to free some space"
+                            ),
+                            fetchCallback: fetchDiscardedDatasets,
+                            reviewCallback: (items) => this.onReview(items),
+                        },
+                    ],
+                },
+            ];
         },
     },
 };

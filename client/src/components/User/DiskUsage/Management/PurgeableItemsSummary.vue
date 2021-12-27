@@ -1,7 +1,7 @@
 <template>
     <b-card :title="title" class="item-counter-card mx-2">
         <b-alert v-if="errorMessage" variant="danger" show>
-            <h4 class="alert-heading">Failed to access disk usage details.</h4>
+            <h4 class="alert-heading">Failed to retrieve details.</h4>
             {{ errorMessage }}
         </b-alert>
         <LoadingSpan v-if="loading" />
@@ -52,6 +52,14 @@ export default {
             errorMessage: null,
         };
     },
+    async created() {
+        this.loading = true;
+        try {
+            this.items = await this.providerCallback();
+        } finally {
+            this.loading = false;
+        }
+    },
     computed: {
         /** @returns {float} */
         totalRecoverableBytes() {
@@ -71,17 +79,12 @@ export default {
         },
     },
     methods: {
+        onError(err) {
+            this.errorMessage = err;
+        },
         onReviewItems() {
             this.$emit("onReviewItems", this.items);
         },
-    },
-    async created() {
-        this.loading = true;
-        try {
-            this.items = await this.providerCallback();
-        } finally {
-            this.loading = false;
-        }
     },
 };
 </script>
