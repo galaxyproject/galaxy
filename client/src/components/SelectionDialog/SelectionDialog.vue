@@ -70,11 +70,12 @@ export default {
         },
         backFunc: {
             type: Function,
-            required: true,
+            required: false,
+            default: () => {},
         },
         undoShow: {
             type: Boolean,
-            required: true,
+            required: false,
         },
         showFtpHelper: {
             type: Boolean,
@@ -86,8 +87,8 @@ export default {
     },
     data() {
         return {
-            ftpUploadSite: getGalaxyInstance().config.ftp_upload_site,
-            oidcEnabled: getGalaxyInstance().config.enable_oidc,
+            ftpUploadSite: getGalaxyInstance()?.config?.ftp_upload_site,
+            oidcEnabled: getGalaxyInstance()?.config?.enable_oidc,
         };
     },
 };
