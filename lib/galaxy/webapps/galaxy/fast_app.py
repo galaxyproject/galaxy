@@ -225,7 +225,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
-    app.mount("/static", GalaxyStaticFiles(config=gx_app.config), name="static")
+    # app.mount("/static", GalaxyStaticFiles(config=gx_app.config), name="static")
 
     @app.get("/favicon.ico")
     async def favicon():
