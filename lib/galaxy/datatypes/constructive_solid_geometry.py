@@ -633,30 +633,16 @@ class NeperTesr(Binary):
             dataset.blurb = 'File purged from disc'
 
 
-@build_sniff_from_prefix
 class NeperPoints(data.Text):
     """
     Neper Position File
     Neper position format has 1 - 3 floats per line separated by white space.
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.neper.points')
-    >>> NeperPoints().sniff(fname)
-    True
-    >>> fname = get_test_fname('test.neper.tess')
-    >>> NeperPoints().sniff(fname)
-    False
     """
     file_ext = "neper.points"
     MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
-
-    def sniff_prefix(self, file_prefix: FilePrefix):
-        """
-        Neper position format has 1 - 3 floats per line separated by white space.
-        """
-        return self._get_dimension(file_prefix.text_io(errors='ignore')) is not None
 
     def set_meta(self, dataset, **kwd):
         data.Text.set_meta(self, dataset, **kwd)
@@ -689,29 +675,15 @@ class NeperPoints(data.Text):
             dataset.blurb += f' dim: {str(dataset.metadata.dimension)}'
 
 
-@build_sniff_from_prefix
 class NeperPointsTabular(NeperPoints, Tabular):
     """
     Neper Position File
-    Neper position format has 1 - 3 floats per line separated by white space.
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.neper.points.tsv')
-    >>> NeperPointsTabular().sniff(fname)
-    True
-    >>> fname = get_test_fname('test.neper.points')
-    >>> NeperPointsTabular().sniff(fname)
-    False
+    Neper position format has 1 - 3 floats per line separated by TABs.
     """
     file_ext = "neper.points.tsv"
 
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
-
-    def sniff_prefix(self, file_prefix: FilePrefix):
-        """
-        Neper position format has 1 - 3 floats per line separated by white space.
-        """
-        return self._get_dimension(file_prefix.text_io(errors='ignore'), sep='\t') is not None
 
     def set_meta(self, dataset, **kwd):
         Tabular.set_meta(self, dataset, **kwd)

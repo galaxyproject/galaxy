@@ -1097,8 +1097,6 @@
     <sniffer type="galaxy.datatypes.metacyto:mStats"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>
     <sniffer type="galaxy.datatypes.tabular:MatrixMarket"/>
-    <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperPointsTabular"/>
-    <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperPoints"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer3"/>
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0"/>
