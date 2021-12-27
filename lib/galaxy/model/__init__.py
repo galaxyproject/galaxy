@@ -7142,6 +7142,7 @@ class WorkflowStepInput(Base, RepresentById):
         back_populates="input_step_input",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
     )
+    default_datasets = relationship("WorkflowStepInputDefaultDatasetAssociation", back_populates="workflow_step_input")
 
     def __init__(self, workflow_step):
         add_object_to_object_session(self, workflow_step)
@@ -7158,6 +7159,17 @@ class WorkflowStepInput(Base, RepresentById):
 
         copied_step_input.connections = copy_list(self.connections)
         return copied_step_input
+
+
+class WorkflowStepInputDefaultDatasetAssociation(Base, RepresentById):
+    __tablename__ = "workflow_step_input_default_dataset_association"
+    id = Column(Integer, primary_key=True)
+    workflow_step_input_id = Column(Integer, ForeignKey("workflow_step_input.id"), index=True)
+    default_dataset_association_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True)
+    name = Column(TEXT)
+
+    workflow_step_input = relationship("WorkflowStepInput")
+    default_dataset_association = relationship("DefaultDatasetAssociation")
 
 
 class WorkflowStepConnection(Base, RepresentById):
