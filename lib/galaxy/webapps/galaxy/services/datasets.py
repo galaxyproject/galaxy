@@ -213,7 +213,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         """
         user = self.get_authenticated_user(trans)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
-        view = serialization_params.view or "summary"
+        serialization_params.default_view = "summary"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order or "create_time-dsc")
         container = None
         if history_id:
@@ -228,7 +228,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, view=view
+                content, user=user, trans=trans, **serialization_params.dict()
             )
             for content in contents
         ]
