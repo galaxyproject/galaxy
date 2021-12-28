@@ -17,7 +17,7 @@
         <div v-for="(category, categoryIndex) in purgeableCategories" :key="categoryIndex">
             <b-row class="justify-content-md-center mb-2">
                 <h3>
-                    <b>{{ category.title }}</b>
+                    <b>{{ category.name }}</b>
                 </h3>
             </b-row>
             <b-row class="justify-content-md-center mb-5">
@@ -25,15 +25,19 @@
                     <PurgeableItemsSummary
                         v-for="(provider, providerIndex) in category.providers"
                         :key="providerIndex"
-                        :title="provider.title"
+                        :category-name="category.name"
+                        :provider-name="provider.name"
                         :description="provider.description"
-                        :provider-callback="provider.fetchCallback"
-                        @onReviewItems="provider.reviewCallback" />
+                        :fetch-items="provider.fetchItems"
+                        @onReviewItems="showReviewDialog" />
                 </b-card-group>
             </b-row>
         </div>
 
-        <PurgeableDetailsModal :items="purgeableItems" />
+        <PurgeableDetailsModal
+            :title="currentProvider"
+            :items="purgeableItems"
+            @onConfirmPurgeSelectedItems="onConfirmPurgeSelected" />
     </b-container>
 </template>
 
@@ -41,7 +45,7 @@
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
-import { fetchDiscardedDatasets } from "./services";
+import { categories } from "./categories";
 import PurgeableItemsSummary from "./PurgeableItemsSummary";
 import PurgeableDetailsModal from "./PurgeableDetailsModal";
 
@@ -72,37 +76,25 @@ export default {
             learnMoreText: _l("Learn more"),
             purgeableCategories: [],
             purgeableItems: [],
+            currentCategory: null,
+            currentProvider: null,
         };
     },
     created() {
         const Galaxy = getGalaxyInstance();
         this.userIdLocal = this.userId || Galaxy.user.id;
         this.quotaSettingsLocal = this.quotaSettings || QuotaSettings.create(Galaxy.config);
-        this.loadCategories();
+        this.purgeableCategories = categories;
     },
     methods: {
-        onReview(items) {
-            console.log("Review datasets:", items);
+        showReviewDialog(items, category, provider) {
             this.purgeableItems = items;
+            this.currentCategory = category;
+            this.currentProvider = provider;
             this.$bvModal.show("purgeable-details-modal");
         },
-        loadCategories() {
-            this.purgeableCategories = [
-                {
-                    title: _l("Discarded Items"),
-                    providers: [
-                        {
-                            title: _l("Deleted datasets"),
-                            description: _l(
-                                "Datasets that you have marked as deleted but that haven't been permanently deleted." +
-                                    " You can restore these datasets or you can permanently remove them to free some space"
-                            ),
-                            fetchCallback: fetchDiscardedDatasets,
-                            reviewCallback: (items) => this.onReview(items),
-                        },
-                    ],
-                },
-            ];
+        onConfirmPurgeSelected(items) {
+            console.log("TODO Items confirmed: ", items);
         },
     },
 };

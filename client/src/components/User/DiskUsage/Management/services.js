@@ -3,7 +3,11 @@ import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 
 export async function fetchDiscardedDatasets() {
-    const url = `${getAppRoot()}api/datasets?keys=id,name,size,update_time&q=history_content_type-eq&qv=dataset&q=purged-eq&qv=False&q=deleted-eq&qv=True`;
+    const keys = "id,name,size,update_time";
+    const isDataset = "q=history_content_type-eq&qv=dataset";
+    const isDeleted = "q=deleted-eq&qv=True";
+    const isNotPurged = "q=purged-eq&qv=False";
+    const url = `${getAppRoot()}api/datasets?keys=${keys}&${isDataset}&${isDeleted}&${isNotPurged}`;
     try {
         const { data } = await axios.get(url);
         return data;

@@ -1,5 +1,5 @@
 <template>
-    <b-card :title="title" class="item-counter-card mx-2">
+    <b-card :title="providerName" class="item-counter-card mx-2">
         <b-alert v-if="errorMessage" variant="danger" show>
             <h4 class="alert-heading">Failed to retrieve details.</h4>
             {{ errorMessage }}
@@ -30,7 +30,11 @@ export default {
         LoadingSpan,
     },
     props: {
-        title: {
+        categoryName: {
+            type: String,
+            required: true,
+        },
+        providerName: {
             type: String,
             required: true,
         },
@@ -38,7 +42,7 @@ export default {
             type: String,
             required: true,
         },
-        providerCallback: {
+        fetchItems: {
             type: Promise,
             required: true,
         },
@@ -55,7 +59,7 @@ export default {
     async created() {
         this.loading = true;
         try {
-            this.items = await this.providerCallback();
+            this.items = await this.fetchItems();
         } finally {
             this.loading = false;
         }
@@ -83,7 +87,7 @@ export default {
             this.errorMessage = err;
         },
         onReviewItems() {
-            this.$emit("onReviewItems", this.items);
+            this.$emit("onReviewItems", this.items, this.categoryName, this.providerName);
         },
     },
 };

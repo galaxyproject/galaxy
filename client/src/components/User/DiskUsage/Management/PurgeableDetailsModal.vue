@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-modal id="purgeable-details-modal" :title="title" size="xl">
+        <b-modal ref="purgeable-details-modal" id="purgeable-details-modal" :title="title" centered @show="resetModal">
             <b-table
                 id="purgeable-items-table"
                 hover
@@ -17,7 +17,7 @@
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
-                        @change="toggleAll"></b-form-checkbox>
+                        @change="toggleSelectAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox
@@ -35,28 +35,35 @@
                     v-if="hasPages"
                     v-model="currentPage"
                     :total-rows="totalRows"
-                    :per-page="perPage"></b-pagination>
-                <b-button v-if="hasItemsSelected" class="mx-2" variant="danger" v-b-modal.confirmation-modal>
-                    Permanently delete {{ selectedItemCount }} items
+                    :per-page="perPage"
+                    class="mx-auto" />
+                <b-button
+                    :disabled="!hasItemsSelected"
+                    :variant="deleteButtonVariant"
+                    v-b-modal.confirmation-modal
+                    class="mx-2">
+                    {{ permanentlyDeleteText }} {{ deleteItemsText }}
                 </b-button>
             </template>
         </b-modal>
         <b-modal
             id="confirmation-modal"
             :title="confirmationTitle"
-            ok-title="Permanently delete"
-            ok-variant="danger"
+            :ok-title="permanentlyDeleteText"
+            :ok-variant="confirmButtonVariant"
             :ok-disabled="!confirmChecked"
-            size="sm"
+            @show="resetConfirmationModal"
+            @ok="onConfirmPurgeSelectedItems"
             centered>
             <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked">
-                I understand that once I delete the items, they cannot be recovered.
+                {{ agreementText }}
             </b-form-checkbox>
         </b-modal>
     </div>
 </template>
 
 <script>
+import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import UtcDate from "components/UtcDate";
 
@@ -107,18 +114,29 @@ export default {
             indeterminate: false,
             selectedItemIds: [],
             confirmChecked: false,
+            permanentlyDeleteText: _l("Permanently delete"),
+            agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
         };
     },
     methods: {
         toNiceSize(sizeInBytes) {
             return bytesToString(sizeInBytes, true);
         },
-        toggleAll(checked) {
+        toggleSelectAll(checked) {
             this.selectedItemIds = checked ? this.items.reduce((acc, item) => [...acc, item["id"]], []) : [];
-            console.log("Selected ITEMS: ", this.selectedItemIds);
         },
-        onConfirmDeleteSelectedItems() {
-            this.$emit("onConfirmDeleteSelectedItems", this.selectedItemIds);
+        hideModal() {
+            this.$refs["purgeable-details-modal"].hide();
+        },
+        resetModal() {
+            this.selectedItemIds = [];
+        },
+        resetConfirmationModal() {
+            this.confirmChecked = false;
+        },
+        onConfirmPurgeSelectedItems() {
+            this.$emit("onConfirmPurgeSelectedItems", this.selectedItemIds);
+            this.hideModal();
         },
     },
     computed: {
@@ -137,6 +155,18 @@ export default {
         /** @returns {String} */
         confirmationTitle() {
             return `Delete ${this.selectedItemCount} items?`;
+        },
+        /** @returns {String} */
+        deleteButtonVariant() {
+            return this.hasItemsSelected ? "danger" : "";
+        },
+        /** @returns {String} */
+        deleteItemsText() {
+            return this.hasItemsSelected ? `${this.selectedItemCount} items` : "";
+        },
+        /** @returns {String} */
+        confirmButtonVariant() {
+            return this.confirmChecked ? "danger" : "";
         },
     },
     watch: {
