@@ -1,9 +1,16 @@
 <template>
-    <UserDetailsProvider :id="userId" v-slot="{ result: user, loading: userDetailsLoading }" @error="onError">
+    <UserDetailsProvider
+        :id="userId"
+        v-slot="{ result: user, loading: userDetailsLoading }"
+        @error="onError"
+        :use-cache="false">
         <div>
             <b-alert v-if="errorMessage" variant="danger" show>
                 <h4 class="alert-heading">Failed to access disk usage details.</h4>
                 {{ errorMessage }}
+            </b-alert>
+            <b-alert v-if="!quotaSettings.canUserPurgeImmediately" show>
+                {{ noImmediatePurgeAllowedMessage }}
             </b-alert>
             <LoadingSpan v-if="userDetailsLoading" :message="loadingMessage" />
             <div v-if="user">
@@ -43,6 +50,9 @@ export default {
     data() {
         return {
             loadingMessage: _l("Loading disk usage summary..."),
+            noImmediatePurgeAllowedMessage: _l(
+                "If you had free up some space recently, please note that your disk usage may take a while to be updated"
+            ),
             errorMessage: null,
         };
     },

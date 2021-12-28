@@ -20,6 +20,15 @@ export class QuotaSettings {
         return this.config.quota_url;
     }
 
+    /** Whether users are allowed to remove their datasets from disk immediately
+     * (otherwise, datasets will be removed after a time period specified by an
+     * administrator)
+     * @returns {Boolean}
+     */
+    get canUserPurgeImmediately() {
+        return this.config.allow_user_dataset_purge;
+    }
+
     static create(config = {}) {
         return new QuotaSettings(config);
     }
