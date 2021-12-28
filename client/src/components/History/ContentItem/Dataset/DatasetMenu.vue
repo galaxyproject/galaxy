@@ -261,8 +261,9 @@ export default {
 
         // wierd iframe navigation
         visualize() {
+            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
-                path: this.dataset.getUrl("show_params"),
+                path: showDetailsUrl,
                 title: "Dataset details",
                 tryIframe: false,
             };
@@ -274,13 +275,14 @@ export default {
         },
 
         showDetails() {
+            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
-                path: this.dataset.getUrl("show_params"),
+                path: showDetailsUrl,
                 title: "Dataset details",
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(this.dataset.getUrl("show_params"));
+                this.backboneRoute(showDetailsUrl);
             }
         },
 
