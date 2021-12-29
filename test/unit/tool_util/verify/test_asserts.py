@@ -302,7 +302,7 @@ if h5py is not None:
 with tempfile.NamedTemporaryFile(delete=False) as ziptmp:
     zipname = ziptmp.name
     with zipfile.ZipFile(ziptmp, mode='w') as zipfh:
-        for f in ["file1", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
+        for f in ["file1.txt", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
             zipfh.writestr(f, f)
 with open(zipname, "rb") as zfh:
     ZIPBYTES = zfh.read()
@@ -311,11 +311,11 @@ os.remove(zipname)
 with tempfile.NamedTemporaryFile(delete=False) as tartmp:
     tarname = tartmp.name
     with tarfile.open(name=None, mode='w:gz', fileobj=tartmp) as tarfh:
-        for f in ["file1", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
-            with tempfile.NamedTemporaryFile("w") as tmptmp:
+        for f in ["file1.txt", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
+            with tempfile.NamedTemporaryFile("w", delete=False) as tmptmp:
                 tmptmpname = tmptmp.name
                 tmptmp.write(f)
-                tarfh.add(tmptmpname, arcname=f)
+            tarfh.add(tmptmpname, arcname=f)
 with open(tarname, "rb") as tfh:
     TARBYTES = tfh.read()
 os.remove(tarname)
@@ -685,15 +685,25 @@ TESTS = [
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/", content_assert=""), TARBYTES,
         lambda x: len(x) == 0
     ),
-    # test has_archive_member with zip
+    # test has_archive_member with zip with subassertion
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='testdir/file1.txt'), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="testdir/file1.txt"/>'), ZIPBYTES,
         lambda x: len(x) == 0
     ),
-    # test has_archive_member with tar
+    # test has_archive_member with tar with subassertion
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='testdir/file1.txt'), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="testdir/file1.txt"/>'), TARBYTES,
         lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip with failing subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="ABSENT"/>'), ZIPBYTES,
+        lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
+    ),
+    # test has_archive_member with tar with failing subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="ABSENT"/>'), TARBYTES,
+        lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
     ),
 ]
 
@@ -795,6 +805,8 @@ TEST_IDS = [
     'has_archive_member tar non-file member',
     'has_archive_member zip with content assertion',
     'has_archive_member tar with content assertion',
+    'has_archive_member zip with failing content assertion',
+    'has_archive_member tar with failing content assertion',
 ]
 
 if h5py is not None:
