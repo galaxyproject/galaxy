@@ -9829,6 +9829,14 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 # <user_obj>.preferences[pref_name] = pref_value
 User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
 
+SRC_CLASS_MAPPING = {
+    "hda": HistoryDatasetAssociation,
+    "ldda": LibraryDatasetDatasetAssociation,
+    "dce": DatasetCollectionElement,
+    "dda": DefaultDatasetAssociation,
+    "hdca": HistoryDatasetCollectionAssociation,
+}
+
 
 @event.listens_for(HistoryDatasetCollectionAssociation, "init")
 def receive_init(target, args, kwargs):

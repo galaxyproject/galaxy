@@ -29,6 +29,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    SRC_CLASS_MAPPING,
 )
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
@@ -2313,8 +2314,9 @@ class DefaultDatasetToolParameter(DataToolParameter):
             if isinstance(self.value, DatasetInstance):
                 dataset_instance = self.value
             else:
-                dataset_instance = trans.sa_session.query(HistoryDatasetAssociation).get(self.value["id"])
-            match = dataset_matcher.hda_match(dataset_instance)
+                klass = SRC_CLASS_MAPPING[self.value["src"]]
+                dataset_instance = trans.sa_session.query(klass).get(self.value["id"] or 1)
+            match = dataset_matcher.hda_match(dataset_instance, ensure_visible=False)
             if match:
                 m = match.hda
                 m_name = f"{match.original_hda.name} (as {match.target_ext})" if match.implicit_conversion else m.name
@@ -2322,7 +2324,7 @@ class DefaultDatasetToolParameter(DataToolParameter):
                     0,
                     {
                         "id": trans.security.encode_id(dataset_instance.id),
-                        "hid": dataset_instance.hid if dataset_instance.hid is not None else -1,
+                        "hid": dataset_instance.hid if getattr(dataset_instance, "hid", None) is not None else -1,
                         "name": f"Default Dataset: {m_name}",
                         "src": dataset_instance.src,
                         "keep": True,  # What is keep ?
