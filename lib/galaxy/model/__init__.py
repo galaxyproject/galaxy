@@ -4300,6 +4300,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     Resource class that creates a relation between a dataset and a user history.
     """
 
+    src = "hda"
+
     def __init__(
         self,
         hid=None,
@@ -5070,6 +5072,9 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+
+    src = "ldda"
+
     def __init__(
         self,
         copied_from_history_dataset_association=None,
@@ -5888,6 +5893,7 @@ class HistoryDatasetCollectionAssociation(
 ):
     """Associates a DatasetCollection with a History."""
 
+    src = "hdca"
     __tablename__ = "history_dataset_collection_association"
 
     id = Column(Integer, primary_key=True)
@@ -6242,6 +6248,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
 class DatasetCollectionElement(Base, Dictifiable, Serializable):
     """Associates a DatasetInstance (hda or ldda) with a DatasetCollection."""
 
+    src = "dce"
     __tablename__ = "dataset_collection_element"
 
     id = Column(Integer, primary_key=True)

@@ -29,6 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    DatasetInstance,
     HistoryDatasetAssociation,
     PostJobAction,
     Workflow,
@@ -779,7 +780,12 @@ class InputDataModule(InputModule):
         data_src = dict(
             name="input", label=self.label, multiple=False, type="data", format=formats, tag=tag, optional=optional
         )
-        input_param = DataToolParameter(None, data_src, self.trans)
+        default = parameter_def.get("default")
+        if default:
+            data_src["default"] = default
+            input_param = DefaultDatasetToolParameter(None, data_src, self.trans)
+        else:
+            input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
     def get_inputs(self):
@@ -799,7 +805,28 @@ class InputDataModule(InputModule):
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
         inputs["tag"] = input_tag
+        default_source: Dict[str, Union[int, float, bool, str]] = dict(
+            name="default",
+            label="Default Value",
+            help="Select a dataset that will be suggested as input for all runs of this workflow",
+            type="default_file",
+            default=parameter_def.get("default"),
+        )
+        inputs["default"] = DefaultDatasetToolParameter(None, default_source)
         return inputs
+
+    def _parse_state_into_dict(self):
+        rval = super()._parse_state_into_dict()
+        inputs = self.state.inputs
+        default = inputs.get("default")
+        if default and not is_runtime_value(default):
+            if isinstance(default, DatasetInstance):
+                rval["default"] = {"src": default.src, "id": default.id}
+            else:
+                if not isinstance(default, dict) or "src" not in default or "id" not in default:
+                    raise Exception(f"Invalid default tool state encountered: {default}")
+                rval["default"] = default
+        return rval
 
 
 class InputDataCollectionModule(InputModule):
