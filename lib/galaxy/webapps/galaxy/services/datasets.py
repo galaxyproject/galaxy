@@ -169,6 +169,38 @@ class BamDataResult(DataResult):
     max_high: int
 
 
+class DeleteDatasetBatchPayload(BaseModel):
+    ids: List[EncodedDatabaseIdField] = Field(
+        description="The list of datasets IDs to be deleted/purged.",
+    )
+    purge: Optional[bool] = Field(
+        default=False,
+        description="Whether to permanently delete from disk the specified datasets."
+    )
+
+
+class DatasetErrorMessage(BaseModel):
+    dataset_id: EncodedDatabaseIdField = Field(
+        description="The encoded ID of the dataset.",
+    )
+    error_message: str = Field(
+        description="The error message returned while processing this dataset.",
+    )
+
+
+class DeleteDatasetBatchResult(BaseModel):
+    success_count: int = Field(
+        description="The number of datasets successfully processed.",
+    )
+    errors: Optional[List[DatasetErrorMessage]] = Field(
+        default=None,
+        description=(
+            "A collection of dataset IDs and the corresponding error message if something "
+            "went wrong while processing the dataset."
+        ),
+    )
+
+
 class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def __init__(
         self,
@@ -492,6 +524,29 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         decoded_id = self.decode_id(dataset_id)
         hda = self.hda_manager.get_accessible(decoded_id, trans.user)
         return self.hda_serializer.serialize_converted_datasets(hda, "converted")
+
+    def delete_batch(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: DeleteDatasetBatchPayload,
+    ) -> DeleteDatasetBatchResult:
+        success_count = 0
+        errors = []
+        for encoded_id in payload.ids:
+            try:
+                hda = self.hda_manager.get_owned(self.decode_id(encoded_id), trans.user, current_history=trans.history)
+                self.hda_manager.error_if_uploading(hda)
+                if payload.purge:
+                    self.hda_manager.purge(hda, flush=False)
+                else:
+                    self.hda_manager.delete(hda, flush=False)
+                success_count += 1
+            except galaxy_exceptions.MessageException as e:
+                errors.append(DatasetErrorMessage.construct(dataset_id=encoded_id, error_message=str(e)))
+
+        if success_count:
+            trans.sa_session.flush()
+        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:
