@@ -6,12 +6,10 @@
         </h2>
 
         <b-row class="justify-content-md-center mb-5">
-            <b-col md="auto">
-                <b-alert v-if="quotaSettingsLocal.quotasEnabled" show>
-                    {{ whatCountsText }}
-                    <b-link :href="quotaSettingsLocal.quotasHelpUrl" target="_blank">{{ learnMoreText }}</b-link>
-                </b-alert>
-            </b-col>
+            <b-alert v-if="quotaSettingsLocal.quotasEnabled" show>
+                {{ whatCountsText }}
+                <b-link :href="quotaSettingsLocal.quotasHelpUrl" target="_blank">{{ learnMoreText }}</b-link>
+            </b-alert>
         </b-row>
 
         <div v-for="(category, categoryIndex) in purgeableCategories" :key="categoryIndex">
@@ -35,9 +33,11 @@
         </div>
 
         <PurgeableDetailsModal
-            :title="currentProvider"
+            :title="currentProviderName"
             :items="purgeableItems"
             @onConfirmPurgeSelectedItems="onConfirmPurgeSelected" />
+
+        <CleanUpResultDialog :result="cleanupResult" />
     </b-container>
 </template>
 
@@ -46,13 +46,16 @@ import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
 import { categories } from "./categories";
+import { cleanupDatasets } from "./services";
 import PurgeableItemsSummary from "./PurgeableItemsSummary";
 import PurgeableDetailsModal from "./PurgeableDetailsModal";
+import CleanUpResultDialog from "./CleanUpResultDialog";
 
 export default {
     components: {
         PurgeableItemsSummary,
         PurgeableDetailsModal,
+        CleanUpResultDialog,
     },
     props: {
         userId: {
@@ -76,8 +79,9 @@ export default {
             learnMoreText: _l("Learn more"),
             purgeableCategories: [],
             purgeableItems: [],
-            currentCategory: null,
-            currentProvider: null,
+            cleanupResult: null,
+            currentProviderName: null,
+            refreshProviderCallback: null,
         };
     },
     created() {
@@ -87,14 +91,18 @@ export default {
         this.purgeableCategories = categories;
     },
     methods: {
-        showReviewDialog(items, category, provider) {
+        showReviewDialog(items, providerName, refreshCallback) {
             this.purgeableItems = items;
-            this.currentCategory = category;
-            this.currentProvider = provider;
+            this.currentProviderName = providerName;
+            this.refreshProviderCallback = refreshCallback;
             this.$bvModal.show("purgeable-details-modal");
         },
-        onConfirmPurgeSelected(items) {
-            console.log("TODO Items confirmed: ", items);
+        async onConfirmPurgeSelected(items) {
+            this.$bvModal.show("cleanup-result-modal");
+            this.cleanupResult = await cleanupDatasets(items);
+            if (this.refreshProviderCallback) {
+                await this.refreshProviderCallback();
+            }
         },
     },
 };

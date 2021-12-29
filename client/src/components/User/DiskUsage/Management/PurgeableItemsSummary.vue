@@ -43,7 +43,7 @@ export default {
             required: true,
         },
         fetchItems: {
-            type: Promise,
+            type: Function,
             required: true,
         },
     },
@@ -57,12 +57,7 @@ export default {
         };
     },
     async created() {
-        this.loading = true;
-        try {
-            this.items = await this.fetchItems();
-        } finally {
-            this.loading = false;
-        }
+        await this.refresh();
     },
     computed: {
         /** @returns {float} */
@@ -83,11 +78,19 @@ export default {
         },
     },
     methods: {
+        async refresh() {
+            this.loading = true;
+            try {
+                this.items = await this.fetchItems();
+            } finally {
+                this.loading = false;
+            }
+        },
         onError(err) {
             this.errorMessage = err;
         },
         onReviewItems() {
-            this.$emit("onReviewItems", this.items, this.categoryName, this.providerName);
+            this.$emit("onReviewItems", this.items, this.providerName, this.refresh);
         },
     },
 };

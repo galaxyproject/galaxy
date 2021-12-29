@@ -21,10 +21,10 @@
                 </template>
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox
-                        v-model="selectedItemIds"
+                        v-model="selectedItems"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['id']"></b-form-checkbox>
+                        :value="data.item"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -112,7 +112,7 @@ export default {
             totalRows: 1,
             allSelected: false,
             indeterminate: false,
-            selectedItemIds: [],
+            selectedItems: [],
             confirmChecked: false,
             permanentlyDeleteText: _l("Permanently delete"),
             agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
@@ -123,30 +123,30 @@ export default {
             return bytesToString(sizeInBytes, true);
         },
         toggleSelectAll(checked) {
-            this.selectedItemIds = checked ? this.items.reduce((acc, item) => [...acc, item["id"]], []) : [];
+            this.selectedItems = checked ? this.items : [];
         },
         hideModal() {
             this.$refs["purgeable-details-modal"].hide();
         },
         resetModal() {
-            this.selectedItemIds = [];
+            this.selectedItems = [];
         },
         resetConfirmationModal() {
             this.confirmChecked = false;
         },
         onConfirmPurgeSelectedItems() {
-            this.$emit("onConfirmPurgeSelectedItems", this.selectedItemIds);
+            this.$emit("onConfirmPurgeSelectedItems", this.selectedItems);
             this.hideModal();
         },
     },
     computed: {
         /** @returns {Number} */
         selectedItemCount() {
-            return this.selectedItemIds.length;
+            return this.selectedItems.length;
         },
         /** @returns {Boolean} */
         hasItemsSelected() {
-            return this.selectedItemIds.length > 0;
+            return this.selectedItems.length > 0;
         },
         /** @returns {Boolean} */
         hasPages() {
@@ -173,7 +173,7 @@ export default {
         items(newVal) {
             this.totalRows = newVal.length;
         },
-        selectedItemIds(newVal) {
+        selectedItems(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
                 this.allSelected = false;
