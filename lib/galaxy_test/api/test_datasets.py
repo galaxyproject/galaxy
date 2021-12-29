@@ -1,4 +1,5 @@
 import textwrap
+from typing import Dict
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -218,3 +219,61 @@ class DatasetsApiTestCase(ApiTestCase):
             f"histories/{self.history_id}/contents/{hda_id}", data={"datatype": "invalid"}, json=True
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
+
+    def test_delete_batch(self):
+        num_datasets = 4
+        dataset_map: Dict[int, str] = {}
+        history_id = self.dataset_populator.new_history()
+        for index in range(num_datasets):
+            hda = self.dataset_populator.new_dataset(history_id)
+            dataset_map[index] = hda["id"]
+
+        expected_deleted_ids = [dataset_map[1], dataset_map[2]]
+        delete_payload = {
+            "ids": expected_deleted_ids
+        }
+        delete_response = self._delete("datasets", data=delete_payload, json=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_result = delete_response.json()
+
+        assert deleted_result["success_count"] == len(expected_deleted_ids)
+        for purged_id in expected_deleted_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{purged_id}").json()
+            assert dataset["deleted"] is True
+
+        expected_purged_ids = [dataset_map[0], dataset_map[2]]
+        purge_payload = {
+            "purge": True,
+            "ids": expected_purged_ids
+        }
+        delete_response = self._delete("datasets", data=purge_payload, json=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_result = delete_response.json()
+
+        assert deleted_result["success_count"] == len(expected_purged_ids)
+
+        for purged_id in expected_purged_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{purged_id}").json()
+            assert dataset["purged"] is True
+
+    def test_delete_batch_error(self):
+        num_datasets = 4
+        dataset_map: Dict[int, str] = {}
+
+        with self._different_user():
+            history_id = self.dataset_populator.new_history()
+            for index in range(num_datasets):
+                hda = self.dataset_populator.new_dataset(history_id)
+                dataset_map[index] = hda["id"]
+
+        # Trying to delete datasets that we don't own will error
+        expected_errored_ids = [dataset_map[1], dataset_map[2]]
+        delete_payload = {
+            "ids": expected_errored_ids
+        }
+        delete_response = self._delete("datasets", data=delete_payload, json=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_result = delete_response.json()
+
+        assert deleted_result["success_count"] == 0
+        assert len(deleted_result["errors"]) == len(expected_errored_ids)
