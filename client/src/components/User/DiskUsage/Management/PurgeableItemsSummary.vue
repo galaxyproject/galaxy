@@ -46,6 +46,11 @@ export default {
             type: Function,
             required: true,
         },
+        refreshProvider: {
+            type: String,
+            required: false,
+            default: null,
+        },
     },
     data() {
         return {
@@ -90,7 +95,14 @@ export default {
             this.errorMessage = err;
         },
         onReviewItems() {
-            this.$emit("onReviewItems", this.items, this.providerName, this.refresh);
+            this.$emit("onReviewItems", this.items, this.providerName);
+        },
+    },
+    watch: {
+        async refreshProvider(newValue) {
+            if (this.providerName === newValue) {
+                await this.refresh();
+            }
         },
     },
 };

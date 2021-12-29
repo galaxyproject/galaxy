@@ -60,5 +60,6 @@ export async function cleanupDatasets(datasets) {
     return {
         totalFreeBytes: totalFreeBytes,
         errors: requestResult.errors,
+        success: totalFreeBytes > 0,
     };
 }

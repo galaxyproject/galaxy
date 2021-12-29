@@ -27,6 +27,7 @@
                         :provider-name="provider.name"
                         :description="provider.description"
                         :fetch-items="provider.fetchItems"
+                        :refresh-provider="refreshProvider"
                         @onReviewItems="showReviewDialog" />
                 </b-card-group>
             </b-row>
@@ -81,7 +82,7 @@ export default {
             purgeableItems: [],
             cleanupResult: null,
             currentProviderName: null,
-            refreshProviderCallback: null,
+            refreshProvider: null,
         };
     },
     created() {
@@ -91,17 +92,16 @@ export default {
         this.purgeableCategories = categories;
     },
     methods: {
-        showReviewDialog(items, providerName, refreshCallback) {
+        showReviewDialog(items, providerName) {
             this.purgeableItems = items;
             this.currentProviderName = providerName;
-            this.refreshProviderCallback = refreshCallback;
             this.$bvModal.show("purgeable-details-modal");
         },
         async onConfirmPurgeSelected(items) {
             this.$bvModal.show("cleanup-result-modal");
             this.cleanupResult = await cleanupDatasets(items);
-            if (this.refreshProviderCallback) {
-                await this.refreshProviderCallback();
+            if (this.cleanupResult.success) {
+                this.refreshProvider = this.currentProviderName;
             }
         },
     },
