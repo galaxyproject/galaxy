@@ -77,6 +77,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
+    backref,
     column_property,
     deferred,
     joinedload,
@@ -8477,6 +8478,17 @@ class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     dataset_collection = relationship('LibraryDatasetCollectionAssociation',
         back_populates='annotations')
     user = relationship('User')
+
+
+class Vault(Base):
+    __tablename__ = 'vault'
+
+    key = Column(Text, primary_key=True)
+    parent_key = Column(Text, ForeignKey(key), index=True, nullable=True)
+    children = relationship('Vault', backref=backref('parent', remote_side=[key]))
+    value = Column(Text, nullable=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now)
 
 
 # Item rating classes.

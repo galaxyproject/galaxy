@@ -7,7 +7,6 @@
                 {{ dscName || "(Collection Name)" }}
             </h3>
             <p class="mt-1">
-                <i class="fas fa-folder"></i>
                 <DscDescription :dsc="dsc" />
             </p>
 

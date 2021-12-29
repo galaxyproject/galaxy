@@ -1732,14 +1732,21 @@ The following demonstrates verifying XML content with XPath-like expressions.
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestParamMetadata">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This directive specifies metadata that should be set for a test data parameter.
+
+See [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_how_do_i.html#test-metadata)
+]]></xs:documentation>
+    </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element of the data parameter</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Value to set</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

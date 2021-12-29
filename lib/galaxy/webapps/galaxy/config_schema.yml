@@ -261,26 +261,16 @@ mapping:
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
 
-      check_migrate_tools:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable / disable checking if any tools defined in the above non-shed
-          tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed. This functionality is largely untested
-          in modern Galaxy releases and has serious issues such as #7273 and the possibility
-          of slowing down Galaxy startup, so the default and recommended value is false.
-
       migrated_tools_config:
         type: str
         default: migrated_tools_conf.xml
         path_resolves_to: managed_config_dir
         required: false
         desc: |
-          Tool config maintained by tool migration scripts.  If you use the migration
-          scripts to install tools that have been migrated to the tool shed upon a new
-          release, they will be added to this tool config file.
+          This option is deprecated.
+          In previous releases this file was maintained by tool migration scripts that are no
+          longer part of the code base. The option remains as a placeholder for deployments where
+          these scripts were previously run and such a file exists.
 
       integrated_tool_panel_config:
         type: str
@@ -3492,3 +3482,11 @@ mapping:
           Location of New User Welcome data, a single directory containing the
           images and JSON of Topics/Subtopics/Slides as export. This location
           is relative to galaxy/static
+
+      vault_config_file:
+        type: str
+        default: vault_conf.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Vault config file.

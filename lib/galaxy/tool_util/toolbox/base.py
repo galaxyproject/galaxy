@@ -701,12 +701,12 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     break
         return shed_config_dict
 
-    def dynamic_conf_filenames(self, include_migrated_tool_conf=False):
+    def dynamic_conf_filenames(self):
         """ Return list of dynamic tool configuration filenames (shed_tools).
         These must be used with various dynamic tool configuration update
         operations (e.g. with update_shed_config).
         """
-        for dynamic_tool_conf_dict in self.dynamic_confs(include_migrated_tool_conf=include_migrated_tool_conf):
+        for dynamic_tool_conf_dict in self.dynamic_confs():
             yield dynamic_tool_conf_dict['config_filename']
 
     def _path_template_kwds(self):

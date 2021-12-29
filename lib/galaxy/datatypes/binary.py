@@ -37,6 +37,7 @@ from galaxy.datatypes.metadata import (
     MetadataParameter,
 )
 from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.text import Html
 from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
@@ -1609,6 +1610,33 @@ class H5MLM(H5):
         repr_ = self.get_repr(dataset.file_name)
 
         return f"<pre>{repr_}</pre><pre>{rval}</pre>", headers
+
+
+class LudwigModel(Html):
+    """
+    Composite datatype that encloses multiple files for a Ludwig trained model.
+    """
+    composite_type = 'auto_primary_file'
+    file_ext = "ludwig_model"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+        self.add_composite_file('model_hyperparameters.json', description='Model hyperparameters', is_binary=False)
+        self.add_composite_file('model_weights', description='Model weights', is_binary=True)
+        self.add_composite_file('training_set_metadata.json', description='Training set metadata', is_binary=False)
+        self.add_composite_file('training_progress.json', description='Training progress', is_binary=False, optional=True)
+
+    def generate_primary_file(self, dataset=None):
+        rval = ['<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>']
+        rval.append('<div>This model dataset is composed of the following items:<p/><ul>')
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            description = composite_file.get('description')
+            link_text = f'{composite_name} ({description})' if description else composite_name
+            opt_text = ' (optional)' if composite_file.optional else ''
+            rval.append(f'<li><a href="{composite_name}" type="text/plain">{link_text}</a>{opt_text}</li>')
+        rval.append('</ul></div></html>')
+        return "\n".join(rval)
 
 
 class HexrdMaterials(H5):

@@ -285,8 +285,7 @@ class AdminToolshed(AdminGalaxy):
         itdm = install_manager.InstallToolDependencyManager(trans.app)
         installed_tool_dependencies = itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
                                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                               tool_dependencies=tool_dependencies,
-                                                                               from_tool_migration_manager=False)
+                                                                               tool_dependencies=tool_dependencies)
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = unicodify(installed_tool_dependency.error_message)

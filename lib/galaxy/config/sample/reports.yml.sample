@@ -103,7 +103,7 @@ reports:
   #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Where dataset files are stored.
-  #file_path: database/files
+  #file_path: database/objects
 
   # Where temporary files are stored.
   #new_file_path: database/tmp

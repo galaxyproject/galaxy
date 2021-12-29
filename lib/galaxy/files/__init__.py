@@ -282,6 +282,18 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
         """Whether this user is an administrator."""
         return self.trans.user_is_admin
 
+    @property
+    def user_vault(self):
+        """User vault namespace"""
+        user_vault = self.trans.user_vault
+        return user_vault or defaultdict(lambda: None)
+
+    @property
+    def app_vault(self):
+        """App vault namespace"""
+        vault = self.trans.app.vault
+        return vault or defaultdict(lambda: None)
+
 
 class DictFileSourcesUserContext(FileSourceDictifiable):
 
@@ -315,3 +327,11 @@ class DictFileSourcesUserContext(FileSourceDictifiable):
     @property
     def is_admin(self):
         return self._kwd.get("is_admin")
+
+    @property
+    def user_vault(self):
+        return self._kwd.get("user_vault")
+
+    @property
+    def app_vault(self):
+        return self._kwd.get("app_vault")

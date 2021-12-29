@@ -41,14 +41,6 @@
                     icon="trash-restore"
                     @click.stop="$emit('undelete')" />
 
-                <IconButton
-                    class="px-1"
-                    state="ok"
-                    title="Collection"
-                    icon="folder"
-                    @click.stop="$emit('viewCollection')"
-                    variant="link" />
-
                 <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
                         <span class="hid">{{ dsc.hid }}</span>
