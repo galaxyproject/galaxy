@@ -2323,7 +2323,7 @@ class DefaultDatasetToolParameter(DataToolParameter):
                     {
                         "id": trans.security.encode_id(dataset_instance.id),
                         "hid": dataset_instance.hid if dataset_instance.hid is not None else -1,
-                        "name": f"Default Value: {m_name}",
+                        "name": f"Default Dataset: {m_name}",
                         "src": dataset_instance.src,
                         "keep": True,  # What is keep ?
                     },

@@ -806,7 +806,7 @@ class InputDataModule(InputModule):
         inputs["tag"] = input_tag
         default_source: Dict[str, Union[int, float, bool, str]] = dict(
             name="default",
-            label="Default Value",
+            label="Default Dataset",
             help="Select a dataset that will be suggested as input for all runs of this workflow",
             type="default_file",
             default=parameter_def.get("default"),
