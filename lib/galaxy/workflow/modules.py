@@ -115,6 +115,9 @@ class WorkflowModule:
         self.content_id = content_id
         self.state = DefaultToolState()
 
+    def recover_defaults(self, step):
+        return {}
+
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
@@ -129,6 +132,7 @@ class WorkflowModule:
     def from_workflow_step(Class, trans, step, **kwds):
         module = Class(trans, **kwds)
         module.recover_state(step.tool_inputs, from_tool_form=False)
+        module.recover_defaults(step)
         module.label = step.label
         return module
 
@@ -826,6 +830,13 @@ class InputDataModule(InputModule):
                     raise Exception(f"Invalid default tool state encountered: {default}")
                 rval["default"] = default
         return rval
+
+    def recover_defaults(self, step):
+        # TODO: make method on step?
+        assert len(step.inputs) == 1
+        step_input = step.inputs[0]
+        assert step_input.name == "default"
+        self.state.inputs["default"] = step_input.step_input_default_dataset_associations[0].default_dataset_association
 
 
 class InputDataCollectionModule(InputModule):

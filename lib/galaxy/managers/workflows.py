@@ -10,6 +10,7 @@ from typing import (
     List,
     Optional,
 )
+from sqlalchemy.orm.scoping import scoped_session
 
 from gxformat2 import (
     from_galaxy_native,
@@ -30,6 +31,11 @@ from galaxy import (
     util,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.model import (
+    DatasetInstance,
+    DefaultDatasetAssociation,
+    WorkflowStepInputDefaultDatasetAssociation,
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
@@ -49,9 +55,11 @@ from galaxy.util.json import (
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.workflow.modules import (
+    InputDataModule,
     is_tool_module_type,
     module_factory,
     ToolModule,
+    WorkflowModule,
     WorkflowModuleInjector,
 )
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
@@ -1401,6 +1409,25 @@ class WorkflowContentsManager(UsesAnnotations):
             )
             step_dict["subworkflow"] = subworkflow
 
+    def default_to_default_dataset_association(
+        self, sa_session: scoped_session, step: model.WorkflowStep, module: WorkflowModule, dry_run: bool
+    ):
+        if isinstance(module, InputDataModule):
+            default = module.state.inputs.get("default")
+            if default and isinstance(default, DatasetInstance) and not isinstance(default, DefaultDatasetAssociation):
+                dda = DefaultDatasetAssociation()
+                dda.dataset = default.dataset
+                dda.metadata = default.metadata
+                dda.extension = default.extension
+                dda.workflow = step.workflow
+                # module.state.inputs['default'] = dda
+                workflow_step_input = step.get_or_add_input("default")
+                WorkflowStepInputDefaultDatasetAssociation(
+                    workflow_step_input=workflow_step_input, default_dataset_association=dda
+                )
+                if not dry_run:
+                    sa_session.add(workflow_step_input)
+
     def __module_from_dict(
         self,
         trans,
@@ -1422,6 +1449,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         module = module_factory.from_dict(trans, step_dict, detached=dry_run, **kwds)
         self.__set_default_label(step, module, step_dict.get("tool_state"))
+        self.default_to_default_dataset_association(trans.sa_session, step, module, dry_run=dry_run)
         module.save_to_step(step, detached=dry_run)
 
         annotation = step_dict.get("annotation")
