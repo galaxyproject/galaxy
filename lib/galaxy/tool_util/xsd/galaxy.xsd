@@ -2286,6 +2286,11 @@ considered like an empty file.
         <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="all" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType> 
   <xs:complexType name="AssertIsValidXML">
     <xs:annotation>
