@@ -3,6 +3,7 @@ import Backbone from "backbone";
 import _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "user";
 //==============================================================================
@@ -134,11 +135,11 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 ? `title="Using ${data.nice_total_disk_usage}. Click for details."`
                 : "";
             const using = `${_l("Using")} ${data.quota_percent}%`;
-            const quotaUrl = this.options.quotaUrl;
+            const storageDashboardUrl = `${getAppRoot()}storage`;
             return `<div id="quota-meter" class="quota-meter progress">
     <div class="progress-bar" style="width: ${data.quota_percent}%"></div>
     <div class="quota-meter-text" data-placement="left" ${title}>
-        <a href="${quotaUrl}" target="_blank">${using}</a>
+        <a href="${storageDashboardUrl}">${using}</a>
     </div>
 </div>`;
         },
