@@ -19,7 +19,8 @@ TSI = 'tsi'  # tool_shed_install model identifier
 
 ALEMBIC_TABLE = 'alembic_version'  # TODO this should come from alembic config
 SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
-SQLALCHEMYMIGRATE_LAST_VERSION = 179
+SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 179
+SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
 log = logging.getLogger(__name__)
 
 
@@ -87,7 +88,7 @@ class AlembicManager:
         True if version table contains a revision that represents `model`.
         (checked via revision's branch labels)
         """
-        with self.engine.connect() as conn: 
+        with self.engine.connect() as conn:
             context = migration.MigrationContext.configure(conn)
             db_heads = context.get_current_heads()
             if db_heads:
@@ -143,8 +144,8 @@ class DatabaseStateCache:
     def has_sqlalchemymigrate_version_table(self):
         return SQLALCHEMYMIGRATE_TABLE in self.db_metadata.tables
 
-    def is_last_sqlalchemymigrate_version(self):
-        return self.sqlalchemymigrate_version == SQLALCHEMYMIGRATE_LAST_VERSION
+    def is_last_sqlalchemymigrate_version(self, last_version):
+        return self.sqlalchemymigrate_version == last_version
 
     def _load_db(self, engine):
         with engine.connect() as conn:
@@ -313,7 +314,8 @@ class DatabaseStateVerifier:
         return self.db_state.has_sqlalchemymigrate_version_table()
 
     def _is_last_sqlalchemymigrate_version(self):
-        return self.db_state.is_last_sqlalchemymigrate_version()
+        last_version = get_last_sqlalchemymigrate_version(self.model)
+        return self.db_state.is_last_sqlalchemymigrate_version(last_version)
 
     def _handle_no_version_table(self):
         log.error('no version table')  # TODO edit message
@@ -322,6 +324,13 @@ class DatabaseStateVerifier:
     def _handle_version_too_old(self):
         log.error('version too old')  # TODO edit message
         raise VersionTooOldError()
+
+
+def get_last_sqlalchemymigrate_version(model):
+    if model == GXY:
+        return SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+    elif model == TSI:
+        return SQLALCHEMYMIGRATE_LAST_VERSION_TSI
 
 
 def get_url_string(engine):

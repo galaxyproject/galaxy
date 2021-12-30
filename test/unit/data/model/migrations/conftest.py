@@ -33,6 +33,8 @@ def tmp_directory():
 # State 6: New table added.
 #          (Most recent state versioned with Alembic. This is the current state)
 #
+# Additional edge case: gxy at state3, tsi has no SQLAlchemy Migrate table.
+#
 # (State 0 assumes an empty database, so it needs no state fixtures.)
 
 
@@ -221,24 +223,9 @@ def metadata_state6_combined(
 
 
 @pytest.fixture
-def metadata_state6_combined(
-    gxy_table1, gxy_table2, gxy_table3, tsi_table1, tsi_table2, tsi_table3, alembic_table
-):
-    metadata = sa.MetaData()
-    gxy_table1(metadata)
-    gxy_table2(metadata)
-    gxy_table3(metadata)
-    tsi_table1(metadata)
-    tsi_table2(metadata)
-    tsi_table3(metadata)
-    alembic_table(metadata)
-    return metadata
-
-
-@pytest.fixture
 def metadata_state6_gxy_state3_tsi_no_sam(
     gxy_table1, gxy_table2, gxy_table3, tsi_table1, tsi_table2, tsi_table3, alembic_table
-    ):
+):
     # This does NOT include sqlalchemymigrate_table (sam)
     metadata = sa.MetaData()
     gxy_table1(metadata)
