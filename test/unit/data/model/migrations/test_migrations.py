@@ -26,6 +26,7 @@ from galaxy.model.migrations import (
 from .common import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
+    drop_database,
     url_factory,
 )
 
@@ -334,22 +335,24 @@ class TestDatabaseStates:
         """
         def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
             db_url = url_factory()
-            assert not database_exists(db_url)
-            with disposing_engine(db_url) as engine:
-                db = DatabaseVerifier(engine)
-                db.verify()
-                assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
-                assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
+            with drop_database(db_url):
+                assert not database_exists(db_url)
+                with disposing_engine(db_url) as engine:
+                    db = DatabaseVerifier(engine)
+                    db.verify()
+                    assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
+                    assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
         def test_separate_databases(self, url_factory, metadata_state6_gxy, metadata_state6_tsi):  # noqa: F811
             db1_url, db2_url = url_factory(), url_factory()
             assert not database_exists(db1_url)
             assert not database_exists(db2_url)
-            with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
-                db = DatabaseVerifier(engine1, engine2)
-                db.verify()
-                assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
-                assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
+            with drop_database(db1_url), drop_database(db2_url):
+                with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
+                    db = DatabaseVerifier(engine1, engine2)
+                    db.verify()
+                    assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
+                    assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     class TestState0:
         """

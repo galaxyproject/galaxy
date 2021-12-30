@@ -53,6 +53,19 @@ def create_and_drop_database(db_url):
             _drop_postgres_database(db_url)
 
 
+@contextmanager
+def drop_database(db_url):
+    """
+    Context manager that ensures a postgres database identified by db_url is dropped on exit;
+    a sqlite database should be removed automatically by tempfile.
+    """
+    try:
+        yield
+    finally:
+        if _is_postgres(db_url):
+            _drop_postgres_database(db_url)
+
+
 def _generate_unique_database_name():
     return f'galaxytest_{uuid.uuid4().hex}'
 
