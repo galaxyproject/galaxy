@@ -1,7 +1,6 @@
 import os
-import tarfile
+import shutil
 import tempfile
-import zipfile
 
 try:
     import h5py
@@ -299,26 +298,29 @@ if h5py is not None:
         </assert_contents>
     """
 
-with tempfile.NamedTemporaryFile(delete=False) as ziptmp:
-    zipname = ziptmp.name
-    with zipfile.ZipFile(ziptmp, mode='w') as zipfh:
-        for f in ["file1.txt", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
-            zipfh.writestr(f, f)
-with open(zipname, "rb") as zfh:
-    ZIPBYTES = zfh.read()
-os.remove(zipname)
+# create a test directory structure for zipping
+# might also be done directly with the fipfile/tarfile module without creating
+# a tmpdir, but its much harder to create empty directories or symlinks
+tmpdir = tempfile.mkdtemp()
+for f in ["file1.txt", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
+    tmpfile = os.path.join(tmpdir, f)
+    os.makedirs(os.path.dirname(tmpfile), exist_ok=True)
+    with open(tmpfile, "w") as fh:
+        fh.write(f)
+os.makedirs(os.path.join(tmpdir, "emptydir"))
+os.symlink("testdir/file1.txt", os.path.join(tmpdir, "symlink"))
 
-with tempfile.NamedTemporaryFile(delete=False) as tartmp:
-    tarname = tartmp.name
-    with tarfile.open(name=None, mode='w:gz', fileobj=tartmp) as tarfh:
-        for f in ["file1.txt", "testdir/file1.txt", "testdir/file2.txt", "testdir/dir2/file1.txt"]:
-            with tempfile.NamedTemporaryFile("w", delete=False) as tmptmp:
-                tmptmpname = tmptmp.name
-                tmptmp.write(f)
-            tarfh.add(tmptmpname, arcname=f)
-with open(tarname, "rb") as tfh:
-    TARBYTES = tfh.read()
-os.remove(tarname)
+with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as ziptmp:
+    zipname = ziptmp.name
+    shutil.make_archive(zipname[:-4], "zip", tmpdir)
+    with open(zipname, "rb") as zfh:
+        ZIPBYTES = zfh.read()
+with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as ziptmp:
+    zipname = ziptmp.name
+    shutil.make_archive(zipname[:-7], "gztar", tmpdir)
+    with open(zipname, "rb") as zfh:
+        TARBYTES = zfh.read()
+shutil.rmtree(tmpdir)
 
 
 with tempfile.NamedTemporaryFile(mode="w", delete=False) as nonarchivetmp:
@@ -329,7 +331,23 @@ with open(nonarchivename, "rb") as ntmp:
 
 ARCHIVE_HAS_ARCHIVE_MEMBER = """
     <assert_contents>
-        <has_archive_member path="{path}">
+        <has_archive_member path="{path}" all="{all}">
+            {content_assert}
+        </has_archive_member>
+    </assert_contents>
+"""
+
+ARCHIVE_HAS_ARCHIVE_MEMBER_N = """
+    <assert_contents>
+        <has_archive_member path="{path}" n="{n}" delta="{delta}">
+            {content_assert}
+        </has_archive_member>
+    </assert_contents>
+"""
+
+ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX = """
+    <assert_contents>
+        <has_archive_member path="{path}" min="{min}" max="{max}">
             {content_assert}
         </has_archive_member>
     </assert_contents>
@@ -652,58 +670,129 @@ TESTS = [
     ),
     # test has_archive_member with zip
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert=""), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert="", all="false"), ZIPBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with tar
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert=""), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert="", all="false"), TARBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with non archive
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="irrelevant", content_assert=""), NONARCHIVE,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="irrelevant", content_assert="", all="false"), NONARCHIVE,
         lambda x: "Expected path 'irrelevant' to be an archive" in x
     ),
     # test has_archive_member with zip on absent member
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert=""), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert="", all="false"), ZIPBYTES,
         lambda x: "Expected path 'absent' in archive" in x
     ),
     # test has_archive_member with tar on absent member
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert=""), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="absent", content_assert="", all="false"), TARBYTES,
         lambda x: "Expected path 'absent' in archive" in x
     ),
-    # test has_archive_member with zip on a dir member
+    # test has_archive_member with zip on symlink
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/", content_assert=""), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?symlink", content_assert='<has_text text="testdir/file1.txt"/>', all="false"), ZIPBYTES,
         lambda x: len(x) == 0
     ),
-    # test has_archive_member with tar on a dir member
+    # test has_archive_member with tar on symlink
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/", content_assert=""), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?symlink", content_assert='<has_text text="testdir/file1.txt"/>', all="false"), TARBYTES,
         lambda x: len(x) == 0
     ),
-    # test has_archive_member with zip with subassertion
+    # test has_archive_member with zip on a dir member (which are treated like empty files)
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="testdir/file1.txt"/>'), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/", content_assert='<has_size value="0"/>', all="false"), ZIPBYTES,
         lambda x: len(x) == 0
     ),
-    # test has_archive_member with tar with subassertion
+    # test has_archive_member with tar on a dir member (which are treated like empty files)
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="testdir/file1.txt"/>'), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/", content_assert='<has_size value="0"/>', all="false"), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip with subassertion (note that archive members are sorted therefor file1 in dir2 is tested)
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/.*\\.txt", content_assert='<has_text text="testdir/dir2/file1.txt"/>', all="false"), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar with subassertion (note that archive members are sorted therefor file1 in dir2 is tested)
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/.*\\.txt", content_assert='<has_text text="testdir/dir2/file1.txt"/>', all="false"), TARBYTES,
         lambda x: len(x) == 0
     ),
     # test has_archive_member with zip with failing subassertion
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="ABSENT"/>'), ZIPBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert='<has_text text="ABSENT"/>', all="false"), ZIPBYTES,
         lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
     ),
     # test has_archive_member with tar with failing subassertion
     (
-        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="testdir/file1.txt", content_assert='<has_text text="ABSENT"/>'), TARBYTES,
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert='<has_text text="ABSENT"/>', all="false"), TARBYTES,
         lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
+    ),
+    # test has_archive_member with zip checking all matches with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', all="true"), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar checking all matches with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', all="true"), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip checking all matches with failing subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file1\\.txt"/>', all="true"), ZIPBYTES,
+        lambda x: "Expected text matching expression 'file1\\.txt' in output ('testdir/file2.txt')"
+    ),
+    # test has_archive_member with tar checking all matches with failing subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file1\\.txt"/>', all="true"), TARBYTES,
+        lambda x: "Expected text matching expression 'file1\\.txt' in output ('testdir/file2.txt')"
+    ),
+
+    # test has_archive_member with zip n+delta with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_N.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', n="3", delta="1"), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip n+delta with subassertion .. negative
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_N.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', n="1", delta="1"), ZIPBYTES,
+        lambda x: "Expected 1+-1 matches for path '.*file.\\.txt' in archive found 4" in x
+    ),
+    # test has_archive_member with tar n+delta with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_N.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', n="3", delta="1"), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar n+delta with subassertion .. negative
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_N.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', n="1", delta="1"), TARBYTES,
+        lambda x: "Expected 1+-1 matches for path '.*file.\\.txt' in archive found 4" in x
+    ),
+    # test has_archive_member with zip min+max with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', min="2", max="4"), ZIPBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with zip min+max with subassertion .. negative
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', min="0", max="2"), ZIPBYTES,
+        lambda x: "Expected that the number of matches for path '.*file.\\.txt' in archive is in [0:2] found 4" in x
+    ),
+    # test has_archive_member with tar min+max with subassertion
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', min="2", max="4"), TARBYTES,
+        lambda x: len(x) == 0
+    ),
+    # test has_archive_member with tar min+max with subassertion .. negative
+    (
+        ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX.format(path=".*file.\\.txt", content_assert='<has_text_matching expression="file.\\.txt"/>', min="0", max="2"), TARBYTES,
+        lambda x: "Expected that the number of matches for path '.*file.\\.txt' in archive is in [0:2] found 4" in x
     ),
 ]
 
@@ -801,12 +890,26 @@ TEST_IDS = [
     'has_archive_member non-archive',
     'has_archive_member zip absent member',
     'has_archive_member tar absent member',
+    'has_archive_member zip symlink member',
+    'has_archive_member tar symlink member',
     'has_archive_member zip non-file member',
     'has_archive_member tar non-file member',
     'has_archive_member zip with content assertion',
     'has_archive_member tar with content assertion',
     'has_archive_member zip with failing content assertion',
     'has_archive_member tar with failing content assertion',
+    'has_archive_member zip all matching with content assertion',
+    'has_archive_member tar all matching with content assertion',
+    'has_archive_member zip all matching with failing content assertion',
+    'has_archive_member tar all matching with failing content assertion',
+    'has_archive_member zip n + delta and content assertion',
+    'has_archive_member zip n + delta failing  and content assertion',
+    'has_archive_member tar n + delta and content assertion',
+    'has_archive_member tar n + delta failing and content assertion',
+    'has_archive_member zip min max and content assertion',
+    'has_archive_member zip min max failing  and content assertion',
+    'has_archive_member tar min max and content assertion',
+    'has_archive_member tar min max failing and content assertion',
 ]
 
 if h5py is not None:
@@ -829,4 +932,4 @@ def test_assertions(assertion_xml, data, assert_func):
         assert_list = e.args
     else:
         assert_list = ()
-    assert assert_func(assert_list)
+    assert assert_func(assert_list), assert_list
