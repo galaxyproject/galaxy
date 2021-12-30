@@ -158,16 +158,6 @@ export async function deleteHistoryById(id, purge = false) {
 }
 
 /**
- * Undelete a deleted (but not purged) history
- * @param {String} id Encoded history id
- */
-export async function undeleteHistoryById(id) {
-    const url = `/histories/deleted/${id}/undelete`;
-    const response = await api.post(url, null, { params: stdHistoryParams });
-    return doResponse(response);
-}
-
-/**
  * Update specific fields in history
  * @param {Object} history
  * @param {Object} payload fields to update
