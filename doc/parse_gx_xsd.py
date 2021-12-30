@@ -102,8 +102,9 @@ def _build_tag(tag, hide_attributes):
             assertions_buffer.write(_doc_or_none(assertions_tag))
             assertions_buffer.write("\n\n")
 
-            assertion_groups = assertions_tag.xpath("xs:sequence/xs:group", namespaces={'xs': 'http://www.w3.org/2001/XMLSchema'})
+            assertion_groups = assertions_tag.xpath("xs:choice/xs:group", namespaces={'xs': 'http://www.w3.org/2001/XMLSchema'})
             for group in assertion_groups:
+                sys.stderr.write(f"{group}")
                 ref = group.attrib['ref']
                 assertion_tag = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}group[@name='" + ref + "']")
                 doc = _doc_or_none(assertion_tag)
@@ -115,7 +116,7 @@ def _build_tag(tag, hide_attributes):
                         doc = _doc_or_none(_type_el(element))
                     assert doc is not None, "Documentation for %s is empty" % element.attrib["name"]
                     doc = doc.strip()
-                    assertions_buffer.write(f"``{element.attrib['name']}``\n: {doc}\n\n")
+                    assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
     best_practices = _get_bp_link(annotation_el)
