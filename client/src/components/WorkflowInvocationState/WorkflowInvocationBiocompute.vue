@@ -1,8 +1,8 @@
 <template>
-    <div v-if="Object.keys(invocation).length">
+    <div v-if="hasInvocationProps">
         <details class="invocation-biocompute-objects">
             <summary><b>Biocompute Object</b></summary>
-            <div v-if="Object.keys(invocation).length">
+            <div v-if="hasInvocationProps">
                 <details class="invocation-biocompute-object-export">
                     <summary><b>Export BioCompute Object</b></summary>
                     <div>
@@ -13,7 +13,7 @@
                                     type="text"
                                     class="form-control"
                                     id="fetch"
-                                    placeholder="https://beta.portal.aws.biochemistry.gwu.edu"
+                                    placeholder="https://biocomputeobject.org"
                                     v-model="form.fetch"
                                 />
                             </div>
@@ -27,27 +27,26 @@
                                 />
                             </div>
                             <div class="form-group">
-                                <label for="table">Table</label>
+                                <label for="table">Prefix</label>
                                 <input
                                     type="text"
                                     class="form-control"
                                     id="table"
-                                    placeholder="bco_draft"
+                                    placeholder="BCO"
                                     v-model="form.table"
                                 />
                             </div>
                             <div class="form-group">
-                                <label for="owner_group">Group</label>
+                                <label for="owner_group">User Name</label>
                                 <input
                                     type="text"
                                     class="form-control"
                                     id="owner_group"
-                                    placeholder="bco_drafters"
                                     v-model="form.owner_group"
                                 />
                             </div>
                             <div class="form-group">
-                                <button class="btn btn-primary">Submit</button>
+                                <button class="btn btn-primary">{{ 'Submit' | localize }}</button>
                             </div>
                         </form>
                     </div>
@@ -109,17 +108,19 @@ export default {
         bcoJSON: function () {
             return getUrl(`api/invocations/${this.invocation}/biocompute/download`);
         },
+        hasInvocationProps() {
+            return Object.keys(this.invocation).length > 0;
+        },
     },
     methods: {
         submitForm() {
             const bcoString = {
-                POST_create_new_object: [
+                POST_api_objects_draft_create: [
                     {
                         contents: this.bco,
                         owner_group: this.form.owner_group,
                         schema: "IEEE",
-                        state: "DRAFT",
-                        table: this.form.table,
+                        prefix: this.form.table,
                     },
                 ],
             };
@@ -127,12 +128,25 @@ export default {
                 Authorization: "Token " + this.form.authorization,
                 "Content-type": "application/json; charset=UTF-8",
             };
+            const submitURL = this.form.fetch;
             axios
-                .post(this.form.fetch, bcoString, { headers: headers })
-                .then((res) => {})
-                .catch((error) => {})
-                .finally(() => {
-                    console.log(this.form);
+                .post(`${submitURL}/api/objects/drafts/create/`, bcoString, { headers: headers })
+                .then((response) => {
+                    console.log("response:", response)
+                    alert(JSON.stringify(response.data[0].message));
+                })
+                .catch(function (error) {
+                    if (error.response) {
+                        alert(JSON.stringify(error.response.data[0].message));
+                        console.log('Error response: ',error.response.data);
+                        console.log(error.response.status);
+                        console.log(error.response.headers);
+                    } else if (error.request) {
+                        alert(`Error request: failed to connect to server at ${submitURL}`);
+                    } else {
+                        console.log('Error', error.message);
+                        alert('Error', error.message);
+                    }
                 });
         },
     },
