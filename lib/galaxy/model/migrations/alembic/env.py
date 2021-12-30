@@ -38,7 +38,7 @@ def _run_migrations_invoked_via_script(run_migrations):
     if _process_cmd_current(urls):
         return  # we're done
 
-    revision_str = config.cmd_opts.revision
+    revision_str = config.cmd_opts.revision  # type: ignore[union-attr]
 
     if revision_str.startswith(f'{GXY}@'):
         url = urls[GXY]
@@ -55,7 +55,7 @@ def _run_migrations_invoked_via_script(run_migrations):
 
 
 def _process_cmd_current(urls):
-    if config.cmd_opts.cmd[0].__name__ == 'current':
+    if config.cmd_opts.cmd[0].__name__ == 'current':  # type: ignore[union-attr]
         for url in urls.values():
             _configure_and_run_migrations_online(url)
         return True
