@@ -2,6 +2,7 @@ galaxy-files
 galaxy-objectstore
 galaxy-sequence-utils
 galaxy-util[template]
+alembic==1.7.4; python_version >= "3.6"
 bdbag
 bx-python
 contextvars; python_version >= "3.6" and python_version < "3.7"

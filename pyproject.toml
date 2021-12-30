@@ -30,6 +30,7 @@ url = "https://wheels.galaxyproject.org/simple"
 [tool.poetry.dependencies]
 a2wsgi = "*"
 aiofiles = "*"
+alembic = "*"
 Babel = "*"
 bdbag = "*"
 Beaker = "1.11.0"
