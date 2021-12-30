@@ -8,8 +8,9 @@ export const categories = [
             {
                 name: _l("Deleted datasets"),
                 description: _l(
-                    "Datasets that you have marked as deleted but that haven't been permanently deleted." +
-                        " You can restore these datasets or you can permanently remove them to free some space"
+                    "When you delete a dataset it's not immediately removed from the disk (so you can recover it later)." +
+                        " But this means it's still taking space until you permanently delete it." +
+                        " Here you can quickly find and remove those datasets to free up some space"
                 ),
                 fetchItems: fetchDiscardedDatasets,
             },

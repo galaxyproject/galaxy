@@ -13,9 +13,9 @@
             <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
                 <b>{{ reviewAndClearText }} {{ totalRecoverableAmount }}</b>
             </b-link>
-            <b-card-footer v-else>
+            <b v-else class="text-secondary">
                 {{ noItemsToClearText }}
-            </b-card-footer>
+            </b>
         </div>
     </b-card>
 </template>

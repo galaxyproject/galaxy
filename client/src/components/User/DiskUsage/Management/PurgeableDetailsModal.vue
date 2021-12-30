@@ -107,7 +107,7 @@ export default {
             ],
             sortBy: "size",
             sortDesc: true,
-            perPage: 3,
+            perPage: 25,
             currentPage: 1,
             totalRows: 1,
             allSelected: false,
@@ -188,4 +188,3 @@ export default {
     },
 };
 </script>
-

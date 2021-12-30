@@ -12,7 +12,7 @@
                 <b>{{ usedQuotaString }}</b> of {{ totalQuotaString }} used
             </h3>
             <h5>{{ usedQuotaPercent }}% of total disk quota used</h5>
-            <b-progress :value="usedQuotaPercent" max="100"></b-progress>
+            <b-progress :value="usedQuotaPercent" :variant="progressVariant" max="100"></b-progress>
         </div>
     </div>
 </template>
@@ -35,7 +35,7 @@ export default {
     },
     data() {
         return {
-            quotaDescriptionSummary: _l("This is the maximum disk space that you can use."),
+            quotaDescriptionSummary: _l("This is the maximum disk space that you can use"),
         };
     },
     computed: {
@@ -50,6 +50,18 @@ export default {
         /** @returns {float} */
         usedQuotaPercent() {
             return this.user.quota_percent;
+        },
+        /** @returns {String} */
+        progressVariant() {
+            const percent = this.usedQuotaPercent;
+            if (percent < 50) {
+                return "success";
+            } else if (percent >= 50 && percent < 80) {
+                return "primary";
+            } else if (percent >= 80 && percent < 95) {
+                return "warning";
+            }
+            return "danger";
         },
     },
 };
