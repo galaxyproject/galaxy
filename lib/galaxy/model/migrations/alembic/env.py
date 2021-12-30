@@ -4,17 +4,10 @@ from alembic import context
 from alembic import script
 from sqlalchemy import create_engine
 
-from galaxy.config import GalaxyAppConfiguration
 from galaxy.model.migrations import GXY, TSI
 
 config = context.config
 target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
-
-galaxy_config = GalaxyAppConfiguration()
-URLS = {
-    GXY: galaxy_config.database_connection,
-    TSI: galaxy_config.install_database_connection or galaxy_config.database_connection,
-}
 
 
 def run_migrations_offline():
@@ -34,29 +27,39 @@ def run_migrations_online():
         _configure_and_run_migrations_online(url)
     else:  # invoked via script
         f = _configure_and_run_migrations_online
-        # Special case: runs online; config.cmd_opts has no revision property
-        if config.cmd_opts.cmd[0].__name__ == 'current':
-            for url in URLS.values():
-                f(url)
-            return
         _run_migrations_invoked_via_script(f)
 
 
 def _run_migrations_invoked_via_script(run_migrations):
+    urls = _load_urls()
+
+    # Special case: the `current` command has no config.cmd_opts.revision property,
+    # so we check for it before checking for `upgrade/downgrade`.
+    if _process_cmd_current(urls):
+        return  # we're done
+
     revision_str = config.cmd_opts.revision
 
     if revision_str.startswith(f'{GXY}@'):
-        url = URLS[GXY]
+        url = urls[GXY]
     elif revision_str.startswith(f'{TSI}@'):
-        url = URLS[TSI]
+        url = urls[TSI]
     else:
         revision = _get_revision(revision_str)
         if GXY in revision.branch_labels:
-            url = URLS[GXY]
+            url = urls[GXY]
         elif TSI in revision.branch_labels:
-            url = URLS[TSI]
+            url = urls[TSI]
 
     run_migrations(url)
+
+
+def _process_cmd_current(urls):
+    if config.cmd_opts.cmd[0].__name__ == 'current':
+        for url in urls.values():
+            _configure_and_run_migrations_online(url)
+        return True
+    return False
 
 
 def _get_revision(revision_str):
@@ -102,6 +105,15 @@ def _configure_and_run_migrations_online(url):
 
 def _get_url_from_config():
     return config.get_main_option("sqlalchemy.url")
+
+
+def _load_urls():
+    gxy_url = context.get_x_argument(as_dictionary=True).get(f'{GXY}_url')
+    tsi_url = context.get_x_argument(as_dictionary=True).get(f'{TSI}_url')
+    return {
+        GXY: gxy_url,
+        TSI: tsi_url,
+    }
 
 
 if context.is_offline_mode():

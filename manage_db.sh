@@ -7,6 +7,8 @@
 # ./manage_db.sh revision --head=gxy@head
 # To create a revision for tool_shed_install:
 # ./manage_db.sh revision --head=tsi@head
+
+# To pass a galaxy config file, use `--galaxy-config`
 #######
 
 ALEMBIC_CONFIG='lib/galaxy/model/migrations/alembic.ini'

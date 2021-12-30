@@ -134,8 +134,36 @@ def get_config(argv, use_argparse=True, cwd=None):
 
     return dict(db_url=db_url, repo=repo, config_file=config_file, database=database, install_database_connection=install_database_connection)
 
+
 def manage_db():
     # TODO is this used?
     # Migrate has its own args, so cannot use argparse
     config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
     migrate_main(repository=config['repo'], url=config['db_url'])
+
+
+def get_config_for_alembic(argv, cwd):
+    # 1. get config_file from args
+    config_file = None
+    config_file_arg = '--galaxy-config'
+    if config_file_arg in argv:
+        pos = argv.index(config_file_arg)
+        argv.pop(pos)
+        config_file = argv.pop(pos)
+
+    # 2. ensure config_file
+    if config_file is None:
+        cwds = [cwd, os.path.join(cwd, 'config')]
+        config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)
+
+    # 3. get properties for gxy
+    properties = load_app_properties(config_file=config_file, config_prefix='GALAXY_CONFIG_')
+    default_gxy_url = f"sqlite:///{os.path.join(get_data_dir(properties), 'universe.sqlite')}?isolation_level=IMMEDIATE"
+    gxy_url = properties.get('database_connection', default_gxy_url)
+
+    # 4. get properties for tsi
+    properties = load_app_properties(config_file=config_file, config_prefix='GALAXY_INSTALL_CONFIG_')
+    default_tsi_url = gxy_url
+    tsi_url = properties.get('install_database_connection', default_tsi_url)
+
+    return (gxy_url, tsi_url)
