@@ -468,17 +468,22 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers[
-                "Content-Disposition"
-            ] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}.zip"'
-            trans.response.set_content_type("application/zip")
+            content_disposition = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}'
+            content_type = "application/galaxy-archive"
+            if archive.size > 0:
+                content_type = "application/zip"
+                content_disposition = f"{content_disposition}.zip"
+            trans.response.set_content_type(content_type)
+            trans.response.headers["Content-Disposition"] = content_disposition
 
         if style == "format2" and download_format != "json-download":
             return ordered_dump(ret_dict)
         else:
             json_content = format_return_as_json(ret_dict, pretty=True)
-            archive.archive.writestr(f"Galaxy-Workflow-{sname}.{extension}", json_content.encode())
-            return archive.response()
+            if archive.size > 0:
+                archive.archive.writestr(f"Galaxy-Workflow-{sname}.{extension}", json_content.encode())
+                return archive.response()
+            return json_content
 
     @expose_api
     def delete(self, trans: ProvidesUserContext, id, **kwd):
