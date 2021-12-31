@@ -2322,7 +2322,7 @@ class DefaultDatasetToolParameter(DataToolParameter):
                     0,
                     {
                         "id": trans.security.encode_id(dataset_instance.id),
-                        "hid": dataset_instance.hid if getattr(dataset_instance, "hid", None) is not None else -1,
+                        "hid": getattr(dataset_instance, "hid", None),
                         "name": f"Default Dataset: {m_name}",
                         "src": dataset_instance.src,  # type: ignore[attr-defined]
                         "keep": True,  # What is keep ?
