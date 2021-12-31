@@ -1,5 +1,6 @@
 import sqlite3
 from contextlib import contextmanager
+from typing import Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -118,3 +119,14 @@ class MySQLDatabaseManager(DatabaseManager):
             stmt = f"CREATE DATABASE {database} CHARACTER SET = '{encoding}'"
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
                 conn.execute(stmt)
+
+
+def is_one_database(db1_url: str, db2_url: Optional[str]):
+    """
+    Check if the arguments refer to one database. This will be true
+    if only one argument is passed, or if the urls are the same.
+    URLs are strings, so sameness is determined via string comparison.
+    """
+    # TODO: Consider more aggressive check here that this is not the same
+    # database file under the hood.
+    return not(db1_url and db2_url and db1_url != db2_url)

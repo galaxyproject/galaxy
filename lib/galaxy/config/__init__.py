@@ -774,8 +774,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
         self.database_engine_options = get_database_engine_options(kwargs)
-        self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
-        self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
+        self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
