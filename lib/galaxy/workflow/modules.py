@@ -784,6 +784,7 @@ class InputDataModule(InputModule):
             name="input", label=self.label, multiple=False, type="data", format=formats, tag=tag, optional=optional
         )
         default = parameter_def.get("default")
+        input_param: Union[DefaultDatasetToolParameter, DataToolParameter]
         if default:
             data_src["default"] = default
             input_param = DefaultDatasetToolParameter(None, data_src, self.trans)
@@ -830,7 +831,7 @@ class InputDataModule(InputModule):
         default = inputs.get("default")
         if default and not is_runtime_value(default):
             if isinstance(default, DatasetInstance):
-                rval["default"] = {"src": default.src, "id": default.id}
+                rval["default"] = {"src": default.src, "id": default.id}  # type: ignore[attr-defined]
             else:
                 rval["default"] = default
         return rval

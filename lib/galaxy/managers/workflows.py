@@ -1,7 +1,9 @@
 import json
 import logging
 import os
+import shutil
 import uuid
+import zipfile
 from collections import namedtuple
 from typing import (
     Any,
@@ -10,7 +12,6 @@ from typing import (
     List,
     Optional,
 )
-from sqlalchemy.orm.scoping import scoped_session
 
 from gxformat2 import (
     from_galaxy_native,
@@ -34,9 +35,12 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     DatasetInstance,
     DefaultDatasetAssociation,
+    WorkflowStepInput,
     WorkflowStepInputDefaultDatasetAssociation,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import ObjectStore
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
@@ -53,6 +57,7 @@ from galaxy.util.json import (
     safe_loads,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import url_for
 from galaxy.workflow.modules import (
     InputDataModule,
@@ -406,6 +411,7 @@ class WorkflowContentsManager(UsesAnnotations):
         source=None,
         add_to_menu=False,
         hidden=False,
+        archive: Optional[zipfile.ZipFile] = None,
     ):
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
@@ -425,6 +431,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raw_workflow_description,
             workflow_create_options,
             name=name,
+            archive=archive,
         )
         if "uuid" in data:
             workflow.uuid = data["uuid"]
@@ -514,9 +521,15 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_raw_description(
-        self, trans, raw_workflow_description, workflow_state_resolution_options, name, **kwds
+        self,
+        trans,
+        raw_workflow_description,
+        workflow_state_resolution_options,
+        name,
+        archive: Optional[zipfile.ZipFile] = None,
+        **kwds,
     ):
-        # don't commit the workflow or attach its part to the sa session - just build a
+        # don't commit the workflow or attach its part to the sa session if dry_run is true - just build a
         # a transient model to operate on or render.
         dry_run = kwds.pop("dry_run", False)
 
@@ -577,7 +590,9 @@ class WorkflowContentsManager(UsesAnnotations):
         module_kwds = workflow_state_resolution_options.dict()
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
-            module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
+            module, step = self.__module_from_dict(
+                trans, steps, steps_by_external_id, step_dict, archive=archive, **module_kwds
+            )
             is_tool = is_tool_module_type(module.type)
             if is_tool and module.tool is None:
                 missing_tool_tup = (module.tool_id, module.get_name(), module.tool_version, step_dict["id"])
@@ -594,7 +609,15 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export", version=None, history=None):
+    def workflow_to_dict(
+        self,
+        trans,
+        stored,
+        style="export",
+        version=None,
+        history=None,
+        archive: Optional[ZipstreamWrapper] = None,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -628,10 +651,10 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict)
         elif style == "format2_wrapped_yaml":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow, archive=archive)
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
         elif style == "ga":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow, archive=archive)
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
@@ -1075,7 +1098,14 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_data_output["collection_type"] = collection_type
         return steps
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False):
+    def _workflow_to_dict_export(
+        self,
+        trans,
+        stored=None,
+        workflow=None,
+        internal=False,
+        archive: Optional[ZipstreamWrapper] = None,
+    ):
         """Export the workflow contents to a dictionary ready for JSON-ification and export.
 
         If internal, use content_ids instead subworkflow definitions.
@@ -1214,19 +1244,25 @@ class WorkflowContentsManager(UsesAnnotations):
                 if step_input.default_value_set:
                     if step_input.step_input_default_dataset_associations:
                         default = step_input.step_input_default_dataset_associations[0].default_dataset_association
-                        step_in = {
-                            "class": "File",
-                            "location": f"{default.name}.{default.ext}",
-                            "uuid": str(default.dataset.uuid),
-                            "ext": default.datatype.file_ext,
-                            "cwl-formats": [f"http://edamontology.org/{default.datatype.edam_format}"],
+                        location = f"{default.name}.{default.ext}"
+                        step_in[step_input.name] = {
+                            "default": {
+                                "class": "File",
+                                "location": location,
+                                "basename": default.created_from_basename or default.name,
+                                "uuid": str(default.dataset.uuid),
+                                "ext": default.datatype.file_ext,
+                                "cwl-formats": [f"http://edamontology.org/{default.datatype.edam_format}"],
+                            }
                         }
+                        if archive:
+                            archive.add_path(default.file_name, location)
+
                     else:
                         step_in[step_input.name] = {"default": step_input.default_value}
 
             if step_in:
                 step_dict["in"] = step_in
-
             # Connections
             input_connections = step.input_connections
             if step.type is None or step.type == "tool":
@@ -1420,7 +1456,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["subworkflow"] = subworkflow
 
     def default_to_default_dataset_association(
-        self, sa_session: scoped_session, step: model.WorkflowStep, module: WorkflowModule, dry_run: bool
+        self, sa_session: galaxy_scoped_session, step: model.WorkflowStep, module: WorkflowModule, dry_run: bool
     ):
         if isinstance(module, InputDataModule):
             default = module.state.inputs.get("default")
@@ -1447,6 +1483,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps: List[model.WorkflowStep],
         steps_by_external_id: Dict[str, model.WorkflowStep],
         step_dict,
+        archive: Optional[zipfile.ZipFile] = None,
         **kwds,
     ):
         """Create a WorkflowStep model object and corresponding module
@@ -1511,6 +1548,13 @@ class WorkflowContentsManager(UsesAnnotations):
                 if default is not NO_DEFAULT_DEFINED:
                     step_input.default_value = default
                     step_input.default_value_set = True
+                    if not dry_run and isinstance(default, dict) and default.get("class") == "File" and archive:
+                        create_dda_from_step_default(
+                            archive,
+                            step_input=step_input,
+                            sa_session=trans.sa_session,
+                            object_store=trans.app.object_store,
+                        )
 
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
@@ -1641,6 +1685,36 @@ class WorkflowContentsManager(UsesAnnotations):
             elif step.type == "subworkflow":
                 tools.extend(self.get_all_tools(step.subworkflow))
         return tools
+
+
+def create_dda_from_step_default(
+    archive: zipfile.ZipFile,
+    step_input: WorkflowStepInput,
+    sa_session: galaxy_scoped_session,
+    object_store: ObjectStore,
+):
+    # TODO make celery task ? Or need to make all workflow import celery task(s)
+    step_default = step_input.default_value
+    location = step_default["location"]
+    dda = DefaultDatasetAssociation(
+        name=step_default["basename"],
+        extension=step_default.get("ext"),
+        dbkey=step_default.get("dbkey"),
+        create_dataset=True,
+        sa_session=sa_session,
+        flush=False,
+    )
+    object_store.create(dda.dataset)
+    with archive.open(next(m for m in archive.filelist if m.filename == location)) as zip_member, open(
+        dda.dataset.file_name, "wb"
+    ) as fh:
+        shutil.copyfileobj(zip_member, fh)
+    # Push output from cache to object store
+    object_store.update_from_file(dda.dataset, file_name=dda.dataset.file_name)
+    dda.datatype.set_meta(dda)
+    sa_session.add(
+        WorkflowStepInputDefaultDatasetAssociation(workflow_step_input=step_input, default_dataset_association=dda)
+    )
 
 
 class RefactorRequest(RefactorActions):
