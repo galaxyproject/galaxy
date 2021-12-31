@@ -18,7 +18,7 @@
                     </b-btn>
                 </div>
                 <div v-else>
-                    <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="backFunc()">
+                    <b-btn id="back-btn" size="sm" class="float-left" v-if="undoShow" @click="backFunc">
                         <font-awesome-icon :icon="['fas', 'caret-left']" />
                         Back
                     </b-btn>

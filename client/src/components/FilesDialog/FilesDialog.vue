@@ -4,7 +4,7 @@
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="() => load()"
+        :back-func="load"
         :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
