@@ -1212,7 +1212,17 @@ class WorkflowContentsManager(UsesAnnotations):
             step_in = {}
             for step_input in step.inputs:
                 if step_input.default_value_set:
-                    step_in[step_input.name] = {"default": step_input.default_value}
+                    if step_input.step_input_default_dataset_associations:
+                        default = step_input.step_input_default_dataset_associations[0].default_dataset_association
+                        step_in = {
+                            "class": "File",
+                            "location": f"{default.name}.{default.ext}",
+                            "uuid": str(default.dataset.uuid),
+                            "ext": default.datatype.file_ext,
+                            "cwl-formats": [f"http://edamontology.org/{default.datatype.edam_format}"],
+                        }
+                    else:
+                        step_in[step_input.name] = {"default": step_input.default_value}
 
             if step_in:
                 step_dict["in"] = step_in
@@ -1420,13 +1430,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 dda.metadata = default.metadata
                 dda.extension = default.extension
                 dda.workflow = step.workflow
+                dda.name = default.name
                 # module.state.inputs['default'] = dda
                 workflow_step_input = step.get_or_add_input("default")
+                workflow_step_input.default_value_set = True
                 WorkflowStepInputDefaultDatasetAssociation(
                     workflow_step_input=workflow_step_input, default_dataset_association=dda
                 )
                 if not dry_run:
                     sa_session.add(workflow_step_input)
+                    module.state.inputs["default"] = "step://default"
 
     def __module_from_dict(
         self,

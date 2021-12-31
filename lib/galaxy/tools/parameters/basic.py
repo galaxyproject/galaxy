@@ -1891,14 +1891,12 @@ class BaseDataToolParameter(ToolParameter):
         def single_to_python(value):
             if isinstance(value, dict) and "src" in value:
                 id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
-                if value["src"] == "dce":
-                    return app.model.context.query(DatasetCollectionElement).get(id)
-                elif value["src"] == "hdca":
-                    return app.model.context.query(HistoryDatasetCollectionAssociation).get(id)
-                elif value["src"] == "ldda":
-                    return app.model.context.query(LibraryDatasetDatasetAssociation).get(id)
-                else:
-                    return app.model.context.query(HistoryDatasetAssociation).get(id)
+                src = value["src"]
+                klass = SRC_CLASS_MAPPING.get(src)
+                if not klass:
+                    # Should never happen, but previous if/elif/else was ambiguous
+                    raise Exception(f"Unexpected src value {value['src']}")
+                return app.model.context.query(klass).get(id)
 
         if isinstance(value, dict) and "values" in value:
             if hasattr(self, "multiple") and self.multiple is True:

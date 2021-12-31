@@ -325,51 +325,37 @@ def build_workflow_run_configs(trans, workflow, payload):
                 )
             input_source = input_dict["src"]
             input_id = input_dict["id"]
+            decoded_input_id = input_id if input_source == "uuid" else trans.security.decode_id(input_id)
             try:
-                if input_source == "ldda":
-                    ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(
-                        trans.security.decode_id(input_id)
-                    )
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
-                        trans.get_current_user_roles(), ldda.dataset
-                    )
-                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
+                klass = model.SRC_CLASS_MAPPING.get(input_source)
+                if klass:
+                    content = input_item = trans.sa_session.query(klass).get(decoded_input_id)
                 elif input_source == "ld":
-                    ldda = (
-                        trans.sa_session.query(app.model.LibraryDataset)
-                        .get(trans.security.decode_id(input_id))
+                    input_item = (
+                        trans.sa_session.query(model.LibraryDataset)
+                        .get(decoded_input_id)
                         .library_dataset_dataset_association
                     )
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
-                        trans.get_current_user_roles(), ldda.dataset
-                    )
-                    content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif input_source == "hda":
-                    # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(
-                        trans.security.decode_id(input_id)
-                    )
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
-                        trans.get_current_user_roles(), content.dataset
-                    )
                 elif input_source == "uuid":
-                    dataset = (
-                        trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
+                    # This isn't completely correct, raw Dataset has no metadata, and we don't create the metadata either when
+                    # adding to history ... so drop maybe ?
+                    input_item = (
+                        trans.sa_session.query(model.Dataset).filter(model.Dataset.uuid == decoded_input_id).first()
                     )
-                    if dataset is None:
-                        # this will need to be changed later. If federation code is avalible, then a missing UUID
-                        # could be found amoung fereration partners
-                        raise exceptions.RequestParameterInvalidException(f"Input cannot find UUID: {input_id}.")
+                if not input_item:
+                    raise exceptions.RequestParameterInvalidException(f"Cannot find input {input_source}: {input_id}.")
+                dataset = getattr(input_item, "dataset", input_item)
+                if isinstance(dataset, model.Dataset):
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), dataset
                     )
+                elif isinstance(input_item, model.HistoryDatasetCollectionAssociation):
+                    # Roll HDCA/DDA access into RBACManager ?
+                    app.history_manager.error_unless_accessible(input_item.history, trans.user, current_history=history)
+                if input_source in ("ld", "ldda", "dda"):
+                    content = input_item.to_history_dataset_association(history, add_to_history=add_to_history)
+                elif input_source == "uuid":
                     content = history.add_dataset(dataset)
-                elif input_source == "hdca":
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
-                else:
-                    raise exceptions.RequestParameterInvalidException(
-                        f"Unknown workflow input source '{input_source}' specified."
-                    )
                 if add_to_history and content.history != history:
                     content = content.copy(flush=False)
                     history.stage_addition(content)

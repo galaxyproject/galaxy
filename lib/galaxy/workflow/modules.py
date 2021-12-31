@@ -818,6 +818,12 @@ class InputDataModule(InputModule):
         inputs["default"] = DefaultDatasetToolParameter(None, default_source)
         return inputs
 
+    def get_export_state(self):
+        default = self.state.inputs.get("default")
+        if default and isinstance(default, DatasetInstance):
+            self.state.inputs["default"] = "step://default"
+        return super().get_export_state()
+
     def _parse_state_into_dict(self):
         rval = super()._parse_state_into_dict()
         inputs = self.state.inputs
@@ -826,17 +832,22 @@ class InputDataModule(InputModule):
             if isinstance(default, DatasetInstance):
                 rval["default"] = {"src": default.src, "id": default.id}
             else:
-                if not isinstance(default, dict) or "src" not in default or "id" not in default:
-                    raise Exception(f"Invalid default tool state encountered: {default}")
                 rval["default"] = default
         return rval
 
     def recover_defaults(self, step):
         # TODO: make method on step?
-        assert len(step.inputs) == 1
-        step_input = step.inputs[0]
-        assert step_input.name == "default"
-        self.state.inputs["default"] = step_input.step_input_default_dataset_associations[0].default_dataset_association
+        default = self.state.inputs.get("default")
+        if isinstance(default, str) and default.startswith("step://"):
+            input_name = default.split("step://", 1)[-1]
+            for step_input in step.inputs:
+                # is currently always 'default', but we might want to have more than one input
+                # per step in the future
+                if step_input.name == input_name:
+                    self.state.inputs["default"] = step_input.step_input_default_dataset_associations[
+                        0
+                    ].default_dataset_association
+                    return
 
 
 class InputDataCollectionModule(InputModule):
