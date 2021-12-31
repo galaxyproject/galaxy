@@ -5,21 +5,15 @@ Add history audit table and associated triggers
 import datetime
 import logging
 
-from sqlalchemy import (
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    MetaData,
-    PrimaryKeyConstraint,
-    Table,
-)
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, PrimaryKeyConstraint, Table
 
-from galaxy.model.migrate.triggers import history_update_time_field as old_triggers  # rollback to old ones
-from galaxy.model.migrate.triggers import update_audit_table as new_triggers  # install me
 from galaxy.model.migrate.versions.util import (
     create_table,
     drop_table,
+)
+from galaxy.model.triggers import (
+    history_update_time_field as old_triggers,  # rollback to old ones
+    update_audit_table as new_triggers,  # install me
 )
 
 log = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ import logging
 
 from sqlalchemy import MetaData
 
-from galaxy.model.migrate.triggers.history_update_time_field import (
+from galaxy.model.triggers.history_update_time_field import (
     drop_timestamp_triggers,
     install_timestamp_triggers,
 )
