@@ -1,9 +1,5 @@
 <template>
-    <UserDetailsProvider
-        :id="userId"
-        v-slot="{ result: user, loading: userDetailsLoading }"
-        @error="onError"
-        :use-cache="false">
+    <CurrentUser v-slot="{ user }">
         <div>
             <b-alert v-if="errorMessage" variant="danger" show>
                 <h4 class="alert-heading">Failed to access disk usage details.</h4>
@@ -12,7 +8,6 @@
             <b-alert v-if="!quotaSettings.canUserPurgeImmediately" show>
                 {{ noImmediatePurgeAllowedMessage }}
             </b-alert>
-            <LoadingSpan v-if="userDetailsLoading" :message="loadingMessage" />
             <div v-if="user">
                 <QuotaUsageSummary v-if="quotaSettings.quotasEnabled" :user="user" :quota-settings="quotaSettings" />
                 <h2 v-else class="text-center my-3">
@@ -20,40 +15,34 @@
                 </h2>
             </div>
         </div>
-    </UserDetailsProvider>
+    </CurrentUser>
 </template>
 
 <script>
 import _l from "utils/localization";
+import { getGalaxyInstance } from "app";
 import { bytesToString } from "utils/utils";
-import { UserDetailsProvider } from "./services";
+import CurrentUser from "components/providers/CurrentUser";
 import { QuotaSettings } from "./model";
-import LoadingSpan from "components/LoadingSpan";
 import QuotaUsageSummary from "components/User/DiskUsage/QuotaUsageSummary";
 
 export default {
     components: {
-        UserDetailsProvider,
-        LoadingSpan,
+        CurrentUser,
         QuotaUsageSummary,
     },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        quotaSettings: {
-            type: QuotaSettings,
-            required: true,
-        },
+    created() {
+        const Galaxy = getGalaxyInstance();
+        this.quotaSettings = QuotaSettings.create(Galaxy.config);
     },
     data() {
         return {
+            quotaSettings: null,
+            errorMessage: null,
             loadingMessage: _l("Loading disk usage summary..."),
             noImmediatePurgeAllowedMessage: _l(
                 "If you had free up some space recently, please note that your disk usage may take a while to be updated"
             ),
-            errorMessage: null,
         };
     },
     methods: {

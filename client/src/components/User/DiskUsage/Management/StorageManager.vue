@@ -6,9 +6,9 @@
         </h2>
 
         <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="quotaSettingsLocal.quotasEnabled" show>
+            <b-alert v-if="quotaSettings.quotasEnabled" show>
                 {{ whatCountsText }}
-                <b-link :href="quotaSettingsLocal.quotasHelpUrl" target="_blank">{{ learnMoreText }}</b-link>
+                <b-link :href="quotaSettings.quotasHelpUrl" target="_blank">{{ learnMoreText }}</b-link>
             </b-alert>
         </b-row>
 
@@ -58,22 +58,9 @@ export default {
         PurgeableDetailsModal,
         CleanUpResultDialog,
     },
-    props: {
-        userId: {
-            type: String,
-            required: false,
-            default: null,
-        },
-        quotaSettings: {
-            type: QuotaSettings,
-            required: false,
-            default: null,
-        },
-    },
     data() {
         return {
-            userIdLocal: null,
-            quotaSettingsLocal: null,
+            quotaSettings: null,
             errorMessage: null,
             title: _l("Manage your account storage"),
             whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
@@ -87,8 +74,7 @@ export default {
     },
     created() {
         const Galaxy = getGalaxyInstance();
-        this.userIdLocal = this.userId || Galaxy.user.id;
-        this.quotaSettingsLocal = this.quotaSettings || QuotaSettings.create(Galaxy.config);
+        this.quotaSettings = QuotaSettings.create(Galaxy.config);
         this.purgeableCategories = categories;
     },
     methods: {

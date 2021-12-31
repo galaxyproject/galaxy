@@ -6,8 +6,7 @@
             </h1>
             <h4 class="text-center my-3">{{ subtitle }}</h4>
         </header>
-
-        <DiskUsageSummary class="m-3" :user-id="userId" :quota-settings="quotaSettings" />
+        <DiskUsageSummary class="m-3" />
         <IconCard
             class="mx-auto"
             :title="freeSpaceData.title"
@@ -20,8 +19,6 @@
 
 <script>
 import _l from "utils/localization";
-import { getGalaxyInstance } from "app";
-import { QuotaSettings } from "./model";
 import DiskUsageSummary from "components/User/DiskUsage/DiskUsageSummary";
 import IconCard from "components/IconCard";
 
@@ -34,8 +31,6 @@ export default {
         return {
             title: _l("Storage Dashboard"),
             subtitle: _l("Here you can see an overview of your disk usage status."),
-            userId: null,
-            quotaSettings: null,
             freeSpaceData: {
                 title: _l("Is your usage more than expected?"),
                 description: _l(
@@ -46,16 +41,11 @@ export default {
             },
         };
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        this.userId = Galaxy.user.id;
-        this.quotaSettings = QuotaSettings.create(Galaxy.config);
-    },
+
     methods: {
         goToStorageManager() {
             this.$router.push({
                 name: "StorageManager",
-                params: { userId: this.userId, quotaSettings: this.quotaSettings },
             });
         },
     },
