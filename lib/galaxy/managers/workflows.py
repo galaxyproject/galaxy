@@ -1251,7 +1251,7 @@ class WorkflowContentsManager(UsesAnnotations):
                                 "location": location,
                                 "basename": default.created_from_basename or default.name,
                                 "uuid": str(default.dataset.uuid),
-                                "ext": default.datatype.file_ext,
+                                "format": default.datatype.file_ext,
                                 "cwl-formats": [f"http://edamontology.org/{default.datatype.edam_format}"],
                             }
                         }
