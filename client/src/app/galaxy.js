@@ -231,6 +231,9 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
     /** cached info about the last ajax call made through jQuery */
     this.lastAjax = {};
     $(document).bind("ajaxSend", (ev, xhr, options) => {
+    //document.addEventListener(
+
+
         let data = options.data;
         try {
             data = JSON.parse(data);

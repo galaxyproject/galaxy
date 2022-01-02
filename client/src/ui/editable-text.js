@@ -58,7 +58,7 @@ $.fn.make_text_editable = function (config_dict) {
         if (use_textarea) {
             input_elt = $("<textarea/>")
                 .attr({ rows: num_rows, cols: num_cols })
-                .text($.trim(cur_text))
+                .text(string.trim(cur_text))
                 .keyup((e) => {
                     if (e.keyCode === 27) {
                         // Escape key.
@@ -75,7 +75,7 @@ $.fn.make_text_editable = function (config_dict) {
                 });
         } else {
             input_elt = $("<input type='text'/>")
-                .attr({ value: $.trim(cur_text), size: num_cols })
+                .attr({ value: string.trim(cur_text), size: num_cols })
                 .blur((e) => {
                     const new_text = $(e.currentTarget).val();
                     set_text(new_text);

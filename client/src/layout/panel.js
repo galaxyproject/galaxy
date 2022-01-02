@@ -20,7 +20,7 @@ const SidePanel = Backbone.View.extend({
     },
 
     $toggleButton: function () {
-        return this.$(".unified-panel-footer > .panel-collapse");
+        return this.querySelector(".unified-panel-footer > .panel-collapse");
     },
 
     render: function () {
@@ -36,11 +36,11 @@ const SidePanel = Backbone.View.extend({
         } else {
             this.$el.html(this._templatePanel(this.id));
             _.each(components.buttons, (button) => {
-                self.$(".panel-header-buttons").append(button.$el);
+                self.querySelector(".panel-header-buttons").append(button.$el);
             });
             this.$el.addClass(components.cls);
-            this.$(".panel-header-text").html(_.escape(components.title));
-            this.$(".unified-panel-body").append(panel.$el);
+            this.querySelector(".panel-header-text").innerHTNL = _.escape(components.title);
+            this.querySelector(".unified-panel-body").append(panel.$el);
             panel.render();
         }
     },

@@ -1,4 +1,3 @@
-import $ from "jquery";
 import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";

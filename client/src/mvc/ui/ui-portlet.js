@@ -90,7 +90,7 @@ export var View = Backbone.View.extend({
         // render buttons
         if (options.buttons) {
             this.$buttons.empty().show();
-            $.each(this.model.get("buttons"), (name, item) => {
+            this.model.get("buttons").forEach((name, item) => {
                 if (item) {
                     item.$el.prop("id", name);
                     self.$buttons.append(item.$el);
@@ -106,7 +106,7 @@ export var View = Backbone.View.extend({
             this.$operations.append(this.collapsible_button.$el);
         }
         if (options.operations) {
-            $.each(options.operations, (name, item) => {
+            options.operations.forEach((name, item) => {
                 item.$el.prop("id", name);
                 self.$operations.append(item.$el);
             });

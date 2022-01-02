@@ -65,7 +65,7 @@ export default {
                 const Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
-                    el: $("#hda-" + hda.id),
+                    el: document.querySelector("#hda-" + hda.id),
                     linkTarget: "galaxy_main",
                     purgeAllowed: Galaxy.config.allow_user_dataset_purge,
                     logger: Galaxy.logger,
@@ -73,9 +73,9 @@ export default {
             });
             // toggle the body section of each item in the structure
             $(function () {
-                $(".workflow, .tool").each((index, element) => {
-                    const body = $(element).children(".body");
-                    $(element)
+                document.querySelectorAll(".workflow, .tool").each((index, element) => {
+                    const body = document.querySelector(element).children(".body");
+                    document.querySelector(element)
                         .children(".header")
                         .click((e) => {
                             body.toggle();

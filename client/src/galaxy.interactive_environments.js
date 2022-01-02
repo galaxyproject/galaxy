@@ -8,18 +8,18 @@ import { Toast } from "ui/toast";
  */
 export function append_notebook(url) {
     clear_main_area();
-    $("#main").append(
+    document.querySelector("#main").append(
         `<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:hidden;" scrolling="no" src="${url}"></iframe>`
     );
 }
 
 export function clear_main_area() {
-    $("#spinner").remove();
-    $("#main").children().remove();
+    document.querySelector("#spinner").remove();
+    document.querySelector("#main").children().remove();
 }
 
 export function display_spinner() {
-    $("#main").append(`<div id="ie-loading-spinner"></div>`);
+    document.querySelector("#main").append(`<div id="ie-loading-spinner"></div>`);
 }
 
 /* Create a spin_state object used by spin() and spin_again() */

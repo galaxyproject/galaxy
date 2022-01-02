@@ -139,7 +139,7 @@ export default Backbone.View.extend({
     _loadDataset: function (dataset_id, callback) {
         const self = this;
         const dataset = new Dataset({ id: dataset_id });
-        $.when(dataset.fetch()).then(() => {
+        Promise.all(dataset.fetch()).then(() => {
             const is_tabular = _.find(
                 ["tabular", "interval"],
                 (data_type) => dataset.get("data_type").indexOf(data_type) !== -1
@@ -174,7 +174,7 @@ export default Backbone.View.extend({
     addTrackster: function (viz_id) {
         const self = this;
         const viz = new visualization.Visualization({ id: viz_id });
-        $.when(viz.fetch()).then(() => {
+        Promise.all(viz.fetch()).then(() => {
             const ui = new TracksterUI(getAppRoot());
 
             // Construct frame config based on dataset's type.

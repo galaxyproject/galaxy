@@ -159,13 +159,14 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
         // When "set link id" link clicked, update UI.
         $("#set_link_id").click(function () {
             // Set label.
-            $("#link_attribute_label").text("ID/Name");
+            document.querySelector("#link_attribute_label").text("ID/Name");
 
             // Set input elt class, value.
-            var attribute_input = $(".wym_href");
-            attribute_input.addClass("wym_id").removeClass("wym_href");
+            var attribute_input = document.querySelector(".wym_href");
+            attribute_input.classList.add("wym_id");
+            attribute_input.classList.removeClass("wym_href");
             if (selected) {
-                attribute_input.val($(selected).attr("id"));
+                attribute_input.value = document.querySelector(selected).getAttribute("id");
             }
 
             // Remove link.
@@ -176,10 +177,10 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
     // LINK DIALOG
     if (dialogType == WYMeditor.DIALOG_LINK) {
         if (selected) {
-            $(wym._options.hrefSelector).val($(selected).attr(WYMeditor.HREF));
-            $(wym._options.srcSelector).val($(selected).attr(WYMeditor.SRC));
-            $(wym._options.titleSelector).val($(selected).attr(WYMeditor.TITLE));
-            $(wym._options.altSelector).val($(selected).attr(WYMeditor.ALT));
+            document.querySelector(wym._options.hrefSelector).value = document.querySelector(selected).getAttribute(WYMeditor.HREF);
+            document.querySelector(wym._options.srcSelector).value = document.querySelector(selected).getAttribute(WYMeditor.SRC);
+            document.querySelector(wym._options.titleSelector).value = document.querySelector(selected).getAttribute(WYMeditor.TITLE);
+            document.querySelector(wym._options.altSelector).value = document.querySelector(selected).getAttribute(WYMeditor.ALT);
         }
 
         // Get current URL, title.
@@ -187,11 +188,11 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
 
         var curTitle;
         if (selected) {
-            curURL = $(selected).attr("href");
+            curURL = document.querySelector(selected).getAttribute("href");
             if (curURL == undefined) {
                 curURL = "";
             }
-            curTitle = $(selected).attr("title");
+            curTitle = document.querySelector(selected).getAttribute("title");
             if (curTitle == undefined) {
                 curTitle = "";
             }
@@ -202,22 +203,22 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
             {
                 "Make link": function () {
                     // Get URL, name/title.
-                    var sUrl = $(wym._options.hrefSelector).val() || "";
+                    var sUrl = document.querySelector(wym._options.hrefSelector).value || "";
 
-                    var sId = $(".wym_id").val() || "";
-                    var sName = $(wym._options.titleSelector).val() || "";
+                    var sId = document.querySelector(".wym_id").value || "";
+                    var sName = document.querySelector(wym._options.titleSelector).value || "";
 
                     if (sUrl || sId) {
                         // Create link.
                         wym._exec(WYMeditor.CREATE_LINK, sStamp);
 
                         // Set link attributes.
-                        var link = $(`a[href=${sStamp}]`, wym._doc.body);
-                        link.attr(WYMeditor.HREF, sUrl).attr(WYMeditor.TITLE, sName).attr("id", sId);
+                        var link = document.querySelector(`a[href=${sStamp}]`, wym._doc.body);
+                        link.setAttribute(WYMeditor.HREF, sUrl).setAttribute(WYMeditor.TITLE, sName).setAttribute("id", sId);
 
                         // If link's text is default (wym-...), change it to the title.
-                        if (link.text().indexOf("wym-") === 0) {
-                            link.text(sName);
+                        if (link.textContent.indexOf("wym-") === 0) {
+                            link.textContent = sName;
                         }
                     }
                     hide_modal();
@@ -234,15 +235,9 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
     // IMAGE DIALOG
     if (dialogType == WYMeditor.DIALOG_IMAGE) {
         if (wym._selected_image) {
-            $(`${wym._options.dialogImageSelector} ${wym._options.srcSelector}`).val(
-                $(wym._selected_image).attr(WYMeditor.SRC)
-            );
-            $(`${wym._options.dialogImageSelector} ${wym._options.titleSelector}`).val(
-                $(wym._selected_image).attr(WYMeditor.TITLE)
-            );
-            $(`${wym._options.dialogImageSelector} ${wym._options.altSelector}`).val(
-                $(wym._selected_image).attr(WYMeditor.ALT)
-            );
+            document.querySelector(`${wym._options.dialogImageSelector} ${wym._options.srcSelector}`).value = document.querySelector(wym._selected_image).getAttribute(WYMeditor.SRC));
+            document.querySelector(`${wym._options.dialogImageSelector} ${wym._options.titleSelector}`).value = document.querySelector(wym._selected_image).getAttribute(WYMeditor.TITLE));
+            document.querySelector(`${wym._options.dialogImageSelector} ${wym._options.altSelector}`).value = document.querySelector(wym._selected_image).getAttribute(WYMeditor.ALT));
         }
         show_modal(
             "Image",
@@ -260,13 +255,13 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                 "</div>",
             {
                 Insert: function () {
-                    var sUrl = $(wym._options.srcSelector).val();
+                    var sUrl = document.querySelector(wym._options.srcSelector).value;
                     if (sUrl.length > 0) {
                         wym._exec(WYMeditor.INSERT_IMAGE, sStamp);
-                        $(`img[src$=${sStamp}]`, wym._doc.body)
-                            .attr(WYMeditor.SRC, sUrl)
-                            .attr(WYMeditor.TITLE, $(wym._options.titleSelector).val())
-                            .attr(WYMeditor.ALT, $(wym._options.altSelector).val());
+                        document.querySelector(`img[src$=${sStamp}]`, wym._doc.body)
+                            .setAttributeNS(WYMeditor.SRC, sUrl)
+                            .setAttribute(WYMeditor.TITLE, document.querySelector(wym._options.titleSelector).value)
+                            .setAttribute(WYMeditor.ALT, document.querySelector(wym._options.altSelector).value);
                     }
                     hide_modal();
                 },
@@ -300,8 +295,8 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                 "</div>",
             {
                 Insert: function () {
-                    var iRows = $(wym._options.rowsSelector).val();
-                    var iCols = $(wym._options.colsSelector).val();
+                    var iRows = document.querySelector(wym._options.rowsSelector).value;
+                    var iCols = document.querySelector(wym._options.colsSelector).value;
 
                     if (iRows > 0 && iCols > 0) {
                         var table = wym._doc.createElement(WYMeditor.TABLE);
@@ -322,7 +317,7 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                         }
 
                         //set the summary attr
-                        $(table).attr("summary", $(wym._options.summarySelector).val());
+                        document.querySelector(table).setAttribute("summary", document.getAttribute(wym._options.summarySelector).value);
 
                         //append the table after the selected container
                         var node = $(wym.findUp(wym.container(), WYMeditor.MAIN_CONTAINERS)).get(0);
@@ -422,9 +417,9 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                                 );
                             } else {
                                 // Link created from selected text; add href and title.
-                                $(`a[href=${sStamp}]`, wym._doc.body)
-                                    .attr(WYMeditor.HREF, returned_item_info.link)
-                                    .attr(WYMeditor.TITLE, item_info.singular + item_id);
+                                document.querySelector(`a[href=${sStamp}]`, wym._doc.body)
+                                    .setAttributeNS(WYMeditor.HREF, returned_item_info.link)
+                                    .setAttribute(WYMeditor.TITLE, item_info.singular + item_id);
                             }
                         });
                     });
@@ -471,10 +466,10 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
         const Galaxy = getGalaxyInstance();
         Galaxy.modal.show({
             title: `Insert Link to ${item_info.singular}`,
-            body: $("<div/>")
+            body: document.querySelector("<div/>")
                 .append(grid.$el)
                 .append(
-                    $("<div/>")
+                    document.querySelector("<div/>")
                         .append('<input id="make-importable" type="checkbox" checked/>')
                         .append(
                             `Make the selected ${item_info.plural.toLowerCase()} accessible so that they can viewed by everyone.`
@@ -486,7 +481,7 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                 Embed: function () {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null) {
+                    if (document.querySelector("#make-importable:checked").val() != null) {
                         make_importable = true;
                     }
 
@@ -560,7 +555,7 @@ function renderEditorWithContent(pageId, content) {
         return false;
     });
     // Create editor
-    $("[name=page_content]")
+    document.querySelector("[name=page_content]")
         .val(content)
         .wymeditor({
             skin: "galaxy",
@@ -612,14 +607,14 @@ function renderEditorWithContent(pageId, content) {
     //
     // Containers, Galaxy style
     //
-    var containers_menu = $(
+    var containers_menu = document.querySelector(
         "<div class='galaxy-page-editor-button'><a id='insert-galaxy-link' class='action-button popup' href='javascript:void(0)' role='button'>Paragraph type</a></div>"
     );
-    $(".wym_area_top").append(containers_menu);
+    document.querySelector(".wym_area_top").append(containers_menu);
 
     // Add menu options.
     var items = {};
-    $.each(editor._options.containersItems, (k, v) => {
+    editor._options.containersItems.forEach((k, v) => {
         var tagname = v.name;
         items[v.title.replace("_", " ")] = () => {
             editor.container(tagname);
@@ -632,10 +627,10 @@ function renderEditorWithContent(pageId, content) {
     //
 
     // Add menu button.
-    var insert_link_menu_button = $(
+    var insert_link_menu_button = document.querySelector(
         "<div><a id='insert-galaxy-link' class='action-button popup' href='javascript:void(0)' role='button'>Insert Link to Galaxy Object</a></div>"
     ).addClass("galaxy-page-editor-button");
-    $(".wym_area_top").append(insert_link_menu_button);
+    document.querySelector(".wym_area_top").append(insert_link_menu_button);
 
     // Add menu options.
     make_popupmenu(insert_link_menu_button, {
@@ -661,10 +656,10 @@ function renderEditorWithContent(pageId, content) {
     //
 
     // Add menu button.
-    var embed_object_button = $(
+    var embed_object_button = document.querySelector(
         "<div><a id='embed-galaxy-object' class='action-button popup' href='javascript:void(0)' role=''button'>Embed Galaxy Object</a></div>"
     ).addClass("galaxy-page-editor-button");
-    $(".wym_area_top").append(embed_object_button);
+    document.querySelector(".wym_area_top").append(embed_object_button);
 
     // Add menu options.
     make_popupmenu(embed_object_button, {

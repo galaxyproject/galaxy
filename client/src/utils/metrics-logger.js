@@ -227,7 +227,7 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
 
     // short circuit if we're already sending
     if (!this.options.postUrl || this._sending) {
-        return jQuery.when({});
+        return Promise.all({});
     }
 
     var self = this;

@@ -83,7 +83,7 @@ export default Backbone.View.extend({
     // refresh frames
     handle_refresh: function (refresh_frames) {
         if (refresh_frames) {
-            if ($.inArray("history", refresh_frames) > -1) {
+            if (refresh_frames.includes("history")) {
                 const Galaxy = getGalaxyInstance();
                 if (Galaxy && Galaxy.currHistoryPanel) {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -403,7 +403,7 @@ export default Backbone.View.extend({
         var cur_value = this.grid.get("filters")[name];
         var self = this;
         this.$el.find(`.${name}-filter`).each(function () {
-            var text = $.trim($(this).text());
+            var text = string.trim($(this).text());
             var filter = category_filter[text];
             var filter_value = filter[name];
             if (filter_value == new_value) {

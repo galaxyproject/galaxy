@@ -9,7 +9,6 @@ import CurrentHistoryPanel from "../CurrentHistoryPanel";
 // import { genericProxy } from "utils/proxy";
 
 // mvc nonsense
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
@@ -82,10 +81,10 @@ export const HistoryPanelProxy = Backbone.View.extend({
         // the component, so I'm just chopping those elements out manually.
 
         // TODO: Rework layout/page and sidepanel to avoid this arrangement
-        $("#right > .unified-panel-header").remove();
-        $("#right > .unified-panel-controls").remove();
-        $("#right > .unified-panel-body").remove();
-        $("#right").addClass("beta").prepend(this.$el);
+        document.querySelector("#right > .unified-panel-header").parentNode.removeChild();
+        document.querySelector("#right > .unified-panel-controls").parentNode.removeChild();
+        document.querySelector("#right > .unified-panel-body").parentNode.removeChild();
+        document.querySelector("#right").addClass("beta").prepend(this.$el);
 
         const container = this.$el[0];
         const mountHistory = mountVueComponent(CurrentHistoryPanel);

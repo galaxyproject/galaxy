@@ -9,8 +9,8 @@ function processDownload(url, data, method) {
         data = typeof data == "string" ? data : $.param(data);
         //split params into form inputs
         var inputs = "";
-        $.each(data.split("&"), function () {
-            var pair = this.split("=");
+        data.split("&").forEach( (el) => {
+            var pair = el.split("=");
             inputs += `<input type="hidden" name="${pair[0]}" value="${pair[1]}" />`;
         });
         //send request

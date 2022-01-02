@@ -19,7 +19,7 @@ export function render_embedded_items() {
                 ajax_url = container.data("item-url");
             }
             // Only get item content if it's not already there.
-            var item_content = $.trim(container.find(".item-content").text());
+            var item_content = string.trim(container.find(".item-content").text());
             if (!item_content) {
                 $.ajax({
                     type: "GET",

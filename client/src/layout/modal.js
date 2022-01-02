@@ -9,10 +9,10 @@ export const Modal = function (options) {
     this.$footer = this.$dialog.find(".modal-footer");
     this.$backdrop = options.backdrop;
     // Close button
-    this.$header.find(".close").on("click", $.proxy(this.hide, this));
+    this.$header.find(".close").on("click", this.hide.bind(this));
 };
 
-$.extend(Modal.prototype, {
+Object.assign(Modal.prototype, {
     setContent: function (options) {
         this.$header.hide();
         // Title
@@ -30,14 +30,14 @@ $.extend(Modal.prototype, {
         this.$footer.hide();
         const $buttons = this.$footer.find(".buttons").html("");
         if (options.buttons) {
-            $.each(options.buttons, (name, value) => {
+            options.buttons.forEach((name, value) => {
                 $buttons.append($("<button></button> ").text(name).click(value)).append(" ");
             });
             this.$footer.show();
         }
         const $extraButtons = this.$footer.find(".extra_buttons").html("");
         if (options.extra_buttons) {
-            $.each(options.extra_buttons, (name, value) => {
+            options.extra_buttons.forEach((name, value) => {
                 $extraButtons.append($("<button></button>").text(name).click(value)).append(" ");
             });
             this.$footer.show();
@@ -64,7 +64,11 @@ $.extend(Modal.prototype, {
         this.$body.css("min-width", this.$body.width());
         // Set max-height so that modal does not exceed window size and is in middle of page.
         // TODO: this could perhaps be handled better using CSS.
-        this.$body.css("max-height", $(window).height() / 1.5);
+        
+        // without scrollbar, behaves like jQuery $(window).height()
+        var window_height = window.document.documentElement.clientHeight;
+
+        this.$body.css("max-height", window_height / 1.5);
         // Callback on init
         if (callback) {
             callback();

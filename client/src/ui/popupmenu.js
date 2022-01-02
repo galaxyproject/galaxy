@@ -1,7 +1,3 @@
-import jQuery from "jquery";
-import _ from "underscore";
-var $ = jQuery;
-
 // ============================================================================
 // TODO: unify popup menus and/or eliminate this
 /**
@@ -31,10 +27,10 @@ export function make_popupmenu(button_element, initial_options) {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
             var menu_element = $(`<div class="dropdown-menu" id="${button_element.attr("id")}-menu"/>`);
             var options = button_element.data("menu_options");
-            if (_.size(options) <= 0) {
+            if (Object.keys(options).length <= 0) {
                 $('<div class="dropdown-item">No Options.</div>').appendTo(menu_element);
             }
-            $.each(options, (k, v) => {
+            array.forEach(options, (k, v) => {
                 if (v) {
                     // Action can be either an anonymous function and a mapped dict.
                     const action = v.action || v;

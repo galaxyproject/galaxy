@@ -279,7 +279,7 @@
 				// select by literal value (must be passed as a string
 				if(typeof value=='string'){
 					//return
-					$.each(control.stars, function(){
+					control.stars.forEach(function(){
  					//console.log($(this).data('rating.input'), $(this).data('rating.input').val(), value, $(this).data('rating.input').val()==value?'BINGO!':'');
 						if($(this).data('rating.input').val()==value) $(this).rating('select',undefined,wantCallBack);
 					});

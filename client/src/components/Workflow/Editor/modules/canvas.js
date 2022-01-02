@@ -344,7 +344,7 @@ class CanvasManager {
             }, OVERLAY_HIGHLIGHT_INTERVAL);
         };
         // Draw overview
-        $.each(this.app.nodes, (id, node) => {
+        this.app.nodes.forEach((id, node) => {
             const nodeElement = $(node.element);
             let color = NODE_COLOR;
             if (node.errors) {

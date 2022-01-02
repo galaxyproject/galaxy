@@ -897,7 +897,7 @@ var SettingsMenu = UserMenuBase.extend({
         ) {
             return;
         }
-        $.each(self.inputs, (key, $input) => {
+        self.inputs.forEach((key, $input) => {
             self.phyloTree.set(key, $input.val());
         });
     },
@@ -906,7 +906,7 @@ var SettingsMenu = UserMenuBase.extend({
      */
     updateUI: function () {
         var self = this;
-        $.each(self.inputs, (key, $input) => {
+        self.inputs.forEach((key, $input) => {
             $input.val(self.phyloTree.get(key));
         });
     },
@@ -914,9 +914,9 @@ var SettingsMenu = UserMenuBase.extend({
      * Resets the value of the phyloTree model to its default
      */
     resetToDefaults: function () {
-        $(".tooltip").remove(); // just in case the tool tip was not removed
+        document.querySelector(".tooltip").remove(); // just in case the tool tip was not removed
         var self = this;
-        $.each(self.phyloTree.defaults, (key, value) => {
+        self.phyloTree.defaults.forEach((key, value) => {
             self.phyloTree.set(key, value);
         });
         self.updateUI();
@@ -933,16 +933,16 @@ var NodeSelectionView = UserMenuBase.extend({
 
     initialize: function (options) {
         var self = this;
-        self.el = $("#nodeSelectionView");
+        self.el = document.querySelector("#nodeSelectionView");
         self.phyloTree = options.phyloTree;
 
         self.UI = {
-            enableEdit: $("#phylovizEditNodesCheck"),
-            saveChanges: $("#phylovizNodeSaveChanges"),
-            cancelChanges: $("#phylovizNodeCancelChanges"),
-            name: $("#phyloVizSelectedNodeName"),
-            dist: $("#phyloVizSelectedNodeDist"),
-            annotation: $("#phyloVizSelectedNodeAnnotation"),
+            enableEdit: document.querySelector("#phylovizEditNodesCheck"),
+            saveChanges: document.querySelector("#phylovizNodeSaveChanges"),
+            cancelChanges: document.querySelector("#phylovizNodeCancelChanges"),
+            name: document.querySelector("#phyloVizSelectedNodeName"),
+            dist: document.querySelector("#phyloVizSelectedNodeDist"),
+            annotation: document.querySelector("#phyloVizSelectedNodeAnnotation"),
         };
 
         // temporarily stores the values in case user change their mind
@@ -953,7 +953,7 @@ var NodeSelectionView = UserMenuBase.extend({
         };
 
         //init UI buttons
-        $("#nodeSelCloseBtn")
+        document.querySelector("#nodeSelCloseBtn")
             .off()
             .on("click", () => {
                 self.el.hide();
@@ -994,7 +994,7 @@ var NodeSelectionView = UserMenuBase.extend({
             self.cancelChanges();
         }
 
-        $.each(self.valuesOfConcern, (key, value) => {
+        self.valuesOfConcern.forEach((key, value) => {
             self.UI[key].enable(checked);
         });
         if (checked) {
@@ -1013,7 +1013,7 @@ var NodeSelectionView = UserMenuBase.extend({
         var self = this;
         var node = self.phyloTree.get("selectedNode");
         if (node) {
-            $.each(self.valuesOfConcern, (key, value) => {
+            self.valuesOfConcern.forEach((key, value) => {
                 self.UI[key].val(node[key]);
             });
         }
@@ -1033,7 +1033,7 @@ var NodeSelectionView = UserMenuBase.extend({
             ) {
                 return;
             }
-            $.each(self.valuesOfConcern, (key, value) => {
+            self.valuesOfConcern.forEach((key, value) => {
                 node[key] = self.UI[key].val();
             });
             self.phyloTree.set("nodeAttrChangedTime", new Date());

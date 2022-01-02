@@ -38,10 +38,10 @@ function async_save_text(
             var t;
 
             if (use_textarea) {
-                t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text($.trim(old_text));
+                t = $("<textarea></textarea>").attr({ rows: num_rows, cols: num_cols }).text(string.trim(old_text));
             } else {
                 t = $("<input type='text'></input>").attr({
-                    value: $.trim(old_text),
+                    value: string.trim(old_text),
                     size: num_cols,
                 });
             }

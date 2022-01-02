@@ -35,7 +35,7 @@ export default Backbone.View.extend({
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
             var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? `:${tag_value}` : "");
-            var advanced_search = $("#advanced-search").is(":visible");
+            var advanced_search = document.querySelector("#advanced-search").matches(":visible");
             if (!advanced_search) {
                 $("#standard-search").slideToggle("fast");
                 $("#advanced-search").slideToggle("fast");
@@ -69,17 +69,16 @@ export default Backbone.View.extend({
 
         // fix padding
         if (grid_config.use_panels) {
-            $("#center").css({
-                padding: "10px",
-                overflow: "auto",
-            });
+            var el = document.querySelector("#center");
+            el.style.padding = "10px";
+            el.string.overflow = "auto";
         }
     },
 
     // refresh frames
     handle_refresh: function (refresh_frames) {
         if (refresh_frames) {
-            if ($.inArray("history", refresh_frames) > -1) {
+            if (refresh_frames.includes("history")) {
                 if (window.top.Galaxy && window.top.Galaxy.currHistoryPanel) {
                     window.top.Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
@@ -384,7 +383,7 @@ export default Backbone.View.extend({
         var cur_value = this.grid.get("filters")[name];
         var self = this;
         this.$el.find(`.${name}-filter`).each(function () {
-            var text = $.trim($(this).text());
+            var text = string.trim($(this).text());
             var filter = category_filter[text];
             var filter_value = filter[name];
             if (filter_value == new_value) {

@@ -101,7 +101,7 @@ export function isEmpty(value) {
  * @param{String}   lst - List of strings to be converted in human readable list sentence
  */
 export function textify(lst) {
-    if ($.isArray(lst)) {
+    if (Array.isArray(lst)) {
         lst = lst.toString().replace(/,/g, ", ");
         var pos = lst.lastIndexOf(", ");
         if (pos != -1) {
@@ -164,7 +164,7 @@ export function request(options) {
     };
     // encode data into url
     if (ajaxConfig.type == "GET" || ajaxConfig.type == "DELETE") {
-        if (!$.isEmptyObject(ajaxConfig.data)) {
+        if (Object.keys(ajaxConfig.data).length > 0) {
             ajaxConfig.url += ajaxConfig.url.indexOf("?") == -1 ? "?" : "&";
             ajaxConfig.url += $.param(ajaxConfig.data, true);
         }
@@ -180,7 +180,7 @@ export function request(options) {
             if (typeof response === "string") {
                 try {
                     response = response.replace("Infinity,", '"Infinity",');
-                    response = $.parseJSON(response);
+                    response = JSON(response);
                 } catch (e) {
                     console.debug(e);
                 }
@@ -192,7 +192,7 @@ export function request(options) {
         .fail((response) => {
             var response_text = null;
             try {
-                response_text = $.parseJSON(response.responseText);
+                response_text = JSON.parse(response.responseText);
             } catch (e) {
                 response_text = response.responseText;
             }
