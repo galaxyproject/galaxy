@@ -1,4 +1,9 @@
 import os
+from tempfile import NamedTemporaryFile
+from typing import (
+    List,
+    Optional,
+)
 from urllib.parse import quote
 
 import zipstream
@@ -7,14 +12,14 @@ from .path import safe_walk
 
 
 class ZipstreamWrapper:
-    def __init__(self, archive_name=None, upstream_mod_zip=False, upstream_gzip=False):
+    def __init__(self, archive_name: Optional[str] = None, upstream_mod_zip: bool = False, upstream_gzip: bool = False):
         self.upstream_mod_zip = upstream_mod_zip
         self.archive_name = archive_name
         if not self.upstream_mod_zip:
             self.archive = zipstream.ZipFile(
                 allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED
             )
-        self.files = []
+        self.files: List[str] = []
         self.size = 0
 
     def response(self):
@@ -26,6 +31,10 @@ class ZipstreamWrapper:
     def get_iterator(self):
         return iter(self.archive)
 
+    def to_fh(self, fh):
+        for chunk in self.archive:
+            fh.write(chunk)
+
     def get_headers(self):
         headers = {}
         if self.archive_name:
@@ -36,7 +45,7 @@ class ZipstreamWrapper:
             headers["Content-Type"] = "application/x-zip-compressed"
         return headers
 
-    def add_path(self, path, archive_name):
+    def add_path(self, path: str, archive_name: str):
         size = int(os.stat(path).st_size)
         if self.upstream_mod_zip:
             # calculating crc32 would defeat the point of using mod-zip, but if we ever calculate hashsums we should consider this
@@ -47,7 +56,7 @@ class ZipstreamWrapper:
             self.size += size
             self.archive.write(path, archive_name)
 
-    def write(self, path, archive_name=None):
+    def write(self, path: str, archive_name: Optional[str] = None):
         if os.path.isdir(path):
             pardir = os.path.join(path, os.pardir)
             for root, directories, files in safe_walk(path):
@@ -59,3 +68,11 @@ class ZipstreamWrapper:
                     self.add_path(file_path, os.path.relpath(file_path, pardir))
         else:
             self.add_path(path, archive_name or os.path.basename(path))
+
+    def write_str(self, content: str, archive_name: str):
+        if self.archive:
+            self.archive.writestr(archive_name, content.encode())
+        else:
+            with NamedTemporaryFile(prefix=archive_name, mode="w", delete=False) as fh:
+                fh.write(content)
+            self.add_path(fh.name, archive_name)

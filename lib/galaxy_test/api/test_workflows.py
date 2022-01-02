@@ -3005,6 +3005,31 @@ data_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 3, content
 
+    def test_run_with_default_file_dataset_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: 1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "chr1" in content
+
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(

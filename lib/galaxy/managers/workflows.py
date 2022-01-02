@@ -1467,6 +1467,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 dda.extension = default.extension
                 dda.workflow = step.workflow
                 dda.name = default.name
+                dda.state = default.state
                 # module.state.inputs['default'] = dda
                 workflow_step_input = step.get_or_add_input("default")
                 workflow_step_input.default_value_set = True
@@ -1555,6 +1556,7 @@ class WorkflowContentsManager(UsesAnnotations):
                             sa_session=trans.sa_session,
                             object_store=trans.app.object_store,
                         )
+                        step.tool_inputs["default"] = "step://default"
 
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
@@ -1712,6 +1714,7 @@ def create_dda_from_step_default(
     # Push output from cache to object store
     object_store.update_from_file(dda.dataset, file_name=dda.dataset.file_name)
     dda.datatype.set_meta(dda)
+    dda.state = dda.states.OK
     sa_session.add(
         WorkflowStepInputDefaultDatasetAssociation(workflow_step_input=step_input, default_dataset_association=dda)
     )

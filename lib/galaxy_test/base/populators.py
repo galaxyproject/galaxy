@@ -50,7 +50,10 @@ from abc import (
     abstractmethod,
 )
 from functools import wraps
-from io import StringIO
+from io import (
+    BytesIO,
+    StringIO,
+)
 from operator import itemgetter
 from typing import (
     Any,
@@ -87,6 +90,7 @@ from galaxy.util import (
     galaxy_root_path,
 )
 from galaxy.util.resources import resource_string
+from galaxy.util.zipstream import ZipstreamWrapper
 from . import api_asserts
 from .api import ApiTestInteractor
 
@@ -1565,18 +1569,48 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
+        self.test_data_resolver = TestDataResolver()
 
     # Required for ImporterGalaxyInterface interface - so we can recursively import
     # nested workflows.
     def import_workflow(self, workflow, **kwds) -> Dict[str, Any]:
+        workflow_name = workflow.get("name", "test workflow")
+        archive = ZipstreamWrapper(f"{workflow_name}.ga.zip")
+        self.attach_default_file_inputs(workflow, archive=archive)
         workflow_str = json.dumps(workflow, indent=4)
-        data = {
-            "workflow": workflow_str,
-        }
+        data: Dict[str, Any] = {}
+        if archive.size > 0:
+            handle = BytesIO()
+            archive.write_str(workflow_str, f"{workflow_name}.ga")
+            archive.to_fh(handle)
+            handle.seek(0)
+            data["archive_source"] = ""
+            data["__files"] = {"archive_file": handle}
+        else:
+            data["workflow"] = (workflow_str,)
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
+
+    def attach_default_file_inputs(self, workflow, archive: ZipstreamWrapper):
+        steps = workflow.get("steps", [])
+        if isinstance(steps, dict):
+            steps = steps.values()
+        for step in steps:
+            if step.get("type") == "subworkflow" or step.get("run"):
+                subworkflow = step.get("subworkflow") or step.get("run")
+                self.attach_default_file_inputs(subworkflow, archive=archive)
+                continue
+            for input_value in step.get("in", {}).values():
+                if isinstance(input_value, dict):
+                    default = input_value.get("default")
+                    if isinstance(default, dict) and default.get("class") == "File":
+                        location = default.get("location")
+                        if location and ("://" not in location or location.startswith("file://")):
+                            rel_path = location.replace("file://", "")
+                            filename = self.test_data_resolver.get_filename(rel_path)
+                            archive.add_path(filename, rel_path)
 
     def import_tool(self, tool) -> Dict[str, Any]:
         """Import a workflow via POST /api/workflows or

@@ -481,7 +481,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         else:
             json_content = format_return_as_json(ret_dict, pretty=True)
             if archive.size > 0:
-                archive.archive.writestr(f"Galaxy-Workflow-{sname}.{extension}", json_content.encode())
+                archive.write_str(f"Galaxy-Workflow-{sname}.{extension}", json_content.encode())
                 return archive.response()
             return json_content
 
@@ -724,11 +724,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
     # -- Helper methods --
     #
     def __api_import_from_archive(
-        self,
-        trans: GalaxyWebTransaction,
-        archive_data: Union[str, zipfile.ZipFile, Dict[str, Any]],
-        source=None,
-        payload=None,
+        self, trans: GalaxyWebTransaction, archive_data: Union[str, zipfile.ZipFile], source=None, payload=None
     ):
         payload = payload or {}
         archive = None
@@ -738,13 +734,14 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 if archive_entry.filename.endswith(".ga"):
                     # This isn't great, should use some kind of manifest here to pick the right workflow file
                     data = json.loads(archive_data.read(archive_entry).decode("utf-8"))
-        elif isinstance(archive_data, str):
-            data = json.loads(archive_data)
-        elif isinstance(archive_data, dict):
-            if "GalaxyWorkflow" in archive_data:
-                data = {"yaml_content": archive_data}
-            else:
-                raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+        else:
+            try:
+                data = json.loads(archive_data)
+            except json.decoder.JSONDecodeError:
+                if "GalaxyWorkflow" in archive_data:
+                    data = {"yaml_content": archive_data}
+                else:
+                    raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)

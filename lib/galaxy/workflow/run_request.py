@@ -315,10 +315,10 @@ def build_workflow_run_configs(trans, workflow, payload):
                 continue
             if "src" not in input_dict:
                 raise exceptions.RequestParameterInvalidException(
-                    f"Not input source type defined for input '{input_dict}'."
+                    f"No input source type defined for input '{input_dict}'."
                 )
             if "id" not in input_dict:
-                raise exceptions.RequestParameterInvalidException(f"Not input id defined for input '{input_dict}'.")
+                raise exceptions.RequestParameterInvalidException(f"No input id defined for input '{input_dict}'.")
             if "content" in input_dict:
                 raise exceptions.RequestParameterInvalidException(
                     f"Input cannot specify explicit 'content' attribute {input_dict}'."

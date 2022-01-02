@@ -30,6 +30,7 @@ from galaxy.exceptions import (
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     DatasetInstance,
+    DefaultDatasetAssociation,
     PostJobAction,
     Workflow,
     WorkflowStepConnection,
@@ -678,7 +679,14 @@ class InputModule(WorkflowModule):
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        step_outputs = dict(output=step.state.inputs["input"])
+        step_output = step.state.inputs["input"]
+        if not step_output:
+            default = self.state.inputs.get("default")
+            if isinstance(default, DefaultDatasetAssociation):
+                # Always add default dataset associations to history
+                step_output = default.to_history_dataset_association(invocation.history, add_to_history=True)
+
+        step_outputs = dict(output=step_output)
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
