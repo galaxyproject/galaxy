@@ -60,6 +60,7 @@ export default Backbone.View.extend({
             type: input_def.type,
             flavor: input_def.flavor,
             data: input_def.options,
+            tag: input_def.tag,
             onchange: input_def.onchange,
         });
     },
