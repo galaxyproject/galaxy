@@ -61,7 +61,7 @@ def assert_element_text_matches(output, path, expression):
 def assert_element_text_is(output, path, text):
     """ Asserts the text of the first element matching the specified
     path matches exactly the specified text. """
-    assert_element_text_matches(output, path, re.escape(text))
+    assert_element_text_matches(output, path, re.escape(text) + "$")
 
 
 def assert_attribute_matches(output, path, attribute, expression):
@@ -75,7 +75,7 @@ def assert_attribute_matches(output, path, attribute, expression):
 def assert_attribute_is(output, path, attribute, text):
     """ Asserts the specified attribute of the first element matching
     the specified path matches exactly the specified text."""
-    assert_attribute_matches(output, path, attribute, re.escape(text))
+    assert_attribute_matches(output, path, attribute, re.escape(text) + "$")
 
 
 def assert_element_text(output, path, verify_assertions_function, children):
