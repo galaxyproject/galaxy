@@ -1556,7 +1556,7 @@ class WorkflowContentsManager(UsesAnnotations):
                             sa_session=trans.sa_session,
                             object_store=trans.app.object_store,
                         )
-                        step.tool_inputs["default"] = "step://default"
+                        step.tool_inputs[input_name] = "step://default"
 
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)

@@ -312,6 +312,11 @@ class WorkflowProgress:
             else:
                 is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+        else:
+            for step_input in step.inputs:
+                if step_input.name == prefixed_name:
+                    for step_input_dda in step_input.step_input_default_dataset_associations:
+                        replacement = step_input_dda.default_dataset_association
 
         return replacement
 

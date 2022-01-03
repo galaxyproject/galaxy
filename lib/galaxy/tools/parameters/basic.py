@@ -2074,7 +2074,7 @@ class DataToolParameter(BaseDataToolParameter):
                         "the previously selected dataset has entered an unusable state", self.name
                     )
                 elif hasattr(v, "dataset"):
-                    match = dataset_matcher.hda_match(v)
+                    match = dataset_matcher.hda_match(v, ensure_visible=False)
                     if match and match.implicit_conversion:
                         v.implicit_conversion = True
         if not self.multiple:

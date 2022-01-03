@@ -1270,11 +1270,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.parameters.append(JobParameter(name, value))
 
     def add_input_dataset(self, name, dataset=None, dataset_id=None):
-        assoc = JobToInputDatasetAssociation(name, dataset)
-        if dataset is None and dataset_id is not None:
-            assoc.dataset_id = dataset_id
-        add_object_to_object_session(self, assoc)
-        self.input_datasets.append(assoc)
+        if isinstance(dataset, HistoryDatasetAssociation):
+            assoc = JobToInputDatasetAssociation(name, dataset)
+            if dataset is None and dataset_id is not None:
+                assoc.dataset_id = dataset_id
+            add_object_to_object_session(self, assoc)
+            self.input_datasets.append(assoc)
+        # Should we track DefaultDatasetAssociations ?
 
     def add_output_dataset(self, name, dataset):
         joda = JobToOutputDatasetAssociation(name, dataset)
@@ -7082,6 +7084,7 @@ class WorkflowStep(Base, RepresentById):
 class DefaultDatasetAssociation(DatasetInstance, RepresentById):
     __tablename__ = "default_dataset_association"
     src = "dda"
+    history_content_type = None
 
     def __init__(
         self,
@@ -7108,7 +7111,17 @@ class DefaultDatasetAssociation(DatasetInstance, RepresentById):
         # self.copied_from_history_dataset_association_id = copied_from_history_dataset_association_id
         # self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association_id
 
-    def to_history_dataset_association(self, target_history, parent_id=None, add_to_history=False, visible=None):
+    @property
+    def tags(self):
+        return []
+
+    @property
+    def auto_propagated_tags(self):
+        return []
+
+    def to_history_dataset_association(
+        self, target_history, parent_id=None, add_to_history=False, visible=None, flush=False
+    ):
         sa_session = object_session(self)
         hda = HistoryDatasetAssociation(
             name=self.name,
@@ -7129,6 +7142,8 @@ class DefaultDatasetAssociation(DatasetInstance, RepresentById):
             target_history.add_dataset(hda)
         if not self.datatype.copy_safe_peek:
             hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        if flush:
+            sa_session.flush()
         return hda
 
 
