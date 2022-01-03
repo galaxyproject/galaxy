@@ -100,7 +100,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         self._init_tool(tools_support.SIMPLE_CAT_TOOL_CONTENTS)
         hda = self.__add_dataset(1)
         # Execute tool action
-        vars = self.__handle_with_incoming(param1=1)
+        vars = self.__handle_with_incoming(param1=hda)
         self.__assert_executed(vars)
         # Tool 'executed' once, with hda as param1
         assert len(self.tool_action.execution_call_args) == 1
@@ -110,7 +110,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         self._init_tool(tools_support.SIMPLE_CAT_TOOL_CONTENTS)
         hda = self.__add_dataset(1)
         # Update state
-        vars = self.__handle_with_incoming(param1=1)
+        vars = self.__handle_with_incoming(param1=hda)
         state = self.__assert_rerenders_tool_without_errors(vars)
         assert hda == state["param1"]
 

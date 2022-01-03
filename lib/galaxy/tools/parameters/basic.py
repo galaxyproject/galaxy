@@ -1862,20 +1862,11 @@ class BaseDataToolParameter(ToolParameter):
     def to_json(self, value, app, use_security):
         def single_to_json(value):
             src = None
-            if isinstance(value, dict) and "src" in value and "id" in value:
-                return value
-            elif isinstance(value, DatasetCollectionElement):
-                src = "dce"
-            elif isinstance(value, HistoryDatasetCollectionAssociation):
-                src = "hdca"
-            elif isinstance(value, LibraryDatasetDatasetAssociation):
-                src = "ldda"
-            elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
-                # hasattr 'id' fires a query on persistent objects after a flush so better
-                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
-                # nice to drop it.
-                src = "hda"
-            if src is not None:
+            if isinstance(value, dict):
+                if "src" in value and "id" in value:
+                    return value
+            elif value:
+                src = value.src
                 object_id = cached_id(value)
                 return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
 
@@ -2035,31 +2026,18 @@ class DataToolParameter(BaseDataToolParameter):
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
         rval = []
+        if isinstance(value, dict) and "src" in value and "id" in value:
+            value = [value]
         if isinstance(value, list):
-            found_hdca = False
             for single_value in value:
                 if isinstance(single_value, dict) and "src" in single_value and "id" in single_value:
-                    if single_value["src"] == "hda":
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
-                    elif single_value["src"] == "hdca":
-                        found_hdca = True
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id))
-                    elif single_value["src"] == "ldda":
-                        decoded_id = trans.security.decode_id(single_value["id"])
-                        rval.append(trans.sa_session.query(LibraryDatasetDatasetAssociation).get(decoded_id))
-                    else:
-                        raise ValueError(f"Unknown input source {single_value['src']} passed to job submission API.")
-                elif isinstance(
-                    single_value,
-                    (
-                        HistoryDatasetCollectionAssociation,
-                        DatasetCollectionElement,
-                        HistoryDatasetAssociation,
-                        LibraryDatasetDatasetAssociation,
-                    ),
-                ):
+                    src = single_value["src"]
+                    decoded_id = trans.security.decode_id(single_value["id"])
+                    klass = SRC_CLASS_MAPPING.get(src)
+                    if klass is None:
+                        raise ValueError(f"Unknown input source {src} passed to job submission API.")
+                    rval.append(trans.sa_session.query(klass).get(decoded_id))
+                elif isinstance(single_value, tuple(SRC_CLASS_MAPPING.values())):
                     rval.append(single_value)
                 else:
                     if len(str(single_value)) == 16:
@@ -2068,24 +2046,14 @@ class DataToolParameter(BaseDataToolParameter):
                         log.warning("Encoded ID where unencoded ID expected.")
                         single_value = trans.security.decode_id(single_value)
                     rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(single_value))
-            if found_hdca:
-                for val in rval:
-                    if not isinstance(val, HistoryDatasetCollectionAssociation):
-                        raise ParameterValueError(
-                            "if collections are supplied to multiple data input parameter, only collections may be used",
-                            self.name,
-                        )
-        elif isinstance(value, (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
+            types = set(type(val) for val in rval)
+            if len(types) > 1 and HistoryDatasetCollectionAssociation in types:
+                raise ParameterValueError(
+                    "if collections are supplied to multiple data input parameter, only collections may be used",
+                    self.name,
+                )
+        elif isinstance(value, tuple(SRC_CLASS_MAPPING.values())):
             rval.append(value)
-        elif isinstance(value, dict) and "src" in value and "id" in value:
-            if value["src"] == "hda":
-                decoded_id = trans.security.decode_id(value["id"])
-                rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
-            elif value["src"] == "hdca":
-                decoded_id = trans.security.decode_id(value["id"])
-                rval.append(trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id))
-            else:
-                raise ValueError(f"Unknown input source {value['src']} passed to job submission API.")
         elif str(value).startswith("__collection_reduce__|"):
             encoded_ids = [v[len("__collection_reduce__|") :] for v in str(value).split(",")]
             decoded_ids = map(trans.security.decode_id, encoded_ids)
@@ -2093,10 +2061,8 @@ class DataToolParameter(BaseDataToolParameter):
             for decoded_id in decoded_ids:
                 hdca = trans.sa_session.query(HistoryDatasetCollectionAssociation).get(decoded_id)
                 rval.append(hdca)
-        elif isinstance(value, HistoryDatasetCollectionAssociation) or isinstance(value, DatasetCollectionElement):
-            rval.append(value)
         else:
-            rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(value))
+            raise Exception(f"Unexpected value '{value}' encountered'")
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:

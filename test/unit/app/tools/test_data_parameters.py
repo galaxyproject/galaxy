@@ -188,6 +188,8 @@ class MockHistoryDatasetAssociation:
     stuff like that.
     """
 
+    src = "hda"
+
     def __init__(self, test_dataset=None, name="Test Dataset", id=1):
         if not test_dataset:
             test_dataset = model.Dataset()
