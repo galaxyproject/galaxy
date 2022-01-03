@@ -1,8 +1,7 @@
 <template>
-    <b-modal ref="cleanup-result-modal" id="cleanup-result-modal" hide-footer>
+    <b-modal id="cleanup-result-modal" title="Congratulations!" title-tag="h2" hide-footer>
         <LoadingSpan v-if="isLoading" :message="loadingMessage" />
         <div v-else class="d-block text-center">
-            <h2>Congratulations!</h2>
             <h3>
                 You successfully freed <b>{{ niceTotalSpaceFreed }}</b>
             </h3>

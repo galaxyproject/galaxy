@@ -1,17 +1,28 @@
 <template>
     <div>
-        <b-modal ref="purgeable-details-modal" id="purgeable-details-modal" :title="title" centered @show="resetModal">
+        <b-modal
+            id="review-cleanup-dialog"
+            :title="title"
+            title-tag="h2"
+            centered
+            @show="onShowModal"
+            v-model="showDialog">
             <b-table
-                id="purgeable-items-table"
+                v-if="operation"
+                id="cleanable-items-table"
                 hover
                 caption-top
                 :fields="fields"
-                :items="items"
+                :items="itemsProvider"
+                v-model="items"
                 :per-page="perPage"
                 :current-page="currentPage"
+                no-local-sorting
+                no-provider-filtering
+                @sort-changed="onSort"
                 sticky-header="50vh">
                 <template v-slot:table-caption>
-                    To free up account space, select items to be permanently deleted.
+                    {{ captionText }}
                 </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
@@ -31,12 +42,7 @@
                 </template>
             </b-table>
             <template v-slot:modal-footer>
-                <b-pagination
-                    v-if="hasPages"
-                    v-model="currentPage"
-                    :total-rows="totalRows"
-                    :per-page="perPage"
-                    class="mx-auto" />
+                <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
                 <b-button
                     :disabled="!hasItemsSelected"
                     :variant="deleteButtonVariant"
@@ -49,11 +55,12 @@
         <b-modal
             id="confirmation-modal"
             :title="confirmationTitle"
+            title-tag="h2"
             :ok-title="permanentlyDeleteText"
             :ok-variant="confirmButtonVariant"
             :ok-disabled="!confirmChecked"
             @show="resetConfirmationModal"
-            @ok="onConfirmPurgeSelectedItems"
+            @ok="onConfirmCleanupSelectedItems"
             centered>
             <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked">
                 {{ agreementText }}
@@ -66,20 +73,22 @@
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import UtcDate from "components/UtcDate";
+import { CleanupOperation } from "../../model";
 
 export default {
     components: {
         UtcDate,
     },
     props: {
-        title: {
-            type: String,
+        operation: {
+            type: CleanupOperation,
             required: false,
-            default: "Purgeable items",
+            default: null,
         },
-        items: {
-            type: Array,
-            required: true,
+        totalItems: {
+            type: Number,
+            required: false,
+            default: 0,
         },
     },
     data() {
@@ -96,7 +105,7 @@ export default {
                 },
                 {
                     key: "size",
-                    sortable: true,
+                    sortable: false, // The API does not allow sort by size?
                     formatter: this.toNiceSize,
                 },
                 {
@@ -105,16 +114,19 @@ export default {
                     sortable: true,
                 },
             ],
-            sortBy: "size",
+            sortBy: "update_time",
             sortDesc: true,
             perPage: 25,
             currentPage: 1,
             totalRows: 1,
             allSelected: false,
             indeterminate: false,
+            showDialog: false,
+            items: [],
             selectedItems: [],
             confirmChecked: false,
             permanentlyDeleteText: _l("Permanently delete"),
+            captionText: _l("To free up account space, select items to be permanently deleted."),
             agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
         };
     },
@@ -126,7 +138,10 @@ export default {
             this.selectedItems = checked ? this.items : [];
         },
         hideModal() {
-            this.$refs["purgeable-details-modal"].hide();
+            this.showDialog = false;
+        },
+        onShowModal() {
+            this.resetModal();
         },
         resetModal() {
             this.selectedItems = [];
@@ -134,9 +149,29 @@ export default {
         resetConfirmationModal() {
             this.confirmChecked = false;
         },
-        onConfirmPurgeSelectedItems() {
-            this.$emit("onConfirmPurgeSelectedItems", this.selectedItems);
+        onConfirmCleanupSelectedItems() {
+            this.$emit("onConfirmCleanupSelectedItems", this.selectedItems);
             this.hideModal();
+        },
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
+        },
+        async itemsProvider(ctx) {
+            try {
+                const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
+                const offset = page * ctx.perPage;
+                const options = {
+                    offset: offset,
+                    limit: ctx.perPage,
+                    sortBy: this.sortBy,
+                    sortDesc: this.sortDesc,
+                };
+                const result = await this.operation.fetchItems(options);
+                return result;
+            } catch (error) {
+                return [];
+            }
         },
     },
     computed: {
@@ -153,8 +188,12 @@ export default {
             return this.totalRows > this.perPage;
         },
         /** @returns {String} */
+        title() {
+            return this.operation ? this.operation.name : "";
+        },
+        /** @returns {String} */
         confirmationTitle() {
-            return `Delete ${this.selectedItemCount} items?`;
+            return `Permanently delete ${this.selectedItemCount} items?`;
         },
         /** @returns {String} */
         deleteButtonVariant() {
@@ -170,8 +209,8 @@ export default {
         },
     },
     watch: {
-        items(newVal) {
-            this.totalRows = newVal.length;
+        totalItems(newVal) {
+            this.totalRows = newVal;
         },
         selectedItems(newVal) {
             if (newVal.length === 0) {

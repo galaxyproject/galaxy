@@ -1,5 +1,5 @@
 <template>
-    <b-card :title="providerName" class="item-counter-card mx-2">
+    <b-card :title="operation.name" class="item-counter-card mx-2">
         <b-alert v-if="errorMessage" variant="danger" show>
             <h4 class="alert-heading">Failed to retrieve details.</h4>
             {{ errorMessage }}
@@ -7,7 +7,7 @@
         <LoadingSpan v-if="loading" />
         <div v-else>
             <b-card-text>
-                {{ description }}
+                {{ operation.description }}
             </b-card-text>
 
             <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
@@ -24,29 +24,18 @@
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import LoadingSpan from "components/LoadingSpan";
+import { CleanupOperation } from "../../model";
 
 export default {
     components: {
         LoadingSpan,
     },
     props: {
-        categoryName: {
-            type: String,
+        operation: {
+            type: CleanupOperation,
             required: true,
         },
-        providerName: {
-            type: String,
-            required: true,
-        },
-        description: {
-            type: String,
-            required: true,
-        },
-        fetchItems: {
-            type: Function,
-            required: true,
-        },
-        refreshProvider: {
+        refreshOperationId: {
             type: String,
             required: false,
             default: null,
@@ -56,7 +45,7 @@ export default {
         return {
             noItemsToClearText: _l("No items to clear"),
             reviewAndClearText: _l("Review and clear"),
-            items: null,
+            summary: null,
             loading: true,
             errorMessage: null,
         };
@@ -65,28 +54,20 @@ export default {
         await this.refresh();
     },
     computed: {
-        /** @returns {float} */
-        totalRecoverableBytes() {
-            return this.items
-                ? this.items.reduce(function (acc, obj) {
-                      return acc + obj.size;
-                  }, 0)
-                : 0;
-        },
         /** @returns {String} */
         totalRecoverableAmount() {
-            return bytesToString(this.totalRecoverableBytes, true);
+            return bytesToString(this.summary.totalSize, true);
         },
         /** @returns {Boolean} */
         canClearItems() {
-            return this.items?.length > 0;
+            return this.summary.totalItems > 0;
         },
     },
     methods: {
         async refresh() {
             this.loading = true;
             try {
-                this.items = await this.fetchItems();
+                this.summary = await this.operation.fetchSummary();
             } finally {
                 this.loading = false;
             }
@@ -95,12 +76,12 @@ export default {
             this.errorMessage = err;
         },
         onReviewItems() {
-            this.$emit("onReviewItems", this.items, this.providerName);
+            this.$emit("onReviewItems", this.operation.id, this.summary.totalItems);
         },
     },
     watch: {
-        async refreshProvider(newValue) {
-            if (this.providerName === newValue) {
+        async refreshOperationId(operationId) {
+            if (this.operation.id === operationId) {
                 await this.refresh();
             }
         },

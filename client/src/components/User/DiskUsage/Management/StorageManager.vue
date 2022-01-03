@@ -12,7 +12,7 @@
             </b-alert>
         </b-row>
 
-        <div v-for="(category, categoryIndex) in purgeableCategories" :key="categoryIndex">
+        <div v-for="category in cleanupManager.categories" :key="category.id">
             <b-row class="justify-content-md-center mb-2">
                 <h3>
                     <b>{{ category.name }}</b>
@@ -20,23 +20,20 @@
             </b-row>
             <b-row class="justify-content-md-center mb-5">
                 <b-card-group deck>
-                    <PurgeableItemsSummary
-                        v-for="(provider, providerIndex) in category.providers"
-                        :key="providerIndex"
-                        :category-name="category.name"
-                        :provider-name="provider.name"
-                        :description="provider.description"
-                        :fetch-items="provider.fetchItems"
-                        :refresh-provider="refreshProvider"
-                        @onReviewItems="showReviewDialog" />
+                    <CleanupOperationSummary
+                        v-for="operation in category.operations"
+                        :key="operation.id"
+                        :operation="operation"
+                        :refresh-operation-id="refreshOperationId"
+                        @onReviewItems="onReviewItems" />
                 </b-card-group>
             </b-row>
         </div>
 
-        <PurgeableDetailsModal
-            :title="currentProviderName"
-            :items="purgeableItems"
-            @onConfirmPurgeSelectedItems="onConfirmPurgeSelected" />
+        <ReviewCleanupDialog
+            :operation="currentOperation"
+            :total-items="currentTotalItems"
+            @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
         <CleanUpResultDialog :result="cleanupResult" />
     </b-container>
@@ -46,48 +43,48 @@
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
-import { categories } from "./categories";
-import { cleanupDatasets } from "./services";
-import PurgeableItemsSummary from "./PurgeableItemsSummary";
-import PurgeableDetailsModal from "./PurgeableDetailsModal";
-import CleanUpResultDialog from "./CleanUpResultDialog";
+import { ResourceCleanupManager } from "./Cleanup";
+import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary";
+import CleanUpResultDialog from "./Cleanup/CleanUpResultDialog";
+import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog";
 
 export default {
     components: {
-        PurgeableItemsSummary,
-        PurgeableDetailsModal,
+        CleanupOperationSummary,
+        ReviewCleanupDialog,
         CleanUpResultDialog,
     },
     data() {
         return {
-            quotaSettings: null,
-            errorMessage: null,
             title: _l("Manage your account storage"),
             whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
-            purgeableCategories: [],
-            purgeableItems: [],
+            cleanupManager: null,
+            quotaSettings: null,
+            errorMessage: null,
+            currentOperation: null,
+            currentTotalItems: 0,
             cleanupResult: null,
-            currentProviderName: null,
-            refreshProvider: null,
+            refreshOperationId: null,
         };
     },
     created() {
         const Galaxy = getGalaxyInstance();
         this.quotaSettings = QuotaSettings.create(Galaxy.config);
-        this.purgeableCategories = categories;
+        this.cleanupManager = ResourceCleanupManager.create();
     },
     methods: {
-        showReviewDialog(items, providerName) {
-            this.purgeableItems = items;
-            this.currentProviderName = providerName;
-            this.$bvModal.show("purgeable-details-modal");
+        onReviewItems(operationId, totalItems) {
+            this.currentOperation = this.cleanupManager.getOperationById(operationId);
+            this.currentTotalItems = totalItems;
+            this.refreshOperationId = null;
+            this.$bvModal.show("review-cleanup-dialog");
         },
-        async onConfirmPurgeSelected(items) {
+        async onConfirmCleanupSelected(items) {
             this.$bvModal.show("cleanup-result-modal");
-            this.cleanupResult = await cleanupDatasets(items);
+            this.cleanupResult = await this.currentOperation.cleanupItems(items);
             if (this.cleanupResult.success) {
-                this.refreshProvider = this.currentProviderName;
+                this.refreshOperationId = this.currentOperation.id.toString();
             }
         },
     },

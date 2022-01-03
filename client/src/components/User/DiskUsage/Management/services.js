@@ -1,19 +1,53 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
+import { CleanableSummary } from "../model";
 
 const datasetKeys = "id,name,size,update_time";
+const isDataset = "q=history_content_type-eq&qv=dataset";
+const isDeleted = "q=deleted-eq&qv=True";
+const isNotPurged = "q=purged-eq&qv=False";
+const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}`;
 
 /**
- * Retrieves all deleted datasets of the current user
- * that haven't been purged yet.
+ * Calculates the total amount of bytes that can be cleaned by permanently removing
+ * deleted datasets.
+ * @returns {CleanableSummary} Object containing information about how much can be cleaned.
+ */
+export async function fetchDiscardedDatasetsSummary() {
+    //TODO: possible optimization -> moving this to specific API endpoint so we don't have to parse
+    //      potentially a huge number of items
+    const summaryKeys = "size";
+    const url = `${getAppRoot()}api/datasets?keys=${summaryKeys}&${discardedDatasetsQueryParams}`;
+    try {
+        const { data } = await axios.get(url);
+        const totalSizeInBytes = data.reduce((partial_sum, item) => partial_sum + item["size"], 0);
+        return new CleanableSummary({
+            totalSize: totalSizeInBytes,
+            totalItems: data.length,
+        });
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+/**
+ * Retrieves all deleted datasets of the current user that haven't been purged yet using pagination.
  * @returns {Array} Array of dataset objects with the fields defined in `datasetKeys` constant.
  */
-export async function fetchDiscardedDatasets() {
-    const isDataset = "q=history_content_type-eq&qv=dataset";
-    const isDeleted = "q=deleted-eq&qv=True";
-    const isNotPurged = "q=purged-eq&qv=False";
-    const url = `${getAppRoot()}api/datasets?keys=${datasetKeys}&${isDataset}&${isDeleted}&${isNotPurged}`;
+export async function fetchDiscardedDatasets(options = {}) {
+    let params = "";
+    if (options.sortBy) {
+        const sortPostfix = options.sortDesc ? "-dsc" : "-asc";
+        params += `order=${options.sortBy}${sortPostfix}&`;
+    }
+    if (options.limit) {
+        params += `limit=${options.limit}&`;
+    }
+    if (options.offset) {
+        params += `offset=${options.offset}&`;
+    }
+    const url = `${getAppRoot()}api/datasets?keys=${datasetKeys}&${discardedDatasetsQueryParams}&${params}`;
     try {
         const { data } = await axios.get(url);
         return data;
