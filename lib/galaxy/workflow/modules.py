@@ -1947,8 +1947,8 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
-                dataset_instance: Optional[model.Dataset] = None
+                replacement: Union[model.DatasetInstance, NoReplacement] = NO_REPLACEMENT
+                dataset_instance: Optional[model.DatasetInstance] = None
                 if iteration_elements and prefixed_name in iteration_elements:
                     dataset_instance = getattr(iteration_elements[prefixed_name], "dataset_instance", None)
                     if isinstance(input, DataToolParameter) and dataset_instance:
