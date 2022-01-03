@@ -2243,7 +2243,10 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
         elif is_dict and "type" in value:
             input_type = value["type"]
             if input_type == "File":
-                content = open_test_data(value)
+                if "content" in value:
+                    content = value.get("content")
+                else:
+                    content = open_test_data(value)
                 new_dataset_kwds = {"content": content}
                 if "name" in value:
                     new_dataset_kwds["name"] = value["name"]

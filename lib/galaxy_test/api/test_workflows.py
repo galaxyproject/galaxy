@@ -3036,6 +3036,41 @@ steps:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
+    def test_run_with_default_file_dataset_input_and_explicit_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: 1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+test_data:
+  default_file_input:
+    content: "I am not the default"
+    type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "hda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 2
+            assert dataset_details["file_ext"] == "txt"
+            assert "I am not the default" in dataset_details["peek"]
+
     def test_run_with_default_file_in_step_inline(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(
