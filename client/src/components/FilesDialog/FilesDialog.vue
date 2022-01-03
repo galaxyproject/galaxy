@@ -10,7 +10,7 @@
             <data-dialog-search v-model="filter" />
         </template>
         <template v-slot:helper>
-            <b-alert v-if="showFTPHelper" variant="info" show>
+            <b-alert v-if="showFTPHelper" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
                 <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
