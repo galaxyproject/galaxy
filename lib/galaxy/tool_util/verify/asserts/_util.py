@@ -39,11 +39,9 @@ def _assert_presence_number(output, text, n, delta, min, max, negate, check_pres
     raising an assertion error using presence_text, n_text or min_max_text (resp)
     substituting {n}, {delta}, {min}, {max}, {text}, and {output}
     """
-    print(f"{text} {output} eval {check_presence_foo(output, text)}")
     negate = asbool(negate)
     expected = "Expected" if not negate else "Did not expect"
     if n is None and min is None and max is None:
-        print(f"negate {negate} presence {check_presence_foo(output, text)}")
         assert (not negate) == check_presence_foo(output, text), presence_text.format(expected=expected, output=output, text=text)
     try:
         _assert_number(count_foo(output, text), n, delta, min, max, negate, n_text, min_max_text)

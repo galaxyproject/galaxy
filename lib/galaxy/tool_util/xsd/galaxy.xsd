@@ -2062,6 +2062,7 @@ module.
     </xs:annotation>
     <xs:choice>
       <xs:element name="is_valid_xml" type="AssertIsValidXML"/>
+      <xs:element name="xml_element" type="AssertXMLElement"/>
       <xs:element name="has_element_with_path" type="AssertHasElementWithPath"/>
       <xs:element name="has_n_elements_with_path" type="AssertHasNElementsWithPath"/>
       <xs:element name="element_text_matches" type="AssertElementTextMatches"/>
@@ -2334,6 +2335,61 @@ Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
 ]]>
       </xs:documentation>
     </xs:annotation>
+  </xs:complexType>
+  <xs:complexType name="AssertXMLElement">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Assert if the XML file contains element(s) or tag(s) with the specified
+[XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
+or ``min`` and ``max`` are given also the number of occurences is checked.
+
+```xml
+<assert_contents>
+  <xml_element path="./elem"/>
+  <xml_element path="./elem/more[2]"/>
+  <xml_element path=".//more" n="3" delta="1"/>
+</assert_contents>
+```
+
+With ``negate="true"`` the outcome of the assertions wrt the precence and number
+of ``path`` can be negated. If there are any sub assertions then check them against
+
+- the content of the attribute ``attribute``
+- the element's text if no attribute is given
+
+```xml
+<assert_contents>
+  <xml_element path="./elem/more[2]" attribute="name">
+    <has_text_matching expression="foo$"/>
+  </xml_element>
+</assert_contents>
+```
+
+Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
+If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+
+Note that all other XML assertions can be expressed by this assertion (Galaxy
+also implements the other assertions by calling this one).
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="all" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="attribute" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The name of the attribute to apply sub assertion on. If not given then the element text is used.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasElementWithPath">
     <xs:annotation>

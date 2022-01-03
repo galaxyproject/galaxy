@@ -179,72 +179,44 @@ XML_IS_VALID_XML_ASSERTION = """
 """
 XML_HAS_ELEMENT_WITH_PATH = """
     <assert_contents>
-        <is_valid_xml/>
-        <has_element_with_path path="./elem[1]/more"/>
-        <has_element_with_path path="./elem[@name='foo']/more"/>
-        <has_element_with_path path=".//more[@name]"/>
-    </assert_contents>
-"""
-XML_HAS_ELEMENT_WITH_PATH = """
-    <assert_contents>
-        <is_valid_xml/>
-        <has_element_with_path path="./elem[1]/more"/>
-        <has_element_with_path path="./elem[@name='foo']/more"/>
-        <has_element_with_path path=".//more[@name]"/>
-    </assert_contents>
-"""
-XML_HAS_ELEMENT_WITH_PATH_NEGATIVE = """
-    <assert_contents>
-        <has_element_with_path path="./blah"/>
+        <has_element_with_path path="{path}"/>
     </assert_contents>
 """
 XML_HAS_N_ELEMENTS_WITH_PATH = """
     <assert_contents>
         <is_valid_xml/>
-        <has_n_elements_with_path path="./elem" n="2"/>
-        <has_n_elements_with_path path="./elem[1]/more" n="3"/>
-        <has_n_elements_with_path path="./elem[@name='foo']/more" n="3"/>
-        <has_n_elements_with_path path="./elem[2]/more" n="0"/>
-    </assert_contents>
-"""
-XML_HAS_N_ELEMENTS_WITH_PATH_NEGATIVE = """
-    <assert_contents>
-        <is_valid_xml/>
-        <has_n_elements_with_path path="./elem" n="1"/>
+        <has_n_elements_with_path path="{path}" n="{n}"/>
     </assert_contents>
 """
 XML_ELEMENT_TEXT_MATCHES = """
     <assert_contents>
-        <is_valid_xml/>
-        <element_text_matches path="./elem/more" expression="BA(R|Z)"/>
-        <element_text_matches path="./elem/more[2]" expression="BA(R|Z)"/>
+        <element_text_matches path="{path}" expression="{expression}"/>
     </assert_contents>
 """
-XML_ELEMENT_TEXT_MATCHES_NEGATIVE = """
+XML_ELEMENT_TEXT_IS = """
     <assert_contents>
-        <is_valid_xml/>
-        <element_text_matches path="./elem/more" expression="QU(X|Y)"/>
+        <element_text_is path="{path}" text="{text}"/>
     </assert_contents>
 """
 XML_ATTRIBUTE_MATCHES = """
     <assert_contents>
         <is_valid_xml/>
-        <attribute_matches path="./elem/more" attribute="name" expression="ba(r|z)"/>
-        <attribute_matches path="./elem/more[2]" attribute="name" expression="ba(r|z)"/>
-    </assert_contents>
-"""
-XML_ATTRIBUTE_MATCHES_NEGATIVE = """
-    <assert_contents>
-        <is_valid_xml/>
-        <attribute_matches path="./elem/more" attribute="name" expression="QU(X|Y)"/>
+        <attribute_matches path="{path}" attribute="{attribute}" expression="{expression}"/>
     </assert_contents>
 """
 XML_ELEMENT_TEXT = """
     <assert_contents>
-        <is_valid_xml/>
         <element_text path="{path}">
             {content_assert}
         </element_text>
+    </assert_contents>
+"""
+
+XML_XML_ELEMENT = """
+    <assert_contents>
+        <xml_element path="{path}" attribute="{attribute}" all="{all}" n="{n}" delta="{delta}" min="{min}" max="{max}" negate="{negate}">
+            {content_assert}
+        </xml_element>
     </assert_contents>
 """
 
@@ -610,43 +582,91 @@ TESTS = [
     ),
     # test has_element_with_path
     (
-        XML_HAS_ELEMENT_WITH_PATH, VALID_XML,
+        XML_HAS_ELEMENT_WITH_PATH.format(path="./elem[1]/more"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    (
+        XML_HAS_ELEMENT_WITH_PATH.format(path="./elem[@name='foo']"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    (
+        XML_HAS_ELEMENT_WITH_PATH.format(path=".//more[@name]"), VALID_XML,
         lambda x: len(x) == 0
     ),
     # test has_element_with_path .. negative test
     (
-        XML_HAS_ELEMENT_WITH_PATH_NEGATIVE, VALID_XML,
-        lambda x: 'Expected to find XML element matching expression ./blah, not such match was found.' in x
+        XML_HAS_ELEMENT_WITH_PATH.format(path="./blah"), VALID_XML,
+        lambda x: "Expected path './blah' in xml" in x
     ),
     # test has_n_elements_with_path
     (
-        XML_HAS_N_ELEMENTS_WITH_PATH, VALID_XML,
+        XML_HAS_N_ELEMENTS_WITH_PATH.format(path="./elem", n="2"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test has_n_elements_with_path
+    (
+        XML_HAS_N_ELEMENTS_WITH_PATH.format(path="./elem[1]/more", n="3"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test has_n_elements_with_path
+    (
+        XML_HAS_N_ELEMENTS_WITH_PATH.format(path="./elem[@name='foo']/more", n="3"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test has_n_elements_with_path
+    (
+        XML_HAS_N_ELEMENTS_WITH_PATH.format(path="./elem[2]/more", n="0"), VALID_XML,
         lambda x: len(x) == 0
     ),
     # test has_n_elements_with_path .. negative test
     (
-        XML_HAS_N_ELEMENTS_WITH_PATH_NEGATIVE, VALID_XML,
-        lambda x: 'Expected to find 1 elements with path ./elem, but 2 were found.' in x
+        XML_HAS_N_ELEMENTS_WITH_PATH.format(path="./elem", n="1"), VALID_XML,
+        lambda x: "Expected 1+-0 occurrences of path './elem' in xml found 2" in x
     ),
     # test element_text_matches
     (
-        XML_ELEMENT_TEXT_MATCHES, VALID_XML,
+        XML_ELEMENT_TEXT_MATCHES.format(path="./elem/more", expression="BA(R|Z)"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test element_text_matches more specific path
+    (
+        XML_ELEMENT_TEXT_MATCHES.format(path="./elem/more[2]", expression="BA(R|Z)"), VALID_XML,
         lambda x: len(x) == 0
     ),
     # test element_text_matches .. negative test
     (
-        XML_ELEMENT_TEXT_MATCHES_NEGATIVE, VALID_XML,
-        lambda x: "Expected element with path './elem/more' to contain text matching 'QU(X|Y)', instead text 'BAR' was found." in x
+        XML_ELEMENT_TEXT_MATCHES.format(path="./elem/more", expression="QU(X|Y)"), VALID_XML,
+        lambda x: "Text of element with path './elem/more': Expected text matching expression 'QU(X|Y)' in output ('BAR')" in x
+    ),
+    # test element_text_is
+    (
+        XML_ELEMENT_TEXT_IS.format(path="./elem/more", text="BAR"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test element_text_is with more specific path
+    (
+        XML_ELEMENT_TEXT_IS.format(path="./elem/more[@name='baz']", text="BAZ"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test element_text_is .. negative test testing that prefix is not accepted
+    (
+        XML_ELEMENT_TEXT_IS.format(path="./elem/more", text="BA"), VALID_XML,
+        lambda x: "Text of element with path './elem/more': Expected text matching expression 'BA$' in output ('BAR')" in x
     ),
     # test element_attribute_matches
     (
-        XML_ATTRIBUTE_MATCHES, VALID_XML,
+        XML_ATTRIBUTE_MATCHES.format(path="./elem/more", attribute="name", expression="ba(r|z)"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test element_attribute_matches with more specific path
+    (
+        XML_ATTRIBUTE_MATCHES.format(path="./elem/more[2]", attribute="name", expression="ba(r|z)"), VALID_XML,
         lambda x: len(x) == 0
     ),
     # test element_attribute_matches .. negative test
     (
-        XML_ATTRIBUTE_MATCHES_NEGATIVE, VALID_XML,
-        lambda x: "Expected attribute 'name' on element with path './elem/more' to match 'QU(X|Y)', instead attribute value was 'bar'." in x
+        XML_ATTRIBUTE_MATCHES.format(path="./elem/more", attribute="name", expression="qu(x|y)"), VALID_XML,
+        lambda x: "Attribute 'name' on element with path './elem/more': Expected text matching expression 'qu(x|y)' in output ('bar')" in x
     ),
     # test element_text
     (
@@ -666,8 +686,36 @@ TESTS = [
     # test element_text with sub-assertion .. negative
     (
         XML_ELEMENT_TEXT.format(path="./elem/more", content_assert='<has_text text="NOTBAR"/>'), VALID_XML,
-        lambda x: "Expected text 'NOTBAR' in output ('BAR')" in x
+        lambda x: "Text of element with path './elem/more': Expected text 'NOTBAR' in output ('BAR')" in x
     ),
+    # note that xml_element is also tested indirectly by the other xml
+    # assertions which are all implemented by xml_element
+    # test xml_element
+    (
+        XML_XML_ELEMENT.format(path=".//more", n="2", delta="1", min="1", max="3", attribute="", all="false", content_assert='<has_text_matching expression="(BA[RZ]|QUX)$"/>', negate="false"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test xml_element testing attribute matching on all matching elements
+    (
+        XML_XML_ELEMENT.format(path=".//more", n="2", delta="1", min="1", max="3", attribute="name", all="true", content_assert='<has_text_matching expression="(ba[rz]|qux)$"/>', negate="false"), VALID_XML,
+        lambda x: len(x) == 0
+    ),
+    # test xml_element .. failing because of n
+    (
+        XML_XML_ELEMENT.format(path=".//more", n="2", delta="0", min="1", max="3", attribute="", all="false", content_assert='', negate="false"), VALID_XML,
+        lambda x: "Expected 2+-0 occurrences of path './/more' in xml found 3" in x
+    ),
+    # test xml_element .. failing because of n
+    (
+        XML_XML_ELEMENT.format(path=".//more", n="10000", delta="1", min="1", max="3", attribute="", all="false", content_assert='', negate="true"), VALID_XML,
+        lambda x: "Did not expect that the number of occurences of path './/more' in xml is in [1:3] found 3" in x
+    ),
+    # test xml_element .. failing because of sub assertion
+    (
+        XML_XML_ELEMENT.format(path=".//more", n="2", delta="1", min="1", max="3", attribute="", all="false", content_assert='<has_text_matching expression="(BA[RZ]|QUX)$" negate="true"/>', negate="false"), VALID_XML,
+        lambda x: "Text of element with path './/more': Did not expect text matching expression '(BA[RZ]|QUX)$' in output ('BAR')" in x
+    ),
+
     # test has_archive_member with zip
     (
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert="", all="false"), ZIPBYTES,
@@ -873,18 +921,33 @@ TEST_IDS = [
     'has_size delta',
     'is_valid_xml success',
     'is_valid_xml failure',
-    'has_element_with_path success',
+    'has_element_with_path success 1',
+    'has_element_with_path success 2',
+    'has_element_with_path success 3',
     'has_element_with_path failure',
-    'has_n_elements_with_path success',
+    'has_n_elements_with_path success 1',
+    'has_n_elements_with_path success 2',
+    'has_n_elements_with_path success 3',
+    'has_n_elements_with_path success 4',
     'has_n_elements_with_path failure',
     'element_text_matches sucess',
+    'element_text_matches sucess (with more specific path)',
     'element_text_matches failure',
+    'element_text_is sucess',
+    'element_text_is sucess (with more specific path)',
+    'element_text_is failure',
     'attribute_matches sucess',
+    'attribute_matches sucess (with more specific path)',
     'attribute_matches failure',
     'element_text success',
     'element_text failure',
     'element_text with subassertion sucess',
     'element_text with subassertion failure',
+    'xml_element matching text success',
+    'xml_element matching attribute success',
+    'xml_element failure (due to n)',
+    'xml_element failure (due to min/max in combination with negate)',
+    'xml_element failure (due to subassertion)',
     'has_archive_member zip',
     'has_archive_member tar',
     'has_archive_member non-archive',
