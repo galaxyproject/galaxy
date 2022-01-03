@@ -1700,7 +1700,7 @@ def create_dda_from_step_default(
     location = step_default["location"]
     dda = DefaultDatasetAssociation(
         name=step_default["basename"],
-        extension=step_default.get("ext"),
+        extension=step_default.get("format", "data"),
         dbkey=step_default.get("dbkey"),
         create_dataset=True,
         sa_session=sa_session,
