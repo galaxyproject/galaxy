@@ -7501,12 +7501,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
             output_assoc.workflow_step = step
             output_assoc.value = output_object
             self.output_values.append(output_assoc)
-        elif output_object.history_content_type == "dataset":
+        elif isinstance(output_object, (HistoryDatasetAssociation, DefaultDatasetAssociation)):
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
-            output_assoc.dataset = output_object
+            if isinstance(output_object, HistoryDatasetAssociation):
+                output_assoc.dataset = output_object
+            else:
+                output_assoc.default_dataset = output_object
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
@@ -7516,7 +7519,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Unknown output type encountered")
+            raise Exception(f"Unknown output object {output_object} encountered")
 
     def get_output_object(self, label):
         for output_dataset_assoc in self.output_datasets:
@@ -7627,9 +7630,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
                 if not label:
                     continue
 
+                output = output_assoc.dataset or output_assoc.default_dataset
+
                 outputs[label] = {
-                    "src": "hda",
-                    "id": output_assoc.dataset_id,
+                    "src": output.src,
+                    "id": output.id,
                     "workflow_step_id": output_assoc.workflow_step_id,
                 }
 
@@ -7678,6 +7683,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
             request_to_content.dataset_collection = content
             attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
+        elif isinstance(content, DefaultDatasetAssociation):
+            # Arguments could be made for and against tracking DefaultDatasetAssociation:
+            # Tracking would be more explicit, but we also haven't selected a value ...
+            # and this adds fewer models. May need to track this in the future though.
+            pass
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
@@ -7814,10 +7824,13 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
         return self.state == self.states.NEW
 
     def add_output(self, output_name, output_object):
-        if output_object.history_content_type == "dataset":
+        if isinstance(output_object, (HistoryDatasetAssociation, DefaultDatasetAssociation)):
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
-            output_assoc.dataset = output_object
+            if isinstance(output_object, HistoryDatasetAssociation):
+                output_assoc.dataset = output_object
+            else:
+                output_assoc.default_dataset = output_object
             output_assoc.output_name = output_name
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
@@ -7853,12 +7866,11 @@ class WorkflowInvocationStep(Base, Dictifiable, RepresentById):
             outputs = {}
             for output_assoc in self.output_datasets:
                 name = output_assoc.output_name
+                output_dataset = output_assoc.dataset or output_assoc.default_dataset
                 outputs[name] = {
-                    "src": "hda",
-                    "id": output_assoc.dataset.id,
-                    "uuid": str(output_assoc.dataset.dataset.uuid)
-                    if output_assoc.dataset.dataset.uuid is not None
-                    else None,
+                    "src": output_dataset.src,
+                    "id": output_dataset.id,
+                    "uuid": str(output_dataset.dataset.uuid) if output_dataset.dataset.uuid is not None else None,
                 }
 
             output_collections = {}
@@ -7976,12 +7988,14 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, RepresentByI
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(Integer, ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"), index=True)
-    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True)
+    default_dataset_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True, nullable=True)
     workflow_output_id = Column(Integer, ForeignKey("workflow_output.id"), index=True)
 
     workflow_invocation = relationship("WorkflowInvocation", back_populates="output_datasets")
     workflow_step = relationship("WorkflowStep")
     dataset = relationship("HistoryDatasetAssociation")
+    default_dataset = relationship("DefaultDatasetAssociation")
     workflow_output = relationship("WorkflowOutput")
 
     history_content_type = "dataset"
@@ -8049,10 +8063,12 @@ class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, Represen
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_step_id = Column(Integer, ForeignKey("workflow_invocation_step.id"), index=True)
-    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True)
+    default_dataset_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True, nullable=True)
     output_name = Column(String(255), nullable=True)
     workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="output_datasets")
     dataset = relationship("HistoryDatasetAssociation")
+    default_dataset = relationship("DefaultDatasetAssociation")
 
     dict_collection_visible_keys = ["id", "workflow_invocation_step_id", "dataset_id", "output_name"]
 

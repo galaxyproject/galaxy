@@ -3007,7 +3007,7 @@ data_input:
 
     def test_run_with_default_file_dataset_input(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(
+            run_response = self._run_jobs(
                 """
 class: GalaxyWorkflow
 inputs:
@@ -3027,8 +3027,14 @@ steps:
                 wait=True,
                 assert_ok=True,
             )
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            assert "chr1" in content
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "dda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 1
+            assert dataset_details["file_ext"] == "txt"
+            assert "chr1" in dataset_details["peek"]
 
     def test_run_with_default_file_in_step_inline(self):
         with self.dataset_populator.test_history() as history_id:
