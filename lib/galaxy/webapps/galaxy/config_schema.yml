@@ -1417,7 +1417,7 @@ mapping:
 
       logo_src:
         type: str
-        default: static/favicon.png
+        default: /static/favicon.png
         required: false
         per_host: true
         desc: |

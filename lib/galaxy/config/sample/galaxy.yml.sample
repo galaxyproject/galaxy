@@ -1024,7 +1024,7 @@ galaxy:
   #logo_url: /
 
   # The brand image source.
-  #logo_src: static/favicon.png
+  #logo_src: /static/favicon.png
 
   # The custom brand image source.
   #logo_src_secondary: null

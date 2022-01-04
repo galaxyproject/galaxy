@@ -1957,7 +1957,7 @@
 
 :Description:
     The brand image source.
-:Default: ``static/favicon.png``
+:Default: ``/static/favicon.png``
 :Type: str
 
 
