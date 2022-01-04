@@ -19,7 +19,7 @@ from galaxy.model.tool_shed_install import Base as tsi_base
 GXY = 'gxy'  # galaxy model identifier
 TSI = 'tsi'  # tool_shed_install model identifier
 
-ALEMBIC_TABLE = 'alembic_version'  # TODO this should come from alembic config
+ALEMBIC_TABLE = 'alembic_version'
 SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
 SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 180
 SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
@@ -65,13 +65,13 @@ class AlembicManager:
 
     def _load_config(self, config_dict):
         alembic_root = os.path.dirname(__file__)
-        _alembic_file = os.path.join(alembic_root, 'alembic.ini')  # TODO can we make this more flexible so we can call it from multiple locations?
+        _alembic_file = os.path.join(alembic_root, 'alembic.ini')
         config = Config(_alembic_file)
         url = get_url_string(self.engine)
         config.set_main_option('sqlalchemy.url', url)
         if config_dict:
             for key, value in config_dict.items():
-                config.set_main_option(key, value)  # TODO consider: can also use config.attributes dictionary
+                config.set_main_option(key, value)
         return config
 
     def stamp_model_head(self, model):
@@ -181,29 +181,59 @@ class DatabaseStateCache:
             return conn.execute(sql).scalar()
 
 
-def verify_databases(engine, install_engine=None, app_config=None):
-    # verify galaxy (gxy) model
-    gxy_dsv = DatabaseStateVerifier(engine, GXY, app_config)
+def verify_databases(engine, install_engine=None, config=None):
+    # Get config values for gxy model.
+    template, encoding, is_auto_migrate = None, None, False
+    if config:
+        is_auto_migrate = config.database_auto_migrate  # Applied for both gxy and tsi.
+        template = config.database_template
+        encoding = config.database_encoding
+
+    # Verify galaxy (gxy) model.
+    gxy_dsv = DatabaseStateVerifier(engine, GXY, template, encoding, is_auto_migrate)
     gxy_dsv.run()
-    # determine install_engine, and whether it's a new database
+
+    # Update database template and encoding for tsi model if needed, falling back to gxy values.
+    if install_engine != engine:
+        template = getattr(config, 'install_database_template', template)
+        encoding = getattr(config, 'install_database_encoding', encoding)
+
+    # Determine install_engine.
     install_engine = install_engine or engine
+    # New database = same engine, and gxy model has just been initialized.
     is_new_database = install_engine == engine and gxy_dsv.is_new_database
-    # verify tool_shed_install model (tsi) model
-    tsi_dsv = DatabaseStateVerifier(install_engine, TSI, app_config, is_new_database)
+
+    # Verify tool_shed_install model (tsi) model.
+    tsi_dsv = DatabaseStateVerifier(install_engine, TSI, template, encoding, is_auto_migrate, is_new_database)
     tsi_dsv.run()
 
 
 class DatabaseStateVerifier:
 
-    def __init__(self, engine, model, app_config, is_new_database=None):
+    def __init__(
+            self,
+            engine,
+            model,
+            database_template,
+            database_encoding,
+            is_auto_migrate,
+            is_new_database=None
+    ):
         self.engine = engine
         self.model = model
-        self.app_config = app_config  # TODO gxy vs tsi: need a way to easily use the right options
+        self.database_template = database_template
+        self.database_encoding = database_encoding
+        self._is_auto_migrate = is_auto_migrate
         self.metadata = get_metadata(model)
-        self.is_new_database = is_new_database  # True if database has been created and/or initialized for another model.
+        # True if database has been initialized for another model.
+        self.is_new_database = is_new_database
         # These values may or may not be required, so do a lazy load.
         self._db_state = None
         self._alembic_manager = None
+
+    @property
+    def is_auto_migrate(self):
+        return self._is_auto_migrate
 
     @property
     def db_state(self):
@@ -264,7 +294,7 @@ class DatabaseStateVerifier:
             # TODO: log message: db is up-to-date
             return
         # is outdated: try to upgrade
-        if not self._is_automigrate_set():
+        if not self.is_auto_migrate:
             raise OutdatedDatabaseError()
         else:
             # TODO log message: upgrading
@@ -280,16 +310,14 @@ class DatabaseStateVerifier:
         return True
 
     def _create_database(self, url):
-        template = self.app_config.database_template if self.app_config else None  # TODO: this should be different for TSI? or not?
-        encoding = self.app_config.database_encoding if self.app_config else None
         create_kwds = {}
         message = f'Creating database for URI [{url}]'
-        if template:
-            message += f' from template [{template}]'
-            create_kwds['template'] = template
-        if encoding:
-            message += f' with encoding [{encoding}]'
-            create_kwds['encoding'] = encoding
+        if self.database_template:
+            message += f' from template [{self.database_template}]'
+            create_kwds['template'] = self.database_template
+        if self.database_encoding:
+            message += f' with encoding [{self.database_encoding}]'
+            create_kwds['encoding'] = self.database_encoding
         log.info(message)
         create_database(url, **create_kwds)
 
@@ -297,7 +325,7 @@ class DatabaseStateVerifier:
         load_metadata(self.metadata, self.engine)
         if self.model == GXY:
             self._create_additional_database_objects()
-        self.alembic_manager.stamp_model_head(self.model)  # create version table if not exists, stamp with head  #TODO rename method
+        self.alembic_manager.stamp_model_head(self.model)
         self.is_new_database = True
 
     def _create_additional_database_objects(self):
@@ -305,11 +333,6 @@ class DatabaseStateVerifier:
 
     def _is_database_empty(self):
         return self.db_state.is_database_empty()
-
-    def _is_automigrate_set(self):
-        if self.app_config:
-            return self.app_config.database_auto_migrate
-        return False
 
     def _has_alembic_version_table(self):
         return self.db_state.has_alembic_version_table()
