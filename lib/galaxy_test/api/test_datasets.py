@@ -237,8 +237,8 @@ class DatasetsApiTestCase(ApiTestCase):
         deleted_result = delete_response.json()
 
         assert deleted_result["success_count"] == len(expected_deleted_ids)
-        for purged_id in expected_deleted_ids:
-            dataset = self._get(f"histories/{history_id}/contents/{purged_id}").json()
+        for deleted_id in expected_deleted_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{deleted_id}").json()
             assert dataset["deleted"] is True
 
         expected_purged_ids = [dataset_map[0], dataset_map[2]]
