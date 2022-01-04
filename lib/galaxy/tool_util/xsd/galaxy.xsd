@@ -1772,7 +1772,6 @@ provides a demonstration of using this tag.
   </output>
 </test>
 ```
-
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
@@ -2113,38 +2112,6 @@ Alternatively the range of the expected size can be specified by ``min`` and/or
     </xs:attribute>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
-  
-  <xs:attributeGroup name="AssertAttributeNegate">
-    <xs:attribute name="negate" type="PermissiveBoolean" default="false">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Negate the outcome of the assertion.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:attributeGroup>
-  
-  <xs:attributeGroup name="AssertAttributeN">
-    <xs:attribute name="n" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number (default: -infinity)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number (default: infinity)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:attributeGroup>
-
   <xs:complexType name="AssertHasText">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2373,19 +2340,15 @@ also implements the other assertions by calling this one).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="all" type="PermissiveBoolean" default="false">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first </xs:documentation>
+        <xs:documentation xml:lang="en">Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The name of the attribute to apply sub assertion on. If not given then the element text is used.</xs:documentation>
+        <xs:documentation xml:lang="en">The name of the attribute to apply sub-assertion on. If not given then the element text is used</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attributeGroup ref="AssertAttributeN"/>
@@ -2395,134 +2358,159 @@ also implements the other assertions by calling this one).
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the XML output contains at least one element (or tag) with the specified
-XPath-like ``path`` (e.g. ``<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />``).
+XPath-like ``path``, e.g. 
+
+```xml
+<has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
+```
+
+With ``negate`` the result of the assertion can be inverted.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasNElementsWithPath">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the XML output contains the specified number (``n``) of elements (or
-tags) with the specified XPath-like ``path`` (e.g. ``<has_n_elements_with_path
-n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />``).
+Asserts the XML output contains the specified number (``n``, optionally with ``delta``) of elements (or
+tags) with the specified XPath-like ``path``, e.g.
+
+```xml
+<has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />
+```
+
+Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
+can be used to specify the range of the expected number of occurences.
+With ``negate`` the result of the assertion can be inverted.
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="n" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The number of times the path should appear.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeN"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertElementTextMatches">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the text of the XML element with the specified XPath-like ``path``
-matches the regular expression defined by ``expression`` (e.g.
-``<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"
-/>``).
+matches the regular expression defined by ``expression``, e.g.
+
+```xml
+<element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"/>
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="expression" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertElementTextIs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the text of the XML element with the specified XPath-like ``path`` is
-the specified ``text`` (e.g. ``<element_text_is path="BlastOutput_program" text="blastp" />``).
+the specified ``text``, e.g.
+
+```xml
+<element_text_is path="BlastOutput_program" text="blastp" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="text" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertAttributeMatches">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the XML ``attribute`` for the element (or tag) with the specified
-XPath-like ``path`` matches the regular expression specified by ``expression``
-(e.g. ``<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />``).
+XPath-like ``path`` matches the regular expression specified by ``expression``, e.g.
+
+```xml
+<attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the matching) can be inverted (the
+implicit assertion on the existence of the path is not affected).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="expression" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
       </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="AssertAttributeIs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the XML ``attribute`` for the element (or tag) with the specified
-XPath-like ``path`` is the specified ``text`` (e.g. ``<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />`` ).
+XPath-like ``path`` is the specified ``text``, e.g.
+
+```xml
+<attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />
+```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the assertion (on the equality) can be inverted (the
+implicit assertion on the existence of the path is not affected).
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attribute name="text" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Text to check for.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertElementText">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 This tag allows the developer to recurisively specify additional assertions as
 child elements about just the text contained in the element specified by the
-XPath-like ``path`` (e.g. ``<element_text
-path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text
-text="EDK72998.1" /></element_text>``).
+XPath-like ``path``, e.g.
+```xml
+<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+  <not_has_text text="EDK72998.1" />
+</element_text>```
+
+The assertion implicitly also asserts that an element matching ``path`` exists.
+With ``negate`` the result of the implicit assertions can be inverted. 
+The sub-assertions, which have their own ``negate`` attribute, are not affected
+by ``negate``.
+
 ]]>
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="TestAssertionsText" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="path" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Text to check for</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributePath"/>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
@@ -2549,6 +2537,45 @@ text="EDK72998.1" /></element_text>``).
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
+  
+  <xs:attributeGroup name="AssertAttributePath">
+    <xs:attribute name="path" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="AssertAttributeNegate">
+    <xs:attribute name="negate" type="PermissiveBoolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Negate the outcome of the assertion.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+  
+  <xs:attributeGroup name="AssertAttributeN">
+    <xs:attribute name="n" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Desired number</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="delta" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="min" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Minimum number (default: -infinity)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="max" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Maximum number (default: infinity)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
 
   <xs:complexType name="Inputs">
     <xs:annotation>

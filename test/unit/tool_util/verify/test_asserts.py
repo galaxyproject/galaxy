@@ -774,12 +774,12 @@ TESTS = [
     # test has_archive_member with zip with failing subassertion
     (
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert='<has_text text="ABSENT"/>', all="false"), ZIPBYTES,
-        lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
+        lambda x: "Archive member '(\\./)?testdir/file1.txt': Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
     ),
     # test has_archive_member with tar with failing subassertion
     (
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert='<has_text text="ABSENT"/>', all="false"), TARBYTES,
-        lambda x: "Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
+        lambda x: "Archive member '(\\./)?testdir/file1.txt': Expected text 'ABSENT' in output ('testdir/file1.txt')" in x
     ),
     # test has_archive_member with zip checking all matches with subassertion
     (
