@@ -143,6 +143,7 @@ JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
 AUTO_PROPAGATED_TAGS = ["name"]
+YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
@@ -940,7 +941,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         back_populates='job')
     output_dataset_collections = relationship('JobToImplicitOutputDatasetCollectionAssociation',
         back_populates='job')
-    post_job_actions = relationship('PostJobActionAssociation', back_populates='job', lazy='joined')
+    post_job_actions = relationship('PostJobActionAssociation', back_populates='job')
     input_library_datasets = relationship('JobToInputLibraryDatasetAssociation',
         back_populates='job')
     output_library_datasets = relationship('JobToOutputLibraryDatasetAssociation',
