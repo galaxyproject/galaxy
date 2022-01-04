@@ -684,7 +684,7 @@ def set_create_additional(monkeypatch):
 
 @pytest.fixture
 def set_automigrate(monkeypatch):
-    monkeypatch.setattr(DatabaseStateVerifier, '_is_automigrate_set', lambda _: True)
+    monkeypatch.setattr(DatabaseStateVerifier, 'is_auto_migrate', True)
 
 
 @pytest.fixture(autouse=True)  # always override AlembicManager
