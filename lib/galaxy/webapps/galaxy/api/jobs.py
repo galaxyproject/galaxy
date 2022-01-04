@@ -204,7 +204,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         query = query.limit(limit)
 
         out = []
-        for job in query.all():
+        for job in query.yield_per(model.YIELD_PER_ROWS):
             job_dict = job.to_dict(view, system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
             if view == 'admin_job_list':
