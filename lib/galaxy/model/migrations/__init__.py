@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import alembic
 from alembic import command, script
@@ -59,6 +60,8 @@ class AlembicManager:
         self.engine = engine
         self.alembic_cfg = self._load_config(config_dict)
         self.script_directory = script.ScriptDirectory.from_config(self.alembic_cfg)
+        self._db_heads: Optional[tuple]
+        self._reset_db_heads()
 
     def _load_config(self, config_dict):
         alembic_root = os.path.dirname(__file__)
@@ -74,30 +77,30 @@ class AlembicManager:
     def stamp_model_head(self, model):
         """Partial proxy to alembic's stamp command."""
         command.stamp(self.alembic_cfg, f'{model}@head')
+        self._reset_db_heads()
 
     def stamp_revision(self, revision):
         """Partial proxy to alembic's stamp command."""
         command.stamp(self.alembic_cfg, revision)
+        self._reset_db_heads()
 
     def upgrade(self, model):
         """Partial proxy to alembic's upgrade command."""
         # This works with or without an existing alembic version table.
         command.upgrade(self.alembic_cfg, f'{model}@head')
+        self._reset_db_heads()
 
     def is_under_version_control(self, model):
         """
         True if version table contains a revision that represents `model`.
         (checked via revision's branch labels)
         """
-        with self.engine.connect() as conn:
-            context = migration.MigrationContext.configure(conn)
-            db_heads = context.get_current_heads()
-            if db_heads:
-                for head in db_heads:
-                    revision = self._get_revision(head)
-                    if revision and model in revision.branch_labels:
-                        return True
-            return False
+        if self.db_heads:
+            for head in self.db_heads:
+                revision = self._get_revision(head)
+                if revision and model in revision.branch_labels:
+                    return True
+        return False
 
     def is_up_to_date(self, model):
         """
@@ -106,23 +109,27 @@ class AlembicManager:
         concept of up-to-date would be meaningless for that state.
         """
         version_heads = self.script_directory.get_heads()
-        if not version_heads:
+        if not version_heads or not self.db_heads:
             return False
-        with self.engine.connect() as conn:
-            context = migration.MigrationContext.configure(conn)
-            db_version_heads = context.get_current_heads()
-            if not db_version_heads:
-                return False
-            db_version_heads = listify(db_version_heads)
+        # Verify that db_version_heads contains a head for the passed model:
+        # if the head in the database is for gxy, but we are checking for tsi
+        # this should return False.
+        for head in self.db_heads:
+            revision = self._get_revision(head)
+            if revision and model in revision.branch_labels and head in version_heads:
+                return True
+        return False
 
-            # Verify that db_version_heads contains a head for the passed model:
-            # if the head in the database is for gxy, but we are checking for tsi
-            # this should return False.
-            for head in db_version_heads:
-                revision = self._get_revision(head)
-                if revision and model in revision.branch_labels and head in version_heads:
-                    return True
-            return False
+    @property
+    def db_heads(self):
+        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
+            with self.engine.connect() as conn:
+                context = migration.MigrationContext.configure(conn)
+                self._db_heads = context.get_current_heads()
+            # We get a tuple as long as we use branches. Otherwise, we'd get a single value.
+            # listify() is a safeguard in case we stop using branches.
+            self._db_heads = listify(self._db_heads)
+        return self._db_heads
 
     def _get_revision(self, revision_id):
         try:
@@ -130,6 +137,9 @@ class AlembicManager:
         except alembic.util.exc.CommandError as e:
             log.error('TODO: explaining message')  # TODO fix message
             raise e
+
+    def _reset_db_heads(self):
+        self._db_heads = None
 
 
 class DatabaseStateCache:
