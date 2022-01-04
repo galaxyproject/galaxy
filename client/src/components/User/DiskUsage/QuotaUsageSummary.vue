@@ -20,16 +20,11 @@
 <script>
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
-import { QuotaSettings } from "./model";
 
 export default {
     props: {
         user: {
             type: Object,
-            required: true,
-        },
-        quotaSettings: {
-            type: QuotaSettings,
             required: true,
         },
     },

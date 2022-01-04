@@ -1,48 +1,49 @@
 <template>
-    <b-container fluid>
-        <b-link to="StorageDashboard">Back to Dashboard</b-link>
-        <h2 class="text-center my-3">
-            <b>{{ title }}</b>
-        </h2>
+    <ConfigProvider v-slot="{ config }">
+        <b-container fluid>
+            <b-link to="StorageDashboard">Back to Dashboard</b-link>
+            <h2 class="text-center my-3">
+                <b>{{ title }}</b>
+            </h2>
 
-        <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="quotaSettings.quotasEnabled" show>
-                {{ whatCountsText }}
-                <b-link :href="quotaSettings.quotasHelpUrl" target="_blank">{{ learnMoreText }}</b-link>
-            </b-alert>
-        </b-row>
-
-        <div v-for="category in cleanupManager.categories" :key="category.id">
-            <b-row class="justify-content-md-center mb-2">
-                <h3>
-                    <b>{{ category.name }}</b>
-                </h3>
-            </b-row>
             <b-row class="justify-content-md-center mb-5">
-                <b-card-group deck>
-                    <CleanupOperationSummary
-                        v-for="operation in category.operations"
-                        :key="operation.id"
-                        :operation="operation"
-                        :refresh-operation-id="refreshOperationId"
-                        @onReviewItems="onReviewItems" />
-                </b-card-group>
+                <b-alert v-if="config.enable_quotas" show>
+                    {{ whatCountsText }}
+                    <b-link :href="config.quota_url" target="_blank">{{ learnMoreText }}</b-link>
+                </b-alert>
             </b-row>
-        </div>
 
-        <ReviewCleanupDialog
-            :operation="currentOperation"
-            :total-items="currentTotalItems"
-            @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
+            <div v-for="category in cleanupManager.categories" :key="category.id">
+                <b-row class="justify-content-md-center mb-2">
+                    <h3>
+                        <b>{{ category.name }}</b>
+                    </h3>
+                </b-row>
+                <b-row class="justify-content-md-center mb-5">
+                    <b-card-group deck>
+                        <CleanupOperationSummary
+                            v-for="operation in category.operations"
+                            :key="operation.id"
+                            :operation="operation"
+                            :refresh-operation-id="refreshOperationId"
+                            @onReviewItems="onReviewItems" />
+                    </b-card-group>
+                </b-row>
+            </div>
 
-        <CleanupResultDialog :result="cleanupResult" @onHide="onCleanupResultsHide" />
-    </b-container>
+            <ReviewCleanupDialog
+                :operation="currentOperation"
+                :total-items="currentTotalItems"
+                @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
+
+            <CleanupResultDialog :result="cleanupResult" @onHide="onCleanupResultsHide" />
+        </b-container>
+    </ConfigProvider>
 </template>
 
 <script>
 import _l from "utils/localization";
-import { getGalaxyInstance } from "app";
-import { QuotaSettings } from "../model";
+import ConfigProvider from "components/providers/ConfigProvider";
 import { ResourceCleanupManager } from "./Cleanup";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog";
@@ -50,6 +51,7 @@ import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog";
 
 export default {
     components: {
+        ConfigProvider,
         CleanupOperationSummary,
         ReviewCleanupDialog,
         CleanupResultDialog,
@@ -60,7 +62,6 @@ export default {
             whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
             cleanupManager: null,
-            quotaSettings: null,
             errorMessage: null,
             currentOperation: null,
             currentTotalItems: 0,
@@ -69,8 +70,6 @@ export default {
         };
     },
     created() {
-        const Galaxy = getGalaxyInstance();
-        this.quotaSettings = QuotaSettings.create(Galaxy.config);
         this.cleanupManager = ResourceCleanupManager.create();
     },
     methods: {
