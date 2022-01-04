@@ -1025,7 +1025,7 @@ class BaseDatasetPopulator(BasePopulator):
         contents = contents_response.json()
         return len(contents)
 
-    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
         # Export the history.
         download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
 

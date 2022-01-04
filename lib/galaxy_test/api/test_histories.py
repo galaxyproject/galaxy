@@ -390,7 +390,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(
-            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
+            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, api_key=self.galaxy_interactor.api_key
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
