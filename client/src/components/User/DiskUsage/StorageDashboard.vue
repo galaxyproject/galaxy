@@ -41,7 +41,6 @@ export default {
             },
         };
     },
-
     methods: {
         goToStorageManager() {
             this.$router.push({

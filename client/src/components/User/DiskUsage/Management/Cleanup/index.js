@@ -1,4 +1,4 @@
 export { CleanupOperationSummary } from "./CleanupOperationSummary";
-export { CleanUpResultDialog } from "./CleanUpResultDialog";
+export { CleanupResultDialog } from "./CleanupResultDialog";
 export { ResourceCleanupManager } from "./ResourceCleanupManager";
 export { ReviewCleanupDialog } from "./ReviewCleanupDialog";

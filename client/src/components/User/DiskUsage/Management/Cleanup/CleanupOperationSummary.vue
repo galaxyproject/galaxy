@@ -48,6 +48,7 @@ export default {
             summary: null,
             loading: true,
             errorMessage: null,
+            refreshDelay: 500,
         };
     },
     async created() {
@@ -67,6 +68,7 @@ export default {
         async refresh() {
             this.loading = true;
             try {
+                await new Promise((r) => setTimeout(r, this.refreshDelay));
                 this.summary = await this.operation.fetchSummary();
             } finally {
                 this.loading = false;

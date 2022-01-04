@@ -35,7 +35,7 @@
             :total-items="currentTotalItems"
             @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
-        <CleanUpResultDialog :result="cleanupResult" />
+        <CleanupResultDialog :result="cleanupResult" @onHide="onCleanupResultsHide" />
     </b-container>
 </template>
 
@@ -45,14 +45,14 @@ import { getGalaxyInstance } from "app";
 import { QuotaSettings } from "../model";
 import { ResourceCleanupManager } from "./Cleanup";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary";
-import CleanUpResultDialog from "./Cleanup/CleanUpResultDialog";
+import CleanupResultDialog from "./Cleanup/CleanupResultDialog";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog";
 
 export default {
     components: {
         CleanupOperationSummary,
         ReviewCleanupDialog,
-        CleanUpResultDialog,
+        CleanupResultDialog,
     },
     data() {
         return {
@@ -82,10 +82,14 @@ export default {
         },
         async onConfirmCleanupSelected(items) {
             this.$bvModal.show("cleanup-result-modal");
+            await new Promise((r) => setTimeout(r, 1000));
             this.cleanupResult = await this.currentOperation.cleanupItems(items);
             if (this.cleanupResult.success) {
                 this.refreshOperationId = this.currentOperation.id.toString();
             }
+        },
+        onCleanupResultsHide() {
+            this.cleanupResult = null;
         },
     },
 };
