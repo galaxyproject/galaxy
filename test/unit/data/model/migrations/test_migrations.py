@@ -1,6 +1,7 @@
 import os
 from typing import Union
 
+import alembic
 import pytest
 from sqlalchemy import MetaData
 
@@ -139,6 +140,14 @@ class TestAlembicManager:
                 am.stamp_revision(TSI_REVISION_0)
                 assert am.is_under_version_control(GXY)
                 assert am.is_under_version_control(TSI)
+
+    def test_get_revision_raises_error_if_revision_not_found(self, url_factory):  # noqa: F811
+        db_url = url_factory()
+        with create_and_drop_database(db_url):
+            with disposing_engine(db_url) as engine:
+                am = AlembicManagerForTests(engine)
+                with pytest.raises(alembic.util.exc.CommandError):
+                    am._get_revision('invalid')
 
 
 class TestDatabaseStateCache:

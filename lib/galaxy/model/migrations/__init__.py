@@ -1,6 +1,7 @@
 import logging
 import os
 
+import alembic
 from alembic import command, script
 from alembic.config import Config
 from alembic.runtime import migration
@@ -93,7 +94,7 @@ class AlembicManager:
             db_heads = context.get_current_heads()
             if db_heads:
                 for head in db_heads:
-                    revision = self.script_directory.get_revision(head)
+                    revision = self._get_revision(head)
                     if revision and model in revision.branch_labels:
                         return True
             return False
@@ -118,10 +119,17 @@ class AlembicManager:
             # if the head in the database is for gxy, but we are checking for tsi
             # this should return False.
             for head in db_version_heads:
-                revision = self.script_directory.get_revision(head)
-                if model in revision.branch_labels and head in version_heads:
+                revision = self._get_revision(head)
+                if revision and model in revision.branch_labels and head in version_heads:
                     return True
             return False
+
+    def _get_revision(self, revision_id):
+        try:
+            return self.script_directory.get_revision(revision_id)
+        except alembic.util.exc.CommandError as e:
+            log.error('TODO: explaining message')  # TODO fix message
+            raise e
 
 
 class DatabaseStateCache:
