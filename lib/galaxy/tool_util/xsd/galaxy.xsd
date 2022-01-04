@@ -2087,6 +2087,8 @@ Asserts the output has a specific size (in bytes) of ``value`` plus minus
 ``delta``, e.g. ``<has_size value="10000" delta="100" />``.
 Alternatively the range of the expected size can be specified by ``min`` and/or
 ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2120,6 +2122,8 @@ text="chr7">``). If the ``text`` is expected to occur a particular number of
 times, this value can be specified using ``n``. Optionally also with a certain
 ``delta``. Alternatively the range of expected occurences can be specified by
 ``min`` and/or ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2133,7 +2137,12 @@ times, this value can be specified using ``n``. Optionally also with a certain
   </xs:complexType>
   <xs:complexType name="AssertNotHasText">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the specified ``text`` does not appear in the output (e.g. ``<not_has_text text="chr8" />``).
+
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:attribute name="text" type="xs:string" use="required">
       <xs:annotation>
@@ -2150,6 +2159,8 @@ regular expression is expected to match a particular number of times, this value
 can be specified using ``n``.  Note only non-overlapping occurences are counted.
 Optionally also with a certain ``delta``. Alternatively the range of expected
 occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2169,6 +2180,8 @@ Asserts a line matching the specified string (``line``) appears in the output
 to occur a particular number of times, this value can be specified using ``n``.
 Optionally also with a certain ``delta``. Alternatively the range of expected
 occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2187,6 +2200,8 @@ Asserts that an output contains ``n`` lines, allowing for a difference of
 ``delta`` (default is 0), e.g. ``<has_n_lines n="3" delta="1"/>``.
 Alternatively the range of expected occurences can be specified by ``min``
 and/or ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2201,6 +2216,8 @@ appears in the output (e.g. ``<has_line_matching expression=".*\s+127489808\s+12
 If a particular number of matching lines is expected, this value can be
 specified using ``n``.  Optionally also with ``delta``. Alternatively the range
 of expected occurences can be specified by ``min`` and/or ``max``.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2222,6 +2239,8 @@ number (``n``) of columns (e.g. ``<has_n_columns n="3"/>``) optionally also with
 ``\t``) `and comment character(s) can be specified (``comment``, default is
 empty string), then the first non-comment line is used for determining the
 number of columns.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2274,6 +2293,8 @@ the asserts on the presence and number of matching archive members, but not any
 sub-assertions (which can offer the ``negate`` attribute on their own).  The
 check if the file is an archive at all, which is also done by the function, is
 not affected.
+
+$attribute_list::5
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -2299,6 +2320,8 @@ not affected.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2337,6 +2360,8 @@ If ``all`` is ``true`` then the sub assertions are checked for all occurences.
 
 Note that all other XML assertions can be expressed by this assertion (Galaxy
 also implements the other assertions by calling this one).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2365,6 +2390,8 @@ XPath-like ``path``, e.g.
 ```
 
 With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2384,6 +2411,8 @@ tags) with the specified XPath-like ``path``, e.g.
 Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
 can be used to specify the range of the expected number of occurences.
 With ``negate`` the result of the assertion can be inverted.
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2404,6 +2433,8 @@ matches the regular expression defined by ``expression``, e.g.
 The assertion implicitly also asserts that an element matching ``path`` exists.
 With ``negate`` the result of the assertion (on the matching) can be inverted (the
 implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2428,6 +2459,8 @@ the specified ``text``, e.g.
 The assertion implicitly also asserts that an element matching ``path`` exists.
 With ``negate`` the result of the assertion (on the equality) can be inverted (the
 implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2452,6 +2485,8 @@ XPath-like ``path`` matches the regular expression specified by ``expression``, 
 The assertion implicitly also asserts that an element matching ``path`` exists.
 With ``negate`` the result of the assertion (on the matching) can be inverted (the
 implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2476,6 +2511,8 @@ XPath-like ``path`` is the specified ``text``, e.g.
 The assertion implicitly also asserts that an element matching ``path`` exists.
 With ``negate`` the result of the assertion (on the equality) can be inverted (the
 implicit assertion on the existence of the path is not affected).
+
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2493,16 +2530,19 @@ implicit assertion on the existence of the path is not affected).
 This tag allows the developer to recurisively specify additional assertions as
 child elements about just the text contained in the element specified by the
 XPath-like ``path``, e.g.
+
 ```xml
 <element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
   <not_has_text text="EDK72998.1" />
-</element_text>```
+</element_text>
+```
 
 The assertion implicitly also asserts that an element matching ``path`` exists.
 With ``negate`` the result of the implicit assertions can be inverted. 
 The sub-assertions, which have their own ``negate`` attribute, are not affected
 by ``negate``.
 
+$attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
@@ -2514,7 +2554,16 @@ by ``negate``.
   </xs:complexType>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts HDF5 output has a set of attributes (``keys``), specified as a
+comma-separated list, e.g.
+
+```xml
+<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />
+```
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
@@ -2524,7 +2573,16 @@ by ``negate``.
   </xs:complexType>
   <xs:complexType name="AssertHasH5Attribute">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_h5_attribute key="nchroms" value="15" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.
+
+```xml
+<has_h5_attribute key="nchroms" value="15" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
     </xs:annotation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
