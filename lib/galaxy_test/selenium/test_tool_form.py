@@ -141,7 +141,6 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # prefetch citations so they will be available quickly when rendering tool form.
         citations_api = self.api_get("tools/bibtex/citations")
         citation_count = len(citations_api)
-        assert len(citations_api) == citation_count, len(citations_api)
         self.tool_open("bibtex")
         self.components.tool_form.about.wait_for_and_click()
 
