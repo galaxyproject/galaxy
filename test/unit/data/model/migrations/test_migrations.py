@@ -149,6 +149,24 @@ class TestAlembicManager:
                 with pytest.raises(alembic.util.exc.CommandError):
                     am._get_revision('invalid')
 
+    def test_get_model_db_head(self, url_factory):  # noqa: F811
+        db_url = url_factory()
+        with create_and_drop_database(db_url):
+            with disposing_engine(db_url) as engine:
+                am = AlembicManagerForTests(engine)
+                revisions = [GXY_REVISION_1, TSI_REVISION_2]
+                am.stamp_revision(revisions)
+                db_head = am.get_model_db_head(GXY)
+                assert db_head == GXY_REVISION_1  # We stamped the db with this GXY revision
+
+    def test_get_model_script_head(self, url_factory):  # noqa: F811
+        db_url = url_factory()
+        with create_and_drop_database(db_url):
+            with disposing_engine(db_url) as engine:
+                am = AlembicManagerForTests(engine)
+                script_head = am.get_model_script_head(GXY)
+                assert script_head == GXY_REVISION_2  # That's the latest GXY revision in our script directory
+
 
 class TestDatabaseStateCache:
 
