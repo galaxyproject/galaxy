@@ -27,18 +27,25 @@ log = logging.getLogger(__name__)
 
 
 class NoVersionTableError(Exception):
-    def __init__(self):
-        super().__init__('Database has no version table')  # TODO edit message
+    # The database has no version table (neither SQLAlchemy Migrate, nor Alembic), so it is
+    # impossible to automatically determine the state of the database. Manual update required.
+    def __init__(self, model):
+        super().__init__(f'Your {model} database has no version table; manual update is required')
 
 
 class VersionTooOldError(Exception):
-    def __init__(self):
-        super().__init__('Database version is too old and cannot be upgraded automatically')  # TODO edit message
+    # The database has a SQLAlchemy Migrate version table, but its version is older than
+    # {SQLALCHEMYMIGRATE_LAST_VERSION_GXY/TSI}, so it cannot be upgraded with Alembic.
+    # Manual update required.
+    def __init__(self, model):
+        super().__init__(f'Your {model} database version is too old; manual update is required')
 
 
 class OutdatedDatabaseError(Exception):
-    def __init__(self):
-        super().__init__('Database version is outdated. Can be upgraded automatically if auto-migrate is set')  # TODO edit message
+    # The database is under Alembic version control, but is out-of-date. Automatic upgrade possible.
+    def __init__(self, model):
+        msg = f'Your {model} database is out-of-date; automatic update requires setting `database_auto_migrate`'
+        super().__init__(msg)
 
 
 class AlembicManager:
@@ -120,6 +127,18 @@ class AlembicManager:
                 return True
         return False
 
+    def get_model_db_head(self, model):
+        return self._get_head_revision(model, self.db_heads)
+
+    def get_model_script_head(self, model):
+        return self._get_head_revision(model, self.script_directory.get_heads())
+
+    def _get_head_revision(self, model, heads):
+        for head in heads:
+            revision = self._get_revision(head)
+            if revision and model in revision.branch_labels:
+                return head
+
     @property
     def db_heads(self):
         if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
@@ -135,7 +154,7 @@ class AlembicManager:
         try:
             return self.script_directory.get_revision(revision_id)
         except alembic.util.exc.CommandError as e:
-            log.error('TODO: explaining message')  # TODO fix message
+            log.error(f'Revision {revision_id} not found in the script directory')
             raise e
 
     def _reset_db_heads(self):
@@ -289,17 +308,36 @@ class DatabaseStateVerifier:
     def _handle_with_alembic(self):
         # we know model is under alembic version control
         am = self.alembic_manager
+        model = self._get_model_name()
         # first check if this model is up to date
         if am.is_up_to_date(self.model):
-            # TODO: log message: db is up-to-date
+            log.info(f'Your {model} database is up-to-date')
             return
         # is outdated: try to upgrade
         if not self.is_auto_migrate:
-            raise OutdatedDatabaseError()
+            db_version = am.get_model_db_head(self.model)
+            code_version = am.get_model_script_head(self.model)
+            msg = self._get_upgrade_message(model, db_version, code_version)
+            log.warning(msg)
+            raise OutdatedDatabaseError(model)
         else:
-            # TODO log message: upgrading
+            log.info('Database is being upgraded to current version')
             am.upgrade(self.model)
             return
+
+    def _get_upgrade_message(self, model, db_version, code_version):
+        msg = f'Your {model} database has version {db_version}, but this code expects '
+        msg += f'version {code_version}. '
+        msg += 'This database can be upgraded automatically if database_auto_migrate is set. '
+        msg += 'To upgrade manually, run `migrate.sh` (see instructions in that file). '
+        msg += 'Please remember to backup your database before migrating.'
+        return msg
+
+    def _get_model_name(self):
+        if self.model == GXY:
+            return 'galaxy'
+        elif self.model == TSI:
+            return 'tool shed install'
 
     def _no_model_tables_exist(self):
         # True if there are no tables from `self.model` in the database.
@@ -345,12 +383,12 @@ class DatabaseStateVerifier:
         return self.db_state.is_last_sqlalchemymigrate_version(last_version)
 
     def _handle_no_version_table(self):
-        log.error('no version table')  # TODO edit message
-        raise NoVersionTableError()
+        model = self._get_model_name()
+        raise NoVersionTableError(model)
 
     def _handle_version_too_old(self):
-        log.error('version too old')  # TODO edit message
-        raise VersionTooOldError()
+        model = self._get_model_name()
+        raise VersionTooOldError(model)
 
 
 def get_last_sqlalchemymigrate_version(model):
@@ -380,7 +418,6 @@ def load_metadata(metadata, engine):
         metadata.create_all(bind=conn)
 
 
-# TODO galaxy has this (reuse, don't test)
 def listify(data):
     if not isinstance(data, (list, tuple)):
         return [data]
