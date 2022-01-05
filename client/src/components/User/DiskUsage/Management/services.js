@@ -59,10 +59,12 @@ export async function fetchDiscardedDatasets(options = {}) {
 /**
  * Purges a collection of datasets.
  * @param {Array} datasetIds Array of dataset IDs to be purged.
+ * @param {String} sourceType The type of dataset associations (hda, ldda...) to be purged.
  * @returns {Object} Result object with `success_count` and `errors`.
  */
-export async function purgeDatasets(datasetIds) {
+export async function purgeDatasets(datasetIds, sourceType) {
     const payload = {
+        src: sourceType,
         purge: true,
         ids: datasetIds,
     };
@@ -76,7 +78,7 @@ export async function purgeDatasets(datasetIds) {
 }
 
 /**
- * Purges a set of datasets from disk and returns the total space freed in bytes
+ * Purges a set of datasets (HDA) from disk and returns the total space freed in bytes
  * taking into account possible datasets that couldn't be deleted.
  * @param {Array} datasets Array of datasets to be removed from disk.
  *                         Each dataset must contain `id` and `size`.
@@ -85,7 +87,7 @@ export async function purgeDatasets(datasetIds) {
 export async function cleanupDatasets(datasets) {
     const datasetsTable = datasets.reduce((acc, item) => ((acc[item.id] = item), acc), {});
     const datasetIds = Object.keys(datasetsTable);
-    const requestResult = await purgeDatasets(datasetIds);
+    const requestResult = await purgeDatasets(datasetIds, "hda");
     const erroredIds = requestResult.errors.reduce((acc, item) => [...acc, item["id"]], []);
     const totalFreeBytes = datasetIds.reduce(
         (partial_sum, id) => partial_sum + (erroredIds.includes(id) ? 0 : datasetsTable[id]["size"]),

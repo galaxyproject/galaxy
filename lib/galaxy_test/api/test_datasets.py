@@ -240,11 +240,10 @@ class DatasetsApiTestCase(ApiTestCase):
 
         expected_deleted_ids = [dataset_map[1], dataset_map[2]]
         delete_payload = {
+            "src": "hda",
             "ids": expected_deleted_ids
         }
-        delete_response = self._delete("datasets", data=delete_payload, json=True)
-        self._assert_status_code_is_ok(delete_response)
-        deleted_result = delete_response.json()
+        deleted_result = self._delete_batch_with_payload(delete_payload)
 
         assert deleted_result["success_count"] == len(expected_deleted_ids)
         for deleted_id in expected_deleted_ids:
@@ -253,12 +252,11 @@ class DatasetsApiTestCase(ApiTestCase):
 
         expected_purged_ids = [dataset_map[0], dataset_map[2]]
         purge_payload = {
+            "src": "hda",
             "purge": True,
             "ids": expected_purged_ids
         }
-        delete_response = self._delete("datasets", data=purge_payload, json=True)
-        self._assert_status_code_is_ok(delete_response)
-        deleted_result = delete_response.json()
+        deleted_result = self._delete_batch_with_payload(purge_payload)
 
         assert deleted_result["success_count"] == len(expected_purged_ids)
 
@@ -276,14 +274,30 @@ class DatasetsApiTestCase(ApiTestCase):
                 hda = self.dataset_populator.new_dataset(history_id)
                 dataset_map[index] = hda["id"]
 
+            # Trying to delete datasets of wrong type will error
+            expected_errored_ids = [dataset_map[0], dataset_map[3]]
+            delete_payload = {
+                "src": "ldda",
+                "ids": expected_errored_ids
+            }
+            deleted_result = self._delete_batch_with_payload(delete_payload)
+
+            assert deleted_result["success_count"] == 0
+            assert len(deleted_result["errors"]) == len(expected_errored_ids)
+
         # Trying to delete datasets that we don't own will error
         expected_errored_ids = [dataset_map[1], dataset_map[2]]
         delete_payload = {
+            "src": "hda",
             "ids": expected_errored_ids
         }
-        delete_response = self._delete("datasets", data=delete_payload, json=True)
-        self._assert_status_code_is_ok(delete_response)
-        deleted_result = delete_response.json()
+        deleted_result = self._delete_batch_with_payload(delete_payload)
 
         assert deleted_result["success_count"] == 0
         assert len(deleted_result["errors"]) == len(expected_errored_ids)
+
+    def _delete_batch_with_payload(self, payload):
+        delete_response = self._delete("datasets", data=payload, json=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_result = delete_response.json()
+        return deleted_result

@@ -170,6 +170,11 @@ class BamDataResult(DataResult):
 
 
 class DeleteDatasetBatchPayload(BaseModel):
+    src: DatasetSourceType = Field(
+        ...,
+        title="Source",
+        description="The type of dataset associations to delete. Only datasets of this type will be processed.",
+    )
     ids: List[EncodedDatabaseIdField] = Field(
         description="The list of datasets IDs to be deleted/purged.",
     )
@@ -534,12 +539,15 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         errors = []
         for encoded_id in payload.ids:
             try:
-                hda = self.hda_manager.get_owned(self.decode_id(encoded_id), trans.user, current_history=trans.history)
-                self.hda_manager.error_if_uploading(hda)
+                decoded_dataset_id = self.decode_id(encoded_id)
+                manager = self.dataset_manager_by_type[payload.src]
+                dataset = manager.get_owned(decoded_dataset_id, trans.user)
+                if payload.src == DatasetSourceType.hda:
+                    self.hda_manager.error_if_uploading(dataset)
                 if payload.purge:
-                    self.hda_manager.purge(hda, flush=False)
+                    manager.purge(dataset, flush=False)
                 else:
-                    self.hda_manager.delete(hda, flush=False)
+                    manager.delete(dataset, flush=False)
                 success_count += 1
             except galaxy_exceptions.MessageException as e:
                 errors.append(DatasetErrorMessage.construct(dataset_id=encoded_id, error_message=str(e)))
