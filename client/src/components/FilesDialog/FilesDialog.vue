@@ -3,9 +3,23 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)">
+        :hide-modal="() => (modalShow = false)"
+        :back-func="load"
+        :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
+        </template>
+        <template v-slot:helper>
+            <b-alert v-if="showFTPHelper" id="helper" variant="info" show>
+                This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
+                <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
+                <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
+                <span v-if="oidcEnabled"
+                    ><br />If you are signed-in to Galaxy using a third-party identity and you
+                    <strong>do not have a Galaxy password</strong> please use the reset password option in the login
+                    form with your email to create a password for your account.</span
+                >
+            </b-alert>
         </template>
         <template v-slot:options>
             <data-dialog-table
@@ -43,6 +57,7 @@
 
 <script>
 import Vue from "vue";
+import { getGalaxyInstance } from "../../app";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import { UrlTracker } from "components/DataDialog/utilities";
@@ -89,7 +104,10 @@ export default {
             showDetails: true,
             isBusy: false,
             currentDirectory: undefined,
+            showFTPHelper: false,
             selectAllIcon: selectionStates.unselected,
+            ftpUploadSite: getGalaxyInstance()?.config?.ftp_upload_site,
+            oidcEnabled: getGalaxyInstance()?.config?.enable_oidc,
         };
     },
     created: function () {
@@ -258,10 +276,12 @@ export default {
         /** Performs server request to retrieve data records **/
         load: function (record) {
             this.currentDirectory = this.urlTracker.getUrl(record);
+            this.showFTPHelper = record?.url === "gxftp://";
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = !this.urlTracker.atRoot();
-            if (this.urlTracker.atRoot()) {
+            if (this.urlTracker.atRoot() || this.errorMessage) {
+                this.errorMessage = null;
                 this.services
                     .getFileSources()
                     .then((items) => {
