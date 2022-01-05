@@ -2092,24 +2092,24 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:string" use="optional">
+    <xs:attribute name="value" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Desired size of the output (in bytes)</xs:documentation>
+        <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
+    <xs:attribute name="delta" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``.</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum allowed size difference (default is 0). The observed size has to be in the range ``value +- delta``. Can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
+    <xs:attribute name="min" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum expected size</xs:documentation>
+        <xs:documentation xml:lang="en">Minimum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
+    <xs:attribute name="max" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum expected size</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum expected size, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
@@ -2613,24 +2613,24 @@ $attribute_list::5
   </xs:attributeGroup>
   
   <xs:attributeGroup name="AssertAttributeN">
-    <xs:attribute name="n" type="xs:integer" use="optional">
+    <xs:attribute name="n" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Desired number</xs:documentation>
+        <xs:documentation xml:lang="en">Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:integer" use="optional">
+    <xs:attribute name="delta" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0)</xs:documentation>
+        <xs:documentation xml:lang="en">Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="min" type="xs:integer" use="optional">
+    <xs:attribute name="min" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Minimum number (default: -infinity)</xs:documentation>
+        <xs:documentation xml:lang="en">Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="max" type="xs:integer" use="optional">
+    <xs:attribute name="max" type="Bytes" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Maximum number (default: infinity)</xs:documentation>
+        <xs:documentation xml:lang="en">Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
@@ -6773,6 +6773,14 @@ and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafou
       <xs:enumeration value="False"/>
       <xs:enumeration value="yes"/>
       <xs:enumeration value="no"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="Bytes">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Number of bytes alowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[1-9][0-9]*([kKMGTPE]i?)?"></xs:pattern>
     </xs:restriction>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">

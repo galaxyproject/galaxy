@@ -126,12 +126,12 @@ TEXT_HAS_LINE_ASSERTION_N = """
 """
 TEXT_HAS_N_LINES_ASSERTION = """
     <assert_contents>
-        <has_n_lines n="2"/>
+        <has_n_lines n="{n}"/>
     </assert_contents>
 """
 TEXT_HAS_N_LINES_ASSERTION_DELTA = """
     <assert_contents>
-        <has_n_lines n="3" delta="1"/>
+        <has_n_lines n="{n}" delta="{delta}"/>
     </assert_contents>
 """
 TEXT_HAS_LINE_MATCHING_ASSERTION = """
@@ -147,20 +147,16 @@ TEXT_HAS_LINE_MATCHING_ASSERTION_N = """
 
 SIZE_HAS_SIZE_ASSERTION = """
     <assert_contents>
-        <has_size value="10"/>
+        <has_size value="{value}"/>
     </assert_contents>
 """
 SIZE_HAS_SIZE_ASSERTION_DELTA = """
     <assert_contents>
-        <has_size value="10" delta="10"/>
+        <has_size value="{value}" delta="{delta}"/>
     </assert_contents>
 """
 
 TEXT_DATA_HAS_TEXT = """test text
-"""
-
-TEXT_DATA_HAS_TEXT_TWO = """test text
-test text
 """
 
 TEXT_DATA_HAS_TEXT_NEG = """desired content
@@ -368,7 +364,7 @@ TESTS = [
     ),
     # test has_text with n
     (
-        TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_text with n .. negative test
@@ -378,7 +374,7 @@ TESTS = [
     ),
     # test has_text with n and delta
     (
-        TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_text with n and delta .. negative test
@@ -388,7 +384,7 @@ TESTS = [
     ),
     # test has_text with min max
     (
-        TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_text with min max .. negative test
@@ -425,7 +421,7 @@ TESTS = [
     ),
     # test has_text negate with n .. negative test
     (
-        TEXT_HAS_TEXT_ASSERTION_N_NEGATE, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_N_NEGATE, TEXT_DATA_HAS_TEXT * 2,
         lambda x: "Did not expect 2+-0 occurences of 'test text' in output ('test text\ntest text\n') found 2" in x
     ),
     # test has_text negate with n and delta
@@ -435,7 +431,7 @@ TESTS = [
     ),
     # test has_text negate with n and delta .. negative test
     (
-        TEXT_HAS_TEXT_ASSERTION_N_DELTA_NEGATE, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_N_DELTA_NEGATE, TEXT_DATA_HAS_TEXT * 2,
         lambda x: "Did not expect 3+-1 occurences of 'test text' in output ('test text\ntest text\n') found 2" in x
     ),
     # test has_text negate with min max
@@ -445,7 +441,7 @@ TESTS = [
     ),
     # test has_text negate with min max .. negative test
     (
-        TEXT_HAS_TEXT_ASSERTION_MIN_MAX_NEGATE, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_ASSERTION_MIN_MAX_NEGATE, TEXT_DATA_HAS_TEXT * 2,
         lambda x: "Did not expect that the number of occurences of 'test text' in output is in [2:4] ('test text\ntest text\n') found 2" in x
     ),
 
@@ -482,7 +478,7 @@ TESTS = [
     ),
     # test has_text_matching with n
     (
-        TEXT_HAS_TEXT_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_text_matching with n .. negative test (using the test text where "te[sx]st" appears twice)
@@ -492,7 +488,7 @@ TESTS = [
     ),
     # test has_text_matching with n
     (
-        TEXT_HAS_TEXT_MATCHING_ASSERTION_MINMAX, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_TEXT_MATCHING_ASSERTION_MINMAX, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_text_matching with n .. negative test (using the test text where "te[sx]st" appears twice)
@@ -512,7 +508,7 @@ TESTS = [
     ),
     # test has_line with n
     (
-        TEXT_HAS_LINE_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_LINE_ASSERTION_N, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_line with n .. negative test
@@ -522,17 +518,22 @@ TESTS = [
     ),
     # test has_n_lines
     (
-        TEXT_HAS_N_LINES_ASSERTION, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_N_LINES_ASSERTION.format(n="2"), TEXT_DATA_HAS_TEXT * 2,
+        lambda x: len(x) == 0
+    ),
+    # test has_n_lines .. bytes
+    (
+        TEXT_HAS_N_LINES_ASSERTION.format(n="2ki"), TEXT_DATA_HAS_TEXT * 2048,
         lambda x: len(x) == 0
     ),
     # test has_n_lines .. negative test
     (
-        TEXT_HAS_N_LINES_ASSERTION, TEXT_DATA_HAS_TEXT,
+        TEXT_HAS_N_LINES_ASSERTION.format(n="2"), TEXT_DATA_HAS_TEXT,
         lambda x: "Expected 2+-0 lines in the output found 1" in x
     ),
     # test has_n_lines ..delta
     (
-        TEXT_HAS_N_LINES_ASSERTION_DELTA, TEXT_DATA_HAS_TEXT,
+        TEXT_HAS_N_LINES_ASSERTION_DELTA.format(n="3", delta="1"), TEXT_DATA_HAS_TEXT,
         lambda x: "Expected 3+-1 lines in the output found 1" in x
     ),
     # test has_line_matching
@@ -547,7 +548,7 @@ TESTS = [
     ),
     # test has_line_matching n
     (
-        TEXT_HAS_LINE_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT_TWO,
+        TEXT_HAS_LINE_MATCHING_ASSERTION_N, TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
     ),
     # test has_line_matching n .. negative test
@@ -557,18 +558,28 @@ TESTS = [
     ),
     # test has_size
     (
-        SIZE_HAS_SIZE_ASSERTION, TEXT_DATA_HAS_TEXT,
+        SIZE_HAS_SIZE_ASSERTION.format(value=10), TEXT_DATA_HAS_TEXT,
         lambda x: len(x) == 0
     ),
     # test has_size .. negative test
     (
-        SIZE_HAS_SIZE_ASSERTION, TEXT_DATA_HAS_TEXT_TWO,
+        SIZE_HAS_SIZE_ASSERTION.format(value="10"), TEXT_DATA_HAS_TEXT * 2,
         lambda x: "Expected file size of 10+-0 found 20" in x
     ),
     # test has_size .. delta
     (
-        SIZE_HAS_SIZE_ASSERTION_DELTA, TEXT_DATA_HAS_TEXT_TWO,
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="10", delta="10"), TEXT_DATA_HAS_TEXT * 2,
         lambda x: len(x) == 0
+    ),
+    # test has_size .. bytes suffix
+    (
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1k", delta="0"), TEXT_DATA_HAS_TEXT * 100,
+        lambda x: len(x) == 0
+    ),
+    # test has_size .. bytes suffix .. negative
+    (
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1Mi", delta="10k"), TEXT_DATA_HAS_TEXT * 100,
+        lambda x: 'Expected file size of 1Mi+-10k found 1000' in x
     ),
     # test is_valid_xml
     (
@@ -910,6 +921,7 @@ TEST_IDS = [
     'has_line n success',
     'has_line n failure',
     'has_n_lines success',
+    'has_n_lines n as bytes success',
     'has_n_lines failure',
     'has_n_lines delta',
     'has_line_matching success',
@@ -919,6 +931,8 @@ TEST_IDS = [
     'has_size success',
     'has_size failure',
     'has_size delta',
+    'has_size with bytes suffix',
+    'has_size with bytes suffix failure',
     'is_valid_xml success',
     'is_valid_xml failure',
     'has_element_with_path success 1',
