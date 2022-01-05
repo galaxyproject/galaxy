@@ -3,7 +3,10 @@
     var lastUpdate = 0;
 
     function removeOverlay() {
-        document.getElementById("gtn-container").style.visibility = "hidden";
+        const container = document.getElementById("gtn-container");
+        if (container) {
+            container.style.visibility = "hidden";
+        }
     }
 
     function showOverlay() {

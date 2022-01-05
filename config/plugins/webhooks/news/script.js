@@ -1,6 +1,9 @@
 (function () {
     function hideNewsOverlay() {
-        document.getElementById("news-container").style.visibility = "hidden";
+        const container = document.getElementById("news-container");
+        if (container) {
+            container.style.visibility = "hidden";
+        }
     }
 
     function newsSeen() {
