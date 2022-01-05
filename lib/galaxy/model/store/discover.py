@@ -11,7 +11,9 @@ import os
 from collections import (
     namedtuple,
 )
-from typing import Any, NamedTuple, Optional
+from typing import Any, Callable, Dict, List, NamedTuple, Optional
+
+from sqlalchemy.orm.scoping import ScopedSession
 
 import galaxy.model
 from galaxy import util
@@ -20,6 +22,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.model.tags import GalaxySessionlessTagHandler
+from galaxy.objectstore import ObjectStore
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer
@@ -135,7 +138,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list, flush=False)
+            # TODO: handle tag list without a session here...
+            self.tag_handler.add_tags_from_list(self.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -231,7 +235,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             self._populate_elements(chunk=filenames.items(), name=name, root_collection_builder=root_collection_builder, metadata_source_name=metadata_source_name, final_job_state=final_job_state)
 
     def _populate_elements(self, chunk, name, root_collection_builder, metadata_source_name, final_job_state):
-        element_datasets = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
+        element_datasets: Dict[str, List[Any]] = {'element_identifiers': [], 'datasets': [], 'tag_lists': [], 'paths': [], 'extra_files': []}
         for filename, discovered_file in chunk:
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
@@ -309,7 +313,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def add_tags_to_datasets(self, datasets, tag_lists):
         if any(tag_lists):
             for dataset, tags in zip(datasets, tag_lists):
-                self.tag_handler.add_tags_from_list(self.job.user, dataset, tags, flush=False)
+                self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
 
     def update_object_store_with_datasets(self, datasets, paths, extra_files):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
@@ -330,6 +334,44 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         Return None otherwise.
         """
+
+    @abc.abstractproperty
+    def sa_session(self) -> Optional[ScopedSession]:
+        """If bound to a database, return the SQL Alchemy session.
+
+        Return None otherwise.
+        """
+
+    @abc.abstractproperty
+    def permission_provider(self) -> 'PermissionProvider':
+        """If bound to a database, return the SQL Alchemy session.
+
+        Return None otherwise.
+        """
+
+    def get_implicit_collection_jobs_association_id(self) -> Optional[str]:
+        """No-op, no job context."""
+        return None
+
+    @abc.abstractproperty
+    def job(self) -> Optional[galaxy.model.Job]:
+        """Return associated job object if bound to a job finish context connected to a database."""
+
+    @abc.abstractproperty
+    def metadata_source_provider(self) -> 'MetadataSourceProvider':
+        """Return associated MetadataSourceProvider object."""
+
+    @abc.abstractproperty
+    def object_store(self) -> ObjectStore:
+        """Return object store to use for populating discovered dataset contents."""
+
+    @abc.abstractproperty
+    def flush_per_n_datasets(self) -> Optional[int]:
+        pass
+
+    @property
+    def input_dbkey(self) -> str:
+        return '?'
 
     @abc.abstractmethod
     def add_library_dataset_to_folder(self, library_folder, ld):
@@ -410,12 +452,11 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
     """A variant of ModelPersistenceContext that persists to an export store instead of database directly."""
 
     def __init__(self, object_store, export_store, working_directory):
-        self.permission_provider = UnusedPermissionProvider()
-        self.metadata_source_provider = UnusedMetadataSourceProvider()
-        self.sa_session = None
-        self.object_store = object_store
+        self._permission_provider = UnusedPermissionProvider()
+        self._metadata_source_provider = UnusedMetadataSourceProvider()
+        self._object_store = object_store
         self.export_store = export_store
-        self.flush_per_n_datasets = None
+        self._flush_per_n_datasets = None
 
         self.job_working_directory = working_directory  # TODO: rename...
 
@@ -424,8 +465,32 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return GalaxySessionlessTagHandler(self.sa_session)
 
     @property
+    def sa_session(self):
+        return None
+
+    @property
     def user(self):
         return None
+
+    @property
+    def job(self):
+        return None
+
+    @property
+    def permission_provider(self) -> UnusedPermissionProvider:
+        return self._permission_provider
+
+    @property
+    def metadata_source_provider(self) -> UnusedMetadataSourceProvider:
+        return self._metadata_source_provider
+
+    @property
+    def object_store(self) -> ObjectStore:
+        return self._object_store
+
+    @property
+    def flush_per_n_datasets(self) -> Optional[int]:
+        return self._flush_per_n_datasets
 
     def add_tags_to_datasets(self, datasets, tag_lists):
         user = galaxy.model.User()
@@ -614,7 +679,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
 def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
     # discover files as individual datasets for the target history
     datasets = []
-    storage_callbacks = []
+    storage_callbacks: List[Callable] = []
 
     def collect_elements_for_history(elements):
         for element in elements:
