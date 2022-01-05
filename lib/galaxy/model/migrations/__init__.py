@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import Optional
 
 import alembic
 from alembic import command, script
@@ -59,6 +60,7 @@ class AlembicManager:
         self.engine = engine
         self.alembic_cfg = self._load_config(config_dict)
         self.script_directory = script.ScriptDirectory.from_config(self.alembic_cfg)
+        self._db_heads: Optional[tuple]
         self._reset_db_heads()
 
     def _load_config(self, config_dict):
