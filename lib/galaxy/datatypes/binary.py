@@ -2473,6 +2473,10 @@ class RDS(CompressedArchive):
     see https://cran.r-project.org/doc/manuals/r-patched/R-ints.html#Serialization-Formats
 
     >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> from galaxy.model import Dataset, set_datatypes_registry
+    >>> from galaxy.model import History, HistoryDatasetAssociation
+    >>> from galaxy.model.mapping import init
     >>> fname = get_test_fname('int-r3.rds')
     >>> RDS().sniff(fname)
     True
@@ -2482,20 +2486,24 @@ class RDS(CompressedArchive):
     >>> fname = get_test_fname('int-r3-version2.rds')
     >>> RDS().sniff(fname)
     True
-    >>> from galaxy.util.bunch import Bunch
-    >>> dataset = Bunch()
-    >>> dataset.metadata = Bunch
-    >>> dataset.file_name = get_test_fname('int-r4.rds')
-    >>> dataset.has_data = lambda: True
-    >>> RDS().set_meta(dataset)
-    >>> dataset.metadata.version
+    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
+    >>> hist = History()
+    >>> sa_session.add(hist)
+    >>> sa_session.flush()
+    >>> set_datatypes_registry(example_datatype_registry_for_sample())
+    >>> fname = get_test_fname( 'int-r4.rds' )
+    >>> rdsds = Dataset(external_filename=fname)
+    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='rds', create_dataset=True, sa_session=sa_session, dataset=rdsds))
+    >>> RDS().set_meta(hda)
+    >>> hda.metadata.version
     '3'
-    >>> dataset.metadata.rversion
+    >>> hda.metadata.rversion
     '4.1.1'
-    >>> dataset.metadata.minrversion
+    >>> hda.metadata.minrversion
     '3.5.0'
-    >>> dataset.metadata.rdatatype
-    None
+    >>> hda.metadata.element_is_set('rdatatype')
+    False
+    >>> hda.metadata.rdatatype = 'dada_unique'
     """
     file_ext = 'rds'
 
@@ -2516,6 +2524,7 @@ class RDS(CompressedArchive):
             pass
         finally:
             fh.close()
+        # dataset.metadata.rdatatype = None
 
     def sniff_prefix(self, sniff_prefix):
         try:
