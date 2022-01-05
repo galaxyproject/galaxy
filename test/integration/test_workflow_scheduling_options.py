@@ -124,5 +124,5 @@ input1:
   name: fasta1
 text_input: foo
 """, history_id=history_id)
-            invocation = self._get(f"/invocations/{invocation_response.invocation_id}").json()
+            invocation = self._get(f"invocations/{invocation_response.invocation_id}").json()
             assert 'wf_output_1' in invocation['output_collections']

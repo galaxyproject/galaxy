@@ -6,6 +6,7 @@ import logging
 import sys
 import threading
 import traceback
+from urllib.parse import urljoin
 
 from paste import httpexceptions
 from tuswsgi import TusMiddleware
@@ -1389,7 +1390,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
     app = wrap_if_allowed(app, stack, TusMiddleware, kwargs={
-        'upload_path': '/api/upload/resumable_upload',
+        'upload_path': urljoin(f"{application_stack.config.galaxy_url_prefix}/", 'api/upload/resumable_upload'),
         'tmp_dir': application_stack.config.new_file_path,
         'max_size': application_stack.config.maximum_upload_file_size
     })

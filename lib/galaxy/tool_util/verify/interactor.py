@@ -7,6 +7,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import urllib.parse
 import zipfile
 from json import dumps
 from logging import getLogger
@@ -740,7 +741,7 @@ class GalaxyInteractorApi:
             return path
         elif path.startswith("/api/"):
             path = path[len("/api/"):]
-        return f"{self.api_url}/{path}"
+        return urllib.parse.urljoin(f"{self.api_url}/", path)
 
     def _prepare_request_params(self, data=None, files=None, as_json: bool = False, params: dict = None, headers: dict = None):
         """Handle some Galaxy conventions and work around requests issues.

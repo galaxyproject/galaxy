@@ -20,7 +20,7 @@
     <head>
         <title>WYMeditor iframe</title>
         <meta http-equiv="X-UA-Compatible" content="IE=EmulateIE7" />
-        <link rel="stylesheet" type="text/css" media="screen" href="/static/wymeditor/iframe/galaxy/wymiframe.css" />
+        <link rel="stylesheet" type="text/css" media="screen" href="${h.url_for('/')}/static/wymeditor/iframe/galaxy/wymiframe.css" />
         ${h.css("base", "embed_item")}
     </head>
     <body class="wym_iframe text-content"></body>

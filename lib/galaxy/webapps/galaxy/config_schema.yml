@@ -1361,6 +1361,14 @@ mapping:
           Users can override this settings in their user preferences if the localization
           settings are enabled in user_preferences_extra_conf.yml
 
+      galaxy_url_prefix:
+        type: str
+        default: '/'
+        required: false
+        desc: |
+          URL prefix for Galaxy application. If Galaxy should be served under a prefix set this to
+          the desired prefix value.
+
       galaxy_infrastructure_url:
         type: str
         default: http://localhost:8080
