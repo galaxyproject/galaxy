@@ -43,7 +43,7 @@ TSI_REVISION_2 = '0e28bf2fb7b5'  # current/head
 class TestAlembicManager:
 
     def test_is_at_revision__one_head_one_revision(self, url_factory):  # noqa: F811
-        """ Use case: Check if separate tsi database is at a given revision."""
+        # Use case: Check if separate tsi database is at a given revision.
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -54,7 +54,7 @@ class TestAlembicManager:
                 assert AlembicManagerForTests.is_at_revision(engine, revision)
 
     def test_is_at_revision__two_heads_one_revision(self, url_factory):  # noqa: F811
-        """ Use case: Check if combined gxy and tsi database is at a given gxy revision."""
+        # Use case: Check if combined gxy and tsi database is at a given gxy revision.
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -66,7 +66,7 @@ class TestAlembicManager:
                 assert AlembicManagerForTests.is_at_revision(engine, revision)
 
     def test_is_at_revision__two_heads_two_revisions(self, url_factory):  # noqa: F811
-        """ Use case: Check if combined gxy and tsi database is at given gxy and tsi revisions."""
+        # Use case: Check if combined gxy and tsi database is at given gxy and tsi revisions.
         db_url = url_factory()
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
@@ -213,13 +213,11 @@ class TestDatabaseStateCache:
 # Database fixture tests
 
 class TestDatabaseFixtures:
-    """
-    Verify that database fixtures have the expected state.
-
-    The fixtures of the form `db_state#_[gxy|tsi]` are urls that point
-    to databases that HAVE BEEN CREATED. Thus, we are not wrapping them here
-    in the `create_and_drop_database` context manager: they are wrapped already.
-    """
+    # Verify that database fixtures have the expected state.
+    #
+    # The fixtures of the form `db_state#_[gxy|tsi]` are urls that point
+    # to databases that HAVE BEEN CREATED. Thus, we are not wrapping them here
+    # in the `create_and_drop_database` context manager: they are wrapped already.
     class TestState1:
 
         def test_database_gxy(self, db_state1_gxy, metadata_state1_gxy):
@@ -351,15 +349,12 @@ class TestDatabaseFixtures:
 
 
 class TestDatabaseStates:
-    """
-    Tests of primary function under different scenarios and database state.
-    """
+    # Tests of primary function under different scenarios and database state.
+
     class TestNoState:
-        """
-        Initial state: database does not exist.
-        Expect: database created, initialized, versioned w/alembic.
-        (we use `metadata_state6_{gxy|tsi|combined}` for final database schema)
-        """
+        # Initial state: database does not exist.
+        # Expect: database created, initialized, versioned w/alembic.
+        # (we use `metadata_state6_{gxy|tsi|combined}` for final database schema)
         def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
             db_url = url_factory()
             with drop_database(db_url):
@@ -380,10 +375,8 @@ class TestDatabaseStates:
                     assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     class TestState0:
-        """
-        Initial state: database is empty.
-        Expect: database created, initialized, versioned w/alembic.
-        """
+        # Initial state: database is empty.
+        # Expect: database created, initialized, versioned w/alembic.
         def test_combined_database(self, url_factory, metadata_state6_combined):  # noqa: F811
             db_url = url_factory()
             with create_and_drop_database(db_url):
@@ -407,10 +400,8 @@ class TestDatabaseStates:
                     assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     class TestState1:
-        """
-        Initial state: non-empty database, no version table.
-        Expect: fail with appropriate message.
-        """
+        # Initial state: non-empty database, no version table.
+        # Expect: fail with appropriate message.
         def test_combined_database(self, db_state1_combined):
             with pytest.raises(NoVersionTableError):
                 with disposing_engine(db_state1_combined) as engine:
@@ -427,11 +418,9 @@ class TestDatabaseStates:
                     verify_databases(engine1, engine2)
 
     class TestState2:
-        """
-        Initial state: non-empty database, SQLAlchemy Migrate version table present; however,
-        the stored version is not the latest after which we could transition to Alembic.
-        Expect: fail with appropriate message.
-        """
+        # Initial state: non-empty database, SQLAlchemy Migrate version table present; however,
+        # the stored version is not the latest after which we could transition to Alembic.
+        # Expect: fail with appropriate message.
         def test_combined_database(self, db_state2_combined):
             with pytest.raises(VersionTooOldError):
                 with disposing_engine(db_state2_combined) as engine:
@@ -448,13 +437,11 @@ class TestDatabaseStates:
                     verify_databases(engine1, engine2)
 
     class TestState3:
-        """
-        Initial state: non-empty database, SQLAlchemy Migrate version table contains latest version
-        under SQLAlchemy Migrate.
-        Expect:
-        a) auto-migrate enabled: alembic version table added, database upgraded to current version.
-        b) auto-migrate disabled: fail with appropriate message.
-        """
+        # Initial state: non-empty database, SQLAlchemy Migrate version table contains latest version
+        # under SQLAlchemy Migrate.
+        # Expect:
+        # a) auto-migrate enabled: alembic version table added, database upgraded to current version.
+        # b) auto-migrate disabled: fail with appropriate message.
         def test_combined_database_automigrate(
             self,
             db_state3_combined,
@@ -497,13 +484,11 @@ class TestDatabaseStates:
                     verify_databases(engine1, engine2)
 
     class TestState4:
-        """
-        Initial state: non-empty database, SQLAlchemy Migrate version table present, Alembic version table present.
-        Oldest Alembic revision.
-        Expect:
-        a) auto-migrate enabled: database upgraded to current version.
-        b) auto-migrate disabled: fail with appropriate message.
-        """
+        # Initial state: non-empty database, SQLAlchemy Migrate version table present, Alembic version table present.
+        # Oldest Alembic revision.
+        # Expect:
+        # a) auto-migrate enabled: database upgraded to current version.
+        # b) auto-migrate disabled: fail with appropriate message.
         def test_combined_database_automigrate(
             self,
             db_state4_combined,
@@ -546,13 +531,11 @@ class TestDatabaseStates:
                     verify_databases(engine1, engine2)
 
     class TestState5:
-        """
-        Initial state: non-empty database, Alembic version table present.
-        Oldest Alembic revision that does not include SQLAlchemy Migrate version table.
-        Expect:
-        a) auto-migrate enabled: database upgraded to current version.
-        b) auto-migrate disabled: fail with appropriate message.
-        """
+        # Initial state: non-empty database, Alembic version table present.
+        # Oldest Alembic revision that does not include SQLAlchemy Migrate version table.
+        # Expect:
+        # a) auto-migrate enabled: database upgraded to current version.
+        # b) auto-migrate disabled: fail with appropriate message.
         def test_combined_database_automigrate(
             self,
             db_state5_combined,
@@ -595,10 +578,8 @@ class TestDatabaseStates:
                     verify_databases(engine1, engine2)
 
     class TestState6:
-        """
-        Initial state: non-empty database, Alembic version table present, database up-to-date.
-        Expect: do nothing.
-        """
+        # Initial state: non-empty database, Alembic version table present, database up-to-date.
+        # Expect: do nothing.
         def test_combined_database(self, db_state6_combined, metadata_state6_combined):
             db_url = db_state6_combined
             with disposing_engine(db_url) as engine:
@@ -620,34 +601,30 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
     class TestPartiallyUpgradedCombinedDatabase:
-        """
-        This only applies to an EXISTING, NONEMPTY database, that is COMBINED (both GXY and TSI models
-        are in the same database).
-        This covers several edge cases when the GXY model is up-to-date, but the TSI model is not.
-        This may happen for a variety of reasons:
-        - a database is being upgraded to Alembic: the GXY model is processed first,
-          so GXY will become up-to-date before TSI;
-        - a database is changed to "combined" (via setting install_database_connection): so TSI has not
-          been initialized in this database.
-        - a glitch in the Matrix, an act of god, etc.
-        These tests verify the system's handling of such cases for 2 TSI states:
-        - Database has no TSI tables: assume new TSI install.
-        - Database has some TSI tables: assume TSI is at last pre-alembic state and can be migrated.
-        (We expect a severly outdated TSI model to have been upgraded manually together with the GXY model;
-        for there is no reasonable way to determine its state automatically without a version table.)
-
-        Initial state for all tests:
-        - combined database
-        - GXY model: up-to-date
-        - TSI model: not in Alembic version table
-        """
+        # This only applies to an EXISTING, NONEMPTY database, that is COMBINED (both GXY and TSI models
+        # are in the same database).
+        # This covers several edge cases when the GXY model is up-to-date, but the TSI model is not.
+        # This may happen for a variety of reasons:
+        # - a database is being upgraded to Alembic: the GXY model is processed first,
+        #   so GXY will become up-to-date before TSI;
+        # - a database is changed to "combined" (via setting install_database_connection): so TSI has not
+        #   been initialized in this database.
+        # - a glitch in the Matrix, an act of god, etc.
+        # These tests verify the system's handling of such cases for 2 TSI states:
+        # - Database has no TSI tables: assume new TSI install.
+        # - Database has some TSI tables: assume TSI is at last pre-alembic state and can be migrated.
+        # (We expect a severly outdated TSI model to have been upgraded manually together with the GXY model;
+        # for there is no reasonable way to determine its state automatically without a version table.)
+        #
+        # Initial state for all tests:
+        # - combined database
+        # - GXY model: up-to-date
+        # - TSI model: not in Alembic version table
         def test_case1_automigrate(self, db_state6_gxy, metadata_state6_combined, set_automigrate):
-            """
-            Initial state:
-            - no TSI tables exist
-            - auto-migrate enabled
-            Expect: database is up-to-date
-            """
+            # Initial state:
+            # - no TSI tables exist
+            # - auto-migrate enabled
+            # Expect: database is up-to-date
             db_url = db_state6_gxy
             with disposing_engine(db_url) as engine:
                 verify_databases(engine)
@@ -655,12 +632,10 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
         def test_case1_no_automigrate(self, db_state6_gxy, metadata_state6_combined):
-            """
-            Initial state:
-            - no TSI tables exist
-            - auto-migrate not enabled
-            Expect: database is up-to-date (same as auto-migrate enabled)
-            """
+            # Initial state:
+            # - no TSI tables exist
+            # - auto-migrate not enabled
+            # Expect: database is up-to-date (same as auto-migrate enabled)
             db_url = db_state6_gxy
             with disposing_engine(db_url) as engine:
                 verify_databases(engine)
@@ -668,12 +643,10 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
         def test_case2_automigrate(self, db_state6_gxy_state3_tsi_no_sam, metadata_state6_combined, set_automigrate):
-            """
-            Initial state:
-            - all pre-alembic TSI tables exist
-            - auto-migrate enabled
-            Expect: database is up-to-date
-            """
+            # Initial state:
+            # - all pre-alembic TSI tables exist
+            # - auto-migrate enabled
+            # Expect: database is up-to-date
             db_url = db_state6_gxy_state3_tsi_no_sam
             with disposing_engine(db_url) as engine:
                 verify_databases(engine)
@@ -681,12 +654,10 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
         def test_case2_no_automigrate(self, db_state6_gxy_state3_tsi_no_sam):
-            """
-            Initial state:
-            - all pre-alembic TSI tables exist
-            - auto-migrate not enabled
-            Expect: fail with appropriate message
-            """
+            # Initial state:
+            # - all pre-alembic TSI tables exist
+            # - auto-migrate not enabled
+            # Expect: fail with appropriate message
             db_url = db_state6_gxy_state3_tsi_no_sam
             with pytest.raises(OutdatedDatabaseError):
                 with disposing_engine(db_url) as engine:
@@ -786,15 +757,13 @@ def test_database_is_empty(url_factory, metadata_state1_gxy):  # noqa F811
 
 
 def database_is_up_to_date(db_url, current_state_metadata, model):
-    """
-    True if the database at `db_url` has the `current_state_metadata` loaded,
-    and is up-to-date with respect to `model` (has the most recent Alembic revision).
+    # True if the database at `db_url` has the `current_state_metadata` loaded,
+    # and is up-to-date with respect to `model` (has the most recent Alembic revision).
 
-    NOTE: Ideally, we'd determine the current metadata based on the model. However, since
-    metadata is a fixture, it cannot be called directly, and instead has to be
-    passed as an argument. That's why we ensure that the passed metadata is current
-    (this guards againt an incorrect test).
-    """
+    # NOTE: Ideally, we'd determine the current metadata based on the model. However, since
+    # metadata is a fixture, it cannot be called directly, and instead has to be
+    # passed as an argument. That's why we ensure that the passed metadata is current
+    # (this guards againt an incorrect test).
     if model == GXY:
         current_tables = {'gxy_table1', 'gxy_table2', 'gxy_table3'}
     elif model == TSI:
@@ -859,10 +828,8 @@ def test_database_is_not_up_to_date_if_alembic_not_added(url_factory, metadata_s
 
 
 def is_metadata_loaded(db_url, metadata):
-    """
-    True if the set of tables from the up-to-date state metadata (state6)
-    is a subset of the metadata reflected from `db_url`.
-    """
+    # True if the set of tables from the up-to-date state metadata (state6)
+    # is a subset of the metadata reflected from `db_url`.
     with disposing_engine(db_url) as engine:
         with engine.connect() as conn:
             db_metadata = MetaData()
@@ -910,15 +877,14 @@ def test_load_metadata(url_factory, metadata_state1_gxy):  # noqa F811
             assert is_metadata_loaded(db_url, metadata)
 
 
-"""
 # Fixtures: databases loaded with a given state.
-Each state has 3 versions: gxy, tsi, combined (see fixtures/schemas.py)
-
-Each fixture is constructed as follows:
-1. Create a new sqlite database url.
-2. Pass database url with state metadata fixture to a `_setup_db_url_state{state#}` function.
-3. Inside the function, create database and load any state-specific data.
-"""
+#
+# Each state has 3 versions: gxy, tsi, combined (see fixtures/schemas.py)
+#
+# Each fixture is constructed as follows:
+# 1. Create a new sqlite database url.
+# 2. Pass database url with state metadata fixture to a `_setup_db_url_state{state#}` function.
+# 3. Inside the function, create database and load any state-specific data.
 
 
 # state 1
