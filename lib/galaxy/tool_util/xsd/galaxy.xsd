@@ -2495,8 +2495,8 @@ $attribute_list::5
       <xs:annotation>
         <xs:documentation xml:lang="en">The regular expression to use.</xs:documentation>
       </xs:annotation>
-    <xs:attributeGroup ref="AssertAttributeNegate"/>
     </xs:attribute>
+    <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
   <xs:complexType name="AssertAttributeIs">
     <xs:annotation>
