@@ -171,7 +171,6 @@ class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, Hal
         log.debug("python path is: %s", ", ".join(sys.path))
         self.name = "galaxy"
         self.is_webapp = False
-        self.new_installation = False
         # Read config file and check for errors
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
         self.config.check()
