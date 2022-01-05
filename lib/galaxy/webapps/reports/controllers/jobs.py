@@ -351,7 +351,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                     curr_month = ''
                     curr_year = ''
                 else:
-                    curr_month =row.date.strftime("%B") 
+                    curr_month = row.date.strftime("%B")
                     curr_year = row.date.strftime("%Y")
                 jobs.append((
                     row.date.strftime("%Y-%m"),
@@ -942,7 +942,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                     curr_month = ''
                     curr_year = ''
                 else:
-                    curr_month =row.date.strftime("%B") 
+                    curr_month = row.date.strftime("%B")
                     curr_year = row.date.strftime("%Y")
                 jobs.append((row.date.strftime("%Y-%m"),
                              row.execute_time,
