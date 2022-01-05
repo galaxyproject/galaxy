@@ -22,6 +22,16 @@ class DatasetsApiTestCase(ApiTestCase):
         index_response = self._get("datasets")
         self._assert_status_code_is(index_response, 200)
 
+    def test_index_using_keys(self):
+        expected_keys = "size"
+        self.dataset_populator.new_dataset(self.history_id)
+        index_response = self._get(f"datasets?keys={expected_keys}")
+        self._assert_status_code_is(index_response, 200)
+        datasets = index_response.json()
+        for dataset in datasets:
+            self._assert_has_keys(dataset, "size")
+            self._assert_not_has_keys(dataset, "name", "history_content_type")
+
     def test_search_datasets(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
         payload = {"limit": 1, "offset": 0}
