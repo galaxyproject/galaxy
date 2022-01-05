@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
-import { CleanableSummary } from "../model";
+import { CleanableSummary, CleanupResult } from "../model";
 
 const datasetKeys = "id,name,size,update_time";
 const isDataset = "q=history_content_type-eq&qv=dataset";
@@ -82,20 +82,22 @@ export async function purgeDatasets(datasetIds, sourceType) {
  * taking into account possible datasets that couldn't be deleted.
  * @param {Array} datasets Array of datasets to be removed from disk.
  *                         Each dataset must contain `id` and `size`.
- * @returns {Object} Contains the total bytes cleaned up and the list of errors if any.
+ * @returns {CleanupResult}
  */
 export async function cleanupDatasets(datasets) {
+    const result = new CleanupResult();
     const datasetsTable = datasets.reduce((acc, item) => ((acc[item.id] = item), acc), {});
     const datasetIds = Object.keys(datasetsTable);
-    const requestResult = await purgeDatasets(datasetIds, "hda");
-    const erroredIds = requestResult.errors.reduce((acc, item) => [...acc, item["id"]], []);
-    const totalFreeBytes = datasetIds.reduce(
-        (partial_sum, id) => partial_sum + (erroredIds.includes(id) ? 0 : datasetsTable[id]["size"]),
-        0
-    );
-    return {
-        totalFreeBytes: totalFreeBytes,
-        errors: requestResult.errors,
-        success: totalFreeBytes > 0,
-    };
+    try {
+        const requestResult = await purgeDatasets(datasetIds, "hda");
+        result.errors = requestResult.errors;
+        const erroredIds = requestResult.errors.reduce((acc, item) => [...acc, item["id"]], []);
+        result.totalFreeBytes = datasetIds.reduce(
+            (partial_sum, id) => partial_sum + (erroredIds.includes(id) ? 0 : datasetsTable[id]["size"]),
+            0
+        );
+    } catch (error) {
+        result.errorMessage = error;
+    }
+    return result;
 }
