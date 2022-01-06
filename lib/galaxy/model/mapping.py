@@ -58,7 +58,7 @@ def configure_model_mapping(
     engine,
     map_install_models,
     thread_local_log,
-) -> GalaxyModelMapping:
+):
     _configure_model(file_path, object_store, use_pbkdf2)
     return _build_model_mapping(engine, map_install_models, thread_local_log)
 

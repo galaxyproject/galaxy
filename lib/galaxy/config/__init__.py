@@ -1513,7 +1513,14 @@ class ConfiguresGalaxyMixin:
             from galaxy.model.migrations import verify_databases
             verify_databases(engine, install_engine, self.config)
 
-        self.model = self._this_should_be_inlined(engine, combined_install_database)
+        self.model = mapping.configure_model_mapping(
+            self.config.file_path,
+            self.object_store,
+            self.config.use_pbkdf2,
+            engine,
+            combined_install_database,
+            self.config.thread_local_log
+        )
 
         if combined_install_database:
             log.info("Install database targeting Galaxy's database configuration.")  # TODO this message is ambiguous
@@ -1522,17 +1529,6 @@ class ConfiguresGalaxyMixin:
             from galaxy.model.tool_shed_install import mapping as install_mapping
             self.install_model = install_mapping.configure_model_mapping(install_engine)
             log.info(f"Install database using its own connection {install_db_url}")
-
-    def _this_should_be_inlined(self, engine, combined_install_database):
-        # TODO this is WIP: see comments in method above.
-        return mapping.configure_model_mapping(
-            self.config.file_path,
-            self.object_store,
-            self.config.use_pbkdf2,
-            engine,
-            combined_install_database,
-            self.config.thread_local_log
-        )
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
