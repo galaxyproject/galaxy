@@ -62,7 +62,6 @@ Members
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Marius van den Beek (@mvdbeek)
-- Oleg Zharkov (@OlegZharkov)
 
 Membership
 ----------
