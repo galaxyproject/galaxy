@@ -1,4 +1,4 @@
-from galaxy.model.migrate.versions.util import execute_statements
+from galaxy.model.triggers.utils import execute_statements
 
 # function name prefix
 fn_prefix = "fn_audit_history_by"
