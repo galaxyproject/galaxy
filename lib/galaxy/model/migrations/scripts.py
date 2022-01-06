@@ -10,8 +10,8 @@ from galaxy.util.properties import (
 DEFAULT_CONFIG_NAMES = ['galaxy', 'universe_wsgi']
 CONFIG_FILE_ARG = '--galaxy-config'
 CONFIG_DIR_NAME = 'config'
-GXY_CONFIG_PREFIX = 'GALALXY_CONFIG_'
-TSI_CONFIG_PREFIX = 'GALALXY_INSTALL_CONFIG_'
+GXY_CONFIG_PREFIX = 'GALAXY_CONFIG_'
+TSI_CONFIG_PREFIX = 'GALAXY_INSTALL_CONFIG_'
 
 DatabaseConfig = namedtuple('DatabaseConfig', ['url', 'template', 'encoding'])
 
