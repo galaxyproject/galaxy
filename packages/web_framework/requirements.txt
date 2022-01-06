@@ -4,7 +4,7 @@ galaxy-util
 galaxy-web-stack
 MarkupSafe
 paste
-pydantic<1.8
+pydantic
 requests
 Routes
 SQLAlchemy>=1.4.25,<2

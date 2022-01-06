@@ -3,6 +3,7 @@ Cheetah3
 fastapi>=0.68.2,!=0.69.0,!=0.70.0,!=0.70.1
 fastapi-utils
 Mako
+pydantic
 python-multipart  # required to support form parsing in FastAPI/Starlette
 starlette
 typing-extensions
