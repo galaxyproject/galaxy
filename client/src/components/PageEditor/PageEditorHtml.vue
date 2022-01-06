@@ -715,7 +715,7 @@ export default {
             save(this.pageId, editor.xhtml(), !showResult)
                 .then(() => {
                     if (showResult) {
-                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                        window.location = this.publicUrl;
                     }
                 })
                 .catch((error) => {

@@ -723,6 +723,67 @@ def test_config_parse_cloud():
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
+            _assert_key_has_value(as_dict, "enable_cache_monitor", False)
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
+
+
+CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
+     <auth />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+def test_config_parse_cloud_noauth_for_aws():
+    for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
+        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+
+            assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
+            assert object_store.use_rr is False
+
+            assert object_store.host is None
+            assert object_store.port == 6000
+            assert object_store.multipart is True
+            assert object_store.is_secure is True
+            assert object_store.conn_path == "/"
+
+            assert object_store.cache_size == 1000.0
+            assert object_store.staging_path == "database/object_store_cache"
+            assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
+            assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
+
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "cloud")
+
+            auth_dict = as_dict["auth"]
+            bucket_dict = as_dict["bucket"]
+            connection_dict = as_dict["connection"]
+            cache_dict = as_dict["cache"]
+
+            provider = as_dict["provider"]
+            assert provider == "aws"
+            print(auth_dict["access_key"])
+            _assert_key_has_value(auth_dict, "access_key", None)
+            _assert_key_has_value(auth_dict, "secret_key", None)
+
+            _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
+            _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
+
+            _assert_key_has_value(connection_dict, "host", None)
+            _assert_key_has_value(connection_dict, "port", 6000)
+            _assert_key_has_value(connection_dict, "multipart", True)
+            _assert_key_has_value(connection_dict, "is_secure", True)
+
+            _assert_key_has_value(cache_dict, "size", 1000.0)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 

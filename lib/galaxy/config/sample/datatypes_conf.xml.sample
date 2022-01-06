@@ -82,7 +82,9 @@
     <datatype extension="daa" type="galaxy.datatypes.binary:DAA" display_in_upload="true"/>
     <datatype extension="rma6" type="galaxy.datatypes.binary:RMA6" display_in_upload="true"/>
     <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
-    <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true"/>
+    <datatype extension="parquet" type="galaxy.datatypes.binary:Parquet" display_in_upload="true">
+      <converter file="parquet_to_csv_converter.xml" target_datatype="csv"/>
+    </datatype>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
       <display file="ucsc/bigbed.xml"/>
@@ -181,6 +183,7 @@
     <datatype extension="cool" type="galaxy.datatypes.binary:Cool" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mcool" type="galaxy.datatypes.binary:MCool" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5mlm" type="galaxy.datatypes.binary:H5MLM" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="ludwig_model" type="galaxy.datatypes.binary:LudwigModel" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order).">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>

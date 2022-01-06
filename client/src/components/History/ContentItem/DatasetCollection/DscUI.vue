@@ -41,22 +41,12 @@
                     icon="trash-restore"
                     @click.stop="$emit('undelete')" />
 
-                <IconButton
-                    class="px-1"
-                    state="ok"
-                    title="Collection"
-                    icon="folder"
-                    @click.stop="$emit('viewCollection')"
-                    variant="link" />
-
                 <div class="content-title title flex-grow-1 overflow-hidden" @click.stop="$emit('viewCollection')">
                     <h5 class="text-truncate">
                         <span class="hid">{{ dsc.hid }}</span>
                         <span class="name">{{ dsc.name }}</span>
-                        <span class="description">
-                            ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                        </span>
                     </h5>
+                    <DscDescription :dsc="dsc" />
                 </div>
             </div>
 
@@ -80,6 +70,7 @@
 import { DatasetCollection } from "../../model/DatasetCollection";
 import StatusIcon from "../../StatusIcon";
 import JobStateProgress from "./JobStateProgress";
+import DscDescription from "./DscDescription";
 import DscMenu from "./DscMenu";
 import { Nametag } from "components/Nametags";
 import IconButton from "components/IconButton";
@@ -91,6 +82,7 @@ export default {
         DscMenu,
         Nametag,
         IconButton,
+        DscDescription,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },

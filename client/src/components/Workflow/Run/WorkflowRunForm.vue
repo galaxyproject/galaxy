@@ -63,7 +63,7 @@ import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";

@@ -136,8 +136,7 @@ class InstallToolDependencyManager:
         tool_dependency = self.mark_tool_dependency_installed(tool_dependency)
         return tool_dependency
 
-    def install_specified_tool_dependencies(self, tool_shed_repository, tool_dependencies_config, tool_dependencies,
-                                            from_tool_migration_manager=False):
+    def install_specified_tool_dependencies(self, tool_shed_repository, tool_dependencies_config, tool_dependencies):
         """
         Follow the recipe in the received tool_dependencies_config to install specified packages for
         repository tools.  The received list of tool_dependencies are the database records for those
@@ -191,14 +190,12 @@ class InstallToolDependencyManager:
                                                     elem,
                                                     name,
                                                     version,
-                                                    from_tool_migration_manager=from_tool_migration_manager,
                                                     tool_dependency_db_records=tool_dependencies)
                     if (tool_dependency.type == 'package' and proceed_with_install):
                         try:
                             tool_dependency = self.install_package(elem,
                                                                    tool_shed_repository,
-                                                                   tool_dependencies=tool_dependencies,
-                                                                   from_tool_migration_manager=from_tool_migration_manager)
+                                                                   tool_dependencies=tool_dependencies)
                         except Exception as e:
                             error_message = "Error installing tool dependency %s version %s: %s" % \
                                 (str(name), str(version), str(e))
@@ -273,7 +270,7 @@ class InstallToolDependencyManager:
                                                                         actions_dict)
         return tool_dependency
 
-    def install_package(self, elem, tool_shed_repository, tool_dependencies=None, from_tool_migration_manager=False):
+    def install_package(self, elem, tool_shed_repository, tool_dependencies=None):
         """
         Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
         a partial or full list of ToolDependency records associated with the tool_shed_repository.
@@ -296,7 +293,6 @@ class InstallToolDependencyManager:
                                                     package_elem,
                                                     package_name,
                                                     package_version,
-                                                    from_tool_migration_manager=from_tool_migration_manager,
                                                     tool_dependency_db_records=None)
                     if proceed_with_install and actions_elem_tuples:
                         # Get the installation directory for tool dependencies that will be installed for the received
@@ -955,8 +951,7 @@ class InstallRepositoryManager:
             itdm = InstallToolDependencyManager(self.app)
             itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
                                                      tool_dependencies_config=tool_dependencies_config,
-                                                     tool_dependencies=tool_shed_repository.tool_dependencies,
-                                                     from_tool_migration_manager=False)
+                                                     tool_dependencies=tool_shed_repository.tool_dependencies)
             basic_util.remove_dir(work_dir)
         self.update_tool_shed_repository_status(tool_shed_repository,
                                                 self.install_model.ToolShedRepository.installation_status.INSTALLED)

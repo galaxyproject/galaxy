@@ -1168,7 +1168,10 @@ class SelectTagParameter(SelectToolParameter):
                         tag = tag.strip()
                         if tag:
                             tag_list.append(tag)
-            value = tag_list
+            if len(tag_list) == 0:
+                value = None
+            else:
+                value = tag_list
         else:
             if not value:
                 value = None
@@ -1291,9 +1294,12 @@ class ColumnListParameter(SelectToolParameter):
                         column2 = column2.strip()
                         if column2:
                             column_list.append(column2)
-                value = list(map(ColumnListParameter._strip_c, column_list))
+                if len(column_list) == 0:
+                    value = None
+                else:
+                    value = list(map(ColumnListParameter._strip_c, column_list))
             else:
-                value = []
+                value = None
         else:
             if value:
                 value = ColumnListParameter._strip_c(value)

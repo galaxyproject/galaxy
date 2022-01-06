@@ -100,8 +100,8 @@ class Tools(BaseUIController):
                                          whereclause=(galaxy.model.Job.table.c.state == 'error'),
                                          group_by=['tool'])
 
-        tools_and_jobs_ok = dict(list(tools_and_jobs_ok.execute()))
-        tools_and_jobs_error = dict(list(tools_and_jobs_error.execute()))
+        tools_and_jobs_ok = dict(list(trans.sa_session.execute(tools_and_jobs_ok)))
+        tools_and_jobs_error = dict(list(trans.sa_session.execute(tools_and_jobs_error)))
 
         # select each job name one time
         tools = list(set(tools_and_jobs_ok.keys()) | set(tools_and_jobs_error.keys()))
@@ -154,8 +154,8 @@ class Tools(BaseUIController):
                                         whereclause=and_(galaxy.model.Job.table.c.state == 'error', galaxy.model.Job.table.c.tool_id == tool),
                                         group_by=['date'])
 
-        date_and_jobs_ok = dict(list(date_and_jobs_ok.execute()))
-        date_and_jobs_error = dict(list(date_and_jobs_error.execute()))
+        date_and_jobs_ok = dict(list(trans.sa_session.execute(date_and_jobs_ok)))
+        date_and_jobs_error = dict(list(trans.sa_session.execute(date_and_jobs_error)))
 
         # select each date
         dates = list(set(date_and_jobs_ok.keys()) | set(date_and_jobs_error.keys()))
@@ -207,7 +207,7 @@ class Tools(BaseUIController):
                                 galaxy.model.Job.table.c.update_time - galaxy.model.Job.table.c.create_time),
                                from_obj=[galaxy.model.Job.table])
 
-        jobs_times = [(name, (create, update, time)) for name, create, update, time in jobs_times.execute()]
+        jobs_times = [(name, (create, update, time)) for name, create, update, time in trans.sa_session.execute(jobs_times)]
         for tool, attr in jobs_times:
             if tool not in data:
                 data[tool] = {"last": [(attr[1], attr[0])], "avg": [attr[2]]}
@@ -270,7 +270,7 @@ class Tools(BaseUIController):
                                whereclause=galaxy.model.Job.table.c.tool_id == tool,
                                group_by=['date'])
 
-        months = list(jobs_times.execute())
+        months = list(trans.sa_session.execute(jobs_times.execute))
         months.sort(key=sort_keys[sort_by], reverse=reverse)
         if user_cutoff:
             months = months[:user_cutoff]
@@ -300,11 +300,22 @@ class Tools(BaseUIController):
 
         if tool_name is None:
             raise ValueError("Tool can't be none")
-        tool_errors = [[unicodify(a), b] for a, b in
-                       sa.select((galaxy.model.Job.table.c.tool_stderr, galaxy.model.Job.table.c.create_time),
-                        from_obj=[galaxy.model.Job.table],
-                        whereclause=and_(galaxy.model.Job.table.c.tool_id == tool_name,
-                                         galaxy.model.Job.table.c.state == 'error')).execute()]
+        tool_errors = [
+            [unicodify(a), b]
+            for a, b in trans.sa_session.execute(
+                sa.select(
+                    (
+                        galaxy.model.Job.table.c.tool_stderr,
+                        galaxy.model.Job.table.c.create_time,
+                    ),
+                    from_obj=[galaxy.model.Job.table],
+                    whereclause=and_(
+                        galaxy.model.Job.table.c.tool_id == tool_name,
+                        galaxy.model.Job.table.c.state == "error",
+                    ),
+                )
+            )
+        ]
 
         counter = {}
         for error in tool_errors:

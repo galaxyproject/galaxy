@@ -10,7 +10,7 @@ const invocationJobsSummaryById = {
     states: {},
     populated_state: "ok",
 };
-jest.mock("components/History/caching");
+jest.mock("components/providers/History/caching");
 
 const localVue = getLocalVue();
 

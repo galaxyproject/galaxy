@@ -432,6 +432,8 @@ class CwlPopulator:
 
 class BasePopulator(metaclass=ABCMeta):
 
+    galaxy_interactor: ApiTestInteractor
+
     @abstractmethod
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
         """POST data to target Galaxy instance on specified route."""
@@ -960,7 +962,7 @@ class BaseDatasetPopulator(BasePopulator):
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
-        download_url = response["download_url"]
+        download_url = urllib.parse.urljoin(self.galaxy_interactor.api_url, response["download_url"].strip('/'))
 
         if check_download:
             self.get_export_url(download_url, api_key)
@@ -1023,12 +1025,12 @@ class BaseDatasetPopulator(BasePopulator):
         contents = contents_response.json()
         return len(contents)
 
-    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
         # Export the history.
         download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
 
         # Create download for history
-        full_download_url = f"{url}{download_path}?key={api_key}"
+        full_download_url = urllib.parse.urljoin(download_path, f"?key={api_key}")
 
         import_data = dict(archive_source=full_download_url, archive_type="url")
 

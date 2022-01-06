@@ -1,6 +1,9 @@
 import os
 from contextlib import contextmanager
-from urllib.parse import urlencode
+from urllib.parse import (
+    urlencode,
+    urljoin,
+)
 
 import requests
 
@@ -33,7 +36,7 @@ class UsesApiTestCaseMixin:
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
             params = {}
-        url = f"{self.url}/api/{path}"
+        url = urljoin(self.url, f"api/{path}")
         if use_key:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:

@@ -1,3 +1,4 @@
+export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";
 export const directoryId = "gxfiles://pdb-gzip/directory1";
 export const subDirectoryId = "gxfiles://pdb-gzip/directory1/subdirectory1";
@@ -20,6 +21,16 @@ export const rootResponse = [
         uri_root: "gxfiles://pdb-gzip",
         label: "PDB",
         doc: "Protein Data Bank (PDB)",
+        writable: true,
+        requires_roles: null,
+        requires_groups: null,
+    },
+    {
+        id: "empty-dir",
+        type: "posix",
+        uri_root: "gxfiles://empty-dir",
+        label: "Empty Directory",
+        doc: "Empty Directory",
         writable: true,
         requires_roles: null,
         requires_groups: null,
@@ -172,3 +183,5 @@ export const subsubdirectoryResponse = [
         path: "directory1/subdirectory1/subsubdirectory",
     },
 ];
+
+export const someErrorText = "some error text";

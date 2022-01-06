@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Union,
 )
 
@@ -1186,6 +1187,10 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
         None,
         title="Job State Summary",
         description="Overview of the job states working inside the dataset collection.",
+    )
+    elements_datatypes: Set[str] = Field(
+        ...,
+        description="A set containing all the different element datatypes in the collection."
     )
 
 

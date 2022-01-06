@@ -28,7 +28,7 @@
 
 :Description:
     Where dataset files are stored.
-:Default: ``database/files``
+:Default: ``database/objects``
 :Type: str
 
 

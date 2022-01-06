@@ -38,7 +38,7 @@
 
 <script>
 import { debounce } from "lodash";
-import { SearchParams } from "./model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { clamp } from "utils/math";
 
 const clean = (o) => JSON.parse(JSON.stringify(o));

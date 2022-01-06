@@ -500,6 +500,7 @@ steps:
         editor.label_input.wait_for_and_send_keys('cloned label')
         output_label = editor.label_output(output='out_file1')
         self.set_text_element(output_label, 'cloned output label')
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_has_changes_and_save()
         edited_workflow = self.workflow_populator.download_workflow(workflow_id)
         source_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'source label'))

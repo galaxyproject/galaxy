@@ -30,6 +30,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
@@ -288,7 +289,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         return trans.app.config.user_preferences_extra['preferences']
 
-    def _build_extra_user_pref_inputs(self, preferences, user):
+    def _build_extra_user_pref_inputs(self, trans, preferences, user):
         """
         Build extra user preferences inputs list.
         Add values to the fields if present
@@ -297,6 +298,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             return []
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
+        user_vault = UserVaultWrapper(trans.app.vault, user)
         for item, value in preferences.items():
             if value is not None:
                 input_fields = copy.deepcopy(value["inputs"])
@@ -307,10 +309,19 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         input['help'] = f"{help} {required}"
                     else:
                         input['help'] = required
-                    field = f"{item}|{input['name']}"
-                    for data_item in user.extra_preferences:
-                        if field in data_item:
-                            input['value'] = user.extra_preferences[data_item]
+                    if input.get('store') == 'vault':
+                        field = f"{item}/{input['name']}"
+                        input['value'] = user_vault.read_secret(f'preferences/{field}')
+                    else:
+                        field = f"{item}|{input['name']}"
+                        for data_item in user.extra_preferences:
+                            if field in data_item:
+                                input['value'] = user.extra_preferences[data_item]
+                    # regardless of the store, do not send secret type values to client
+                    if input.get('type') == 'secret':
+                        input['value'] = "__SECRET_PLACEHOLDER__"
+                        # let the client treat it as a password field
+                        input['type'] = "password"
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': input_fields})
         return extra_pref_inputs
 
@@ -382,7 +393,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             inputs.append(address_repeat)
 
             # Build input sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs(self._get_extra_user_preferences(trans), user)
+            extra_user_pref = self._build_extra_user_pref_inputs(trans, self._get_extra_user_preferences(trans), user)
             for item in extra_user_pref:
                 inputs.append(item)
         else:
@@ -460,20 +471,26 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         # Update values for extra user preference items
         extra_user_pref_data = dict()
         extra_pref_keys = self._get_extra_user_preferences(trans)
+        user_vault = UserVaultWrapper(trans.app.vault, user)
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
                 key_prefix = f"{key}|"
                 for item in payload:
                     if item.startswith(key_prefix):
-                        # Show error message if the required field is empty
-                        if payload[item] == "":
-                            # Raise an exception when a required field is empty while saving the form
-                            keys = item.split("|")
-                            section = extra_pref_keys[keys[0]]
-                            for input in section['inputs']:
-                                if input['name'] == keys[1] and input['required']:
-                                    raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                        extra_user_pref_data[item] = payload[item]
+                        keys = item.split("|")
+                        section = extra_pref_keys[keys[0]]
+                        matching_input = [input for input in section['inputs'] if input['name'] == keys[1]]
+                        if matching_input:
+                            input = matching_input[0]
+                            if input.get('required') and payload[item] == "":
+                                raise exceptions.ObjectAttributeMissingException("Please fill the required field")
+                            if not (input.get('type') == 'secret' and payload[item] == "__SECRET_PLACEHOLDER__"):
+                                if input.get('store') == 'vault':
+                                    user_vault.write_secret(f'preferences/{keys[0]}/{keys[1]}', str(payload[item]))
+                                else:
+                                    extra_user_pref_data[item] = payload[item]
+                        else:
+                            extra_user_pref_data[item] = payload[item]
             user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
 
         # Update user addresses

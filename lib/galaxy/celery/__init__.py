@@ -27,7 +27,6 @@ def get_galaxy_app():
         return galaxy.app.app
     kwargs = get_app_properties()
     if kwargs:
-        kwargs['check_migrate_tools'] = False
         kwargs['check_migrate_databases'] = False
         galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
         return galaxy_app

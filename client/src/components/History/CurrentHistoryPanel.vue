@@ -20,7 +20,7 @@
 
 <script>
 import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "./providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import HistoryPanel from "./HistoryPanel";
 import HistoriesMenu from "./HistoriesMenu";
 

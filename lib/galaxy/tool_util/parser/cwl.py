@@ -1,4 +1,5 @@
 import logging
+import math
 import os
 
 from galaxy.tool_util.cwl.parser import tool_proxy
@@ -87,12 +88,12 @@ class CwlToolSource(ToolSource):
         # TODO: remove duplication with YAML
         # New format - starting out just using exit code.
         exit_code_lower = ToolStdioExitCode()
-        exit_code_lower.range_start = float("-inf")
+        exit_code_lower.range_start = -math.inf
         exit_code_lower.range_end = -1
         exit_code_lower.error_level = StdioErrorLevel.FATAL
         exit_code_high = ToolStdioExitCode()
         exit_code_high.range_start = 1
-        exit_code_high.range_end = float("inf")
+        exit_code_high.range_end = math.inf
         exit_code_lower.error_level = StdioErrorLevel.FATAL
         return [exit_code_lower, exit_code_high], []
 

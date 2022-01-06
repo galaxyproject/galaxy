@@ -239,11 +239,11 @@ class JobHandlerQueue(Monitors):
                 .outerjoin(model.User) \
                 .filter(model.Job.state.in_(in_list)
                         & (model.Job.handler == self.app.config.server_name)
-                        & or_((model.Job.user_id == null()), (model.User.active == true()))).all()
+                        & or_((model.Job.user_id == null()), (model.User.active == true()))).yield_per(model.YIELD_PER_ROWS)
         else:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .filter(model.Job.state.in_(in_list)
-                        & (model.Job.handler == self.app.config.server_name)).all()
+                        & (model.Job.handler == self.app.config.server_name)).yield_per(model.YIELD_PER_ROWS)
 
         for job in jobs_at_startup:
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
