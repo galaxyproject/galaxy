@@ -15,6 +15,7 @@ kombu
 lagom
 Mako
 Markdown
+paramiko!=2.9.0,!=2.9.1
 pulsar-galaxy-lib>=0.14.13
 pykwalify
 refgenconf>=0.12.0
