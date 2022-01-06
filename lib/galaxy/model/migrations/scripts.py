@@ -23,7 +23,7 @@ def _pop_config_file(argv):
         return argv.pop(pos)  # pop and return argument value
 
 
-def get_configuration(argv, cwd) -> tuple[DatabaseConfig, DatabaseConfig, bool]:
+def get_configuration(argv, cwd):
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
