@@ -92,7 +92,7 @@ Routes = "*"
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
-sqlalchemy-migrate = "*"
+sqlalchemy-migrate = "*"  # required to support tool shed
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
