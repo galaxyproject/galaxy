@@ -151,8 +151,8 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert output.strip() == "1"
 
     def test_database_scripts(self):
-        self._scripts_check_argparse_help("create_db.py")
-        self._scripts_check_argparse_help("manage_db.py")
+        self._scripts_check_argparse_help("create_toolshed_db.py")
+        self._scripts_check_argparse_help("migrate_toolshed_db.py")
         # TODO: test creating a smaller database - e.g. tool install database based on fresh
         # config file.
 
