@@ -420,7 +420,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
                 # Add the source file to the irods collection
-                self.session.data_objects.put(source_file, f"{collection_path}/", **options)
+                self.session.data_objects.put(source_file, data_object_path, **options)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -662,7 +662,6 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
-                    source_file = cache_file
                 except OSError:
                     log.exception("Trouble copying source file '%s' to cache '%s'", source_file, cache_file)
             else:
