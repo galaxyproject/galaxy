@@ -58,7 +58,7 @@ ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or pyth
 edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.70.1; python_full_version >= "3.6.1"
+fastapi==0.68.2; python_full_version >= "3.6.1"
 fluent-logger==0.10.0; python_version >= "3.5"
 fs==2.4.14
 funcsigs==1.0.2
@@ -195,7 +195,7 @@ sqlalchemy==1.4.29; (python_version >= "2.7" and python_full_version < "3.0.0") 
 sqlitedict==1.7.0
 sqlparse==0.4.2; python_version >= "3.5"
 starlette-context==0.3.3; python_version >= "3.7"
-starlette==0.16.0; python_version >= "3.6"
+starlette==0.14.2; python_version >= "3.6"
 statsd==3.3.0
 svgwrite==1.4.1; python_version >= "3.6"
 tempita==0.5.2

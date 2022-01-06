@@ -33,7 +33,7 @@ dictobj = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
 Fabric3 = "*"
-fastapi = ">=0.68.2, !=0.69.0, !=0.70.0"  # https://github.com/tiangolo/fastapi/issues/4041
+fastapi = ">=0.68.2, !=0.69.0, !=0.70.0, !=0.70.1"  # https://github.com/tiangolo/fastapi/issues/4041
 fastapi-utils = "*"
 fs = "*"
 future = "*"
