@@ -248,7 +248,9 @@ export default {
         },
         /** check if all objects in this folders are selected **/
         checkIfAllSelected() {
-            const isAllSelected = this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
+            const isAllSelected =
+                this.items.length &&
+                this.items.every(({ id }) => this.model.exists(id) || this.isDirectorySelected(id));
 
             if (isAllSelected && !this.isDirectorySelected(this.currentDirectory.id)) {
                 // if all selected, select current folder
@@ -270,6 +272,13 @@ export default {
                     item.isLeaf ? this.model.add(item) : this.selectDirectory(item);
                 }
             }
+
+            if (!isUnselectAll && this.items.length !== 0) {
+                this.selectedDirectories.push(this.currentDirectory);
+            } else if (this.isDirectorySelected(this.currentDirectory.id)) {
+                this.selectDirectory(this.currentDirectory);
+            }
+
             this.hasValue = this.model.count() > 0;
             this.formatRows();
         },
