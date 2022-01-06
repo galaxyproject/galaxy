@@ -8,9 +8,12 @@ from alembic.config import Config
 from alembic.runtime import migration
 from sqlalchemy import create_engine, MetaData
 
-from galaxy.config import is_one_database
 from galaxy.model import Base as gxy_base
-from galaxy.model.database_utils import create_database, database_exists
+from galaxy.model.database_utils import (
+    create_database,
+    database_exists,
+    is_one_database,
+)
 from galaxy.model.mapping import create_additional_database_objects
 from galaxy.model.migrations.scripts import DatabaseConfig
 from galaxy.model.tool_shed_install import Base as tsi_base

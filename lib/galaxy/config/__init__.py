@@ -41,8 +41,11 @@ from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
-from galaxy.model.database_utils import database_exists
 from galaxy.schema.fields import BaseDatabaseIdField
+from galaxy.model.database_utils import (
+    database_exists,
+    is_one_database,
+)
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util import (
@@ -1549,9 +1552,3 @@ class ConfiguresGalaxyMixin:
     @property
     def tool_dependency_dir(self):
         return self.toolbox.dependency_manager.default_base_path
-
-
-def is_one_database(db_url: str, install_db_url: Optional[str]):
-    # TODO: Consider more aggressive check here that this is not the same
-    # database file under the hood.
-    return not(db_url and install_db_url and install_db_url != db_url)
