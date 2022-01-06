@@ -6,11 +6,13 @@ import alembic
 from alembic import command, script
 from alembic.config import Config
 from alembic.runtime import migration
-from sqlalchemy import MetaData
+from sqlalchemy import create_engine, MetaData
 
+from galaxy.config import is_one_database
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.mapping import create_additional_database_objects
+from galaxy.model.migrations.scripts import DatabaseConfig
 from galaxy.model.tool_shed_install import Base as tsi_base
 
 # These identifiers are used throughout the migrations system to distinquish
@@ -200,31 +202,72 @@ class DatabaseStateCache:
             return conn.execute(sql).scalar()
 
 
-def verify_databases(engine, install_engine=None, config=None):
-    # Get config values for gxy model.
-    template, encoding, is_auto_migrate = None, None, False
+def verify_databases_via_script(
+    gxy_config: DatabaseConfig,
+    tsi_config: DatabaseConfig,
+    is_auto_migrate: bool = False,
+):
+    # This function serves a use case when an engine has not been created yet
+    # (e.g. when called from a script).
+    gxy_engine = create_engine(gxy_config.url)
+    tsi_engine = None
+    if tsi_config.url and tsi_config.url != gxy_config.url:
+        tsi_engine = create_engine(tsi_config.url)
+
+    _verify(
+        gxy_engine, gxy_config.template, gxy_config.encoding,
+        tsi_engine, tsi_config.template, tsi_config.encoding,
+        is_auto_migrate
+    )
+
+
+def verify_databases(gxy_engine, tsi_engine=None, config=None):
+    gxy_template, gxy_encoding = None, None
+    tsi_template, tsi_encoding = None, None
+    is_auto_migrate = False
+
     if config:
-        is_auto_migrate = config.database_auto_migrate  # Applied for both gxy and tsi.
-        template = config.database_template
-        encoding = config.database_encoding
+        is_auto_migrate = config.database_auto_migrate
+        gxy_template = config.database_template
+        gxy_encoding = config.database_encoding
 
-    # Verify galaxy (gxy) model.
-    gxy_dsv = DatabaseStateVerifier(engine, GXY, template, encoding, is_auto_migrate)
-    gxy_dsv.run()
+        is_combined = gxy_engine and tsi_engine and \
+            is_one_database(str(gxy_engine.url), str(tsi_engine.url))
+        if not is_combined:  # Otherwise not used.
+            tsi_template = getattr(config, 'install_database_template', None)
+            tsi_encoding = getattr(config, 'install_database_encoding', None)
 
-    # Update database template and encoding for tsi model if needed, falling back to gxy values.
-    if install_engine != engine:
-        template = getattr(config, 'install_database_template', template)
-        encoding = getattr(config, 'install_database_encoding', encoding)
+    _verify(
+        gxy_engine, gxy_template, gxy_encoding,
+        tsi_engine, tsi_template, tsi_encoding,
+        is_auto_migrate
+    )
 
-    # Determine install_engine.
-    install_engine = install_engine or engine
+
+def _verify(
+    gxy_engine,
+    gxy_template,
+    gxy_encoding,
+    tsi_engine,
+    tsi_template,
+    tsi_encoding,
+    is_auto_migrate,
+):
+    # Verify gxy model.
+    gxy_verifier = DatabaseStateVerifier(
+        gxy_engine, GXY, gxy_template, gxy_encoding, is_auto_migrate)
+    gxy_verifier.run()
+
     # New database = same engine, and gxy model has just been initialized.
-    is_new_database = install_engine == engine and gxy_dsv.is_new_database
+    is_new_database = gxy_engine == tsi_engine and gxy_verifier.is_new_database
 
-    # Verify tool_shed_install model (tsi) model.
-    tsi_dsv = DatabaseStateVerifier(install_engine, TSI, template, encoding, is_auto_migrate, is_new_database)
-    tsi_dsv.run()
+    # Determine engine for tsi model.
+    tsi_engine = tsi_engine or gxy_engine
+
+    # Verify tsi model model.
+    tsi_verifier = DatabaseStateVerifier(
+        tsi_engine, TSI, tsi_template, tsi_encoding, is_auto_migrate, is_new_database)
+    tsi_verifier.run()
 
 
 class DatabaseStateVerifier:
@@ -329,7 +372,7 @@ class DatabaseStateVerifier:
         msg = f'Your {model} database has version {db_version}, but this code expects '
         msg += f'version {code_version}. '
         msg += 'This database can be upgraded automatically if database_auto_migrate is set. '
-        msg += 'To upgrade manually, run `migrate.sh` (see instructions in that file). '
+        msg += 'To upgrade manually, run `migrate_db.sh` (see instructions in that file). '
         msg += 'Please remember to backup your database before migrating.'
         return msg
 
