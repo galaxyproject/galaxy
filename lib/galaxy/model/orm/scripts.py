@@ -1,5 +1,5 @@
 """
-Code to support database helper scripts (create_db.py, manage_db.py, etc...).
+Code to support database helper scripts (create_toolshed_db.py, migrate_toolshed_db.py, etc...).
 """
 import argparse
 import logging

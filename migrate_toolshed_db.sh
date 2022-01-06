@@ -15,4 +15,4 @@ cd `dirname $0`
 setup_python
 
 find lib/galaxy/model/migrate/versions -name '*.pyc' -delete
-python ./scripts/migrate_toolshed_db.py $@
+python ./scripts/migrate_toolshed_db.py $@ tool_shed
