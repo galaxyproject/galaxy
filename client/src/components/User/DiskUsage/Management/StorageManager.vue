@@ -36,7 +36,7 @@
                 :total-items="currentTotalItems"
                 @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
-            <CleanupResultDialog :result="cleanupResult" @onHide="onCleanupResultsHide" />
+            <CleanupResultDialog :result="cleanupResult" />
         </b-container>
     </ConfigProvider>
 </template>
@@ -80,15 +80,13 @@ export default {
             this.$bvModal.show("review-cleanup-dialog");
         },
         async onConfirmCleanupSelected(items) {
+            this.cleanupResult = null;
             this.$bvModal.show("cleanup-result-modal");
             await new Promise((r) => setTimeout(r, 1000));
             this.cleanupResult = await this.currentOperation.cleanupItems(items);
             if (this.cleanupResult.success) {
                 this.refreshOperationId = this.currentOperation.id.toString();
             }
-        },
-        onCleanupResultsHide() {
-            this.cleanupResult = null;
         },
     },
 };

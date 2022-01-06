@@ -1,13 +1,16 @@
 <template>
-    <b-modal id="cleanup-result-modal" :title="title" title-tag="h2" hide-footer @hidden="onHide">
+    <b-modal id="cleanup-result-modal" :title="title" title-tag="h2" hide-footer>
         <div class="text-center">
             <b-spinner v-if="isLoading" class="mx-auto" />
-            <b-alert v-else-if="hasErrored" show variant="danger">
-                {{ result.errorMessage }}
+            <b-alert v-else-if="hasFailed" show variant="danger">
+                {{ localResult.errorMessage }}
             </b-alert>
-            <h3 v-else>
+            <h3 v-else-if="success">
                 You've cleared <b>{{ niceTotalSpaceFreed }}</b>
             </h3>
+            <b-alert v-if="hasSomeErrors" show variant="danger">
+                {{ localResult.errors.length }} items couldn't be cleared
+            </b-alert>
         </div>
     </b-modal>
 </template>
@@ -36,8 +39,16 @@ export default {
             return this.localResult === null;
         },
         /** @returns {Boolean} */
-        hasErrored() {
+        hasFailed() {
             return this.localResult?.errorMessage !== null;
+        },
+        /** @returns {Boolean} */
+        success() {
+            return this.localResult?.success;
+        },
+        /** @returns {Boolean} */
+        hasSomeErrors() {
+            return this.localResult?.errors.length;
         },
         /** @returns {String} */
         niceTotalSpaceFreed() {
@@ -45,15 +56,14 @@ export default {
         },
         /** @returns {String} */
         title() {
+            let message = _l("Something went wrong...");
             if (this.isLoading) {
-                return _l("Freeing up some space...");
+                message = _l("Freeing up some space...");
             }
-            return this.hasErrored ? _l("Something went wrong...") : _l("Congratulations!");
-        },
-    },
-    methods: {
-        onHide() {
-            this.$emit("onHide");
+            if (this.success) {
+                message = _l("Congratulations!");
+            }
+            return message;
         },
     },
     watch: {
