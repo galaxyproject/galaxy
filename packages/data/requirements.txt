@@ -16,7 +16,6 @@ pydantic
 pysam
 social-auth-core[openidconnect]==4.0.3
 SQLAlchemy>=1.4.25,<2
-sqlalchemy-migrate
 tifffile<=2020.9.3  # Last version compatible with python 3.6
 typing-extensions
 WebOb
