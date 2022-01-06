@@ -488,10 +488,12 @@ def send_file(start_response, trans, body):
     base = trans.app.config.nginx_x_accel_redirect_base
     apache_xsendfile = trans.app.config.apache_xsendfile
     if base:
+        trans.response.headers.pop('content-length', None)
         trans.response.headers['X-Accel-Redirect'] = \
             base + os.path.abspath(body.name)
         body = [b""]
     elif apache_xsendfile:
+        trans.response.headers.pop('content-length', None)
         trans.response.headers['X-Sendfile'] = os.path.abspath(body.name)
         body = [b""]
     # Fall back on sending the file in chunks
