@@ -244,6 +244,9 @@ def verify_databases_via_script(
         tsi_engine, tsi_config.template, tsi_config.encoding,
         is_auto_migrate
     )
+    gxy_engine.dispose()
+    if tsi_engine:
+        tsi_engine.dispose()
 
 
 def verify_databases(
