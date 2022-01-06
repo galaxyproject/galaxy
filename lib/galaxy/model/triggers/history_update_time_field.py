@@ -2,7 +2,7 @@
 Database trigger installation and removal
 """
 
-from galaxy.model.migrate.versions.util import execute_statements
+from galaxy.model.triggers.utils import execute_statements
 
 
 def install_timestamp_triggers(engine):
