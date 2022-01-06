@@ -886,6 +886,19 @@
     <datatype extension="npz" type="galaxy.datatypes.binary:Npz" display_in_upload="true"/>
     <datatype extension="hexrd.images.npz" type="galaxy.datatypes.binary:HexrdImagesNpz" display_in_upload="true"/>
     <datatype extension="hexrd.eta_ome.npz" type="galaxy.datatypes.binary:HexrdEtaOmeNpz" display_in_upload="true"/>
+    <datatype extension="hexrd.scored_orientations.npz" type="galaxy.datatypes.binary:Npz" subclass="true" display_in_upload="true"/>
+    <datatype extension="hexrd.accepted_orientations" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
+    <datatype extension="hexrd.yml" type="galaxy.datatypes.text:Yaml" subclass="true" display_in_upload="true"/>
+    <datatype extension="neper.tess" type="galaxy.datatypes.constructive_solid_geometry:NeperTess" display_in_upload="true"/>
+    <datatype extension="neper.tesr" type="galaxy.datatypes.constructive_solid_geometry:NeperTesr" display_in_upload="true"/>
+    <datatype extension="neper.points" type="galaxy.datatypes.constructive_solid_geometry:NeperPoints" display_in_upload="true"/>
+    <datatype extension="neper.points.tsv" type="galaxy.datatypes.constructive_solid_geometry:NeperPointsTabular" display_in_upload="true"/>
+    <datatype extension="neper.mscell" type="galaxy.datatypes.constructive_solid_geometry:NeperMultiScaleCell" display_in_upload="true"/>
+    <datatype extension="gmsh.msh" type="galaxy.datatypes.constructive_solid_geometry:GmshMsh" display_in_upload="true"/>
+    <datatype extension="gmsh.geo" type="galaxy.datatypes.constructive_solid_geometry:GmshGeo" display_in_upload="true"/>
+    <datatype extension="zset.geof" type="galaxy.datatypes.constructive_solid_geometry:ZsetGeof" display_in_upload="true"/>
+    <!-- Povray script -->
+    <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
     <!-- End Structural Materials datatypes -->
   </registration>
   <sniffers>
@@ -915,6 +928,9 @@
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:PlyBinary"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkAscii"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:VtkBinary"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTess"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTesr"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:GmshMsh"/>
     <sniffer type="galaxy.datatypes.goldenpath:GoldenPath"/>
     <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>
