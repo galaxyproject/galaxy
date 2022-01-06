@@ -48,7 +48,6 @@ Members
 - Dave Bouvier (@davebx)
 - Martin Čech (@martenson)
 - John Chilton (@jmchilton)
-- Dave Clements (@tnabtaf)
 - Nate Coraor (@natefoo)
 - Jeremy Goecks (@jgoecks)
 - Sergey Golitsynskiy (@ic4f)
