@@ -238,30 +238,34 @@ class DatasetsApiTestCase(ApiTestCase):
             hda = self.dataset_populator.new_dataset(history_id)
             dataset_map[index] = hda["id"]
 
-        expected_deleted_ids = [dataset_map[1], dataset_map[2]]
+        expected_deleted_source_ids = [
+            {"id": dataset_map[1], "src":"hda"},
+            {"id": dataset_map[2], "src":"hda"},
+        ]
         delete_payload = {
-            "src": "hda",
-            "ids": expected_deleted_ids
+            "datasets": expected_deleted_source_ids
         }
         deleted_result = self._delete_batch_with_payload(delete_payload)
 
-        assert deleted_result["success_count"] == len(expected_deleted_ids)
-        for deleted_id in expected_deleted_ids:
-            dataset = self._get(f"histories/{history_id}/contents/{deleted_id}").json()
+        assert deleted_result["success_count"] == len(expected_deleted_source_ids)
+        for deleted_source_id in expected_deleted_source_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{deleted_source_id['id']}").json()
             assert dataset["deleted"] is True
 
-        expected_purged_ids = [dataset_map[0], dataset_map[2]]
+        expected_purged_source_ids = [
+            {"id": dataset_map[0], "src":"hda"},
+            {"id": dataset_map[2], "src":"hda"},
+        ]
         purge_payload = {
-            "src": "hda",
             "purge": True,
-            "ids": expected_purged_ids
+            "datasets": expected_purged_source_ids
         }
         deleted_result = self._delete_batch_with_payload(purge_payload)
 
-        assert deleted_result["success_count"] == len(expected_purged_ids)
+        assert deleted_result["success_count"] == len(expected_purged_source_ids)
 
-        for purged_id in expected_purged_ids:
-            dataset = self._get(f"histories/{history_id}/contents/{purged_id}").json()
+        for purged_source_id in expected_purged_source_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{purged_source_id['id']}").json()
             assert dataset["purged"] is True
 
     def test_delete_batch_error(self):
@@ -275,26 +279,33 @@ class DatasetsApiTestCase(ApiTestCase):
                 dataset_map[index] = hda["id"]
 
             # Trying to delete datasets of wrong type will error
-            expected_errored_ids = [dataset_map[0], dataset_map[3]]
+            expected_errored_source_ids = [
+                {"id": dataset_map[0], "src":"ldda"},
+                {"id": dataset_map[3], "src":"ldda"},
+            ]
             delete_payload = {
-                "src": "ldda",
-                "ids": expected_errored_ids
+                "datasets": expected_errored_source_ids
             }
             deleted_result = self._delete_batch_with_payload(delete_payload)
 
             assert deleted_result["success_count"] == 0
-            assert len(deleted_result["errors"]) == len(expected_errored_ids)
+            assert len(deleted_result["errors"]) == len(expected_errored_source_ids)
 
         # Trying to delete datasets that we don't own will error
-        expected_errored_ids = [dataset_map[1], dataset_map[2]]
+        expected_errored_source_ids = [
+            {"id": dataset_map[1], "src":"hda"},
+            {"id": dataset_map[2], "src":"hda"},
+        ]
         delete_payload = {
-            "src": "hda",
-            "ids": expected_errored_ids
+            "datasets": expected_errored_source_ids
         }
         deleted_result = self._delete_batch_with_payload(delete_payload)
 
         assert deleted_result["success_count"] == 0
-        assert len(deleted_result["errors"]) == len(expected_errored_ids)
+        assert len(deleted_result["errors"]) == len(expected_errored_source_ids)
+        for error in deleted_result["errors"]:
+            self._assert_has_keys(error, "dataset", "error_message")
+            self._assert_has_keys(error["dataset"], "id", "src")
 
     def _delete_batch_with_payload(self, payload):
         delete_response = self._delete("datasets", data=payload, json=True)

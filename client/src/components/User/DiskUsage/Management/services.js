@@ -3,7 +3,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import { CleanableSummary, CleanupResult } from "../model";
 
-const datasetKeys = "id,name,size,update_time";
+const datasetKeys = "id,name,size,update_time,hda_ldda";
 const isDataset = "q=history_content_type-eq&qv=dataset";
 const isDeleted = "q=deleted-eq&qv=True";
 const isNotPurged = "q=purged-eq&qv=False";
@@ -21,7 +21,7 @@ export async function fetchDiscardedDatasetsSummary() {
     const url = `${getAppRoot()}api/datasets?keys=${summaryKeys}&${discardedDatasetsQueryParams}`;
     try {
         const { data } = await axios.get(url);
-        const totalSizeInBytes = data.reduce((partial_sum, item) => partial_sum + item["size"], 0);
+        const totalSizeInBytes = data.reduce((partial_sum, item) => partial_sum + item.size, 0);
         return new CleanableSummary({
             totalSize: totalSizeInBytes,
             totalItems: data.length,
@@ -33,6 +33,7 @@ export async function fetchDiscardedDatasetsSummary() {
 
 /**
  * Retrieves all deleted datasets of the current user that haven't been purged yet using pagination.
+ * @param {Object} options Filtering options for pagination and sorting.
  * @returns {Array} Array of dataset objects with the fields defined in `datasetKeys` constant.
  */
 export async function fetchDiscardedDatasets(options = {}) {
@@ -58,15 +59,13 @@ export async function fetchDiscardedDatasets(options = {}) {
 
 /**
  * Purges a collection of datasets.
- * @param {Array} datasetIds Array of dataset IDs to be purged.
- * @param {String} sourceType The type of dataset associations (hda, ldda...) to be purged.
+ * @param {Array} datasetSourceIds Array of objects with datasets {id, src} to be purged.
  * @returns {Object} Result object with `success_count` and `errors`.
  */
-export async function purgeDatasets(datasetIds, sourceType) {
+export async function purgeDatasets(datasetSourceIds) {
     const payload = {
-        src: sourceType,
         purge: true,
-        ids: datasetIds,
+        datasets: datasetSourceIds,
     };
     const url = `${getAppRoot()}api/datasets`;
     try {
@@ -78,7 +77,7 @@ export async function purgeDatasets(datasetIds, sourceType) {
 }
 
 /**
- * Purges a set of datasets (HDA) from disk and returns the total space freed in bytes
+ * Purges a set of datasets (HDAs) from disk and returns the total space freed in bytes
  * taking into account possible datasets that couldn't be deleted.
  * @param {Array} datasets Array of datasets to be removed from disk.
  *                         Each dataset must contain `id` and `size`.
@@ -86,14 +85,16 @@ export async function purgeDatasets(datasetIds, sourceType) {
  */
 export async function cleanupDatasets(datasets) {
     const result = new CleanupResult();
-    const datasetsTable = datasets.reduce((acc, item) => ((acc[item.id] = item), acc), {});
-    const datasetIds = Object.keys(datasetsTable);
     try {
-        const requestResult = await purgeDatasets(datasetIds, "hda");
+        const datasetsTable = datasets.reduce((acc, item) => ((acc[item.id] = item), acc), {});
+        const datasetSourceIds = datasets.map((dataset) => {
+            return { id: dataset.id, src: dataset.hda_ldda };
+        });
+        const requestResult = await purgeDatasets(datasetSourceIds);
         result.errors = requestResult.errors;
-        const erroredIds = requestResult.errors.reduce((acc, item) => [...acc, item["id"]], []);
-        result.totalFreeBytes = datasetIds.reduce(
-            (partial_sum, id) => partial_sum + (erroredIds.includes(id) ? 0 : datasetsTable[id]["size"]),
+        const erroredIds = requestResult.errors.reduce((acc, error) => [...acc, error.item.id], []);
+        result.totalFreeBytes = datasetSourceIds.reduce(
+            (partial_sum, item) => partial_sum + (erroredIds.includes(item.id) ? 0 : datasetsTable[item.id].size),
             0
         );
     } catch (error) {

@@ -47,6 +47,7 @@ from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
     DatasetAssociationRoles,
+    DatasetSourceId,
     DatasetSourceType,
     Model,
     UpdateDatasetPermissionsPayload,
@@ -170,13 +171,8 @@ class BamDataResult(DataResult):
 
 
 class DeleteDatasetBatchPayload(BaseModel):
-    src: DatasetSourceType = Field(
-        ...,
-        title="Source",
-        description="The type of dataset associations to delete. Only datasets of this type will be processed.",
-    )
-    ids: List[EncodedDatabaseIdField] = Field(
-        description="The list of datasets IDs to be deleted/purged.",
+    datasets: List[DatasetSourceId] = Field(
+        description="The list of datasets IDs with their sources to be deleted/purged.",
     )
     purge: Optional[bool] = Field(
         default=False,
@@ -185,8 +181,8 @@ class DeleteDatasetBatchPayload(BaseModel):
 
 
 class DatasetErrorMessage(BaseModel):
-    dataset_id: EncodedDatabaseIdField = Field(
-        description="The encoded ID of the dataset.",
+    dataset: DatasetSourceId = Field(
+        description="The encoded ID of the dataset and it's source.",
     )
     error_message: str = Field(
         description="The error message returned while processing this dataset.",
@@ -535,22 +531,26 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         payload: DeleteDatasetBatchPayload,
     ) -> DeleteDatasetBatchResult:
+        """
+        Deletes or purges a batch of datasets.
+        Warning: only the ownership of the dataset and upload state for HDAs is checked, no other checks or restrictions are made.
+        """
         success_count = 0
         errors = []
-        for encoded_id in payload.ids:
+        for dataset in payload.datasets:
             try:
-                decoded_dataset_id = self.decode_id(encoded_id)
-                manager = self.dataset_manager_by_type[payload.src]
-                dataset = manager.get_owned(decoded_dataset_id, trans.user)
-                if payload.src == DatasetSourceType.hda:
-                    self.hda_manager.error_if_uploading(dataset)
+                decoded_dataset_id = self.decode_id(dataset.id)
+                manager = self.dataset_manager_by_type[dataset.src]
+                dataset_instance = manager.get_owned(decoded_dataset_id, trans.user)
+                if dataset.src == DatasetSourceType.hda:
+                    self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
-                    manager.purge(dataset, flush=False)
+                    manager.purge(dataset_instance, flush=False)
                 else:
-                    manager.delete(dataset, flush=False)
+                    manager.delete(dataset_instance, flush=False)
                 success_count += 1
             except galaxy_exceptions.MessageException as e:
-                errors.append(DatasetErrorMessage.construct(dataset_id=encoded_id, error_message=str(e)))
+                errors.append(DatasetErrorMessage.construct(dataset=dataset, error_message=str(e)))
 
         if success_count:
             trans.sa_session.flush()
