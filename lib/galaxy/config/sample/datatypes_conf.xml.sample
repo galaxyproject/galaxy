@@ -866,6 +866,7 @@
     <datatype extension="dada2_mergepairs" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_sequencetable" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
     <datatype extension="dada2_uniques" type="galaxy.datatypes.tabular:Tabular" mimetype="application/text" subclass="true" display_in_upload="true" />
+    <datatype extension="ampvis2" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" />
     <datatype extension="ckpt" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <datatype extension="tgz" type="galaxy.datatypes.binary:Binary" subclass="true" mimetype="multipart/x-gzip" display_in_upload="true" />
     <!-- media datatypes -->
