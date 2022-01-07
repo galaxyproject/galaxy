@@ -27,6 +27,7 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v3
         with:
+          author: galaxybot <galaxybot@users.noreply.github.com>
           token: ${{ secrets.GALAXYBOT_PAT }}
           commit-message: Update Python dependencies
           branch: dev_auto_update_dependencies

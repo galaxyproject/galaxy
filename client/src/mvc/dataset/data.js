@@ -609,7 +609,7 @@ export var createTabularDatasetChunkedView = (options) => {
     view.render();
 
     if (parent_elt) {
-        parent_elt.append(view.$el);
+        parent_elt.append(view.el);
         // If we're sticking this in another element, once it's appended check
         // to make sure we've filled enough space.
         // Without this, the scroll elements don't work.

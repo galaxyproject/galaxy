@@ -99,7 +99,7 @@ UpdateTimeField = Field(
 CollectionType = str  # str alias for now
 
 CollectionTypeField = Field(
-    ...,
+    default=None,
     title="Collection Type",
     description=(
         "The type of the collection, can be `list`, `paired`, or define subcollections using `:` "
@@ -964,7 +964,7 @@ class CollectionElementIdentifier(Model):
         title="ID",
         description="The encoded ID of the element.",
     )
-    collection_type: Optional[CollectionType]
+    collection_type: Optional[CollectionType] = CollectionTypeField
     element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
         default=None,
         title="Element Identifiers",
@@ -977,13 +977,15 @@ class CollectionElementIdentifier(Model):
     )
 
 
+# Required for self-referencing models
+# See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 CollectionElementIdentifier.update_forward_refs()
 
 
 class CreateNewCollectionPayload(Model):
-    collection_type: CollectionType = CollectionTypeField
-    element_identifiers: List[CollectionElementIdentifier] = Field(
-        ...,
+    collection_type: Optional[CollectionType] = CollectionTypeField
+    element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
+        default=None,
         title="Element Identifiers",
         description="List of elements that should be in the new collection.",
     )
