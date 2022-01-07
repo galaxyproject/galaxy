@@ -7,7 +7,12 @@
                     {{ errorMessage }}
                 </b-alert>
                 <div v-if="user">
-                    <QuotaUsageSummary v-if="config.enable_quotas" :user="user" />
+                    <div v-if="config.enable_quotas">
+                        <QuotaUsageProvider v-slot="{ result: quotaUsages, loading: isLoadingUsage }">
+                            <LoadingSpan v-if="isLoadingUsage" />
+                            <QuotaUsageSummary v-else-if="quotaUsages" :quota-usages="quotaUsages" />
+                        </QuotaUsageProvider>
+                    </div>
                     <h2 v-else class="text-center my-3">
                         You're using <b>{{ getTotalDiskUsage(user) }}</b> of disk space.
                     </h2>
@@ -20,15 +25,19 @@
 <script>
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
+import LoadingSpan from "components/LoadingSpan";
 import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
 import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
+import { QuotaUsageProvider } from "./Quota/QuotaUsageProvider";
 
 export default {
     components: {
         CurrentUser,
         ConfigProvider,
         QuotaUsageSummary,
+        QuotaUsageProvider,
+        LoadingSpan,
     },
     data() {
         return {

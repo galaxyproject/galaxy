@@ -1,18 +1,16 @@
 <template>
     <div class="quota-summary">
-        <h2 class="text-center mt-5">
-            You've got <b>{{ totalQuotaString }}</b> of disk quota.
-        </h2>
-        <h4 class="text-center mb-5">
-            {{ quotaDescriptionSummary }}
-        </h4>
+        <div class="text-center my-5">
+            <h2>
+                You've got <b>{{ totalQuotaString }}</b> of total disk quota.
+            </h2>
+            <h4>
+                {{ quotaDescriptionSummary }}
+            </h4>
+        </div>
 
-        <div class="w-75 mx-auto my-5">
-            <h3>
-                <b>{{ usedQuotaString }}</b> of {{ totalQuotaString }} used
-            </h3>
-            <h5>{{ usedQuotaPercent }}% of total disk quota used</h5>
-            <b-progress :value="usedQuotaPercent" :variant="progressVariant" max="100"></b-progress>
+        <div v-for="quotaUsage in quotaUsages" :key="quotaUsage.sourceLabel">
+            <QuotaUsageBar :quota-usage="quotaUsage" />
         </div>
     </div>
 </template>
@@ -20,43 +18,31 @@
 <script>
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
+import QuotaUsageBar from "./QuotaUsageBar";
 
 export default {
+    components: {
+        QuotaUsageBar,
+    },
     props: {
-        quotaUsage: {
-            type: Object,
+        quotaUsages: {
+            type: Array,
             required: true,
         },
     },
     data() {
         return {
-            quotaDescriptionSummary: _l("This is the maximum disk space that you can use"),
+            quotaDescriptionSummary: _l(
+                "This is the maximum disk space that you can use across all your storage sources." +
+                    " Unlimited storage sources are not taken into account"
+            ),
         };
     },
     computed: {
         /** @returns {String} */
         totalQuotaString() {
-            return this.quotaUsage.quota;
-        },
-        /** @returns {String} */
-        usedQuotaString() {
-            return bytesToString(this.quotaUsage.total_disk_usage, true);
-        },
-        /** @returns {float} */
-        usedQuotaPercent() {
-            return this.quotaUsage.quota_percent;
-        },
-        /** @returns {String} */
-        progressVariant() {
-            const percent = this.usedQuotaPercent;
-            if (percent < 50) {
-                return "success";
-            } else if (percent >= 50 && percent < 80) {
-                return "primary";
-            } else if (percent >= 80 && percent < 95) {
-                return "warning";
-            }
-            return "danger";
+            const totalQuota = this.quotaUsages.reduce((acc, item) => acc + item.quotaInBytes, 0);
+            return bytesToString(totalQuota, true);
         },
     },
 };
