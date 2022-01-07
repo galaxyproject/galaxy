@@ -58,9 +58,9 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
-    ColletionSourceType,
     ContentsNearResult,
     ContentsNearStats,
+    CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
@@ -138,67 +138,6 @@ class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
             "- The encoded id from the HDA\n"
             "- The encoded id from the HDCA\n"
         ),
-    )
-
-
-class CollectionElementIdentifier(Model):
-    name: Optional[str] = Field(
-        None,
-        title="Name",
-        description="The name of the element.",
-    )
-    src: ColletionSourceType = Field(
-        ...,
-        title="Source",
-        description="The source of the element.",
-    )
-    id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="ID",
-        description="The encoded ID of the element.",
-    )
-    tags: List[str] = Field(
-        default=[],
-        title="Tags",
-        description="The list of tags associated with the element.",
-    )
-    element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
-        default=None,
-        title="Element Identifiers",
-        description="List of elements that should be in the new nested collection.",
-    )
-    collection_type: Optional[str] = Field(
-        default=None,
-        title="Collection Type",
-        description="The type of the nested collection. For example, `list`, `paired`, `list:paired`.",
-    )
-
-
-# Required for self-referencing models
-# See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
-CollectionElementIdentifier.update_forward_refs()
-
-
-class CreateNewCollectionPayload(Model):
-    collection_type: Optional[str] = Field(
-        default=None,
-        title="Collection Type",
-        description="The type of the collection. For example, `list`, `paired`, `list:paired`.",
-    )
-    element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
-        default=None,
-        title="Element Identifiers",
-        description="List of elements that should be in the new collection.",
-    )
-    name: Optional[str] = Field(
-        default=None,
-        title="Name",
-        description="The name of the new collection.",
-    )
-    hide_source_items: Optional[bool] = Field(
-        default=False,
-        title="Hide Source Items",
-        description="Whether to mark the original HDAs as hidden.",
     )
 
 
