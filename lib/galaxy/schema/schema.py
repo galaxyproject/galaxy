@@ -964,7 +964,7 @@ class CollectionElementIdentifier(Model):
         title="ID",
         description="The encoded ID of the element.",
     )
-    collection_type: Optional[CollectionType]
+    collection_type: Optional[CollectionType] = CollectionTypeField
     element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
         default=None,
         title="Element Identifiers",
