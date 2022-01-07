@@ -18,7 +18,7 @@
 <script>
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
-import { CleanupResult } from "../../model";
+import { CleanupResult } from "./model";
 
 export default {
     props: {

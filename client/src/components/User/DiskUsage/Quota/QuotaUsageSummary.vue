@@ -23,7 +23,7 @@ import { bytesToString } from "utils/utils";
 
 export default {
     props: {
-        user: {
+        quotaUsage: {
             type: Object,
             required: true,
         },
@@ -36,15 +36,15 @@ export default {
     computed: {
         /** @returns {String} */
         totalQuotaString() {
-            return this.user.quota;
+            return this.quotaUsage.quota;
         },
         /** @returns {String} */
         usedQuotaString() {
-            return bytesToString(this.user.total_disk_usage, true);
+            return bytesToString(this.quotaUsage.total_disk_usage, true);
         },
         /** @returns {float} */
         usedQuotaPercent() {
-            return this.user.quota_percent;
+            return this.quotaUsage.quota_percent;
         },
         /** @returns {String} */
         progressVariant() {

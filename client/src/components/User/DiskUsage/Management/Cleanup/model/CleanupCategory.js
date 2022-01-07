@@ -1,4 +1,4 @@
-import { CleanupOperation } from "../model";
+import { CleanupOperation } from ".";
 
 export class CleanupCategory {
     constructor(data) {

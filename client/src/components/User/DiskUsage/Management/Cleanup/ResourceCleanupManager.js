@@ -1,5 +1,5 @@
-import { CleanupCategory } from "../../model";
 import { cleanupCategories } from "./categories";
+import { CleanupCategory } from "./model";
 
 export class ResourceCleanupManager {
     constructor() {

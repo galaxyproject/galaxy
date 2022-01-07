@@ -22,7 +22,7 @@ import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
-import QuotaUsageSummary from "components/User/DiskUsage/QuotaUsageSummary";
+import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
 
 export default {
     components: {

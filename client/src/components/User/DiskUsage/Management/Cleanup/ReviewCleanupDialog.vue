@@ -73,7 +73,7 @@
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import UtcDate from "components/UtcDate";
-import { CleanupOperation } from "../../model";
+import { CleanupOperation } from "./model";
 
 export default {
     components: {

@@ -24,7 +24,7 @@
 import _l from "utils/localization";
 import { bytesToString } from "utils/utils";
 import LoadingSpan from "components/LoadingSpan";
-import { CleanupOperation } from "../../model";
+import { CleanupOperation } from "./model";
 
 export default {
     components: {

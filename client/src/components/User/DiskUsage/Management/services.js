@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
-import { CleanableSummary, CleanupResult } from "../model";
+import { CleanableSummary, CleanupResult } from "./Cleanup/model";
 
 const datasetKeys = "id,name,size,update_time,hda_ldda";
 const isDataset = "q=history_content_type-eq&qv=dataset";
