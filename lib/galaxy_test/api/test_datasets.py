@@ -24,7 +24,7 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_index_using_keys(self):
         expected_keys = "size"
-        self.dataset_populator.new_dataset(self.history_id)
+        self.dataset_populator.new_dataset(self.history_id, wait=True)
         index_response = self._get(f"datasets?keys={expected_keys}")
         self._assert_status_code_is(index_response, 200)
         datasets = index_response.json()
