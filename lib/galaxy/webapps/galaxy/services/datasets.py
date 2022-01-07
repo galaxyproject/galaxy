@@ -176,13 +176,16 @@ class DeleteDatasetBatchPayload(BaseModel):
     )
     purge: Optional[bool] = Field(
         default=False,
-        description="Whether to permanently delete from disk the specified datasets."
+        description=(
+            "Whether to permanently delete from disk the specified datasets. "
+            "*Warning*: this is a destructive operation."
+        )
     )
 
 
 class DatasetErrorMessage(BaseModel):
     dataset: DatasetSourceId = Field(
-        description="The encoded ID of the dataset and it's source.",
+        description="The encoded ID of the dataset and its source.",
     )
     error_message: str = Field(
         description="The error message returned while processing this dataset.",

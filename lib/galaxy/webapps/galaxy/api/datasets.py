@@ -305,7 +305,7 @@ class FastAPIDatasets:
     ) -> DeleteDatasetBatchResult:
         """
         Deletes or purges a batch of datasets.
-        **Warning**: this is a destructive operation. Only the ownership of the datasets (and upload state for HDAs)
-        is checked, no other checks or restrictions are made.
+        **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
+        no other checks or restrictions are made.
         """
         return self.service.delete_batch(trans, payload)

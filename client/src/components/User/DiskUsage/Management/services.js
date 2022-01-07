@@ -77,7 +77,7 @@ export async function purgeDatasets(datasetSourceIds) {
 }
 
 /**
- * Purges a set of datasets (HDAs) from disk and returns the total space freed in bytes
+ * Purges a set of datasets instances (HDA, LDDA, ...) from disk and returns the total space freed in bytes
  * taking into account possible datasets that couldn't be deleted.
  * @param {Array} datasets Array of datasets to be removed from disk.
  *                         Each dataset must contain `id` and `size`.
