@@ -199,7 +199,7 @@ class DeleteDatasetBatchResult(BaseModel):
     errors: Optional[List[DatasetErrorMessage]] = Field(
         default=None,
         description=(
-            "A collection of dataset IDs and the corresponding error message if something "
+            "A list of dataset IDs and the corresponding error message if something "
             "went wrong while processing the dataset."
         ),
     )
