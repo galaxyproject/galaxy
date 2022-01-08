@@ -272,7 +272,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     def tag_dataset(self, history_id, hda_id, tags):
         url = f"histories/{history_id}/contents/{hda_id}"
-        return self._put(url, {'tags': tags}, json=True).json()
+        response = self._put(url, {'tags': tags}, json=True)
+        response.raise_for_status()
+        return response.json()
 
     def wait_for_tool_run(self, history_id: str, run_response: requests.Response, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True):
         job = self.check_run(run_response)
