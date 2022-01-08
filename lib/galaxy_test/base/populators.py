@@ -270,6 +270,12 @@ class BaseDatasetPopulator(BasePopulator):
 
         return tool_response
 
+    def tag_dataset(self, history_id, hda_id, tags):
+        url = f"histories/{history_id}/contents/{hda_id}"
+        response = self._put(url, {'tags': tags}, json=True)
+        response.raise_for_status()
+        return response.json()
+
     def wait_for_tool_run(self, history_id: str, run_response: requests.Response, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True):
         job = self.check_run(run_response)
         self.wait_for_job(job["id"], timeout=timeout)
@@ -674,7 +680,10 @@ class BaseDatasetPopulator(BasePopulator):
 
     def setup_history_for_export_testing(self, history_name):
         history_id = self.new_history(name=history_name)
-        self.new_dataset(history_id, content="1 2 3")
+        hda = self.new_dataset(history_id, content="1 2 3")
+        tags = ['name:name']
+        response = self.tag_dataset(history_id, hda['id'], tags=tags)
+        assert response['tags'] == tags
         deleted_hda = self.new_dataset(history_id, content="1 2 3", wait=True)
         self.delete_dataset(history_id, deleted_hda["id"])
         deleted_details = self.get_history_dataset_details(history_id, id=deleted_hda["id"])
