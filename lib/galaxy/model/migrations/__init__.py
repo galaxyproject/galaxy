@@ -117,9 +117,9 @@ class AlembicManager:
         command.stamp(self.alembic_cfg, f'{model}@head')
         self._reset_db_heads()
 
-    def stamp_revision(self, revision: str) -> None:
+    def stamp_revision(self, revision: Union[str, Iterable[str]]) -> None:
         """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, revision)
+        command.stamp(self.alembic_cfg, revision)  # type: ignore[arg-type]  # https://alembic.sqlalchemy.org/en/latest/api/commands.html#alembic.command.stamp.params.revision
         self._reset_db_heads()
 
     def upgrade(self, model: ModelId) -> None:
