@@ -564,7 +564,7 @@ class FilePrefix:
     def line_iterator(self):
         s = self.string_io()
         s_len = len(s.getvalue())
-        for line in s:
+        for line in iter(s.readline, ''):
             if line.endswith("\n") or line.endswith("\r"):
                 yield line
             elif s.tell() == s_len and not self.truncated:
