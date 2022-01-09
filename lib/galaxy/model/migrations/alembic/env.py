@@ -1,7 +1,13 @@
 import re
+from typing import (
+    Callable,
+    cast,
+    Dict,
+)
 
 from alembic import context
-from alembic import script
+from alembic.script import ScriptDirectory
+from alembic.script.base import Script
 from sqlalchemy import create_engine
 
 from galaxy.model.migrations import GXY, TSI
@@ -10,7 +16,7 @@ config = context.config
 target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in offline mode; database url required."""
     if not config.cmd_opts:  # invoked programmatically
         url = _get_url_from_config()
@@ -20,7 +26,7 @@ def run_migrations_offline():
         _run_migrations_invoked_via_script(f)
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in online mode: engine and connection required."""
     if not config.cmd_opts:  # invoked programmatically
         url = _get_url_from_config()
@@ -30,7 +36,7 @@ def run_migrations_online():
         _run_migrations_invoked_via_script(f)
 
 
-def _run_migrations_invoked_via_script(run_migrations):
+def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) -> None:
     urls = _load_urls()
 
     # Special case: the `current` command has no config.cmd_opts.revision property,
@@ -54,7 +60,7 @@ def _run_migrations_invoked_via_script(run_migrations):
     run_migrations(url)
 
 
-def _process_cmd_current(urls):
+def _process_cmd_current(urls: Dict[str, str]) -> bool:
     if config.cmd_opts.cmd[0].__name__ == 'current':  # type: ignore[union-attr]
         for url in urls.values():
             _configure_and_run_migrations_online(url)
@@ -62,16 +68,16 @@ def _process_cmd_current(urls):
     return False
 
 
-def _get_revision(revision_str):
+def _get_revision(revision_str: str) -> Script:
     revision_id = _get_revision_id(revision_str)
-    script_directory = script.ScriptDirectory.from_config(config)
+    script_directory = ScriptDirectory.from_config(config)
     revision = script_directory.get_revision(revision_id)
     if not revision:
         raise Exception(f'Revision not found: "{revision}"')
     return revision
 
 
-def _get_revision_id(revision_str):
+def _get_revision_id(revision_str: str) -> str:
     # Match a full or partial revision (GUID) or a relative migration identifier
     p = re.compile(r'([0-9A-Fa-f]+)([+-]\d)?')
     m = p.match(revision_str)
@@ -80,7 +86,7 @@ def _get_revision_id(revision_str):
     return m.group(1)
 
 
-def _configure_and_run_migrations_offline(url):
+def _configure_and_run_migrations_offline(url: str) -> None:
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -91,7 +97,7 @@ def _configure_and_run_migrations_offline(url):
         context.run_migrations()
 
 
-def _configure_and_run_migrations_online(url):
+def _configure_and_run_migrations_online(url) -> None:
     engine = create_engine(url)
     with engine.connect() as connection:
         context.configure(
@@ -103,11 +109,12 @@ def _configure_and_run_migrations_online(url):
     engine.dispose()
 
 
-def _get_url_from_config():
-    return config.get_main_option("sqlalchemy.url")
+def _get_url_from_config() -> str:
+    url = config.get_main_option("sqlalchemy.url")
+    return cast(str, url)
 
 
-def _load_urls():
+def _load_urls() -> Dict[str, str]:
     gxy_url = context.get_x_argument(as_dictionary=True).get(f'{GXY}_url')
     tsi_url = context.get_x_argument(as_dictionary=True).get(f'{TSI}_url')
     return {

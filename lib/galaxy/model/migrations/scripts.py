@@ -1,5 +1,10 @@
 import os
-from collections import namedtuple
+from typing import (
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+)
 
 from galaxy.util.properties import (
     find_config_file,
@@ -13,17 +18,22 @@ CONFIG_DIR_NAME = 'config'
 GXY_CONFIG_PREFIX = 'GALAXY_CONFIG_'
 TSI_CONFIG_PREFIX = 'GALAXY_INSTALL_CONFIG_'
 
-DatabaseConfig = namedtuple('DatabaseConfig', ['url', 'template', 'encoding'])
+
+class DatabaseConfig(NamedTuple):
+    url: str
+    template: str
+    encoding: str
 
 
-def _pop_config_file(argv):
+def _pop_config_file(argv: List[str]) -> Optional[str]:
     if CONFIG_FILE_ARG in argv:
         pos = argv.index(CONFIG_FILE_ARG)
         argv.pop(pos)  # pop argument name
         return argv.pop(pos)  # pop and return argument value
+    return None
 
 
-def get_configuration(argv, cwd):
+def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
