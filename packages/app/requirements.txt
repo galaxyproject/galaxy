@@ -2,7 +2,7 @@ galaxy-auth
 galaxy-data
 galaxy-job-execution
 galaxy-job-metrics
-galaxy-tool-util[cwl]
+galaxy-tool-util[cwl,edam]
 galaxy-web-framework
 galaxy-web-stack
 
@@ -24,3 +24,4 @@ sqlitedict
 svgwrite
 tuswsgi
 typing-extensions
+Whoosh
