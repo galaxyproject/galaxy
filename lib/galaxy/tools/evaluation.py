@@ -456,10 +456,6 @@ class ToolEvaluator:
         param_dict = self.param_dict
         interpreter = self.tool.interpreter
         version_string_cmd_raw = self.tool.version_string_cmd
-        if version_string_cmd_raw:
-            version_command_template = string.Template(version_string_cmd_raw)
-            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
-            command = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1;\n{command}"
         command_line = None
         if not command:
             return
@@ -483,6 +479,10 @@ class ToolEvaluator:
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
+        if version_string_cmd_raw:
+            version_command_template = string.Template(version_string_cmd_raw)
+            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
+            command_line = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1;\n{command_line}"
         self.command_line = command_line
 
     def _build_config_files(self):
