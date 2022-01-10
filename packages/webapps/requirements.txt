@@ -9,3 +9,4 @@ starlette
 starlette-context
 typing-extensions
 uvicorn
+Whoosh
