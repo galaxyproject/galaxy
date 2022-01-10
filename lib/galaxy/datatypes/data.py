@@ -229,7 +229,7 @@ class Data(metaclass=DataMeta):
         """
         Checks for empty metadata values, Returns True if non-optional metadata is missing
         Specifying a list of 'check' values will only check those names provided; when used, optionality is ignored
-        Specifying a list of 'skip' items will return True even when a named metadata value is missing
+        Specifying a list of 'skip' items will return True even when a named metadata value is missing; when used, optionality is ignored
         """
         if skip is None:
             skip = []
@@ -238,9 +238,11 @@ class Data(metaclass=DataMeta):
         else:
             to_check = dataset.metadata.items()
         for key, value in to_check:
-            if key in skip or (not check and dataset.metadata.spec[key].get("optional")):
+            if key in skip:
+                continue
+            if check is None and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
                 continue  # we skip check for optional and nonrequested values here
-            if not value:
+            if value is None:
                 return True
         return False
 

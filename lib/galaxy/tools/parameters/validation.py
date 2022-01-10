@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
-    full_path = os.path.join(path, 'test', fname)
+    full_path = os.path.join(path, '..', '..', '..', '..', 'test-data', fname)
     return full_path
 
 
@@ -512,7 +512,7 @@ class MetadataValidator(Validator):
     Validator that checks for missing metadata
 
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model import Dataset, History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
@@ -522,40 +522,62 @@ class MetadataValidator(Validator):
     >>> sa_session.add(hist)
     >>> sa_session.flush()
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> fname = get_test_fname('1.bed')
+    >>> bedds = Dataset(external_filename=fname)
+    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='bed', create_dataset=True, sa_session=sa_session, dataset=bedds))
     >>> hda.set_dataset_state(model.Dataset.states.OK)
-    >>> # TODO I did not find a way to remove a metadata from the hda, therefore I used two parameters, ideas?
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="metadata" check="dbkey" skip="absent_metadata"/>
-    ... </param>
-    ... '''))
-    >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="metadata" check="absent_metadata" skip="dbkey"/>
-    ... </param>
-    ... '''))
+    >>> hda.set_meta()
+    >>> hda.metadata.strandCol = None
+    >>> param_xml = '''<param name="blah" type="data">
+    ...     <validator type="metadata" check="{check}" skip="{skip}"/>
+    ... </param>'''
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="nameCol", skip="")))
     >>> t = p.validate(hda)
-    >>> t = p2.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
-    ... </param>
-    ... '''))
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="strandCol", skip="")))
     >>> t = p.validate(hda)
     Traceback (most recent call last):
         ...
     ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> t = p2.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="strandCol")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="nameCol")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> param_xml = '''<param name="blah" type="data">
+    ...     <validator type="metadata" check="{check}" skip="{skip}" negate="true"/>
+    ... </param>'''
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="strandCol", skip="")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="nameCol", skip="")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="nameCol")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="strandCol")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
     """
+    # >>> p = ToolParameter.build(None, XML('''
+    # ... <param name="blah" type="data">
+    # ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
+    # ... </param>
+    # ... '''))
+    # >>> p2 = ToolParameter.build(None, XML('''
+    # ... <param name="blah" type="data">
+    # ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
+    # ... </param>
+    # ... '''))
+    # >>> t = p.validate(hda)
+    # Traceback (most recent call last):
+    #     ...
+    # ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    # >>> t = p2.validate(hda)
     requires_dataset_metadata = True
 
     @classmethod
