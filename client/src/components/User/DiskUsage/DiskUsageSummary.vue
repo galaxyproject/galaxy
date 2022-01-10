@@ -3,7 +3,7 @@
         <CurrentUser v-slot="{ user }">
             <div>
                 <b-alert v-if="errorMessage" variant="danger" show>
-                    <h4 class="alert-heading">Failed to access disk usage details.</h4>
+                    <h4 class="alert-heading">{{ errorMessageTitle }}</h4>
                     {{ errorMessage }}
                 </b-alert>
                 <div v-if="user">
@@ -13,7 +13,7 @@
                             <QuotaUsageSummary v-else-if="quotaUsages" :quota-usages="quotaUsages" />
                         </QuotaUsageProvider>
                     </div>
-                    <h2 v-else class="text-center my-3">
+                    <h2 v-else class="text-center my-3" id="basic-disk-usage-summary">
                         You're using <b>{{ getTotalDiskUsage(user) }}</b> of disk space.
                     </h2>
                 </div>
@@ -41,11 +41,8 @@ export default {
     },
     data() {
         return {
+            errorMessageTitle: _l("Failed to access disk usage details."),
             errorMessage: null,
-            loadingMessage: _l("Loading disk usage summary..."),
-            noImmediatePurgeAllowedMessage: _l(
-                "If you had free up some space recently, please note that your disk usage may take a while to be updated"
-            ),
         };
     },
     methods: {
