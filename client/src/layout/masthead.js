@@ -2,6 +2,7 @@ import $ from "jquery";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import Masthead from "../components/Masthead/Masthead";
 import { mountVueComponent } from "../utils/mountVueComponent";
 
@@ -42,16 +43,21 @@ export class MastheadState {
     }
 }
 
+function staticUrlToPrefixed(appRoot, url) {
+    return url?.startsWith("/") ? `${appRoot}${url}` : url;
+}
+
 export function mountMasthead(el, options, mastheadState) {
+    const appRoot = getAppRoot();
     return mountVueComponent(Masthead)(
         {
             el: el,
             mastheadState: mastheadState,
             displayGalaxyBrand: options.display_galaxy_brand,
             brand: options.brand,
-            brandLink: options.logo_url,
-            brandImage: options.logo_src,
-            brandImageSecondary: options.logo_src_secondary,
+            brandLink: staticUrlToPrefixed(appRoot, options.logo_url),
+            brandImage: staticUrlToPrefixed(appRoot, options.logo_src),
+            brandImageSecondary: staticUrlToPrefixed(appRoot, options.logo_src_secondary),
             menuOptions: options,
         },
         el
