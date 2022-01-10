@@ -355,7 +355,7 @@ class DatasetOkValidator(Validator):
     >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="dataset_ok_validator"/>
     ... </param>
     ... '''))
@@ -366,7 +366,7 @@ class DatasetOkValidator(Validator):
     ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="dataset_ok_validator" negate="true"/>
     ... </param>
     ... '''))
@@ -526,12 +526,12 @@ class MetadataValidator(Validator):
     >>> hda.set_dataset_state(model.Dataset.states.OK)
     >>> # TODO I did not find a way to remove a metadata from the hda, therefore I used two parameters, ideas?
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="metadata" check="dbkey" skip="absent_metadata"/>
     ... </param>
     ... '''))
     >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="metadata" check="absent_metadata" skip="dbkey"/>
     ... </param>
     ... '''))
@@ -541,12 +541,12 @@ class MetadataValidator(Validator):
         ...
     ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
     ... </param>
     ... '''))
     >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
     ... </param>
     ... '''))
@@ -561,15 +561,15 @@ class MetadataValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get('message', None)
-        if not message:
-            # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
-            message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
         return cls(message=message,
                    check=elem.get('check', ""),
                    skip=elem.get('skip', ""),
                    negate=elem.get('negate', 'false'))
 
     def __init__(self, message=None, check="", skip="", negate='false'):
+        if message is None:
+            # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
+            message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
         super().__init__(message, negate)
         if check == "":
             self.check = None
@@ -608,7 +608,7 @@ class UnspecifiedBuildValidator(Validator):
     >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="unspecified_build"/>
     ... </param>
     ... '''))
@@ -619,7 +619,7 @@ class UnspecifiedBuildValidator(Validator):
     ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="unspecified_build" negate="true"/>
     ... </param>
     ... '''))
