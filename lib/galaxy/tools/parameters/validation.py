@@ -589,18 +589,12 @@ class MetadataValidator(Validator):
                    negate=elem.get('negate', 'false'))
 
     def __init__(self, message=None, check="", skip="", negate='false'):
-        if message is None:
+        if not message:
             # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
             message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
         super().__init__(message, negate)
-        if check == "":
-            self.check = None
-        else:
-            self.check = check.split(",")
-        if skip == "":
-            self.skip = None
-        else:
-            self.skip = skip.split(",")
+        self.check = check.split(",") if check else None
+        self.skip = skip.split(",") if skip else None
 
     def validate(self, value, trans=None):
         if value:
