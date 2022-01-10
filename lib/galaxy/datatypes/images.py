@@ -91,7 +91,7 @@ class Tiff(Image):
 
 class OMETiff(Tiff):
     file_ext = "ome.tiff"
-    MetadataElement(name="offsets", desc="Offsets File", param=FileParameter, file_ext="json", readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="offsets", desc="Offsets File", param=FileParameter, file_ext="json", readonly=True, visible=False, optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         spec_key = 'offsets'

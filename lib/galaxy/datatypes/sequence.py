@@ -298,7 +298,7 @@ class Alignment(data.Text):
     """Class describing an alignment"""
     edam_data = "data_0863"
 
-    MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
@@ -899,8 +899,8 @@ class Maf(Alignment):
 
     # Readonly and optional, users can't unset it, but if it is not set, we are generally ok; if required use a metadata validator in the tool definition
     MetadataElement(name="blocks", default=0, desc="Number of blocks", readonly=True, optional=True, visible=False, no_value=0)
-    MetadataElement(name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
-    MetadataElement(name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, no_value=None, visible=False, optional=True)
+    MetadataElement(name="species_chromosomes", desc="Species Chromosomes", param=metadata.FileParameter, readonly=True, visible=False, optional=True)
+    MetadataElement(name="maf_index", desc="MAF Index File", param=metadata.FileParameter, readonly=True, visible=False, optional=True)
 
     def init_meta(self, dataset, copy_from=None):
         Alignment.init_meta(self, dataset, copy_from=copy_from)
