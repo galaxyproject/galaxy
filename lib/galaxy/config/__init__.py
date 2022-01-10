@@ -1510,8 +1510,7 @@ class ConfiguresGalaxyMixin:
             self._wait_for_database(db_url)
 
         if check_migrate_databases:
-            from galaxy.model.migrations import verify_databases
-            verify_databases(engine, install_engine, self.config)
+            self._verify_databases(engine, install_engine, combined_install_database)
 
         self.model = mapping.configure_model_mapping(
             self.config.file_path,
@@ -1529,6 +1528,19 @@ class ConfiguresGalaxyMixin:
             from galaxy.model.tool_shed_install import mapping as install_mapping
             self.install_model = install_mapping.configure_model_mapping(install_engine)
             log.info(f"Install database using its own connection {install_db_url}")
+
+    def _verify_databases(self, engine, install_engine, combined_install_database):
+        from galaxy.model.migrations import verify_databases
+        install_template, install_encoding = None, None
+        if not combined_install_database:  # Otherwise these options are not used.
+            install_template = getattr(self.config, 'install_database_template', None)
+            install_encoding = getattr(self.config, 'install_database_encoding', None)
+
+        verify_databases(
+            engine, self.config.database_template, self.config.database_encoding,
+            install_engine, install_template, install_encoding,
+            self.config.database_auto_migrate
+        )
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():

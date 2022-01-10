@@ -27,13 +27,8 @@ from sqlalchemy.engine import (
     Engine,
 )
 
-from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import Base as gxy_base
-from galaxy.model.database_utils import (
-    create_database,
-    database_exists,
-    is_one_database,
-)
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.mapping import create_additional_database_objects
 from galaxy.model.migrations.scripts import DatabaseConfig
 from galaxy.model.tool_shed_install import Base as tsi_base
@@ -244,7 +239,7 @@ def verify_databases_via_script(
     if tsi_config.url and tsi_config.url != gxy_config.url:
         tsi_engine = create_engine(tsi_config.url)
 
-    _verify(
+    verify_databases(
         gxy_engine, gxy_config.template, gxy_config.encoding,
         tsi_engine, tsi_config.template, tsi_config.encoding,
         is_auto_migrate
@@ -255,33 +250,6 @@ def verify_databases_via_script(
 
 
 def verify_databases(
-    gxy_engine: Engine,
-    tsi_engine: Optional[Engine] = None,
-    config: Optional[GalaxyAppConfiguration] = None
-) -> None:
-    gxy_template, gxy_encoding = None, None
-    tsi_template, tsi_encoding = None, None
-    is_auto_migrate = False
-
-    if config:
-        is_auto_migrate = config.database_auto_migrate
-        gxy_template = config.database_template
-        gxy_encoding = config.database_encoding
-
-        is_combined = gxy_engine and tsi_engine and \
-            is_one_database(str(gxy_engine.url), str(tsi_engine.url))
-        if not is_combined:  # Otherwise not used.
-            tsi_template = getattr(config, 'install_database_template', None)
-            tsi_encoding = getattr(config, 'install_database_encoding', None)
-
-    _verify(
-        gxy_engine, gxy_template, gxy_encoding,
-        tsi_engine, tsi_template, tsi_encoding,
-        is_auto_migrate
-    )
-
-
-def _verify(
     gxy_engine: Engine,
     gxy_template: Optional[str],
     gxy_encoding: Optional[str],
