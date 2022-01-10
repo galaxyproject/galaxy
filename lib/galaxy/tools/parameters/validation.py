@@ -571,8 +571,14 @@ class MetadataValidator(Validator):
 
     def __init__(self, message=None, check="", skip="", negate='false'):
         super().__init__(message, negate)
-        self.check = check.split(",")
-        self.skip = skip.split(",")
+        if check == "":
+            self.check = None
+        else:
+            self.check = check.split(",")
+        if skip == "":
+            self.skip = None
+        else:
+            self.skip = skip.split(",")
 
     def validate(self, value, trans=None):
         if value:
