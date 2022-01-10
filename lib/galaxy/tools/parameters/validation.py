@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
-    full_path = os.path.join(path, '..', '..', '..', '..', 'test-data', fname)
+    full_path = os.path.join(path, 'test', fname)
     return full_path
 
 
