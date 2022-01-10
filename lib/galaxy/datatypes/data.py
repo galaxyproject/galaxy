@@ -233,16 +233,14 @@ class Data(metaclass=DataMeta):
         """
         if skip is None:
             skip = []
-        if check:
-            to_check = ((to_check, dataset.metadata.get(to_check)) for to_check in check)
-        else:
-            to_check = dataset.metadata.items()
-        for key, value in to_check:
+        if not check:
+            check = dataset.metadata.keys()
+        for key in check:
             if key in skip:
                 continue
-            if check is None and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
+            if len(check) == 0 and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
                 continue  # we skip check for optional and nonrequested values here
-            if value is None:
+            if not dataset.metadata.element_is_set(key):
                 return True
         return False
 
