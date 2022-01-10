@@ -431,7 +431,7 @@ class Fasta(Sequence):
                 part_file = open(part_path, 'w')
                 log.debug(f"Writing {input_file} part to {part_path}")
                 start_offset = 0
-                for line in f:
+                for line in iter(f.readline, ''):
                     offset = f.tell()
                     if not line:
                         break

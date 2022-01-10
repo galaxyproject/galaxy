@@ -18,9 +18,13 @@ class MockDataset:
     def __init__(self, id):
         self.id = id
         self.metadata = MockMetadata()
+        self.dataset = None
 
     def has_data(self):
         return True
+
+    def get_size(self):
+        return self.dataset and os.path.getsize(self.dataset.file_name)
 
 
 @contextmanager
