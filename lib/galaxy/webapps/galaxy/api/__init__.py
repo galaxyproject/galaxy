@@ -27,7 +27,7 @@ from starlette.routing import NoMatchFound
 try:
     from starlette_context import context as request_context
 except ImportError:
-    request_context = None
+    request_context = None  # type: ignore[assignment]
 
 from galaxy import (
     app as galaxy_app,

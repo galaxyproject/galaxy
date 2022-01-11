@@ -6,4 +6,7 @@ Mako
 pydantic
 python-multipart  # required to support form parsing in FastAPI/Starlette
 starlette
+starlette-context
 typing-extensions
+uvicorn
+Whoosh
