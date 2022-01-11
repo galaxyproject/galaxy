@@ -156,10 +156,49 @@ def _expand_macro(element, expand_el, macros, tokens):
 
 
 def _expand_yield_statements(macro_def, expand_el):
+    """
+    >>> from lxml.etree import tostring
+    >>> from galaxy.util import XML
+    >>> expand_el = XML('''
+    ...     <expand macro="test">
+    ...         <sub_of_expand_1/>
+    ...         <sub_of_expand_2/>
+    ...     </expand>''')
+    >>> macro_def = XML('''
+    ... <xml name="test">
+    ...     <A><yield/></A>
+    ...     <B><yield/></B>
+    ... </xml>''')
+    >>> _expand_yield_statements(macro_def, expand_el)
+    >>> print(tostring(macro_def).decode('UTF-8'))
+    <xml name="test">
+        <A><sub_of_expand_1/>
+            <sub_of_expand_2/>
+        </A>
+        <B><sub_of_expand_1/>
+            <sub_of_expand_2/>
+        </B>
+    </xml>
+    >>> macro_def = XML('''
+    ... <xml name="test">
+    ...     <blah/>
+    ...     <yield/>
+    ...     <blah/>
+    ...     <yield/>
+    ... </xml>''')
+    >>> _expand_yield_statements(macro_def, expand_el)
+    >>> print(tostring(macro_def).decode('UTF-8'))
+    <xml name="test">
+        <blah/>
+        <sub_of_expand_1/>
+            <sub_of_expand_2/>
+        <blah/>
+        <sub_of_expand_1/>
+            <sub_of_expand_2/>
+        </xml>
+    """
     yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
-
     expand_el_children = list(expand_el)
-
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children)
 
@@ -170,10 +209,9 @@ def _expand_yield_statements(macro_def, expand_el):
             if macro_def_el.tag == "yield":
                 for target in expand_el_children:
                     i += 1
-                    macro_def.insert(i, target)
+                    macro_def.insert(i, deepcopy(target))
                 macro_def.remove(macro_def_el)
                 continue
-
         replace_yield = False
 
 
