@@ -2,10 +2,10 @@
     <div class="quota-summary">
         <div class="text-center my-5">
             <h2>
-                You've got <b>{{ totalQuotaString }}</b> of total disk quota.
+                You've got <b>{{ niceTotalQuota }}</b> of total disk quota.
             </h2>
             <h4>
-                {{ quotaDescriptionSummary }}
+                {{ quotaSummaryDescription }}
             </h4>
         </div>
 
@@ -32,17 +32,21 @@ export default {
     },
     data() {
         return {
-            quotaDescriptionSummary: _l(
+            quotaSummaryDescription: _l(
                 "This is the maximum disk space that you can use across all your storage sources." +
                     " Unlimited storage sources are not taken into account"
             ),
         };
     },
     computed: {
-        /** @returns {String} */
-        totalQuotaString() {
+        /** @returns {Number} */
+        totalQuota() {
             const totalQuota = this.quotaUsages.reduce((acc, item) => acc + item.quotaInBytes, 0);
-            return bytesToString(totalQuota, true);
+            return totalQuota;
+        },
+        /** @returns {String} */
+        niceTotalQuota() {
+            return bytesToString(this.totalQuota, true);
         },
     },
 };
