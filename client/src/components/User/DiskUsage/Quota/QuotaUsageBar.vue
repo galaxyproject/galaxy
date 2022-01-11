@@ -1,12 +1,17 @@
 <template>
     <div class="quota-usage-bar w-75 mx-auto my-5">
-        <h2 v-if="!isDefaultQuota">
-            <b>{{ quotaUsage.sourceLabel }}</b> {{ storageSourceText }}
+        <h2 v-if="!isDefaultQuota" class="quota-storage-source">
+            <span class="storage-source-label">
+                <b>{{ quotaUsage.sourceLabel }}</b>
+            </span>
+            {{ storageSourceText }}
         </h2>
         <h3>
             <b>{{ quotaUsage.niceTotalDiskUsage }}</b> of {{ quotaUsage.niceQuota }} used
         </h3>
-        <h5 v-if="quotaHasLimit">{{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}</h5>
+        <span v-if="quotaHasLimit" class="quota-percent-text">
+            {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}
+        </span>
         <b-progress :value="quotaUsage.quotaPercent" :variant="progressVariant" max="100" />
     </div>
 </template>
