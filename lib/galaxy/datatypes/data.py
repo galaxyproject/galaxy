@@ -227,7 +227,8 @@ class Data(metaclass=DataMeta):
 
     def missing_meta(self, dataset, check=None, skip=None):
         """
-        Checks for empty metadata values, Returns True if non-optional metadata is missing
+        Checks for empty metadata values.
+        Returns False if no non-optional metadata is missing and the missing metadata key otherwise.
         Specifying a list of 'check' values will only check those names provided; when used, optionality is ignored
         Specifying a list of 'skip' items will return True even when a named metadata value is missing; when used, optionality is ignored
         """
@@ -243,7 +244,7 @@ class Data(metaclass=DataMeta):
             if not check and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
                 continue  # we skip check for optional and nonrequested values here
             if not dataset.metadata.element_is_set(key):
-                return True
+                return key
         return False
 
     def set_max_optional_metadata_filesize(self, max_value):

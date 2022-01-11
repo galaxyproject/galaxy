@@ -167,7 +167,7 @@ class MetadataCollection(Mapping):
                   False if its equal of if no metadata with the name is specified
         """
         try:
-            meta_val = self.parent._metadata[name]
+            meta_val = self[name]
         except KeyError:
             log.debug(f"no metadata with name {name} found")
             return False

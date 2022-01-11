@@ -527,7 +527,7 @@ class MetadataValidator(Validator):
     >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='bed', create_dataset=True, sa_session=sa_session, dataset=bedds))
     >>> hda.set_dataset_state(model.Dataset.states.OK)
     >>> hda.set_meta()
-    >>> hda.metadata.strandCol = None
+    >>> hda.metadata.strandCol = hda.metadata.spec["strandCol"].no_value
     >>> param_xml = '''<param name="blah" type="data">
     ...     <validator type="metadata" check="{check}" skip="{skip}"/>
     ... </param>'''
@@ -537,47 +537,32 @@ class MetadataValidator(Validator):
     >>> t = p.validate(hda)
     Traceback (most recent call last):
         ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="strandCol")))
+    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
     >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="nameCol")))
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
     >>> t = p.validate(hda)
     Traceback (most recent call last):
         ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> param_xml = '''<param name="blah" type="data">
+    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> param_xml_negate = '''<param name="blah" type="data">
     ...     <validator type="metadata" check="{check}" skip="{skip}" negate="true"/>
     ... </param>'''
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="strandCol", skip="")))
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="strandCol", skip="")))
     >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="nameCol", skip="")))
-    >>> t = p.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="nameCol")))
-    >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="strandCol")))
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="nameCol", skip="")))
     >>> t = p.validate(hda)
     Traceback (most recent call last):
         ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
+    ValueError: At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
     """
-    # >>> p = ToolParameter.build(None, XML('''
-    # ... <param name="blah" type="data">
-    # ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
-    # ... </param>
-    # ... '''))
-    # >>> p2 = ToolParameter.build(None, XML('''
-    # ... <param name="blah" type="data">
-    # ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
-    # ... </param>
-    # ... '''))
-    # >>> t = p.validate(hda)
-    # Traceback (most recent call last):
-    #     ...
-    # ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    # >>> t = p2.validate(hda)
     requires_dataset_metadata = True
 
     @classmethod
@@ -590,8 +575,13 @@ class MetadataValidator(Validator):
 
     def __init__(self, message=None, check="", skip="", negate='false'):
         if not message:
-            # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
-            message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
+            if not util.asbool(negate):
+                message = "Metadata '%s' missing, click the pencil icon in the history item to edit / save the metadata attributes"
+            else:
+                if check != '':
+                    message = f"At least one of the checked metadata '{check}' is set, click the pencil icon in the history item to edit / save the metadata attributes"
+                elif skip != '':
+                    message = f"At least one of the non skipped metadata '{skip}' is set, click the pencil icon in the history item to edit / save the metadata attributes"
         super().__init__(message, negate)
         self.check = check.split(",") if check else None
         self.skip = skip.split(",") if skip else None
@@ -599,7 +589,8 @@ class MetadataValidator(Validator):
     def validate(self, value, trans=None):
         if value:
             # TODO why this validator checks for isinstance(value, model.DatasetInstance)
-            super().validate(isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip))
+            missing = value.missing_meta(check=self.check, skip=self.skip)
+            super().validate(isinstance(value, model.DatasetInstance) and not missing, value_to_show=missing)
 
 
 class UnspecifiedBuildValidator(Validator):
