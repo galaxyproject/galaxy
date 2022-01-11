@@ -1,6 +1,7 @@
 """
 """
 import datetime
+import importlib.resources
 import inspect
 import logging
 import os
@@ -90,16 +91,13 @@ class WebApplication(base.WebApplication):
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
-        # FIXME: should be os.path.join (galaxy_root, 'templates')?
-        if galaxy_app.config.template_path == './templates':
-            template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
-        else:
-            template_path = galaxy_app.config.template_path
+        base_template_path = importlib.resources.files('galaxy.webapps.base') / 'templates'
+        app_template_path = base_template_path / 'webapps'
         # First look in webapp specific directory
         if name is not None:
-            paths.append(os.path.join(template_path, 'webapps', name))
+            paths.append(app_template_path / name)
         # Then look in root directory
-        paths.append(template_path)
+        paths.append(base_template_path)
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache_path,
