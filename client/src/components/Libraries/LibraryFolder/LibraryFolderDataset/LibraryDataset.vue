@@ -141,14 +141,9 @@ import { Toast } from "ui/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 import { GenomeProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
+import { buildFields } from "components/Libraries/library-utils";
 
 library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
-
-function buildFields(fieldTitles, data) {
-    return Object.entries(fieldTitles).flatMap(([property, title]) =>
-        data[property] ? { name: title, value: data[property] } : []
-    );
-}
 
 export default {
     props: {
