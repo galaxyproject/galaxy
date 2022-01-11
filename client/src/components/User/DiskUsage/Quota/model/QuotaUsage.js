@@ -7,7 +7,7 @@ export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
  */
 export class QuotaUsage {
     constructor(data) {
-        this.data = data;
+        this._data = data;
     }
 
     /**
@@ -15,7 +15,7 @@ export class QuotaUsage {
      * @returns {String}
      */
     get sourceLabel() {
-        return this.data.quota_source_label || DEFAULT_QUOTA_SOURCE_LABEL;
+        return this._data.quota_source_label || DEFAULT_QUOTA_SOURCE_LABEL;
     }
 
     /**
@@ -23,7 +23,7 @@ export class QuotaUsage {
      * @returns {Number}
      */
     get quotaInBytes() {
-        return this.data.quota_bytes;
+        return this._data.quota_bytes;
     }
 
     /**
@@ -31,7 +31,7 @@ export class QuotaUsage {
      * @returns {Number}
      */
     get totalDiskUsageInBytes() {
-        return this.data.total_disk_usage;
+        return this._data.total_disk_usage;
     }
 
     /**
@@ -39,7 +39,7 @@ export class QuotaUsage {
      * @returns {Number}
      */
     get quotaPercent() {
-        return this.data.quota_percent;
+        return this._data.quota_percent;
     }
 
     /**
