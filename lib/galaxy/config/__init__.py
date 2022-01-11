@@ -6,6 +6,7 @@ Universe configuration builder.
 import collections
 import configparser
 import errno
+import importlib.resources
 import ipaddress
 import logging
 import logging.config
@@ -72,7 +73,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
+GALAXY_CONFIG_SCHEMA_PATH = importlib.resources.files('galaxy.webapps.galaxy') / 'config_schema.yml'
 LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     'disable_existing_loggers': False,
     'version': 1,
@@ -624,13 +625,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def _load_schema(self):
         # Schemas are symlinked to the root of the galaxy-app package
-        config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
-        if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
-            config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
-        elif not os.path.exists(config_schema_path):
-            # Not a package, but cwd is not galaxy_root
-            config_schema_path = os.path.join(self.root, GALAXY_CONFIG_SCHEMA_PATH)
-        return AppSchema(config_schema_path, GALAXY_APP_NAME)
+        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
