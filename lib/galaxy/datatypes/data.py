@@ -154,7 +154,7 @@ class Data(metaclass=DataMeta):
     metadata_spec: metadata.MetadataSpecCollection
 
     # Add metadata elements
-    MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?")
+    MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, optional=True, no_value="?")
     # Stores the set of display applications, and viewing methods, supported by this datatype
     supported_display_apps: Dict[str, Any] = {}
     # If False, the peek is regenerated whenever a dataset of this type is copied
