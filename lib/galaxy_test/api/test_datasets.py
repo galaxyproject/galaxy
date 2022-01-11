@@ -23,14 +23,14 @@ class DatasetsApiTestCase(ApiTestCase):
         self._assert_status_code_is(index_response, 200)
 
     def test_index_using_keys(self):
-        expected_keys = "size"
-        self.dataset_populator.new_dataset(self.history_id, wait=True)
+        expected_keys = "id"
+        self.dataset_populator.new_dataset(self.history_id)
         index_response = self._get(f"datasets?keys={expected_keys}")
         self._assert_status_code_is(index_response, 200)
         datasets = index_response.json()
         for dataset in datasets:
-            self._assert_has_keys(dataset, "size")
-            self._assert_not_has_keys(dataset, "name", "history_content_type")
+            assert len(dataset) == 1
+            self._assert_has_keys(dataset, "id")
 
     def test_search_datasets(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
@@ -239,12 +239,10 @@ class DatasetsApiTestCase(ApiTestCase):
             dataset_map[index] = hda["id"]
 
         expected_deleted_source_ids = [
-            {"id": dataset_map[1], "src":"hda"},
-            {"id": dataset_map[2], "src":"hda"},
+            {"id": dataset_map[1], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
         ]
-        delete_payload = {
-            "datasets": expected_deleted_source_ids
-        }
+        delete_payload = {"datasets": expected_deleted_source_ids}
         deleted_result = self._delete_batch_with_payload(delete_payload)
 
         assert deleted_result["success_count"] == len(expected_deleted_source_ids)
@@ -253,13 +251,10 @@ class DatasetsApiTestCase(ApiTestCase):
             assert dataset["deleted"] is True
 
         expected_purged_source_ids = [
-            {"id": dataset_map[0], "src":"hda"},
-            {"id": dataset_map[2], "src":"hda"},
+            {"id": dataset_map[0], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
         ]
-        purge_payload = {
-            "purge": True,
-            "datasets": expected_purged_source_ids
-        }
+        purge_payload = {"purge": True, "datasets": expected_purged_source_ids}
         deleted_result = self._delete_batch_with_payload(purge_payload)
 
         assert deleted_result["success_count"] == len(expected_purged_source_ids)
@@ -280,12 +275,10 @@ class DatasetsApiTestCase(ApiTestCase):
 
             # Trying to delete datasets of wrong type will error
             expected_errored_source_ids = [
-                {"id": dataset_map[0], "src":"ldda"},
-                {"id": dataset_map[3], "src":"ldda"},
+                {"id": dataset_map[0], "src": "ldda"},
+                {"id": dataset_map[3], "src": "ldda"},
             ]
-            delete_payload = {
-                "datasets": expected_errored_source_ids
-            }
+            delete_payload = {"datasets": expected_errored_source_ids}
             deleted_result = self._delete_batch_with_payload(delete_payload)
 
             assert deleted_result["success_count"] == 0
@@ -293,12 +286,10 @@ class DatasetsApiTestCase(ApiTestCase):
 
         # Trying to delete datasets that we don't own will error
         expected_errored_source_ids = [
-            {"id": dataset_map[1], "src":"hda"},
-            {"id": dataset_map[2], "src":"hda"},
+            {"id": dataset_map[1], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
         ]
-        delete_payload = {
-            "datasets": expected_errored_source_ids
-        }
+        delete_payload = {"datasets": expected_errored_source_ids}
         deleted_result = self._delete_batch_with_payload(delete_payload)
 
         assert deleted_result["success_count"] == 0

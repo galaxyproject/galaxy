@@ -179,7 +179,7 @@ class DeleteDatasetBatchPayload(BaseModel):
         description=(
             "Whether to permanently delete from disk the specified datasets. "
             "*Warning*: this is a destructive operation."
-        )
+        ),
     )
 
 
