@@ -1,7 +1,6 @@
 """
 """
 import datetime
-import importlib.resources
 import inspect
 import logging
 import os
@@ -41,6 +40,11 @@ from galaxy.web.framework import (
     url_for
 )
 from galaxy.web_stack import get_app_kwds
+
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +95,7 @@ class WebApplication(base.WebApplication):
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
-        base_template_path = importlib.resources.files('galaxy.webapps.base') / 'templates'
+        base_template_path = files('galaxy.webapps.base') / 'templates'
         app_template_path = base_template_path / 'webapps'
         # First look in webapp specific directory
         if name is not None:

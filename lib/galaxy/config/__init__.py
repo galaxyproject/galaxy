@@ -6,7 +6,6 @@ Universe configuration builder.
 import collections
 import configparser
 import errno
-import importlib.resources
 import ipaddress
 import logging
 import logging.config
@@ -63,6 +62,11 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
 
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
+
 if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.tool_util.deps.containers import ContainerFinder
@@ -73,7 +77,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = importlib.resources.files('galaxy.webapps.galaxy') / 'config_schema.yml'
+GALAXY_CONFIG_SCHEMA_PATH = files('galaxy.webapps.galaxy') / 'config_schema.yml'
 LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     'disable_existing_loggers': False,
     'version': 1,
