@@ -3733,7 +3733,7 @@ parameters a ``metadata`` validator is added automatically.
 - ``metadata``: Check for missing metadata. The set of (optional) metadata
 to be checked can be set using either the ``check`` or ``skip`` attribute.
 Note that each data parameter has automatically a metadata validator that checks
-if all non-optional metadata is set, i.e. ``<validator type="metadata/>``.
+if all non-optional metadata are set, i.e. ``<validator type="metadata/>``.
 - ``unspecified_build``: Check of a build is defined.
 - ``dataset_ok_validator``: Check if the data set is in state OK.
 - ``dataset_metadata_in_range``: Check if a numeric metadata value is within
