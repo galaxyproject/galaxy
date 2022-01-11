@@ -157,6 +157,9 @@ def _expand_macro(element, expand_el, macros, tokens):
 
 def _expand_yield_statements(macro_def, expand_el):
     """
+    Modifies the macro_def element by replacing all <yield/> tags below the
+    macro_def element by the children  of the expand_el
+
     >>> from lxml.etree import tostring
     >>> from galaxy.util import XML
     >>> expand_el = XML('''
