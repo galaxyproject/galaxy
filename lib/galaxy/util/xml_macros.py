@@ -159,8 +159,7 @@ def _expand_yield_statements(macro_def, expand_el):
     Modifies the macro_def element by replacing all <yield/> tags below the
     macro_def element by the children  of the expand_el
 
-    >>> from lxml.etree import tostring
-    >>> from galaxy.util import XML
+    >>> from galaxy.util import XML, xml_to_string
     >>> expand_el = XML('''
     ...     <expand macro="test">
     ...         <sub_of_expand_1/>
@@ -172,12 +171,15 @@ def _expand_yield_statements(macro_def, expand_el):
     ...     <B><yield/></B>
     ... </xml>''')
     >>> _expand_yield_statements(macro_def, expand_el)
-    >>> print(tostring(macro_def).decode('UTF-8'))
+    >>> print(xml_to_string(macro_def, pretty=True))
+    <?xml version="1.0" ?>
     <xml name="test">
-        <A><sub_of_expand_1/>
+        <A>
+            <sub_of_expand_1/>
             <sub_of_expand_2/>
         </A>
-        <B><sub_of_expand_1/>
+        <B>
+            <sub_of_expand_1/>
             <sub_of_expand_2/>
         </B>
     </xml>
@@ -189,15 +191,16 @@ def _expand_yield_statements(macro_def, expand_el):
     ...     <yield/>
     ... </xml>''')
     >>> _expand_yield_statements(macro_def, expand_el)
-    >>> print(tostring(macro_def).decode('UTF-8'))
+    >>> print(xml_to_string(macro_def, pretty=True))
+    <?xml version="1.0" ?>
     <xml name="test">
         <blah/>
         <sub_of_expand_1/>
-            <sub_of_expand_2/>
+        <sub_of_expand_2/>
         <blah/>
         <sub_of_expand_1/>
-            <sub_of_expand_2/>
-        </xml>
+        <sub_of_expand_2/>
+    </xml>
     """
     yield_els = [yield_el for yield_el in macro_def.findall('.//yield')]
     expand_el_children = list(expand_el)
