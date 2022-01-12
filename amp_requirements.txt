@@ -40,5 +40,6 @@ spacy==2.2.2
 # pyscenedetect
 scenedetect==0.5.3
 
-# tesseract.xml
+# tesseract
 pytesseract==0.3.3
+tesseract==0.1.3
