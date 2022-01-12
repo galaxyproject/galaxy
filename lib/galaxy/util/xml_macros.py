@@ -142,8 +142,7 @@ def _expand_macro(element, expand_el, macros, tokens):
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
     assert macro_name in macros, f"No macro named {macro_name} found, known macros are {', '.join(macros.keys())}."
     macro_def = macros[macro_name]
-    expanded_elements = deepcopy(macro_def.elements)
-
+    expanded_elements = deepcopy(macro_def.element)
     _expand_yield_statements(expanded_elements, expand_el)
 
     # Recursively expand contained macros.
@@ -299,15 +298,29 @@ def _xml_replace(query, targets):
 
 
 class XmlMacroDef:
+    """
+    representation of a (Galaxy) XML macro
 
+    stores the root element of the macro and the parameters.
+    each parameter is represented as pair containing
+    - the quote character, default '@'
+    - parameter name
+
+    parameter names can be given as comma separated list using the
+    `token` attribute or as attributes `token_XXX` (where `XXX` is the name).
+    The former option should be used to specify required attributes of the
+    macro and the latter for optional attributes if the macro (the value of
+    `token_XXX is used as default value).
+
+    TODO: `token_quote` forbids `"quote"` as character name of optional
+    parameters
+    """
     def __init__(self, el):
-        self.elements = list(el)
+        self.element = el
         parameters = {}
         tokens = []
-        token_quote = "@"
+        token_quote = el.attrib.get("token_quote", "@")
         for key, value in el.attrib.items():
-            if key == "token_quote":
-                token_quote = value
             if key == "tokens":
                 for token in value.split(","):
                     tokens.append((token, REQUIRED_PARAMETER))
@@ -319,12 +332,17 @@ class XmlMacroDef:
         self.parameters = parameters
 
     def macro_tokens(self, expand_el):
+        """
+        get a dictionary mapping token names to values. The names are the
+        parameter names surrounded by the quote character. Values are taken
+        from the expand_el if absent default values of optional parameters are
+        used.
+        """
         tokens = {}
         for key, (wrap_char, default_val) in self.parameters.items():
             token_value = expand_el.attrib.get(key, default_val)
             if token_value is REQUIRED_PARAMETER:
-                message = "Failed to expand macro - missing required parameter [%s]."
-                raise ValueError(message % key)
+                raise ValueError(f"Failed to expand macro - missing required parameter [{key}].")
             token_name = f"{wrap_char}{key.upper()}{wrap_char}"
             tokens[token_name] = token_value
         return tokens
