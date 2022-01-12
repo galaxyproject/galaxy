@@ -64,7 +64,7 @@ def imported_macro_paths(root):
 
 def _import_macros(root, path):
     """
-    root the parsed XML tree 
+    root the parsed XML tree
     path the path to the main xml document
     """
     xml_base_dir = os.path.dirname(path)
@@ -223,6 +223,33 @@ def _expand_yield_statements(macro_def, expand_el):
         </blah>
         <content_of_token2/>
         <more_content_of_token2/>
+    </xml>
+    >>> # test recursion like replacements
+    >>> expand_el = XML('''
+    ...     <expand macro="test">
+    ...         <token name="token1">
+    ...             <T1><yield name="token2"/></T1>
+    ...         </token>
+    ...         <token name="token2">
+    ...             <T2><yield/></T2>
+    ...         </token>
+    ...         <T/>
+    ...     </expand>''')
+    >>> macro_def = XML('''
+    ... <xml name="test">
+    ...     <A><yield name="token1"/></A>
+    ... </xml>''')
+    >>> _expand_yield_statements(macro_def, expand_el)
+    >>> print(xml_to_string(macro_def, pretty=True))
+    <?xml version="1.0" ?>
+    <xml name="test">
+        <A>
+            <T1>
+                <T2>
+                    <T/>
+                </T2>
+            </T1>
+        </A>
     </xml>
     """
     # replace named yields
