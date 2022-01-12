@@ -42,9 +42,9 @@ from galaxy.web.framework import (
 from galaxy.web_stack import get_app_kwds
 
 try:
-    from importlib.resources import files
+    from importlib.resources import files  # type: ignore[attr-defined]
 except ImportError:
-    from importlib_resources import files
+    from importlib_resources import files  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 

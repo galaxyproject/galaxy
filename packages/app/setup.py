@@ -101,9 +101,9 @@ ENTRY_POINTS = '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
     'galaxy': [
-        'config_schema.yml',
-        'job_config_schema.yml',
-        'uwsgi_schema.yml',
+        'config/schemas/config_schema.yml',
+        'config/schemas/job_config_schema.yml',
+        'config/schemas/uwsgi_schema.yml',
         'config/sample/*',
     ],
     'tool_shed': [

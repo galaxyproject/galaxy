@@ -63,9 +63,9 @@ from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
 
 try:
-    from importlib.resources import files
+    from importlib.resources import files  # type: ignore[attr-defined]
 except ImportError:
-    from importlib_resources import files
+    from importlib_resources import files  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
@@ -77,7 +77,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = files('galaxy.webapps.galaxy') / 'config_schema.yml'
+GALAXY_SCHEMAS_PATH = files('galaxy.config') / 'schemas'
+GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / 'config_schema.yml'
+UWSGI_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / 'uwsgi_schema.yml'
 LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     'disable_existing_loggers': False,
     'version': 1,
@@ -628,7 +630,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_config(kwargs)
 
     def _load_schema(self):
-        # Schemas are symlinked to the root of the galaxy-app package
         return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):

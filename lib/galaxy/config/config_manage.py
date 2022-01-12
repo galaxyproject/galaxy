@@ -22,7 +22,10 @@ if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 
-from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
+from galaxy.config import (
+    GALAXY_CONFIG_SCHEMA_PATH,
+    UWSGI_SCHEMA_PATH,
+)
 from galaxy.config.schema import (
     AppSchema,
     OPTION_DEFAULTS,
@@ -48,7 +51,6 @@ UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for sect
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
-UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 UWSGI_OPTIONS = dict([
     ('http', {
@@ -346,7 +348,7 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
     "config/galaxy.yml",
-    GALAXY_CONFIG_SCHEMA_PATH,
+    str(GALAXY_CONFIG_SCHEMA_PATH),
     'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
 )
 SHED_APP = App(
@@ -465,9 +467,8 @@ def _build_uwsgi_schema(args, app_desc):
         "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
-    path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
     contents = ordered_dump(schema)
-    _write_to_file(args, contents, path)
+    _write_to_file(args, contents, UWSGI_SCHEMA_PATH)
 
 
 def _find_config(args, app_desc):
