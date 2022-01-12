@@ -9,10 +9,7 @@ from collections import defaultdict
 from threading import Lock
 from typing import Dict, List, Tuple
 
-from sqlalchemy.orm import (
-    defer,
-    joinedload,
-)
+from sqlalchemy.orm import defer
 from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
@@ -294,16 +291,16 @@ class ToolShedRepositoryCache:
         # Repositories loaded from database
         self.repositories = []
         self.repos_by_tuple = defaultdict(list)
-        self._rebuild()
+        self._build()
         self.session.close()
 
     def add_local_repository(self, repository):
         self.local_repositories.append(repository)
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
-    def _rebuild(self):
+    def _build(self):
         self.repositories = self.session.query(ToolShedRepository).options(
-            defer(ToolShedRepository.metadata_), joinedload('tool_dependencies')
+            defer(ToolShedRepository.metadata_)
         ).all()
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:
