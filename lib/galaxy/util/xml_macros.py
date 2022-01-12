@@ -63,6 +63,10 @@ def imported_macro_paths(root):
 
 
 def _import_macros(root, path):
+    """
+    root the parsed XML tree 
+    path the path to the main xml document
+    """
     xml_base_dir = os.path.dirname(path)
     macros_el = _macros_el(root)
     if macros_el is not None:
@@ -162,13 +166,22 @@ def _expand_yield_statements(macro_def, expand_el):
     >>> from galaxy.util import XML, xml_to_string
     >>> expand_el = XML('''
     ...     <expand macro="test">
+    ...         <token name="token1">
+    ...             <content_of_token1/>
+    ...             <more_content_of_token1/>
+    ...         </token>
     ...         <sub_of_expand_1/>
+    ...         <token name="token2">
+    ...             <content_of_token2/>
+    ...             <more_content_of_token2/>
+    ...         </token>
     ...         <sub_of_expand_2/>
     ...     </expand>''')
     >>> macro_def = XML('''
     ... <xml name="test">
     ...     <A><yield/></A>
-    ...     <B><yield/></B>
+    ...     <yield name="token1"/>
+    ...     <B><yield/><yield name="token2"/></B>
     ... </xml>''')
     >>> _expand_yield_statements(macro_def, expand_el)
     >>> print(xml_to_string(macro_def, pretty=True))
@@ -178,17 +191,24 @@ def _expand_yield_statements(macro_def, expand_el):
             <sub_of_expand_1/>
             <sub_of_expand_2/>
         </A>
+        <content_of_token1/>
+        <more_content_of_token1/>
         <B>
             <sub_of_expand_1/>
             <sub_of_expand_2/>
+            <content_of_token2/>
+            <more_content_of_token2/>
         </B>
     </xml>
+    >>> # test replacement of top level yields
     >>> macro_def = XML('''
     ... <xml name="test">
     ...     <blah/>
     ...     <yield/>
-    ...     <blah/>
-    ...     <yield/>
+    ...     <blah>
+    ...         <yield name="token1"/>
+    ...     </blah>
+    ...     <yield name="token2"/>
     ... </xml>''')
     >>> _expand_yield_statements(macro_def, expand_el)
     >>> print(xml_to_string(macro_def, pretty=True))
@@ -197,13 +217,27 @@ def _expand_yield_statements(macro_def, expand_el):
         <blah/>
         <sub_of_expand_1/>
         <sub_of_expand_2/>
-        <blah/>
-        <sub_of_expand_1/>
-        <sub_of_expand_2/>
+        <blah>
+            <content_of_token1/>
+            <more_content_of_token1/>
+        </blah>
+        <content_of_token2/>
+        <more_content_of_token2/>
     </xml>
     """
+    # replace named yields
+    for token_el in expand_el.findall('./token'):
+        name = token_el.attrib.get("name", None)
+        assert name is not None, "Found unnamed token" + str(token_el.attrib)
+        yield_els = [yield_el for yield_el in macro_def.findall(f".//yield[@name='{name}']")]
+        assert len(yield_els) > 0, f"No named yield found for named token {name}"
+        token_el_children = list(token_el)
+        for yield_el in yield_els:
+            _xml_replace(yield_el, token_el_children)
+
+    # replace unnamed yields
     yield_els = [yield_el for yield_el in macro_def.findall('.//yield')]
-    expand_el_children = list(expand_el)
+    expand_el_children = [c for c in expand_el if c.tag != "token"]
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children)
 
