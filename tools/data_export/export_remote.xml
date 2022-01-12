@@ -40,15 +40,15 @@ $fileconfig
                 <!-- Allow more options - e.g. HTML, collections preserving their structure... -->
             </param>
             <when value="datasets_auto">
-                <param name="infiles" type="data" format="txt,binary" multiple="true" label="Choose your datasets" help="Datasets must have unique names"/>
+                <param name="infiles" type="data" format="data" multiple="true" label="Choose your datasets" help="Datasets must have unique names"/>
             </when>
             <when value="collection_auto">
-                <param name="incollection" type="data_collection" format="txt,binary" label="Choose your dataset collection" help="Dataset collection will be exported. Collections will become folders and datasets will be files"/>
+                <param name="incollection" type="data_collection" format="data" label="Choose your dataset collection" help="Dataset collection will be exported. Collections will become folders and datasets will be files"/>
                 <param name="include_collection_name" type="boolean" label="Include the collection name as top level directory?"/>
             </when>
             <when value="datasets_named">
                 <repeat name="datasets" title="Dataset">
-                    <param type="data" format="txt,binary" name="infile" label="Input dataset" />
+                    <param type="data" format="data" name="infile" label="Input dataset" />
                     <param type="text" name="name" label="Enter file name" help="To create a file named &quot;f1.txt&quot; in directory named &quot;dir1&quot; enter &quot;dir1/f1.txt&quot;">
                         <!-- 🔥 turn off sanitizer, so unicode strings can be used. Is sanitized in configfile -->
                         <sanitizer sanitize="false"></sanitizer>
