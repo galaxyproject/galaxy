@@ -623,6 +623,8 @@ class DefaultToolAction:
                 assert old_job.session_id == galaxy_session.id, f'({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})'
             else:
                 raise Exception(f'({old_job.id}/{current_job.id}): Remapping via the API is not (yet) supported')
+            # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
+            current_job.hide_outputs(flush=False)
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
@@ -660,7 +662,6 @@ class DefaultToolAction:
                             job.job_id = current_job.id
             for jtoidca in old_job.output_dataset_collections:
                 jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
-            current_job.hide_outputs(flush=False)
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
 
