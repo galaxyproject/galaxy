@@ -44,7 +44,7 @@ export class MastheadState {
 }
 
 function staticUrlToPrefixed(appRoot, url) {
-    return url?.startsWith("/") ? `${appRoot}${url}` : url;
+    return url?.startsWith("/") ? `${appRoot}${url.substring(1)}` : url;
 }
 
 export function mountMasthead(el, options, mastheadState) {
