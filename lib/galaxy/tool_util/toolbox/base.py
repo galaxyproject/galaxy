@@ -807,7 +807,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 repository_path,
                 tool_path
             )
-            self.app.tool_shed_repository_cache.add_local_repository(repository)
+            tsr_cache = self.app.tool_shed_repository_cache
+            if tsr_cache:
+                tsr_cache.add_local_repository(repository)
         return repository
 
     def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
