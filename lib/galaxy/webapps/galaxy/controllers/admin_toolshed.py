@@ -1241,8 +1241,7 @@ class AdminToolshed(AdminGalaxy):
                                                               tool_shed=tool_shed_url,
                                                               name=name,
                                                               owner=owner,
-                                                              changeset_revision=changeset_revision,
-                                                              refresh=True)
+                                                              changeset_revision=changeset_revision)
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = f"The installed repository named '{name}' is current, there are no updates available.  "

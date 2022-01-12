@@ -13,7 +13,6 @@ from sqlalchemy.orm import (
     defer,
     joinedload,
 )
-from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
@@ -288,20 +287,20 @@ class ToolShedRepositoryCache:
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
     def __init__(self, session: sessionmaker):
-        engine = session().bind
-        self.session = scoped_session(sessionmaker(engine))
+        self.session = session()
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
         # Repositories loaded from database
         self.repositories = []
         self.repos_by_tuple = defaultdict(list)
-        self.rebuild()
+        self._rebuild()
+        self.session.close()
 
     def add_local_repository(self, repository):
         self.local_repositories.append(repository)
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
-    def rebuild(self):
+    def _rebuild(self):
         self.repositories = self.session.query(ToolShedRepository).options(
             defer(ToolShedRepository.metadata), joinedload('tool_dependencies')
         ).all()
@@ -325,6 +324,3 @@ class ToolShedRepositoryCache:
                 continue
             return repo
         return None
-
-    def shutdown(self) -> None:
-        self.session.close()
