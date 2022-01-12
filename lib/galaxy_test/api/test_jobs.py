@@ -268,18 +268,21 @@ steps:
                                                                          assert_ok=False)
             assert dataset['visible']
 
+    def _run_map_over_error(self, history_id):
+        hdca1 = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("sample1-1", "1 2 3")]).json()
+        inputs = {
+            'error_bool': 'true',
+            'dataset': {
+                'batch': True,
+                'values': [{'src': 'hdca', 'id': hdca1['id']}],
+            }
+        }
+        return self._run_detect_errors(history_id=history_id, inputs=inputs)
+
     @skip_without_tool("detect_errors_aggressive")
     def test_no_unhide_on_error_if_mapped_over(self):
         with self.dataset_populator.test_history() as history_id:
-            hdca1 = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("sample1-1", "1 2 3")]).json()
-            inputs = {
-                'error_bool': 'true',
-                'dataset': {
-                    'batch': True,
-                    'values': [{'src': 'hdca', 'id': hdca1['id']}],
-                }
-            }
-            run_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            run_response = self._run_map_over_error(history_id)
             job_id = run_response['jobs'][0]["id"]
             self.dataset_populator.wait_for_job(job_id)
             job = self.dataset_populator.get_job_details(job_id).json()
@@ -288,6 +291,23 @@ steps:
                                                                          dataset_id=run_response['outputs'][0]['id'],
                                                                          assert_ok=False)
             assert not dataset['visible']
+
+    def test_no_hide_on_rerun(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_map_over_error(history_id)
+            assert run_response['implicit_collections'][0]['visible']
+            job_id = run_response['jobs'][0]["id"]
+            rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
+            inputs = rerun_params['state_inputs']
+            inputs['rerun_remap_job_id'] = job_id
+            self._run_detect_errors(history_id=history_id, inputs=inputs)
+            # Verify source hdca is still visible
+            hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id,
+                content_id=run_response['implicit_collections'][0]['id'],
+                assert_ok=False,
+            )
+            assert hdca['visible']
 
     @skip_without_tool('empty_output')
     def test_common_problems(self):
