@@ -499,7 +499,7 @@ class User(Base, Dictifiable, RepresentById):
     cloudauthz = relationship('CloudAuthz', back_populates='user', cascade_backrefs=False)
     custos_auth = relationship('CustosAuthnzToken', back_populates='user', cascade_backrefs=False)
     default_permissions = relationship('DefaultUserPermissions', back_populates='user', cascade_backrefs=False)
-    groups = relationship('UserGroupAssociation', back_populates='user')
+    groups = relationship('UserGroupAssociation', back_populates='user', cascade_backrefs=False)
     histories = relationship('History',
         back_populates='user',
         order_by=lambda: desc(History.update_time))  # type: ignore[has-type]
@@ -2280,7 +2280,7 @@ class UserGroupAssociation(Base, RepresentById):
     group_id = Column(Integer, ForeignKey('galaxy_group.id'), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user = relationship('User', back_populates='groups')
+    user = relationship('User', back_populates='groups', cascade_backrefs=False)
     group = relationship('Group', back_populates='users')
 
     def __init__(self, user, group):
