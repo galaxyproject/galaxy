@@ -513,7 +513,7 @@ class User(Base, Dictifiable, RepresentById):
         cascade_backrefs=False,
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore[has-type]
     quotas = relationship('UserQuotaAssociation', back_populates='user', cascade_backrefs=False)
-    social_auth = relationship('UserAuthnzToken', back_populates='user')
+    social_auth = relationship('UserAuthnzToken', back_populates='user', cascade_backrefs=False)
     stored_workflow_menu_entries = relationship('StoredWorkflowMenuEntry',
         primaryjoin=(lambda:
             (StoredWorkflowMenuEntry.user_id == User.id)
@@ -7810,7 +7810,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     extra_data = Column(MutableJSONType, nullable=True)
     lifetime = Column(Integer)
     assoc_type = Column(VARCHAR(64))
-    user = relationship('User', back_populates='social_auth')
+    user = relationship('User', back_populates='social_auth', cascade_backrefs=False)
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
