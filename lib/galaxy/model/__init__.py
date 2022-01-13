@@ -512,7 +512,7 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         cascade_backrefs=False,
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore[has-type]
-    quotas = relationship('UserQuotaAssociation', back_populates='user')
+    quotas = relationship('UserQuotaAssociation', back_populates='user', cascade_backrefs=False)
     social_auth = relationship('UserAuthnzToken', back_populates='user')
     stored_workflow_menu_entries = relationship('StoredWorkflowMenuEntry',
         primaryjoin=(lambda:
@@ -2905,7 +2905,7 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     quota_id = Column(Integer, ForeignKey('quota.id'), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user = relationship('User', back_populates='quotas')
+    user = relationship('User', back_populates='quotas', cascade_backrefs=False)
     quota = relationship('Quota', back_populates='users')
 
     dict_element_visible_keys = ['user']
