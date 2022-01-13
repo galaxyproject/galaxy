@@ -77,7 +77,6 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
-    backref,
     column_property,
     deferred,
     joinedload,
@@ -8486,7 +8485,8 @@ class Vault(Base):
 
     key = Column(Text, primary_key=True)
     parent_key = Column(Text, ForeignKey(key), index=True, nullable=True)
-    children = relationship('Vault', backref=backref('parent', remote_side=[key]))
+    children = relationship('Vault', back_populates='parent')
+    parent = relationship('Vault', back_populates='children', remote_side=[key])
     value = Column(Text, nullable=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
