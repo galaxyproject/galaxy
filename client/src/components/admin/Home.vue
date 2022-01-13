@@ -111,12 +111,6 @@
                 </strong>
                 - A view of a version lineages for all installed tools. Useful for debugging.
             </li>
-            <li>
-                <strong>
-                    <a :href="migrationStagesUrl">View Migration Stages</a>
-                </strong>
-                - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
-            </li>
         </ul>
     </div>
 </template>
@@ -145,7 +139,6 @@ export default {
         },
     },
     computed: {
-        migrationStagesUrl: () => `${root}admin/review_tool_migration_stages`, // NOT ROUTER
         adminDataTypesUrl: () => `${root}admin/data_types`,
         adminDataTablesUrl: () => `${root}admin/data_tables`,
         adminDisplayApplicationsUrl: () => `${root}admin/display_applications`,
