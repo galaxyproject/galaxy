@@ -1,5 +1,6 @@
 <template>
     <div>
+        <b-button variant="link" @click="onGoBack">Go back to Libraries</b-button>
         <PermissionsHeader v-if="library" :name="library.name" />
         <h2 class="text-center">Library permissions</h2>
         <PermissionsInputField
@@ -127,6 +128,9 @@ export default {
                     console.error(error);
                 }
             );
+        },
+        onGoBack() {
+            this.$router.go(-1);
         },
     },
 };
