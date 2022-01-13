@@ -17,13 +17,29 @@ def load_with_references(path):
 
     macro_paths = _import_macros(root, path)
 
+    # temporarily remove the children of the macros node
+    # and create a copy. this is done because this allows
+    # to iterate over all expand nodes of the tree
+    # that are not included in the macros node
+    macros = _macros_el(root)
+    if macros is not None:
+        macros_copy = deepcopy(macros)
+        macros.clear()
+    else:
+        macros_copy = []
+
     # Collect tokens
-    tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
+    tokens = _macros_of_type(macros_copy, 'token', lambda el: el.text or '')
     tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
-    macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
+    macro_dict = _macros_of_type(macros_copy, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
+
+    # readd the stashed children of the macros node
+    # TODO is this this really necesary? Since macro nodes are removed anyway just below.
+    _xml_set_children(macros, list(macros_copy))
+
     for el in root.xpath('//macro'):
         if el.get('type') != 'template':
             # Only keep template macros
@@ -80,7 +96,10 @@ def _macros_el(root):
 
 
 def _macros_of_type(root, type, el_func):
-    macros_el = root.find('macros')
+    if root.tag == "macros":
+        macros_el = root
+    else:
+        macros_el = root.find('macros')
     macro_dict = {}
     if macros_el is not None:
         macro_els = macros_el.findall('macro')
@@ -110,6 +129,11 @@ def _expand_tokens(elements, tokens):
 
 
 def _expand_tokens_for_el(element, tokens):
+    """
+    expand tokens in element and (recursively) in its children
+    replacements of text attributes and attribute values are
+    possible
+    """
     value = element.text
     if value:
         new_value = _expand_tokens_str(element.text, tokens)
@@ -119,6 +143,11 @@ def _expand_tokens_for_el(element, tokens):
         new_value = _expand_tokens_str(value, tokens)
         if not (new_value is value):
             element.attrib[key] = new_value
+        new_key = _expand_tokens_str(key, tokens)
+        if not (new_key is key):
+            element.attrib[new_key] = element.attrib[key]
+            del element.attrib[key]
+    # recursively expand in childrens
     _expand_tokens(list(element), tokens)
 
 
@@ -138,10 +167,10 @@ def _expand_macros(elements, macros, tokens):
             expand_el = element.find('.//expand')
             if expand_el is None:
                 break
-            _expand_macro(element, expand_el, macros, tokens)
+            _expand_macro(expand_el, macros, tokens)
 
 
-def _expand_macro(element, expand_el, macros, tokens):
+def _expand_macro(expand_el, macros, tokens):
     macro_name = expand_el.get('macro')
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
     assert macro_name in macros, f"No macro named {macro_name} found, known macros are {', '.join(macros.keys())}."
@@ -149,19 +178,18 @@ def _expand_macro(element, expand_el, macros, tokens):
     expanded_elements = deepcopy(macro_def.element)
     _expand_yield_statements(expanded_elements, expand_el)
 
-    # Recursively expand contained macros.
-    _expand_macros(expanded_elements, macros, tokens)
     macro_tokens = macro_def.macro_tokens(expand_el)
     if macro_tokens:
         _expand_tokens(expanded_elements, macro_tokens)
 
+    # Recursively expand contained macros.
+    _expand_macros(expanded_elements, macros, tokens)
     _xml_replace(expand_el, expanded_elements)
 
 
 def _expand_yield_statements(macro_def, expand_el):
     """
-    Modifies the macro_def element by replacing 
-    
+    Modifies the macro_def element by replacing
     1. all named yield tags by the content of the corresponding token tags
        - token tags need to be direct children of the expand
        - processed in order of definition of the token tags
@@ -232,7 +260,6 @@ def _load_imported_macros(macros_el, xml_base_dir):
         file_macros, current_macro_paths = _load_macro_file(import_path, xml_base_dir)
         macros.extend(file_macros)
         macro_paths.extend(current_macro_paths)
-
     return macros, macro_paths
 
 
