@@ -72,9 +72,9 @@ class ToolShedRepository(Base, _HasTable):
     dist_to_shed = Column(Boolean, default=False)
     status = Column(TrimmedString(255))
     error_message = Column(TEXT)
-    tool_versions = relationship('ToolVersion', back_populates='tool_shed_repository')
+    tool_versions = relationship('ToolVersion', back_populates='tool_shed_repository', cascade_backrefs=False)
     tool_dependencies = relationship('ToolDependency', order_by='ToolDependency.name',
-        back_populates='tool_shed_repository')
+        back_populates='tool_shed_repository', cascade_backrefs=False)
     required_repositories = relationship('RepositoryRepositoryDependencyAssociation',
         back_populates='repository')
 
@@ -582,7 +582,7 @@ class ToolDependency(Base, _HasTable):
     type = Column(TrimmedString(40))
     status = Column(TrimmedString(255), nullable=False)
     error_message = Column(TEXT)
-    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_dependencies')
+    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_dependencies', cascade_backrefs=False)
 
     # converting this one to Enum breaks the tool shed tests,
     # don't know why though -John
@@ -666,7 +666,7 @@ class ToolVersion(Base, Dictifiable, _HasTable):
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.tool_id))
     child_tool_association = relationship('ToolVersionAssociation',
         primaryjoin=(lambda: ToolVersion.id == ToolVersionAssociation.parent_id))
-    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_versions')
+    tool_shed_repository = relationship('ToolShedRepository', back_populates='tool_versions', cascade_backrefs=False)
 
     dict_element_visible_keys = ['id', 'tool_shed_repository']
 
