@@ -35,6 +35,8 @@ from . import dataproviders
 
 log = logging.getLogger(__name__)
 
+MAX_DATA_LINES = 100000
+
 
 @dataproviders.decorators.has_dataproviders
 class TabularData(data.Text):
@@ -270,7 +272,7 @@ class Tabular(TabularData):
     def get_column_names(self, first_line=None):
         return None
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=100000, max_guess_type_data_lines=None, **kwd):
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=MAX_DATA_LINES, max_guess_type_data_lines=None, **kwd):
         """
         Tries to determine the number of columns as well as those columns that
         contain numerical values in the dataset.  A skip parameter is used
@@ -367,7 +369,7 @@ class Tabular(TabularData):
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
                 i = 0
-                for line in dataset_fh:
+                for line in iter(dataset_fh.readline, ''):
                     line = line.rstrip('\r\n')
                     if i == 0:
                         column_names = self.get_column_names(first_line=line)

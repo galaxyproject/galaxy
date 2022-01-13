@@ -99,12 +99,7 @@
                         <font-awesome-icon icon="trash" />
                         Delete
                     </button>
-                    <span class="mr-1" data-toggle="tooltip" title="Show location details">
-                        <button @click="showDetails" class="primary-button toolbtn-show-locinfo" type="button">
-                            <font-awesome-icon icon="info-circle" />
-                            Details
-                        </button>
-                    </span>
+                    <FolderDetails class="mr-1" :id="folder_id" :metadata="metadata" />
                     <div class="form-check logged-dataset-manipulation mr-1" v-if="logged_dataset_manipulation">
                         <b-form-checkbox
                             id="checkbox-1"
@@ -129,7 +124,6 @@ import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { showLocInfo } from "./details-modal";
 import { deleteSelectedItems } from "./delete-selected";
 import { initTopBarIcons } from "components/Libraries/icons";
 import mod_import_dataset from "./import-to-history/import-dataset";
@@ -139,6 +133,7 @@ import { Toast } from "ui/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
+import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import SearchField from "../SearchField";
 import { Services } from "../services";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -183,6 +178,7 @@ export default {
         SearchField,
         FontAwesomeIcon,
         LibraryBreadcrumb,
+        FolderDetails,
     },
     data() {
         return {
@@ -346,9 +342,6 @@ export default {
                 },
                 cache: true,
             });
-        },
-        showDetails() {
-            showLocInfo(Object.assign({ id: this.folder_id }, this.metadata));
         },
         toggle_include_deleted: function (value) {
             this.$emit("fetchFolderContents", value);

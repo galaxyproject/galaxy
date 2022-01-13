@@ -159,9 +159,9 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     def test_show_details(self):
         self.navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.wait_for_selector_clickable(".toolbtn-show-locinfo").click()
+        self.components.libraries.folder.open_location_details_btn.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.wait_for_selector_clickable(".ui-modal #button-0").click()
+        self.components.libraries.folder.location_details_ok_btn.wait_for_and_click()
         self.screenshot("libraries_show_details")
         self.wait_for_overlays_cleared()
         self.screenshot("libraries_show_details_done")

@@ -744,6 +744,7 @@
       <converter file="mdconvert.xml" target_datatype="trr"/>
     </datatype>
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="prmtop" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="AMBER topology file" />
     <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="mdp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="ndx" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
@@ -758,6 +759,7 @@
     <datatype extension="gro" type="galaxy.datatypes.molecules:GRO" display_in_upload="true">
       <converter file="gro_to_pdb.xml" target_datatype="pdb"/>
     </datatype>
+    <datatype extension="inpcrd" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true" description="AMBER coordinate file" />
     <datatype extension="vel" type="galaxy.datatypes.binary:Vel" display_in_upload="true"/>
     <datatype extension="grd" type="galaxy.datatypes.molecules:grd" display_in_upload="true"/>
     <datatype extension="grd.tgz" type="galaxy.datatypes.molecules:grdtgz" display_in_upload="true"/>
