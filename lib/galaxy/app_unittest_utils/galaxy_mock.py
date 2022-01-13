@@ -189,6 +189,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.monitor_thread_join_timeout = 1
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get('vault_config_file')
+        self.max_discovered_files = 10000
 
     @property
     def config_dict(self):

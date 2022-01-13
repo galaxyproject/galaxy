@@ -2114,6 +2114,7 @@ class Tool(Dictifiable):
             object_store=tool.app.object_store,
             final_job_state=final_job_state,
             flush_per_n_datasets=tool.app.config.flush_per_n_datasets,
+            max_discovered_files=tool.app.config.max_discovered_files,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,

@@ -1354,6 +1354,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs['exit_code'] = self.exit_code
         job_attrs['create_time'] = self.create_time.isoformat()
         job_attrs['update_time'] = self.update_time.isoformat()
+        job_attrs['job_messages'] = self.job_messages
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()

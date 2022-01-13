@@ -5,11 +5,17 @@ import operator
 import os
 import re
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import Callable, Dict, List, Optional, Union
 
 from sqlalchemy.orm.scoping import ScopedSession
 
-import galaxy.model
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    Job,
+    JobToOutputDatasetAssociation,
+    LibraryDatasetDatasetAssociation,
+)
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
@@ -38,7 +44,8 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutputCollection,
 )
 from galaxy.util import (
-    unicodify
+    shrink_and_unicodify,
+    unicodify,
 )
 
 DATASET_ID_TOKEN = "DATASET_ID"
@@ -176,12 +183,15 @@ def collect_dynamic_outputs(
 
 class BaseJobContext:
 
+    max_discovered_files: Union[int, float]
+
     def add_dataset_collection(self, collection):
         pass
 
     def find_files(self, output_name, collection, dataset_collectors):
         filenames = {}
         for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
+            self.increment_discovered_file_count()
             filenames[discovered_file.path] = discovered_file
         return filenames
 
@@ -202,7 +212,9 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
             input_dbkey,
             object_store,
             final_job_state,
-            flush_per_n_datasets=None):
+            max_discovered_files: Optional[int],
+            flush_per_n_datasets=None,
+    ):
         self.tool = tool
         self._metadata_source_provider = metadata_source_provider
         self._permission_provider = permission_provider
@@ -215,6 +227,8 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         self._object_store = object_store
         self.final_job_state = final_job_state
         self._flush_per_n_datasets = flush_per_n_datasets
+        self.max_discovered_files = float('inf') if max_discovered_files is None else max_discovered_files
+        self.discovered_file_count = 0
         self._tag_handler = None
 
     @property
@@ -241,7 +255,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         return self._metadata_source_provider
 
     @property
-    def job(self) -> galaxy.model.Job:
+    def job(self) -> Job:
         return self._job
 
     @property
@@ -277,7 +291,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         return library_folder
 
     def get_hdca(self, object_id):
-        hdca = self.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
+        hdca = self.sa_session.query(HistoryDatasetCollectionAssociation).get(int(object_id))
         return hdca
 
     def create_library_folder(self, parent_folder, name, description):
@@ -296,7 +310,7 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
         return hdca
 
     def add_output_dataset_association(self, name, dataset):
-        assoc = galaxy.model.JobToOutputDatasetAssociation(name, dataset)
+        assoc = JobToOutputDatasetAssociation(name, dataset)
         assoc.job = self.job
         self.sa_session.add(assoc)
 
@@ -365,13 +379,15 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
 
 class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
-    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory, final_job_state):
+    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory, final_job_state, max_discovered_files: Optional[int]):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
         super().__init__(object_store, export_store, working_directory)
         self.metadata_params = metadata_params
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
         self.final_job_state = final_job_state
+        self.max_discovered_files = float('inf') if max_discovered_files is None else max_discovered_files
+        self.discovered_file_count = 0
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]
@@ -397,7 +413,7 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         return "non-session bound job"
 
     def get_hdca(self, object_id):
-        hdca = self.import_store.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).find(int(object_id))
+        hdca = self.import_store.sa_session.query(HistoryDatasetCollectionAssociation).find(int(object_id))
         if hdca:
             self.export_store.add_dataset_collection(hdca)
             for collection_dataset in hdca.dataset_instances:
@@ -424,15 +440,15 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         return self.metadata_params.get("implicit_collection_jobs_association_id")
 
 
-def collect_primary_datasets(job_context, output, input_ext):
+def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContext], output, input_ext):
     job_working_directory = job_context.job_working_directory
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
     primary_output_assigned = False
     new_outdata_name = None
-    primary_datasets = {}
-    storage_callbacks = []
+    primary_datasets: Dict[str, Dict[str, Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation]]] = {}
+    storage_callbacks: List[Callable] = []
     for output_index, (name, outdata) in enumerate(output.items()):
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
         output_def = job_context.output_def(name)
@@ -440,6 +456,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             dataset_collectors = [dataset_collector(description) for description in output_def.dataset_collector_descriptions]
         filenames = {}
         for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
+            job_context.increment_discovered_file_count()
             filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
             extra_file_collector = discovered_file.collector
@@ -704,6 +721,6 @@ def collect_extra_files(object_store, dataset, job_working_directory):
 def collect_shrinked_content_from_path(path):
     try:
         with open(path, 'rb') as fh:
-            return galaxy.util.shrink_and_unicodify(fh.read().strip())
+            return shrink_and_unicodify(fh.read().strip())
     except FileNotFoundError:
         return None

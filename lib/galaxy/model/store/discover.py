@@ -11,7 +11,16 @@ import os
 from collections import (
     namedtuple,
 )
-from typing import Any, Callable, Dict, List, NamedTuple, Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 from sqlalchemy.orm.scoping import ScopedSession
 
@@ -29,10 +38,18 @@ from galaxy.util import (
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
 
+if TYPE_CHECKING:
+    from galaxy.job_execution.output_collect import JobContext, SessionlessJobContext
+
+
 log = logging.getLogger(__name__)
 
 UNSET = object()
 DEFAULT_CHUNK_SIZE = 1000
+
+
+class MaxDiscoveredFilesExceededError(ValueError):
+    pass
 
 
 class ModelPersistenceContext(metaclass=abc.ABCMeta):
@@ -41,6 +58,10 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     This class implement the create_dataset method that takes care of populating metadata
     required for datasets and other potential model objects.
     """
+
+    max_discovered_files = float('inf')
+    discovered_file_count: int
+
     def create_dataset(
         self,
         ext,
@@ -400,6 +421,11 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def flush(self):
         """If database bound, flush the persisted objects to ensure IDs."""
 
+    def increment_discovered_file_count(self):
+        self.discovered_file_count += 1
+        if self.discovered_file_count > self.max_discovered_files:
+            raise MaxDiscoveredFilesExceededError(f"Job generated more than maximum number ({self.max_discovered_files}) of output datasets")
+
 
 class PermissionProvider(metaclass=abc.ABCMeta):
     """Interface for working with permissions while importing datasets with ModelPersistenceContext."""
@@ -457,6 +483,8 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self._object_store = object_store
         self.export_store = export_store
         self._flush_per_n_datasets = None
+        self.discovered_file_count = 0
+        self.max_discovered_files = float('inf')
 
         self.job_working_directory = working_directory  # TODO: rename...
 
@@ -607,7 +635,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
         export_store.add_dataset_collection(hdca)
 
 
-def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
+def persist_elements_to_hdca(model_persistence_context: Union['JobContext', 'SessionlessJobContext', SessionlessModelPersistenceContext], elements, hdca, collector=None):
     filenames = {}
 
     def add_to_discovered_files(elements, parent_identifiers=None):
@@ -616,7 +644,7 @@ def persist_elements_to_hdca(model_persistence_context, elements, hdca, collecto
             if "elements" in element:
                 add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
             else:
-                discovered_file = discovered_file_for_element(element, model_persistence_context.job_working_directory, parent_identifiers, collector=collector)
+                discovered_file = discovered_file_for_element(element, model_persistence_context, parent_identifiers, collector=collector)
                 filenames[discovered_file.path] = discovered_file
 
     add_to_discovered_files(elements)
@@ -640,7 +668,7 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             nested_folder = model_persistence_context.create_library_folder(library_folder, name, description)
             persist_elements_to_folder(model_persistence_context, element["elements"], nested_folder)
         else:
-            discovered_file = discovered_file_for_element(element, model_persistence_context.job_working_directory)
+            discovered_file = discovered_file_for_element(element, model_persistence_context)
             fields_match = discovered_file.match
             designation = fields_match.designation
             visible = fields_match.visible
@@ -686,7 +714,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
             if "elements" in element:
                 collect_elements_for_history(element["elements"])
             else:
-                discovered_file = discovered_file_for_element(element, model_persistence_context.job_working_directory)
+                discovered_file = discovered_file_for_element(element, model_persistence_context)
                 fields_match = discovered_file.match
                 designation = fields_match.designation
                 ext = fields_match.ext
@@ -795,9 +823,10 @@ def replace_request_syntax_sugar(obj):
 DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
-def discovered_file_for_element(dataset, job_working_directory, parent_identifiers=None, collector=None):
+def discovered_file_for_element(dataset, model_persistence_context: Union['JobContext', 'SessionlessJobContext', SessionlessModelPersistenceContext], parent_identifiers=None, collector=None):
+    model_persistence_context.increment_discovered_file_count()
     parent_identifiers = parent_identifiers or []
-    target_directory = discover_target_directory(getattr(collector, "directory", None), job_working_directory)
+    target_directory = discover_target_directory(getattr(collector, "directory", None), model_persistence_context.job_working_directory)
     filename = dataset.get("filename")
     error_message = dataset.get("error_message")
     if error_message is None:

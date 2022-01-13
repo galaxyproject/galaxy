@@ -705,6 +705,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 assert self.import_options.allow_edit
                 job = self.sa_session.query(model.Job).get(job_attrs["id"])
                 self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)
+                self._set_job_attributes(job, job_attrs, force_terminal=False)
                 # Don't edit job
                 continue
 
@@ -715,25 +716,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_job.imported = True
             imported_job.tool_id = job_attrs['tool_id']
             imported_job.tool_version = job_attrs['tool_version']
-            raw_state = job_attrs['state']
-            if raw_state not in model.Job.terminal_states:
-                raw_state = model.Job.states.ERROR
-            imported_job.set_state(raw_state)
-            imported_job.info = job_attrs.get('info', None)
-            imported_job.exit_code = job_attrs.get('exit_code', None)
-            imported_job.traceback = job_attrs.get('traceback', None)
-            if 'stdout' in job_attrs:
-                # Pre 19.05 export.
-                imported_job.tool_stdout = job_attrs.get('stdout', None)
-                imported_job.tool_stderr = job_attrs.get('stderr', None)
-            else:
-                # Post 19.05 export with separated I/O
-                imported_job.tool_stdout = job_attrs.get('tool_stdout', None)
-                imported_job.job_stdout = job_attrs.get('job_stdout', None)
-                imported_job.tool_stderr = job_attrs.get('tool_stderr', None)
-                imported_job.job_stderr = job_attrs.get('job_stderr', None)
+            self._set_job_attributes(imported_job, job_attrs, force_terminal=True)
 
-            imported_job.command_line = job_attrs.get('command_line')
             try:
                 imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
                 imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
@@ -935,6 +919,29 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             return load(open(implicit_collection_jobs_attrs_file_name))
         except FileNotFoundError:
             return []
+
+    def _set_job_attributes(self, imported_job, job_attrs, force_terminal=False):
+        ATTRIBUTES = (
+            'info',
+            'exit_code',
+            'traceback',
+            'job_messages',
+            'tool_stdout',
+            'tool_stderr',
+            'job_stdout',
+            'job_stderr'
+        )
+        for attribute in ATTRIBUTES:
+            value = job_attrs.get(attribute)
+            if value is not None:
+                setattr(imported_job, attribute, value)
+        if 'stdout' in job_attrs:
+            imported_job.tool_stdout = job_attrs.get('stdout')
+            imported_job.tool_stderr = job_attrs.get('stderr')
+        raw_state = job_attrs.get('state')
+        if force_terminal and raw_state and raw_state not in model.Job.terminal_states:
+            raw_state = model.Job.states.ERROR
+        imported_job.set_state(raw_state)
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
@@ -1245,14 +1252,14 @@ class DirectoryModelExportStore(ModelExportStore):
     def __enter__(self):
         return self
 
-    def export_job(self, job, tool=None, include_job_data=True):
+    def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
         tool_source = getattr(tool, 'tool_source', None)
         if tool_source:
             with open(os.path.join(self.export_directory, 'tool.xml'), 'w') as out:
                 out.write(tool_source.to_string())
 
-    def export_jobs(self, jobs, jobs_attrs=None, include_job_data=True):
+    def export_jobs(self, jobs: List[model.Job], jobs_attrs=None, include_job_data=True):
         """
         Export jobs.
 
@@ -1267,12 +1274,12 @@ class DirectoryModelExportStore(ModelExportStore):
             if include_job_data:
                 # -- Get input, output datasets. --
 
-                input_dataset_mapping = {}
-                output_dataset_mapping = {}
-                input_dataset_collection_mapping = {}
-                input_dataset_collection_element_mapping = {}
-                output_dataset_collection_mapping = {}
-                implicit_output_dataset_collection_mapping = {}
+                input_dataset_mapping: Dict[str, List[model.DatasetInstance]] = {}
+                output_dataset_mapping: Dict[str, List[model.DatasetInstance]] = {}
+                input_dataset_collection_mapping: Dict[str, List[model.DatasetCollectionInstance]] = {}
+                input_dataset_collection_element_mapping: Dict[str, List[model.DatasetCollectionElement]] = {}
+                output_dataset_collection_mapping: Dict[str, List[model.DatasetCollectionInstance]] = {}
+                implicit_output_dataset_collection_mapping: Dict[str, List[model.DatasetCollection]] = {}
 
                 for assoc in job.input_datasets:
                     # Optional data inputs will not have a dataset.
