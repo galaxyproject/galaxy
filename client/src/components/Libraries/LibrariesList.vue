@@ -75,10 +75,7 @@
                     :changed-value.sync="item[newSynopsisProperty]" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <font-awesome-icon
-                    v-if="row.item.public && !row.item.deleted"
-                    title="Unrestricted dataset"
-                    icon="globe" />
+                <font-awesome-icon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button @click="undelete(row.item)" v-if="row.item.deleted" :title="'Undelete ' + row.item.name">
