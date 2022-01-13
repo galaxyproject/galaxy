@@ -531,7 +531,7 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         cascade_backrefs=False,
         order_by=lambda: desc(APIKeys.create_time))
-    data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
+    data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user', cascade_backrefs=False)
     roles = relationship('UserRoleAssociation', back_populates='user')
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore[has-type]
@@ -8621,7 +8621,7 @@ class DataManagerHistoryAssociation(Base, RepresentById):
     history_id = Column(Integer, ForeignKey('history.id'), index=True)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     history = relationship('History')
-    user = relationship('User', back_populates='data_manager_histories')
+    user = relationship('User', back_populates='data_manager_histories', cascade_backrefs=False)
 
 
 class DataManagerJobAssociation(Base, RepresentById):
