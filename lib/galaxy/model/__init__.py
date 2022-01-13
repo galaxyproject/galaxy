@@ -529,6 +529,7 @@ class User(Base, Dictifiable, RepresentById):
     # Add type hint (will this work w/SA?)
     api_keys: 'List[APIKeys]' = relationship('APIKeys',
         back_populates='user',
+        cascade_backrefs=False,
         order_by=lambda: desc(APIKeys.create_time))
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user')
     roles = relationship('UserRoleAssociation', back_populates='user')
@@ -8672,7 +8673,7 @@ class APIKeys(Base, RepresentById):
     create_time = Column(DateTime, default=now)
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
-    user = relationship('User', back_populates='api_keys')
+    user = relationship('User', back_populates='api_keys', cascade_backrefs=False)
 
 
 def copy_list(lst, *args, **kwds):
