@@ -95,7 +95,8 @@ class WebApplication(base.WebApplication):
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
-        base_template_path = files('galaxy.webapps.base') / 'templates'
+        base_package = 'tool_shed.webapp' if galaxy_app.name == 'tool_shed' else 'galaxy.webapps.base'  # reports has templates in galaxy package
+        base_template_path = files(base_package) / 'templates'
         app_template_path = base_template_path / 'webapps'
         # First look in webapp specific directory
         if name is not None:
