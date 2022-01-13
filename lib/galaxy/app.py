@@ -232,7 +232,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("job manager", self._shutdown_job_manager),
             ("application heartbeat", self._shutdown_heartbeat),
             ("repository manager", self._shutdown_repo_manager),
-            ("database connection repository cache", self._shutdown_repo_cache),
             ("database connection", self._shutdown_model),
             ("application stack", self._shutdown_application_stack),
         ]
@@ -384,6 +383,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
+        # Limit lifetime of tool shed repository cache to app startup
+        self.tool_shed_repository_cache = None
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
@@ -407,9 +408,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     def _shutdown_repo_manager(self):
         self.update_repository_manager.shutdown()
-
-    def _shutdown_repo_cache(self):
-        self.tool_shed_repository_cache.shutdown()
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()

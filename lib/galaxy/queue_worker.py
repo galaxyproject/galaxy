@@ -181,8 +181,6 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     """
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
-    if hasattr(app, 'tool_shed_repository_cache'):
-        app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
 
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel)
@@ -199,8 +197,6 @@ def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
     from galaxy.tools.data_manager.manager import DataManagers
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
-    if hasattr(app, 'tool_shed_repository_cache'):
-        app.tool_shed_repository_cache.rebuild()
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
