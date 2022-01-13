@@ -1,6 +1,4 @@
-import imp
 import logging
-import os
 
 from sqlalchemy import false, func
 
@@ -18,9 +16,7 @@ from galaxy.util import (
     nice_size,
     pretty_print_time_interval,
     sanitize_text,
-    url_get
 )
-from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.webapps.base import controller
@@ -860,35 +856,6 @@ class AdminGalaxy(controller.JSAppLauncher):
         return trans.response.send_redirect(web.url_for(controller='admin',
                                                         action='users',
                                                         message="Invalid user selected", status="error"))
-
-    def check_for_tool_dependencies(self, trans, migration_stage):
-        # Get the 000x_tools.xml file associated with migration_stage.
-        tools_xml_file_path = os.path.abspath(os.path.join(common_util.TOOL_MIGRATION_SCRIPTS_DIR, '%04d_tools.xml' % migration_stage))
-        tree = util.parse_xml(tools_xml_file_path)
-        root = tree.getroot()
-        tool_shed = root.get('name')
-        shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed)
-        repo_name_dependency_tups = []
-        if shed_url:
-            for elem in root:
-                if elem.tag == 'repository':
-                    tool_dependencies = []
-                    tool_dependencies_dict = {}
-                    repository_name = elem.get('name')
-                    changeset_revision = elem.get('changeset_revision')
-                    params = dict(name=repository_name, owner='devteam', changeset_revision=changeset_revision)
-                    pathspec = ['repository', 'get_tool_dependencies']
-                    text = url_get(shed_url, auth=self.app.tool_shed_registry.url_auth(shed_url), pathspec=pathspec, params=params)
-                    if text:
-                        tool_dependencies_dict = encoding_util.tool_shed_decode(text)
-                        for requirements_dict in tool_dependencies_dict.values():
-                            tool_dependency_name = requirements_dict['name']
-                            tool_dependency_version = requirements_dict['version']
-                            tool_dependency_type = requirements_dict['type']
-                            tool_dependency_readme = requirements_dict.get('readme', '')
-                            tool_dependencies.append((tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme))
-                    repo_name_dependency_tups.append((repository_name, tool_dependencies))
-        return repo_name_dependency_tups
 
     @web.legacy_expose_api
     @web.require_admin
