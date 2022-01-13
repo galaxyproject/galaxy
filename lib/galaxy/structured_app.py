@@ -133,7 +133,7 @@ class StructuredApp(MinimalManagerApp):
     genomes: Any  # 'galaxy.visualization.genomes.Genomes'
     error_reports: Any  # 'galaxy.tools.error_reports.ErrorReports'
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
-    tool_shed_repository_cache: Any  # 'galaxy.tools.cache.ToolShedRepositoryCache'
+    tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
     watchers: Any  # 'galaxy.config_watchers.ConfigWatchers'
     installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
