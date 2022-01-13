@@ -494,6 +494,7 @@ class User(Base, Dictifiable, RepresentById):
 
     addresses = relationship('UserAddress',
         back_populates='user',
+        cascade_backrefs=False,
         order_by=lambda: desc(UserAddress.update_time))
     cloudauthz = relationship('CloudAuthz', back_populates='user')
     custos_auth = relationship('CustosAuthnzToken', back_populates='user')
@@ -7651,7 +7652,7 @@ class UserAddress(Base, RepresentById):
     purged = Column(Boolean, index=True, default=False)
     # `desc` needs to be fully qualified because it is shadowed by `desc` Column defined above
     # TODO: db migration to rename column, then use `desc`
-    user = relationship('User', back_populates='addresses', order_by=sqlalchemy.desc('update_time'))
+    user = relationship('User', back_populates='addresses', cascade_backrefs=False, order_by=sqlalchemy.desc('update_time'))
 
     def to_dict(self, trans):
         return {'id': trans.security.encode_id(self.id),
