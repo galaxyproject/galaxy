@@ -10,7 +10,6 @@ from threading import Lock
 from typing import Dict, List, Tuple
 
 from sqlalchemy.orm import defer
-from sqlalchemy.orm.session import sessionmaker
 from sqlitedict import SqliteDict
 
 from galaxy.model.scoped_session import install_model_scoped_session
