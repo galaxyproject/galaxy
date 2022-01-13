@@ -497,7 +497,7 @@ class User(Base, Dictifiable, RepresentById):
         cascade_backrefs=False,
         order_by=lambda: desc(UserAddress.update_time))
     cloudauthz = relationship('CloudAuthz', back_populates='user', cascade_backrefs=False)
-    custos_auth = relationship('CustosAuthnzToken', back_populates='user')
+    custos_auth = relationship('CustosAuthnzToken', back_populates='user', cascade_backrefs=False)
     default_permissions = relationship('DefaultUserPermissions', back_populates='user')
     groups = relationship('UserGroupAssociation', back_populates='user')
     histories = relationship('History',
@@ -7929,7 +7929,7 @@ class CustosAuthnzToken(Base, RepresentById):
     refresh_token = Column(Text)
     expiration_time = Column(DateTime)
     refresh_expiration_time = Column(DateTime)
-    user = relationship('User', back_populates='custos_auth')
+    user = relationship('User', back_populates='custos_auth', cascade_backrefs=False)
 
 
 class CloudAuthz(Base, _HasTable):
