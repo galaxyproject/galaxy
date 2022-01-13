@@ -227,7 +227,6 @@ define({
     "Download local tool": false,
     "Tool lineage": false,
     "Reload a tool's configuration": false,
-    "Review tool migration stages": false,
     "View Tool Error Logs": false,
     "Manage Display Whitelist": false,
     "Manage Tool Dependencies": false,
@@ -384,7 +383,6 @@ define({
     "Refresh history": "刷新历史记录",
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": false,
-    "View migration stages": false,
     "View lineage": false,
     "Manage dependencies": false,
     "Manage whitelist": false,
