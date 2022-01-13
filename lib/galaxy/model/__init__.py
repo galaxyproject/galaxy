@@ -502,6 +502,7 @@ class User(Base, Dictifiable, RepresentById):
     groups = relationship('UserGroupAssociation', back_populates='user', cascade_backrefs=False)
     histories = relationship('History',
         back_populates='user',
+        cascade_backrefs=False,
         order_by=lambda: desc(History.update_time))  # type: ignore[has-type]
     active_histories = relationship('History',
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted))),  # type: ignore[has-type]
@@ -2391,7 +2392,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     users_shared_with = relationship('HistoryUserShareAssociation', back_populates='history')
     galaxy_sessions = relationship('GalaxySessionToHistoryAssociation', back_populates='history')
     workflow_invocations = relationship('WorkflowInvocation', back_populates='history')
-    user = relationship('User', back_populates='histories')
+    user = relationship('User', back_populates='histories', cascade_backrefs=False)
     jobs = relationship('Job', back_populates='history')
 
     update_time = column_property(
