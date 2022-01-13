@@ -498,7 +498,7 @@ class User(Base, Dictifiable, RepresentById):
         order_by=lambda: desc(UserAddress.update_time))
     cloudauthz = relationship('CloudAuthz', back_populates='user', cascade_backrefs=False)
     custos_auth = relationship('CustosAuthnzToken', back_populates='user', cascade_backrefs=False)
-    default_permissions = relationship('DefaultUserPermissions', back_populates='user')
+    default_permissions = relationship('DefaultUserPermissions', back_populates='user', cascade_backrefs=False)
     groups = relationship('UserGroupAssociation', back_populates='user')
     histories = relationship('History',
         back_populates='user',
@@ -3115,7 +3115,7 @@ class DefaultUserPermissions(Base, RepresentById):
     user_id = Column(Integer, ForeignKey('galaxy_user.id'), index=True)
     action = Column(TEXT)
     role_id = Column(Integer, ForeignKey('role.id'), index=True)
-    user = relationship('User', back_populates='default_permissions')
+    user = relationship('User', back_populates='default_permissions', cascade_backrefs=False)
     role = relationship('Role')
 
     def __init__(self, user, action, role):
