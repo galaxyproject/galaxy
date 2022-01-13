@@ -532,7 +532,7 @@ class User(Base, Dictifiable, RepresentById):
         cascade_backrefs=False,
         order_by=lambda: desc(APIKeys.create_time))
     data_manager_histories = relationship('DataManagerHistoryAssociation', back_populates='user', cascade_backrefs=False)
-    roles = relationship('UserRoleAssociation', back_populates='user')
+    roles = relationship('UserRoleAssociation', back_populates='user', cascade_backrefs=False)
     stored_workflows = relationship('StoredWorkflow', back_populates='user',
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id))  # type: ignore[has-type]
     non_private_roles = relationship(
@@ -2842,7 +2842,7 @@ class UserRoleAssociation(Base, RepresentById):
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
 
-    user = relationship('User', back_populates="roles")
+    user = relationship('User', back_populates="roles", cascade_backrefs=False)
     role = relationship('Role', back_populates="users")
 
     def __init__(self, user, role):
