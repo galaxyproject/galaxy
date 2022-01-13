@@ -890,33 +890,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                     repo_name_dependency_tups.append((repository_name, tool_dependencies))
         return repo_name_dependency_tups
 
-    @web.expose
-    @web.require_admin
-    def review_tool_migration_stages(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        migration_stages_dict = {}
-        # FIXME: this isn't valid in an installed context
-        migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'galaxy', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
-        modules = os.listdir(migration_scripts_dir)
-        modules.sort()
-        modules.reverse()
-        for item in modules:
-            if not item.endswith('_tools.py') or item.startswith('0001_tools'):
-                continue
-            module = item.replace('.py', '')
-            migration_stage = int(module.replace('_tools', ''))
-            repo_name_dependency_tups = self.check_for_tool_dependencies(trans, migration_stage)
-            open_file_obj, file_name, description = imp.find_module(module, [migration_scripts_dir])
-            imported_module = imp.load_module('upgrade', open_file_obj, file_name, description)
-            migration_info = imported_module.__doc__
-            open_file_obj.close()
-            migration_stages_dict[migration_stage] = (migration_info, repo_name_dependency_tups)
-        return trans.fill_template('admin/review_tool_migration_stages.mako',
-                                   migration_stages_dict=migration_stages_dict,
-                                   message=message,
-                                   status=status)
-
     @web.legacy_expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
