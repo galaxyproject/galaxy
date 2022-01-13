@@ -76,7 +76,7 @@ class ToolShedRepository(Base, _HasTable):
     tool_dependencies = relationship('ToolDependency', order_by='ToolDependency.name',
         back_populates='tool_shed_repository', cascade_backrefs=False)
     required_repositories = relationship('RepositoryRepositoryDependencyAssociation',
-        back_populates='repository')
+        back_populates='repository', cascade_backrefs=False)
 
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
@@ -549,7 +549,7 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
     update_time = Column(DateTime, default=now, onupdate=now)
     tool_shed_repository_id = Column(ForeignKey('tool_shed_repository.id'), index=True)
     repository_dependency_id = Column(ForeignKey('repository_dependency.id'), index=True)
-    repository = relationship('ToolShedRepository', back_populates='required_repositories')
+    repository = relationship('ToolShedRepository', back_populates='required_repositories', cascade_backrefs=False)
     repository_dependency = relationship('RepositoryDependency')
 
     def __init__(self, tool_shed_repository_id=None, repository_dependency_id=None):
