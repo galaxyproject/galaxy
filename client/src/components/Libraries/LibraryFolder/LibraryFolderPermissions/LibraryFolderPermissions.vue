@@ -1,5 +1,6 @@
 <template>
     <div>
+        <b-button variant="link" @click="onGoBack">Go back</b-button>
         <PermissionsHeader v-if="folder" :name="folder.name" />
         <b-container fluid>
             <div class="dataset_table">
@@ -125,6 +126,9 @@ export default {
                     console.error(error);
                 }
             );
+        },
+        onGoBack() {
+            this.$router.go(-1);
         },
     },
 };
