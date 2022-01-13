@@ -201,7 +201,7 @@ def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
     return installing_repository_ids
 
 
-def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False, from_cache=False):
+def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, from_cache=False):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
