@@ -14,8 +14,7 @@
                                     class="form-control"
                                     id="fetch"
                                     placeholder="https://biocomputeobject.org"
-                                    v-model="form.fetch"
-                                />
+                                    v-model="form.fetch" />
                             </div>
                             <div class="form-group">
                                 <label for="authorization">User API Key</label>
@@ -23,8 +22,7 @@
                                     type="text"
                                     class="form-control"
                                     id="authorization"
-                                    v-model="form.authorization"
-                                />
+                                    v-model="form.authorization" />
                             </div>
                             <div class="form-group">
                                 <label for="table">Prefix</label>
@@ -33,20 +31,14 @@
                                     class="form-control"
                                     id="table"
                                     placeholder="BCO"
-                                    v-model="form.table"
-                                />
+                                    v-model="form.table" />
                             </div>
                             <div class="form-group">
                                 <label for="owner_group">User Name</label>
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="owner_group"
-                                    v-model="form.owner_group"
-                                />
+                                <input type="text" class="form-control" id="owner_group" v-model="form.owner_group" />
                             </div>
                             <div class="form-group">
-                                <button class="btn btn-primary">{{ 'Submit' | localize }}</button>
+                                <button class="btn btn-primary">{{ "Submit" | localize }}</button>
                             </div>
                         </form>
                     </div>
@@ -132,20 +124,20 @@ export default {
             axios
                 .post(`${submitURL}/api/objects/drafts/create/`, bcoString, { headers: headers })
                 .then((response) => {
-                    console.log("response:", response)
+                    console.log("response:", response);
                     alert(JSON.stringify(response.data[0].message));
                 })
                 .catch(function (error) {
                     if (error.response) {
                         alert(JSON.stringify(error.response.data[0].message));
-                        console.log('Error response: ',error.response.data);
+                        console.log("Error response: ", error.response.data);
                         console.log(error.response.status);
                         console.log(error.response.headers);
                     } else if (error.request) {
                         alert(`Error request: failed to connect to server at ${submitURL}`);
                     } else {
-                        console.log('Error', error.message);
-                        alert('Error', error.message);
+                        console.log("Error", error.message);
+                        alert("Error", error.message);
                     }
                 });
         },

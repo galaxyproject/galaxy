@@ -52,8 +52,7 @@
         <workflow-invocation-biocompute
             v-if="invocation"
             :invocation="invocation.id"
-            :invocation-and-job-terminal="invocationAndJobTerminal"
-        />
+            :invocation-and-job-terminal="invocationAndJobTerminal" />
         <workflow-invocation-details
             v-if="invocation"
             :invocation="invocation"
