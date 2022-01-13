@@ -131,11 +131,6 @@ const AdminPanel = Backbone.View.extend({
                         id: "admin-link-tool-versions",
                     },
                     {
-                        title: _l("View Migration Stages"),
-                        url: "admin/review_tool_migration_stages",
-                        id: "admin-link-migrations",
-                    },
-                    {
                         title: _l("View Error Logs"),
                         url: "admin/error_stack",
                         id: "admin-link-error-stack",
