@@ -6,16 +6,6 @@
             <div class="dataset_table">
                 <h2 class="text-center">Folder permissions</h2>
                 <PermissionsInputField
-                    v-if="manage_folder_role_list"
-                    :id="folder_id"
-                    :permission_type="manage_type"
-                    :initial_value="manage_folder_role_list"
-                    :api-root-url="apiRootUrl"
-                    alert="User with <strong>any</strong> of these roles can manage permissions on this folder."
-                    title="Roles that can manage permissions on this folder"
-                    @input="setUserPermissionsPreferences" />
-
-                <PermissionsInputField
                     v-if="add_library_item_role_list"
                     :id="folder_id"
                     :permission_type="add_type"
@@ -25,7 +15,6 @@
                     alert="User with <strong>any</strong> of these roles can add items to this folder (folders and
                                 datasets)."
                     @input="setUserPermissionsPreferences" />
-
                 <PermissionsInputField
                     v-if="modify_folder_role_list"
                     :id="folder_id"
@@ -84,9 +73,7 @@ export default {
             folder: undefined,
             add_library_item_role_list: undefined,
             modify_folder_role_list: undefined,
-            manage_folder_role_list: undefined,
             add_type: "add_library_item_role_list",
-            manage_type: "manage_folder_role_list",
             modify_type: "modify_folder_role_list",
             apiRootUrl: `${getAppRoot()}api/folders`,
         };
@@ -96,7 +83,6 @@ export default {
         this.services = new Services({ root: this.root });
         this.services.getFolderPermissions(this.folder_id).then((fetched_permissions) => {
             this.add_library_item_role_list = extractRoles(fetched_permissions.add_library_item_role_list);
-            this.manage_folder_role_list = extractRoles(fetched_permissions.manage_folder_role_list);
             this.modify_folder_role_list = extractRoles(fetched_permissions.modify_folder_role_list);
         });
         this.services.getFolder(this.folder_id).then((response) => {
@@ -112,11 +98,7 @@ export default {
             this.services.setPermissions(
                 this.apiRootUrl,
                 this.folder_id,
-                [
-                    { "add_ids[]": this.add_library_item_role_list },
-                    { "manage_ids[]": this.manage_folder_role_list },
-                    { "modify_ids[]": this.modify_folder_role_list },
-                ],
+                [{ "add_ids[]": this.add_library_item_role_list }, { "modify_ids[]": this.modify_folder_role_list }],
                 (fetched_permissions) => {
                     Toast.success("Permissions saved.");
                     this.permissions = fetched_permissions;
