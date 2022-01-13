@@ -496,7 +496,7 @@ class User(Base, Dictifiable, RepresentById):
         back_populates='user',
         cascade_backrefs=False,
         order_by=lambda: desc(UserAddress.update_time))
-    cloudauthz = relationship('CloudAuthz', back_populates='user')
+    cloudauthz = relationship('CloudAuthz', back_populates='user', cascade_backrefs=False)
     custos_auth = relationship('CustosAuthnzToken', back_populates='user')
     default_permissions = relationship('DefaultUserPermissions', back_populates='user')
     groups = relationship('UserGroupAssociation', back_populates='user')
@@ -7945,7 +7945,7 @@ class CloudAuthz(Base, _HasTable):
     last_activity = Column(DateTime)
     description = Column(TEXT)
     create_time = Column(DateTime, default=now)
-    user = relationship('User', back_populates='cloudauthz')
+    user = relationship('User', back_populates='cloudauthz', cascade_backrefs=False)
     authn = relationship('UserAuthnzToken')
 
     def __init__(self, user_id, provider, config, authn_id, description=None):
