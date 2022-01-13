@@ -103,6 +103,7 @@ class MockApp(di.Container):
         self.user_manager = UserManager(self)
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
         self.is_job_handler = False
+        self.biotools_metadata_source = None
         rebind_container_to_task(self)
 
         def url_for(*args, **kwds):
