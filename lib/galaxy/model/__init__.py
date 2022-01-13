@@ -510,6 +510,7 @@ class User(Base, Dictifiable, RepresentById):
         order_by=lambda: desc(History.update_time))  # type: ignore[has-type]
     galaxy_sessions = relationship('GalaxySession',
         back_populates='user',
+        cascade_backrefs=False,
         order_by=lambda: desc(GalaxySession.update_time))  # type: ignore[has-type]
     quotas = relationship('UserQuotaAssociation', back_populates='user')
     social_auth = relationship('UserAuthnzToken', back_populates='user')
@@ -6061,7 +6062,7 @@ class GalaxySession(Base, RepresentById):
     last_action = Column(DateTime)
     current_history = relationship('History')
     histories = relationship('GalaxySessionToHistoryAssociation', back_populates='galaxy_session')
-    user = relationship('User', back_populates='galaxy_sessions')
+    user = relationship('User', back_populates='galaxy_sessions', cascade_backrefs=False)
 
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
