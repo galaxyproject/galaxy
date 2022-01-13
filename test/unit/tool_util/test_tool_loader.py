@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 
 from galaxy.tool_util.loader import load_tool, template_macro_params
 from galaxy.tool_util.unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
-from galaxy.util import parse_xml
+from galaxy.util import parse_xml, xml_to_string
 
 
 def test_loader():
@@ -84,12 +84,11 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
-        assert xml.findall("inputs")[0].find("input").get("name") == "first_input"
-        assert xml.findall("inputs")[1].find("input").get("name") == "second_input"
-        assert xml.findall("inputs")[2].find("input").get("name") == "third_input"
+        assert xml.find("/inputs[1]/input").get("name") == "first_input"
+        assert xml.find("/inputs[2]/input").get("name") == "second_input"
+        assert xml.find("/inputs[3]/input").get("name") == "third_input"
 
     # Test nested macro with yield statements
-
     with TestToolDirectory() as tool_dir:
         tool_dir.write("""
 <tool>
@@ -111,11 +110,16 @@ def test_loader():
         </macro>
     </macros>
     <inputs>
-        <expand macro="single_or_paired_general"></expand>
+        <expand macro="single_or_paired_general">
+            <param name="test"/>
+        </expand>
     </inputs>
 </tool>
 """)
         xml = tool_dir.load()
+        # assert the both yields in the inner macro (paired_options) are expanded
+        assert xml.find('/inputs/conditional[@name="library"]/when[@value="paired"]/param[@name="test"]') is not None
+        assert xml.find('/inputs/conditional[@name="library"]/when[@value="paired_collection"]/param[@name="test"]') is not None
 
     # Test recursive macro applications.
     with TestToolDirectory() as tool_dir:
@@ -138,9 +142,9 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
-        assert xml.find("inputs").findall("input")[0].get("name") == "first_input"
-        assert xml.find("inputs").findall("input")[1].get("name") == "second_input"
-        assert xml.find("inputs").findall("input")[2].get("name") == "third_input"
+        assert xml.find("/inputs/input[1]").get("name") == "first_input"
+        assert xml.find("/inputs/input[2]").get("name") == "second_input"
+        assert xml.find("/inputs/input[3]").get("name") == "third_input"
 
     # Test recursive macro applications.
     with TestToolDirectory() as tool_dir:
@@ -166,10 +170,11 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
-        assert xml.find("inputs").findall("input")[0].get("name") == "first_input"
-        assert xml.find("inputs").findall("input")[1].get("name") == "second_input"
-        assert xml.find("inputs").findall("input")[2].get("name") == "third_input"
+        assert xml.find("/inputs/input[1]").get("name") == "first_input"
+        assert xml.find("/inputs/input[2]").get("name") == "second_input"
+        assert xml.find("/inputs/input[3]").get("name") == "third_input"
 
+    # test expansion of top level (ie child of <macro>) yields
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
 <tool id="issue_647">
@@ -186,8 +191,8 @@ def test_loader():
     </inputs>
 </tool>''')
         xml = tool_dir.load()
-        assert xml.find("inputs").findall("param")[0].get("name") == "a1"
-        assert xml.find("inputs").findall("param")[1].get("name") == "b"
+        assert xml.find("/inputs/param[1]").get("name") == "a1"
+        assert xml.find("/inputs/param[2]").get("name") == "b"
 
     # Test <xml> is shortcut for macro type="xml"
     with TestToolDirectory() as tool_dir:
@@ -246,9 +251,7 @@ def test_loader():
 </tool>
 ''')
         xml = tool_dir.load()
-        tag_el = xml.find("another").find("tag")
-        value = tag_el.get('value')
-        assert value == "The value.", value
+        assert xml.find('/another/tag[@value="The value."]') is not None
 
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
@@ -262,9 +265,7 @@ def test_loader():
 </tool>
 ''')
         xml = tool_dir.load()
-        tag_el = xml.find("another").find("tag")
-        value = tag_el.get('value')
-        assert value == "", value
+        assert xml.find('/another/tag[@value=""]') is not None
 
     # Test macros XML macros with $$ expansions in attributes
     with TestToolDirectory() as tool_dir:

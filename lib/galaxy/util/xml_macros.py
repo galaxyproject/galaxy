@@ -383,8 +383,10 @@ class XmlMacroDef:
         self.element = el
         parameters = {}
         tokens = []
-        token_quote = el.attrib.get("token_quote", "@")
+        token_quote = "@"
         for key, value in el.attrib.items():
+            if key == "token_quote":
+                token_quote = value
             if key == "tokens":
                 for token in value.split(","):
                     tokens.append((token, REQUIRED_PARAMETER))
