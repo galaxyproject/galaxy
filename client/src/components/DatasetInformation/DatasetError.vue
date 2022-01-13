@@ -43,7 +43,9 @@
                         <br />
                         Start here:
                         <b>
-                            <a href="https://training.galaxyproject.org/training-material/faqs/galaxy/#troubleshooting-errors" target="_blank">
+                            <a
+                                href="https://training.galaxyproject.org/training-material/faqs/galaxy/#troubleshooting-errors"
+                                target="_blank">
                                 My job ended with an error. What can I do?
                             </a>
                         </b>
