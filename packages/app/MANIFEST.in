@@ -1,5 +1,5 @@
 include *.rst *.txt LICENSE
-include galaxy/config/*.yml
+include galaxy/config/schemas/*.yml
 include galaxy/config/sample/*.sample*
 include galaxy/jobs/runners/util/job_script/*.sh
 include galaxy/tools/*tsv
