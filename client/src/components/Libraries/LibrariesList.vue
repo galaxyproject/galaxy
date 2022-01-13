@@ -85,50 +85,48 @@
                     <font-awesome-icon icon="unlock" />
                     {{ titleUndelete }}
                 </b-button>
-                <div v-else-if="isAdmin">
-                    <b-button
-                        v-if="row.item.can_user_modify && row.item.editMode"
-                        size="sm"
-                        class="lib-btn permission_folder_btn"
-                        :title="'Permissions of ' + row.item.name"
-                        @click="saveChanges(row.item)">
-                        <font-awesome-icon :icon="['far', 'save']" />
-                        {{ titleSave }}
-                    </b-button>
-                    <b-button
-                        v-if="row.item.can_user_modify"
-                        size="sm"
-                        class="lib-btn edit_library_btn save_library_btn"
-                        :title="`Edit ${row.item.name}`"
-                        @click="toggleEditMode(row.item)">
-                        <div v-if="!row.item.editMode">
-                            <font-awesome-icon icon="pencil-alt" />
-                            {{ titleEdit }}
-                        </div>
-                        <div v-else>
-                            <font-awesome-icon :icon="['fas', 'times']" />
-                            {{ titleCancel }}
-                        </div>
-                    </b-button>
-                    <b-button
-                        v-if="row.item.can_user_manage && !row.item.editMode"
-                        size="sm"
-                        class="lib-btn permission_library_btn"
-                        :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/${row.item.id}/permissions` }">
-                        <font-awesome-icon icon="users" />
-                        Manage
-                    </b-button>
-                    <b-button
-                        v-if="row.item.editMode"
-                        size="sm"
-                        class="lib-btn delete-lib-btn"
-                        :title="`Delete ${row.item.name}`"
-                        @click="deleteLibrary(row.item)">
-                        <font-awesome-icon icon="trash" />
-                        {{ titleDelete }}
-                    </b-button>
-                </div>
+                <b-button
+                    v-if="row.item.can_user_modify && row.item.editMode"
+                    size="sm"
+                    class="lib-btn permission_folder_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    @click="saveChanges(row.item)">
+                    <font-awesome-icon :icon="['far', 'save']" />
+                    {{ titleSave }}
+                </b-button>
+                <b-button
+                    v-if="row.item.can_user_modify"
+                    size="sm"
+                    class="lib-btn edit_library_btn save_library_btn"
+                    :title="`Edit ${row.item.name}`"
+                    @click="toggleEditMode(row.item)">
+                    <div v-if="!row.item.editMode">
+                        <font-awesome-icon icon="pencil-alt" />
+                        {{ titleEdit }}
+                    </div>
+                    <div v-else>
+                        <font-awesome-icon :icon="['fas', 'times']" />
+                        {{ titleCancel }}
+                    </div>
+                </b-button>
+                <b-button
+                    v-if="row.item.can_user_manage && !row.item.editMode"
+                    size="sm"
+                    class="lib-btn permission_library_btn"
+                    :title="'Permissions of ' + row.item.name"
+                    :to="{ path: `/${row.item.id}/permissions` }">
+                    <font-awesome-icon icon="users" />
+                    Manage
+                </b-button>
+                <b-button
+                    v-if="isAdmin && row.item.editMode"
+                    size="sm"
+                    class="lib-btn delete-lib-btn"
+                    :title="`Delete ${row.item.name}`"
+                    @click="deleteLibrary(row.item)">
+                    <font-awesome-icon icon="trash" />
+                    {{ titleDelete }}
+                </b-button>
             </template>
         </b-table>
 
