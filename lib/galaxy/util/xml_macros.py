@@ -160,97 +160,12 @@ def _expand_macro(element, expand_el, macros, tokens):
 
 def _expand_yield_statements(macro_def, expand_el):
     """
-    Modifies the macro_def element by replacing all <yield/> tags below the
-    macro_def element by the children  of the expand_el
-
-    >>> from galaxy.util import XML, xml_to_string
-    >>> expand_el = XML('''
-    ...     <expand macro="test">
-    ...         <token name="token1">
-    ...             <content_of_token1/>
-    ...             <more_content_of_token1/>
-    ...         </token>
-    ...         <sub_of_expand_1/>
-    ...         <token name="token2">
-    ...             <content_of_token2/>
-    ...             <more_content_of_token2/>
-    ...         </token>
-    ...         <sub_of_expand_2/>
-    ...     </expand>''')
-    >>> macro_def = XML('''
-    ... <xml name="test">
-    ...     <A><yield/></A>
-    ...     <yield name="token1"/>
-    ...     <B><yield/><yield name="token2"/></B>
-    ... </xml>''')
-    >>> _expand_yield_statements(macro_def, expand_el)
-    >>> print(xml_to_string(macro_def, pretty=True))
-    <?xml version="1.0" ?>
-    <xml name="test">
-        <A>
-            <sub_of_expand_1/>
-            <sub_of_expand_2/>
-        </A>
-        <content_of_token1/>
-        <more_content_of_token1/>
-        <B>
-            <sub_of_expand_1/>
-            <sub_of_expand_2/>
-            <content_of_token2/>
-            <more_content_of_token2/>
-        </B>
-    </xml>
-    >>> # test replacement of top level yields
-    >>> macro_def = XML('''
-    ... <xml name="test">
-    ...     <blah/>
-    ...     <yield/>
-    ...     <blah>
-    ...         <yield name="token1"/>
-    ...     </blah>
-    ...     <yield name="token2"/>
-    ... </xml>''')
-    >>> _expand_yield_statements(macro_def, expand_el)
-    >>> print(xml_to_string(macro_def, pretty=True))
-    <?xml version="1.0" ?>
-    <xml name="test">
-        <blah/>
-        <sub_of_expand_1/>
-        <sub_of_expand_2/>
-        <blah>
-            <content_of_token1/>
-            <more_content_of_token1/>
-        </blah>
-        <content_of_token2/>
-        <more_content_of_token2/>
-    </xml>
-    >>> # test recursion like replacements
-    >>> expand_el = XML('''
-    ...     <expand macro="test">
-    ...         <token name="token1">
-    ...             <T1><yield name="token2"/></T1>
-    ...         </token>
-    ...         <token name="token2">
-    ...             <T2><yield/></T2>
-    ...         </token>
-    ...         <T/>
-    ...     </expand>''')
-    >>> macro_def = XML('''
-    ... <xml name="test">
-    ...     <A><yield name="token1"/></A>
-    ... </xml>''')
-    >>> _expand_yield_statements(macro_def, expand_el)
-    >>> print(xml_to_string(macro_def, pretty=True))
-    <?xml version="1.0" ?>
-    <xml name="test">
-        <A>
-            <T1>
-                <T2>
-                    <T/>
-                </T2>
-            </T1>
-        </A>
-    </xml>
+    Modifies the macro_def element by replacing 
+    
+    1. all named yield tags by the content of the corresponding token tags
+       - token tags need to be direct children of the expand
+       - processed in order of definition of the token tags
+    2. all unnamed yield tags by the non-token children of the expand tag
     """
     # replace named yields
     for token_el in expand_el.findall('./token'):

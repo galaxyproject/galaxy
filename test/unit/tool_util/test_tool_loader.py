@@ -332,3 +332,144 @@ def test_loader():
         assert input_els[0].find("cow").text == "hello"
         assert input_els[1].find("cow").text == "world"
         assert input_els[2].find("cow").text == "the_default"
+
+    # test expansion of named and unnamed yield
+    # - named yields are replaced by content of the corresponding token
+    # - unnamed yields are replaced by all non-token elements of the expand tag
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <xml name="test">
+            <A>
+                <yield/>
+            </A>
+            <yield name="token1"/>
+            <B>
+                <yield/>
+                <yield name="token2"/>
+            </B>
+        </xml>
+    </macros>
+    <expand macro="test">
+        <token name="token1">
+            <content_of_token1/>
+            <more_content_of_token1/>
+        </token>
+        <sub_of_expand_1/>
+        <token name="token2">
+            <content_of_token2/>
+            <more_content_of_token2/>
+        </token>
+        <sub_of_expand_2/>
+    </expand>
+</tool>
+''')
+        xml = tool_dir.load()
+        assert xml_to_string(xml, pretty=True) == '''<?xml version="1.0" ?>
+<tool>
+    <macros>
+        </macros>
+    <A>
+        <sub_of_expand_1/>
+        <sub_of_expand_2/>
+    </A>
+    <content_of_token1/>
+    <more_content_of_token1/>
+    <B>
+        <sub_of_expand_1/>
+        <sub_of_expand_2/>
+        <content_of_token2/>
+        <more_content_of_token2/>
+    </B>
+</tool>'''
+
+    # test replacement of multiple top level yield
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <xml name="test">
+            <blah/>
+            <yield/>
+            <blah>
+                <yield name="token1"/>
+            </blah>
+            <yield name="token2"/>
+        </xml>
+    </macros>
+    <expand macro="test">
+        <token name="token1">
+            <content_of_token1/>
+            <more_content_of_token1/>
+        </token>
+        <sub_of_expand_1/>
+        <token name="token2">
+            <content_of_token2/>
+            <more_content_of_token2/>
+        </token>
+        <sub_of_expand_2/>
+    </expand>
+</tool>
+''')
+        xml = tool_dir.load()
+        assert xml_to_string(xml, pretty=True) == '''<?xml version="1.0" ?>
+<tool>
+    <macros>
+        </macros>
+    <blah/>
+    <sub_of_expand_1/>
+    <sub_of_expand_2/>
+    <blah>
+        <content_of_token1/>
+        <more_content_of_token1/>
+    </blah>
+    <content_of_token2/>
+    <more_content_of_token2/>
+</tool>'''
+
+    # test 'recursive' replacement with named yields
+    # since named yields are processed in order of the definition of the
+    # corresponding tokens:
+    # - replacing yield for token1 introduces yield for token2
+    # - replacing yield for token2 introduced unnamed yield
+    # - replacing unnamed yield gives the only non-token element of the expand
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <xml name="test">
+            <A>
+                <yield name="token1"/>
+            </A>
+        </xml>
+    </macros>
+    <expand macro="test">
+        <token name="token1">
+            <T1>
+                <yield name="token2"/>
+            </T1>
+        </token>
+        <token name="token2">
+            <T2>
+                <yield/>
+            </T2>
+        </token>
+        <T/>
+    </expand>
+</tool>''')
+
+        xml = tool_dir.load()
+        print(xml_to_string(xml, pretty=True))
+        assert xml_to_string(xml, pretty=True) == '''<?xml version="1.0" ?>
+<tool>
+    <macros>
+        </macros>
+    <A>
+        <T1>
+            <T2>
+                <T/>
+            </T2>
+        </T1>
+    </A>
+</tool>'''
