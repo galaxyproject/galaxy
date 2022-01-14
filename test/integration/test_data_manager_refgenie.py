@@ -77,10 +77,11 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
-                run_response = self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
-                                                               inputs=DATA_MANAGER_MANUAL_INPUT,
-                                                               history_id=history_id,
-                                                               assert_ok=False)
+                run_response = self.dataset_populator.run_tool_raw(
+                    tool_id=DATA_MANAGER_MANUAL_ID,
+                    inputs=DATA_MANAGER_MANUAL_INPUT,
+                    history_id=history_id,
+                )
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
 
         entries = self._app.tool_data_tables.get("all_fasta").get_entries('dbkey', 'dm6', 'dbkey')
@@ -97,10 +98,11 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         self.install_repository('iuc', 'data_manager_manual', '1ed87dee9e68')
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
-                run_response = self.dataset_populator.run_tool(tool_id=DATA_MANAGER_MANUAL_ID,
-                                                               inputs=DATA_MANAGER_MANUAL_INPUT_DBKEY,
-                                                               history_id=history_id,
-                                                               assert_ok=False)
+                run_response = self.dataset_populator.run_tool_raw(
+                    tool_id=DATA_MANAGER_MANUAL_ID,
+                    inputs=DATA_MANAGER_MANUAL_INPUT_DBKEY,
+                    history_id=history_id,
+                )
                 self.dataset_populator.wait_for_tool_run(history_id=history_id, run_response=run_response, timeout=CONDA_AUTO_INSTALL_JOB_TIMEOUT)
 
         entries = self._app.tool_data_tables.get("__dbkeys__").get_entries('name', 'dm7', 'name')

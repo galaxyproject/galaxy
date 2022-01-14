@@ -11,8 +11,10 @@ import logging
 import os
 import pickle
 from abc import ABCMeta, abstractmethod
+from typing import Dict, List, overload, Union
 from uuid import uuid4
 
+from typing_extensions import Literal, TypedDict
 
 from galaxy.exceptions import MessageException
 from galaxy.util import (
@@ -72,6 +74,27 @@ SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + [
 ]
 
 PERSISTED_REPRESENTATION = "cwl_tool_object"
+
+ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
+InputInstanceDict = TypedDict(
+    "InputInstanceDict",
+    {
+        "type": str,
+        "name": str,
+        "title": str,
+        "label": str,
+        "help": str,
+        "optional": bool,
+        "area": bool,
+        "value": str,
+        "collection_type": str,
+    },
+    total=False,
+)
+InputInstanceArrayDict = TypedDict(
+    "InputInstanceArrayDict",
+    {"type": str, "name": str, "title": str, "blocks": List[InputInstanceDict]},
+)
 
 
 def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None):
@@ -207,7 +230,7 @@ def _schema_loader(strict_cwl_validation):
 
 
 def _hack_cwl_requirements(cwl_tool):
-    move_to_hints = []
+    move_to_hints: List[int] = []
     for i, requirement in enumerate(cwl_tool.requirements):
         if requirement["class"] == DOCKER_REQUIREMENT:
             move_to_hints.insert(0, i)
@@ -236,9 +259,11 @@ def check_requirements(rec, tool=True):
 
 class ToolProxy(metaclass=ABCMeta):
 
+    _class: str
+
     def __init__(self, tool, uuid, raw_process_reference=None, tool_path=None):
         self._tool = tool
-        self._uuid = uuid
+        self.uuid = uuid
         self._tool_path = tool_path
         self._raw_process_reference = raw_process_reference
         # remove input parameter formats from CWL files so that cwltool
@@ -259,7 +284,7 @@ class ToolProxy(metaclass=ABCMeta):
         raw_id = self._tool.tool.get("id", None)
         return raw_id
 
-    def galaxy_id(self):
+    def galaxy_id(self) -> str:
         raw_id = self.id
         tool_id = None
         # don't reduce "search.cwl#index" to search
@@ -267,8 +292,7 @@ class ToolProxy(metaclass=ABCMeta):
             tool_id = os.path.basename(raw_id)
             # tool_id = os.path.splitext(os.path.basename(raw_id))[0]
         if not tool_id:
-            return self._uuid
-        assert tool_id
+            return str(self.uuid)
         if tool_id.startswith("#"):
             tool_id = tool_id[1:]
         return tool_id
@@ -305,7 +329,7 @@ class ToolProxy(metaclass=ABCMeta):
         return {
             "class": self._class,
             "pickle": unicodify(base64.b64encode(pickle.dumps(persisted_obj, pickle.HIGHEST_PROTOCOL))),
-            "uuid": self._uuid,
+            "uuid": self.uuid,
         }
 
     @staticmethod
@@ -461,7 +485,7 @@ class JobProxy:
             )
 
             args = []
-            kwargs = {}
+            kwargs: Dict[str, str] = {}
             if RuntimeContext is not None:
                 args.append(RuntimeContext(job_args))
             else:
@@ -740,7 +764,7 @@ class WorkflowProxy:
         cwl_ids_to_index = self.cwl_ids_to_index(step_proxies)
         input_connections_by_step = []
         for step_proxy in step_proxies:
-            input_connections_step = {}
+            input_connections_step: Dict[str, List[Dict[str, str]]] = {}
             for input_proxy in step_proxy.input_proxies:
                 cwl_source_id = input_proxy.cwl_source_id
                 input_name = input_proxy.input_name
@@ -830,7 +854,7 @@ class WorkflowProxy:
                 input_as_dict["type"] = "parameter_input"
                 # TODO: dispatch on actual type so this doesn't always need
                 # to be field - simpler types could be simpler inputs.
-                tool_state = {}
+                tool_state: ToolStateType = {}
                 tool_state["parameter_type"] = "field"
                 default_set = "default" in input
                 default_value = input.get("default")
@@ -1019,7 +1043,7 @@ class ToolStepProxy(BaseStepProxy):
 
     @property
     def tool_proxy(self):
-        # Neeeds to be cached so UUID that is loaded matches UUID generated with to_dict.
+        # Needs to be cached so UUID that is loaded matches UUID generated with to_dict.
         if self._tool_proxy is None:
             self._tool_proxy = _cwl_tool_object_to_proxy(self.cwl_tool_object, uuid=str(uuid4()))
         return self._tool_proxy
@@ -1032,14 +1056,14 @@ class ToolStepProxy(BaseStepProxy):
         # We need to stub out null entries for things getting replaced by
         # connections. This doesn't seem ideal - consider just making Galaxy
         # handle this.
-        tool_state = {}
+        tool_state: ToolStateType = {}
         for input_name in input_connections.keys():
             tool_state[input_name] = None
 
         outputs = self.galaxy_workflow_outputs_list()
         return {
             "id": self._index,
-            "tool_uuid": self.tool_proxy._uuid,  # TODO: make sure this is respected...
+            "tool_uuid": self.tool_proxy.uuid,  # TODO: make sure this is respected...
             "label": self.label,
             "position": {"left": 0, "top": 0},
             "type": "tool",
@@ -1254,9 +1278,21 @@ class InputInstance:
         self.array = array
         self.area = area
 
-    def to_dict(self, itemwise=True):
+    @overload
+    def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict:
+        ...
+
+    @overload
+    def to_dict(
+        self, itemwise: Literal[True]
+    ) -> Union[InputInstanceDict, InputInstanceArrayDict]:
+        ...
+
+    def to_dict(
+        self, itemwise: bool = True
+    ) -> Union[InputInstanceDict, InputInstanceArrayDict]:
         if itemwise and self.array:
-            as_dict = dict(
+            return InputInstanceArrayDict(
                 type="repeat",
                 name=f"{self.name}_repeat",
                 title=f"{self.name}",
@@ -1265,7 +1301,7 @@ class InputInstance:
                 ]
             )
         else:
-            as_dict = dict(
+            as_dict = InputInstanceDict(
                 name=self.name,
                 label=self.label or self.name,
                 help=self.description,
@@ -1281,8 +1317,7 @@ class InputInstance:
                 as_dict["value"] = "0.0"
             elif self.input_type == INPUT_TYPE.DATA_COLLECTON:
                 as_dict["collection_type"] = self.collection_type
-
-        return as_dict
+            return as_dict
 
 
 OUTPUT_TYPE = Bunch(

@@ -21,8 +21,7 @@
                 container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" ref="footerExtensionInfo" />
@@ -43,8 +42,7 @@
                 @click="_eventStart"
                 id="btn-start"
                 :disabled="!readyStart"
-                :variant="readyStart ? 'primary' : ''"
-            >
+                :variant="readyStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
             <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">
@@ -57,10 +55,11 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
+import { submitUpload } from "utils/uploadbox";
 
 export default {
     mixins: [UploadBoxMixin],
@@ -139,9 +138,9 @@ export default {
                     extension: this.extension,
                 });
             });
-            $.uploadpost({
+            submitUpload({
                 url: this.app.uploadPath,
-                data: this.app.toFileUploadData(this.collection.filter()),
+                data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
                 success: (message) => {
                     this._eventSuccess(message);
                 },

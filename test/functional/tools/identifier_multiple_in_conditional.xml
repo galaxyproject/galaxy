@@ -13,8 +13,10 @@
                     <when value="true">
                         <param type="data" name="input1" label="True Input" multiple="true" />
                     </when>
+                    <when value="false" />
                 </conditional>
             </when>
+            <when value="false" />
         </conditional>
     </inputs>
     <outputs>

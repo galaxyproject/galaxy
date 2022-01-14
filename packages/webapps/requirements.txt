@@ -1,6 +1,12 @@
 galaxy-app
 Cheetah3
-Mako
-fastapi
+fastapi>=0.68.2,!=0.69.0,!=0.70.0,!=0.70.1
 fastapi-utils
+Mako
+pydantic
+python-multipart  # required to support form parsing in FastAPI/Starlette
 starlette
+starlette-context
+typing-extensions
+uvicorn
+Whoosh

@@ -32,8 +32,7 @@
                             <InstallationButton
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
-                                @onUninstall="uninstallRepository(row.item)"
-                            />
+                                @onUninstall="uninstallRepository(row.item)" />
                         </template>
                     </b-table>
                     <ConfigProvider v-slot="{ config }">
@@ -47,8 +46,7 @@
                                 :current-panel="currentPanel"
                                 :tool-dynamic-configs="config.tool_dynamic_configs"
                                 @hide="onHide"
-                                @ok="onOk"
-                            />
+                                @ok="onOk" />
                         </ToolPanelViewProvider>
                     </ConfigProvider>
                 </div>

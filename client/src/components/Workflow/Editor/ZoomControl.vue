@@ -7,8 +7,7 @@
             size="sm"
             aria-label="Zoom Out"
             v-b-tooltip.hover
-            @click="onZoomOut"
-        />
+            @click="onZoomOut" />
         <b-button
             role="button"
             class="zoom-reset"
@@ -17,8 +16,7 @@
             size="sm"
             aria-label="Reset Zoom Level"
             v-b-tooltip.hover
-            @click="onZoomReset"
-        >
+            @click="onZoomReset">
             {{ this.zoomPercentage }}%
         </b-button>
         <b-button
@@ -28,8 +26,7 @@
             size="sm"
             aria-label="Zoom In"
             v-b-tooltip.hover
-            @click="onZoomIn"
-        />
+            @click="onZoomIn" />
     </span>
 </template>
 

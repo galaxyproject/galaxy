@@ -1,5 +1,6 @@
 import logging
 import uuid
+from typing import List, Union
 
 from galaxy import model
 from galaxy.util import ExecutionTimer
@@ -270,19 +271,27 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(self, step, input_dict):
-        replacement = modules.NO_REPLACEMENT
+        replacement: Union[
+            modules.NoReplacement,
+            model.DatasetCollectionInstance,
+            List[model.DatasetCollectionInstance],
+        ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
             if input_dict["input_type"] == "dataset" and multiple:
-                replacement = [self.replacement_for_connection(c) for c in connection]
+                temp = [self.replacement_for_connection(c) for c in connection]
                 # If replacement is just one dataset collection, replace tool
                 # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
-                if len(replacement) == 1:
-                    if isinstance(replacement[0], model.HistoryDatasetCollectionAssociation):
-                        replacement = replacement[0]
+                if len(temp) == 1:
+                    if isinstance(temp[0], model.HistoryDatasetCollectionAssociation):
+                        replacement = temp[0]
+                    else:
+                        replacement = temp
+                else:
+                    replacement = temp
             else:
                 is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
@@ -292,8 +301,7 @@ class WorkflowProgress:
     def replacement_for_connection(self, connection, is_data=True):
         output_step_id = connection.output_step.id
         if output_step_id not in self.outputs:
-            template = "No outputs found for step id %s, outputs are %s"
-            message = template % (output_step_id, self.outputs)
+            message = f"No outputs found for step id {output_step_id}, outputs are {self.outputs}"
             raise Exception(message)
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
@@ -319,8 +327,9 @@ class WorkflowProgress:
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
-        if not is_data and isinstance(replacement, data_inputs):
+        if isinstance(replacement, model.DatasetCollection):
+            raise NotImplementedError
+        if not is_data and isinstance(replacement, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
             if isinstance(replacement, model.HistoryDatasetAssociation):
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation()

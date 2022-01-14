@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import shutil
 import string
@@ -753,7 +754,7 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
             value = str(value).lower()
         key_val_str = f"{key}: {value}"
     else:
-        key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
+        key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
     f.write(f"{lines_idented}\n\n")

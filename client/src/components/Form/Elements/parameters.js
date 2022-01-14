@@ -9,8 +9,6 @@ import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import RulesEdit from "mvc/ui/ui-rules-edit";
-import FileSource from "mvc/ui/ui-file-source";
-import ColorPicker from "mvc/ui/ui-color-picker";
 import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
@@ -26,25 +24,19 @@ export default Backbone.View.extend({
         data_collection: "_fieldData",
         integer: "_fieldSlider",
         float: "_fieldSlider",
-        boolean: "_fieldBoolean",
         drill_down: "_fieldDrilldown",
-        color: "_fieldColor",
         group_tag: "_fieldSelect",
-        hidden: "_fieldHidden",
-        hidden_data: "_fieldHidden",
-        baseurl: "_fieldHidden",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
-        directory_uri: "_fieldDirectoryUri",
         data_dialog: "_fieldDialog",
     },
 
     /** Returns an input field for a given field type */
     create: function (input_def) {
         const Galaxy = getGalaxyInstance();
-        var fieldClass = this.types[input_def.titleonly ? "hidden" : input_def.type];
+        var fieldClass = this.types[input_def.type];
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!this.field) {
             this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
@@ -68,6 +60,7 @@ export default Backbone.View.extend({
             type: input_def.type,
             flavor: input_def.flavor,
             data: input_def.options,
+            tag: input_def.tag,
             onchange: input_def.onchange,
         });
     },
@@ -189,30 +182,6 @@ export default Backbone.View.extend({
         });
     },
 
-    /** Hidden field */
-    _fieldHidden: function (input_def) {
-        return new Ui.Hidden({
-            id: `field-${input_def.id}`,
-            info: input_def.info,
-        });
-    },
-
-    /** Boolean field */
-    _fieldBoolean: function (input_def) {
-        return new Ui.Switch({
-            id: `field-${input_def.id}`,
-            onchange: input_def.onchange,
-        });
-    },
-
-    /** Color picker field */
-    _fieldColor: function (input_def) {
-        return new ColorPicker({
-            id: `field-${input_def.id}`,
-            onchange: input_def.onchange,
-        });
-    },
-
     /** Data dialog picker field */
     _fieldDialog: function (input_def) {
         return new DataPicker({
@@ -239,14 +208,6 @@ export default Backbone.View.extend({
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
-        });
-    },
-
-    _fieldDirectoryUri: function (input_def) {
-        return new FileSource.View({
-            id: `field-${input_def.id}`,
-            onchange: input_def.onchange,
-            target: input_def.target,
         });
     },
 

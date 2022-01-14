@@ -17,8 +17,7 @@
             :ok-count="okCount"
             :error-count="errorCount"
             :running-count="runningCount"
-            :new-count="newCount"
-        />
+            :new-count="newCount" />
     </div>
 </template>
 <script>

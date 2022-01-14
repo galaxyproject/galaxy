@@ -9,6 +9,7 @@ import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 
 import {
+    ftpId,
     rootId,
     directoryId,
     subDirectoryId,
@@ -19,6 +20,7 @@ import {
     directory2RecursiveResponse,
     directory1Response,
     subsubdirectoryResponse,
+    someErrorText,
 } from "./testingData";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
@@ -43,6 +45,11 @@ const initComponent = async (props) => {
     for (const [path, response] of api_paths_map.entries()) {
         axiosMock.onGet(path).reply(200, response);
     }
+
+    axiosMock.onGet("/api/remote_files?target=gxfiles://empty-dir").reply(404, {
+        err_msg: someErrorText,
+        err_code: 404,
+    });
 
     const wrapper = shallowMount(FilesDialog, {
         localVue,
@@ -193,6 +200,43 @@ describe("FilesDialog, file mode", () => {
         const rootNode = utils.getRenderedDirectory(rootId);
         expect(rootNode._rowVariant).toBe(selectionStates.selected);
     });
+
+    it("should show ftp helper only in ftp directory", async () => {
+        // open some other directory than ftp
+        await utils.open_root_folder();
+        // check that ftp helper is not visible
+        expect(wrapper.vm.showFTPHelper).toBe(false);
+        expect(wrapper.find("#helper").exists()).toBe(false);
+        // back to root folder
+        await utils.navigateBack();
+
+        // open ftp directory
+        await utils.openDirectory(ftpId);
+        // check that ftp helper is visible
+        expect(wrapper.vm.showFTPHelper).toBe(true);
+        expect(wrapper.find("#helper").exists()).toBe(true);
+    });
+
+    it("should show loading error and can return back", async () => {
+        expect(wrapper.vm.errorMessage).toBeNull();
+
+        // open directory with error
+        await utils.openDirectory("empty-dir");
+        // assert that error message is set and showed
+        expect(wrapper.vm.errorMessage).toBe(someErrorText);
+        expect(wrapper.html()).toContain(someErrorText);
+
+        // assert that OK button is disabled
+        expect(wrapper.vm.hasValue).toBe(false);
+
+        // back to the root folder
+        await wrapper.find("#back-btn").trigger("click");
+        await flushPromises();
+        expect(wrapper.vm.items.length).toBe(rootResponse.length);
+
+        // assert that OK button is disabled
+        expect(wrapper.vm.hasValue).toBe(false);
+    });
 });
 
 describe("FilesDialog, directory mode", () => {
@@ -237,6 +281,27 @@ describe("FilesDialog, directory mode", () => {
         expect(spyFinalize).toHaveBeenCalled();
         //should close modal
         expect(wrapper.vm.modalShow).toBe(false);
+    });
+
+    it("should show loading error and can return back", async () => {
+        expect(wrapper.vm.errorMessage).toBeNull();
+
+        // open directory with error
+        await utils.openDirectory("empty-dir");
+        // assert that error message is set and showed
+        expect(wrapper.vm.errorMessage).toBe(someErrorText);
+        expect(wrapper.html()).toContain(someErrorText);
+
+        // assert that OK button is disabled
+        expect(wrapper.vm.hasValue).toBe(false);
+
+        // back to the root folder
+        await wrapper.find("#back-btn").trigger("click");
+        await flushPromises();
+        expect(wrapper.vm.items.length).toBe(rootResponse.length);
+
+        // assert that OK button is disabled
+        expect(wrapper.vm.hasValue).toBe(false);
     });
 });
 

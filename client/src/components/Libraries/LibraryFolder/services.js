@@ -1,6 +1,6 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
 
 export class Services {
     constructor(options = {}) {
@@ -95,6 +95,30 @@ export class Services {
                     onError(error);
                 });
             return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async getDataset(datasetID, onError) {
+        const url = `${this.root}api/libraries/datasets/${datasetID}`;
+        try {
+            const response = await axios.get(url).catch((error) => {
+                onError(error);
+            });
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+    async updateDataset(datasetID, data, onSucess, onError) {
+        const url = `${this.root}api/libraries/datasets/${datasetID}`;
+        try {
+            await axios
+                .patch(url, data)
+                .then((response) => onSucess(response.data))
+                .catch((error) => {
+                    onError(error.err_msg);
+                });
         } catch (e) {
             rethrowSimple(e);
         }

@@ -12,7 +12,7 @@ BUTTON_TOOLTIPS = {
     "info": 'View details',
     "rerun": 'Run this job again',
 }
-EXPECTED_TOOLHELP_TITLE_TEXT = 'Tool help for Upload File'
+EXPECTED_TOOLHELP_TITLE_TEXT = 'Tool help for Data Fetch'
 TEST_DBKEY_TEXT = 'Honeybee (Apis mellifera): apiMel3 (apiMel3)'
 FIRST_HID = 1
 

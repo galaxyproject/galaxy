@@ -9,7 +9,7 @@ from functools import partial
 try:
     from grp import getgrgid
 except ImportError:
-    getgrgid = None  # type: ignore
+    getgrgid = None  # type: ignore[assignment]
 from itertools import starmap
 from operator import getitem
 from os import (
@@ -36,7 +36,7 @@ from pathlib import Path
 try:
     from pwd import getpwuid
 except ImportError:
-    getpwuid = None  # type: ignore
+    getpwuid = None  # type: ignore[assignment]
 
 
 import galaxy.util

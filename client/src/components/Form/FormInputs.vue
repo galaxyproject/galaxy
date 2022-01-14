@@ -12,15 +12,13 @@
                     :disabled="sustainConditionals"
                     :attributes="input.test_param"
                     :backbonejs="true"
-                    @change="onChange"
-                />
+                    @change="onChange" />
                 <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
                     <FormNode
                         v-if="conditionalMatch(input, caseId)"
                         v-bind="$props"
                         :inputs="caseDetails.inputs"
-                        :prefix="getPrefix(input.name)"
-                    />
+                        :prefix="getPrefix(input.name)" />
                 </div>
             </div>
             <div v-else-if="input.type == 'repeat'">
@@ -30,8 +28,7 @@
                 <FormCard
                     v-for="(cache, cacheId) in input.cache"
                     :key="cacheId"
-                    :title="repeatTitle(cacheId, input.title)"
-                >
+                    :title="repeatTitle(cacheId, input.title)">
                     <template v-slot:operations>
                         <b-button
                             v-if="!sustainRepeats"
@@ -40,8 +37,7 @@
                             size="sm"
                             class="float-right"
                             v-b-tooltip.hover.bottom
-                            @click="repeatDelete(input, cacheId)"
-                        >
+                            @click="repeatDelete(input, cacheId)">
                             <font-awesome-icon icon="trash-alt" />
                         </b-button>
                     </template>
@@ -76,8 +72,7 @@
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
-                @change="onChange"
-            />
+                @change="onChange" />
         </div>
     </div>
 </template>

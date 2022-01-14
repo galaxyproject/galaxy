@@ -3,8 +3,7 @@
         <ToolPanelViewProvider
             v-slot="{ currentPanel, currentPanelView }"
             :panel-view="config.default_panel_view"
-            v-if="config.default_panel_view"
-        >
+            v-if="config.default_panel_view">
             <ToolBox
                 :toolbox="currentPanel"
                 :panel-views="config.panel_views"
@@ -12,8 +11,7 @@
                 :stored-workflow-menu-entries="storedWorkflowMenuEntries"
                 :workflow-title="workflowTitle"
                 @updatePanelView="updatePanelView"
-                v-if="currentPanelView"
-            >
+                v-if="currentPanelView">
             </ToolBox>
         </ToolPanelViewProvider>
     </ConfigProvider>

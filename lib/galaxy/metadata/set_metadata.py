@@ -66,6 +66,9 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
+MAX_STDIO_READ_BYTES = 100 * 10 ** 6  # 100 MB
+
+
 def set_validated_state(dataset_instance):
     datatype_validation = validate(dataset_instance)
 
@@ -113,17 +116,31 @@ def set_metadata():
     set_metadata_portable()
 
 
+def get_metadata_params(tool_job_working_directory):
+    metadata_params_path = os.path.join(tool_job_working_directory, "metadata", "params.json")
+    try:
+        with open(metadata_params_path) as f:
+            return json.load(f)
+    except OSError:
+        raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
+
+
+def get_object_store(tool_job_working_directory):
+    object_store_conf_path = os.path.join(tool_job_working_directory, "metadata", "object_store_conf.json")
+    with open(object_store_conf_path) as f:
+        config_dict = json.load(f)
+    assert config_dict is not None
+    object_store = build_object_store_from_config(None, config_dict=config_dict)
+    Dataset.object_store = object_store
+    return object_store
+
+
 def set_metadata_portable():
     tool_job_working_directory = os.path.abspath(os.getcwd())
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
     MetadataTempFile.tmp_dir = metadata_tmp_files_dir
 
-    metadata_params_path = os.path.join("metadata", "params.json")
-    try:
-        with open(metadata_params_path) as f:
-            metadata_params = json.load(f)
-    except OSError:
-        raise Exception(f"Failed to find metadata/params.json from cwd [{tool_job_working_directory}]")
+    metadata_params = get_metadata_params(tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
@@ -136,10 +153,11 @@ def set_metadata_portable():
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
 
-    object_store_conf_path = os.path.join("metadata", "object_store_conf.json")
-    extended_metadata_collection = os.path.exists(object_store_conf_path)
-
-    object_store = None
+    try:
+        object_store = get_object_store(tool_job_working_directory=tool_job_working_directory)
+    except (FileNotFoundError, AssertionError):
+        object_store = None
+    extended_metadata_collection = bool(object_store)
     job_context = None
     version_string = None
 
@@ -151,57 +169,45 @@ def set_metadata_portable():
         stdio_exit_codes = list(map(ToolStdioExitCode, stdio_exit_code_dicts))
         stdio_regexes = list(map(ToolStdioRegex, stdio_regex_dicts))
 
-        with open(object_store_conf_path) as f:
-            config_dict = json.load(f)
-        assert config_dict is not None
-        object_store = build_object_store_from_config(None, config_dict=config_dict)
-        Dataset.object_store = object_store
-
         outputs_directory = os.path.join(tool_job_working_directory, "outputs")
         if not os.path.exists(outputs_directory):
             outputs_directory = tool_job_working_directory
 
         # TODO: constants...
-        if os.path.exists(os.path.join(outputs_directory, "tool_stdout")):
-            with open(os.path.join(outputs_directory, "tool_stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(outputs_directory, "tool_stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(tool_job_working_directory, "stdout")):
-            with open(os.path.join(tool_job_working_directory, "stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(tool_job_working_directory, "stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(outputs_directory, "stdout")):
-            # Puslar style output directory? Was this ever used - did this ever work?
-            with open(os.path.join(outputs_directory, "stdout"), "rb") as f:
-                tool_stdout = f.read()
-
-            with open(os.path.join(outputs_directory, "stderr"), "rb") as f:
-                tool_stderr = f.read()
-        elif os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
-            # We have a task splitting job
-            tool_stdout = b''
-            tool_stderr = b''
-            paths = Path(tool_job_working_directory).glob('task_*')
-            for path in paths:
-                with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
-                    task_stdout = f.read()
-                    if task_stdout:
-                        tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
-                with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
-                    task_stderr = f.read()
-                    if task_stderr:
-                        tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+        locations = [
+            (outputs_directory, 'tool_'),
+            (tool_job_working_directory, ''),
+            (outputs_directory, ''),  # # Pulsar style output directory? Was this ever used - did this ever work?
+        ]
+        for directory, prefix in locations:
+            if os.path.exists(os.path.join(directory, f"{prefix}stdout")):
+                with open(os.path.join(directory, f"{prefix}stdout"), 'rb') as f:
+                    tool_stdout = f.read(MAX_STDIO_READ_BYTES)
+                with open(os.path.join(directory, f"{prefix}stderr"), 'rb') as f:
+                    tool_stderr = f.read(MAX_STDIO_READ_BYTES)
+                break
         else:
-            wdc = os.listdir(tool_job_working_directory)
-            odc = os.listdir(outputs_directory)
-            error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
-            error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-            log.warn(f"{error_desc}. {error_extra}")
-            raise Exception(error_desc)
+            if os.path.exists(os.path.join(tool_job_working_directory, 'task_0')):
+                # We have a task splitting job
+                tool_stdout = b''
+                tool_stderr = b''
+                paths = Path(tool_job_working_directory).glob('task_*')
+                for path in paths:
+                    with open(path / 'outputs' / 'tool_stdout', 'rb') as f:
+                        task_stdout = f.read(MAX_STDIO_READ_BYTES)
+                        if task_stdout:
+                            tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                    with open(path / 'outputs' / 'tool_stderr', 'rb') as f:
+                        task_stderr = f.read(MAX_STDIO_READ_BYTES)
+                        if task_stderr:
+                            tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+            else:
+                wdc = os.listdir(tool_job_working_directory)
+                odc = os.listdir(outputs_directory)
+                error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
+                error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
+                log.warn(f"{error_desc}. {error_extra}")
+                raise Exception(error_desc)
 
         job_id_tag = metadata_params["job_id_tag"]
 
@@ -217,15 +223,22 @@ def set_metadata_portable():
         version_string_path = os.path.join('outputs', COMMAND_VERSION_FILENAME)
         version_string = collect_shrinked_content_from_path(version_string_path)
 
-        expression_context = ExpressionContext(dict(stdout=tool_stdout, stderr=tool_stderr))
+        expression_context = ExpressionContext(dict(stdout=tool_stdout[:255], stderr=tool_stderr[:255]))
 
         # Load outputs.
-        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=False)
+        export_store = store.DirectoryModelExportStore('metadata/outputs_populated', serialize_dataset_objects=True, for_edit=True, strip_metadata_files=False, serialize_jobs=True)
     try:
         import_model_store = store.imported_store_for_metadata('metadata/outputs_new', object_store=object_store)
     except AssertionError:
         # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
         import_model_store = None
+
+    tool_script_file = os.path.join(tool_job_working_directory, 'tool_script.sh')
+    if import_model_store and export_store and os.path.exists(tool_script_file):
+        job = next(iter(import_model_store.sa_session.objects[Job].values()))
+        with open(tool_script_file) as command_fh:
+            job.command_line = command_fh.read().strip()
+            export_store.export_job(job, include_job_data=False)
 
     job_context = SessionlessJobContext(
         metadata_params,

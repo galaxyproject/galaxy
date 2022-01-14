@@ -5447,6 +5447,26 @@ class TestUserRoleAssociation(BaseTest):
             assert stored_obj.role.id == role.id
 
 
+class TestVault(BaseTest):
+    def test_table(self, cls_):
+        assert cls_.__tablename__ == "vault"
+
+    def test_columns(self, session, cls_):
+        create_time = update_time = datetime.now()
+        key = '/some/path'
+        parent_key = '/some'
+        value = 'helloworld'
+        obj = cls_(create_time=create_time, update_time=update_time, key=key, parent_key=parent_key, value=value)
+
+        with dbcleanup(session, obj, where_clause=cls_.key == key):
+            stored_obj = get_stored_obj(session, cls_, where_clause=cls_.key == key)
+            assert stored_obj.create_time == create_time
+            assert stored_obj.update_time == update_time
+            assert stored_obj.key == key
+            assert stored_obj.parent_key == parent_key
+            assert stored_obj.value == value
+
+
 class TestVisualization(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == "visualization"

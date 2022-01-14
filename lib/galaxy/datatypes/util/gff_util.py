@@ -219,20 +219,16 @@ class GFFReaderWrapper(NiceReaderWrapper):
         while True:
             try:
                 interval = super(GenomicIntervalReader, self).__next__()
-                raw_size += len(self.current_line)
             except StopIteration:
                 # No more intervals to read, but last feature needs to be
                 # returned.
                 interval = None
-                raw_size += len(self.current_line)
                 break
             except ParseError as e:
                 handle_parse_error(e)
-                raw_size += len(self.current_line)
                 continue
-            # TODO: When no longer supporting python 2.4 use finally:
-            # finally:
-            # raw_size += len( self.current_line )
+            finally:
+                raw_size += len(self.current_line)
 
             # Ignore comments.
             if isinstance(interval, Comment):

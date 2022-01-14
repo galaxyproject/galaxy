@@ -89,7 +89,7 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
 class RunsInterativeToolTests:
 
     def test_simple_execution(self):
-        response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, self.history_id, assert_ok=True)
+        response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, self.history_id)
         assert "jobs" in response_dict, response_dict
         jobs = response_dict["jobs"]
         assert isinstance(jobs, list)
@@ -103,7 +103,7 @@ class RunsInterativeToolTests:
         assert content == "moo cow\n", content
 
     def test_multi_server_realtime_tool(self):
-        response_dict = self.dataset_populator.run_tool("interactivetool_two_entry_points", {}, self.history_id, assert_ok=True)
+        response_dict = self.dataset_populator.run_tool("interactivetool_two_entry_points", {}, self.history_id)
         assert "jobs" in response_dict, response_dict
         jobs = response_dict["jobs"]
         assert isinstance(jobs, list)

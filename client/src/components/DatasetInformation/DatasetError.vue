@@ -9,8 +9,7 @@
                 v-if="!datasetLoading"
                 :jobid="dataset.creating_job"
                 v-slot="{ result: jobDetails, loading }"
-                @error="onError"
-            >
+                @error="onError">
                 <div v-if="!loading">
                     <div class="page-container edit-attr">
                         <div class="response-message"></div>
@@ -24,8 +23,7 @@
                     <DatasetErrorDetails
                         :tool-stderr="jobDetails.tool_stderr"
                         :job-stderr="jobDetails.job_stderr"
-                        :job-messages="jobDetails.job_messages"
-                    />
+                        :job-messages="jobDetails.job_messages" />
                     <JobProblemProvider :jobid="dataset.creating_job" v-slot="{ result: jobProblems }" @error="onError">
                         <div v-if="jobProblems && (jobProblems.has_duplicate_inputs || jobProblems.has_empty_inputs)">
                             <h3 class="common_problems mt-3">Detected Common Potential Problems</h3>
@@ -45,7 +43,9 @@
                         <br />
                         Start here:
                         <b>
-                            <a href="https://galaxyproject.org/support/tool-error/" target="_blank">
+                            <a
+                                href="https://training.galaxyproject.org/training-material/faqs/galaxy/#troubleshooting-errors"
+                                target="_blank">
                                 My job ended with an error. What can I do?
                             </a>
                         </b>
@@ -62,20 +62,17 @@
                         v-if="!jobDetails.user_email"
                         id="dataset-error-email"
                         v-model="email"
-                        title="Please provide your email:"
-                    />
+                        title="Please provide your email:" />
                     <FormElement
                         id="dataset-error-message"
                         v-model="message"
                         :area="true"
-                        title="Please provide detailed information on the activities leading to this issue:"
-                    />
+                        title="Please provide detailed information on the activities leading to this issue:" />
                     <b-button
                         id="dataset-error-submit"
                         variant="primary"
                         @click="submit(dataset, jobDetails.user_email)"
-                        class="mt-3"
-                    >
+                        class="mt-3">
                         <font-awesome-icon icon="bug" class="mr-1" />Report
                     </b-button>
                 </div>

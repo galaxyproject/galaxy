@@ -23,8 +23,7 @@
                 class="make-publishable"
                 switch
                 v-model="item.published"
-                @change="onPublish"
-            >
+                @change="onPublish">
                 Make {{ modelClass }} publicly available in
                 <a :href="published_url" target="_top">Published {{ pluralName }}</a>
             </b-form-checkbox>
@@ -65,8 +64,7 @@
                     class="share-with-collapse"
                     @click="isCollapseVisible = !isCollapseVisible"
                     v-b-toggle.accordion-1
-                    variant="light"
-                >
+                    variant="light">
                     Share {{ modelClass }} with Individual Users
                     <font-awesome-icon :icon="isCollapseVisible ? `caret-up` : `caret-down`" />
                 </b-button>
@@ -88,14 +86,12 @@
                                     class="success-alert"
                                     variant="success"
                                     @dismissed="dismissCountDown = 0"
-                                    @dismiss-count-down="dismissCountDown = $event"
-                                >
+                                    @dismiss-count-down="dismissCountDown = $event">
                                     Sharing preferences are saved!
                                 </b-alert>
 
                                 <div class="share_with_view">
                                     <multiselect
-                                        class="multiselect-users"
                                         v-model="multiselectValues.sharingCandidates"
                                         :options="multiselectValues.userOptions"
                                         :clear-on-select="true"
@@ -108,8 +104,7 @@
                                         @search-change="
                                             searchChanged($event, config.expose_user_email || user.is_admin)
                                         "
-                                        placeholder="Please specify user email"
-                                    >
+                                        placeholder="Please specify user email">
                                         <template slot="caret" v-if="!(config.expose_user_email || user.is_admin)">
                                             <div></div>
                                         </template>
@@ -126,8 +121,7 @@
                                                     aria-hidden="true"
                                                     @click="remove(option)"
                                                     tabindex="1"
-                                                    class="multiselect__tag-icon"
-                                                ></i>
+                                                    class="multiselect__tag-icon"></i>
                                             </span>
                                         </template>
                                         <template slot="noOptions">
@@ -144,8 +138,7 @@
                                         <b-button
                                             @click="getSharing()"
                                             variant="outline-danger"
-                                            class="sharing_icon cancel-sharing-with"
-                                        >
+                                            class="sharing_icon cancel-sharing-with">
                                             Cancel
                                         </b-button>
                                         <b-button
@@ -161,8 +154,7 @@
                                             "
                                             v-b-tooltip.hover.bottom
                                             :title="submitBtnTitle"
-                                            class="sharing_icon submit-sharing-with"
-                                        >
+                                            class="sharing_icon submit-sharing-with">
                                             {{ multiselectValues.currentUserSearch ? `Add` : `Save` }}
                                         </b-button>
                                     </div>
@@ -221,8 +213,7 @@
                                 header="How would you like to proceed?"
                                 header-bg-variant="primary"
                                 header-text-variant="white"
-                                align="center"
-                            >
+                                align="center">
                                 <b-button
                                     @click="
                                         setSharing(
@@ -259,8 +250,7 @@
                                         )
                                     "
                                     block
-                                    variant="outline-primary"
-                                >
+                                    variant="outline-primary">
                                     Share Anyway
                                 </b-button>
                                 <b-button @click="getSharing()" block variant="outline-danger">Cancel </b-button>
@@ -565,24 +555,6 @@ export default {
     padding-top: 1.1rem;
 }
 
-.multiselect-users {
-    font-weight: normal;
-}
-.multiselect-users::v-deep .multiselect__option--highlight {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag-icon:after {
-    color: white;
-}
-.multiselect__tag-icon:focus,
-.multiselect__tag-icon:hover {
-    background: #132c40;
-}
 .success-alert {
     margin: 0.3rem 2rem 0.9rem;
 }

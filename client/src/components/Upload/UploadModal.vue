@@ -14,8 +14,7 @@ Provides user and current history to modal because it currently has initializati
                 dialog-class="upload-dialog"
                 body-class="upload-dialog-body"
                 no-enforce-focus
-                hide-footer
-            >
+                hide-footer>
                 <template v-slot:modal-header>
                     <h4 class="title" tabindex="0">{{ title | localize }}</h4>
                 </template>
@@ -25,8 +24,7 @@ Provides user and current history to modal because it currently has initializati
                     :current-user-id="user.id"
                     :current-history-id="currentHistoryId"
                     v-bind="{ ...$props, ...$attrs }"
-                    @dismiss="dismiss"
-                />
+                    @dismiss="dismiss" />
             </b-modal>
         </UserHistories>
     </CurrentUser>
@@ -34,7 +32,7 @@ Provides user and current history to modal because it currently has initializati
 
 <script>
 import CurrentUser from "../providers/CurrentUser";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import UploadModalContent from "./UploadModalContent";
 import { commonProps } from "./helpers";
 

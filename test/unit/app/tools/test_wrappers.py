@@ -1,11 +1,14 @@
 import os
 import tempfile
+from typing import cast
 from unittest.mock import Mock
 
 import pytest
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
+from galaxy.model import DatasetInstance
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DrillDownSelectToolParameter,
@@ -101,7 +104,7 @@ def test_select_wrapper_multiple(tool):
 @with_mock_tool
 def test_select_wrapper_with_path_rewritting(tool):
     parameter = _setup_blast_tool(tool, multiple=True)
-    compute_environment = MockComputeEnvironment(None)
+    compute_environment = cast(ComputeEnvironment, MockComputeEnvironment(None))
     wrapper = SelectToolParameterWrapper(parameter, ["val1", "val2"], other_values={}, compute_environment=compute_environment)
     assert wrapper.fields.path == "Rewrite<path1>,Rewrite<path2>"
 
@@ -190,7 +193,7 @@ def test_input_value_wrapper_input_value_wrapper_comparison(tool):
 
 
 def test_dataset_wrapper():
-    dataset = MockDataset()
+    dataset = cast(DatasetInstance, MockDataset())
     wrapper = DatasetFilenameWrapper(dataset)
     assert str(wrapper) == MOCK_DATASET_PATH
     assert wrapper.file_name == MOCK_DATASET_PATH
@@ -199,9 +202,9 @@ def test_dataset_wrapper():
 
 
 def test_dataset_wrapper_false_path():
-    dataset = MockDataset()
+    dataset = cast(DatasetInstance, MockDataset())
     new_path = "/new/path/dataset_123.dat"
-    wrapper = DatasetFilenameWrapper(dataset, compute_environment=MockComputeEnvironment(false_path=new_path))
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(false_path=new_path)))
     assert str(wrapper) == new_path
     assert wrapper.file_name == new_path
 
@@ -223,19 +226,19 @@ class MockComputeEnvironment:
 
 
 def test_dataset_false_extra_files_path():
-    dataset = MockDataset()
+    dataset = cast(DatasetInstance, MockDataset())
 
     wrapper = DatasetFilenameWrapper(dataset)
     assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
 
     new_path = "/new/path/dataset_123.dat"
     dataset_path = DatasetPath(123, MOCK_DATASET_PATH, false_path=new_path)
-    wrapper = DatasetFilenameWrapper(dataset, compute_environment=MockComputeEnvironment(dataset_path))
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(dataset_path)))
     # Setting false_path is not enough to override
     assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
 
     new_files_path = "/new/path/dataset_123_files"
-    wrapper = DatasetFilenameWrapper(dataset, compute_environment=MockComputeEnvironment(false_path=new_path, false_extra_files_path=new_files_path))
+    wrapper = DatasetFilenameWrapper(dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(false_path=new_path, false_extra_files_path=new_files_path)))
     assert wrapper.extra_files_path == new_files_path
 
 

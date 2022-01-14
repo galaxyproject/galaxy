@@ -8,8 +8,7 @@
                 title="View Dataset Collection Details"
                 @click.stop.prevent="backboneRoute(collectionDetailsPath)"
                 variant="link"
-                class="px-1"
-            >
+                class="px-1">
             </IconButton>
             <IconButton
                 v-if="notIn(STATES.DISCARDED)"
@@ -18,8 +17,7 @@
                 :disabled="dsc.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
                 @click.stop="backboneRoute('collection/edit/' + dsc.hdca_id)"
                 variant="link"
-                class="px-1 dsc-edit-view"
-            />
+                class="px-1 dsc-edit-view" />
             <b-dropdown v-if="notIn(STATES.DISCARDED)" no-caret right variant="link" size="sm" boundary="window">
                 <template v-slot:button-content>
                     <Icon icon="trash" variant="link" />

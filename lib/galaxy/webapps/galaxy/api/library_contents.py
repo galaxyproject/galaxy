@@ -263,7 +263,9 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             create_params['parent'] = parent
             dataset_collection_manager = trans.app.dataset_collection_manager
             dataset_collection_instance = dataset_collection_manager.create(**create_params)
-            return [dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=parent)]
+            return [dictify_dataset_collection_instance(
+                dataset_collection_instance, security=trans.security, url_builder=trans.url_builder, parent=parent
+            )]
         if status != 200:
             trans.response.status = status
             return output
@@ -333,7 +335,6 @@ class LibraryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
             return 400, message
         else:
             created_outputs_dict = self._upload_dataset(trans,
-                                                        library_id=trans.security.encode_id(library.id),
                                                         folder_id=trans.security.encode_id(folder.id),
                                                         replace_dataset=replace_dataset,
                                                         **kwd)

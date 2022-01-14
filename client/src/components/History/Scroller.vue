@@ -8,8 +8,7 @@
                     v-for="(item, index) in itemWindow"
                     :key="getItemKey(item)"
                     :data-row-index="index"
-                    :data-row-key="getItemKey(item)"
-                >
+                    :data-row-key="getItemKey(item)">
                     <slot :item="item" :index="index" :row-key="getItemKey(item)">
                         <pre>{{ item }}</pre>
                     </slot>
@@ -25,8 +24,7 @@
             ref="scrollSliderContainer"
             class="scrollSliderContainer"
             :style="scrollSliderContainerStyles"
-            @scroll="onScroll"
-        >
+            @scroll="onScroll">
             <div ref="scrollSlider"></div>
         </div>
 
@@ -40,7 +38,7 @@
 
 <script>
 import { debounce } from "lodash";
-import { SearchParams } from "./model";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { clamp } from "utils/math";
 
 const clean = (o) => JSON.parse(JSON.stringify(o));

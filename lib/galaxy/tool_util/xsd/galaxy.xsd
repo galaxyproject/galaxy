@@ -1732,14 +1732,21 @@ The following demonstrates verifying XML content with XPath-like expressions.
     </xs:choice>
   </xs:group>
   <xs:complexType name="TestParamMetadata">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+This directive specifies metadata that should be set for a test data parameter.
+
+See [planemo documentation](https://planemo.readthedocs.io/en/latest/writing_how_do_i.html#test-metadata)
+]]></xs:documentation>
+    </xs:annotation>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for name</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the metadata element of the data parameter</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Documentation for value</xs:documentation>
+        <xs:documentation xml:lang="en">Value to set</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -3739,25 +3746,22 @@ Check if a metadata value is contained in a specific column of a file in the ``t
 
 ### Validators for textual inputs (``text``, ``select``, ...)
 
-``regex``: Check if a regular expression **matches** the value, i.e. appears
+- ``regex``: Check if a regular expression **matches** the value, i.e. appears
 at the beginning of the value. To enforce a match of the complete value use
 ``$`` at the end of the expression. The expression is given is the content 
 of the validator tag. Note that for ``selects`` each option is checked
 separately.
+- ``length``: Check if the length of the value is within a range.
+- ``empty_field``: Check if the string is not empty
+- ``value_in_data_table``: Check if the value is
+contained in a column of a given data table.
+- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 For selects (in particular with dynamically defined options) the following
 validator is useful:
 
 ``no_options``: Check if options are available for a ``select`` parameter.
 Useful for parameters with dynamically defined options.
-
-For ``text`` inputs the following validators are useful:
-
-- ``length``: Check if the length of the value is within a range.
-- ``empty_field``: Check if the string is not empty
-- ``value_in_data_table``: Check if the value is
-contained in a column of a given data table.
-- ``value_not_in_data_table``: Equivalent to ``value_in_data_table`` with ``negate="true"``.
 
 ### Validators for numeric inputs (``integer``, ``float``)
 

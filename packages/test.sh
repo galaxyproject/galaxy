@@ -36,9 +36,8 @@ PACKAGE_DIRS=(
 RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 0)
 RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
+    printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
     package_dir=${PACKAGE_DIRS[$i]}
-    run_tests=${RUN_TESTS[$i]}
-    run_mypy=${RUN_MYPY[$i]}
 
     cd "$package_dir"
 
@@ -53,10 +52,10 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
 
     pip install -r test-requirements.txt
 
-    if [[ "$run_tests" == "1" ]]; then
+    if [[ "${RUN_TESTS[$i]}" == "1" ]]; then
         pytest --doctest-modules galaxy tests
     fi
-    if [[ "$run_mypy" == "1" ]]; then
+    if [[ "${RUN_MYPY[$i]}" == "1" ]]; then
         make mypy
     fi
     cd ..

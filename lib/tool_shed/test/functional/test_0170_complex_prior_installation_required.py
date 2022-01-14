@@ -35,8 +35,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_matplotlib_repository(self):
-        '''Create and populate the package_matplotlib_1_2_0170 repository.'''
-        '''
+        '''Create and populate the package_matplotlib_1_2_0170 repository.
+
         This is step 1 - Create and populate repositories package_matplotlib_1_2_0170 and package_numpy_1_7_0170.
         '''
         category = self.create_category(name=category_name, description=category_description)
@@ -58,8 +58,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_numpy_repository(self):
-        '''Create and populate the package_numpy_1_7_0170 repository.'''
-        '''
+        '''Create and populate the package_numpy_1_7_0170 repository.
+
         This is step 1 - Create and populate repositories package_matplotlib_1_2_0170 and package_numpy_1_7_0170.
         '''
         category = self.create_category(name=category_name, description=category_description)
@@ -81,8 +81,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_complex_repository_dependency(self):
-        '''Create a dependency on package_numpy_1_7_0170.'''
-        '''
+        '''Create a dependency on package_numpy_1_7_0170.
+
         This is step 2 - Create a complex repository dependency on package_numpy_1_7_0170, and upload this to package_matplotlib_1_2_0170.
         package_matplotlib_1_2_0170 should depend on package_numpy_1_7_0170, with prior_installation_required
         set to True. When matplotlib is selected for installation, the result should be that numpy is compiled
@@ -118,8 +118,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_verify_generated_dependency(self):
-        '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.'''
-        '''
+        '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.
+
         This is step 3 - Verify that package_matplotlib_1_2_0170 now depends on package_numpy_1_7_0170, and that the inherited tool
                          dependency displays correctly.
         'Inhherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository

@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import re
+from abc import abstractmethod
 from json import dumps
-
+from typing import Any, cast, Dict, List, Set, Union
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
@@ -51,12 +52,12 @@ class ToolAction:
     been converted and validated).
     """
 
-    def execute(self, tool, trans, incoming=None, set_output_hid=True):
-        incoming = incoming or {}
-        raise TypeError("Abstract method")
+    @abstractmethod
+    def execute(self, tool, trans, incoming=None, set_output_hid=True, **kwargs):
+        pass
 
 
-class DefaultToolAction:
+class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
     produces_real_jobs = True
 
@@ -69,7 +70,7 @@ class DefaultToolAction:
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = {}
-        all_permissions = {}
+        all_permissions: Dict[str, Set[str]] = {}
 
         def record_permission(action, role_id):
             if action not in all_permissions:
@@ -211,7 +212,7 @@ class DefaultToolAction:
                 the_dict[key] = []
             the_dict[key].append(value)
 
-        input_dataset_collections = dict()
+        input_dataset_collections: Dict[str, str] = {}
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -228,7 +229,7 @@ class DefaultToolAction:
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        if hasattr(value, 'child_collection'):
+                        if isinstance(value, model.DatasetCollectionElement):
                             # if we are mapping a collection over a tool, we only require the child_collection
                             dataset_instances = value.child_collection.dataset_instances
                         else:
@@ -473,7 +474,10 @@ class DefaultToolAction:
                         # Output collection is mapped over and has already been copied from original job
                         continue
                     collections_manager = app.dataset_collection_manager
-                    element_identifiers = []
+                    element_identifiers: List[
+                        Dict[str, Union[str, List[Dict[str, Union[str, List[Any]]]]]]
+                    ] = []
+                    # mypy doesn't yet support recursive type definitions
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
@@ -497,7 +501,19 @@ class DefaultToolAction:
                                     ))
                                 else:
                                     index = name_to_index[parent_id]
-                            current_element_identifiers = current_element_identifiers[index]["element_identifiers"]
+                            current_element_identifiers = cast(
+                                List[
+                                    Dict[
+                                        str,
+                                        Union[
+                                            str, List[Dict[str, Union[str, List[Any]]]]
+                                        ],
+                                    ]
+                                ],
+                                current_element_identifiers[index][
+                                    "element_identifiers"
+                                ],
+                            )
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
@@ -722,7 +738,7 @@ class DefaultToolAction:
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
-        reductions = {}
+        reductions: Dict[str, List[str]] = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
             for (dataset_collection, reduced) in dataset_collection_info_pairs:
                 if reduced:

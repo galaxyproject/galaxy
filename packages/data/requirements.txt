@@ -8,13 +8,14 @@ contextvars; python_version >= "3.6" and python_version < "3.7"
 h5py
 isa-rwval
 mrcfile
-parsley
 numpy
+parsley
 pycryptodome
 pydantic
 pysam
-social-auth-core[openidconnect]==3.3.0
+social-auth-core[openidconnect]==4.0.3
 SQLAlchemy>=1.4.25,<2
 sqlalchemy-migrate
 tifffile<=2020.9.3  # Last version compatible with python 3.6
+typing-extensions
 WebOb

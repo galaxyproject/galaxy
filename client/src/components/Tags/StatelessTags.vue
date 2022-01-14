@@ -9,8 +9,7 @@ upstream component or environment that is accessed through props and events -->
             href="javascript:void(0)"
             role="button"
             class="toggle-link"
-            @click.prevent="toggleTagDisplay"
-        >
+            @click.prevent="toggleTagDisplay">
             {{ linkText }}
         </a>
         <vue-tags-input
@@ -25,8 +24,7 @@ upstream component or environment that is accessed through props and events -->
             :validation="validation"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
-            @tags-changed="tagsChanged"
-        >
+            @tags-changed="tagsChanged">
             <template v-slot:tag-center="t">
                 <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>

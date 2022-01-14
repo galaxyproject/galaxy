@@ -13,8 +13,7 @@
                     :key="idx"
                     @mouseover="onMouseOver(item)"
                     @mouseleave="onMouseLeave(item)"
-                    class="ml-2"
-                >
+                    class="ml-2">
                     <a href="#" @click="onClick(item)" class="scrolls">
                         <font-awesome-icon v-if="item.autofix" icon="magic" class="mr-1" />
                         <font-awesome-icon v-else icon="search" class="mr-1" />

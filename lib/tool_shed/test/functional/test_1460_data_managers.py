@@ -44,8 +44,8 @@ class TestDataManagers(ShedTwillTestCase):
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0010_create_data_manager_repository(self):
-        '''Create and populate data_manager_1460.'''
-        '''
+        '''Create and populate data_manager_1460.
+
         This is step 1 - Create repository data_manager_1460.
 
         Create and populate a repository that contains a Data manager.
@@ -69,8 +69,8 @@ class TestDataManagers(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_install_data_manager_repository(self):
-        '''Install the data_manager_1460 repository to galaxy.'''
-        '''
+        '''Install the data_manager_1460 repository to galaxy.
+
         This is step 3 - Attempt to install the repository into a galaxy instance, verify that it is installed.
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)

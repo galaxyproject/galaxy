@@ -12,8 +12,7 @@
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
-            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional)."
-        >
+            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
             <b-form-input list="sectionSelect" v-model="toolSection" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
@@ -29,8 +28,7 @@
                         v-for="filename in toolConfigs"
                         v-model="toolConfig"
                         :value="filename"
-                        :key="filename"
-                    >
+                        :key="filename">
                         {{ filename }}
                     </b-form-radio>
                 </b-form-group>

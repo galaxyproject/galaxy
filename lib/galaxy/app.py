@@ -4,10 +4,6 @@ import sys
 import time
 from typing import Any, Callable, List, Tuple
 
-from sqlalchemy.orm.scoping import (
-    scoped_session,
-)
-
 import galaxy.model
 import galaxy.model.security
 import galaxy.queues
@@ -38,6 +34,10 @@ from galaxy.managers.workflows import (
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.scoped_session import (
+    galaxy_scoped_session,
+    install_model_scoped_session,
+)
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
@@ -45,6 +45,10 @@ from galaxy.queue_worker import (
 )
 from galaxy.quota import get_quota_agent, QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import (
+    Vault,
+    VaultFactory
+)
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -72,7 +76,7 @@ from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicApp, MinimalManagerApp, StructuredApp
+from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None
@@ -97,7 +101,31 @@ class HaltableContainer(Container):
             raise exception
 
 
-class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableContainer):
+class SentryClientMixin:
+    def configure_sentry_client(self):
+        self.sentry_client = None
+        if self.config.sentry_dsn:
+            event_level = self.config.sentry_event_level.upper()
+            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
+
+            def postfork_sentry_client():
+                import sentry_sdk
+                from sentry_sdk.integrations.logging import LoggingIntegration
+
+                sentry_logging = LoggingIntegration(
+                    level=logging.INFO,  # Capture info and above as breadcrumbs
+                    event_level=getattr(logging, event_level)  # Send errors as events
+                )
+                self.sentry_client = sentry_sdk.init(
+                    self.config.sentry_dsn,
+                    release=f"{self.config.version_major}.{self.config.version_minor}",
+                    integrations=[sentry_logging]
+                )
+
+            self.application_stack.register_postfork_function(postfork_sentry_client)
+
+
+class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, HaltableContainer, SentryClientMixin):
     """Encapsulates the state of a minimal Galaxy application"""
 
     def __init__(self, fsmon=False, configure_logging=True, **kwargs) -> None:
@@ -106,7 +134,7 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
             ("object store", self._shutdown_object_store),
             ("database connection", self._shutdown_model),
         ]
-        self._register_singleton(BasicApp, self)
+        self._register_singleton(BasicSharedApp, self)
         if not log.handlers:
             # Paste didn't handle it, so we need a temporary basic log
             # configured.  The handler added here gets dumped and replaced with
@@ -125,14 +153,14 @@ class MinimalGalaxyApplication(BasicApp, config.ConfiguresGalaxyMixin, HaltableC
         config_file = kwargs.get('global_conf', {}).get('__file__', None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
-        check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
         # Security helper
         self._configure_security()
         self._register_singleton(IdEncodingHelper, self.security)
         self._register_singleton(SharedModelMapping, self.model)
         self._register_singleton(GalaxyModelMapping, self.model)
-        self._register_singleton(scoped_session, self.model.context)
+        self._register_singleton(galaxy_scoped_session, self.model.context)
+        self._register_singleton(install_model_scoped_session, self.install_model.context)
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -183,6 +211,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
 
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
+
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
         self._configure_tool_config_files()
@@ -190,27 +220,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._configure_datatypes_registry(self.installed_repository_manager)
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
-
-        self.sentry_client = None
-        if self.config.sentry_dsn:
-            event_level = self.config.sentry_event_level.upper()
-            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
-
-            def postfork_sentry_client():
-                import sentry_sdk
-                from sentry_sdk.integrations.logging import LoggingIntegration
-
-                sentry_logging = LoggingIntegration(
-                    level=logging.INFO,  # Capture info and above as breadcrumbs
-                    event_level=getattr(logging, event_level)  # Send errors as events
-                )
-                self.sentry_client = sentry_sdk.init(
-                    self.config.sentry_dsn,
-                    release=f"{self.config.version_major}.{self.config.version_minor}",
-                    integrations=[sentry_logging]
-                )
-
-            self.application_stack.register_postfork_function(postfork_sentry_client)
+        self.configure_sentry_client()
 
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):
@@ -228,7 +238,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("job manager", self._shutdown_job_manager),
             ("application heartbeat", self._shutdown_heartbeat),
             ("repository manager", self._shutdown_repo_manager),
-            ("database connection repository cache", self._shutdown_repo_cache),
             ("database connection", self._shutdown_model),
             ("application stack", self._shutdown_application_stack),
         ]
@@ -290,7 +299,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
-        self[ToursRegistry] = tour_registry  # type: ignore
+        self[ToursRegistry] = tour_registry  # type: ignore[misc]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         # Load security policy.
@@ -380,6 +389,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
 
         self.server_starttime = int(time.time())  # used for cachebusting
+        # Limit lifetime of tool shed repository cache to app startup
+        self.tool_shed_repository_cache = None
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):
@@ -403,9 +414,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     def _shutdown_repo_manager(self):
         self.update_repository_manager.shutdown()
-
-    def _shutdown_repo_cache(self):
-        self.tool_shed_repository_cache.shutdown()
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()

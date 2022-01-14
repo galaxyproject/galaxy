@@ -196,7 +196,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                      model.StoredWorkflow.table.c.id))
 
         trends = dict()
-        for workflow in all_workflows.execute():
+        for workflow in trans.sa_session.execute(all_workflows):
             workflow_day = int(workflow.date.strftime("%-d")) - 1
             workflow_month = int(workflow.date.strftime("%-m"))
             workflow_month_name = workflow.date.strftime("%B")
@@ -212,7 +212,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                 trends[key][workflow_day] += 1
 
         workflows = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             month_name = row.date.strftime("%B")
             year = int(row.date.strftime("%Y"))
 
@@ -281,7 +281,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                                                                   model.User.table)])
         currday = datetime.today()
         trends = dict()
-        for workflow in all_workflows_per_user.execute():
+        for workflow in trans.sa_session.execute(all_workflows_per_user):
             curr_user = re.sub(r'\W+', '', workflow.user_email)
             try:
                 day = currday - workflow.date
@@ -299,7 +299,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                 if container < spark_limit:
                     trends[curr_user][container] += 1
 
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             workflows.append((row.user_email,
                               row.total_workflows))
 
@@ -342,7 +342,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                                              from_obj=[model.StoredWorkflow.table])
 
         trends = dict()
-        for workflow in all_workflows_user_month.execute():
+        for workflow in trans.sa_session.execute(all_workflows_user_month):
             workflow_day = int(workflow.date.strftime("%-d")) - 1
             workflow_month = int(workflow.date.strftime("%-m"))
             workflow_month_name = workflow.date.strftime("%B")
@@ -358,7 +358,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                 trends[key][workflow_day] += 1
 
         workflows = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             workflows.append((row.date.strftime("%Y-%m"),
                               row.total_workflows,
                               row.date.strftime("%B"),
@@ -426,7 +426,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
 
         currday = date.today()
         trends = dict()
-        for run in all_runs_per_workflow.execute():
+        for run in trans.sa_session.execute(all_runs_per_workflow):
             curr_tool = re.sub(r'\W+', '', str(run.workflow_id))
             try:
                 day = currday - run.date
@@ -445,7 +445,7 @@ class Workflows(BaseUIController, ReportQueryBuilder):
                     trends[curr_tool][container] += 1
 
         runs = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             runs.append((row.workflow_name,
                          row.total_runs,
                          row.workflow_id))

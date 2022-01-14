@@ -53,7 +53,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         with open(native_path, 'rb') as read_file:
             openfs = self._open_fs(user_context=user_context)
             dirname = fs.path.dirname(target_path)
-            if not openfs.exists(dirname):
+            if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)
             openfs.upload(target_path, read_file)
 

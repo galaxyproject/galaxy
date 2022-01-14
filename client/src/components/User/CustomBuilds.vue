@@ -13,8 +13,7 @@
                             href="javascript:void(0)"
                             v-b-tooltip.bottom.hover
                             title="Delete build"
-                            @click="deleteBuild(row.item.id)"
-                        >
+                            @click="deleteBuild(row.item.id)">
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>
@@ -36,8 +35,7 @@
                         track-by="value"
                         :searchable="false"
                         :options="installedBuilds"
-                        v-model="selectedInstalledBuilds"
-                    >
+                        v-model="selectedInstalledBuilds">
                     </multiselect>
                 </b-col>
             </b-row>
@@ -56,8 +54,7 @@
                         :variant="alertType"
                         :show="dismissCountDown"
                         @dismissed="dismissCountDown = 0"
-                        @dismiss-count-down="countDownChanged"
-                    >
+                        @dismiss-count-down="countDownChanged">
                         {{ alertMessage }}
                     </b-alert>
 
@@ -73,16 +70,14 @@
                                 id="type"
                                 tour_id="type"
                                 v-model="selectedDataSource"
-                                :options="dataSources"
-                            ></b-form-select>
+                                :options="dataSources"></b-form-select>
                         </b-form-group>
                         <div>
                             <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
                                 <b-form-select
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"
-                                ></b-form-select>
+                                    :disabled="fastaFilesSelectDisabled"></b-form-select>
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
                                 <b-form-file placeholder="Choose a file..." @change="readFile" />
@@ -91,8 +86,7 @@
                                     show-progress
                                     v-show="fileLoaded !== 0"
                                     :value="fileLoaded"
-                                    :max="maxFileSize"
-                                />
+                                    :max="maxFileSize" />
                                 <b-form-textarea v-show="form.file" :value="form.file" />
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
@@ -105,8 +99,7 @@
                             type="submit"
                             variant="primary"
                             v-b-tooltip.bottom.hover
-                            title="Create new build"
-                        >
+                            title="Create new build">
                             <i class="icon fa fa-save" /> Save
                         </b-button>
                     </b-form>

@@ -5,6 +5,9 @@ import operator
 import os
 import re
 from tempfile import NamedTemporaryFile
+from typing import Optional
+
+from sqlalchemy.orm.scoping import ScopedSession
 
 import galaxy.model
 from galaxy.model.dataset_collections import builder
@@ -14,7 +17,9 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     JsonCollectedDatasetMatch,
+    MetadataSourceProvider as AbstractMetadataSourceProvider,
     ModelPersistenceContext,
+    PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,
@@ -22,6 +27,7 @@ from galaxy.model.store.discover import (
     SessionlessModelPersistenceContext,
     UNSET,
 )
+from galaxy.objectstore import ObjectStore
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -42,7 +48,7 @@ log = logging.getLogger(__name__)
 
 # PermissionProvider and MetadataSourceProvider are abstractions over input data used to
 # collect and produce dynamic outputs.
-class PermissionProvider:
+class PermissionProvider(AbstractPermissionProvider):
 
     def __init__(self, inp_data, security_agent, job):
         self._job = job
@@ -74,7 +80,7 @@ class PermissionProvider:
         self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
 
 
-class MetadataSourceProvider:
+class MetadataSourceProvider(AbstractMetadataSourceProvider):
 
     def __init__(self, inp_data):
         self._inp_data = inp_data
@@ -198,17 +204,17 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
             final_job_state,
             flush_per_n_datasets=None):
         self.tool = tool
-        self.metadata_source_provider = metadata_source_provider
-        self.permission_provider = permission_provider
-        self.input_dbkey = input_dbkey
+        self._metadata_source_provider = metadata_source_provider
+        self._permission_provider = permission_provider
+        self._input_dbkey = input_dbkey
         self.app = tool.app
-        self.sa_session = tool.sa_session
-        self.job = job
+        self._sa_session = tool.sa_session
+        self._job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
-        self.object_store = object_store
+        self._object_store = object_store
         self.final_job_state = final_job_state
-        self.flush_per_n_datasets = flush_per_n_datasets
+        self._flush_per_n_datasets = flush_per_n_datasets
         self._tag_handler = None
 
     @property
@@ -221,6 +227,34 @@ class JobContext(ModelPersistenceContext, BaseJobContext):
     def work_context(self):
         from galaxy.work.context import WorkRequestContext
         return WorkRequestContext(self.app, user=self.user)
+
+    @property
+    def sa_session(self) -> ScopedSession:
+        return self._sa_session
+
+    @property
+    def permission_provider(self) -> PermissionProvider:
+        return self._permission_provider
+
+    @property
+    def metadata_source_provider(self) -> MetadataSourceProvider:
+        return self._metadata_source_provider
+
+    @property
+    def job(self) -> galaxy.model.Job:
+        return self._job
+
+    @property
+    def flush_per_n_datasets(self) -> Optional[int]:
+        return self._flush_per_n_datasets
+
+    @property
+    def input_dbkey(self) -> str:
+        return self._input_dbkey
+
+    @property
+    def object_store(self) -> ObjectStore:
+        return self._object_store
 
     @property
     def user(self):
@@ -333,15 +367,11 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
 
     def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory, final_job_state):
         # TODO: use a metadata source provider... (pop from inputs and add parameter)
-        # TODO: handle input_dbkey...
-        input_dbkey = "?"
         super().__init__(object_store, export_store, working_directory)
         self.metadata_params = metadata_params
         self.tool_provided_metadata = tool_provided_metadata
         self.import_store = import_store
-        self.input_dbkey = input_dbkey
         self.final_job_state = final_job_state
-        self.flush_per_n_datasets = None
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]

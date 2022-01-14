@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - 'release*'
-      - anvil
+      - dev
 concurrency:
   group: docker-build-${{ github.ref }}
   cancel-in-progress: true
@@ -16,24 +16,35 @@ jobs:
       - uses: actions/checkout@v2
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
       - name: Set outputs
-        id: vars
+        id: commit
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
       - name: Set branch name
         id: branch
-        run: echo "::set-output name=name::$(BRANCH_NAME=${GITHUB_REF##*/}; echo ${BRANCH_NAME/release_/}-auto)"
-      - run: docker build . -t galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} -f .k8s_ci.Dockerfile
-      - run: docker tag galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy:${{ steps.branch.outputs.name }} && docker tag galaxy/galaxy-min:${{ steps.vars.outputs.sha_short }} quay.io/galaxy-k8s/galaxy:${{ steps.vars.outputs.sha_short }}
+        run: echo "::set-output name=name::$(BRANCH_NAME=${GITHUB_REF##*/}; echo ${BRANCH_NAME/release_/})"
+      - name: Build container image
+        run: docker build . --build-arg GIT_COMMIT=$(git rev-parse HEAD) --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') --build-arg IMAGE_TAG=${{ steps.branch.outputs.name }} -t galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -t quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }} -f .k8s_ci.Dockerfile
+      - name: Create auto-expiring one for per-commit auto repository
+        run: echo "FROM galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}" | docker build --label "quay.expires-after"="90d" -t "quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}" -
       - name: Login to quay.io
         uses: actions-hub/docker/login@master
         env:
           DOCKER_USERNAME: ${{ secrets.QUAY_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
           DOCKER_REGISTRY_URL: quay.io
-      - name: Push to quay.io with commit ID
-        uses: actions-hub/docker@master
-        with:
-          args: push quay.io/galaxy-k8s/galaxy:${{ steps.vars.outputs.sha_short }}
       - name: Push to quay.io with branch name
         uses: actions-hub/docker@master
         with:
-          args: push quay.io/galaxy-k8s/galaxy:${{ steps.branch.outputs.name }}
+          args: push quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
+      - name: Push to quay.io with commit hash
+        uses: actions-hub/docker@master
+        with:
+          args: push quay.io/galaxyproject/galaxy-k8s-auto:${{ steps.commit.outputs.sha_short }}
+      - name: Login to DockerHub
+        uses: actions-hub/docker/login@master
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Push to DockerHub with branch name
+        uses: actions-hub/docker@master
+        with:
+          args: push galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}

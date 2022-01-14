@@ -261,26 +261,16 @@ mapping:
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
 
-      check_migrate_tools:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable / disable checking if any tools defined in the above non-shed
-          tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed. This functionality is largely untested
-          in modern Galaxy releases and has serious issues such as #7273 and the possibility
-          of slowing down Galaxy startup, so the default and recommended value is false.
-
       migrated_tools_config:
         type: str
         default: migrated_tools_conf.xml
         path_resolves_to: managed_config_dir
         required: false
         desc: |
-          Tool config maintained by tool migration scripts.  If you use the migration
-          scripts to install tools that have been migrated to the tool shed upon a new
-          release, they will be added to this tool config file.
+          This option is deprecated.
+          In previous releases this file was maintained by tool migration scripts that are no
+          longer part of the code base. The option remains as a placeholder for deployments where
+          these scripts were previously run and such a file exists.
 
       integrated_tool_panel_config:
         type: str
@@ -516,10 +506,11 @@ mapping:
         type: str
         required: false
         desc: |
-          Container resolvers configuration (beta). Set up a file describing
+          Container resolvers configuration. Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
           this is set to None, the default container resolvers loaded is
           determined by enable_mulled_containers.
+          For available options see config/container_resolvers_conf.xml.sample.
 
       container_resolvers:
         type: seq
@@ -529,11 +520,7 @@ mapping:
           Rather than specifying a container_resolvers_config_file, the definition of the
           resolvers to enable can be embedded into Galaxy's config with this option.
           This has no effect if a container_resolvers_config_file is used.
-
-          The syntax, available resolvers, and documentation of their options is explained in detail in the
-          documentation:
-
-          https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
+          Takes the same options that can be set in container_resolvers_config_file.
 
       involucro_path:
         type: str
@@ -1373,6 +1360,14 @@ mapping:
           the user's navigator language.
           Users can override this settings in their user preferences if the localization
           settings are enabled in user_preferences_extra_conf.yml
+
+      galaxy_url_prefix:
+        type: str
+        default: '/'
+        required: false
+        desc: |
+          URL prefix for Galaxy application. If Galaxy should be served under a prefix set this to
+          the desired prefix value.
 
       galaxy_infrastructure_url:
         type: str
@@ -2824,6 +2819,17 @@ mapping:
           Details" option in the history. This option also exposes the command line to
           non-administrative users. Administrators can always see dataset paths.
 
+      enable_tool_source_display:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          This option allows users to view the tool wrapper source code. This is
+          safe to enable if you have not hardcoded any secrets in any of the tool
+          wrappers installed on this Galaxy server. If you have only installed tool
+          wrappers from  public tool sheds and tools shipped with Galaxy there you
+          can enable this option.
+
       job_metrics_config_file:
         type: str
         default: job_metrics_conf.xml
@@ -3062,6 +3068,18 @@ mapping:
           these files.  The job runner will retry the number of times specified below,
           waiting 1 second between tries.  For NFS, you may want to try the -noac mount
           option (Linux) or -actimeo=0 (Solaris).
+
+      tool_evaluation_strategy:
+        type: str
+        default: local
+        required: false
+        desc: |
+          Determines which process will evaluate the tool command line. If set to "local" the tool command
+          line, configuration files and other dynamic values will be templated in the job
+          handler process. If set to ``remote`` the tool command line will be built as part of the
+          submitted job. Note that ``remote`` is a beta setting that will be useful for materializing
+          deferred datasets as part of the submitted job. Note also that you have to set ``metadata_strategy``
+          to ``extended`` if you set this option to ``remote``.
 
       preserve_python_environment:
         type: str
@@ -3472,3 +3490,11 @@ mapping:
           Location of New User Welcome data, a single directory containing the
           images and JSON of Topics/Subtopics/Slides as export. This location
           is relative to galaxy/static
+
+      vault_config_file:
+        type: str
+        default: vault_conf.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          Vault config file.

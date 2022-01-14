@@ -32,10 +32,8 @@ from pulsar.client import (
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
-from galaxy.jobs import (
-    ComputeEnvironment,
-    JobDestination
-)
+from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -342,7 +340,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 output_names = compute_environment.output_names()
 
                 client_inputs_list = []
-                for input_dataset_wrapper in job_wrapper.get_input_paths():
+                for input_dataset_wrapper in job_wrapper.job_io.get_input_paths():
                     # str here to resolve false_path if set on a DatasetPath object.
                     path = str(input_dataset_wrapper)
                     object_store_ref = {
@@ -559,11 +557,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return updated
 
     def get_output_files(self, job_wrapper):
-        output_paths = job_wrapper.get_output_fnames()
+        output_paths = job_wrapper.job_io.get_output_fnames()
         return [str(o) for o in output_paths]   # Force job_path from DatasetPath objects.
 
     def get_input_files(self, job_wrapper):
-        input_paths = job_wrapper.get_input_paths()
+        input_paths = job_wrapper.job_io.get_input_paths()
         return [str(i) for i in input_paths]  # Force job_path from DatasetPath objects.
 
     def get_client_from_wrapper(self, job_wrapper):
@@ -652,7 +650,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # Following check is a hack for jobs started during 19.01 or earlier release
             # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
             # along with hacks for legacy metadata compute strategy.
-            if not os.path.exists(job_metrics_directory) or not any(["__instrument" in f for f in os.listdir(job_metrics_directory)]):
+            if not os.path.exists(job_metrics_directory) or not any("__instrument" in f for f in os.listdir(job_metrics_directory)):
                 job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
                 stdout,
@@ -1032,7 +1030,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def output_names(self):
         # Maybe this should use the path mapper, but the path mapper just uses basenames
-        return self.job_wrapper.get_output_basenames()
+        return self.job_wrapper.job_io.get_output_basenames()
 
     def input_path_rewrite(self, dataset):
         local_input_path_rewrite = self.local_path_config.input_path_rewrite(dataset)
@@ -1133,6 +1131,9 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def galaxy_url(self):
         return self.job_wrapper.get_destination_configuration("galaxy_infrastructure_url")
+
+    def get_file_sources_dict(self):
+        return self.job_wrapper.job_io.file_sources_dict
 
 
 class UnsupportedPulsarException(Exception):

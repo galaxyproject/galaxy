@@ -41,7 +41,7 @@ import RecentInvocations from "components/User/RecentInvocations.vue";
 import ToolsView from "components/ToolsView/ToolsView.vue";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
-import PluginList from "components/PluginList.vue";
+import VisualizationsList from "components/Visualizations/Index";
 import QueryStringParsing from "utils/query-string-parsing";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
@@ -75,10 +75,10 @@ export const getAnalysisRouter = (Galaxy) => {
             "(/)pages(/)edit(/)": "show_pages_edit",
             "(/)pages(/)sharing(/)": "show_pages_sharing",
             "(/)pages(/)(:action_id)": "show_pages",
-            "(/)visualizations(/)": "show_plugins",
+            "(/)visualizations(/)": "show_visualizations",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
             "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
-            "(/)visualizations/(:action_id)": "show_visualizations",
+            "(/)visualizations/(:action_id)": "show_visualizations_grid",
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/trs_import": "show_workflows_trs_import",
             "(/)workflows/trs_search": "show_workflows_trs_search",
@@ -175,7 +175,13 @@ export const getAnalysisRouter = (Galaxy) => {
             this._display_vue_helper(ExternalIdentities);
         },
 
-        show_visualizations: function (action_id) {
+        show_visualizations: function () {
+            this._display_vue_helper(VisualizationsList, {
+                datasetId: QueryStringParsing.get("id"),
+            });
+        },
+
+        show_visualizations_grid: function (action_id) {
             const activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
@@ -327,10 +333,6 @@ export const getAnalysisRouter = (Galaxy) => {
                 pluralName: "Pages",
                 modelClass: "Page",
             });
-        },
-
-        show_plugins: function () {
-            this._display_vue_helper(PluginList);
         },
 
         show_workflows: function () {

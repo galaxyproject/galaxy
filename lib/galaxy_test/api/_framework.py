@@ -8,7 +8,7 @@ try:
 except ImportError:
     # Galaxy libraries and galaxy test driver not available, just assume we're
     # targetting a remote Galaxy.
-    GalaxyTestDriver = None  # type: ignore
+    GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):

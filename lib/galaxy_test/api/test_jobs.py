@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import time
+import urllib.parse
 from operator import itemgetter
 
 import requests
@@ -324,7 +325,7 @@ steps:
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
         with self._different_user(anon=True):
-            history_id = self._get(f"{self.url}/history/current_history_json").json()['id']
+            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()['id']
             self._run_error_report(history_id)
 
     def _run_error_report(self, history_id):
@@ -547,7 +548,7 @@ steps:
         # We first copy the datasets, so that the update time is lower than the job creation time
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": dataset_id, "source": "hda", "type": "dataset"}
-        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload, json=True)
         self._assert_status_code_is(copy_response, 200)
         inputs = json.dumps({
             'input1': {'src': 'hda', 'id': dataset_id}
@@ -654,7 +655,7 @@ steps:
         # We test that a job can be found even if the collection has been copied to another history
         new_history_id = self.dataset_populator.new_history()
         copy_payload = {"content": list_id_a, "source": "hdca", "type": "dataset_collection"}
-        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload)
+        copy_response = self._post(f"histories/{new_history_id}/contents", data=copy_payload, json=True)
         self._assert_status_code_is(copy_response, 200)
         new_list_a = copy_response.json()['id']
         copied_inputs = json.dumps({

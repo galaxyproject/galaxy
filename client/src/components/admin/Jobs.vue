@@ -26,8 +26,7 @@
                             id="cutoff"
                             label="Cutoff time period"
                             label-for="cutoff-minutes"
-                            description="in minutes"
-                        >
+                            description="in minutes">
                             <b-input-group>
                                 <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
                                 <b-input-group-append>
@@ -41,14 +40,12 @@
                     <b-form-group
                         label="Filter Jobs"
                         label-for="filter-regex"
-                        description="by strings or regular expressions"
-                    >
+                        description="by strings or regular expressions">
                         <b-input-group id="filter-regex">
                             <b-form-input
                                 v-model="filter"
                                 placeholder="Type to Search"
-                                @keyup.esc.native="filter = ''"
-                            />
+                                @keyup.esc.native="filter = ''" />
                             <b-input-group-append>
                                 <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                             </b-input-group-append>
@@ -84,8 +81,7 @@
                 striped
                 caption-top
                 @row-clicked="toggleDetails"
-                :busy="busy"
-            >
+                :busy="busy">
                 <template v-slot:table-caption>
                     These jobs are unfinished and have had their state updated in the previous
                     {{ cutoffMin }} minutes. For currently running jobs, the "Last Update" column should indicate the
@@ -95,16 +91,14 @@
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
-                        @change="toggleAll"
-                    ></b-form-checkbox>
+                        @change="toggleAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['id']"
-                    ></b-form-checkbox>
+                        :value="data.item['id']"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <utc-date :date="data.value" mode="elapsed" />
@@ -129,8 +123,7 @@
                 striped
                 caption-top
                 @row-clicked="toggleDetails"
-                :busy="busy"
-            >
+                :busy="busy">
                 <template v-slot:table-caption>
                     These jobs have completed in the previous {{ cutoffMin }} minutes.
                 </template>

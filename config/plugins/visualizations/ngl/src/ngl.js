@@ -9,7 +9,7 @@ window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var dataset = options.dataset,
         settings = options.chart.settings,
-        stage = new ngl.Stage(options.targets[0], { backgroundColor: settings.get("backcolor") }),
+        stage = new ngl.Stage(options.target, { backgroundColor: settings.get("backcolor") }),
         representation_parameters = {},
         stage_parameters = {};
     representation_parameters = {
@@ -36,6 +36,6 @@ window.bundleEntries.load = function (options) {
     }
     // Re-renders the molecule view when window is resized
     window.onresize = function () {
-        viewer.fitParent();
+        stage.handleResize();
     };
 };

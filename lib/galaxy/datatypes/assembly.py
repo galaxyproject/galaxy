@@ -12,7 +12,10 @@ import sys
 from galaxy.datatypes import data
 from galaxy.datatypes import sequence
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
@@ -25,7 +28,7 @@ class Amos(data.Text):
     edam_format = "format_3582"
     file_ext = 'afg'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is an amos assembly file format
         Example::
@@ -66,7 +69,7 @@ class Sequences(sequence.Fasta):
     edam_data = "data_0925"
     file_ext = 'sequences'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced  fasta format
         The id line has 3 fields separated by tabs: sequence_name  sequence_index category::
@@ -77,22 +80,19 @@ class Sequences(sequence.Fasta):
           CGACGAATGACAGGTCACGAATTTGGCGGGGATTA
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith('>'):
                     if not re.match(r'>[^\t]+\t\d+\t\d+$', line):
-                        break
+                        return False
                     # The next line.strip() must not be '', nor startwith '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a fasta header
+                    return False
         return False
 
 
@@ -102,7 +102,7 @@ class Roadmaps(data.Text):
     edam_format = "format_2561"
     file_ext = 'roadmaps'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced RoadMap::
           142858  21      1
@@ -112,21 +112,16 @@ class Roadmaps(data.Text):
         """
 
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if not re.match(r'\d+\t\d+\t\d+$', line):
-                    break
+                    return False
                 # The next line.strip() should be 'ROADMAP 1'
                 line = fh.readline().strip()
-                if not re.match(r'ROADMAP \d+$', line):
-                    break
-                return True
+                return bool(re.match(r'ROADMAP \d+$', line))
             else:
-                break  # we found a non-empty line, but it's not a fasta header
+                return False  # we found a non-empty line, but it's not a fasta header
         return False
 
 

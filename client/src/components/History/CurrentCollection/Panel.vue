@@ -6,20 +6,19 @@
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
-                v-slot="{ isExpanded, setExpanded }"
-            >
+                v-slot="{ isExpanded, setExpanded }">
                 <Layout class="dataset-collection-panel">
                     <template v-slot:globalNav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
                     </template>
 
                     <template v-slot:localNav>
-                        <IconButton
-                            icon="download"
-                            title="Download Collection"
-                            :href="downloadCollectionUrl"
-                            download
-                        />
+                        <!-- Empty -->
+                        <div />
+                    </template>
+
+                    <template v-slot:listcontrols>
+                        <CollectionOperations :collection="selectedCollection" :is-root="isRoot" />
                     </template>
 
                     <template v-slot:details>
@@ -32,8 +31,7 @@
                             :class="{ loadingBackground: loading }"
                             v-bind="payload"
                             @scroll="setScrollPos"
-                            :debug="false"
-                        >
+                            :debug="false">
                             <template v-slot="{ item, index, rowKey }">
                                 <CollectionContentItem
                                     :item="item"
@@ -45,8 +43,7 @@
                                     @update:expanded="setExpanded(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
                                     :data-index="index"
-                                    :data-row-key="rowKey"
-                                />
+                                    :data-row-key="rowKey" />
                             </template>
                         </Scroller>
                     </template>
@@ -59,17 +56,18 @@
 <script>
 import { History } from "../model";
 import { updateContentFields } from "../model/queries";
-import { cacheContent } from "../caching";
+import { cacheContent } from "components/providers/History/caching";
 
-import { DscProvider, CollectionContentProvider, ExpandedItems } from "../providers";
+import { DscProvider, CollectionContentProvider } from "components/providers/History";
+import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
+import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
 import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
-import { reportPayload } from "../providers/ContentProvider/helpers";
-import IconButton from "components/IconButton";
+import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 
 export default {
     filters: {
@@ -84,7 +82,7 @@ export default {
         Scroller,
         CollectionContentItem,
         ExpandedItems,
-        IconButton,
+        CollectionOperations,
     },
     props: {
         history: { type: History, required: true },
@@ -97,7 +95,7 @@ export default {
             return selected;
         },
         isRoot() {
-            return this.selectedCollection == this.selectedCollections[0];
+            return this.selectedCollection == this.rootCollection;
         },
         writable() {
             return this.isRoot;

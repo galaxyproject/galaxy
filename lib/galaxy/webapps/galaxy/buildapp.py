@@ -6,6 +6,7 @@ import logging
 import sys
 import threading
 import traceback
+from urllib.parse import urljoin
 
 from paste import httpexceptions
 from tuswsgi import TusMiddleware
@@ -211,18 +212,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
                                  args=(global_conf,),
                                  kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    try:
-        # This model may not actually be bound.
-        if galaxy.model.tool_shed_install.mapping.metadata.bind:
-            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled toolshed install model database connections.")
-
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
@@ -313,7 +302,7 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="get_metadata_file",
                           conditions=dict(method=["GET"]))
-    webapp.mapper.connect("/api/histories/{history_id}/contents/near/{hid}/{limit}",
+    webapp.mapper.connect("/api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}",
                           action="contents_near",
                           controller='history_contents',
                           conditions=dict(method=["GET"]))
@@ -436,6 +425,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{tool_id:.+?}/convert', action='conversion', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/raw_tool_source', action='raw_tool_source', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
@@ -1400,7 +1390,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
     # TUS upload middleware
     app = wrap_if_allowed(app, stack, TusMiddleware, kwargs={
-        'upload_path': '/api/upload/resumable_upload',
+        'upload_path': urljoin(f"{application_stack.config.galaxy_url_prefix}/", 'api/upload/resumable_upload'),
         'tmp_dir': application_stack.config.new_file_path,
         'max_size': application_stack.config.maximum_upload_file_size
     })

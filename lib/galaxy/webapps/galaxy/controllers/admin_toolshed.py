@@ -285,8 +285,7 @@ class AdminToolshed(AdminGalaxy):
         itdm = install_manager.InstallToolDependencyManager(trans.app)
         installed_tool_dependencies = itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
                                                                                tool_dependencies_config=tool_dependencies_config,
-                                                                               tool_dependencies=tool_dependencies,
-                                                                               from_tool_migration_manager=False)
+                                                                               tool_dependencies=tool_dependencies)
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.install_model.ToolDependency.installation_status.ERROR:
                 text = unicodify(installed_tool_dependency.error_message)
@@ -1241,8 +1240,7 @@ class AdminToolshed(AdminGalaxy):
                                                               tool_shed=tool_shed_url,
                                                               name=name,
                                                               owner=owner,
-                                                              changeset_revision=changeset_revision,
-                                                              refresh=True)
+                                                              changeset_revision=changeset_revision)
         if changeset_revision and latest_changeset_revision and latest_ctx_rev:
             if changeset_revision == latest_changeset_revision:
                 message = f"The installed repository named '{name}' is current, there are no updates available.  "

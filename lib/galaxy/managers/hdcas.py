@@ -294,6 +294,7 @@ class HDCASerializer(
             'populated',
             'populated_state',
             'populated_state_message',
+            'elements_datatypes',
         ])
 
     def add_serializers(self):
@@ -314,13 +315,16 @@ class HDCASerializer(
                                                              id=self.app.security.encode_id(item.id),
                                                              type=self.hdca_manager.model_class.content_type),
             'contents_url': self.generate_contents_url,
-            'job_state_summary': self.serialize_job_state_summary
+            'job_state_summary': self.serialize_job_state_summary,
+            'elements_datatypes': self.serialize_elements_datatypes,
         }
         self.serializers.update(serializers)
 
     def generate_contents_url(self, item, key, **context):
         encode_id = self.app.security.encode_id
-        contents_url = self.url_for('contents_dataset_collection',
+        trans = context.get("trans")
+        url_for = trans.url_builder if trans and trans.url_builder else self.url_for
+        contents_url = url_for('contents_dataset_collection',
             hdca_id=encode_id(item.id),
             parent_id=encode_id(item.collection_id))
         return contents_url
@@ -330,3 +334,7 @@ class HDCASerializer(
         del states['_sa_instance_state']
         del states['hdca_id']
         return states
+
+    def serialize_elements_datatypes(self, item, key, **context):
+        extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
+        return list(extensions_set)

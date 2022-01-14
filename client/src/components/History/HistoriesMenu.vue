@@ -9,8 +9,7 @@
             :text="title | l"
             toggle-class="text-decoration-none"
             class="histories-operation-menu"
-            data-description="histories operation menu"
-        >
+            data-description="histories operation menu">
             <template v-slot:button-content>
                 <Icon fixed-width class="mr-1" icon="folder" />
                 <span class="text-nowrap">{{ title | l }}</span>
@@ -39,8 +38,7 @@
 
             <b-dropdown-item
                 data-description="switch to multi history view"
-                @click="redirect('/history/view_multiple')"
-            >
+                @click="redirect('/history/view_multiple')">
                 <Icon fixed-width class="mr-1" icon="columns" />
                 <span v-localize>Show Histories Side-by-Side</span>
             </b-dropdown-item>
@@ -58,8 +56,7 @@
             id="history-selector-modal"
             :histories="histories"
             :current-history="currentHistory"
-            @selectHistory="$emit('setCurrentHistory', $event)"
-        />
+            @selectHistory="$emit('setCurrentHistory', $event)" />
     </div>
 </template>
 

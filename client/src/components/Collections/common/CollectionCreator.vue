@@ -7,8 +7,7 @@
                     href="javascript:void(0);"
                     role="button"
                     @click="_clickForHelp"
-                    :title="titleForHelp"
-                >
+                    :title="titleForHelp">
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -24,8 +23,7 @@
                         href="javascript:void(0);"
                         role="button"
                         @click="_clickForHelp"
-                        :title="titleForHelp"
-                    >
+                        :title="titleForHelp">
                     </a>
                 </div>
             </div>
@@ -42,8 +40,7 @@
                             class="remove-extensions float-right"
                             type="checkbox"
                             @click="$emit('remove-extensions-toggle')"
-                            checked
-                        />
+                            checked />
                     </label>
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
@@ -54,8 +51,7 @@
                     <input
                         class="collection-name form-control float-right"
                         :placeholder="placeholderEnterName"
-                        v-model="collectionName"
-                    />
+                        v-model="collectionName" />
                     <div class="collection-name-prompt float-right">
                         {{ l("Name:") }}
                     </div>
@@ -71,8 +67,7 @@
                     <button
                         class="create-collection btn btn-primary"
                         @click="$emit('clicked-create', collectionName)"
-                        :disabled="!validInput"
-                    >
+                        :disabled="!validInput">
                         {{ l("Create collection") }}
                     </button>
                 </div>

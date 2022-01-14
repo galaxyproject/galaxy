@@ -200,4 +200,6 @@ def execute_statements(engine, raw_sql):
     statements = raw_sql if isinstance(raw_sql, list) else [raw_sql]
     for sql in statements:
         cmd = DDL(sql)
-        cmd.execute(bind=engine)
+        with engine.connect() as connection:
+            with connection.begin():
+                connection.execute(cmd)

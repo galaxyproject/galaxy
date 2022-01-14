@@ -1,5 +1,6 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
+import json
 import re
 from datetime import datetime
 from enum import Enum
@@ -8,7 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
+    Set,
     Union,
 )
 
@@ -19,7 +20,6 @@ from pydantic import (
     ConstrainedStr,
     Extra,
     Field,
-    FilePath,
     Json,
     UUID4,
 )
@@ -33,7 +33,6 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
-    optional,
 )
 from galaxy.schema.types import RelativeUrl
 
@@ -100,7 +99,7 @@ UpdateTimeField = Field(
 CollectionType = str  # str alias for now
 
 CollectionTypeField = Field(
-    ...,
+    default=None,
     title="Collection Type",
     description=(
         "The type of the collection, can be `list`, `paired`, or define subcollections using `:` "
@@ -360,6 +359,9 @@ class HistoryItemBase(Model):
 
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
+    class Config:
+        extra = Extra.allow
+
     type_id: Optional[str] = Field(
         default=None,
         title="Type - ID",
@@ -419,13 +421,13 @@ class HDADetailed(HDASummary):
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
-    misc_info: str = Field(
-        ...,
+    misc_info: Optional[str] = Field(
+        default=None,
         title="Miscellaneous Information",
         description="TODO",
     )
-    misc_blurb: str = Field(
-        ...,
+    misc_blurb: Optional[str] = Field(
+        default=None,
         title="Miscellaneous Blurb",
         description="TODO",
     )
@@ -444,13 +446,23 @@ class HDADetailed(HDASummary):
         title="Resubmitted",
         description="Whether the job creating this dataset has been resubmitted.",
     )
-    metadata: Any = Field(  # TODO: create pydantic model for metadata?
-        ...,
+    metadata: Optional[Any] = Field(  # TODO: create pydantic model for metadata?
+        default=None,
         title="Metadata",
         description="The metadata associated with this dataset.",
     )
+    metadata_dbkey: Optional[str] = Field(
+        "?",
+        title="Metadata DBKey",
+        description="TODO",
+    )
+    metadata_data_lines: int = Field(
+        0,
+        title="Metadata Data Lines",
+        description="TODO",
+    )
     meta_files: List[MetadataFile] = Field(
-        [],
+        ...,
         title="Metadata Files",
         description="Collection of metadata files associated with this dataset.",
     )
@@ -460,8 +472,8 @@ class HDADetailed(HDASummary):
         description="The fully qualified name of the class implementing the data type of this dataset.",
         example="galaxy.datatypes.data.Text"
     )
-    peek: str = Field(
-        ...,
+    peek: Optional[str] = Field(
+        default=None,
         title="Peek",
         description="A few lines of contents from the start of the file.",
     )
@@ -481,24 +493,24 @@ class HDADetailed(HDASummary):
         title="Permissions",
         description="Role-based access and manage control permissions for the dataset.",
     )
-    file_name: FilePath = Field(
-        ...,
+    file_name: Optional[str] = Field(
+        default=None,
         title="File Name",
         description="The full path to the dataset file.",
     )
     display_apps: List[DisplayApp] = Field(
-        [],
+        ...,
         title="Display Applications",
         description="Contains new-style display app urls.",
     )
     display_types: List[DisplayApp] = Field(
-        [],
+        ...,
         title="Legacy Display Applications",
         description="Contains old-style display app urls.",
         deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
     )
     visualizations: List[Visualization] = Field(
-        [],
+        ...,
         title="Visualizations",
         description="The collection of visualizations that can be applied to this dataset.",
     )
@@ -556,12 +568,6 @@ class HDAExtended(HDADetailed):
 class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
     """History Dataset Association information used in the new Beta History."""
     # Equivalent to `betawebclient` serialization view for HDAs
-    pass
-
-
-@optional
-class UpdateHDAPayload(HDABeta):
-    """Used for updating a particular HDA. All fields are optional."""
     pass
 
 
@@ -667,45 +673,55 @@ class HDCADetailed(HDCASummary):
     elements: List[DCESummary] = ElementsField
 
 
-@optional
-class UpdateHDCAPayload(HDCADetailed):
-    """Used for updating a particular HDCA. All fields are optional."""
-    pass
-
-
-class UpdateHistoryContentsBatchPayload(BaseModel):
-    class Config:
-        use_enum_values = True  # when using .dict()
-        allow_population_by_field_name = True
-        extra = Extra.allow  # Allow any additional field
-
-    items: List[Union[UpdateHDAPayload, UpdateHDCAPayload]] = Field(
-        ...,
-        title="Items",
-        description="A list of content items to update with the changes.",
-    )
-    deleted: Optional[bool] = Field(
-        default=False,
-        title="Deleted",
-        description=(
-            "This will check the uploading state if not deleting (i.e: deleted=False), "
-            "otherwise cannot delete uploading files, so it will raise an error."
-        ),
-    )
-    visible: Optional[bool] = Field(
-        default=False,
-        title="Visible",
-        description=(
-            "Show or hide history contents"
-        ),
-    )
-
-
 class HistoryBase(BaseModel):
     """Provides basic configuration for all the History models."""
     class Config:
         use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
+
+
+class UpdateContentItem(HistoryBase):
+    """Used for updating a particular HDA. All fields are optional."""
+    history_content_type: HistoryContentType = Field(
+        ...,
+        title="Content Type",
+        description="The type of this item.",
+    )
+    id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateHistoryContentsBatchPayload(HistoryBase):
+    """Contains property values that will be updated for all the history `items` provided."""
+
+    items: List[UpdateContentItem] = Field(
+        ...,
+        title="Items",
+        description="A list of content items to update with the changes.",
+    )
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "items": [
+                    {
+                        "history_content_type": "dataset",
+                        "id": "string"
+                    }
+                ],
+                "visible": False,
+            }
+        }
+
+
+class UpdateHistoryContentsPayload(HistoryBase):
+    """Contains arbitrary property values that will be updated for a particular history item."""
+    class Config:
+        schema_extra = {
+            "example": {
+                "visible": False,
+                "annotation": "Test",
+            }
+        }
 
 
 class HistorySummary(HistoryBase):
@@ -948,7 +964,7 @@ class CollectionElementIdentifier(Model):
         title="ID",
         description="The encoded ID of the element.",
     )
-    collection_type: Optional[CollectionType]
+    collection_type: Optional[CollectionType] = CollectionTypeField
     element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
         default=None,
         title="Element Identifiers",
@@ -961,13 +977,15 @@ class CollectionElementIdentifier(Model):
     )
 
 
+# Required for self-referencing models
+# See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
 CollectionElementIdentifier.update_forward_refs()
 
 
 class CreateNewCollectionPayload(Model):
-    collection_type: CollectionType = CollectionTypeField
-    element_identifiers: List[CollectionElementIdentifier] = Field(
-        ...,
+    collection_type: Optional[CollectionType] = CollectionTypeField
+    element_identifiers: Optional[List[CollectionElementIdentifier]] = Field(
+        default=None,
         title="Element Identifiers",
         description="List of elements that should be in the new collection.",
     )
@@ -1171,6 +1189,10 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
         None,
         title="Job State Summary",
         description="Overview of the job states working inside the dataset collection.",
+    )
+    elements_datatypes: Set[str] = Field(
+        ...,
+        description="A set containing all the different element datatypes in the collection."
     )
 
 
@@ -2042,7 +2064,8 @@ class RoleListModel(BaseModel):
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
+# TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
+RoleNameIdTuple = List[str]  # Tuple[str, EncodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
@@ -2433,7 +2456,7 @@ class DatasetAssociationRoles(Model):
 
 class UpdateDatasetPermissionsPayload(Model):
     action: Optional[DatasetPermissionAction] = Field(
-        ...,
+        DatasetPermissionAction.set_permissions,
         title="Action",
         description="Indicates what action should be performed on the dataset.",
     )
@@ -2457,22 +2480,24 @@ class UpdateDatasetPermissionsPayload(Model):
     )
 
 
-class DeleteHDCAResult(Model):
-    id: EncodedDatabaseIdField = Field(
-        ...,
-        title="ID",
-        description="The encoded ID of the collection.",
-    )
-    deleted: bool = Field(
-        ...,
-        title="Deleted",
-        description="True if the collection was successfully deleted.",
-    )
+class CustomHistoryItem(Model):
+    """Can contain any serializable property of the item.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+    class Config:
+        extra = Extra.allow
 
 
-AnyHDA = Union[HDASummary, HDADetailed, HDABeta]
+AnyHDA = Union[HDABeta, HDADetailed, HDASummary]
 AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
-AnyHistoryContentItem = Union[AnyHDA, HDCASummary, HDCADetailed, HDCABeta]
+AnyHistoryContentItem = Union[
+    AnyHDA,
+    AnyHDCA,
+    CustomHistoryItem,
+]
+
 
 AnyJobStateSummary = Union[
     JobStateSummary,
@@ -2481,6 +2506,90 @@ AnyJobStateSummary = Union[
 ]
 
 HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+
+
+class DeleteHistoryContentPayload(BaseModel):
+    purge: bool = Field(
+        default=False,
+        title="Purge",
+        description="Whether to remove the dataset from storage. Datasets will only be removed from storage once all HDAs or LDDAs that refer to this datasets are deleted.",
+    )
+    recursive: bool = Field(
+        default=False,
+        title="Recursive",
+        description="When deleting a dataset collection, whether to also delete containing datasets.",
+    )
+
+
+class DeleteHistoryContentResult(CustomHistoryItem):
+    """Contains minimum information about the deletion state of a history item.
+
+    Can also contain any other properties of the item."""
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="The encoded ID of the history item.",
+    )
+    deleted: bool = Field(
+        ...,
+        title="Deleted",
+        description="True if the item was successfully deleted.",
+    )
+    purged: Optional[bool] = Field(
+        default=None,
+        title="Purged",
+        description="True if the item was successfully removed from disk.",
+    )
+
+
+class HistoryContentsArchiveDryRunResult(BaseModel):
+    """
+    Contains a collection of filepath/filename entries that represent
+    the contents that would have been included in the archive.
+    This is returned when the `dry_run` flag is active when
+    creating an archive with the contents of the history.
+
+    This is used for debugging purposes.
+    """
+    # TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
+    __root__: List[List[str]]  # List[Tuple[str, str]]
+
+
+class ContentsNearStats(BaseModel):
+    """Stats used by the `contents_near` endpoint."""
+    matches: int
+    matches_up: int
+    matches_down: int
+    total_matches: int
+    total_matches_up: int
+    total_matches_down: int
+    max_hid: Optional[int] = None
+    min_hid: Optional[int] = None
+    history_size: int
+    history_empty: bool
+
+    def to_headers(self) -> Dict[str, str]:
+        """Converts all field values to json strings.
+
+        The headers values need to be json strings or updating the response
+        headers will raise encoding errors."""
+        headers = {}
+        for key, val in self:
+            headers[key] = json.dumps(val)
+        return headers
+
+
+class HistoryContentsResult(Model):
+    """Collection of history content items.
+    Can contain different views and kinds of items.
+    """
+    __root__: List[AnyHistoryContentItem]
+
+
+class ContentsNearResult(BaseModel):
+    contents: HistoryContentsResult
+    stats: ContentsNearStats
+
 
 # Sharing -----------------------------------------------------------------
 

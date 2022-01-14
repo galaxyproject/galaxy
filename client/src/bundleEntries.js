@@ -17,7 +17,6 @@ export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
-import GalaxyLibrary from "galaxy.library";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
@@ -42,10 +41,6 @@ export function trackster(options) {
 
 export function circster(options) {
     new Circster.GalaxyApp(options);
-}
-
-export function library(options) {
-    new GalaxyLibrary.GalaxyApp(options);
 }
 
 export function multiHistory(options) {
@@ -76,19 +71,9 @@ export { default as async_save_text } from "utils/async-save-text";
 
 // Previously "chart"
 import Client from "mvc/visualization/chart/chart-client";
-import Datasets from "mvc/visualization/chart/utilities/datasets";
-import Series from "mvc/visualization/chart/utilities/series";
-import Jobs from "mvc/visualization/chart/utilities/jobs";
-
 export function chart(options) {
     return new Client(options);
 }
-
-export const chartUtilities = {
-    Datasets: Datasets,
-    Jobs: Jobs,
-    Series: Series,
-};
 
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";

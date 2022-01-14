@@ -7,8 +7,7 @@
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
-            variant="primary"
-        />
+            variant="primary" />
         <b-container v-else-if="dataTable">
             <b-row>
                 <b-col>
@@ -32,8 +31,7 @@
                             :items="dataTable['data']"
                             small
                             hover
-                            striped
-                        />
+                            striped />
                     </b-card>
                 </b-col>
             </b-row>

@@ -2,8 +2,6 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import FormInput from "./FormInput";
 
-jest.mock("app");
-
 const localVue = getLocalVue();
 
 describe("FormInput", () => {

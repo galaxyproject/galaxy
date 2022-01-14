@@ -10,6 +10,7 @@ from galaxy import exceptions
 from galaxy.util import (
     plugin_config
 )
+from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
-    def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
+    def __init__(self, file_sources_config: 'ConfiguredFileSourcesConfig', conf_file=None, conf_dict=None, load_stock_plugins=False):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
         file_sources = []
@@ -221,7 +222,25 @@ class ConfiguredFileSourcesConfig:
         )
 
 
-class ProvidesUserFileSourcesUserContext:
+class FileSourceDictifiable(Dictifiable):
+    dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
+
+    def to_dict(self, view='collection', value_mapper=None):
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['role_names'] = list(self.role_names)
+        rval['group_names'] = list(self.group_names)
+        return rval
+
+    @property
+    def role_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def group_names(sefl) -> Set[str]:
+        raise NotImplementedError
+
+
+class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -263,8 +282,20 @@ class ProvidesUserFileSourcesUserContext:
         """Whether this user is an administrator."""
         return self.trans.user_is_admin
 
+    @property
+    def user_vault(self):
+        """User vault namespace"""
+        user_vault = self.trans.user_vault
+        return user_vault or defaultdict(lambda: None)
 
-class DictFileSourcesUserContext:
+    @property
+    def app_vault(self):
+        """App vault namespace"""
+        vault = self.trans.app.vault
+        return vault or defaultdict(lambda: None)
+
+
+class DictFileSourcesUserContext(FileSourceDictifiable):
 
     def __init__(self, **kwd):
         self._kwd = kwd
@@ -287,12 +318,20 @@ class DictFileSourcesUserContext:
 
     @property
     def role_names(self):
-        return self._kwd.get("role_names")
+        return set(self._kwd.get("role_names", []))
 
     @property
     def group_names(self):
-        return self._kwd.get("group_names")
+        return set(self._kwd.get("group_names", []))
 
     @property
     def is_admin(self):
         return self._kwd.get("is_admin")
+
+    @property
+    def user_vault(self):
+        return self._kwd.get("user_vault")
+
+    @property
+    def app_vault(self):
+        return self._kwd.get("app_vault")

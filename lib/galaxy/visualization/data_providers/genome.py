@@ -132,13 +132,10 @@ class GenomeDataProvider(BaseDataProvider):
 
     dataset_type: str
 
-    """
-    Mapping from column name to payload data; this mapping is used to create
-    filters. Key is column name, value is a dict with mandatory key 'index' and
-    optional key 'name'. E.g. this defines column 4
-
-    col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
-    """
+    # Mapping from column name to payload data; this mapping is used to create
+    # filters. Key is column name, value is a dict with mandatory key 'index'
+    # and optional key 'name'. E.g. this defines column 4:
+    # col_name_data_attr_mapping = {4 : { index: 5, name: 'Score' } }
     col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {}
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None,
@@ -234,7 +231,7 @@ class GenomeDataProvider(BaseDataProvider):
         """
         # Get column names.
         try:
-            column_names = self.original_dataset.datatype.column_names
+            column_names = self.original_dataset.datatype.column_names  # type: ignore[attr-defined]
         except AttributeError:
             try:
                 column_names = list(range(self.original_dataset.metadata.columns))
@@ -318,11 +315,10 @@ class FilterableMixin:
 
 
 class TabixDataProvider(GenomeDataProvider, FilterableMixin):
-    dataset_type = 'tabix'
-
     """
     Tabix index data provider for the Galaxy track browser.
     """
+    dataset_type = 'tabix'
 
     col_name_data_attr_mapping: Dict[Union[str, int], Dict] = {4: {'index': 4, 'name': 'Score'}}
 
@@ -368,13 +364,12 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
 
 
 class IntervalDataProvider(GenomeDataProvider):
-    dataset_type = 'interval_index'
-
     """
     Processes interval data from native format to payload format.
 
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
+    dataset_type = 'interval_index'
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
         raise Exception("Unimplemented Function")

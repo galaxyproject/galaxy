@@ -1,5 +1,5 @@
 <template>
-    <div v-show="!hidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text" v-html="error" />
@@ -22,6 +22,9 @@
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" v-model="currentValue" :id="id" />
+            <FormHidden v-else-if="isHiddenType" v-model="currentValue" :id="id" :info="attrs['info']" />
+            <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
+            <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
                 v-else-if="backbonejs"
                 v-model="currentValue"
@@ -29,8 +32,7 @@
                 :data-label="title"
                 :type="type"
                 :attributes="attrs"
-                ref="params"
-            />
+                ref="params" />
             <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
@@ -42,14 +44,20 @@
 import _ from "underscore";
 import { getElementId } from "./utilities";
 import FormBoolean from "./Elements/FormBoolean";
+import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
+import FormColor from "./Elements/FormColor";
+import FormDirectory from "./Elements/FormDirectory";
 
 export default {
     components: {
         FormBoolean,
+        FormHidden,
         FormInput,
+        FormColor,
         FormParameter,
+        FormDirectory,
     },
     props: {
         id: {
@@ -178,8 +186,14 @@ export default {
             }
             return help;
         },
-        hidden() {
+        isHidden() {
             return this.attrs["hidden"];
+        },
+        isHiddenType() {
+            return (
+                ["hidden", "hidden_data", "baseurl"].includes(this.type) ||
+                (this.attributes && this.attributes.titleonly)
+            );
         },
         previewText() {
             return _.escape(this.textValue).replace(/\n/g, "<br>");
@@ -207,6 +221,7 @@ export default {
          * Determines to wether expand or collapse the input.
          */
         initialState() {
+            this.setValue(this.value);
             const collapsibleValue = this.collapsibleValue;
             const value = JSON.stringify(this.value);
             this.connected = value == JSON.stringify(this.connectedValue);

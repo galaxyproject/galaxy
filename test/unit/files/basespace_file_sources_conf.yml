@@ -1,0 +1,7 @@
+- type: basespace
+  id: test1
+  doc: Test access to Illumina BaseSpace
+  basespace_server: https://api.basespace.illumina.com
+  client_id: ${user.preferences['basespace|client_id']}
+  client_secret: ${user.preferences['basespace|client_secret']}
+  access_token: ${user.preferences['basespace|access_token']}

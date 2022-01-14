@@ -5,7 +5,7 @@ import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-from galaxy.structured_app import BasicApp
+from galaxy.structured_app import BasicSharedApp
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 
 log = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class CitationsManager:
 
-    def __init__(self, app: BasicApp) -> None:
+    def __init__(self, app: BasicSharedApp) -> None:
         self.app = app
         self.doi_cache = DoiCache(app.config)
 

@@ -23,6 +23,10 @@ ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
 
+ARG GIT_COMMIT=unspecified
+ARG BUILD_DATE=unspecified
+ARG IMAGE_TAG=unspecified
+
 #======================================================
 # Stage 1 - Setup common requirements for build
 #======================================================
@@ -113,6 +117,22 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG ROOT_DIR
 ARG SERVER_DIR
 ARG GALAXY_USER
+
+ARG GIT_COMMIT
+ARG BUILD_DATE
+ARG IMAGE_TAG
+
+LABEL org.opencontainers.image.title="Galaxy Minimal Image" \
+      org.opencontainers.image.description="A size optimized image for Galaxy targeting k8s and ci applications" \
+      org.opencontainers.image.authors="galaxyproject.org" \
+      org.opencontainers.image.vendor="Galaxy Project" \
+      org.opencontainers.image.documentation="https://github.com/galaxyproject/galaxy-docker-k8s" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="$IMAGE_TAG" \
+      org.opencontainers.image.url="https://github.com/galaxyproject/galaxy-docker-k8s" \
+      org.opencontainers.image.source="https://github.com/galaxyproject/galaxy.git" \
+      org.opencontainers.image.revision=$GIT_COMMIT \
+      org.opencontainers.image.created=$BUILD_DATE
 
 # Init Env
 ENV LC_ALL=en_US.UTF-8

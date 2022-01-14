@@ -10,8 +10,7 @@
                     title="Download Collection"
                     type="button"
                     class="py-0 px-1"
-                    v-b-tooltip.hover
-                >
+                    v-b-tooltip.hover>
                     <span class="fa fa-download" />
                 </b-button>
                 <CurrentUser v-slot="{ user }">
@@ -25,8 +24,7 @@
                             title="Import Collection"
                             type="button"
                             class="py-0 px-1"
-                            v-b-tooltip.hover
-                        >
+                            v-b-tooltip.hover>
                             <span class="fa fa-file-import" />
                         </b-button>
                     </UserHistories>
@@ -55,7 +53,7 @@ import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
 import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import { copyCollection } from "components/Markdown/services";
 
 export default {

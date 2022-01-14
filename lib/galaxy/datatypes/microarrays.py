@@ -6,6 +6,7 @@ from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
     get_headers
 )
 
@@ -35,7 +36,7 @@ class GenericMicroarrayFile(data.Text):
                     readonly=True, visible=True,
                     optional=True, no_value=0)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
@@ -60,7 +61,7 @@ class Gal(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gal"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a Gal file.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -101,7 +102,7 @@ class Gpr(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gpr"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a Gpr file.
         >>> from galaxy.datatypes.sniff import get_test_fname

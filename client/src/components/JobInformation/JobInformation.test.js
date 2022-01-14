@@ -11,7 +11,6 @@ import flushPromises from "flush-promises";
 import createCache from "vuex-cache";
 
 jest.mock("app");
-jest.mock("components/History/caching");
 
 const JOB_ID = "test_id";
 

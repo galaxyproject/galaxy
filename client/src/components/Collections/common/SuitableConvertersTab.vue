@@ -6,8 +6,7 @@
                 <button
                     class="run-tool-collection-edit btn btn-primary"
                     @click="clickedConvert"
-                    :disabled="selectedConverter == {}"
-                >
+                    :disabled="selectedConverter == {}">
                     {{ l("Convert Collection") }}
                 </button>
             </div>
@@ -20,8 +19,7 @@
             label="name"
             :options="suitableConverters"
             :searchable="true"
-            :allow-empty="true"
-        >
+            :allow-empty="true">
         </multiselect>
     </div>
 </template>

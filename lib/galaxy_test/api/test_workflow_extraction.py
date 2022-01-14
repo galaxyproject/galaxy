@@ -454,14 +454,14 @@ test_data:
                 source="hda",
                 content=content["id"]
             )
-            response = self._post(f"histories/{history_id}/contents/datasets", payload)
+            response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
 
         else:
             payload = dict(
                 source="hdca",
                 content=content["id"]
             )
-            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload)
+            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload, json=True)
         self._assert_status_code_is(response, 200)
         return response.json()
 
@@ -499,7 +499,7 @@ test_data:
                 history_length = self.dataset_populator.history_length(history_id)
 
             new_history_id = self.dataset_populator.reimport_history(
-                history_id, history_name, wait_on_history_length=history_length, export_kwds={}, url=self.url, api_key=self.galaxy_interactor.api_key
+                history_id, history_name, wait_on_history_length=history_length, export_kwds={}, api_key=self.galaxy_interactor.api_key
             )
             # wait a little more for those jobs, todo fix to wait for history imported false or
             # for a specific number of jobs...

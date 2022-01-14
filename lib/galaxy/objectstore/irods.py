@@ -295,9 +295,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{str(subcollection_name)}"
         data_object_path = f"{collection_path}/{str(data_object_name)}"
+        options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
-            data_obj = self.session.data_objects.get(data_object_path)
+            data_obj = self.session.data_objects.get(data_object_path, **options)
             return data_obj.__sizeof__()
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.warning("Collection or data object (%s) does not exist", data_object_path)
@@ -314,9 +315,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{str(subcollection_name)}"
         data_object_path = f"{collection_path}/{str(data_object_name)}"
+        options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
-            self.session.data_objects.get(data_object_path)
+            self.session.data_objects.get(data_object_path, **options)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
             log.debug("Collection or data object (%s) does not exist", data_object_path)
@@ -351,10 +353,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{str(subcollection_name)}"
         data_object_path = f"{collection_path}/{str(data_object_name)}"
+        options = {kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
             cache_path = self._get_cache_path(rel_path)
-            self.session.data_objects.get(data_object_path, cache_path)
+            self.session.data_objects.get(data_object_path, cache_path, **options)
             log.debug("Pulled data object '%s' into cache to %s", rel_path, cache_path)
             return True
         except (DataObjectDoesNotExist, CollectionDoesNotExist):
@@ -378,7 +381,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         subcollection_name = p.parent
 
         source_file = source_file if source_file else self._get_cache_path(rel_path)
-        options = {kw.FORCE_FLAG_KW: ''}
+        options = {kw.FORCE_FLAG_KW: '', kw.DEST_RESC_NAME_KW: self.resource}
 
         if not os.path.exists(source_file):
             log.error("Tried updating key '%s' from source file '%s', but source file does not exist.", rel_path, source_file)
@@ -388,6 +391,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         collection_path = f"{self.home}/{str(subcollection_name)}"
         data_object_path = f"{collection_path}/{str(data_object_name)}"
         exists = False
+
         try:
             exists = self.session.data_objects.exists(data_object_path)
 
@@ -396,7 +400,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 return True
 
             # Create sub-collection first
-            self.session.collections.create(collection_path, recurse=True)
+            self.session.collections.create(collection_path, recurse=True, **options)
 
             if from_string:
                 # Create data object
@@ -416,7 +420,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 log.debug("Pushing cache file '%s' of size %s bytes to collection '%s'", source_file, os.path.getsize(source_file), rel_path)
 
                 # Add the source file to the irods collection
-                self.session.data_objects.put(source_file, f"{collection_path}/", **options)
+                self.session.data_objects.put(source_file, data_object_path, **options)
 
                 end_time = datetime.now()
                 log.debug("Pushed cache file '%s' to collection '%s' (%s bytes transfered in %s sec)",
@@ -525,6 +529,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         dir_only = kwargs.get('dir_only', False)
         obj_dir = kwargs.get('obj_dir', False)
 
+        options = {kw.DEST_RESC_NAME_KW: self.resource}
+
         try:
             # Remove temparory data in JOB_WORK directory
             if base_dir and dir_only and obj_dir:
@@ -570,7 +576,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 data_object_path = f"{collection_path}/{str(data_object_name)}"
 
                 try:
-                    data_obj = self.session.data_objects.get(data_object_path)
+                    data_obj = self.session.data_objects.get(data_object_path, **options)
                     # remove object
                     data_obj.unlink(force=True)
                     return True

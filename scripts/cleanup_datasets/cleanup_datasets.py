@@ -297,7 +297,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of its
     # LibraryDatasetDatasetAssociations.  Then we mark the LibraryDataset as purged.  We then process our
     # list of Datasets.
-    library_dataset_ids = [row.id for row in library_dataset_ids_query.execute()]
+    library_dataset_ids = [row.id for row in app.sa_session.execute(library_dataset_ids_query)]
     dataset_ids = []
     for library_dataset_id in library_dataset_ids:
         log.info("######### Processing LibraryDataset id: %d", library_dataset_id)
@@ -322,7 +322,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
         log.info("Marked LibraryDataset id %d as purged", ld.id)
         app.sa_session.flush()
     # Add all datasets associated with Histories to our list
-    dataset_ids.extend([row.id for row in history_dataset_ids_query.execute()])
+    dataset_ids.extend([row.id for row in app.sa_session.execute(history_dataset_ids_query)])
     # Process each of the Dataset objects
     for dataset_id in dataset_ids:
         dataset = app.sa_session.query(app.model.Dataset).get(dataset_id)

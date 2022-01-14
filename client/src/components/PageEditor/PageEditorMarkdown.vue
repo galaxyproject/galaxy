@@ -4,8 +4,7 @@
             :title="title"
             :markdown-text="markdownText"
             :markdown-config="contentData"
-            @onUpdate="onUpdate"
-        >
+            @onUpdate="onUpdate">
             <template v-slot:buttons>
                 <b-button
                     id="save-button"
@@ -13,8 +12,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="saveContent(false)"
-                >
+                    @click="saveContent(false)">
                     <font-awesome-icon icon="save" />
                 </b-button>
                 <b-button
@@ -23,8 +21,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="saveContent(true)"
-                >
+                    @click="saveContent(true)">
                     <font-awesome-icon icon="eye" />
                 </b-button>
             </template>

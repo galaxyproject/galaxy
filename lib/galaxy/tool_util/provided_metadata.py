@@ -109,10 +109,9 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                 try:
                     line = stringify_dictionary_keys(json.loads(line))
                     assert 'type' in line
-                except Exception:
-                    log.exception(f"({getattr(job_wrapper, 'job_id', None)}) Got JSON data from tool, but data is improperly formatted or no \"type\" key in data")
-                    log.debug(f'Offending data was: {line}')
-                    continue
+                except Exception as e:
+                    message = f"Got JSON data from tool, but line is improperly formatted or no \"type\" key in: [{line}]"
+                    raise ValueError(message) from e
                 # Set the dataset id if it's a dataset entry and isn't set.
                 # This isn't insecure.  We loop the job's output datasets in
                 # the finish method, so if a tool writes out metadata for a
@@ -122,7 +121,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                     dataset_basename = line['dataset']
                     if job_wrapper:
                         try:
-                            line['dataset_id'] = job_wrapper.get_output_file_id(dataset_basename)
+                            line['dataset_id'] = job_wrapper.job_io.get_output_file_id(dataset_basename)
                         except KeyError:
                             log.warning(f'({job_wrapper.job_id}) Tool provided job dataset-specific metadata without specifying a dataset')
                             continue

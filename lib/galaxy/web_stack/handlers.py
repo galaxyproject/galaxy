@@ -124,7 +124,7 @@ class ConfiguresHandlers:
                 method = method.lower()
                 assert HANDLER_ASSIGNMENT_METHODS.has_value(method), \
                     "Invalid job handler assignment method '{}', must be one of: {}".format(
-                        method, ', '.join([h.value for h in HANDLER_ASSIGNMENT_METHODS]))
+                        method, ', '.join(h.value for h in HANDLER_ASSIGNMENT_METHODS))
                 try:
                     self.handler_assignment_methods.append(method)
                 except AttributeError:

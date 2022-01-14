@@ -39,8 +39,6 @@ import string
 from json import dumps
 from typing import Callable, List, Optional
 
-from sqlalchemy.orm.scoping import scoped_session
-
 from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model import (
     Dataset,
@@ -49,7 +47,9 @@ from galaxy.model import (
     Role,
 )
 from galaxy.model.base import ModelMapping
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import bunch
 
@@ -136,10 +136,10 @@ class ProvidesAppContext:
             self.sa_session.flush()
 
     @property
-    def sa_session(self) -> scoped_session:
+    def sa_session(self) -> galaxy_scoped_session:
         """Provide access to Galaxy's SQLAlchemy session.
 
-        :rtype: sqlalchemy.orm.scoping.scoped_session
+        :rtype: galaxy.model.scoped_session.galaxy_scoped_session
         """
         return self.app.model.session
 
@@ -197,6 +197,11 @@ class ProvidesUserContext(ProvidesAppContext):
     @abc.abstractproperty
     def user(self):
         """Provide access to the user object."""
+
+    @property
+    def user_vault(self):
+        """Provide access to a user's personal vault."""
+        return UserVaultWrapper(self.app.vault, self.user)
 
     @property
     def anonymous(self) -> bool:

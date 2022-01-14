@@ -6,8 +6,7 @@
             v-model="queryInput"
             @input="delayQuery"
             @change="setQuery"
-            @keydown.esc="setQuery()"
-        />
+            @keydown.esc="setQuery()" />
         <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
         <font-awesome-icon
             v-else
@@ -15,8 +14,7 @@
             :title="titleClearSearch"
             class="search-clear"
             icon="times-circle"
-            @click="setQuery()"
-        />
+            @click="setQuery()" />
     </div>
 </template>
 <script>

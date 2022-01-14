@@ -51,7 +51,7 @@ export const legacyNavigationMixin = {
         // galaxy router, wrapper for backbone router
         backboneRoute(path, ...args) {
             try {
-                getGalaxyInstance().router.push(prependPath(path), ...args);
+                getGalaxyInstance().router.push(path, ...args);
             } catch (err) {
                 console.warn("Failed galaxy route change", err, ...arguments);
                 throw err;

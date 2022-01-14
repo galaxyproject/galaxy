@@ -126,30 +126,6 @@ export var Input = Backbone.View.extend({
     },
 });
 
-/** Creates a hidden element input field used e.g. in the tool form */
-export var Hidden = Backbone.View.extend({
-    initialize: function (options) {
-        this.model = (options && options.model) || new Backbone.Model(options);
-        this.setElement(
-            $("<div/>")
-                .append((this.$info = $("<div/>")))
-                .append((this.$hidden = $("<div/>")))
-        );
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
-    },
-    value: function (new_val) {
-        new_val !== undefined && this.model.set("value", new_val);
-        return this.model.get("value");
-    },
-    render: function () {
-        this.$el.attr("id", this.model.id);
-        this.$hidden.val(this.model.get("value"));
-        this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
-        return this;
-    },
-});
-
 export var NullableText = Backbone.View.extend({
     initialize: function (options) {
         this.model = (options && options.model) || new Backbone.Model().set(options);
@@ -316,7 +292,6 @@ export default {
     Select: Select,
     NullableText: NullableText,
     TextSelect: TextSelect,
-    Hidden: Hidden,
     Slider: Slider,
     Drilldown: Drilldown,
 };

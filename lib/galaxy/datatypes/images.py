@@ -17,11 +17,14 @@ from galaxy.datatypes.metadata import (
     FileParameter,
     MetadataElement,
 )
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
-from .sniff import build_sniff_from_prefix
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
@@ -47,7 +50,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = f'Image in {dataset.extension} format'
             dataset.blurb = nice_size(dataset.get_size())
@@ -241,7 +244,7 @@ class Tck(Binary):
     """
     file_ext = 'tck'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         format_def = [[b'mrtrix tracks'], [b'datatype: Float32LE', b'datatype: Float32BE', b'datatype: Float64BE', b'datatype: Float64LE'],
                       [b'count: '], [b'file: .'], [b'END']]
         matches = 0
@@ -271,7 +274,7 @@ class Trk(Binary):
     """
     file_ext = 'trk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # quick check
         header_raw = None
         header_raw = file_prefix.contents_header_bytes[:1000]
@@ -305,12 +308,13 @@ class Trk(Binary):
             ('header_size', 'i4'),
         ]
         np_dtype = np.dtype(header_def)
-        header = np.ndarray(
-            shape=(),
-            dtype=np_dtype,
-            buffer=header_raw)
-        if header['header_size'] == 1000 and b'TRACK' in header['magic'] and \
-           header['version'] == 2 and len(header['dim']) == 3:
+        header: np.ndarray = np.ndarray(shape=(), dtype=np_dtype, buffer=header_raw)
+        if (
+            header["header_size"] == 1000
+            and b"TRACK" in header["magic"]
+            and header["version"] == 2
+            and len(header["dim"]) == 3
+        ):
             return True
         return False
 
@@ -350,7 +354,7 @@ class Gmaj(data.Data):
     file_ext = "gmaj.zip"
     copy_safe_peek = False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {
@@ -412,19 +416,20 @@ class Analyze75(Binary):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-        """The header file. Provides information about dimensions, identification, and processing history."""
+        # The header file provides information about dimensions, identification,
+        # and processing history.
         self.add_composite_file(
             'hdr',
             description='The Analyze75 header file.',
             is_binary=True)
 
-        """The image file.  Image data, whose data type and ordering are described by the header file."""
+        # The image file contains the actual data, whose data type and ordering
+        # are described by the header file.
         self.add_composite_file(
             'img',
             description='The Analyze75 image file.',
             is_binary=True)
 
-        """The optional t2m file."""
         self.add_composite_file(
             't2m',
             description='The Analyze75 t2m file.',
@@ -463,7 +468,7 @@ class Nifti1(Binary):
     """
     file_ext = 'nii1'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         magic = file_prefix.contents_header_bytes[344:348]
         if magic == b'n+1\0':
             return True
@@ -486,7 +491,7 @@ class Nifti2(Binary):
     """
     file_ext = 'nii2'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         magic = file_prefix.contents_header_bytes[4:8]
         if magic in [b'n+2\0', b'ni2\0']:
             return True
@@ -498,7 +503,7 @@ class Gifti(GenericXml):
     """Class describing a Gifti format"""
     file_ext = "gii"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is a Gifti file
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -535,7 +540,7 @@ class Star(data.Text):
     https://relion.readthedocs.io/en/latest/Reference/Conventions.html"""
     file_ext = "star"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -544,7 +549,7 @@ class Star(data.Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """Each file must have one or more data blocks.
         The start of a data block is defined by the keyword
         "data_" followed by an optional string for
@@ -560,14 +565,9 @@ class Star(data.Text):
         False
         """
         in_data_block = False
-        fh = file_prefix.string_io()
-        while True:
+        for line in file_prefix.line_iterator():
             # All lines before the first
             # data_ block must be comments.
-            line = fh.readline()
-            if not line:
-                # End of file_prefix.
-                return False
             line = line.strip()
             if len(line) == 0:
                 continue
@@ -596,7 +596,7 @@ class Laj(data.Text):
     file_ext = "laj"
     copy_safe_peek = False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if hasattr(dataset, 'history_id'):
                 params = {

@@ -15,7 +15,7 @@ from galaxy.config import (
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
-from galaxy.version import VERSION, VERSION_MAJOR
+from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
 from galaxy.web.formatting import expand_pretty_datetime_format
 
 log = logging.getLogger(__name__)
@@ -67,6 +67,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         os.umask(self.umask)  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         self.version_major = VERSION_MAJOR
+        self.version_minor = VERSION_MINOR
         self.version = VERSION
         # Database related configuration
         if not self.database_connection:  # Provide default if not supplied by user

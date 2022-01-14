@@ -4,7 +4,7 @@ repository_name = 'filtering_0400'
 repository_description = 'Galaxy filtering tool for test 0400'
 repository_long_description = 'Long description of Galaxy filtering tool for test 0400'
 
-'''
+"""
 1. Create users.
 2. Grant reviewer role to test_user_2.
 3. Check that the review components that are to be tested are defined in this tool shed instance.
@@ -32,15 +32,15 @@ repository_long_description = 'Long description of Galaxy filtering tool for tes
 25. Upload a new version of the tool.
 26. Review the new revision's functional tests component.
 27. Verify that the functional tests component review displays correctly.
-'''
+"""
 
 
 class TestRepositoryComponentReviews(ShedTwillTestCase):
-    '''Test repository component review features.'''
+    """Test repository component review features."""
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         We are at step 1.
         Create all the user accounts that are needed for this test script to run independently of other test.
         Previously created accounts will not be re-created.
@@ -59,8 +59,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_grant_reviewer_role(self):
-        '''Grant the repository reviewer role to test_user_2.'''
-        """
+        """Grant the repository reviewer role to test_user_2.
+
         We are at step 2.
         We now have an admin user (admin_user) and two non-admin users (test_user_1 and test_user_2). Grant the repository
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories.
@@ -70,8 +70,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.grant_role_to_user(test_user_2, reviewer_role)
 
     def test_0010_verify_repository_review_components(self):
-        '''Ensure that the required review components exist.'''
-        """
+        """Ensure that the required review components exist.
+
         We are at step 3.
         We now have an admin user (admin_user) and two non-admin users (test_user_1 and test_user_2). Grant the repository
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories.
@@ -84,8 +84,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.manage_review_components(strings_displayed=strings_displayed)
 
     def test_0015_create_repository(self):
-        """Create and populate the filtering repository"""
-        """
+        """Create and populate the filtering repository
+
         We are at step 4.
         Log in as test_user_1 and create the filtering repository, then upload a basic set of
         components to be reviewed in subsequent tests.
@@ -110,8 +110,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_review_initial_revision_data_types(self):
-        '''Review the datatypes component for the current tip revision.'''
-        """
+        """Review the datatypes component for the current tip revision.
+
         We are at step 5.
         Log in as test_user_2 and review the data types component of the filtering repository owned by test_user_1.
         # Review this revision:
@@ -132,8 +132,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.create_repository_review(repository, review_contents_dict)
 
     def test_0025_verify_datatype_review(self):
-        '''Verify that the datatypes component review displays correctly.'''
-        """
+        """Verify that the datatypes component review displays correctly.
+
         We are at step 6.
         Log in as test_user_1 and check that the filtering repository only has a review for the data types component.
         """
@@ -145,8 +145,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0030_review_initial_revision_functional_tests(self):
-        '''Review the functional tests component for the current tip revision.'''
-        """
+        """Review the functional tests component for the current tip revision.
+
         We are at step 7.
         Log in as test_user_2 and review the functional tests component for this repository. Since the repository
         has not been altered, this will update the existing review to add a component.
@@ -170,13 +170,13 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
 #    def test_0030_verify_review_display( self ):
-#        '''Verify that private reviews are restricted to owner and reviewer, and non-private views are viewable by others.'''
+#        """Verify that private reviews are restricted to owner and reviewer, and non-private views are viewable by others."""
 #        # Currently not implemented because third parties cannot view reviews whether they are private or not.
 #        self.login( email=common.test_user_3_email, username=common.test_user_3_name )
 
     def test_0035_verify_functional_test_review(self):
-        '''Verify that the functional tests component review displays correctly.'''
-        """
+        """Verify that the functional tests component review displays correctly.
+
         We are at step 8.
         Log in as test_user_1 and check that the filtering repository now has reviews
         for the data types and functional tests components. Since the functional tests component was not marked as 'Not applicable',
@@ -190,8 +190,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0040_review_readme(self):
-        '''Review the readme component for the current tip revision.'''
-        """
+        """Review the readme component for the current tip revision.
+
         We are at step 9.
         Log in as test_user_2 and update the review with the readme component marked as 'Not applicable'.
         # Review this revision:
@@ -215,8 +215,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0045_verify_readme_review(self):
-        '''Verify that the readme component review displays correctly.'''
-        """
+        """Verify that the readme component review displays correctly.
+
         We are at step 10.
         Log in as test_user_1 and verify that the repository component reviews now include a review for the readme component.
         """
@@ -228,8 +228,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0050_review_repository_dependencies(self):
-        '''Review the repository dependencies component for the current tip revision.'''
-        """
+        """Review the repository dependencies component for the current tip revision.
+
         We are at step 11.
         Log in as test_user_2 and update the review with the repository dependencies component marked as 'Not applicable'.
         # Review this revision:
@@ -254,8 +254,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0055_verify_repository_dependency_review(self):
-        '''Verify that the repository dependencies component review displays correctly.'''
-        """
+        """Verify that the repository dependencies component review displays correctly.
+
         We are at step 12.
         Log in as test_user_1 and verify that the repository component reviews now include a review
         for the repository dependencies component.
@@ -268,8 +268,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0060_review_tool_dependencies(self):
-        '''Review the tool dependencies component for the current tip revision.'''
-        """
+        """Review the tool dependencies component for the current tip revision.
+
         We are at step 13.
         Log in as test_user_2 and update the review with the tool dependencies component marked as 'Not applicable'.
         # Review this revision:
@@ -295,8 +295,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0065_verify_tool_dependency_review(self):
-        '''Verify that the tool dependencies component review displays correctly.'''
-        """
+        """Verify that the tool dependencies component review displays correctly.
+
         We are at step 14.
         Log in as test_user_1 and verify that the repository component reviews now include a review
         for the tool dependencies component.
@@ -309,8 +309,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0070_review_tools(self):
-        '''Review the tools component for the current tip revision.'''
-        """
+        """Review the tools component for the current tip revision.
+
         We are at step 15.
         Log in as test_user_2 and update the review with the tools component given
         a favorable review, with 5 stars, and approved status.
@@ -338,8 +338,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0075_verify_tools_review(self):
-        '''Verify that the tools component review displays correctly.'''
-        """
+        """Verify that the tools component review displays correctly.
+
         We are at step 16.
         Log in as test_user_1 and verify that the repository component reviews now include a review
         for the tools component. As before, check for the presence of the comment on this review.
@@ -352,8 +352,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
 
     def test_0080_review_workflows(self):
-        '''Review the workflows component for the current tip revision.'''
-        """
+        """Review the workflows component for the current tip revision.
+
         We are at step 17.
         Log in as test_user_2 and update the review with the workflows component marked as 'Not applicable'.
         # Review this revision:
@@ -381,8 +381,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0085_verify_workflows_review(self):
-        '''Verify that the workflows component review displays correctly.'''
-        """
+        """Verify that the workflows component review displays correctly.
+
         We are at step 18.
         Log in as test_user_1 and verify that the repository component reviews now include a review
         for the workflows component.
@@ -394,8 +394,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0090_upload_readme_file(self):
-        '''Upload a readme file to the filtering repository.'''
-        """
+        """Upload a readme file to the filtering repository.
+
         We are at step 19.
         Log in as test_user_1, the repository owner, and upload readme.txt to the repository. This will create
         a new changeset revision for this repository, which will need to be reviewed.
@@ -413,8 +413,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0095_review_new_changeset_readme_component(self):
-        '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
-        """
+        """Update the filtering repository's readme component review to reflect the presence of the readme file.
+
         We are at step 20.
         There is now a new changeset revision in the repository's changelog, but it has no review associated with it.
         Get the previously reviewed changeset hash, and pass that and the review id to the create_repository_review
@@ -444,8 +444,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                                       copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0100_verify_readme_review(self):
-        '''Verify that the readme component review displays correctly.'''
-        """
+        """Verify that the readme component review displays correctly.
+
         We are at step 21.
         Log in as the repository owner (test_user_1) and check the repository component reviews to
         verify that the readme component is now reviewed and approved.
@@ -457,8 +457,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0105_upload_test_data(self):
-        '''Upload the missing test data to the filtering repository.'''
-        """
+        """Upload the missing test data to the filtering repository.
+
         We are at step 22.
         Remain logged in as test_user_1 and upload test data to the repository. This will also create a
         new changeset revision that needs to be reviewed. This will replace the changeset hash associated with
@@ -477,8 +477,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0110_review_new_changeset_functional_tests(self):
-        '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
-        """
+        """Update the filtering repository's readme component review to reflect the presence of the readme file.
+
         We are at step 23.
         Log in as test_user_2 and get the last reviewed changeset hash, and pass that and the review id to
         the create_repository_review method, then update the copied review to approve the functional tests
@@ -505,8 +505,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                                       copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0115_verify_functional_tests_review(self):
-        '''Verify that the functional tests component review displays correctly.'''
-        """
+        """Verify that the functional tests component review displays correctly.
+
         We are at step 24.
         Log in as the repository owner, test_user_1, and verify that the new revision's functional tests component
         review has been updated with an approved status and favorable comment.
@@ -518,8 +518,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0120_upload_new_tool_version(self):
-        '''Upload filtering 2.2.0 to the filtering repository.'''
-        """
+        """Upload filtering 2.2.0 to the filtering repository.
+
         We are at step 25.
         Log in as test_user_1 and upload a new version of the tool to the filtering repository. This will create
         a new downloadable revision, with no associated repository component reviews.
@@ -537,8 +537,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0125_review_new_changeset_functional_tests(self):
-        '''Update the filtering repository's review to apply to the new changeset with filtering 2.2.0.'''
-        """
+        """Update the filtering repository's review to apply to the new changeset with filtering 2.2.0.
+
         We are at step 26.
         Log in as test_user_2 and copy the last review for this repository to the new changeset. Then
         update the tools component review to refer to the new tool version.
@@ -564,8 +564,8 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
                                       copy_from=(str(last_review.changeset_revision), last_review.id))
 
     def test_0135_verify_review_for_new_version(self):
-        '''Verify that the reviews display correctly for this changeset revision.'''
-        """
+        """Verify that the reviews display correctly for this changeset revision.
+
         We are at step 27.
         Log in as test_user_1 and check that the tools component review is for filtering 2.2.0, but that the other component
         reviews had their contents copied from the last reviewed changeset.

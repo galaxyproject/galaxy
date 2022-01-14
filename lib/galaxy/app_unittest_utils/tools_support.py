@@ -83,22 +83,25 @@ class UsesTools(UsesApp):
         tool_id="test_tool",
         extra_file_contents=None,
         extra_file_path=None,
+        tool_path=None,
     ):
-        self._init_app_for_tools()
-        self.tool_file = os.path.join(self.test_directory, filename)
-        contents_template = string.Template(tool_contents)
-        tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
-        self.__write_tool(tool_contents)
-        if extra_file_contents and extra_file_path:
-            self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
+        if tool_path is None:
+            self.tool_file = os.path.join(self.test_directory, filename)
+            contents_template = string.Template(tool_contents)
+            tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
+            self.__write_tool(tool_contents)
+            if extra_file_contents and extra_file_path:
+                self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
+        else:
+            self.tool_file = tool_path
         return self.__setup_tool()
 
     def _init_tool_for_path(self, tool_file):
-        self._init_app_for_tools()
         self.tool_file = tool_file
         return self.__setup_tool()
 
-    def _init_app_for_tools(self):
+    def setup_app(self):
+        super().setup_app()
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
@@ -106,12 +109,9 @@ class UsesTools(UsesApp):
 
     def __setup_tool(self):
         tool_source = get_tool_source(self.tool_file)
-        try:
-            self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
-            self.tool.assert_finalized()
-        except Exception:
-            self.tool = None
-        if getattr(self, "tool_action", None) and self.tool:
+        self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
+        self.tool.assert_finalized()
+        if getattr(self, "tool_action", None):
             self.tool.tool_action = self.tool_action
         return self.tool
 

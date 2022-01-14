@@ -1195,6 +1195,17 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert found_id
         assert found_uuid
 
+    def test_show_tool_source_admin(self):
+        response = self._get("tools/cat1/raw_tool_source", admin=True)
+        response.raise_for_status()
+        assert "Concatenate datasets" in response.text
+        assert response.headers["language"] == 'xml'
+
+    def test_show_tool_source_denied(self):
+        with self._different_user(anon=True):
+            response = self._get("tools/cat1/raw_tool_source")
+            assert response.status_code == 403
+
     def test_tool_deactivate(self):
         # Create tool.
         tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)

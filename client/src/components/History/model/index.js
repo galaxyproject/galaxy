@@ -4,7 +4,6 @@ export { DatasetCollection } from "./DatasetCollection";
 export { JobStateSummary } from "./JobStateSummary";
 export { DateStore } from "./DateStore";
 export { History } from "./History";
-export { SearchParams } from "./SearchParams";
 export { ScrollPos } from "./ScrollPos";
 export { CurveFit } from "./CurveFit";
 export { STATES } from "./states";

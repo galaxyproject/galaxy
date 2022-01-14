@@ -25,7 +25,6 @@ module.exports = (env = {}, argv = {}) => {
         },
         output: {
             path: path.join(__dirname, "../", "/static/dist"),
-            publicPath: "/static/dist/",
             filename: "[name].bundled.js",
         },
         resolve: {
@@ -208,16 +207,21 @@ module.exports = (env = {}, argv = {}) => {
                     warnings: false,
                 },
             },
+            devMiddleware: {
+                publicPath: '/static/dist'
+            },
             hot: true,
-            // proxy *everything* to the galaxy server
-            // someday, this can be a more limited set -- e.g. `/api`, `/auth`
             port: 8081,
             host: "0.0.0.0",
+            // proxy *everything* to the galaxy server.
+            // someday, when we have a fully API-driven independent client, this
+            // can be a more limited set -- e.g. `/api`, `/auth`
             proxy: {
-                "/": {
+                "**": {
                     target: process.env.GALAXY_URL || "http://localhost:8080",
                     secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
+                    logLevel: 'debug'
                 },
             },
         },

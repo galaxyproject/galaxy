@@ -144,7 +144,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             return
 
         job_destination = job_wrapper.job_destination
-        """ Submit job to godocker """
+        # Submit job to godocker
         job_id = self.post_task(job_wrapper)
         if not job_id:
             log.error("Job creation failure.  No Response from GoDocker")
@@ -165,12 +165,12 @@ class GodockerJobRunner(AsynchronousJobRunner):
             else if the job is running or in pending state, simply
                     return the 'AsynchronousJobState object' (job_state).
         """
-        ''' This function is called by check_watched_items() where
-                    param job_state is an object of AsynchronousJobState.
-            Expected return type of this function is None or
-                    AsynchronousJobState object with updated running status.
-        '''
-        """ Get task from GoDocker """
+        # This function is called by check_watched_items() where param job_state
+        # is an object of AsynchronousJobState.
+        # Expected return type of this function is None or an
+        # AsynchronousJobState object with updated running status.
+
+        # Get task from GoDocker
         job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
         log.debug(f"Job ID: {str(job_state.job_id)} Job Status: {str(job_status_god['status']['primary'])}")
@@ -222,10 +222,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """ Attempts to delete a dispatched executing Job in GoDocker """
-        '''This function is called by fail_job()
-           where param job = self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id )
-           No Return data expected
-        '''
+        # This function is called by fail_job() where
+        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # No Return data expected
         job_id = job_wrapper.job_id
         log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")
         # Get task status from GoDocker.
@@ -237,9 +236,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """ Recovers jobs stuck in the queued/running state when Galaxy started """
-        """ This method is called by galaxy at the time of startup.
-            Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
-        """
+        # This method is called by Galaxy at startup time.
+        # Jobs in Running & Queued state in galaxy are put in the monitor_queue
+        # by creating an AsynchronousJobState object
         job_id = job_wrapper.job_id
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)

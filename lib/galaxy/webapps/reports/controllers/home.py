@@ -30,13 +30,13 @@ class HomePage(BaseUIController, ReportQueryBuilder):
 
         recent_jobs = sa.select(
             (
-                (model.Job.table.c.id),
-                (model.Job.table.c.create_time).label('create_time'),
-                (model.Job.table.c.update_time).label('update_time')
+                (model.Job.id),
+                (model.Job.create_time).label('create_time'),
+                (model.Job.update_time).label('update_time')
             )
         )
 
-        for job in recent_jobs.execute():
+        for job in trans.sa_session.execute(recent_jobs):
             if(job.create_time >= start_days
                and job.create_time < end_date_buffer):
                 if(job.create_time >= start_hours

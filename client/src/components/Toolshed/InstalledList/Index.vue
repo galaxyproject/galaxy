@@ -28,8 +28,7 @@
                     :sort-by="sortBy"
                     :items="repositories"
                     :filter="filter"
-                    @filtered="filtered"
-                >
+                    @filtered="filtered">
                     <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">

@@ -1,7 +1,7 @@
 import logging
 import math
 
-from galaxy import exceptions, model, web
+from galaxy import exceptions, model
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -103,20 +103,20 @@ def get_collection_elements(collection, name=""):
     return names, hdas
 
 
-def dictify_dataset_collection_instance(dataset_collection_instance, parent, security, view="element", fuzzy_count=None):
+def dictify_dataset_collection_instance(dataset_collection_instance, parent, security, url_builder, view="element", fuzzy_count=None):
     hdca_view = "element" if view in ["element", "element-reference"] else "collection"
     dict_value = dataset_collection_instance.to_dict(view=hdca_view)
     encoded_id = security.encode_id(dataset_collection_instance.id)
     if isinstance(parent, model.History):
         encoded_history_id = security.encode_id(parent.id)
-        dict_value['url'] = web.url_for('history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection")
+        dict_value['url'] = url_builder('history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset_collection")
     elif isinstance(parent, model.LibraryFolder):
-        encoded_library_id = security.encode_id(parent.library.id)
+        encoded_library_id = security.encode_id(parent.library_root.id)
         encoded_folder_id = security.encode_id(parent.id)
         # TODO: Work in progress - this end-point is not right yet...
-        dict_value['url'] = web.url_for('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
+        dict_value['url'] = url_builder('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
 
-    dict_value['contents_url'] = web.url_for(
+    dict_value['contents_url'] = url_builder(
         'contents_dataset_collection',
         hdca_id=encoded_id,
         parent_id=security.encode_id(dataset_collection_instance.collection_id)
@@ -163,10 +163,9 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
             object_details["hda_ldda"] = 'hda'
             object_details["history_id"] = element_object.history_id
 
+        dictified["object"] = object_details
     else:
-        object_details = None
-
-    dictified["object"] = object_details
+        dictified["object"] = None
     return dictified
 
 

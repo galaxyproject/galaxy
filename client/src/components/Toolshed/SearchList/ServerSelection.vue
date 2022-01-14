@@ -7,8 +7,7 @@
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
-                class="font-weight-bold"
-            >
+                class="font-weight-bold">
                 {{ toolshedUrl }}
                 <span class="fa fa-caret-down" />
             </b-link>

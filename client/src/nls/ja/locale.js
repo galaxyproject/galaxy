@@ -251,7 +251,6 @@ define({
     "Download local tool": "ローカルツールのダウンロード",
     "Tool lineage": "ツール系統",
     "Reload a tool's configuration": "ツールのコンフィグのリロード",
-    "Review tool migration stages": "ツール移行ステージのレビュー",
     "View Tool Error Logs": "ツールのエラーログ",
     "Manage Allowlist": "表示ホワイトリストの管理",
     "Manage Tool Dependencies": "ツール依存関係の管理",

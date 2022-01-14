@@ -56,8 +56,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_install_filtering_to_galaxy(self):
-        '''Install the filtering_1470 repository to galaxy.'''
-        '''
+        '''Install the filtering_1470 repository to galaxy.
+
         This is step 1 - Install a repository into Galaxy.
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
@@ -78,8 +78,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
                                                       strings_displayed=strings_displayed)
 
     def test_0015_update_repository(self):
-        '''Upload a readme file to the filtering_1470 repository.'''
-        '''
+        '''Upload a readme file to the filtering_1470 repository.
+
         This is step 2 - In the Tool Shed, update the repository from Step 1.
 
         Importantly, this update should *not* create a new installable changeset revision, because that would
@@ -98,8 +98,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_get_repository_updates(self):
-        '''Get updates to the installed repository.'''
-        '''
+        '''Get updates to the installed repository.
+
         This is step 3 - In Galaxy, get updates to the repository.
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
@@ -108,8 +108,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         self.update_installed_repository(installed_repository)
 
     def test_0025_uninstall_repository(self):
-        '''Uninstall the filtering_1470 repository.'''
-        '''
+        '''Uninstall the filtering_1470 repository.
+
         This is step 4 - In Galaxy, uninstall the repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
@@ -117,8 +117,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         self.uninstall_repository(installed_repository)
 
     def test_0030_reinstall_repository(self):
-        '''Reinstall the filtering_1470 repository.'''
-        '''
+        '''Reinstall the filtering_1470 repository.
+
         This is step 5 - In Galaxy, reinstall the repository.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,
@@ -126,8 +126,8 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         self.reinstall_repository(installed_repository)
 
     def test_0035_verify_absence_of_ghosts(self):
-        '''Check the count of repositories in the database named filtering_1470 and owned by user1.'''
-        '''
+        '''Check the count of repositories in the database named filtering_1470 and owned by user1.
+
         This is step 6 - Make sure step 5 created no white ghosts.
         '''
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(repository_name,

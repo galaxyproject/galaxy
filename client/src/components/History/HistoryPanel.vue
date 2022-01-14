@@ -6,20 +6,16 @@ selected datset collections -->
         v-if="history && !breadcrumbs.length"
         :history="history"
         v-on="$listeners"
-        @viewCollection="drillDown"
-    >
+        @viewCollection="drillDown">
         <template v-for="(_, name) in $scopedSlots" :slot="name" slot-scope="slotData">
             <slot :name="name" v-bind="slotData" :history="history" />
         </template>
     </HistoryComponent>
-
     <CurrentCollection
         v-else-if="breadcrumbs.length"
         :history="history"
         :selected-collections.sync="breadcrumbs"
-        @viewCollection="drillDown"
-    />
-
+        @viewCollection="drillDown" />
     <div v-else>
         <span class="sr-only">Loading...</span>
     </div>

@@ -218,7 +218,6 @@ define({
     "Download local tool": "Télécharger un outil en local",
     "Tool lineage": "Affiliation des outils",
     "Reload a tool's configuration": "Recharger une configuration d'outils",
-    "Review tool migration stages": "Vérifier les étapes de migration d'outils",
     "View Tool Error Logs": "Voir les logs d'erreur d'outils",
     "Manage Allowlist": "Gérer la liste autorisée d'outils graphiques",
     "Manage Tool Dependencies": "Gérer les dépendances d'outils",
@@ -370,7 +369,6 @@ define({
     "Refresh history": false,
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": false,
-    "View migration stages": false,
     "View lineage": false,
     "Manage dependencies": false,
     "Manage allowlist": false,

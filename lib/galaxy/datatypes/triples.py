@@ -6,6 +6,7 @@ import re
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
+    FilePrefix,
 )
 from . import (
     binary,
@@ -34,7 +35,7 @@ class Triples(data.Data):
         """
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -52,13 +53,13 @@ class NTriples(data.Text, Triples):
     edam_format = "format_3256"
     file_ext = "nt"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # <http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
         if re.compile(r'<[^>]*>\s<[^>]*>\s<[^>]*>\s\.').search(file_prefix.contents_header):
             return True
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -81,7 +82,7 @@ class N3(data.Text, Triples):
         """
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -99,7 +100,7 @@ class Turtle(data.Text, Triples):
     edam_format = "format_3255"
     file_ext = "ttl"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if file_prefix.search(TURTLE_PREFIX_PATTERN):
             return True
@@ -108,7 +109,7 @@ class Turtle(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -127,14 +128,14 @@ class Rdf(xml.GenericXml, Triples):
     edam_format = "format_3261"
     file_ext = "rdf"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
         match = re.compile(r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"').search(file_prefix.contents_header)
-        if not match and (f"{match.group(1)}:RDF") in file_prefix.contents_header:
+        if match and (f"{match.group(1)}:RDF") in file_prefix.contents_header:
             return True
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -153,13 +154,13 @@ class Jsonld(text.Json, Triples):
     edam_format = "format_3464"
     file_ext = "jsonld"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         if self._looks_like_json(file_prefix):
             if "\"@id\"" in file_prefix.contents_header or "\"@context\"" in file_prefix.contents_header:
                 return True
         return False
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -181,7 +182,7 @@ class HDT(binary.Binary, Triples):
             if f.read(4) == b"$HDT":
                 return True
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

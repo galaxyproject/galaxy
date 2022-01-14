@@ -8,8 +8,7 @@
                         :panel-views="panelViews"
                         :current-panel-view="currentPanelView"
                         @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1"
-                    />
+                        v-if="panelViews && Object.keys(panelViews).length > 1" />
                 </div>
                 <div class="panel-header-text" v-localize>Tools</div>
             </div>
@@ -20,8 +19,7 @@
                 :query="query"
                 :placeholder="titleSearchTools"
                 @onQuery="onQuery"
-                @onResults="onResults"
-            />
+                @onResults="onResults" />
             <upload-button />
             <div class="py-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">
@@ -44,8 +42,7 @@
                         :category="section"
                         :query-filter="queryFilter"
                         :key="key"
-                        @onClick="onOpen"
-                    />
+                        @onClick="onOpen" />
                 </div>
                 <tool-section :category="{ text: workflowTitle }" />
                 <div id="internal-workflows" class="toolSectionBody">

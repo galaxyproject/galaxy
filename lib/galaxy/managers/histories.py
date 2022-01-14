@@ -304,6 +304,21 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             )
         ).first())
 
+    def make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public.
+        Performs permissions check.
+        """
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning(f"Unable to make dataset with id: {dataset.id} public")
+                else:
+                    log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
+
 
 class HistoryExportView:
 
@@ -526,11 +541,10 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         # TODO: history_state and state_counts are classically calc'd at the same time
         #   so this is rel. ineff. - if we keep this...
         hda_state_counts = self.serialize_state_counts(history, 'counts', exclude_deleted=True, **context)
-        num_hdas = sum(hda_state_counts.values())
-        if num_hdas == 0:
+        if history.empty:
             state = states.NEW
-
         else:
+            num_hdas = sum(hda_state_counts.values())
             if (hda_state_counts[states.RUNNING] > 0
                     or hda_state_counts[states.SETTING_METADATA] > 0
                     or hda_state_counts[states.UPLOAD] > 0):

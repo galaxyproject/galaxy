@@ -56,6 +56,9 @@ def lint_inputs(tool_xml, lint_ctx):
             lint_ctx.error("Found param input with no name specified.")
             continue
         param_name = _parse_name(param_attrib.get("name"), param_attrib.get("argument"))
+        if "name" in param_attrib and "argument" in param_attrib:
+            if param_attrib.get("name") == _parse_name(None, param_attrib.get("argument")):
+                lint_ctx.warn(f"Param input [{param_name}] 'name' attribute is redundant if argument implies the same name.")
 
         if "type" not in param_attrib:
             lint_ctx.error(f"Param input [{param_name}] input with no type specified.")
@@ -74,6 +77,7 @@ def lint_inputs(tool_xml, lint_ctx):
             options = param.findall("./options")
             filters = param.findall("./options/filter")
             select_options = param.findall('./option')
+            select_options_text = [option.text.strip() if option.text is not None else option.attrib.get("value", "").capitalize() for option in select_options]
 
             if dynamic_options is not None:
                 lint_ctx.warn(f"Select parameter [{param_name}] uses deprecated 'dynamic_options' attribute.")
@@ -129,22 +133,26 @@ def lint_inputs(tool_xml, lint_ctx):
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements")
 
             # lint statically defined options
-            if any(['value' not in option.attrib for option in select_options]):
+            if any('value' not in option.attrib for option in select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value")
-            if len({option.text.strip() for option in select_options if option.text is not None}) != len(select_options):
+            if any(option.text is None for option in select_options):
+                lint_ctx.warn(f"Select parameter [{param_name}] has option without text")
+            if len(set(select_options_text)) != len(select_options_text):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same text content")
             if len({option.attrib.get("value") for option in select_options}) != len(select_options):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value")
 
+            multiple = string_as_bool(param_attrib.get("multiple", "false"))
+            optional = string_as_bool(param_attrib.get("optional", multiple))
             if param_attrib.get("display") == "checkboxes":
-                if not string_as_bool(param_attrib.get("multiple", "false")):
+                if not multiple:
                     lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `multiple="false"`, remove the `display` attribute')
-                if not string_as_bool(param_attrib.get("optional", "false")):
+                if not optional:
                     lint_ctx.error(f'Select [{param_name}] `display="checkboxes"` is incompatible with `optional="false"`, remove the `display` attribute')
             if param_attrib.get("display") == "radio":
-                if string_as_bool(param_attrib.get("multiple", "false")):
+                if multiple:
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with multiple="true"')
-                if string_as_bool(param_attrib.get("optional", "false")):
+                if optional:
                     lint_ctx.error(f'Select [{param_name}] display="radio" is incompatible with optional="true"')
         # TODO: Validate type, much more...
 
@@ -217,7 +225,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
     if datasource:
         for datasource_tag in ('display', 'uihints'):
-            if not any([param.tag == datasource_tag for param in inputs]):
+            if not any(param.tag == datasource_tag for param in inputs):
                 lint_ctx.info(f"{datasource_tag} tag usually present in data sources")
 
     if num_inputs:

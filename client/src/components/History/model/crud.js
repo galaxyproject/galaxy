@@ -1,4 +1,4 @@
-import { bulkCacheContent } from "../caching";
+import { bulkCacheContent } from "components/providers/History/caching";
 import { bulkContentUpdate, getAllContentByFilter } from "./queries";
 
 /**

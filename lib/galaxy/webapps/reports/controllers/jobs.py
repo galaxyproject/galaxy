@@ -295,9 +295,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 kwd['f-tool_id'] = kwd['tool_id']
         return self.specified_date_list_grid(trans, **kwd)
 
-    def _calculate_trends_for_jobs(self, jobs_query):
+    def _calculate_trends_for_jobs(self, sa_session, jobs_query):
         trends = dict()
-        for job in jobs_query.execute():
+        for job in sa_session.execute(jobs_query):
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
             job_month_name = job.date.strftime("%B")
@@ -313,9 +313,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[key][job_day] += 1
         return trends
 
-    def _calculate_job_table(self, jobs_query):
+    def _calculate_job_table(self, sa_session, jobs_query):
         jobs = []
-        for row in jobs_query.execute():
+        for row in sa_session.execute(jobs_query):
             month_name = row.date.strftime("%B")
             year = int(row.date.strftime("%Y"))
 
@@ -393,7 +393,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                                  model.Job.table.c.create_time < end_date))
 
         trends = dict()
-        for job in all_jobs.execute():
+        for job in trans.sa_session.execute(all_jobs):
             job_hour = int(job.date.strftime("%-H"))
             job_day = job.date.strftime("%d")
 
@@ -404,7 +404,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[job_day][job_hour] += 1
 
         jobs = []
-        for row in month_jobs.execute():
+        for row in trans.sa_session.execute(month_jobs):
             row_dayname = row.date.strftime("%A")
             row_day = row.date.strftime("%d")
 
@@ -495,7 +495,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                                           model.Job.table.c.create_time < end_date))
 
         trends = dict()
-        for job in all_jobs_in_error.execute():
+        for job in trans.sa_session.execute(all_jobs_in_error):
             job_hour = int(job.date.strftime("%-H"))
             job_day = job.date.strftime("%d")
 
@@ -506,7 +506,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[job_day][job_hour] += 1
 
         jobs = []
-        for row in month_jobs_in_error.execute():
+        for row in trans.sa_session.execute(month_jobs_in_error):
             row_dayname = row.date.strftime("%A")
             row_day = row.date.strftime("%d")
 
@@ -583,8 +583,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         all_jobs = sa.select((self.select_day(model.Job.table.c.create_time).label('date'),
                               model.Job.table.c.id.label('id')))
 
-        trends = self._calculate_trends_for_jobs(all_jobs)
-        jobs = self._calculate_job_table(jobs_by_month)
+        trends = self._calculate_trends_for_jobs(trans.sa_session, all_jobs)
+        jobs = self._calculate_job_table(trans.sa_session, jobs_by_month)
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
@@ -654,8 +654,8 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                              whereclause=sa.and_(model.Job.table.c.state == 'error',
                                                  model.Job.table.c.user_id != monitor_user_id))
 
-        trends = self._calculate_trends_for_jobs(all_jobs)
-        jobs = self._calculate_job_table(jobs_in_error_by_month)
+        trends = self._calculate_trends_for_jobs(trans.sa_session, all_jobs)
+        jobs = self._calculate_job_table(trans.sa_session, jobs_in_error_by_month)
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
@@ -720,7 +720,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                   limit=limit)
 
         q_time.start()
-        for row in jobs_per_user.execute():
+        for row in trans.sa_session.execute(jobs_per_user):
             if (row.user_email is None):
                 jobs.append(('Anonymous',
                              row.total_jobs))
@@ -744,7 +744,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         currday = datetime.today()
         trends = dict()
         q_time.start()
-        for job in all_jobs_per_user.execute():
+        for job in trans.sa_session.execute(all_jobs_per_user):
             if job.user_email is None:
                 curr_user = 'Anonymous'
             else:
@@ -812,7 +812,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                       from_obj=[sa.join(model.Job.table, model.User.table)])
 
         trends = dict()
-        for job in all_jobs_per_user.execute():
+        for job in trans.sa_session.execute(all_jobs_per_user):
             job_day = int(job.date.strftime("%-d")) - 1
             job_month = int(job.date.strftime("%-m"))
             job_month_name = job.date.strftime("%B")
@@ -828,7 +828,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[key][job_day] += 1
 
         jobs = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             jobs.append((row.date.strftime("%Y-%m"),
                          row.total_jobs,
                          row.date.strftime("%B"),
@@ -897,7 +897,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         currday = date.today()
         trends = dict()
-        for job in all_jobs_per_tool.execute():
+        for job in trans.sa_session.execute(all_jobs_per_tool):
             curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
@@ -915,7 +915,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 if container < spark_limit:
                     trends[curr_tool][container] += 1
 
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             jobs.append((row.tool_id,
                          row.total_jobs))
 
@@ -994,7 +994,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         currday = date.today()
         trends = dict()
-        for job in all_jobs_per_tool_errors.execute():
+        for job in trans.sa_session.execute(all_jobs_per_tool_errors):
             curr_tool = re.sub(r'\W+', '', str(job.tool_id))
             try:
                 day = currday - job.date
@@ -1013,7 +1013,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 if day < spark_limit:
                     trends[curr_tool][container] += 1
         jobs = []
-        for row in jobs_in_error_per_tool.execute():
+        for row in trans.sa_session.execute(jobs_in_error_per_tool):
             jobs.append((row.total_jobs, row.tool_id))
 
         pages_found = ceil(len(jobs) / float(entries))
@@ -1063,7 +1063,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                                           model.Job.table.c.user_id != monitor_user_id),
                              from_obj=[model.Job.table])
         trends = dict()
-        for job in all_jobs_for_tool.execute():
+        for job in trans.sa_session.execute(all_jobs_for_tool):
             job_day = int(job.day.strftime("%-d")) - 1
             job_month = int(job.month.strftime("%-m"))
             job_month_name = job.month.strftime("%B")
@@ -1079,7 +1079,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[key][job_day] += 1
 
         jobs = []
-        for row in q.execute():
+        for row in trans.sa_session.execute(q):
             jobs.append((row.date.strftime("%Y-%m"),
                          row.total_jobs,
                          row.date.strftime("%B"),
@@ -1116,7 +1116,7 @@ def get_monitor_id(trans, monitor_email):
     A convenience method to obtain the monitor job id.
     """
     monitor_user_id = None
-    monitor_row = trans.sa_session.query(trans.model.User.table.c.id) \
+    monitor_row = trans.sa_session.query(trans.model.User.id) \
         .filter(trans.model.User.table.c.email == monitor_email) \
         .first()
     if monitor_row is not None:

@@ -642,7 +642,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     @property
     def cookie_path(self):
-        return self.app.config.cookie_path or url_for('/')
+        # Cookies for non-root paths should not end with `/` -> https://stackoverflow.com/questions/36131023/setting-a-slash-on-cookie-path
+        return (self.app.config.cookie_path or url_for('/')).rstrip('/') or '/'
 
     def __update_session_cookie(self, name='galaxysession'):
         """
@@ -959,24 +960,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         data.update(self.template_context)
         data.update(kwargs)
         return template.render(**data)
-
-    def stream_template_mako(self, filename, **kwargs):
-        template = self.webapp.mako_template_lookup.get_template(filename)
-        data = dict(caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
-        data.update(self.template_context)
-        data.update(kwargs)
-
-        def render(environ, start_response):
-            response_write = start_response(self.response.wsgi_status(), self.response.wsgi_headeritems())
-
-            class StreamBuffer:
-                def write(self, d):
-                    response_write(d.encode('utf-8'))
-            buffer = StreamBuffer()
-            context = mako.runtime.Context(buffer, **data)
-            template.render_context(context)
-            return []
-        return render
 
     def qualified_url_for_path(self, path):
         return url_for(path, qualified=True)

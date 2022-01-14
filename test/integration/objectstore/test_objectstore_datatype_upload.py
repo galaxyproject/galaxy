@@ -183,7 +183,7 @@ def test_upload_datatype_dos_disk_and_disk(distributed_instance, test_data, temp
 
 @pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_irods(irods_instance, test_data, temp_file):
-    upload_datatype_helper(irods_instance, test_data, temp_file)
+    upload_datatype_helper(irods_instance, test_data, temp_file, True)
 
 
 @pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))

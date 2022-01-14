@@ -30,8 +30,7 @@
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
-                @keyup="$emit('update:annotationCurrent', annotationCurrent)"
-            />
+                @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
             <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
         </div>
         <div id="workflow-license-area" class="mt-2">

@@ -33,6 +33,11 @@ class BaseHistories:
 
 class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
     def test_create_history(self):
         # Create a history.
         create_response = self._create_history("TestHistory1")
@@ -193,7 +198,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
     def test_create_anonymous_fails(self):
         post_data = dict(name="CannotCreate")
-        create_response = self._post("histories", data=post_data, anon=True, json=True)
+        create_response = self._post("histories", data=post_data, anon=True)
         self._assert_status_code_is(create_response, 403)
 
     def test_create_without_session_fails(self):
@@ -210,7 +215,27 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         tag_create_response = self._post(tag_url, data=tag_data, json=True)
         self._assert_status_code_is(tag_create_response, 200)
 
-    # TODO: (CE) test_create_from_copy
+    def test_copy_history(self):
+        history_id = self.dataset_populator.new_history()
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        copied_history_response = self.dataset_populator.copy_history(history_id)
+        copied_history_response.raise_for_status()
+        copied_history = copied_history_response.json()
+        copied_collection = self.dataset_populator.get_history_collection_details(history_id=copied_history['id'], history_content_type="dataset_collection")
+        assert dataset_collection['name'] == copied_collection['name']
+        assert dataset_collection['id'] != copied_collection['id']
+        assert len(dataset_collection['elements']) == len(copied_collection['elements']) == 2
+        source_element = dataset_collection['elements'][0]
+        copied_element = copied_collection['elements'][0]
+        assert source_element['element_identifier'] == copied_element['element_identifier'] == 'data0'
+        assert source_element['id'] != copied_element['id']
+        source_hda = source_element['object']
+        copied_hda = copied_element['object']
+        assert source_hda['name'] == copied_hda['name'] == 'data0'
+        assert source_hda['id'] != copied_hda['id']
+        assert source_hda['history_id'] != copied_hda['history_id']
+        assert source_hda['hid'] == copied_hda['hid'] == 2
 
 
 class ImportExportTests(BaseHistories):
@@ -277,7 +302,7 @@ class ImportExportTests(BaseHistories):
     def test_import_export_failed_job(self):
         history_name = "for_export_include_failed_job"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
+        self.dataset_populator.run_tool_raw('job_properties', inputs={'failbool': True}, history_id=history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
 
         imported_history_id = self._reimport_history(history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"})
@@ -365,7 +390,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(
-            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
+            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, api_key=self.galaxy_interactor.api_key
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
@@ -550,6 +575,28 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["users_shared_with"]
         assert len(sharing_response["users_shared_with"]) == 1
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_private_history_makes_datasets_public(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self.dataset_populator.make_private(history_id, hda_id)
+
+        # Other users cannot access the dataset
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 403)
+
+        sharing_response = self._set_resource_sharing(history_id, "publish")
+        assert sharing_response["published"] is True
+
+        # Other users can access the dataset after publishing
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 200)
+            hda = show_response.json()
+            assert hda["id"] == hda_id
 
     def _share_history_with_payload(self, history_id, payload):
         sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)

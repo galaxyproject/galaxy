@@ -10,7 +10,7 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
-from galaxy.tools import global_tool_errors
+from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
@@ -18,6 +18,7 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
+from galaxy.web.framework.decorators import expose_api_raw
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import BaseGalaxyAPIController, depends
@@ -490,6 +491,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
 
+    @expose_api_raw
+    def raw_tool_source(self, trans: GalaxyWebTransaction, id, **kwds):
+        """Returns tool source. ``language`` is included in the response header."""
+        if not trans.app.config.enable_tool_source_display and not trans.user_is_admin:
+            raise exceptions.InsufficientPermissionsException("Only administrators may display tool sources on this Galaxy server.")
+        tool = self._get_tool(id, user=trans.user, tool_version=kwds.get('tool_version'))
+        trans.response.headers['language'] = tool.tool_source.language
+        return tool.tool_source.to_string()
+
     @expose_api_anonymous
     def fetch(self, trans: GalaxyWebTransaction, payload, **kwd):
         """Adapt clean API to tool-constrained API.
@@ -662,13 +672,17 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['output_collections'].append(output_dict)
 
         for output_name, collection_instance in vars.get('implicit_collections', {}).items():
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
 

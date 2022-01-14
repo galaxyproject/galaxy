@@ -3,8 +3,7 @@
         :active="currentPanelView == panelView.id"
         :disabled="currentPanelView == panelView.id"
         :data-panel-id="panelView.id"
-        @click="onClick"
-    >
+        @click="onClick">
         <span :class="icon" />
         <span :title="title" v-localize>{{ name }}</span>
     </b-dropdown-item>

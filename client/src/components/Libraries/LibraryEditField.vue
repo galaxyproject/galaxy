@@ -10,8 +10,7 @@
                 <span
                     class="shrinked-description"
                     :title="text"
-                    v-html="linkify(text.substring(0, maxDescriptionLength))"
-                >
+                    v-html="linkify(text.substring(0, maxDescriptionLength))">
                 </span>
                 <span :title="text">...</span>
                 <a class="more-text-btn" @click="toggleDescriptionExpand" href="javascript:void(0)">(more) </a>

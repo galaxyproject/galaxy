@@ -14,6 +14,7 @@ from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import (
     asbool,
 )
+from galaxy.util.commands import new_clean_env
 from . import (
     BaseJobRunner,
     JobState
@@ -42,14 +43,10 @@ class LocalJobRunner(BaseJobRunner):
     def __init__(self, app, nworkers):
         """Start the job runner """
 
-        # create a local copy of os.environ to use as env for subprocess.Popen
-        self._environ = os.environ.copy()
         self._proc_lock = threading.Lock()
         self._procs = []
 
-        # Set TEMP if a valid temp value is not already set
-        if not ('TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ):
-            self._environ['TEMP'] = os.path.abspath(tempfile.gettempdir())
+        self._environ = new_clean_env()
 
         super().__init__(app, nworkers)
 
@@ -60,9 +57,9 @@ class LocalJobRunner(BaseJobRunner):
 
         # slots would be cleaner name, but don't want deployers to see examples and think it
         # is going to work with other job runners.
-        slots = job_wrapper.job_destination.params.get("local_slots", None) or os.environ.get("GALAXY_SLOTS", None)
+        slots = job_wrapper.job_destination.params.get("local_slots") or os.environ.get("GALAXY_SLOTS")
         if slots:
-            slots_statement = 'GALAXY_SLOTS="%d"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % (int(slots))
+            slots_statement = f'GALAXY_SLOTS="{int(slots)}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
             slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
@@ -77,7 +74,7 @@ class LocalJobRunner(BaseJobRunner):
             'shell': job_wrapper.shell,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
-        self.write_executable_script(job_file, job_file_contents)
+        self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)
         return job_file, exit_code_path
 
     def queue_job(self, job_wrapper):

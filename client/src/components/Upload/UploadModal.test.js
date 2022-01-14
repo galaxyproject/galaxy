@@ -7,10 +7,9 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 
 import MockCurrentUser from "../providers/MockCurrentUser";
-import MockCurrentHistory from "components/History/providers/UserHistories/MockCurrentHistory";
+import MockCurrentHistory from "components/providers/History/UserHistories/MockCurrentHistory";
 
 jest.mock("app");
-jest.mock("components/History/caching");
 
 const propsData = {
     chunkUploadSize: 1024,

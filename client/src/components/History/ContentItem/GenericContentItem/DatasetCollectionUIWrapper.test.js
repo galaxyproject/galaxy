@@ -2,10 +2,8 @@ import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import datasetCollectionRaw from "components/History/test/json/DatasetCollection.json";
-import datasetCollectionContent from "components/History/test/json/DatasetCollection.nested.json";
-
-jest.mock("components/History/caching");
+import datasetCollectionRaw from "components/providers/History/test/json/DatasetCollection.json";
+import datasetCollectionContent from "components/providers/History/test/json/DatasetCollection.nested.json";
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
     let wrapper;

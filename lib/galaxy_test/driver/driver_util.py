@@ -78,8 +78,7 @@ uwsgi:
 """)
 
 DEFAULT_LOCALES = "en"
-CAN_BUILD_ASGI_APP = sys.version_info[:2] >= (3, 7)
-USE_UVICORN = asbool(os.environ.get('GALAXY_TEST_USE_UVICORN', CAN_BUILD_ASGI_APP))
+USE_UVICORN = asbool(os.environ.get('GALAXY_TEST_USE_UVICORN', True))
 
 log = logging.getLogger("test_driver")
 
@@ -157,6 +156,7 @@ def setup_galaxy_config(
     conda_auto_install=False,
     use_shared_connection_for_amqp=False,
     allow_tool_conf_override: bool = True,
+    allow_path_paste=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -222,11 +222,11 @@ def setup_galaxy_config(
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
+        allow_path_paste=allow_path_paste,
         allow_user_creation=True,
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
-        check_migrate_tools=False,
         chunk_upload_size=100,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
@@ -500,14 +500,17 @@ def get_webapp_global_conf():
     return global_conf
 
 
-def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
+def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
     # Test if the server is up
+    prefix = prefix or '/'
+    if not prefix.endswith('/'):
+        prefix = f"{prefix}/"
     for _ in range(sleep_tries):
         # directly test the app, not the proxy
         conn = http.client.HTTPConnection(host, port)
         try:
-            conn.request("GET", "/")
+            conn.request("GET", prefix)
             response = conn.getresponse()
             if response.status == 200:
                 break
@@ -705,20 +708,21 @@ def explicitly_configured_host_and_port(prefix, config_object):
     return host, port
 
 
-def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tries=150):
+def set_and_wait_for_http_target(prefix, host, port, url_prefix, sleep_amount=0.1, sleep_tries=150):
     host_env_key = f"{prefix}_TEST_HOST"
     port_env_key = f"{prefix}_TEST_PORT"
     os.environ[host_env_key] = host
     os.environ[port_env_key] = port
-    wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
+    wait_for_http_server(host, port, url_prefix, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
 
 
 class ServerWrapper:
 
-    def __init__(self, name, host, port):
+    def __init__(self, name, host, port, prefix=""):
         self.name = name
         self.host = host
         self.port = port
+        self.prefix = prefix
 
     @property
     def app(self):
@@ -730,8 +734,8 @@ class ServerWrapper:
 
 class EmbeddedServerWrapper(ServerWrapper):
 
-    def __init__(self, app, server, name, host, port, thread=None):
-        super().__init__(name, host, port)
+    def __init__(self, app, server, name, host, port, prefix="", thread=None):
+        super().__init__(name, host, port, prefix)
         self._app = app
         self._server = server
         self._thread = thread
@@ -865,7 +869,7 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     port = attempt_ports(port)
     server_wrapper = attempt_port_bind(port)
     try:
-        set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
+        set_and_wait_for_http_target(prefix, host, port, url_prefix="/", sleep_tries=50)
         log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
         return server_wrapper
     except Exception:
@@ -889,10 +893,10 @@ def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=N
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
     app = initialize_fast_app(gx_wsgi_webapp, gx_app)
     server, port, thread = uvicorn_serve(app, host=host, port=port)
-    set_and_wait_for_http_target(prefix, host, port)
-    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
+    set_and_wait_for_http_target(prefix, host, port, url_prefix=gx_app.config.galaxy_url_prefix)
+    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{gx_app.config.galaxy_url_prefix}")
     return EmbeddedServerWrapper(
-        gx_app, server, name, host, port, thread=thread
+        gx_app, server, name, host, port, thread=thread, prefix=gx_app.config.galaxy_url_prefix
     )
 
 
@@ -918,7 +922,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         webapp,
         host=host, port=port
     )
-    set_and_wait_for_http_target(prefix, host, port)
+    set_and_wait_for_http_target(prefix, host, port, url_prefix="/")
     log.info(f"Embedded paste web server for {name} started at {host}:{port}")
     return EmbeddedServerWrapper(
         app, server, name, host, port
@@ -1063,6 +1067,7 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
                     setup_galaxy_config_kwds = dict(
+                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
                         use_test_file_dir=not self.testing_shed_tools,
                         default_install_db_merged=True,
                         default_tool_conf=self.default_tool_conf,

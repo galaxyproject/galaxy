@@ -47,13 +47,14 @@
   <tool file="inputs_as_json_with_paths.xml" />
   <tool file="inputs_as_json_with_staging_path_and_source_path.xml" />
   <tool file="filter_multiple_splitter.xml" />
+  <tool file="filter_param_value.xml" />
+  <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
-  <tool file="dbkey_filter_paired_collection.xml" />
   <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
@@ -123,6 +124,7 @@
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="select_optional.xml"/>
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -137,7 +139,7 @@
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
   <tool file="validation_metadata_in_datatable.xml"/>
-  <tool file="validation_metadata_in_file.xml"/>
+  <tool file="validation_dataset_metadata_in_file.xml"/>
   <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />

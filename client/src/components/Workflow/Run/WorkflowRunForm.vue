@@ -9,8 +9,7 @@
                         class="float-right"
                         title="Run Workflow"
                         :wait="showExecuting"
-                        @onClick="onExecute"
-                    />
+                        @onClick="onExecute" />
                 </div>
                 <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
                     <template v-slot:body>
@@ -28,8 +27,7 @@
                             title="Attempt to re-use jobs with identical parameters?"
                             help="This may skip executing jobs that you have already run."
                             type="boolean"
-                            v-model="useCachedJobs"
-                        />
+                            v-model="useCachedJobs" />
                     </template>
                 </FormCard>
                 <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
@@ -46,15 +44,13 @@
                         :wp-data="wpData"
                         :history-id="currentHistoryId"
                         @onChange="onToolStepInputs"
-                        @onValidation="onValidation"
-                    />
+                        @onValidation="onValidation" />
                     <WorkflowRunDefaultStep
                         v-else
                         :model="step"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
                         @onChange="onDefaultStepInputs"
-                        @onValidation="onValidation"
-                    />
+                        @onValidation="onValidation" />
                 </div>
             </div>
         </UserHistories>
@@ -67,7 +63,7 @@ import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/History/providers/UserHistories";
+import UserHistories from "components/providers/History/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunToolStep from "./WorkflowRunToolStep";
 import { invokeWorkflow } from "./services";

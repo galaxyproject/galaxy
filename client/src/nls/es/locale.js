@@ -222,7 +222,7 @@ define({
 
     None: "Ninguna",
 
-    "For all selected": "Para todos los seleccionados",
+    "For all selected": "Para los seleccionados",
 
     // ---- history-view-edit
 
@@ -496,7 +496,6 @@ define({
     "Download local tool": "Descargar herramienta local",
     "Tool lineage": "Linaje de herramientas",
     "Reload a tool's configuration": "Volver a cargar la configuración de una herramienta",
-    "Review tool migration stages": "Revisar las etapas de migración de la herramienta",
     "View Tool Error Logs": "Ver registros de error de la herramienta",
     "Manage Allowlist": "Administrar lista de permisos",
     "Manage Tool Dependencies": "Administrar dependencias de herramienta",
@@ -730,7 +729,6 @@ define({
     "Refresh history": "Actualizar historial",
     // ---------------------------------------------------------------------------- admin-panel
     "View error logs": "Ver registros de error",
-    "View migration stages": "Ver etapas de migración",
     "View lineage": "Ver linaje",
     "Manage dependencies": "Administrar dependencias",
     "Manage allowlist": "Administrar lista de permitidos",

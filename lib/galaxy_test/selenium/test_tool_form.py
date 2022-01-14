@@ -140,20 +140,19 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         # prefetch citations so they will be available quickly when rendering tool form.
         citations_api = self.api_get("tools/bibtex/citations")
-        assert len(citations_api) == 29, len(citations_api)
+        citation_count = len(citations_api)
         self.tool_open("bibtex")
         self.components.tool_form.about.wait_for_and_click()
 
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            assert len(references) == 29
+            assert len(references) == citation_count
             return references
 
         references = assert_citations_visible()
-
-        doi_resolved_citation = references[1]
-        assert "enabling efficient sequence analysis" in doi_resolved_citation.text
+        doi_resolved_citation = references[0]
+        assert "platform for interactive" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
@@ -163,7 +162,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
         tds = tbody_element.find_elements_by_css_selector("td")
         assert tds
-        assert any([expected_value in td.text for td in tds])
+        assert any(expected_value in td.text for td in tds)
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()

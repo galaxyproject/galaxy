@@ -28,7 +28,6 @@ import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from functools import partial
 from hashlib import md5
 from os.path import relpath
 from urllib.parse import (
@@ -43,7 +42,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None  # type: ignore
+    grp = None  # type: ignore[assignment]
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -53,7 +52,7 @@ try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore
+    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -61,8 +60,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None  # type: ignore
-    docutils_html4css1 = None  # type: ignore
+    docutils_core = None  # type: ignore[assignment]
+    docutils_html4css1 = None  # type: ignore[assignment]
 
 try:
     import uwsgi
@@ -101,6 +100,17 @@ RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 XML = etree.XML
 
 defaultdict = collections.defaultdict
+
+
+def str_removeprefix(s: str, prefix: str):
+    """
+    str.removeprefix() equivalent for Python < 3.9
+    """
+    if sys.version_info >= (3, 9):
+        return s.removeprefix(prefix)
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
 
 
 def remove_protocol_from_url(url):
@@ -201,20 +211,24 @@ def synchronized(func):
 
 
 def iter_start_of_line(fh, chunk_size=None):
-    """
-    Iterate over fh and call readline(chunk_size)
-    """
-    yield from iter(partial(fh.readline, chunk_size), "")
+    """Iterate over fh and call readline(chunk_size)."""
+    while True:
+        data = fh.readline(chunk_size)
+        if not data:
+            break
+        if not data.endswith("\n"):
+            # Discard the rest of the line
+            fh.readline()
+        yield data
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
-    """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
-    while 1:
+    """This generator yields the open file object in chunks (default 64k)."""
+    while True:
         data = fp.read(chunk_size)
         if not data:
             break
         yield data
-    fp.close()
 
 
 def chunk_iterable(it: typing.Iterable, size: int = 1000):
@@ -286,6 +300,10 @@ def parse_xml_string(xml_string, strip_whitespace=True):
             if elem.tail is not None:
                 elem.tail = elem.tail.strip()
     return tree
+
+
+def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
+    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
 def xml_to_string(elem, pretty=False):
@@ -959,7 +977,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string):
+def string_as_bool(string: str) -> bool:
     if str(string).lower() in ('true', 'yes', 'on', '1'):
         return True
     else:
@@ -985,7 +1003,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False):
+def listify(item, do_strip=False) -> typing.List[typing.Any]:
     """
     Make a single item a single item list.
 
@@ -1539,8 +1557,8 @@ def safe_str_cmp(a, b):
 
 
 #  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore[name-defined]
 
 
 def galaxy_directory():
@@ -1696,26 +1714,28 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
     except Exception:
         target_encoding = DEFAULT_ENCODING  # utf-8
     use_source_encoding = source_encoding is not None
-    while True:
-        chunk = stream.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        if use_source_encoding:
-            # If a source encoding is given we use it to convert to the target encoding
-            try:
-                if not isinstance(chunk, str):
-                    chunk = chunk.decode(source_encoding, source_error)
-                os.write(fd, chunk.encode(target_encoding, target_error))
-            except UnicodeDecodeError:
-                use_source_encoding = False
+    try:
+        while True:
+            chunk = stream.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            if use_source_encoding:
+                # If a source encoding is given we use it to convert to the target encoding
+                try:
+                    if not isinstance(chunk, str):
+                        chunk = chunk.decode(source_encoding, source_error)
+                    os.write(fd, chunk.encode(target_encoding, target_error))
+                except UnicodeDecodeError:
+                    use_source_encoding = False
+                    os.write(fd, chunk)
+            else:
+                # Compressed files must be encoded after they are uncompressed in the upload utility,
+                # while binary files should not be encoded at all.
+                if isinstance(chunk, str):
+                    chunk = chunk.encode(target_encoding, target_error)
                 os.write(fd, chunk)
-        else:
-            # Compressed files must be encoded after they are uncompressed in the upload utility,
-            # while binary files should not be encoded at all.
-            if isinstance(chunk, str):
-                chunk = chunk.encode(target_encoding, target_error)
-            os.write(fd, chunk)
-    os.close(fd)
+    finally:
+        os.close(fd)
     return filename
 
 
@@ -1726,26 +1746,6 @@ class classproperty:
 
     def __get__(self, obj, owner):
         return self.f(owner)
-
-
-def get_executable():
-    exe = sys.executable
-    if exe.endswith('uwsgi'):
-        virtualenv = None
-        if uwsgi is not None:
-            for name in ('home', 'virtualenv', 'venv', 'pyhome'):
-                if name in uwsgi.opt:
-                    virtualenv = unicodify(uwsgi.opt[name])
-                    break
-        if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
-            virtualenv = os.environ['VIRTUAL_ENV']
-        if virtualenv is not None:
-            exe = os.path.join(virtualenv, 'bin', 'python')
-        else:
-            exe = os.path.join(os.path.dirname(exe), 'python')
-            if not os.path.exists(exe):
-                exe = 'python'
-    return exe
 
 
 class ExecutionTimer:

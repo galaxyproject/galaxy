@@ -188,7 +188,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Ensure ck_size is an integer before passing through to datatypes.
         if ck_size:
             ck_size = int(ck_size)
-        return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        display_data, headers = data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
+        trans.response.headers.update(headers)
+        return display_data
 
     @web.legacy_expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
@@ -552,7 +554,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
         # Get annotation.
         dataset.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        return trans.stream_template_mako("/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated)
+        return trans.fill_template_mako("/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated)
 
     @web.expose
     def annotate_async(self, trans, id, new_annotation=None, **kwargs):

@@ -6,8 +6,7 @@
         plural="display applications"
         success="reloaded"
         :getter="getter"
-        :setter="setter"
-    />
+        :setter="setter" />
 </template>
 <script>
 import BaseList from "./BaseList";

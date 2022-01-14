@@ -130,7 +130,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
 
-    stdout, ext, datatype, is_binary, converted_path = handle_upload(
+    stdout, ext, datatype, is_binary, converted_path, _, _ = handle_upload(
         registry=registry,
         path=dataset.path,
         requested_ext=dataset.file_type,

@@ -5,13 +5,11 @@
         :disable-poll="false"
         :debug="false"
         :debounce-period="500"
-        v-slot="{ loading, payload, manualReload, setScrollPos }"
-    >
+        v-slot="{ loading, payload, manualReload, setScrollPos }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
-            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
-        >
+            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
             <SelectedItems
                 :scope-key="history.id"
                 :get-item-key="(item) => item.type_id"
@@ -23,8 +21,7 @@
                     isSelected,
                     setSelected,
                     resetSelection,
-                }"
-            >
+                }">
                 <Layout>
                     <template v-slot:globalNav>
                         <slot name="globalNav" :history="history"></slot>
@@ -56,8 +53,7 @@
                             @selectAllContent="selectItems(payload.contents)"
                             @manualReload="manualReload"
                             :expanded-count="expandedCount"
-                            @collapseAllContent="collapseAll"
-                        />
+                            @collapseAllContent="collapseAll" />
                     </template>
 
                     <template v-slot:listing>
@@ -69,8 +65,7 @@
                             key-field="hid"
                             v-bind="payload"
                             :debug="false"
-                            @scroll="setScrollPos"
-                        >
+                            @scroll="setScrollPos">
                             <template v-slot="{ item, index, rowKey }">
                                 <HistoryContentItem
                                     :item="item"
@@ -84,8 +79,7 @@
                                     @viewCollection="$emit('viewCollection', item)"
                                     :data-hid="item.hid"
                                     :data-index="index"
-                                    :data-row-key="rowKey"
-                                />
+                                    :data-row-key="rowKey" />
                             </template>
                         </Scroller>
                     </template>
@@ -100,8 +94,11 @@
 </template>
 
 <script>
-import { History, SearchParams } from "./model";
-import { HistoryContentProvider, ExpandedItems, SelectedItems } from "./providers";
+import { History } from "./model";
+import { SearchParams } from "components/providers/History/SearchParams";
+import { HistoryContentProvider } from "components/providers/History/";
+import ExpandedItems from "./ExpandedItems";
+import SelectedItems from "./SelectedItems";
 import Layout from "./Layout";
 import HistoryMessages from "./HistoryMessages";
 import HistoryDetails from "./HistoryDetails";
@@ -110,7 +107,7 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import Scroller from "./Scroller";
 import { HistoryContentItem } from "./ContentItem";
-import { reportPayload } from "./providers/ContentProvider/helpers";
+import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
 
 export default {

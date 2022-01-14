@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6', '3.9']
+        python-version: ['3.7', '3.10']
     steps:
       - uses: actions/checkout@v2
         with:
@@ -47,3 +47,8 @@ jobs:
       - name: Run tests
         run: tox -e unit
         working-directory: 'galaxy root'
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: Unit test results (${{ matrix.python-version }})
+          path: 'galaxy root/run_unit_tests.html'

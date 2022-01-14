@@ -11,7 +11,7 @@ from galaxy.util import galaxy_directory
 
 
 TOOL_XML_1 = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <xrefs>
         <xref type="bio.tools">bwa</xref>
@@ -266,9 +266,6 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     def test_name(self):
         assert self._tool_source.parse_name() == "BWA Mapper"
 
-    def test_is_multi_byte(self):
-        assert self._tool_source.parse_is_multi_byte()
-
     def test_display_interface(self):
         assert self._tool_source.parse_display_interface(False)
 
@@ -428,9 +425,6 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
     def test_name(self):
         assert self._tool_source.parse_name() == "Bowtie Mapper"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_display_interface(self):
         assert not self._tool_source.parse_display_interface(False)
@@ -664,9 +658,6 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[0] == "galaxy.tools"
         assert tool_module[1] == "ExportHistoryTool"
         assert self._tool_source.parse_tool_type() == "export_history"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_version_command(self):
         assert self._tool_source.parse_version_command() is None

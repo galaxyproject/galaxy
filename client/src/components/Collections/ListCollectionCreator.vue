@@ -65,8 +65,7 @@
                     :oncancel="oncancel"
                     :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
-                    @clicked-create="clickedCreate"
-                >
+                    @clicked-create="clickedCreate">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -114,11 +113,18 @@
                                 {{ l("link.") }}
                             </li>
                             <li>
-                                {{ l("Click the") }}
+                                {{ l("Click ") }}
                                 <i data-target=".reset">
-                                    {{ l("Start over") }}
+                                    <font-awesome-icon icon="undo" />
                                 </i>
-                                {{ l("link to begin again as if you had just opened the interface.") }}
+                                {{ l("to begin again as if you had just opened the interface.") }}
+                            </li>
+                            <li>
+                                {{ l("Click ") }}
+                                <i data-target=".sort-items">
+                                    <font-awesome-icon icon="sort-alpha-down" />
+                                </i>
+                                {{ l("to sort datasets alphabetically.") }}
                             </li>
                             <li>
                                 {{ l("Click the") }}
@@ -143,23 +149,19 @@
                     </template>
                     <template v-slot:middle-content>
                         <div class="collection-elements-controls">
-                            <a
-                                class="reset"
-                                href="javascript:void(0);"
-                                role="button"
-                                :title="titleUndoButton"
-                                @click="reset"
-                            >
-                                {{ l("Start over") }}
-                            </a>
+                            <b-button class="reset" :title="titleUndoButton" @click="reset">
+                                <font-awesome-icon icon="undo" />
+                            </b-button>
+                            <b-button class="sort-items" :title="titleSortButton" @click="sortByName">
+                                <font-awesome-icon icon="sort-alpha-down" />
+                            </b-button>
                             <a
                                 class="clear-selected"
                                 v-if="atLeastOneDatasetIsSelected"
                                 href="javascript:void(0);"
                                 role="button"
                                 :title="titleDeselectButton"
-                                @click="clickClearAll"
-                            >
+                                @click="clickClearAll">
                                 {{ l("Clear selected") }}
                             </a>
                         </div>
@@ -167,8 +169,7 @@
                             v-model="workingElements"
                             class="collection-elements scroll-container flex-row drop-zone"
                             @start="drag = true"
-                            @end="drag = false"
-                        >
+                            @end="drag = false">
                             <div v-if="noMoreValidDatasets">
                                 <b-alert show variant="warning" dismissible>
                                     {{ discardedElementsHeader }}
@@ -186,8 +187,7 @@
                                 @element-is-discarded="elementDiscarded"
                                 @onRename="(name) => (element.name = name)"
                                 :class="{ selected: getSelectedDatasetElems.includes(element.id) }"
-                                :element="element"
-                            />
+                                :element="element" />
                         </draggable>
                     </template>
                 </collection-creator>
@@ -205,6 +205,11 @@ import "ui/hoverhighlight";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import draggable from "vuedraggable";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSortAlphaDown, faUndo } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSortAlphaDown, faUndo);
 
 Vue.use(BootstrapVue);
 export default {
@@ -214,11 +219,12 @@ export default {
         this._elementsSetUp();
         this.saveOriginalNames();
     },
-    components: { DatasetCollectionElementView, draggable },
+    components: { DatasetCollectionElementView, draggable, FontAwesomeIcon },
     data: function () {
         return {
             state: "build", //error
             titleUndoButton: _l("Undo all reordering and discards"),
+            titleSortButton: _l("Sort datasets by name"),
             titleDeselectButton: _l("De-select all selected datasets"),
             noElementsHeader: _l("No datasets were selected"),
             discardedElementsHeader: _l("No elements left. Would you like to"),
@@ -406,6 +412,18 @@ export default {
         reset: function () {
             this._instanceSetUp();
             this.getOriginalNames();
+        },
+        sortByName: function () {
+            this.workingElements.sort(this.compareNames);
+        },
+        compareNames: function (a, b) {
+            if (a.name < b.name) {
+                return -1;
+            }
+            if (a.name > b.name) {
+                return 1;
+            }
+            return 0;
         },
         /** string rep */
         toString: function () {

@@ -109,9 +109,8 @@ export async function getHistoryById(id, since) {
 
 /**
  * Create new history
- * @param {Object} props Optional history props
  */
-export async function createNewHistory(props = {}) {
+export async function createNewHistory() {
     // TODO: adjust api, keep this for later
     // const url = `/histories`;
     // const data = Object.assign({ name: "New History" }, props);
@@ -159,16 +158,6 @@ export async function deleteHistoryById(id, purge = false) {
 }
 
 /**
- * Undelete a deleted (but not purged) history
- * @param {String} id Encoded history id
- */
-export async function undeleteHistoryById(id) {
-    const url = `/histories/deleted/${id}/undelete`;
-    const response = await api.post(url, null, { params: stdHistoryParams });
-    return doResponse(response);
-}
-
-/**
  * Update specific fields in history
  * @param {Object} history
  * @param {Object} payload fields to update
@@ -199,10 +188,9 @@ export async function secureHistory(history) {
     return await getHistoryById(id);
 }
 
-// #endregion
-
-// #region "Current History"
-
+/**
+ * Content Current History
+ */
 export async function getCurrentHistoryFromServer() {
     const url = "/history/current_history_json";
     const response = await api.get(url, {
@@ -223,31 +211,9 @@ export async function setCurrentHistoryOnServer(history_id) {
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Content Queries
-
 /**
- * Loads specific fields for provided content object, handy for loading
- * visualizations or any other field that's too unwieldy to reasonably include
- * in the standard content caching cycle.
- *
- * @param {Object} content content object
- * @param {Array} fields Array of fields to load
+ * Content Queries
  */
-export async function loadContentFields(content, fields = []) {
-    if (fields.length) {
-        const { history_id, id, history_content_type: type } = content;
-        const url = `/histories/${history_id}/contents/${type}s/${id}`;
-        const params = { keys: fields.join(",") };
-        const response = await api.get(url, { params });
-        if (response.status != 200) {
-            throw new Error(response);
-        }
-        return response.data;
-    }
-    return null;
-}
 
 /**
  * Generic content query function originally intended to help with bulk updates
@@ -308,27 +274,6 @@ export async function updateContentFields(content, newFields = {}) {
 }
 
 /**
- * Undeletes content flagged as deleted.
- * @param {Object} content
- */
-export async function undeleteContent(content) {
-    return await updateContentFields(content, {
-        deleted: false,
-    });
-}
-
-/**
- * Marks as purged
- * @param {*} history
- * @param {*} content
- */
-export async function purgeContent(history, content) {
-    const url = `/histories/${history.id}/contents/${content.id}?purge=True`;
-    const response = await api.delete(url);
-    return doResponse(response);
-}
-
-/**
  * Bulk update endpoint (TODO: rewrite)
  *
  * @param {*} history
@@ -349,9 +294,9 @@ export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Collections
+/**
+ * Collections
+ */
 
 export async function createDatasetCollection(history, inputs = {}) {
     const defaults = {
@@ -377,14 +322,13 @@ export async function deleteDatasetCollection(collection, recursive = false, pur
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Job Queries
-
+/**
+ * Job Queries
+ */
 const jobStash = new Map();
 const toolStash = new Map();
 
-export async function loadJobById(jobId) {
+async function loadJobById(jobId) {
     if (!jobStash.has(jobId)) {
         const url = `/jobs/${jobId}?full=false`;
         const response = await api.get(url);
@@ -394,7 +338,7 @@ export async function loadJobById(jobId) {
     return jobStash.get(jobId);
 }
 
-export async function loadToolForJob(job) {
+async function loadToolForJob(job) {
     const { tool_id, history_id } = job;
     const key = `${tool_id}-${history_id}`;
     if (!toolStash.has(key)) {
@@ -410,5 +354,3 @@ export async function loadToolFromJob(jobId) {
     const job = await loadJobById(jobId);
     return await loadToolForJob(job);
 }
-
-// #endregion

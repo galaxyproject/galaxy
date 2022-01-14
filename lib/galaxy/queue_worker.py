@@ -5,16 +5,12 @@ reloading the toolbox, etc., across multiple processes.
 
 import importlib
 import logging
+import math
 import socket
 import sys
 import threading
 import time
 from inspect import ismodule
-try:
-    from math import inf
-except ImportError:
-    # python 2 doesn't have math.inf, but can use float('inf')
-    inf = float('inf')
 
 from kombu import (
     Consumer,
@@ -181,8 +177,6 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     """
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
-    if hasattr(app, 'tool_shed_repository_cache'):
-        app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
 
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel)
@@ -199,8 +193,6 @@ def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
     from galaxy.tools.data_manager.manager import DataManagers
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
-    if hasattr(app, 'tool_shed_repository_cache'):
-        app.tool_shed_repository_cache.rebuild()
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
@@ -382,7 +374,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
-                    if message.headers.get('epoch', inf) > self.epoch:
+                    if message.headers.get('epoch', math.inf) > self.epoch:
                         # Message was created after QueueWorker was started, execute
                         log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
                         result = f(self.app, **body['kwargs'])

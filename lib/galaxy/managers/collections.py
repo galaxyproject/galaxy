@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, List, Union
 
 from sqlalchemy.orm import joinedload, Query
 
@@ -149,9 +150,15 @@ class DatasetCollectionManager:
 
     def _create_instance_for_collection(self, trans, parent, name, dataset_collection, implicit_output_name=None, implicit_inputs=None, tags=None, set_hid=True, flush=True):
         if isinstance(parent, model.History):
-            dataset_collection_instance = model.HistoryDatasetCollectionAssociation(
+            dataset_collection_instance: Union[
+                model.HistoryDatasetCollectionAssociation,
+                model.LibraryDatasetCollectionAssociation,
+            ] = model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
+            )
+            assert isinstance(
+                dataset_collection_instance, model.HistoryDatasetCollectionAssociation
             )
             if implicit_inputs:
                 for input_name, input_collection in implicit_inputs:
@@ -549,7 +556,7 @@ class DatasetCollectionManager:
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
         mapping_as_dict = rule_set.mapping_as_dict
-        elements = {}
+        elements: Dict[str, Any] = {}
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
             collection_type_at_depth = collection_type_description
@@ -592,18 +599,22 @@ class DatasetCollectionManager:
                         found = True
 
                     if not found:
-                        sub_collection = {}
+                        # Create a new collection whose elements are defined in the next loop
+                        sub_collection: Dict[str, Any] = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
                         sub_collection["elements"] = {}
+                        # Update elements with new collection
                         elements_at_depth[identifier] = sub_collection
+                        # Subsequent loop fills elements of newly created collection
                         elements_at_depth = sub_collection["elements"]
 
         return elements
 
     def __init_rule_data(self, elements, collection_type_description, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
-        data, sources = [], []
+        data: List[List[str]] = []
+        sources: List[Dict[str, str]] = []
         for element in elements:
             element_object = element.element_object
             identifiers = parent_identifiers + [element.element_identifier]

@@ -82,8 +82,7 @@
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :suggested-name="initialSuggestedName"
-                >
+                    :suggested-name="initialSuggestedName">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -130,8 +129,7 @@
                                 class="swap"
                                 href="javascript:void(0);"
                                 title="l('Swap forward and reverse datasets')"
-                                @click="swapButton"
-                            >
+                                @click="swapButton">
                                 {{ l("Swap") }}
                             </a>
                         </div>
@@ -139,8 +137,7 @@
                             <div
                                 v-for="(element, index) in workingElements"
                                 :key="element.id"
-                                class="collection-element"
-                            >
+                                class="collection-element">
                                 {{ index == 0 ? l("forward") : l("reverse") }}: {{ element.name }}
                             </div>
                         </div>

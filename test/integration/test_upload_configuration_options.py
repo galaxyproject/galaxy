@@ -25,6 +25,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from typing import Dict, TextIO, Union
 
 from galaxy_test.base.api_util import (
     TEST_USER,
@@ -57,7 +58,7 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         self.history_id = self.dataset_populator.new_history()
 
     def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
-        payload = {
+        payload: Dict[str, Union[str, Dict[str, TextIO]]] = {
             "history_id": self.history_id,
             "targets": json.dumps([target]),
         }
@@ -434,8 +435,7 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
             "collection_type": "list",
             "name": "cool collection",
         }
-        response = self.fetch_target(target)
-        self._assert_status_code_is(response, 200)
+        response = self.fetch_target(target, assert_ok=True, wait=True)
         response_object = response.json()
         assert "output_collections" in response_object
         output_collections = response_object["output_collections"]

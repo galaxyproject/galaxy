@@ -3,6 +3,7 @@ import collections
 import copy
 import json
 import logging
+import math
 import os
 import re
 import sys
@@ -532,7 +533,7 @@ class RuleValidator:
                     lower_bound = 0
                     rule["lower_bound"] = 0
                 else:
-                    lower_bound = float('inf')
+                    lower_bound = math.inf
                 if verbose:
                     log.debug(error)
                 valid_rule = False

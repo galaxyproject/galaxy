@@ -288,7 +288,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, stored)
         for step in stored.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, step)
-        return trans.stream_template_mako("/workflow/item_content.mako", item=stored, item_data=stored.latest_workflow.steps)
+        return trans.fill_template_mako("/workflow/item_content.mako", item=stored, item_data=stored.latest_workflow.steps)
 
     @web.expose
     @web.require_login("use Galaxy workflows")

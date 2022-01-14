@@ -49,7 +49,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_nonadmin(self):
         # Anons can't create libs
         data = dict(name="CreateTestLibrary")
-        create_response = self._post("libraries", data=data, admin=False, anon=True, json=True)
+        create_response = self._post("libraries", data=data, admin=False, anon=True)
         self._assert_status_code_is(create_response, 403)
         # Anons can't delete libs
         library = self.library_populator.new_library("AnonDeleteTestLibrary")
@@ -424,7 +424,7 @@ class LibrariesApiTestCase(ApiTestCase):
             'name': collection_name,
             'collection_type': 'list:paired',
             "type": "dataset_collection",
-            'element_identifiers': json.dumps([
+            'element_identifiers': [
                 {
                     'src': 'new_collection',
                     'name': 'pair1',
@@ -432,9 +432,9 @@ class LibrariesApiTestCase(ApiTestCase):
                     'element_identifiers': [{'name': 'forward', 'src': 'ldda', 'id': ld['id']},
                                             {'name': 'reverse', 'src': 'ldda', 'id': ld['id']}]
                 }
-            ])
+            ]
         }
-        new_collection = self._post(url, payload).json()
+        new_collection = self._post(url, payload, json=True).json()
         assert new_collection['name'] == collection_name
         pair = new_collection['elements'][0]
         assert pair['element_identifier'] == 'pair1'
@@ -453,14 +453,14 @@ class LibrariesApiTestCase(ApiTestCase):
             "history_id": history_id,
             "name": collection_name,
             "hide_source_items": not visible,
-            "element_identifiers": json.dumps([{
+            "element_identifiers": [{
                 "id": ld['id'],
                 "name": element_identifer,
-                "src": "ldda"}]),
+                "src": "ldda"}],
             "type": "dataset_collection",
             "elements": []
         }
-        new_collection = self._post(url, payload).json()
+        new_collection = self._post(url, payload, json=True).json()
         assert new_collection['name'] == collection_name
         assert new_collection['element_count'] == 1
         element = new_collection['elements'][0]

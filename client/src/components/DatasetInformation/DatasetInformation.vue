@@ -54,6 +54,22 @@
                         <td>Full Path</td>
                         <td id="file_name">{{ dataset.file_name }}</td>
                     </tr>
+                    <tr v-if="dataset.created_from_basename">
+                        <td>Originally Created From a File Named</td>
+                        <td id="created_from_basename">{{ dataset.created_from_basename }}</td>
+                    </tr>
+                    <tr v-if="dataset.sources && dataset.sources.length > 0">
+                        <td>Sources</td>
+                        <td>
+                            <DatasetSources :sources="dataset.sources" />
+                        </td>
+                    </tr>
+                    <tr v-if="dataset.hashes && dataset.hashes.length > 0">
+                        <td>Hashes</td>
+                        <td>
+                            <DatasetHashes :hashes="dataset.hashes" />
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -65,6 +81,8 @@ import Utils from "utils/utils";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
+import DatasetSources from "./DatasetSources";
+import DatasetHashes from "./DatasetHashes";
 
 export default {
     props: {
@@ -74,7 +92,9 @@ export default {
         },
     },
     components: {
+        DatasetHashes,
         DatasetProvider,
+        DatasetSources,
         DecodedId,
         UtcDate,
     },

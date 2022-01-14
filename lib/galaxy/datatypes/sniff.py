@@ -14,13 +14,23 @@ import sys
 import tempfile
 import urllib.request
 import zipfile
-from typing import Callable, Dict, IO, NamedTuple, Optional
+from typing import (
+    Dict,
+    IO,
+    NamedTuple,
+    Optional,
+    Union,
+)
 
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.files import ConfiguredFileSources
-from galaxy.util import compression_utils, stream_to_open_named_file
+from galaxy.util import (
+    compression_utils,
+    file_reader,
+    stream_to_open_named_file
+)
 from galaxy.util.checkers import (
     check_binary,
     check_html,
@@ -83,12 +93,27 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
         datatype.groom_dataset_content(file_output_path)
 
 
-def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None):
+class ConvertResult(NamedTuple):
+    line_count: int
+    converted_path: Optional[str]
+    converted_newlines: bool
+    converted_regex: bool
+
+
+class ConvertFunction(Protocol):
+
+    def __call__(self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
+        ...
+
+
+def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024, regexp=None) -> ConvertResult:
     """
     Converts in place a file from universal line endings
     to Posix line endings.
     """
     i = 0
+    converted_newlines = False
+    converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
     with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
@@ -102,28 +127,63 @@ def convert_newlines(fname: str, in_place: bool = True, tmp_dir: Optional[str] =
                 block = block[1:]
             if block:
                 last_char = block[-1]
-                block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                if b"\r" in block:
+                    block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    converted_newlines = True
                 if regexp:
-                    block = b"\t".join(regexp.split(block))
+                    split_block = regexp.split(block)
+                    if len(split_block) > 1:
+                        converted_regex = True
+                    block = b"\t".join(split_block)
                 fp.write(block)
                 i += block.count(b"\n")
                 last_block = block
                 block = fi.read(block_size)
         if last_block and last_block[-1] != NEWLINE_BYTE:
+            converted_newlines = True
             i += 1
             fp.write(b"\n")
     if in_place:
         shutil.move(fp.name, fname)
         # Return number of lines in file.
-        return (i, None)
+        return ConvertResult(i, None, converted_newlines, converted_regex)
     else:
-        return (i, fp.name)
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
 
 
-def convert_newlines_sep2tabs(fname: str, in_place: bool = True, patt: bytes = br"[^\S\n]+", tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"):
+def convert_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload", block_size: int = 128 * 1024):
+    """
+    Transforms in place a 'sep' separated file to a tab separated one
+    """
+    patt: bytes = br"[^\S\r\n]+"
+    regexp = re.compile(patt)
+    i = 0
+    converted_newlines = False
+    converted_regex = False
+    with tempfile.NamedTemporaryFile(mode='wb', prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(fname, mode='rb') as fi:
+        block = fi.read(block_size)
+        while block:
+            if block:
+                split_block = regexp.split(block)
+                if len(split_block) > 1:
+                    converted_regex = True
+                block = b"\t".join(split_block)
+                fp.write(block)
+                i += block.count(b"\n") or block.count(b"\r")
+                block = fi.read(block_size)
+    if in_place:
+        shutil.move(fp.name, fname)
+        # Return number of lines in file.
+        return ConvertResult(i, None, converted_newlines, converted_regex)
+    else:
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
+
+
+def convert_newlines_sep2tabs(fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload") -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
     """
+    patt: bytes = br"[^\S\n]+"
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
@@ -450,16 +510,100 @@ def guess_ext(fname, sniff_order, is_binary=False):
     return 'txt'  # default text data type file extension
 
 
-def run_sniffers_raw(filename_or_file_prefix, sniff_order, is_binary=False):
+class FilePrefix:
+
+    def __init__(self, filename):
+        non_utf8_error = None
+        compressed_format = None
+        contents_header_bytes = None
+        contents_header = None  # First MAX_BYTES of the file.
+        truncated = False
+        # A future direction to optimize sniffing even more for sniffers at the top of the list
+        # is to lazy load contents_header based on what interface is requested. For instance instead
+        # of returning a StringIO directly in string_io() return an object that reads the contents and
+        # populates contents_header while providing a StringIO-like interface until the file is read
+        # but then would fallback to native string_io()
+        try:
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
+            try:
+                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
+                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
+                contents_header = contents_header_bytes.decode("utf-8")
+            finally:
+                f.close()
+        except UnicodeDecodeError as e:
+            non_utf8_error = e
+
+        self.truncated = truncated
+        self.filename = filename
+        self.non_utf8_error = non_utf8_error
+        self.binary = non_utf8_error is not None  # obviously wrong
+        self.compressed_format = compressed_format
+        self.contents_header = contents_header
+        self.contents_header_bytes = contents_header_bytes
+        self._file_size = None
+
+    @property
+    def file_size(self):
+        if self._file_size is None:
+            self._file_size = os.path.getsize(self.filename)
+        return self._file_size
+
+    def string_io(self) -> io.StringIO:
+        if self.non_utf8_error is not None:
+            raise self.non_utf8_error
+        rval = io.StringIO(self.contents_header)
+        return rval
+
+    def text_io(self, *args, **kwargs) -> io.TextIOWrapper:
+        return io.TextIOWrapper(io.BytesIO(self.contents_header_bytes), *args, **kwargs)
+
+    def startswith(self, prefix):
+        return self.string_io().read(len(prefix)) == prefix
+
+    def line_iterator(self):
+        s = self.string_io()
+        s_len = len(s.getvalue())
+        for line in iter(s.readline, ''):
+            if line.endswith("\n") or line.endswith("\r"):
+                yield line
+            elif s.tell() == s_len and not self.truncated:
+                # At the end, return the last line if it wasn't truncated when reading it in.
+                yield line
+
+    # Convenience wrappers around contents_header, shielding contents_header means we can
+    # potentially do a better job lazy loading this data later on.
+    def search(self, pattern):
+        return pattern.search(self.contents_header)
+
+    def search_str(self, query_str):
+        return query_str in self.contents_header
+
+    def magic_header(self, pattern):
+        """
+        Unpack header and get first element
+        """
+        size = struct.calcsize(pattern)
+        header_bytes = self.contents_header_bytes[:size]
+        if len(header_bytes) < size:
+            return None
+        return struct.unpack(pattern, header_bytes)[0]
+
+    def startswith_bytes(self, test_bytes):
+        return self.contents_header_bytes.startswith(test_bytes)
+
+
+def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix]) -> FilePrefix:
+    if not isinstance(filename_or_file_prefix, FilePrefix):
+        return FilePrefix(filename_or_file_prefix)
+    return filename_or_file_prefix
+
+
+def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order, is_binary=False):
     """Run through sniffers specified by sniff_order, return None of None match.
     """
-    if isinstance(filename_or_file_prefix, FilePrefix):
-        fname = filename_or_file_prefix.filename
-        file_prefix = filename_or_file_prefix
-    else:
-        fname = filename_or_file_prefix
-        file_prefix = FilePrefix(filename_or_file_prefix)
-
+    file_prefix = _get_file_prefix(filename_or_file_prefix)
+    fname = file_prefix.filename
     file_ext = None
     for datatype in sniff_order:
         """
@@ -501,86 +645,6 @@ def zip_single_fileobj(path):
     for name in z.namelist():
         if not name.endswith('/'):
             return z.open(name)
-
-
-class FilePrefix:
-
-    def __init__(self, filename):
-        non_utf8_error = None
-        compressed_format = None
-        contents_header_bytes = None
-        contents_header = None  # First MAX_BYTES of the file.
-        truncated = False
-        # A future direction to optimize sniffing even more for sniffers at the top of the list
-        # is to lazy load contents_header based on what interface is requested. For instance instead
-        # of returning a StringIO directly in string_io() return an object that reads the contents and
-        # populates contents_header while providing a StringIO-like interface until the file is read
-        # but then would fallback to native string_io()
-        try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
-            try:
-                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
-                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
-                contents_header = contents_header_bytes.decode("utf-8")
-            finally:
-                f.close()
-        except UnicodeDecodeError as e:
-            non_utf8_error = e
-
-        self.truncated = truncated
-        self.filename = filename
-        self.non_utf8_error = non_utf8_error
-        self.binary = non_utf8_error is not None  # obviously wrong
-        self.compressed_format = compressed_format
-        self.contents_header = contents_header
-        self.contents_header_bytes = contents_header_bytes
-        self._file_size = None
-
-    @property
-    def file_size(self):
-        if self._file_size is None:
-            self._file_size = os.path.getsize(self.filename)
-        return self._file_size
-
-    def string_io(self):
-        if self.non_utf8_error is not None:
-            raise self.non_utf8_error
-        rval = io.StringIO(self.contents_header)
-        return rval
-
-    def startswith(self, prefix):
-        return self.string_io().read(len(prefix)) == prefix
-
-    def line_iterator(self):
-        s = self.string_io()
-        s_len = len(s.getvalue())
-        for line in s:
-            if line.endswith("\n") or line.endswith("\r"):
-                yield line
-            elif s.tell() == s_len and not self.truncated:
-                # At the end, return the last line if it wasn't truncated when reading it in.
-                yield line
-
-    # Convenience wrappers around contents_header, shielding contents_header means we can
-    # potentially do a better job lazy loading this data later on.
-    def search(self, pattern):
-        return pattern.search(self.contents_header)
-
-    def search_str(self, query_str):
-        return query_str in self.contents_header
-
-    def magic_header(self, pattern):
-        """
-        Unpack header and get first element
-        """
-        size = struct.calcsize(pattern)
-        header_bytes = self.contents_header_bytes[:size]
-        if len(header_bytes) < size:
-            return None
-        return struct.unpack(pattern, header_bytes)[0]
-
-    def startswith_bytes(self, test_bytes):
-        return self.contents_header_bytes.startswith(test_bytes)
 
 
 def build_sniff_from_prefix(klass):
@@ -671,20 +735,17 @@ def handle_compressed_file(
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
         assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
-            compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
-            # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
-            while True:
+            with DECOMPRESSION_FUNCTIONS[compressed_type](filename) as compressed_file:
+                # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
                 try:
-                    chunk = compressed_file.read(CHUNK_SIZE)
+                    for chunk in file_reader(compressed_file, CHUNK_SIZE):
+                        if not chunk:
+                            break
+                        uncompressed.write(chunk)
                 except OSError as e:
                     os.remove(uncompressed.name)
-                    compressed_file.close()
-                    raise OSError(f'Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {util.unicodify(e)}')
-                if not chunk:
-                    break
-                uncompressed.write(chunk)
+                    raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
         uncompressed_path = uncompressed.name
-        compressed_file.close()
         if in_place:
             # Replace the compressed file with the uncompressed file
             shutil.move(uncompressed_path, filename)
@@ -703,6 +764,19 @@ class HandleUploadedDatasetFileInternalResponse(NamedTuple):
     ext: str
     converted_path: str
     compressed_type: Optional[str]
+    converted_newlines: bool
+    converted_spaces: bool
+
+
+def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertFunction:
+    assert convert_to_posix_lines or convert_spaces_to_tabs
+    if convert_spaces_to_tabs and convert_to_posix_lines:
+        convert_fxn = convert_newlines_sep2tabs
+    elif convert_to_posix_lines:
+        convert_fxn = convert_newlines
+    else:
+        convert_fxn = convert_sep2tabs
+    return convert_fxn
 
 
 def handle_uploaded_dataset_file_internal(
@@ -729,6 +803,8 @@ def handle_uploaded_dataset_file_internal(
         check_content=check_content,
         auto_decompress=auto_decompress,
     )
+    converted_newlines = False
+    converted_spaces = False
     try:
         if not is_valid:
             if is_tar(converted_path):
@@ -748,15 +824,12 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
-            convert_fxn: Callable
-            if convert_spaces_to_tabs:
-                convert_fxn = convert_newlines_sep2tabs
-            else:
-                convert_fxn = convert_newlines
-            line_count, _converted_path = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+            convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
+            line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
             if not in_place:
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
+                assert _converted_path
                 converted_path = _converted_path
             if ext in AUTO_DETECT_EXTENSIONS:
                 ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
@@ -769,7 +842,7 @@ def handle_uploaded_dataset_file_internal(
         if filename != converted_path:
             os.unlink(converted_path)
         raise
-    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type)
+    return HandleUploadedDatasetFileInternalResponse(ext, converted_path, compressed_type, converted_newlines, converted_spaces)
 
 
 AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?

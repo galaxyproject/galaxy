@@ -20,11 +20,11 @@ try:
         pathmapper,
     )
 except ImportError:
-    main = None  # type: ignore
-    workflow = None  # type: ignore
-    job = None  # type: ignore
-    process = None  # type: ignore
-    pathmapper = None  # type: ignore
+    main = None  # type: ignore[assignment]
+    workflow = None  # type: ignore[assignment]
+    job = None  # type: ignore[assignment]
+    process = None  # type: ignore[assignment]
+    pathmapper = None  # type: ignore[assignment]
 
 try:
     from cwltool.context import (
@@ -35,11 +35,11 @@ try:
     from cwltool.job import relink_initialworkdir
     from cwltool.stdfsaccess import StdFsAccess
 except ImportError:
-    getdefault = None  # type: ignore
-    LoadingContext = None  # type: ignore
-    relink_initialworkdir = None  # type: ignore
-    RuntimeContext = None  # type: ignore
-    StdFsAccess = None  # type: ignore
+    getdefault = None  # type: ignore[assignment]
+    LoadingContext = None  # type: ignore[assignment,misc]
+    relink_initialworkdir = None  # type: ignore[assignment]
+    RuntimeContext = None  # type: ignore[assignment,misc]
+    StdFsAccess = None  # type: ignore[assignment,misc]
 
 try:
     from cwltool import load_tool
@@ -48,42 +48,25 @@ try:
         resolve_and_validate_document,
     )
 except ImportError:
-    default_loader = None  # type: ignore
-    load_tool = None  # type: ignore
-    resolve_and_validate_document = None  # type: ignore
-
-
-def _has_relax_path_checks_flag():
-    """Return True if cwltool uses a flag to control path checks.
-
-    Old cwltool uses the module global below to control whether
-    it's strict about path checks. New versions use an attribute
-    of LoadingContext.
-
-    Once the version of cwltool required is new enough, we can remove
-    this function and simplify the conditionals where it's used.
-    """
-
-    lc = LoadingContext()
-    return hasattr(lc, "relax_path_checks")
+    default_loader = None  # type: ignore[assignment]
+    load_tool = None  # type: ignore[assignment]
+    resolve_and_validate_document = None  # type: ignore[assignment]
 
 
 try:
     from cwltool import command_line_tool
-    if not _has_relax_path_checks_flag():
-        command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
 except ImportError:
-    command_line_tool = None  # type: ignore
+    command_line_tool = None  # type: ignore[assignment]
 
 try:
     from cwltool.load_tool import resolve_and_validate_document
 except ImportError:
-    resolve_and_validate_document = None  # type: ignore
+    resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
     import shellescape
 except ImportError:
-    shellescape = None  # type: ignore
+    shellescape = None
 
 try:
     import schema_salad
@@ -92,9 +75,9 @@ try:
         sourceline,
     )
 except ImportError:
-    schema_salad = None  # type: ignore
-    ref_resolver = None  # type: ignore
-    sourceline = None  # type: ignore
+    schema_salad = None  # type: ignore[assignment]
+    ref_resolver = None  # type: ignore[assignment]
+    sourceline = None  # type: ignore[assignment]
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 

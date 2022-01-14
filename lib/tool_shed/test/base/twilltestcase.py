@@ -43,6 +43,7 @@ tc.options['equiv_refresh_interval'] = 0
 
 
 class ShedTwillTestCase(DrivenFunctionalTestCase):
+    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def setUp(self):
         # Security helper
@@ -65,8 +66,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.test_db_util = test_db_util
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get('GALAXY_TEST_TOOL_DEPENDENCY_DIR')
-
-    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -1172,11 +1171,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             'changeset_revision': changeset_revision
         }
         self.visit_url('/repository/display_tool', params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
-    def load_galaxy_tool_migrations_page(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin/review_tool_migration_stages'
-        self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_invalid_tool_page(self, repository, tool_xml, changeset_revision, strings_displayed=None, strings_not_displayed=None):

@@ -68,16 +68,6 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # Wrap the webapp in some useful middleware
     if kwargs.get('middleware', True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
-    if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
-                                 args=(global_conf,),
-                                 kwargs=kwargs)
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    # Return
     return webapp
 
 
@@ -125,11 +115,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     return app
-
-
-def wrap_in_static(app, global_conf, **local_conf):
-    urlmap, _ = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap
 
 
 def uwsgi_app():

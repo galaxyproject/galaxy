@@ -13,7 +13,7 @@ def lint_tsts(tool_xml, lint_ctx):
         lint_ctx.info("No tests found, that should be OK for data_sources.")
 
     num_valid_tests = 0
-    for test in tests:
+    for test_idx, test in enumerate(tests, start=1):
         has_test = False
         test_expect = ("expect_failure", "expect_exit_code", "expect_num_outputs")
         for te in test_expect:
@@ -26,31 +26,58 @@ def lint_tsts(tool_xml, lint_ctx):
                 has_test = True
                 break
 
+        # really simple test that test parameters are also present in the inputs
+        for param in test.findall("param"):
+            name = param.attrib.get("name", None)
+            if not name:
+                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.")
+                continue
+            name = name.split("|")[-1]
+            xpaths = [f"@name='{name}'",
+                      f"@argument='{name}'",
+                      f"@argument='-{name}'",
+                      f"@argument='--{name}'"]
+            if "_" in name:
+                xpaths += [f"@argument='-{name.replace('_', '-')}'",
+                           f"@argument='--{name.replace('_', '-')}'"]
+            found = False
+            for xp in xpaths:
+                inxpath = f".//inputs//param[{xp}]"
+                inparam = tool_xml.findall(inxpath)
+                if len(inparam) > 0:
+                    found = True
+                    break
+            if not found:
+                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs")
+
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
         for output in test.findall("output"):
             found_output_test = True
             name = output.attrib.get("name", None)
             if not name:
-                lint_ctx.warn("Found output tag without a name defined.")
+                lint_ctx.warn(f"Test {test_idx}: Found output tag without a name defined.")
             else:
                 if name not in output_data_names:
-                    lint_ctx.error(f"Found output tag with unknown name [{name}], valid names [{output_data_names}]")
+                    lint_ctx.error(f"Test {test_idx}: Found output tag with unknown name [{name}], valid names [{output_data_names}]")
 
         for output_collection in test.findall("output_collection"):
             found_output_test = True
             name = output_collection.attrib.get("name", None)
             if not name:
-                lint_ctx.warn("Found output_collection tag without a name defined.")
+                lint_ctx.warn(f"Test {test_idx}: Found output_collection tag without a name defined.")
             else:
                 if name not in output_collection_names:
-                    lint_ctx.warn(f"Found output_collection tag with unknown name [{name}], valid names [{output_collection_names}]")
+                    lint_ctx.warn(f"Test {test_idx}: Found output_collection tag with unknown name [{name}], valid names [{output_collection_names}]")
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn("No outputs or expectations defined for tests, this test is likely invalid.")
+            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.")
         else:
             num_valid_tests += 1
+
+    if "expect_failure" in test.attrib and found_output_test:
+        lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.")
 
     if num_valid_tests or datasource:
         lint_ctx.valid("%d test(s) found.", num_valid_tests)

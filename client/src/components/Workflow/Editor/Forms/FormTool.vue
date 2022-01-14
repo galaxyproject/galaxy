@@ -11,8 +11,7 @@
             :message-text="messageText"
             :message-variant="messageVariant"
             @onChangeVersion="onChangeVersion"
-            @onUpdateFavorites="onUpdateFavorites"
-        >
+            @onUpdateFavorites="onUpdateFavorites">
             <template v-slot:body>
                 <FormElement
                     id="__label"
@@ -20,24 +19,21 @@
                     title="Label"
                     help="Add a step label."
                     @input="onLabel"
-                    :error="errorLabel"
-                />
+                    :error="errorLabel" />
                 <FormElement
                     id="__annotation"
                     :value="node.annotation"
                     title="Step Annotation"
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                    @input="onAnnotation"
-                />
+                    @input="onAnnotation" />
                 <FormDisplay
                     :id="id"
                     :inputs="inputs"
                     :errors="errors"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
-                    @onChange="onChange"
-                />
+                    @onChange="onChange" />
                 <FormSection :id="nodeId" :get-node="getNode" :datatypes="datatypes" @onChange="onChangeSection" />
             </template>
         </ToolCard>
@@ -144,11 +140,9 @@ export default {
             this.mainValues = values;
             this.postChanges();
         },
-        onChangeSection(values, refreshOnChange = false) {
+        onChangeSection(values) {
             this.sectionValues = values;
-            if (refreshOnChange) {
-                this.postChanges();
-            }
+            this.postChanges();
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.node.config_form.name}' version ${newVersion}.`;
