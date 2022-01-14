@@ -1,0 +1,70 @@
+<tool id="CONVERTER_uncompressed_to_gz" name="Compress file(s) using gzip" version="0.1.0">
+    <requirements>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        #if $files.type=="individual":
+            gzip -c ${files.input} > output_file.gz
+            #set $type = "${files.input.extension}.gz"
+        #else:
+            mkdir outdir &&
+            #for $i,$file in enumerate($files.input):
+                gzip -c ${file} > outdir/${file.element_identifier}.gz &&
+            #end for
+            ls outdir
+        #end if -->
+
+    ]]></command>
+    <inputs>
+        <conditional name="files">
+            <param name="type" type="select" label="Compress individual file or a collection?">
+                <option value="individual">Individual file</option>
+                <option value="collection">Collection</option>
+            </param>
+            <when value="individual">
+                <param name="input" type="data" format="data" label="Select data to compress"/>
+            </when>
+            <when value="collection">
+                    <param name="input" type="data_collection" collection_type="list" label="Select data to compress"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_file" format="gz" from_work_dir="output_file.gz" label="GZIP compression on ${on_string}">
+            <filter>files['type']=='individual'</filter>
+        </data>
+        <collection name="output_collection" type="list" label="GZIP compression on ${on_string}">
+            <discover_datasets pattern="__name_and_ext__" format="data" directory="outdir"/>
+            <filter>files['type']=='collection'</filter>
+        </collection>
+    </outputs>
+    <tests>
+        <!-- Single input -->
+        <test expect_num_outputs="1">
+            <conditional name="files">
+                <param name="type" value="individual"/>
+                <param name="input" value="1.csv"/>
+            </conditional>
+            <output name="output_file" file="1.csv.gz" compare="sim_size"/>
+        </test>
+        <!-- Collection -->
+        <test expect_num_outputs="1">
+            <conditional name="files">
+                <param name="type" value="collection"/>
+                <param name="input">
+                    <collection type="list">
+                        <element name="file_1" value="1.csv"/>
+                        <element name="file_2" value="1.bed"/>
+                    </collection>
+                </param>
+            </conditional>
+            <output_collection name="output_collection" type="list">
+                <element name="file_1" file="1.csv.gz" compare="sim_size"/>
+                <element name="file_2" file="1.bed.gz" compare="sim_size"/>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+        Compress files before exporting. If compressing a collection, all elements within that collection will be compressed, but the collection itself will not be.
+    ]]></help>
+    <citations/>
+</tool>
