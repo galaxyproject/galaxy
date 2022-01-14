@@ -97,10 +97,9 @@ class WebApplication(base.WebApplication):
         paths = []
         base_package = 'tool_shed.webapp' if galaxy_app.name == 'tool_shed' else 'galaxy.webapps.base'  # reports has templates in galaxy package
         base_template_path = files(base_package) / 'templates'
-        app_template_path = base_template_path / 'webapps'
         # First look in webapp specific directory
         if name is not None:
-            paths.append(app_template_path / name)
+            paths.append(base_template_path / 'webapps' / name)
         # Then look in root directory
         paths.append(base_template_path)
         # Create TemplateLookup with a small cache
