@@ -258,7 +258,7 @@
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="filters[0]"
+                                            v-model="forwardFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -317,7 +317,7 @@
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
-                                            v-model="filters[1]"
+                                            v-model="reverseFilter"
                                             title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
@@ -359,7 +359,7 @@
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column truncate">
-                                        <ol class="column-datasets" v-if="filters[0] !== '' && filters[1] !== ''">
+                                        <ol class="column-datasets" v-if="forwardFilter !== '' && reverseFilter !== ''">
                                             <li
                                                 v-for="(pairableElement, index) in pairableElements"
                                                 :key="index"
@@ -437,9 +437,10 @@ export default {
     mixins: [mixin],
     created() {
         this.strategy = this.autopairLCS;
+        //TODO convert to Fwd/Rev
         // Setup inital filters and shallow copy the items
-        const initFilters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
-        this.filters = JSON.parse(JSON.stringify(initFilters));
+        this.forwardFilter = this.commonFilters[this.DEFAULT_FILTERS][0];
+        this.reverseFilter = this.commonFilters[this.DEFAULT_FILTERS][1];
         this._elementsSetUp();
     },
     components: {
@@ -464,7 +465,8 @@ export default {
                 dot12s: [".1.fastq", ".2.fastq"],
             },
             DEFAULT_FILTERS: "illumina",
-            filters: this.DEFAULT_FILTERS,
+            forwardFilter: "",
+            reverseFilter: "",
             automaticallyPair: true,
             initialPairsPossible: true,
             matchPercentage: 0.99,
@@ -691,8 +693,8 @@ export default {
             removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
             let fwdName = fwd.name;
             let revName = rev.name;
-            const fwdNameFilter = fwdName.replace(new RegExp(this.filters[0]), "");
-            const revNameFilter = revName.replace(new RegExp(this.filters[1]), "");
+            const fwdNameFilter = fwdName.replace(new RegExp(this.forwardFilter), "");
+            const revNameFilter = revName.replace(new RegExp(this.reverseFilter), "");
             let lcs = this._naiveStartingAndEndingLCS(fwdNameFilter, revNameFilter);
             /** remove url prefix if files were uploaded by url */
             const lastSlashIndex = lcs.lastIndexOf("/");
@@ -726,11 +728,11 @@ export default {
             return () => this._unpair(pair);
         },
         clickClearFilters: function () {
-            Vue.set(this.filters, 0, "");
-            Vue.set(this.filters, 1, "");
+            this.forwardFilter = "";
+            this.reverseFilter = "";
         },
         splitByFilter: function () {
-            var filters = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
+            var filters = [new RegExp(this.forwardFilter), new RegExp(this.reverseFilter)];
             var split = [[], []];
             this.workingElements.forEach((e) => {
                 filters.forEach((filter, i) => {
@@ -838,7 +840,7 @@ export default {
             var _regexps = [];
             function getRegExps() {
                 if (!_regexps.length) {
-                    _regexps = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
+                    _regexps = [new RegExp(this.forwardFilter), new RegExp(this.reverseFilter)];
                 }
                 return _regexps;
             }
@@ -926,8 +928,8 @@ export default {
             };
         },
         changeFilters: function (filter) {
-            Vue.set(this.filters, 0, this.commonFilters[filter][0]);
-            Vue.set(this.filters, 1, this.commonFilters[filter][1]);
+            this.forwardFilter = this.commonFilters[filter][0];
+            this.reverseFilter = this.commonFilters[filter][1];
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
@@ -960,12 +962,12 @@ export default {
     computed: {
         forwardElements: {
             get() {
-                return this.filterElements(this.workingElements, this.filters[0]);
+                return this.filterElements(this.workingElements, this.forwardFilter);
             },
         },
         reverseElements: {
             get() {
-                return this.filterElements(this.workingElements, this.filters[1]);
+                return this.filterElements(this.workingElements, this.reverseFilter);
             },
         },
         pairableElements: {
