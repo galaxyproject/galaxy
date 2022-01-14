@@ -16,6 +16,10 @@
             <param name="input" value="1.csv"/>
             <output name="output_file" file="1.csv.gz" compare="sim_size"/>
         </test>
+        <test expect_num_outputs="1">
+            <param name="input" value="1.csv"/>
+            <output name="output_file" file="1.csv" decompress="true"/>
+        </test>
     </tests>
     <help><![CDATA[
         Compress files before exporting. If compressing a collection, all elements within that collection will be compressed, but the collection itself will not be.
