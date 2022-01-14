@@ -82,8 +82,8 @@ def make_table(metadata):
 
 def run_view_test(url, metadata, view, query):
     with sqlalchemy_engine(url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             metadata.create_all(conn)  # create table in database
             conn.execute(CreateView(view.name, view.__view__))  # create view in database
-            result = conn.execute(query).fetchall()
+            result = conn.execute(text(query)).fetchall()
             assert len(result) == 1  # assert that view exists in database

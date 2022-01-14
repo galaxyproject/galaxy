@@ -9025,7 +9025,7 @@ mapper_registry.map_imperatively(
 # The following statements must not precede the mapped models defined above.
 
 Job.any_output_dataset_collection_instances_deleted = column_property(
-    exists([HistoryDatasetCollectionAssociation.id], and_(
+    exists(HistoryDatasetCollectionAssociation.id).where(and_(
         Job.id == JobToOutputDatasetCollectionAssociation.job_id,
         HistoryDatasetCollectionAssociation.id == JobToOutputDatasetCollectionAssociation.dataset_collection_id,
         HistoryDatasetCollectionAssociation.deleted == true())
@@ -9033,7 +9033,7 @@ Job.any_output_dataset_collection_instances_deleted = column_property(
 )
 
 Job.any_output_dataset_deleted = column_property(
-    exists([HistoryDatasetAssociation], and_(
+    exists(HistoryDatasetAssociation).where(and_(
         Job.id == JobToOutputDatasetAssociation.job_id,
         HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
         HistoryDatasetAssociation.table.c.deleted == true())

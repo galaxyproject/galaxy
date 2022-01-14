@@ -76,5 +76,6 @@ def install_views(engine):
         # it mocks the app and CreateView will attempt to rebuild an existing
         # view in a database that is already made, the right answer is probably
         # to change the sql that gest emitted when CreateView is rendered.
-        engine.execute(DropView(view.name))
-        engine.execute(CreateView(view.name, view.__view__))
+        with engine.begin() as conn:
+            conn.execute(DropView(view.name))
+            conn.execute(CreateView(view.name, view.__view__))
