@@ -5,12 +5,10 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import ItemGrabber
-from galaxy.util import (
-    parse_xml,
-    plugin_config,
-)
+from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import WorkflowSchedulingMessage
 
@@ -188,7 +186,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             self.__init_default_scheduler()
         else:
             self.DEFAULT_BASE_HANDLER_POOLS = ('workflow-schedulers',)
-            plugins_element = parse_xml(config_file).getroot()
+            plugins_element = load(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
 
         if not self.__handlers_configured and self.__stack_has_pool:
