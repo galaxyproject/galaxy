@@ -107,6 +107,17 @@ SELECT_DUPLICATED_OPTIONS = """
 </tool>
 """
 
+SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
+<tool>
+    <inputs>
+        <param name="select" type="select" optional="true" multiple="true">
+            <option value="v">x</option>
+            <option value="v" selected="true">x</option>
+        </param>
+    </inputs>
+</tool>
+"""
+
 SELECT_DEPRECATIONS = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
@@ -332,6 +343,11 @@ TESTS = [
             and len(x.warn_messages) == 0 and len(x.error_messages) == 2
     ),
     (
+        SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED, inputs.lint_inputs,
+        lambda x:
+            len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    ),
+    (
         SELECT_DEPRECATIONS, inputs.lint_inputs,
         lambda x:
             "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in x.warn_messages
@@ -407,6 +423,7 @@ TEST_IDS = [
     'lint no when',
     'radio select incompatibilities',
     'select duplicated options',
+    'select duplicated options with different selected',
     'select deprecations',
     'select option definitions',
     'validator imcompatibilities',
