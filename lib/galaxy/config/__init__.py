@@ -620,7 +620,35 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._override_tempdir(kwargs)
+        self._configure_sqlalchemy20_warnings(kwargs)
         self._process_config(kwargs)
+
+    def _configure_sqlalchemy20_warnings(self, kwargs):
+        """
+        This method should be deleted after migration to SQLAlchemy 2.0 is complete.
+        To enable warnings, set `GALAXY_CONFIG_SQLALCHEMY_WARN_20=1`,
+        """
+        warn = kwargs.get('sqlalchemy_warn_20', False)
+        if warn:
+            import sqlalchemy
+            sqlalchemy.util.deprecations.SQLALCHEMY_WARN_20 = True
+            self._setup_sqlalchemy20_warnings_filters()
+
+    def _setup_sqlalchemy20_warnings_filters(self):
+        import warnings
+        from sqlalchemy.exc import RemovedIn20Warning
+        # Always display RemovedIn20Warning warnings.
+        warnings.filterwarnings('always', category=RemovedIn20Warning)
+        # Optionally, enable filters for specific warnings (raise error, or log, etc.)
+        # messages = [
+        #     r"replace with warning text to match",
+        # ]
+        # for msg in messages:
+        #     warnings.filterwarnings('error', message=msg, category=RemovedIn20Warning)
+        #
+        # See documentation:
+        # https://docs.python.org/3.7/library/warnings.html#the-warnings-filter
+        # https://docs.sqlalchemy.org/en/14/changelog/migration_20.html#migration-to-2-0-step-three-resolve-all-removedin20warnings
 
     def _load_schema(self):
         # Schemas are symlinked to the root of the galaxy-app package
