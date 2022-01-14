@@ -165,7 +165,7 @@ def _expand_macros(elements, macros, tokens, visited=None):
             if expand_el is None:
                 break
             if visited is None:
-                v = list()
+                v = []
             else:
                 v = visited
             _expand_macro(expand_el, macros, tokens, v)
