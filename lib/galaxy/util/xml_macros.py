@@ -155,7 +155,7 @@ def _expand_tokens_str(s, tokens):
     return s
 
 
-def _expand_macros(elements, macros, tokens):
+def _expand_macros(elements, macros, tokens, visited=None):
     if not macros and not tokens:
         return
 
@@ -164,12 +164,21 @@ def _expand_macros(elements, macros, tokens):
             expand_el = element.find('.//expand')
             if expand_el is None:
                 break
-            _expand_macro(expand_el, macros, tokens)
+            if visited is None:
+                v = list()
+            else:
+                v = visited
+            _expand_macro(expand_el, macros, tokens, v)
 
 
-def _expand_macro(expand_el, macros, tokens):
+def _expand_macro(expand_el, macros, tokens, visited):
     macro_name = expand_el.get('macro')
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
+
+    # check for cycles in the nested macro expansion
+    assert macro_name not in visited, f"Cycle in nested macros: already expanded {visited} can't expand '{macro_name}' again"
+    visited.append(macro_name)
+
     assert macro_name in macros, f"No macro named {macro_name} found, known macros are {', '.join(macros.keys())}."
     macro_def = macros[macro_name]
     expanded_elements = deepcopy(macro_def.element)
@@ -180,8 +189,9 @@ def _expand_macro(expand_el, macros, tokens):
         _expand_tokens(expanded_elements, macro_tokens)
 
     # Recursively expand contained macros.
-    _expand_macros(expanded_elements, macros, tokens)
+    _expand_macros(expanded_elements, macros, tokens, visited)
     _xml_replace(expand_el, expanded_elements)
+    del visited[-1]
 
 
 def _expand_yield_statements(macro_def, expand_el):

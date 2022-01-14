@@ -644,3 +644,30 @@ def test_loader_specify_nested_macro_by_token():
     <A/>
     <B/>
 </tool>'''
+
+
+def test_loader_circular_macros():
+    """
+    check the cycles in nested macros are detected
+    """
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <xml name="a">
+            <A>
+                <expand macro="b"/>
+            </A>
+        </xml>
+        <xml name="b">
+            <B>
+                <expand macro="a"/>
+            </B>
+        </xml>
+    </macros>
+    <expand macro="a"/>
+</tool>''')
+        try:
+            tool_dir.load()
+        except AssertionError as a:
+            assert str(a) == "Cycle in nested macros: already expanded ['a', 'b'] can't expand 'a' again"
