@@ -5,6 +5,7 @@ import time
 from operator import itemgetter
 
 import requests
+from dateutil.parser import isoparse
 
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
@@ -296,12 +297,21 @@ steps:
     def test_no_hide_on_rerun(self):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_map_over_error(history_id)
-            assert run_response['implicit_collections'][0]['visible']
             job_id = run_response['jobs'][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            failed_hdca = self.dataset_populator.get_history_collection_details(
+                history_id=history_id,
+                content_id=run_response['implicit_collections'][0]['id'],
+                assert_ok=False,
+            )
+            first_update_time = failed_hdca['update_time']
+            assert failed_hdca['visible']
             rerun_params = self._get(f"jobs/{job_id}/build_for_rerun").json()
             inputs = rerun_params['state_inputs']
             inputs['rerun_remap_job_id'] = job_id
-            self._run_detect_errors(history_id=history_id, inputs=inputs)
+            rerun_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            rerun_job_id = rerun_response['jobs'][0]["id"]
+            self.dataset_populator.wait_for_job(rerun_job_id)
             # Verify source hdca is still visible
             hdca = self.dataset_populator.get_history_collection_details(
                 history_id=history_id,
@@ -309,6 +319,7 @@ steps:
                 assert_ok=False,
             )
             assert hdca['visible']
+            assert isoparse(hdca['update_time']) > (isoparse(first_update_time))
 
     @skip_without_tool('empty_output')
     def test_common_problems(self):

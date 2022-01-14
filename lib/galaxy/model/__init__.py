@@ -295,15 +295,20 @@ class HasName:
 
 class UsesCreateAndUpdateTime:
 
+    update_time: DateTime
+
     @property
     def seconds_since_updated(self):
-        update_time = self.update_time or galaxy.model.orm.now.now()  # In case not yet flushed
-        return (galaxy.model.orm.now.now() - update_time).total_seconds()
+        update_time = self.update_time or now()  # In case not yet flushed
+        return (now() - update_time).total_seconds()
 
     @property
     def seconds_since_created(self):
-        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
-        return (galaxy.model.orm.now.now() - create_time).total_seconds()
+        create_time = self.create_time or now()  # In case not yet flushed
+        return (now() - create_time).total_seconds()
+
+    def update(self):
+        self.update_time = now()
 
 
 class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
@@ -776,7 +781,7 @@ class PasswordResetToken(Base, _HasTable):
         else:
             self.token = unique_id()
         self.user = user
-        self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
+        self.expiration_time = now() + timedelta(hours=24)
 
 
 class DynamicTool(Base, Dictifiable, RepresentById):
@@ -1452,7 +1457,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
-        update_time = galaxy.model.orm.now.now()
+        update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
@@ -1524,7 +1529,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             );
         ''']
         sa_session = object_session(self)
-        update_time = galaxy.model.orm.now.now()
+        update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
@@ -3466,7 +3471,7 @@ def datatype_for_extension(extension, datatypes_registry=None):
     return ret
 
 
-class DatasetInstance:
+class DatasetInstance(UsesCreateAndUpdateTime):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
@@ -3518,9 +3523,6 @@ class DatasetInstance:
     @peek.setter
     def peek(self, peek):
         self._peek = unicodify(peek, strip_null=True)
-
-    def update(self):
-        self.update_time = galaxy.model.orm.now.now()
 
     @property
     def ext(self):
@@ -5430,7 +5432,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, RepresentById):
         return rval
 
 
-class DatasetCollectionInstance(HasName):
+class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
 
     @property
     def state(self):
@@ -5692,6 +5694,8 @@ class HistoryDatasetCollectionAssociation(
                 deleted=self.deleted,
                 job_source_id=self.job_source_id,
                 job_source_type=self.job_source_type,
+                create_time=self.create_time.isoformat(),
+                update_time=self.update_time.isoformat(),
                 **self._base_to_dict(view=view)
             )
 
