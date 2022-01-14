@@ -157,6 +157,7 @@ class DataMetaFilter(Filter):
             self.column = d_option.column_spec_to_index(self.column)
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
+        log.error(f"data_meta.init: ref_name {self.ref_name} key {self.key} column {self.column} multiple {self.multiple} separator {self.separator}")
 
     def get_dependency_name(self):
         return self.ref_name
@@ -271,14 +272,31 @@ class ParamValueFilter(Filter):
         if trans is not None and trans.workflow_building_mode:
             return []
         ref = other_values.get(self.ref_name, None)
-        for ref_attribute in self.ref_attribute:
-            if not hasattr(ref, ref_attribute):
-                return []  # ref does not have attribute, so we cannot filter, return empty list
-            ref = getattr(ref, ref_attribute)
-        ref = str(ref)
+        if ref is None:
+            ref = []
+
+        # - for HDCAs the list of contained HDAs is extracted
+        # - single values are transformed in a single eleent list
+        # - remaining cases are already lists (select and data parameters with multiple=true)
+        if isinstance(ref, HistoryDatasetCollectionAssociation):
+            ref = ref.to_hda_representative(multiple=True)
+        elif not isinstance(ref, list):
+            ref = [ref]
+
+        ref_values = []
+        for r in ref:
+            for ref_attribute in self.ref_attribute:
+                # ref does not have attribute, so we cannot filter,
+                # but other refs might have it
+                if not hasattr(r, ref_attribute):
+                    break
+                r = getattr(r, ref_attribute)
+            ref_values.append(r)
+        ref_values = [str(_) for _ in ref_values]
+
         rval = []
         for fields in options:
-            if self.keep == (fields[self.column] == ref):
+            if self.keep == (fields[self.column] in ref_values):
                 rval.append(fields)
         return rval
 
@@ -666,10 +684,10 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
                 return []
             except ValueError:  # not a valid dataset
-                log.warning(f"could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
                 return []
 
             options = []

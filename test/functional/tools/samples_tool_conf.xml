@@ -47,6 +47,8 @@
   <tool file="inputs_as_json_with_paths.xml" />
   <tool file="inputs_as_json_with_staging_path_and_source_path.xml" />
   <tool file="filter_multiple_splitter.xml" />
+  <tool file="filter_param_value.xml" />
+  <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
