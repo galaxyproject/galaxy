@@ -29,8 +29,7 @@
                 :min="attrs.min"
                 :type="type"
                 v-model="currentValue"
-                :id="id"
-            />
+                :id="id" />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter

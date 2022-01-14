@@ -5,8 +5,7 @@
             v-if="errorMessage"
             :show="dismissCountDown"
             variant="info"
-            @dismissed="dismissCountDown = 0"
-        >
+            @dismissed="dismissCountDown = 0">
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
@@ -18,8 +17,7 @@
                     @keydown.110.capture="onFloatInput"
                     v-model="currentValue"
                     size="sm"
-                    type="number"
-                />
+                    type="number" />
             </b-col>
             <b-col class="pl-0" v-if="isRangeValid">
                 <b-form-input v-model="currentValue" :min="min" :max="max" type="range" />
