@@ -1,0 +1,33 @@
+<tool id="CONVERTER_mol2_to_mol" name="MOL2 to MOL" version="2.4.1">
+    <description></description>
+    <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        obabel -imol2 '${input}' -omol -O '${output}' -e 2>&1
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="mol2" label="Molecules in MOL2-format"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="mol"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="mol2" value="drugbank_drugs.mol2"/>
+            <output name="output" ftype="mol">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="M  END"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>

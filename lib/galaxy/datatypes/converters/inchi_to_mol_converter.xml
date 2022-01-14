@@ -1,0 +1,33 @@
+<tool id="CONVERTER_inchi_to_mol" name="InChI to MOL" version="2.4.1">
+    <description></description>
+    <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        obabel -iinchi '${input}' -omol -O '${output}' -e 2>&1
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="inchi" label="Molecules in InChI-format"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="mol"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="inchi" value="drugbank_drugs.inchi"/>
+            <output name="output" ftype="mol">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="M  END"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>

@@ -1,0 +1,33 @@
+<tool id="CONVERTER_SMILES_to_MOL" name="SMILES to MOL" version="2.4.1">
+    <description></description>
+    <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
+    <requirements>
+        <requirement type="package" version="2.4.1">openbabel</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        obabel -ismi '${input}' -omol -O '${output}' -e 2>&1
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="smi" label="Molecules in SMILES format"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="mol"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="smi" value="drugbank_drugs.smi"/>
+            <output name="output" ftype="mol">
+                <assert_contents>
+                    <has_text text="OpenBabel"/>
+                    <has_text text="M  END"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+]]>
+    </help>
+</tool>
