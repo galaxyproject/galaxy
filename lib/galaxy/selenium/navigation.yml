@@ -692,7 +692,6 @@ admin:
       jobs: '#admin-link-jobs'
       local_data: '#admin-link-local-data'
       metadata: '#admin-link-metadata'
-      migrations: '#admin-link-migrations'
       tool_versions: '#admin-link-tool-versions'
       toolshed: '#admin-link-toolshed'
       users: '#admin-link-users'

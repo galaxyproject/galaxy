@@ -1173,11 +1173,6 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         self.visit_url('/repository/display_tool', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def load_galaxy_tool_migrations_page(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin/review_tool_migration_stages'
-        self.visit_galaxy_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def load_invalid_tool_page(self, repository, tool_xml, changeset_revision, strings_displayed=None, strings_not_displayed=None):
         params = {
             'repository_id': self.security.encode_id(repository.id),

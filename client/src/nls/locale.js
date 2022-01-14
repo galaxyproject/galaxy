@@ -218,7 +218,6 @@ define({
         "Download local tool": false,
         "Tool lineage": false,
         "Reload a tool's configuration": false,
-        "Review tool migration stages": false,
         "View Tool Error Logs": false,
         "Manage Allowlist": false,
         "Manage Tool Dependencies": false,
@@ -368,7 +367,6 @@ define({
         "Refresh history": false,
         // ---------------------------------------------------------------------------- admin-panel
         "View error logs": false,
-        "View migration stages": false,
         "View lineage": false,
         "Manage dependencies": false,
         "Manage allowlist": false,
