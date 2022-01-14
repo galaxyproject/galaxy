@@ -21,12 +21,12 @@ def load_with_references(path):
     # and create a copy. this is done because this allows
     # to iterate over all expand nodes of the tree
     # that are not included in the macros node
-    macros = _macros_el(root)
-    if macros is not None:
-        macros_copy = deepcopy(macros)
-        macros.clear()
+    macros_el = _macros_el(root)
+    if macros_el is not None:
+        macros_copy = deepcopy(macros_el)
+        macros_el.clear()
     else:
-        macros_copy = []
+        macros_copy = None
 
     # Collect tokens
     tokens = _macros_of_type(macros_copy, 'token', lambda el: el.text or '')
@@ -38,7 +38,8 @@ def load_with_references(path):
 
     # readd the stashed children of the macros node
     # TODO is this this really necesary? Since macro nodes are removed anyway just below.
-    _xml_set_children(macros, list(macros_copy))
+    if macros_copy:
+        _xml_set_children(macros_el, list(macros_copy))
 
     for el in root.xpath('//macro'):
         if el.get('type') != 'template':
@@ -59,7 +60,8 @@ def template_macro_params(root):
     with these.
     """
     param_dict = {}
-    macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
+    macros_el = _macros_el(root)
+    macro_dict = _macros_of_type(macros_el, 'template', lambda el: el.text)
     for key, value in macro_dict.items():
         param_dict[key] = value
     return param_dict
@@ -95,19 +97,14 @@ def _macros_el(root):
     return root.find('macros')
 
 
-def _macros_of_type(root, type, el_func):
-    if root.tag == "macros":
-        macros_el = root
-    else:
-        macros_el = root.find('macros')
-    macro_dict = {}
-    if macros_el is not None:
-        macro_els = macros_el.findall('macro')
-        filtered_els = [(macro_el.get("name"), el_func(macro_el))
-                        for macro_el in macro_els
-                        if macro_el.get('type') == type]
-        macro_dict = dict(filtered_els)
-    return macro_dict
+def _macros_of_type(macros_el, type, el_func):
+    if macros_el is None:
+        return {}
+    macro_els = macros_el.findall('macro')
+    filtered_els = [(macro_el.get("name"), el_func(macro_el))
+                    for macro_el in macro_els
+                    if macro_el.get('type') == type]
+    return dict(filtered_els)
 
 
 def expand_nested_tokens(tokens):

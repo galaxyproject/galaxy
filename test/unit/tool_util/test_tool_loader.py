@@ -30,6 +30,15 @@ class TestToolDirectory:
             return parse_xml(path)
 
 
+def test_no_macros():
+    """
+    Test tool loaded in absence of a macros node.
+    """
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('<tool/>')
+        tool_dir.load(preprocess=True)
+
+
 def test_loader_simple():
     """
     Test simple macro replacement.
