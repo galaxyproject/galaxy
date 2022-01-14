@@ -1,5 +1,6 @@
 import collections
 import os
+import shutil
 
 import pytest
 
@@ -59,7 +60,7 @@ def test_upload_datatype_auto(instance, test_data, temp_file):
     upload_datatype_helper(instance, test_data, temp_file)
 
 
-def upload_datatype_helper(instance, test_data, temp_file):
+def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=False):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
         is_compressed = is_method(test_data.path)
@@ -93,6 +94,14 @@ def upload_datatype_helper(instance, test_data, temp_file):
     datatype = registry.datatypes_by_extension[file_ext]
     datatype_compressed = getattr(datatype, "compressed", False)
     if not is_compressed or datatype_compressed:
+        if delete_cache_dir:
+            # Delete cache directory and then re-create it. This way we confirm
+            # that dataset is fetched from the object store, not from the cache
+            temp_dir = instance.get_object_store_kwargs()['temp_directory']
+            cache_dir = temp_dir + '/object_store_cache'
+            shutil.rmtree(cache_dir)
+            os.mkdir(cache_dir)
+
         # download file and verify it hasn't been manipulated
         temp_file.write(instance.dataset_populator.get_history_dataset_content(history_id=instance.history_id,
                                                                                dataset=dataset,
