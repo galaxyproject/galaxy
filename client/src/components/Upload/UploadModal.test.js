@@ -10,7 +10,6 @@ import MockCurrentUser from "../providers/MockCurrentUser";
 import MockCurrentHistory from "components/providers/History/UserHistories/MockCurrentHistory";
 
 jest.mock("app");
-jest.mock("components/providers/History/caching");
 
 const propsData = {
     chunkUploadSize: 1024,

@@ -9,8 +9,6 @@ import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
 
-jest.mock("components/providers/History/caching");
-
 function buildWrapper(conversion_disable = false) {
     return mount(DatasetAttributes, {
         propsData: {

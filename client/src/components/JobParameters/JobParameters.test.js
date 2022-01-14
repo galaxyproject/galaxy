@@ -9,7 +9,6 @@ import raw from "components/providers/History/test/json/Dataset.json";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 
-jest.mock("components/providers/History/caching");
 const observe = jest.fn();
 const unobserve = jest.fn();
 
