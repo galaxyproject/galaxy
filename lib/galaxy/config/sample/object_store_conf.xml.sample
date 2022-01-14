@@ -29,6 +29,7 @@
     tag, until the dataset is found. New datasets are always created in the
     first (order="0") backend.
 -->
+<!--
 <object_store type="hierarchical">
     <backends>
         <backend id="new" type="disk" order="0">
@@ -43,6 +44,7 @@
         </backend>
     </backends>
 </object_store>
+-->
 
 <!--
     Sample Distributed Object Store with disk backends
@@ -54,17 +56,17 @@
     twice the chance of being (randomly) selected for new datasets as a backend
     with weight "1". A weight of "0" will still allow datasets in that backend
     to be read, but no new datasets will be written to that backend.
+
+    In distributed and hierarchical world, you can choose that some backends are
+    automatically unused whenever they become too full. Setting the maxpctfull
+    attribute (on top level object_store it behaves as a global default) enables
+    this, or it can be applied to individual backends to override a global
+    setting. This only applies to disk based backends and not remote object
+    stores.
 -->
+<!--
 <object_store type="distributed">
     <backends>
-        <!--
-            In distributed and hierarchical world, you can choose that some
-            backends are automatically unused whenever they become too full.
-            Setting the maxpctfull attribute (on top level object_store it
-            behaves as a global default), or it can be applied to individual
-            backends to override a global setting. This only applies to disk
-            based backends and not remote object stores.
-        -->
         <backend id="new-big" type="disk" weight="3" maxpctfull="90">
             <files_dir path="/new-big-fs/galaxy/files"/>
             <extra_dir type="temp" path="/new-big-fs/galaxy/tmp"/>
@@ -80,6 +82,7 @@
         </backend>
     </backends>
 </object_store>
+-->
 
 <!--
     Sample Nested (Distributed in Hierarchical) Object Store
@@ -89,12 +92,15 @@
     data will be searched for in a disk object store. This is useful if moving
     from non-distributed to distributed since you don't have to set
     `object_store_id` for old data in the database.
+
+    In this example, new dataset creation is distributed evenly between two
+    backends.
 -->
+<!--
 <object_store type="hierarchical">
     <backends>
         <backend type="distributed" id="primary" order="0" maxpctfull="90">
             <backends>
-                <!-- distribute evenly between two backends -->
                 <backend id="new1" type="disk" weight="1" store_by="uuid">
                     <files_dir path="/new-fs/galaxy/files1"/>
                     <extra_dir type="temp" path="/new-fs/galaxy/tmp1"/>
@@ -112,12 +118,14 @@
         </backend>
     </backends>
 </object_store>
+-->
 
 <!--
     Sample S3 Object Store
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="s3">
      <auth access_key="...." secret_key="....." />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
@@ -125,10 +133,12 @@
      <extra_dir type="job_work" path="database/job_working_directory_s3"/>
      <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
+-->
 
 <!--
     Sample iRODS Object Store
 -->
+<!--
 <object_store type="irods">
     <auth username="rods" password="rods" />
     <resource name="demoResc" />
@@ -138,12 +148,14 @@
     <extra_dir type="job_work" path="database/job_working_directory_irods"/>
     <extra_dir type="temp" path="database/tmp_irods"/>
 </object_store>
+-->
 
 <!--
     Sample Swift Object Store
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="swift">
     <auth access_key="...." secret_key="....." />
     <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
@@ -152,12 +164,14 @@
     <extra_dir type="job_work" path="database/job_working_directory_swift"/>
     <extra_dir type="temp" path="database/tmp_swift"/>
 </object_store>
+-->
 
 <!--
     Sample Azure Object Store
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="azure_blob">
     <auth account_name="..." account_key="...." />
     <container name="unique_container_name" max_chunk_size="250"/>
@@ -165,12 +179,14 @@
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
+-->
 
 <!--
     Cloud ObjectStore: Amazon Simple Storage Service (S3)
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="cloud" provider="aws" order="0">
     <auth access_key="..." secret_key="..." />
     <bucket name="..." use_reduced_redundancy="False" />
@@ -178,12 +194,14 @@
     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
     <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
+-->
 
 <!--
     Cloud ObjectStore: Microsoft Azure Blob Storage
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="cloud" provider="azure" order="0">
     <auth subscription_id="..." client_id="..." secret="..." tenant="..." />
     <bucket name="..." use_reduced_redundancy="False" />
@@ -191,12 +209,14 @@
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
+-->
 
 <!--
     Cloud ObjectStore: Google Compute Platform (GCP)
 
     The "size" attribute of <cache> is in gigabytes.
 -->
+<!--
 <object_store type="cloud" provider="google" order="0">
     <auth credentials_file="..." />
     <bucket name="..." use_reduced_redundancy="False" />
@@ -204,3 +224,4 @@
     <extra_dir type="job_work" path="database/job_working_directory_gcp"/>
     <extra_dir type="temp" path="database/tmp_gcp"/>
 </object_store>
+-->
