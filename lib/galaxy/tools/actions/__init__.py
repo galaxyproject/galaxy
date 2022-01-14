@@ -676,6 +676,7 @@ class DefaultToolAction(ToolAction):
                     for job in hdca.implicit_collection_jobs.jobs:
                         if job.job_id == old_job.id:
                             job.job_id = current_job.id
+                hdca.update()
             for jtoidca in old_job.output_dataset_collections:
                 jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
         except Exception:
