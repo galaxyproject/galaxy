@@ -175,6 +175,7 @@
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="grib" type="galaxy.datatypes.binary:Grib" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="loom" type="galaxy.datatypes.binary:Loom" description="An HDF5-based Loom File" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5ad" type="galaxy.datatypes.binary:Anndata" description="An HDF5-based anndata File" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -961,6 +962,7 @@
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:HexrdMaterials"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
+    <sniffer type="galaxy.datatypes.binary:Grib"/>
     <sniffer type="galaxy.datatypes.binary:HexrdImagesNpz"/>
     <sniffer type="galaxy.datatypes.binary:HexrdEtaOmeNpz"/>
     <sniffer type="galaxy.datatypes.binary:Npz"/>

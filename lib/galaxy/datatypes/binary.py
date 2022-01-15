@@ -1224,6 +1224,51 @@ class Anndata(H5):
             return f"Binary Anndata file ({nice_size(dataset.get_size())})"
 
 
+class Grib(Binary):
+    """
+    Class describing an GRIB file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.grib')
+    >>> Grib().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Grib().sniff(fname)
+    False
+    """
+    file_ext = "grib"
+    # GRIB not yet in EDAM so set to binary
+    edam_format = "format_2333"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b'GRIB'
+
+    def sniff(self, filename):
+        # The first 4 bytes of any GRIB file are GRIB
+        try:
+            header = open(filename, 'rb').read(4)
+            if header == self._magic:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GRIB file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary GRIB file ({nice_size(dataset.get_size())})"
+
+
 @build_sniff_from_prefix
 class GmxBinary(Binary):
     """
