@@ -104,6 +104,17 @@ def get_spark_time(time_period):
     return time_period, _time_period
 
 
+def get_curr_item(check_item, unique_items):
+    """
+    When rendering by item and destination_id,
+    render the item uniquely.
+    """
+    if check_item in unique_items:
+        return ('', unique_items)
+    unique_items.add(check_item)
+    return (check_item, unique_items)
+
+
 class SpecifiedDateListGrid(grids.Grid):
 
     class JobIdColumn(grids.IntegerColumn):
@@ -154,6 +165,13 @@ class SpecifiedDateListGrid(grids.Grid):
             return query.filter(and_(model.Job.table.c.user_id == model.User.table.c.id,
                                      model.User.table.c.email == column_filter))
 
+    class DestinationIdColumn(grids.GridColumn):
+
+        def filter(self, trans, user, query, column_filter):
+            if column_filter == 'All':
+                return query
+            return query.filter(model.Job.table.c.destination_id == column_filter)
+
     class SpecifiedDateColumn(grids.GridColumn):
 
         def filter(self, trans, user, query, column_filter):
@@ -186,6 +204,9 @@ class SpecifiedDateListGrid(grids.Grid):
                     filterable="advanced"),
         StateColumn("State",
                     key="state",
+                    attach_popup=False),
+        DestinationIdColumn("Destination Id",
+                    key="destination_id",
                     attach_popup=False),
         ToolColumn("Tool Id",
                    key="tool_id",
@@ -274,6 +295,9 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                                                                 **kwd))
             elif operation == "user_for_month":
                 kwd['f-email'] = util.restore_text(kwd['email'])
+            elif operation == "user_for_month_by_destination":
+                kwd['f-email'] = util.restore_text(kwd['email'])
+                kwd['f-destination_id'] = kwd['destination_id']
             elif operation == "user_per_month":
                 # The received id is the job id, so we need to get the id of the user
                 # that submitted the job.
@@ -313,18 +337,38 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[key][job_day] += 1
         return trends
 
-    def _calculate_job_table(self, sa_session, jobs_query):
+    def _calculate_job_table(self, sa_session, jobs_query, by_destination=False):
         jobs = []
+        unique_month_year_strs = set()
         for row in sa_session.execute(jobs_query):
             month_name = row.date.strftime("%B")
             year = int(row.date.strftime("%Y"))
 
-            jobs.append((
-                row.date.strftime("%Y-%m"),
-                row.total_jobs,
-                month_name,
-                year
-            ))
+            if str(by_destination).lower() == 'true':
+                month_year_str = "%s %s" % (month_name, year)
+                curr_month_year_str, unique_month_year_strs = get_curr_item(month_year_str, unique_month_year_strs)
+                if curr_month_year_str == '':
+                    curr_month = ''
+                    curr_year = ''
+                else:
+                    curr_month = row.date.strftime("%B")
+                    curr_year = row.date.strftime("%Y")
+                jobs.append((
+                    row.date.strftime("%Y-%m"),
+                    row.total_jobs,
+                    curr_month,
+                    curr_year,
+                    row.user_email,
+                    row.destination_id,
+                    row.execute_time
+                ))
+            else:
+                jobs.append((
+                    row.date.strftime("%Y-%m"),
+                    row.total_jobs,
+                    month_name,
+                    year
+                ))
         return jobs
 
     @web.expose
@@ -534,9 +578,11 @@ class Jobs(BaseUIController, ReportQueryBuilder):
     @web.expose
     def per_month_all(self, trans, **kwd):
         """
-        Queries the DB for all jobs. Avoids monitor jobs.
+        Queries the DB for all jobs. Avoids monitor jobs.  The
+        by_destination param will group by User.email and
+        Job.destination_id.
         """
-
+        by_destination = str(kwd.get('by_destination', False)).lower()
         message = ''
         PageSpec = namedtuple('PageSpec', ['entries', 'offset', 'page', 'pages_found'])
 
@@ -570,26 +616,43 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         monitor_user_id = get_monitor_id(trans, monitor_email)
 
         # Use to make the page table
-        jobs_by_month = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
-                                   sa.func.count(model.Job.table.c.id).label('total_jobs')),
-                                  whereclause=model.Job.table.c.user_id != monitor_user_id,
-                                  from_obj=[model.Job.table],
-                                  group_by=self.group_by_month(model.Job.table.c.create_time),
-                                  order_by=[_order],
-                                  offset=offset,
-                                  limit=limit)
+        if by_destination == 'true':
+            jobs_by_month = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
+                                       model.Job.table.c.destination_id.label('destination_id'),
+                                       sa.func.sum(model.Job.table.c.update_time - model.Job.table.c.create_time).label('execute_time'),
+                                       sa.func.count(model.Job.table.c.id).label('total_jobs'),
+                                       model.User.table.c.email.label('user_email')),
+                                      whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                      from_obj=[sa.join(model.Job.table, model.User.table)],
+                                      group_by=['user_email', 'date', 'destination_id'],
+                                      order_by=[_order],
+                                      offset=offset,
+                                      limit=limit)
+        else:
+            jobs_by_month = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
+                                       sa.func.count(model.Job.table.c.id).label('total_jobs')),
+                                      whereclause=model.Job.table.c.user_id != monitor_user_id,
+                                      from_obj=[model.Job.table],
+                                      group_by=self.group_by_month(model.Job.table.c.create_time),
+                                      order_by=[_order],
+                                      offset=offset,
+                                      limit=limit)
 
         # Use to make sparkline
         all_jobs = sa.select((self.select_day(model.Job.table.c.create_time).label('date'),
                               model.Job.table.c.id.label('id')))
 
         trends = self._calculate_trends_for_jobs(trans.sa_session, all_jobs)
-        jobs = self._calculate_job_table(trans.sa_session, jobs_by_month)
+        jobs = self._calculate_job_table(trans.sa_session, jobs_by_month, by_destination=by_destination)
 
         pages_found = ceil(len(jobs) / float(entries))
         page_specs = PageSpec(entries, offset, page, pages_found)
 
-        return trans.fill_template('/webapps/reports/jobs_per_month_all.mako',
+        if by_destination == 'true':
+            page = '/webapps/reports/jobs_per_month_by_user_and_destination.mako'
+        else:
+            page = '/webapps/reports/jobs_per_month_all.mako'
+        return trans.fill_template(page,
                                    order=order,
                                    arrow=arrow,
                                    sort_id=sort_id,
@@ -674,6 +737,11 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
     @web.expose
     def per_user(self, trans, **kwd):
+        """
+        Queries the DB for jobs per user.  The by_destination
+        param will group by Job.destination_id.
+        """
+        by_destination = str(kwd.get('by_destination', False)).lower()
         total_time = Timer()
         q_time = Timer()
 
@@ -711,24 +779,42 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             page = 1
 
         jobs = []
-        jobs_per_user = sa.select((model.User.table.c.email.label('user_email'),
-                                   sa.func.count(model.Job.table.c.id).label('total_jobs')),
-                                  from_obj=[sa.outerjoin(model.Job.table, model.User.table)],
-                                  group_by=['user_email'],
-                                  order_by=[_order],
-                                  offset=offset,
-                                  limit=limit)
+        if by_destination == 'true':
+            jobs_per_user = sa.select((model.User.table.c.email.label('user_email'),
+                                       sa.func.count(model.Job.table.c.id).label('total_jobs'),
+                                       model.Job.table.c.destination_id.label('destination_id')),
+                                      from_obj=[sa.outerjoin(model.Job.table, model.User.table)],
+                                      group_by=['user_email', 'destination_id'],
+                                      order_by=[_order],
+                                      offset=offset,
+                                      limit=limit)
+
+        else:
+            jobs_per_user = sa.select((model.User.table.c.email.label('user_email'),
+                                       sa.func.count(model.Job.table.c.id).label('total_jobs')),
+                                      from_obj=[sa.outerjoin(model.Job.table, model.User.table)],
+                                      group_by=['user_email'],
+                                      order_by=[_order],
+                                      offset=offset,
+                                      limit=limit)
 
         q_time.start()
+        unique_users = set()
         for row in trans.sa_session.execute(jobs_per_user):
             if (row.user_email is None):
-                jobs.append(('Anonymous',
-                             row.total_jobs))
+                curr_user, unique_users = get_curr_item('Anonymous', unique_users)
+                if by_destination == 'true':
+                    jobs.append((curr_user, row.destination_id, row.total_jobs))
+                else:
+                    jobs.append((curr_user, row.total_jobs))
             elif (row.user_email == monitor_email):
                 continue
             else:
-                jobs.append((row.user_email,
-                             row.total_jobs))
+                curr_user, unique_users = get_curr_item(row.user_email, unique_users)
+                if by_destination == 'true':
+                    jobs.append((curr_user, row.destination_id, row.total_jobs))
+                else:
+                    jobs.append((curr_user, row.total_jobs))
         q_time.stop()
         query1time = q_time.time_elapsed()
 
@@ -773,7 +859,11 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
         total_time.stop()
         ttime = total_time.time_elapsed()
-        return trans.fill_template('/webapps/reports/jobs_per_user.mako',
+        if by_destination == 'true':
+            page = '/webapps/reports/jobs_per_user_by_destination.mako'
+        else:
+            page = '/webapps/reports/jobs_per_user.mako'
+        return trans.fill_template(page,
                                    order=order,
                                    arrow=arrow,
                                    sort_id=sort_id,
@@ -789,6 +879,11 @@ class Jobs(BaseUIController, ReportQueryBuilder):
 
     @web.expose
     def user_per_month(self, trans, **kwd):
+        """
+        Queries the DB for jobs per user per month.  The
+        by_destination param will group by Job.destination_id.
+        """
+        by_destination = str(kwd.get('by_destination', False)).lower()
         params = util.Params(kwd)
         message = ''
 
@@ -799,12 +894,22 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         arrow = specs.arrow
         _order = specs.exc_order
 
-        q = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
-                       sa.func.count(model.Job.table.c.id).label('total_jobs')),
-                      whereclause=model.User.table.c.email == email,
-                      from_obj=[sa.join(model.Job.table, model.User.table)],
-                      group_by=self.group_by_month(model.Job.table.c.create_time),
-                      order_by=[_order])
+        if by_destination == 'true':
+            q = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
+                           model.Job.table.c.destination_id.label('destination_id'),
+                           sa.func.sum(model.Job.table.c.update_time - model.Job.table.c.create_time).label('execute_time'),
+                           sa.func.count(model.Job.table.c.id).label('total_jobs')),
+                          whereclause=model.User.table.c.email == email,
+                          from_obj=[sa.join(model.Job.table, model.User.table)],
+                          group_by=['date', 'destination_id'],
+                          order_by=[_order])
+        else:
+            q = sa.select((self.select_month(model.Job.table.c.create_time).label('date'),
+                           sa.func.count(model.Job.table.c.id).label('total_jobs')),
+                          whereclause=model.User.table.c.email == email,
+                          from_obj=[sa.join(model.Job.table, model.User.table)],
+                          group_by=self.group_by_month(model.Job.table.c.create_time),
+                          order_by=[_order])
 
         all_jobs_per_user = sa.select((model.Job.table.c.create_time.label('date'),
                                        model.Job.table.c.id.label('job_id')),
@@ -828,19 +933,41 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 trends[key][job_day] += 1
 
         jobs = []
+        unique_month_year_strs = set()
         for row in trans.sa_session.execute(q):
-            jobs.append((row.date.strftime("%Y-%m"),
-                         row.total_jobs,
-                         row.date.strftime("%B"),
-                         row.date.strftime("%Y")))
-        return trans.fill_template('/webapps/reports/jobs_user_per_month.mako',
+            if by_destination == 'true':
+                month_year_str = "%s %s" % (row.date.strftime("%B"), row.date.strftime("%Y"))
+                curr_month_year_str, unique_month_year_strs = get_curr_item(month_year_str, unique_month_year_strs)
+                if curr_month_year_str == '':
+                    curr_month = ''
+                    curr_year = ''
+                else:
+                    curr_month = row.date.strftime("%B")
+                    curr_year = row.date.strftime("%Y")
+                jobs.append((row.date.strftime("%Y-%m"),
+                             row.execute_time,
+                             row.total_jobs,
+                             curr_month,
+                             curr_year,
+                             row.destination_id))
+            else:
+                jobs.append((row.date.strftime("%Y-%m"),
+                             row.total_jobs,
+                             row.date.strftime("%B"),
+                             row.date.strftime("%Y")))
+        if by_destination == 'true':
+            page = '/webapps/reports/jobs_user_per_month_by_destination.mako'
+        else:
+            page = '/webapps/reports/jobs_user_per_month.mako'
+        return trans.fill_template(page,
                                    order=order,
                                    arrow=arrow,
                                    sort_id=sort_id,
                                    id=kwd.get('id'),
                                    trends=trends,
                                    email=util.sanitize_text(email),
-                                   jobs=jobs, message=message)
+                                   jobs=jobs,
+                                   message=message)
 
     @web.expose
     def per_tool(self, trans, **kwd):
