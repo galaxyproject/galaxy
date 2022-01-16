@@ -26,11 +26,10 @@ def lint_tsts(tool_xml, lint_ctx):
                 has_test = True
                 break
 
-        # check if expect_num_outputs is set if there are outputs with filters or discovered datasets
-        discover_datasets = tool_xml.findall("./outputs//discover_datasets")
+        # check if expect_num_outputs is set if there are outputs with filters
         filter = tool_xml.findall("./outputs//filter")
-        if len(discover_datasets) + len(filter) > 0 and "expect_num_outputs" not in test.attrib:
-            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters or use discover_datasets")
+        if len(filter) > 0 and "expect_num_outputs" not in test.attrib:
+            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters")
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):

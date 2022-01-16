@@ -294,20 +294,6 @@ TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
 </tool>
 """
 
-TESTS_EXPECT_NUM_OUTPUTS_DISCOVERED_DATASETS = """
-<tool>
-    <outputs>
-        <data>
-            <discover_datasets/>
-        </data>
-    </outputs>
-    <tests>
-        <test expect_failure="false">
-        </test>
-    </tests>
-</tool>
-"""
-
 TESTS = [
     (
         WHITESPACE_IN_VERSIONS_AND_NAMES, general.lint_general,
@@ -428,15 +414,9 @@ TESTS = [
     (
         TESTS_EXPECT_NUM_OUTPUTS_FILTER, tests.lint_tsts,
         lambda x:
-            "Test should specify 'expect_num_outputs' if outputs have filters or use discover_datasets" in x.warn_messages
+            "Test should specify 'expect_num_outputs' if outputs have filters" in x.warn_messages
             and len(x.warn_messages) == 1 and len(x.error_messages) == 0
     ),
-    (
-        TESTS_EXPECT_NUM_OUTPUTS_DISCOVERED_DATASETS, tests.lint_tsts,
-        lambda x:
-            "Test should specify 'expect_num_outputs' if outputs have filters or use discover_datasets" in x.warn_messages
-            and len(x.warn_messages) == 1 and len(x.error_messages) == 0
-    )
 ]
 
 TEST_IDS = [
@@ -457,7 +437,6 @@ TEST_IDS = [
     'test param missing from inputs',
     'test expecting failure with outputs',
     'test missing expect_num_outputs for filtered outputs',
-    'test missing expect_num_outputs for discovered outputs',
 ]
 
 
