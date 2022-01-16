@@ -164,7 +164,6 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
@@ -177,7 +176,6 @@ class GalaxyInteractorApi:
         if primary_datasets:
             job_id = self._dataset_provenance(history_id, hid)["job_id"]
             outputs = self._get(f"jobs/{job_id}/outputs").json()
-
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -466,7 +464,6 @@ class GalaxyInteractorApi:
                 continue
             else:
                 break
-
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
             return Bunch(
@@ -1177,7 +1174,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list} collections {data_collection_list}"
+            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
             raise Exception(message)
     found_exceptions = []
 
