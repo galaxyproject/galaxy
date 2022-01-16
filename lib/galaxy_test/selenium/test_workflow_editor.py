@@ -297,6 +297,19 @@ steps:
         self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
         self.assert_connected("text_input_step#out_file1", "collection_input#input1")
 
+    def test_connecting_display_in_upload_false_connections(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+steps:
+  step1:
+    tool_id: test_sam_to_bam_conversions
+  step2:
+    tool_id: test_sam_to_bam_conversions
+        """)
+
+        self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
+        self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
+
     @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
