@@ -530,6 +530,7 @@ steps:
         self.set_text_element(output_label, 'workflow output label')
         self.set_text_element(editor.rename_output, 'renamed_output')
         editor.change_datatype.wait_for_and_click()
+        editor.select_dataype_text_search.wait_for_and_send_keys('bam')
         editor.select_datatype(datatype='bam').wait_for_and_click()
         self.set_text_element(editor.add_tags, '#crazynewtag')
         self.set_text_element(editor.remove_tags, '#oldboringtag')

@@ -1,6 +1,7 @@
 export class DatatypesMapperModel {
     constructor(typesAndMapping) {
         this.datatypes = typesAndMapping.datatypes;
+        this.datatypes.sort();
         this.datatypesMapping = typesAndMapping.datatypes_mapping;
     }
 
