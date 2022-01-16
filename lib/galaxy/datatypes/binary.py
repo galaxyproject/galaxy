@@ -1247,9 +1247,14 @@ class Grib(Binary):
     def sniff(self, filename):
         # The first 4 bytes of any GRIB file are GRIB
         try:
-            header = open(filename, 'rb').read(4)
+            _uint8struct = struct.Struct(b">B")
+            f = open(filename, 'rb')
+            header = f.read(4)
             if header == self._magic:
-                return True
+                tmp = f.read(4)
+                edition = _uint8struct.unpack_from(tmp, 3)[0]
+                if edition == 1 or edition == 2:
+                    return True
             return False
         except Exception:
             return False
