@@ -119,7 +119,7 @@ describe("PairedListCollectionCreator", () => {
                 hideSourceItems: false,
             },
         });
-        await wrapper.vm.$nextTick()
+        await wrapper.vm.$nextTick();
         //change filter to _R1/_R2
         wrapper.find("div.forward-unpaired-filter > input").setValue("_R1");
         await wrapper.vm.$nextTick();
