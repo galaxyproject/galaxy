@@ -1,5 +1,5 @@
 import os
-from copy import deepcopy
+from copy import copy, deepcopy
 
 from galaxy.util import parse_xml
 
@@ -23,7 +23,7 @@ def load_with_references(path):
     # that are not included in the macros node
     macros_el = _macros_el(root)
     if macros_el is not None:
-        macros_copy = deepcopy(macros_el)
+        macros_copy = copy(macros_el)
         macros_el.clear()
     else:
         macros_copy = None
