@@ -1237,7 +1237,7 @@ class Grib(Binary):
     False
     """
     file_ext = "grib"
-    # GRIB not yet in EDAM so set to binary
+    # GRIB not yet in EDAM (work in progress). For now, so set to binary
     edam_format = "format_2333"
 
     def __init__(self, **kwd):
