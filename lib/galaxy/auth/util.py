@@ -77,15 +77,22 @@ def parse_auth_results(trans, auth_results, options):
     auth_result, auto_email, auto_username = auth_results[:3]
     auto_username = str(auto_username).lower()
     # make username unique
-    if validate_publicname(trans, auto_username) != '':
-        i = 1
-        while i <= 10:  # stop after 10 tries
-            if validate_publicname(trans, "%s-%i" % (auto_username, i)) == '':
-                auto_username = "%s-%i" % (auto_username, i)
-                break
-            i += 1
+    max_retries = int(options.get('max-retries', "10"))
+    try_number = 0
+    while try_number <= max_retries:
+        if try_number == 0:
+            test_name = auto_username
         else:
-            raise Conflict("Cannot make unique username")
+            test_name = f"{auto_username}-{try_number}"
+        validate_result = validate_publicname(trans, test_name)
+        if validate_result == '':
+            auto_username = test_name
+            break
+        else:
+            log.error(f"Invalid username '{auto_username}': {validate_result}")
+        try_number += 1
+    else:
+        raise Conflict("Cannot make unique username")
     log.debug(f"Email: {auto_email}, auto-register with username: {auto_username}")
     auth_return["auto_reg"] = string_as_bool(options.get('auto-register', False))
     auth_return["email"] = auto_email
