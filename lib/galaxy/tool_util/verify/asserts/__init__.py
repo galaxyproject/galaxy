@@ -37,7 +37,7 @@ def verify_assertions(data, assertion_description_list):
 def verify_assertion(data, assertion_description):
     tag = assertion_description["tag"]
     assert_function_name = "assert_" + tag
-    assert_function = assertion_functions.get(assert_function_name, None)
+    assert_function = assertion_functions.get(assert_function_name)
 
     if assert_function is None:
         errmsg = f"Unable to find test function associated with XML tag {tag}. Check your tool file syntax."
