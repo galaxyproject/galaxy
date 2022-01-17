@@ -17,8 +17,8 @@ from galaxy.tool_util.linters import (
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import etree
 
+# TODO tests tool xml for general linter
 # tests tool xml for citations linter
-# tests tool xml for general linter
 CITATIONS_MULTIPLE = """
 <tool>
     <citations/>
@@ -586,6 +586,18 @@ ASSERTS = """
     </tests>
 </tool>
 """
+TESTS_VALID = """
+<tool>
+    <outputs>
+        <data name="test"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="test"/>
+        </test>
+    </tests>
+</tool>
+"""
 
 # tool xml for xml_order linter
 XML_ORDER = """
@@ -862,6 +874,13 @@ TESTS = [
             and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
+        REPEATS, inputs.lint_repeats,
+        lambda x:
+            "Repeat does not specify name attribute." in x.error_messages
+            and "Repeat does not specify title attribute." in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 2
+    ),
+    (
         OUTPUTS_MISSING, outputs.lint_output,
         lambda x:
             'Tool contains no outputs section, most tools should produce outputs.' in x.warn_messages
@@ -975,13 +994,6 @@ TESTS = [
             and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
-        TESTS_WO_EXPECTATIONS, tests.lint_tsts,
-        lambda x:
-            'Test 1: No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
-            and 'No valid test(s) found.' in x.warn_messages
-            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 2 and len(x.error_messages) == 0
-    ),
-    (
         TESTS_PARAM_OUTPUT_NAMES, tests.lint_tsts,
         lambda x:
             '1 test(s) found.' in x.valid_messages
@@ -999,6 +1011,19 @@ TESTS = [
             'No valid test(s) found.' in x.warn_messages
             and "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
             and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 1
+    ),
+    (
+        TESTS_WO_EXPECTATIONS, tests.lint_tsts,
+        lambda x:
+            'Test 1: No outputs or expectations defined for tests, this test is likely invalid.' in x.warn_messages
+            and 'No valid test(s) found.' in x.warn_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 2 and len(x.error_messages) == 0
+    ),
+    (
+        TESTS_VALID, tests.lint_tsts,
+        lambda x:
+            "1 test(s) found." in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 1 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
         XML_ORDER, xml_order.lint_xml_order,
@@ -1042,6 +1067,7 @@ TEST_IDS = [
     'inputs: select filter',
     'inputs: validator incompatibilities',
     'inputs: validator all correct',
+    'repeats',
     'outputs: missing outputs tag',
     'outputs: multiple outputs tags',
     'outputs: unknow tag in outputs',
@@ -1057,10 +1083,11 @@ TEST_IDS = [
     'stdio: invalid tag or attribute',
     'tests: absent',
     'tests: absent data_source',
-    'tests: without expectations',
     'tests: param and output names',
     'tests: expecting failure with outputs',
-    'xml_order',
+    'tests: without expectations',
+    'tests: valid',
+    'xml_order'
 ]
 
 
