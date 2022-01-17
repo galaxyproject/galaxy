@@ -280,7 +280,6 @@ SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
 </tool>
 """
 
-SELECT_DEPRECATIONS = """
 INPUTS_SELECT_DEPRECATIONS = """
 <tool>
     <inputs>
@@ -773,7 +772,6 @@ TESTS = [
             len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
-        SELECT_DEPRECATIONS, inputs.lint_inputs,
         INPUTS_SELECT_DEPRECATIONS, inputs.lint_inputs,
         lambda x:
             'Found 3 input parameters.' in x.info_messages
