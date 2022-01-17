@@ -24,7 +24,7 @@
 -->
 
             <!-- How often Galaxy should retry to validate a user-name: 
-                 If a username is invalid (already taken, to short, to long, non-alphanumeric + '_-')
+                 If a username is invalid (already taken, too short, too long, non-alphanumeric + '_-')
                  Galaxy tries again with username+"-i" for i<= max-retries. -->
 <!--        <max-retries>True</max-retries>
 -->
