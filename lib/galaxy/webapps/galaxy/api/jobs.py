@@ -210,7 +210,10 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if view == 'admin_job_list':
                 j['decoded_job_id'] = job.id
             if user_details:
-                j['user_email'] = job.user.email
+                try:
+                    j['user_email'] = job.user.email
+                except AttributeError:  # when job.user is None
+                    j['user_email'] = None
             out.append(j)
 
         return out
