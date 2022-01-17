@@ -1239,6 +1239,7 @@ class Grib(Binary):
     file_ext = "grib"
     # GRIB not yet in EDAM (work in progress). For now, so set to binary
     edam_format = "format_2333"
+    MetadataElement(name="grib_edition", default=1, desc="GRIB edition", readonly=True, visible=True, optional=True, no_value=0)
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
@@ -1270,6 +1271,21 @@ class Grib(Binary):
             return dataset.peek
         except Exception:
             return f"Binary GRIB file ({nice_size(dataset.get_size())})"
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set the GRIB edition.
+        """
+        dataset.metadata.grib_edition = self._get_grib_edition(dataset.file_name)
+
+    def _get_grib_edition(self, filename):
+         _uint8struct = struct.Struct(b">B")
+         edition = 0
+          with open(filename) as f:
+               header = f.read(4)
+               tmp = f.read(4)
+               edition = _uint8struct.unpack_from(tmp, 3)[0]
+           return edition
 
 
 @build_sniff_from_prefix
