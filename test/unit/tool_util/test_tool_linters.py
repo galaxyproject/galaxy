@@ -473,18 +473,26 @@ STDIO_DEFAULT_FOR_NONLEGACY_PROFILE = """
 """
 
 STDIO_MULTIPLE_STDIO = """
-<tool profile="21.09">
+<tool>
     <stdio/>
     <stdio/>
 </tool>
 """
 
 STDIO_INVALID_CHILD_OR_ATTRIB = """
-<tool profile="21.09">
+<tool>
     <stdio>
         <reqex/>
         <regex descriptio="blah" level="fatal" match="error" source="stdio"/>
         <exit_code descriptio="blah" level="fatal" range="1:"/>
+    </stdio>
+</tool>
+"""
+
+STDIO_INVALID_MATCH = """
+<tool>
+    <stdio>
+        <regex match="["/>
     </stdio>
 </tool>
 """
@@ -979,7 +987,12 @@ TESTS = [
             and "Unknown attribute [descriptio] encountered on exit_code tag." in x.warn_messages
             and "Unknown attribute [descriptio] encountered on regex tag." in x.warn_messages
             and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 3 and len(x.error_messages) == 0
-
+    ),
+    (
+        STDIO_INVALID_MATCH, stdio.lint_stdio,
+        lambda x:
+            "Match '[' is no valid regular expression: unterminated character set at position 0" in x.error_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 1
     ),
     (
         TESTS_ABSENT, tests.lint_tsts,
@@ -1081,6 +1094,7 @@ TEST_IDS = [
     'stdio: default for non-legacy profile',
     'stdio: multiple stdio',
     'stdio: invalid tag or attribute',
+    'stdio: invalid regular expression',
     'tests: absent',
     'tests: absent data_source',
     'tests: param and output names',
