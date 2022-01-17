@@ -63,6 +63,23 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=None):
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
 
 
+class LintMessage:
+    def __init__(self, level, message, line, xpath=None):
+        self.level = level
+        self.message = message
+        self.line = line
+        self.xpath = xpath
+
+    def __str__(self):
+        rval = f".. {self.level.upper()}: {self.message}"
+        if self.line is not None:
+            rval += f" (line {self.line})"
+        if self.xpath is not None:
+            rval += f" [{self.xpath}]"
+
+        return rval
+
+
 # TODO: Nothing inherently tool-y about LintContext and in fact
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
@@ -80,10 +97,9 @@ class LintContext:
         if name in self.skip_types:
             return
         self.printed_linter_info = False
-        self.valid_messages = []
-        self.info_messages = []
-        self.warn_messages = []
-        self.error_messages = []
+        self.message_list = []
+
+        # call linter
         lint_func(lint_target, self)
         # TODO: colorful emoji if in click CLI.
         if self.error_messages:
@@ -99,41 +115,65 @@ class LintContext:
             self.printed_linter_info = True
             print(f"Applying linter {name}... {status}")
 
-        for message in self.error_messages:
+        for message in self.message_list:
+            if message.level != "error":
+                continue
             self.found_errors = True
             print_linter_info()
-            print(f".. ERROR: {message}")
+            print(f"{message}")
 
         if self.level != LEVEL_ERROR:
-            for message in self.warn_messages:
+            for message in self.message_list:
+                if message.level != "warning":
+                    continue
                 self.found_warns = True
                 print_linter_info()
-                print(f".. WARNING: {message}")
+                print(f"{message}")
 
         if self.level == LEVEL_ALL:
-            for message in self.info_messages:
+            for message in self.message_list:
+                if message.level != "info":
+                    continue
                 print_linter_info()
-                print(f".. INFO: {message}")
-            for message in self.valid_messages:
+                print(f"{message}")
+            for message in self.message_list:
+                if message.level != "check":
+                    continue
                 print_linter_info()
-                print(f".. CHECK: {message}")
+                print(f"{message}")
 
-    def __handle_message(self, message_list, message, *args):
+    @property
+    def valid_messages(self):
+        return [x.message for x in self.message_list if x.level == "check"]
+
+    @property
+    def info_messages(self):
+        return [x.message for x in self.message_list if x.level == "info"]
+
+    @property
+    def warn_messages(self):
+        return [x.message for x in self.message_list if x.level == "warning"]
+
+    @property
+    def error_messages(self):
+        return [x.message for x in self.message_list if x.level == "error"]
+
+    def __handle_message(self, level, message, line, xpath, *args):
         if args:
             message = message % args
-        message_list.append(message)
+        self.message_list.append(LintMessage(level=level, message=message, line=line, xpath=xpath))
 
-    def valid(self, message, *args):
-        self.__handle_message(self.valid_messages, message, *args)
+    def valid(self, message, line=None, xpath=None, *args):
+        self.__handle_message("check", message, line, xpath, *args)
 
-    def info(self, message, *args):
-        self.__handle_message(self.info_messages, message, *args)
+    def info(self, message, line=None, xpath=None, *args):
+        self.__handle_message("info", message, line, xpath, *args)
 
-    def error(self, message, *args):
-        self.__handle_message(self.error_messages, message, *args)
+    def error(self, message, line=None, xpath=None, *args):
+        self.__handle_message("error", message, line, xpath, *args)
 
-    def warn(self, message, *args):
-        self.__handle_message(self.warn_messages, message, *args)
+    def warn(self, message, line=None, xpath=None, *args):
+        self.__handle_message("warning", message, line, xpath, *args)
 
     def failed(self, fail_level):
         found_warns = self.found_warns
