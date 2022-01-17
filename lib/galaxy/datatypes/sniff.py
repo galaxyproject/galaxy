@@ -664,7 +664,10 @@ def build_sniff_from_prefix(klass):
         if hasattr(self, "compressed_format"):
             if self.compressed_format != file_prefix.compressed_format:
                 return False
-        return self.sniff_prefix(file_prefix)
+        try:
+            return self.sniff_prefix(file_prefix)
+        except Exception:
+            return False
 
     klass.sniff = auto_sniff
     return klass
