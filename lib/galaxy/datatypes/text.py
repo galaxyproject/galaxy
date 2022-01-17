@@ -875,6 +875,13 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return 'application/yaml'
 
+    def _yield_user_file_content(self, trans, from_dataset, filename):
+        # Override non-standard application/yaml mediatype with
+        # non-standard text/x-yaml, so preview is shown in preview iframe,
+        # instead of downloading the file.
+        trans.response.set_content_type('text/x-yaml')
+        return super()._yield_user_file_content(trans, from_dataset, filename)
+
     def _looks_like_yaml(self, file_prefix):
         # Pattern used by SequenceSplitLocations
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
