@@ -133,6 +133,16 @@ setup_python() {
     python ./scripts/check_python.py || exit 1
 }
 
+setup_gravity_state_dir() {
+    # $GALAXY_VIRTUAL_ENV is expected to be set, and cwd must be galaxy root
+    if ! grep -q '^GRAVITY_STATE_DIR=' "${GALAXY_VIRTUAL_ENV}/bin/activate"; then
+        echo "Setting \$GRAVITY_STATE_DIR in ${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo '\n# Galaxy Gravity per-instance state directory configured by Galaxy common_startup.sh' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo "GRAVITY_STATE_DIR='$(pwd)/database/gravity'" >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo 'export GRAVITY_STATE_DIR' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+    fi
+}
+
 set_galaxy_config_file_var() {
     if [ -z "$GALAXY_CONFIG_FILE" ]; then
         GALAXY_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['galaxy', 'universe_wsgi']) or '')")

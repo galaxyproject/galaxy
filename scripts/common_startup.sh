@@ -122,6 +122,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                 conda_activate
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
+            setup_gravity_state_dir
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
             if [ -z "$GALAXY_PYTHON" ]; then
@@ -139,6 +140,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "existing environment before starting Galaxy."
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+                setup_gravity_state_dir
             else
                 vvers=16.7.9
                 vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -165,6 +167,7 @@ urlretrieve('$vurl', '$vsrc')"
                 tar zxf "$vsrc" -C "$vtmp"
                 "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
+                setup_gravity_state_dir
             fi
         fi
     fi
