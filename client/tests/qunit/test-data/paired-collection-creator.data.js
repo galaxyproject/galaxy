@@ -28,6 +28,15 @@ var datasets3 = [
     {name: "UII_moo_1.2.fastq", state: STATES.OK}
 ]
 
+var datasets4= [
+    { name: "SET1-01_R1.fastq", state: STATES.OK },
+    { name: "SET1-01_R2.fastq", state: STATES.OK },
+    { name: "SET1-02_R1.fastq", state: STATES.OK },
+    { name: "SET1-02_R2.fastq", state: STATES.OK },
+    { name: "SET1-03_R1.fastq", state: STATES.OK },
+    { name: "SET1-03_R2.fastq", state: STATES.OK },
+]
+
 var datasets1CreateRequestJSON = {
     type: "dataset_collection",
     collection_type: "list:paired",
@@ -161,5 +170,6 @@ export default {
     _1: datasets1,
     _1requestJSON: datasets1CreateRequestJSON,
     _2: datasets2,
-    _3: datasets3
+    _3: datasets3,
+    _4: datasets4
 };
