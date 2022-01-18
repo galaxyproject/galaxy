@@ -64,19 +64,26 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=None):
 
 
 class LintMessage:
-    def __init__(self, level, message, line, xpath=None):
+    """
+    a message from the linter
+    """
+    def __init__(self, level, message, line, fname, xpath=None):
         self.level = level
         self.message = message
-        self.line = line
+        self.line = line  # 1 based
+        self.fname = fname
         self.xpath = xpath
 
     def __str__(self):
         rval = f".. {self.level.upper()}: {self.message}"
         if self.line is not None:
-            rval += f" (line {self.line})"
+            rval += " ("
+            if self.fname:
+                rval += f"{self.fname}:"
+            rval += str(self.line)
+            rval += ")"
         if self.xpath is not None:
             rval += f" [{self.xpath}]"
-
         return rval
 
 
@@ -91,12 +98,14 @@ class LintContext:
         self.object_name = object_name
         self.found_errors = False
         self.found_warns = False
+        self.message_list = []
 
     def lint(self, name, lint_func, lint_target):
         name = name.replace("tsts", "tests")[len("lint_"):]
         if name in self.skip_types:
             return
         self.printed_linter_info = False
+        tmp_message_list = list(self.message_list)
         self.message_list = []
 
         # call linter
@@ -141,6 +150,7 @@ class LintContext:
                     continue
                 print_linter_info()
                 print(f"{message}")
+        self.message_list = tmp_message_list + self.message_list
 
     @property
     def valid_messages(self):
@@ -158,22 +168,23 @@ class LintContext:
     def error_messages(self):
         return [x.message for x in self.message_list if x.level == "error"]
 
-    def __handle_message(self, level, message, line, xpath, *args):
+    def __handle_message(self, level, message, line, fname, xpath, *args):
         if args:
             message = message % args
-        self.message_list.append(LintMessage(level=level, message=message, line=line, xpath=xpath))
+        self.message_list.append(LintMessage(level=level, message=message,
+                                 line=line, fname=fname, xpath=xpath))
 
-    def valid(self, message, line=None, xpath=None, *args):
-        self.__handle_message("check", message, line, xpath, *args)
+    def valid(self, message, line=None, fname=None, xpath=None, *args):
+        self.__handle_message("check", message, line, fname, xpath, *args)
 
-    def info(self, message, line=None, xpath=None, *args):
-        self.__handle_message("info", message, line, xpath, *args)
+    def info(self, message, line=None, fname=None, xpath=None, *args):
+        self.__handle_message("info", message, line, fname, xpath, *args)
 
-    def error(self, message, line=None, xpath=None, *args):
-        self.__handle_message("error", message, line, xpath, *args)
+    def error(self, message, line=None, fname=None, xpath=None, *args):
+        self.__handle_message("error", message, line, fname, xpath, *args)
 
-    def warn(self, message, line=None, xpath=None, *args):
-        self.__handle_message("warning", message, line, xpath, *args)
+    def warn(self, message, line=None, fname=None, xpath=None, *args):
+        self.__handle_message("warning", message, line, fname, xpath, *args)
 
     def failed(self, fail_level):
         found_warns = self.found_warns

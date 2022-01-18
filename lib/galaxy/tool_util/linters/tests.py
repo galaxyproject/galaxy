@@ -1,31 +1,24 @@
 """This module contains a linting functions for tool tests."""
 from inspect import Parameter, signature
 
-from ._util import is_datasource
+from ._util import is_datasource, node_props
 from ..verify import asserts
 
 
 # Misspelled so as not be picked up by nosetests.
 def lint_tsts(tool_xml, lint_ctx):
-    # determine line to report for general problems with tests
-    try:
-        tests_line = tool_xml.find("./tests").sourceline
-        tests_path = tool_xml.getpath(tool_xml.find("./tests"))
-    except AttributeError:
-        tests_line = 1
-        tests_path = None
-    try:
-        tests_line = tool_xml.find("./tool").sourceline
-        tests_path = tool_xml.getpath(tool_xml.find("./tool"))
-    except AttributeError:
-        pass
+    # determine node to report for general problems with tests
+    general_node = tool_xml.find("./tests")
+    if not general_node:
+        general_node = tool_xml.find("./tool")
+
     tests = tool_xml.findall("./tests/test")
     datasource = is_datasource(tool_xml)
     if not tests:
         if not datasource:
-            lint_ctx.warn("No tests found, most tools should define test cases.", line=tests_line, xpath=tests_path)
+            lint_ctx.warn("No tests found, most tools should define test cases.", **node_props(general_node, tool_xml))
         elif datasource:
-            lint_ctx.info("No tests found, that should be OK for data_sources.", line=tests_line, xpath=tests_path)
+            lint_ctx.info("No tests found, that should be OK for data_sources.", **node_props(general_node, tool_xml))
         return
 
     num_valid_tests = 0
@@ -51,7 +44,7 @@ def lint_tsts(tool_xml, lint_ctx):
         for param in test.findall("param"):
             name = param.attrib.get("name", None)
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", line=param.sourceline, xpath=tool_xml.getpath(param))
+                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", **node_props(param, tool_xml))
                 continue
             name = name.split("|")[-1]
             xpaths = [f"@name='{name}'",
@@ -69,7 +62,7 @@ def lint_tsts(tool_xml, lint_ctx):
                     found = True
                     break
             if not found:
-                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", line=param.sourceline, xpath=tool_xml.getpath(param))
+                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", **node_props(param, tool_xml))
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
@@ -81,25 +74,25 @@ def lint_tsts(tool_xml, lint_ctx):
             else:
                 valid_names = output_collection_names
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", line=output.sourceline, xpath=tool_xml.getpath(output))
+                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", **node_props(output, tool_xml))
             else:
                 if name not in valid_names:
-                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", line=output.sourceline, xpath=tool_xml.getpath(output))
+                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", **node_props(output, tool_xml))
 
         if "expect_failure" in test.attrib and found_output_test:
-            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.")
+            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", **node_props(test, tool_xml))
             continue
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", line=test.sourceline, xpath=tool_xml.getpath(test))
+            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", **node_props(test, tool_xml))
         else:
             num_valid_tests += 1
 
     if num_valid_tests or datasource:
-        lint_ctx.valid(f"{num_valid_tests} test(s) found.", line=tests_line, xpath=tests_path)
+        lint_ctx.valid(f"{num_valid_tests} test(s) found.", **node_props(general_node, tool_xml))
     else:
-        lint_ctx.warn("No valid test(s) found.", line=tests_line, xpath=tests_path)
+        lint_ctx.warn("No valid test(s) found.", **node_props(general_node, tool_xml))
 
 
 def _check_asserts(test_idx, assertions, lint_ctx):

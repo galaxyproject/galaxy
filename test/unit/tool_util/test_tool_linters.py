@@ -1,8 +1,10 @@
+import os
+import tempfile
 from inspect import getfullargspec
 
 import pytest
 
-from galaxy.tool_util.lint import LintContext
+from galaxy.tool_util.lint import lint_tool_source_with, LintContext
 from galaxy.tool_util.linters import (
     citations,
     command,
@@ -14,8 +16,9 @@ from galaxy.tool_util.linters import (
     tests,
     xml_order,
 )
+from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
-from galaxy.util import etree
+from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
 # tests tool xml for citations linter
@@ -340,6 +343,7 @@ INPUTS_VALIDATOR_INCOMPATIBILITIES = """
             <validator type="in_range">TEXT</validator>
             <validator type="regex" filename="blah"/>
             <validator type="expression"/>
+            <validator type="expression">[</validator>
             <validator type="value_in_data_table"/>
         </param>
         <param name="another_param_name" type="data" format="bed">
@@ -797,7 +801,7 @@ TESTS = [
             and "Select parameter of a conditional [select] options have to be defined by 'option' children elements." in x.error_messages
             and 'Conditional [cond_wo_param] needs exactly one child <param> found 0' in x.error_messages
             and 'Conditional [cond_w_mult_param] needs exactly one child <param> found 2' in x.error_messages
-            and 'Conditional [cond_text] first param should have type="select" (or type="boolean" which is discouraged)' in x.error_messages
+            and 'Conditional [cond_text] first param should have type="select"' in x.error_messages
             and 'Conditional [cond_boolean] first param of type="boolean" is discouraged, use a select' in x.warn_messages
             and "Conditional [cond_boolean] no truevalue/falsevalue found for when block 'False'" in x.warn_messages
             and 'Conditional [cond_w_optional_select] test parameter cannot be optional="true"' in x.warn_messages
@@ -870,10 +874,11 @@ TESTS = [
             and "Parameter [param_name]: validator with an incompatible type 'in_range'" in x.error_messages
             and "Parameter [param_name]: 'in_range' validators need to define the 'min' or 'max' attribute(s)" in x.error_messages
             and "Parameter [param_name]: attribute 'filename' is incompatible with validator of type 'regex'" in x.error_messages
-            and "Parameter [param_name]: expression validator without content" in x.error_messages
+            and "Parameter [param_name]: expression validators are expected to contain text" in x.error_messages
+            and "Parameter [param_name]: '[' is no valid regular expression: unterminated character set at position 0" in x.error_messages
             and "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)" in x.error_messages
             and "Parameter [param_name]: 'value_in_data_table' validators need to define the 'table_name' attribute" in x.error_messages
-            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 6
+            and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 7
     ),
     (
         INPUTS_VALIDATOR_CORRECT, inputs.lint_inputs,
@@ -1107,14 +1112,186 @@ TEST_IDS = [
 
 @pytest.mark.parametrize('tool_xml,lint_func,assert_func', TESTS, ids=TEST_IDS)
 def test_tool_xml(tool_xml, lint_func, assert_func):
+    """
+    test separate linting functions (lint_func) on tool_xml
+    checking assert_func on the resulting LinterContext
+
+    furthermore for all lint_func except for lint_general it is asserted
+    that each message has a complete lint context message (i.e. a line number)
+    """
     lint_ctx = LintContext('all')
     # the general linter gets XMLToolSource and all others
     # an ElementTree
     first_arg = getfullargspec(lint_func).args[0]
-    lint_target = etree.ElementTree(element=etree.fromstring(tool_xml))
+    with tempfile.TemporaryDirectory() as tmp:
+        tool_path = os.path.join(tmp, "tool.xml")
+        with open(tool_path, "w") as tmpf:
+            tmpf.write(tool_xml)
+        lint_target, _ = load_with_references(tool_path)
     if first_arg != "tool_xml":
         lint_target = XmlToolSource(lint_target)
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
+    # TODO would be nice if lint_general would have full context as well
+    if lint_func != general.lint_general:
+        for message in lint_ctx.message_list:
+            assert message.line is not None, f"No context found for message: {message.message}"
+    assert assert_func(lint_ctx), (
+        f"Valid: {lint_ctx.valid_messages}\n"
+        f"Info: {lint_ctx.info_messages}\n"
+        f"Warnings: {lint_ctx.warn_messages}\n"
+        f"Errors: {lint_ctx.error_messages}"
+    )
+
+
+COMPLETE = """<tool>
+    <macros>
+        <import>macros.xml</import>
+        <xml name="test_macro">
+            <param name="select" type="select">
+                <option value="a">a</option>
+                <option value="a">a</option>
+            </param>
+        </xml>
+    </macros>
+    <inputs>
+        <expand macro="test_macro"/>
+        <param/>
+        <expand macro="test_macro2"/>
+    </inputs>
+</tool>
+"""
+
+COMPLETE_MACROS = """<macros>
+    <xml name="test_macro2">
+        <param name="No_type"/>
+    </xml>
+</macros>
+"""
+
+TOOL_AND_MACRO_XML_TESTS = [
+    (
+        COMPLETE, COMPLETE_MACROS,
+        [
+            ("Select parameter [select] has multiple options with the same value", "tool.xml", 5, "/tool/inputs/param[1]"),
+            ("Found param input with no name specified.", "tool.xml", 13, "/tool/inputs/param[2]"),
+            ("Param input [No_type] input with no type specified.", "macros.xml", 3, "/tool/inputs/param[3]")
+        ]
+    ),
+]
+TOOL_AND_MACRO_XML_IDS = [
+    "test tool xml and macros: context: line numbers, file paths, and xpaths"
+]
+
+
+@pytest.mark.parametrize('tool_xml,macros_xml,asserts', TOOL_AND_MACRO_XML_TESTS, ids=TOOL_AND_MACRO_XML_IDS)
+def test_tool_and_macro_xml(tool_xml, macros_xml, asserts):
+    """
+    test linters (all of them via lint_tool_source_with) on a tool and macro xml file
+    checking a list of asserts, where each assert is a 4-tuple:
+    - expected message
+    - filename suffix (tool.xml or macro.xml)
+    - line number (1 based)
+    - xpath
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        tool_path = os.path.join(tmp, "tool.xml")
+        macros_path = os.path.join(tmp, "macros.xml")
+        with open(tool_path, "w") as tmpf:
+            tmpf.write(tool_xml)
+        with open(macros_path, "w") as tmpf:
+            tmpf.write(macros_xml)
+        tool_xml, _ = load_with_references(tool_path)
+
+    tool_source = XmlToolSource(tool_xml)
+    lint_ctx = LintContext('all')
+    lint_tool_source_with(lint_ctx, tool_source)
+
+    for a in asserts:
+        message, fname, line, xpath = a
+        found = False
+        for lint_message in lint_ctx.message_list:
+            if lint_message.message != message:
+                continue
+            found = True
+            assert lint_message.line == line, f"Assumed line {line} found {lint_message.line} for: {message}"
+            assert lint_message.xpath == xpath, f"Assumed xpath {xpath} xpath {lint_message.xpath} for: {message}"
+            assert lint_message.fname.endswith(fname), f"Assumed file {fname} found {lint_message.fname} for: {message}"
+        assert found, f"Did not find {message}"
+
+
+# TODO COPIED from test/unit/app/tools/test_tool_deserialization.py
+CWL_TOOL = """
+cwlVersion: v1.0
+class: CommandLineTool
+baseCommand: echo
+inputs:
+  message:
+    type: string
+    inputBinding:
+      position: 1
+outputs: []
+"""
+
+YAML_TOOL = """
+class: GalaxyTool
+id: simple_constructs_y
+name: simple_constructs_y
+version: 1.0
+command:
+  >
+    echo "$booltest"  >> $out_file1;
+inputs:
+- name: booltest
+  type: boolean
+  truevalue: booltrue
+  falsevalue: boolfalse
+  checked: false
+outputs:
+  out_file1:
+    format: txt
+"""
+
+YML_CWL_TOOLS = [
+    (
+        CWL_TOOL, "cwl",
+        lambda x:
+            "Tool defines a version [0.0.1]." in x.valid_messages
+            and "Tool defines a name [tool]." in x.valid_messages
+            and "Tool defines an id [tool]." in x.valid_messages
+            and "Tool specifies profile version [16.04]." in x.valid_messages
+            and "CWL appears to be valid." in x.info_messages
+            and "Description of tool is empty or absent." in x.warn_messages
+            and "Tool does not specify a DockerPull source." in x.warn_messages
+            and "Modern CWL version [v1.0]." in x.info_messages
+            and len(x.info_messages) == 2 and len(x.valid_messages) == 4 and len(x.warn_messages) == 2 and len(x.error_messages) == 0
+    ),
+    (
+        YAML_TOOL, "yml",
+        lambda x:
+            "Tool defines a version [1.0]." in x.valid_messages
+            and "Tool defines a name [simple_constructs_y]." in x.valid_messages
+            and "Tool defines an id [simple_constructs_y]." in x.valid_messages
+            and "Tool specifies profile version [16.04]." in x.valid_messages
+            and len(x.info_messages) == 0 and len(x.valid_messages) == 4 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
+    )
+]
+YML_CWL_TOOLS_IDS = [
+    "cwl tool",
+    "yaml tool"
+]
+
+
+@pytest.mark.parametrize('tool_raw,ext,assert_func', YML_CWL_TOOLS, ids=YML_CWL_TOOLS_IDS)
+def test_tool_yml_cwl(tool_raw, ext, assert_func):
+    with tempfile.TemporaryDirectory() as tmp:
+        tool_path = os.path.join(tmp, f"tool.{ext}")
+        with open(tool_path, "w") as tmpf:
+            tmpf.write(tool_raw)
+        tool_sources = load_tool_sources_from_path(tmp)
+        assert len(tool_sources) == 1, "Expected 1 tool source"
+        tool_source = tool_sources[0][1]
+        lint_ctx = LintContext('all')
+        lint_tool_source_with(lint_ctx, tool_source)
     assert assert_func(lint_ctx), (
         f"Valid: {lint_ctx.valid_messages}\n"
         f"Info: {lint_ctx.info_messages}\n"
