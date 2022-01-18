@@ -411,11 +411,7 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
         ))
 
         if is_admin:
-            if job.user:
-                job_dict['user_email'] = job.user.email
-            else:
-                job_dict['user_email'] = None
-
+            job_dict['user_email'] = job.get_user_email()
             job_dict['job_metrics'] = summarize_job_metrics(trans, job)
     return job_dict
 
