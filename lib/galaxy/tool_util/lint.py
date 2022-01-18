@@ -75,14 +75,20 @@ class LintMessage:
         self.xpath = xpath
 
     def __str__(self):
-        rval = f".. {self.level.upper()}: {self.message}"
-        if self.line is not None:
+        return f".. {self.level.upper()}: {self.message}"
+
+    def pretty_print(self, level=True, fname=True, xpath=False):
+        rval = ""
+        if level:
+            rval += f".. {self.level.upper()}: "
+        rval += "{self.message}"
+        if fname and self.line is not None:
             rval += " ("
             if self.fname:
                 rval += f"{self.fname}:"
             rval += str(self.line)
             rval += ")"
-        if self.xpath is not None:
+        if xpath and self.xpath is not None:
             rval += f" [{self.xpath}]"
         return rval
 

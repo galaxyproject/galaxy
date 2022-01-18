@@ -1131,9 +1131,10 @@ def test_tool_xml(tool_xml, lint_func, assert_func):
     if first_arg != "tool_xml":
         lint_target = XmlToolSource(lint_target)
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
-    # TODO would be nice if lint_general would have full context as well
-    if lint_func != general.lint_general:
-        for message in lint_ctx.message_list:
+    for message in lint_ctx.message_list:
+        message.pretty_print(level=True, fname=True, xpath=True)
+        # TODO would be nice if lint_general would have full context as well
+        if lint_func != general.lint_general:
             assert message.line is not None, f"No context found for message: {message.message}"
     assert assert_func(lint_ctx), (
         f"Valid: {lint_ctx.valid_messages}\n"
