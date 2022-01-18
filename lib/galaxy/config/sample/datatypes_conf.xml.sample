@@ -884,6 +884,7 @@
     <datatype extension="ffindex" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true" description_url="https://github.com/soedinglab/ffindex_soedinglab"/>
     <datatype extension="ffdata" type="galaxy.datatypes.data:Data" display_in_upload="true" subclass="true" description_url="https://github.com/soedinglab/ffindex_soedinglab"/>
     <datatype extension="pretext" type="galaxy.datatypes.binary:Pretext" display_in_upload="true" />
+    <datatype extension="immuneml_receptors.html" type="galaxy.datatypes.text:Html" subclass="true"/>
     <!-- Structural Materials datatypes -->
     <datatype extension="hexrd.materials.h5" type="galaxy.datatypes.binary:HexrdMaterials" display_in_upload="true"/>
     <datatype extension="npz" type="galaxy.datatypes.binary:Npz" display_in_upload="true"/>

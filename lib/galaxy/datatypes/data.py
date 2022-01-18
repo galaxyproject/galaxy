@@ -369,7 +369,7 @@ class Data(metaclass=DataMeta):
         """
         rel_paths = []
         file_paths = []
-        if dataset.datatype.composite_type or dataset.extension == 'html':
+        if dataset.datatype.composite_type or dataset.extension.endswith('html'):
             main_file = f"{name}.html"
             rel_paths.append(main_file)
             file_paths.append(dataset.file_name)
