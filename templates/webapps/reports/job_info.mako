@@ -37,8 +37,8 @@
             <tr>
                 <td colspan="2">${job.tool_id}</td>
                 <td>
-                    %if job.user and job.user.email:
-                        ${job.user.email}
+                    %if job.get_user_email():
+                        ${job.get_user_email()}
                     %else:
                         anonymous
                     %endif

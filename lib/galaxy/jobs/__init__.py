@@ -2221,12 +2221,9 @@ class JobWrapper(HasResourceParameters):
     @property
     def user(self):
         job = self.get_job()
-        if job.user is not None:
-            return job.user.email
-        elif job.galaxy_session is not None and job.galaxy_session.user is not None:
-            return job.galaxy_session.user.email
-        elif job.history is not None and job.history.user is not None:
-            return job.history.user.email
+        user_email = job.get_user_email()
+        if user_email:
+            return user_email
         elif job.galaxy_session is not None:
             return f"anonymous@{job.galaxy_session.remote_addr.split()[-1]}"
         else:
