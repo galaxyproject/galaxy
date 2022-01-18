@@ -47,7 +47,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
                                 output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
-                                include_command=True, max_metadata_value_size=0,
+                                include_command=True, max_metadata_value_size=0, max_discovered_files=None,
                                 object_store_conf=None, tool=None, job=None,
                                 kwds=None):
         """Setup files needed for external metadata collection.
@@ -106,7 +106,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, provided_metadata_style=None, compute_tmp_dir=None,
-                                include_command=True, max_metadata_value_size=0,
+                                include_command=True, max_metadata_value_size=0, max_discovered_files=None,
                                 validate_outputs=False,
                                 object_store_conf=None, tool=None, job=None, link_data_only=False,
                                 kwds=None):
@@ -152,6 +152,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "provided_metadata_style": provided_metadata_style,
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
+            "max_discovered_files": max_discovered_files,
             "outputs": outputs,
         }
 

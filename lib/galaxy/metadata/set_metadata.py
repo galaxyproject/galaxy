@@ -46,6 +46,7 @@ from galaxy.model import (
 )
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.tool_util.output_checker import (
     check_output,
@@ -145,6 +146,7 @@ def set_metadata_portable():
     job_metadata = metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
+    max_discovered_files = metadata_params.get("max_discovered_files")
     outputs = metadata_params["outputs"]
 
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
@@ -163,6 +165,7 @@ def set_metadata_portable():
 
     export_store = None
     final_job_state = Job.states.OK
+    job_messages = []
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
@@ -234,11 +237,9 @@ def set_metadata_portable():
         import_model_store = None
 
     tool_script_file = os.path.join(tool_job_working_directory, 'tool_script.sh')
-    if import_model_store and export_store and os.path.exists(tool_script_file):
+    job = None
+    if import_model_store and export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
-        with open(tool_script_file) as command_fh:
-            job.command_line = command_fh.read().strip()
-            export_store.export_job(job, include_job_data=False)
 
     job_context = SessionlessJobContext(
         metadata_params,
@@ -248,7 +249,40 @@ def set_metadata_portable():
         import_model_store,
         os.path.join(tool_job_working_directory, "working"),
         final_job_state=final_job_state,
+        max_discovered_files=max_discovered_files,
     )
+
+    if extended_metadata_collection:
+        # discover extra outputs...
+        output_collections = {}
+        for name, output_collection in metadata_params["output_collections"].items():
+            # TODO: remove HistoryDatasetCollectionAssociation fallback on 22.01, model_class used to not be serialized prior to 21.09
+            model_class = output_collection.get('model_class', 'HistoryDatasetCollectionAssociation')
+            collection = import_model_store.sa_session.query(getattr(galaxy.model, model_class)).find(output_collection["id"])
+            output_collections[name] = collection
+        output_instances = {}
+        for name, output in metadata_params["outputs"].items():
+            klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
+            output_instances[name] = import_model_store.sa_session.query(klass).find(output["id"])
+
+        input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
+        try:
+            collect_primary_datasets(
+                job_context,
+                output_instances,
+                input_ext=input_ext,
+            )
+            collect_dynamic_outputs(job_context, output_collections)
+        except MaxDiscoveredFilesExceededError as e:
+            final_job_state = Job.states.ERROR
+            job_messages.append(str(e))
+        if job:
+            job.job_messages = job_messages
+            job.state = final_job_state
+        if os.path.exists(tool_script_file):
+            with open(tool_script_file) as command_fh:
+                job.command_line = command_fh.read().strip()
+                export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
@@ -369,27 +403,6 @@ def set_metadata_portable():
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception:
             json.dump((False, traceback.format_exc()), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
-
-    if extended_metadata_collection:
-        # discover extra outputs...
-        output_collections = {}
-        for name, output_collection in metadata_params["output_collections"].items():
-            # TODO: remove HistoryDatasetCollectionAssociation fallback on 22.01, model_class used to not be serialized prior to 21.09
-            model_class = output_collection.get('model_class', 'HistoryDatasetCollectionAssociation')
-            collection = import_model_store.sa_session.query(getattr(galaxy.model, model_class)).find(output_collection["id"])
-            output_collections[name] = collection
-        outputs = {}
-        for name, output in metadata_params["outputs"].items():
-            klass = getattr(galaxy.model, output.get('model_class', 'HistoryDatasetAssociation'))
-            outputs[name] = import_model_store.sa_session.query(klass).find(output["id"])
-
-        input_ext = json.loads(metadata_params["job_params"].get("__input_ext") or '"data"')
-        collect_primary_datasets(
-            job_context,
-            outputs,
-            input_ext=input_ext,
-        )
-        collect_dynamic_outputs(job_context, output_collections)
 
     if export_store:
         export_store._finalize()

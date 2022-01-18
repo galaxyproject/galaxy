@@ -3586,6 +3586,21 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``max_discovered_files``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to a positive integer value to limit the number of
+    datasets that can be discovered by a single job. This prevents
+    accidentally creating large numbers of datasets when running tools
+    that create a potentially unlimited number of output datasets,
+    such as tools that split a file into a collection of datasets for
+    each line in an input dataset.
+:Default: ``10000``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``history_local_serial_workflow_scheduling``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
