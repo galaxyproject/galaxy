@@ -237,7 +237,6 @@ class Registry:
                                             self.imported_modules.append(imported_module)
                                         if hasattr(imported_module, datatype_class_name):
                                             datatype_class = getattr(imported_module, datatype_class_name)
-                                            assert 'file_ext' in datatype_class.__dict__, f"file_ext undefined for {datatype_class}"
                                     except Exception as e:
                                         full_path = os.path.join(proprietary_path, proprietary_datatype_module)
                                         self.log.debug("Exception importing proprietary code file %s: %s", full_path, galaxy.util.unicodify(e))
