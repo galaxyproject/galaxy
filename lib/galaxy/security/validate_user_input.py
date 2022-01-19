@@ -111,7 +111,7 @@ def transform_publicname(publicname):
     if publicname not in ['None', None, '']:
         publicname = publicname.lower()
         publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-        publicname = publicname.ljust(PUBLICNAME_MIN_LEN + 1, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
+        publicname = publicname.ljust(PUBLICNAME_MIN_LEN, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
     return publicname
 
 
