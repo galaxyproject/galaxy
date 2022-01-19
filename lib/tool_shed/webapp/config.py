@@ -20,9 +20,6 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 
 log = logging.getLogger(__name__)
 
-ts_webapp_path = os.path.abspath(os.path.dirname(__file__))
-templates_path = os.path.join(ts_webapp_path, 'templates')
-
 TOOLSHED_APP_NAME = 'tool_shed'
 TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
 
@@ -48,7 +45,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         paths_to_check = [
             self.file_path,
             self.hgweb_config_dir,
-            self.template_path,
             self.tool_data_path,
             self.template_cache_path,
             os.path.join(self.tool_data_path, 'shared', 'jars'),
@@ -95,7 +91,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.registration_warning_message = kwargs.get('registration_warning_message')
         self.email_domain_blocklist_content = None
         self.email_domain_allowlist_content = None
-        self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get('template_cache_path', 'database/compiled_templates/community'))
         self.error_email_to = kwargs.get('error_email_to')
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)

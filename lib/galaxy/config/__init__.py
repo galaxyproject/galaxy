@@ -740,7 +740,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             for ip in kwargs.get("fetch_url_allowlist", "").split(',')
             if len(ip.strip()) > 0
         ]
-        self.template_path = self._in_root_dir(kwargs.get("template_path", "templates"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 

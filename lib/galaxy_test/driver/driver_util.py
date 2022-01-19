@@ -249,7 +249,6 @@ def setup_galaxy_config(
         master_api_key=master_api_key,
         running_functional_tests=True,
         template_cache_path=template_cache_path,
-        template_path='templates',
         tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
