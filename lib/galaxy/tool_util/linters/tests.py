@@ -9,7 +9,7 @@ from ..verify import asserts
 def lint_tsts(tool_xml, lint_ctx):
     # determine node to report for general problems with tests
     general_node = tool_xml.find("./tests")
-    if not general_node:
+    if general_node is None:
         general_node = tool_xml.find("./tool")
 
     tests = tool_xml.findall("./tests/test")
