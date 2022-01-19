@@ -699,6 +699,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             'annotation': inputs.get('__annotation', ''),
             'name': module.get_name(),
             'tool_state': module.get_state(),
+            'content_id': module.get_content_id(),
             'inputs': module.get_all_inputs(connectable_only=True),
             'outputs': module.get_all_outputs(),
             'config_form': module.get_config_form(),
