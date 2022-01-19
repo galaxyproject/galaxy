@@ -379,7 +379,7 @@ class RepositoriesController(BaseAPIController):
                     if metadata.includes_tools:
                         metadata_dict['tools'] = metadata.metadata['tools']
                     all_metadata[f'{int(changeset)}:{changehash}'] = metadata_dict
-            if repository_found is not None:
+            if repository_found:
                 all_metadata['current_changeset'] = repository_found[0]
                 # all_metadata[ 'found_changesets' ] = repository_found
                 return json.dumps(all_metadata)
