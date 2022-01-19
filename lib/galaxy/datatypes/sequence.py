@@ -860,6 +860,11 @@ class FastqSolexa(Fastq):
                 return False
         return True
 
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        # we expicitely do not want to have this sniffed. so we keep this here
+        # such that it can not be enabled in datatypes_conf
+        raise NotImplementedError
+
 
 class FastqIllumina(Fastq):
     """Class representing a FASTQ sequence ( the Illumina 1.3+ variant )
@@ -879,6 +884,11 @@ class FastqIllumina(Fastq):
             if not all(q >= '@' and q <= 'h' for q in line[0]):
                 return False
         return True
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        # we expicitely do not want to have this sniffed. so we keep this here
+        # such that it can not be enabled in datatypes_conf
+        raise NotImplementedError
 
 
 class FastqCSSanger(Fastq):
