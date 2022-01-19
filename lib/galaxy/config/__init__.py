@@ -628,7 +628,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         This method should be deleted after migration to SQLAlchemy 2.0 is complete.
         To enable warnings, set `GALAXY_CONFIG_SQLALCHEMY_WARN_20=1`,
         """
-        warn = kwargs.get('sqlalchemy_warn_20', False)
+        warn = string_as_bool(kwargs.get('sqlalchemy_warn_20', False))
         if warn:
             import sqlalchemy
             sqlalchemy.util.deprecations.SQLALCHEMY_WARN_20 = True
