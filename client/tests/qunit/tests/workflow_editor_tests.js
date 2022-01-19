@@ -889,6 +889,23 @@ QUnit.module("terminal mapping logic", {
         }
         return inputTerminal;
     },
+    newInputParameterTerminal: function (mapOver, input, node) {
+        input = input || {};
+        node = node || this.newNode();
+        if (!("type" in input)) {
+            input["type"] = "text";
+        }
+        const inputEl = $("<div>")[0];
+        const inputTerminal = new Terminals.InputParameterTerminal({
+            element: inputEl,
+            input: input,
+        });
+        inputTerminal.node = node;
+        if (mapOver) {
+            inputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
+        }
+        return inputTerminal;
+    },
     newInputCollectionTerminal: function (input, node) {
         input = input || {};
         node = node || this.newNode();
@@ -1023,6 +1040,15 @@ QUnit.module("terminal mapping logic", {
     verifyNotMappedOver: function (assert, terminal) {
         assert.ok(!terminal.mapOver.isCollection);
     },
+    verifyDefaultMapOver: function(assert, inputTerminal1) {
+        const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
+        assert.ok(!inputTerminal1.node.mapOver);
+        const connector = new Connector({}, outputCollectionTerminal1, inputTerminal1);
+        outputCollectionTerminal1.connect(connector);
+        assert.ok(inputTerminal1.node.mapOver);
+        inputTerminal1.disconnect(connector);
+        assert.ok(!inputTerminal1.node.mapOver);
+    }
 });
 
 QUnit.test("unconstrained input can be mapped over", function (assert) {
@@ -1280,13 +1306,9 @@ QUnit.test("simple mapping over collection outputs works correctly", function (a
     this.verifyNotAttachable(assert, testTerminal1, connectedOutput);
 });
 
-QUnit.test("node mapping state over collection outputs works correctly", function (assert) {
-    const inputTerminal1 = this.newInputTerminal();
-    const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
-    assert.ok(!inputTerminal1.node.mapOver);
-    const connector = new Connector({}, outputCollectionTerminal1, inputTerminal1);
-    outputCollectionTerminal1.connect(connector);
-    assert.ok(inputTerminal1.node.mapOver);
-    inputTerminal1.disconnect(connector);
-    assert.ok(!inputTerminal1.node.mapOver);
+QUnit.test("node input parameter mapping state over collection outputs works correctly", function (assert) {
+    const inputTerminal = this.newInputTerminal();
+    this.verifyDefaultMapOver(assert, inputTerminal);
+    const inputParameterTerminal = this.newInputParameterTerminal();
+    this.verifyDefaultMapOver(assert, inputParameterTerminal);
 });
