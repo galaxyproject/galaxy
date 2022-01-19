@@ -154,7 +154,7 @@ class SpecifiedDateListGrid(grids.Grid):
 
         def get_value(self, trans, grid, job):
             if job.user:
-                return escape(job.user.email)
+                return escape(job.get_user_email())
             return 'anonymous'
 
     class EmailColumn(grids.GridColumn):
@@ -303,10 +303,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
                 # that submitted the job.
                 job_id = kwd.get('id', None)
                 job = get_job(trans, job_id)
-                if job.user:
-                    kwd['email'] = job.user.email
-                else:
-                    kwd['email'] = None  # For anonymous users
+                kwd['email'] = job.get_user_email()
                 return trans.response.send_redirect(web.url_for(controller='jobs',
                                                                 action='user_per_month',
                                                                 **kwd))
