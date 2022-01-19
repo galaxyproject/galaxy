@@ -99,12 +99,12 @@ export default {
     },
     data() {
         const fields = [
-            { key: "workflow_id", label: "Workflow" },
-            { key: "history_id", label: "History" },
-            { key: "create_time", label: "Invoked" },
-            { key: "update_time", label: "Updated" },
-            { key: "state" },
-            { key: "execute", label: "" },
+            { key: "workflow_id", label: "Workflow", class: "col-name" },
+            { key: "history_id", label: "History", class: "col-history" },
+            { key: "create_time", label: "Invoked", class: "col-small" },
+            { key: "update_time", label: "Updated", class: "col-small" },
+            { key: "state", class: "col-small" },
+            { key: "execute", label: "", class: "col-execute" },
         ];
         return {
             invocationItemsModel: [],
@@ -153,5 +153,18 @@ export default {
 <style scoped>
 .toggle-invocation-details {
     overflow-wrap: break-word;
+}
+.table::v-deep .col-name {
+    width: 40%;
+    min-width: 20ch;
+}
+.table::v-deep .col-history {
+    width: 20%;
+}
+.table::v-deep .col-small {
+    width: 100px;
+}
+.table::v-deep .col-execute {
+    width: 50px;
 }
 </style>
