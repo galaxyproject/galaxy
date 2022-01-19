@@ -1022,8 +1022,9 @@ class Tool(Dictifiable):
         has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
         if has_missing_data:
             biotools_reference = self.biotools_reference
-            if biotools_reference:
-                biotools_entry = self.app.biotools_metadata_source.get_biotools_metadata(biotools_reference)
+            metadata_source = self.app.biotools_metadata_source
+            if biotools_reference and metadata_source:
+                biotools_entry = metadata_source.get_biotools_metadata(biotools_reference)
                 if biotools_entry:
                     edam_info = biotools_entry.edam_info
                     if len(edam_operations) == 0:
