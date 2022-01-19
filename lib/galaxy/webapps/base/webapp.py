@@ -44,6 +44,7 @@ from galaxy.web_stack import get_app_kwds
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
 except ImportError:
+    # Python < 3.9
     from importlib_resources import files  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)

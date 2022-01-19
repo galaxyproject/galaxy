@@ -18,10 +18,16 @@ from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
 from galaxy.web.formatting import expand_pretty_datetime_format
 
+try:
+    from importlib.resources import files  # type: ignore[attr-defined]
+except ImportError:
+    # Python < 3.9
+    from importlib_resources import files  # type: ignore[no-redef]
+
 log = logging.getLogger(__name__)
 
 TOOLSHED_APP_NAME = 'tool_shed'
-TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
+TOOLSHED_CONFIG_SCHEMA_PATH = files('tool_shed.webapp') / 'config_schema.yml'
 
 
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):

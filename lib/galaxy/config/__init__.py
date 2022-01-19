@@ -65,6 +65,7 @@ from ..version import VERSION_MAJOR, VERSION_MINOR
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
 except ImportError:
+    # Python < 3.9
     from importlib_resources import files  # type: ignore[no-redef]
 
 if TYPE_CHECKING:
