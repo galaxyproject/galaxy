@@ -152,6 +152,6 @@ export default {
 </script>
 <style scoped>
 .toggle-invocation-details {
-    word-break: break-all;
+    overflow-wrap: break-word;
 }
 </style>
