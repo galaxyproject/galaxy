@@ -7,6 +7,7 @@ from unittest import mock
 
 from pykwalify.core import Core
 
+from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
 from galaxy.util import galaxy_directory, galaxy_samples_directory
@@ -422,7 +423,7 @@ class AdvancedJobConfYamlParserTestCase(AdvancedJobConfXmlParserTestCase):
 
 
 def test_yaml_advanced_validation():
-    schema = os.path.join(galaxy_directory(), "lib", "galaxy", "webapps", "galaxy", "job_config_schema.yml")
+    schema = GALAXY_SCHEMAS_PATH / 'job_config_schema.yml'
     integration_tests_dir = os.path.join(galaxy_directory(), "test", "integration")
     valid_files = [
         ADVANCED_JOB_CONF_YAML,
@@ -435,6 +436,6 @@ def test_yaml_advanced_validation():
     for valid_file in valid_files:
         c = Core(
             source_file=valid_file,
-            schema_files=[schema],
+            schema_files=[str(schema)],
         )
         c.validate()

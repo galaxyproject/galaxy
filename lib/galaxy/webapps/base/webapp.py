@@ -41,6 +41,12 @@ from galaxy.web.framework import (
 )
 from galaxy.web_stack import get_app_kwds
 
+try:
+    from importlib.resources import files  # type: ignore[attr-defined]
+except ImportError:
+    # Python < 3.9
+    from importlib_resources import files  # type: ignore[no-redef]
+
 log = logging.getLogger(__name__)
 
 
@@ -79,8 +85,8 @@ class WebApplication(base.WebApplication):
     injection_aware: bool = False
 
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
+        super().__init__()
         self.name = name
-        base.WebApplication.__init__(self)
         galaxy_app.is_webapp = True
         self.set_transaction_factory(lambda e: self.transaction_chooser(e, galaxy_app, session_cookie))
         # Mako support
@@ -90,16 +96,13 @@ class WebApplication(base.WebApplication):
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
-        # FIXME: should be os.path.join (galaxy_root, 'templates')?
-        if galaxy_app.config.template_path == './templates':
-            template_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
-        else:
-            template_path = galaxy_app.config.template_path
+        base_package = 'tool_shed.webapp' if galaxy_app.name == 'tool_shed' else 'galaxy.webapps.base'  # reports has templates in galaxy package
+        base_template_path = files(base_package) / 'templates'
         # First look in webapp specific directory
         if name is not None:
-            paths.append(os.path.join(template_path, 'webapps', name))
+            paths.append(base_template_path / 'webapps' / name)
         # Then look in root directory
-        paths.append(template_path)
+        paths.append(base_template_path)
         # Create TemplateLookup with a small cache
         return mako.lookup.TemplateLookup(directories=paths,
                                           module_directory=galaxy_app.config.template_cache_path,

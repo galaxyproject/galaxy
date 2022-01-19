@@ -22,8 +22,8 @@ class TestWebapp(WebApplication):
 
 
 def test_galaxy_routes():
-    test_config = Bunch(template_path="/tmp", template_cache_path="/tmp")
-    app = Bunch(config=test_config, security=object(), trace_logger=None)
+    test_config = Bunch(template_cache_path="/tmp")
+    app = Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy")
     test_webapp = TestWebapp(app)
 
     galaxy_buildapp.populate_api_routes(test_webapp, app)
