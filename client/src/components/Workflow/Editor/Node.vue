@@ -314,7 +314,7 @@ export default {
         },
         setData(data) {
             this.config_form = data.config_form;
-            this.content_id = data.config_form?.id || data.content_id || this.content_id;
+            this.content_id = data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip || "";
