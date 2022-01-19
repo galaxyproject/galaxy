@@ -454,7 +454,10 @@ export const getAnalysisRouter = (Galaxy) => {
         _loadToolForm: function (params) {
             //TODO: load tool form code async
             if (params.tool_id) {
-                params.id = decodeUriComponent(params.tool_id);
+                // If there's a + in tool_id (the only valid character we use
+                // that is problematic like this), then don't decode and use it
+                // directly.
+                params.id = params.tool_id.indexOf("+") >= 0 ? params.tool_id : decodeURIComponent(params.tool_id);
             }
             if (params.version) {
                 params.version = decodeUriComponent(params.version);
