@@ -84,8 +84,8 @@ class WebApplication(base.WebApplication):
     injection_aware: bool = False
 
     def __init__(self, galaxy_app, session_cookie='galaxysession', name=None):
+        super().__init__()
         self.name = name
-        base.WebApplication.__init__(self)
         galaxy_app.is_webapp = True
         self.set_transaction_factory(lambda e: self.transaction_chooser(e, galaxy_app, session_cookie))
         # Mako support
