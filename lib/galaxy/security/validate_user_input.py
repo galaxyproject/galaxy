@@ -16,7 +16,7 @@ VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
-PUBLICNAME_MIN_LEN = 3
+PUBLICNAME_MIN_LEN = 1
 PUBLICNAME_MAX_LEN = 255
 VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
