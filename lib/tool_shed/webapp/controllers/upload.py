@@ -27,6 +27,7 @@ from tool_shed.util import (
     xml_util
 )
 from tool_shed.util.web_util import escape
+from tool_shed.webapp.framework.decorators import require_login
 
 log = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ log = logging.getLogger(__name__)
 class UploadController(BaseUIController):
 
     @web.expose
-    @web.require_login('upload', use_panels=True)
+    @require_login('upload', use_panels=True)
     def upload(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
