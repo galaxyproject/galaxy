@@ -150,3 +150,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.toggle-invocation-details {
+    word-break: break-all;
+}
+</style>
