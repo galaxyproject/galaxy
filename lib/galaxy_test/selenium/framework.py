@@ -384,6 +384,14 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
             self.assert_no_error_message()
         return GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL
 
+    @retry_assertion_during_transitions
+    def assert_workflow_has_changes_and_save(self):
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator
         name = self._get_random_name()
