@@ -457,10 +457,10 @@ export const getAnalysisRouter = (Galaxy) => {
             // character we use that is 'problematic' like this), then assume it
             // is already decoded; avoid double decoding.
             if (params.tool_id) {
-                params.id = params.tool_id.indexOf("+") >= 0 ? params.tool_id : decodeURIComponent(params.tool_id);
+                params.id = params.tool_id.indexOf("+") >= 0 ? params.tool_id : decodeUriComponent(params.tool_id);
             }
             if (params.version) {
-                params.version = params.version.indexOf("+") >= 0 ? params.version : decodeURIComponent(params.version);
+                params.version = params.version.indexOf("+") >= 0 ? params.version : decodeUriComponent(params.version);
             }
             this._display_vue_helper(ToolForm, params);
         },
