@@ -913,10 +913,10 @@ class StdioParser:
                 # Parse the error level:
                 exit_code.error_level = (
                     self.parse_error_level(exit_code_elem.get("level")))
-                code_range = exit_code_elem.get("range", "")
-                if code_range == "":
-                    code_range = exit_code_elem.get("value", "")
-                if code_range == "":
+                code_range = exit_code_elem.get("range")
+                if code_range is None:
+                    code_range = exit_code_elem.get("value")
+                if code_range is None:
                     log.warning("Tool stdio exit codes must have a range or value")
                     continue
                 # Parse the range. We look for:
@@ -984,10 +984,9 @@ class StdioParser:
                 # Parse the error level
                 regex.error_level = (
                     self.parse_error_level(regex_elem.get("level")))
-                regex.match = regex_elem.get("match", "")
-                if regex.match == "":
-                    # TODO: Convert the offending XML element to a string
-                    log.warning("Ignoring tool's stdio regex element %s - "
+                regex.match = regex_elem.get("match")
+                if regex.match is None:
+                    log.warning(f"Ignoring tool's stdio regex element with attributes {regex_elem.attrib} - "
                                 "the 'match' attribute must exist")
                     continue
                 # Parse the output sources. We look for the "src", "source",
