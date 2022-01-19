@@ -40,6 +40,7 @@ outputs:
 
 class ToolApp(GalaxyDataTestApp):
     name = 'galaxy'
+    biotools_metadata_source = None
     job_search = None
 
 
