@@ -871,9 +871,9 @@ QUnit.test("resetMapping", function (assert) {
 });
 
 QUnit.module("terminal mapping logic", {
-    newInputTerminal: function (mapOver, input, node) {
+    newInputTerminal: function (mapOver, input) {
         input = input || {};
-        node = node || this.newNode();
+        const node = this.newNode();
         if (!("extensions" in input)) {
             input["extensions"] = ["data"];
         }
@@ -889,26 +889,19 @@ QUnit.module("terminal mapping logic", {
         }
         return inputTerminal;
     },
-    newInputParameterTerminal: function (mapOver, input, node) {
-        input = input || {};
-        node = node || this.newNode();
-        if (!("type" in input)) {
-            input["type"] = "text";
-        }
+    newInputParameterTerminal: function () {
+        const node = this.newNode();
         const inputEl = $("<div>")[0];
         const inputTerminal = new Terminals.InputParameterTerminal({
             element: inputEl,
-            input: input,
+            input: {},
         });
         inputTerminal.node = node;
-        if (mapOver) {
-            inputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
-        }
         return inputTerminal;
     },
-    newInputCollectionTerminal: function (input, node) {
+    newInputCollectionTerminal: function (input) {
         input = input || {};
-        node = node || this.newNode();
+        const node = this.newNode();
         if (!("extensions" in input)) {
             input["extensions"] = ["data"];
         }
@@ -921,16 +914,12 @@ QUnit.module("terminal mapping logic", {
         });
         return inputTerminal;
     },
-    newOutputTerminal: function (mapOver, output, node) {
-        output = output || {};
-        node = node || this.newNode();
-        if (!("extensions" in output)) {
-            output["extensions"] = ["data"];
-        }
+    newOutputTerminal: function (mapOver) {
+        const node = this.newNode();
         const outputEl = $("<div>")[0];
         const outputTerminal = new Terminals.OutputTerminal({
             element: outputEl,
-            datatypes: output.extensions,
+            datatypes: ["data"],
             node: {},
         });
         outputTerminal.node = node;
@@ -939,24 +928,17 @@ QUnit.module("terminal mapping logic", {
         }
         return outputTerminal;
     },
-    newOutputCollectionTerminal: function (collectionType, output, node, mapOver) {
+    newOutputCollectionTerminal: function (collectionType) {
         collectionType = collectionType || "list";
-        output = output || {};
-        node = node || this.newNode();
-        if (!("extensions" in output)) {
-            output["extensions"] = ["data"];
-        }
+        const node = this.newNode();
         const outputEl = $("<div>")[0];
         const outputTerminal = new Terminals.OutputCollectionTerminal({
             element: outputEl,
-            datatypes: output.extensions,
+            datatypes: ["data"],
             collection_type: collectionType,
             node: {},
         });
         outputTerminal.node = node;
-        if (mapOver) {
-            outputTerminal.setMapOver(new Terminals.CollectionTypeDescription(mapOver));
-        }
         return outputTerminal;
     },
     newNode: function () {
@@ -1040,14 +1022,14 @@ QUnit.module("terminal mapping logic", {
     verifyNotMappedOver: function (assert, terminal) {
         assert.ok(!terminal.mapOver.isCollection);
     },
-    verifyDefaultMapOver: function(assert, inputTerminal1) {
-        const outputCollectionTerminal1 = this.newOutputCollectionTerminal("list");
-        assert.ok(!inputTerminal1.node.mapOver);
-        const connector = new Connector({}, outputCollectionTerminal1, inputTerminal1);
-        outputCollectionTerminal1.connect(connector);
-        assert.ok(inputTerminal1.node.mapOver);
-        inputTerminal1.disconnect(connector);
-        assert.ok(!inputTerminal1.node.mapOver);
+    verifyDefaultMapOver: function(assert, terminal) {
+        const outputCollectionTerminal = this.newOutputCollectionTerminal("list");
+        assert.ok(!terminal.node.mapOver);
+        const connector = new Connector({}, outputCollectionTerminal, terminal);
+        outputCollectionTerminal.connect(connector);
+        assert.ok(terminal.node.mapOver);
+        terminal.disconnect(connector);
+        assert.ok(!terminal.node.mapOver);
     }
 });
 
