@@ -38,7 +38,7 @@ def load_with_references(path):
 
     # readd the stashed children of the macros node
     # TODO is this this really necesary? Since macro nodes are removed anyway just below.
-    if macros_copy:
+    if macros_copy is not None:
         _xml_set_children(macros_el, list(macros_copy))
 
     for el in root.xpath('//macro'):
