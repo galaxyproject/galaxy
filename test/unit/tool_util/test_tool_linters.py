@@ -912,6 +912,20 @@ TESTS = [
             and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 0 and len(x.error_messages) == 0
     ),
     (
+        ASSERTS, tests.lint_tsts,
+        lambda x:
+            'Test 1: unknown assertion invalid' in x.error_messages
+            and 'Test 1: unknown attribute invalid_attrib for has_text' in x.error_messages
+            and 'Test 1: missing attribute text for has_text' in x.error_messages
+            and 'Test 1: attribute value for has_size needs to be int got 500k' in x.error_messages
+            and 'Test 1: attribute delta for has_size needs to be int got 1O' in x.error_messages
+            and 'Test 1: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
+            and "Test 1: has_size needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and "Test 1: has_n_columns needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and "Test 1: has_n_lines needs to specify 'n', 'min', or 'max'" in x.error_messages
+            and len(x.warn_messages) == 0 and len(x.error_messages) == 9
+    ),
+    (
         REPEATS, inputs.lint_repeats,
         lambda x:
             "Repeat does not specify name attribute." in x.error_messages
@@ -992,22 +1006,6 @@ TESTS = [
             'Unknown tag [wrong_tag] encountered, this may result in a warning in the future.' in x.info_messages
             and 'Best practice violation [stdio] elements should come before [command]' in x.warn_messages
             and len(x.info_messages) == 1 and len(x.valid_messages) == 0 and len(x.warn_messages) == 1 and len(x.error_messages) == 0
-            "Test 1: Cannot specify outputs in a test expecting failure." in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 1
-    ),
-    (
-        ASSERTS, tests.lint_tsts,
-        lambda x:
-            'Test 1: unknown assertion invalid' in x.error_messages
-            and 'Test 1: unknown attribute invalid_attrib for has_text' in x.error_messages
-            and 'Test 1: missing attribute text for has_text' in x.error_messages
-            and 'Test 1: attribute value for has_size needs to be int got 500k' in x.error_messages
-            and 'Test 1: attribute delta for has_size needs to be int got 1O' in x.error_messages
-            and 'Test 1: unknown attribute invalid_attrib_also_checked_in_nested_asserts for not_has_text' in x.error_messages
-            and "Test 1: has_size needs to specify 'n', 'min', or 'max'" in x.error_messages
-            and "Test 1: has_n_columns needs to specify 'n', 'min', or 'max'" in x.error_messages
-            and "Test 1: has_n_lines needs to specify 'n', 'min', or 'max'" in x.error_messages
-            and len(x.warn_messages) == 0 and len(x.error_messages) == 9
     ),
 ]
 
@@ -1051,6 +1049,7 @@ TEST_IDS = [
     'outputs: format="input"',
     'outputs collection static elements with format_source',
     'outputs discover datatsets with tool provided metadata',
+    'outputs: asserts',
     'repeats',
     'stdio: default for default profile',
     'stdio: default for non-legacy profile',
@@ -1061,8 +1060,7 @@ TEST_IDS = [
     'tests: without expectations',
     'tests: param and output names',
     'tests: expecting failure with outputs',
-    'xml_order'
-    'asserts'
+    'xml_order',
 ]
 
 
