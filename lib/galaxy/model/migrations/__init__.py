@@ -382,7 +382,7 @@ class DatabaseStateVerifier:
         msg = f'Your {model} database has version {db_version}, but this code expects '
         msg += f'version {code_version}. '
         msg += 'This database can be upgraded automatically if database_auto_migrate is set. '
-        msg += 'To upgrade manually, run `migrate_db.sh` (see instructions in that file). '
+        msg += 'To upgrade manually, run `run_alembic.sh` (see instructions in that file). '
         msg += 'Please remember to backup your database before migrating.'
         return msg
 
