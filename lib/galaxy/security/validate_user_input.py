@@ -107,9 +107,10 @@ def transform_publicname(publicname):
     FILL_CHAR is used to extend or replace characters.
     """
     # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if publicname not in ['None', None, '']:
-        publicname = publicname.lower()
-        publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
+    if not publicname:
+        raise ValueError("Public name cannot be empty")
+    publicname = publicname.lower()
+    publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
     publicname = publicname[:PUBLICNAME_MAX_LEN]
     return publicname
 
