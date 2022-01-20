@@ -12,7 +12,7 @@ To accommodate this setup, the Alembic-based migrations system uses [branches](h
 
 To create a database or initialize an empty database, use the `create_db.sh` script. For usage and options, see the inline documentation in the file. Note that this will create and/or initialize new databases (or one combined database) for the `gxy` and `tsi` models. This script does not handle the Tool Shed database.
 
-To upgrade or downgrade an existing database ***that has been migrated to Alembic***, use the `migrate_db.sh` script. For usage and options, see the inline documentation in the file. This script is a thin wrapper around the Alembic runner. It takes care of adjusting the path, initializing the Python virtual environtment, retrieving necessary configuration values, and invoking Alembic with appropriate arguments.
+To upgrade or downgrade an existing database ***that has been migrated to Alembic***, use the `run_alembic.sh` script. For usage and options, see the inline documentation in the file. This script is a thin wrapper around the Alembic runner. It takes care of adjusting the path, initializing the Python virtual environtment, retrieving necessary configuration values, and invoking Alembic with appropriate arguments.
 
 Since Galaxy uses branch labels to distinguish between the galaxy and the install models, in most cases, you'll need to identify the target branch to which your command should be applied. Use branch labels: `gxy` for the galaxy model, and `tsi` for install model.
 
@@ -22,23 +22,28 @@ Remember to first backup your database(s).
 
 #### To upgrade:
 ```
-./migrate_db.sh upgrade gxy@head  # upgrade gxy to head revision
-./migrate_db.sh upgrade gxy@+1  # upgrade gxy to 1 revision above current
-./migrate_db.sh upgrade [revision identifier]  # upgrade branch to a specific revision
-./migrate_db.sh upgrade [revision identifier]+1  # upgrade branch to 1 revision above specific revision
-./migrate_db.sh upgrade heads  # upgrade gxy and tsi to head revisions
+./run_alembic.sh upgrade gxy@head  # upgrade gxy to head revision
+./run_alembic.sh upgrade gxy@+1  # upgrade gxy to 1 revision above current
+./run_alembic.sh upgrade [revision identifier]  # upgrade branch to a specific revision
+./run_alembic.sh upgrade [revision identifier]+1  # upgrade branch to 1 revision above specific revision
+./run_alembic.sh upgrade heads  # upgrade gxy and tsi to head revisions
 ```
 
 #### To downgrade:
 ```
-./migrate_db.sh downgrade gxy@base  # downgrade gxy to base (empty db with empty alembic table)
-./migrate_db.sh downgrade gxy@-1  # downgrade gxy to 1 revision below current
-./migrate_db.sh downgrade [revision identifier]  # downgrade branch to a specific revision
-./migrate_db.sh downgrade [revision identifier]-1  # downgrade branch to 1 revision below specific revision
+./run_alembic.sh downgrade gxy@base  # downgrade gxy to base (empty db with empty alembic table)
+./run_alembic.sh downgrade gxy@-1  # downgrade gxy to 1 revision below current
+./run_alembic.sh downgrade [revision identifier]  # downgrade branch to a specific revision
+./run_alembic.sh downgrade [revision identifier]-1  # downgrade branch to 1 revision below specific revision
 ```
 Check [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/branches.html#working-with-branches) for more examples.
 
 Note: relative upgrades and downgrades without a revision identifier are not supported - i.e., you cannot `upgrade +1` or `downgrade -1` without providing a revision identifier. However, you can upgrade both branches to their latest versions (head revisions) without providing a branch label: `upgrade heads`.
+
+### Legacy script
+
+The `manage_db.sh` script is still available, but is considered legacy. The script supports a subset of command line options offered previously by SQLAlchemy Migrate. For usage, see documentation in the file.
+
 
 ### Upgrading from SQLAlchemy Migrate
 
@@ -46,21 +51,22 @@ Galaxy no longer supports SQLAlchemy Migrate. To upgrade to Alembic, follow thes
 
 1. Backup your database(s).
 
-2. Verify that your database is at the latest SQLAlchemy Migrate version. If you have a combined database, it should be version 180 (check the `migrate_version` table). If you have separate galaxy model and install model databases, your galaxy version should be 180, and your install model version should be 17. 
+2. Verify that your database is at the latest SQLAlchemy Migrate version. If you have a combined database, it should be version 179 (check the `migrate_version` table). If you have separate galaxy model and install model databases, your galaxy version should be 179, and your install model version should be 17. 
 
-3. If your database is not current, you need to update it first. For that, you'll need to check out a previous version of the code base: use commit 7328ca0da9977bc31cd074464a2e59411a5cdcf8 or later, but prior to [TODO: insert Alembic commit]. Then you can run the old `manage_db.sh` script to bring your database(s) up to date. Once your database has the latest SQLAlchemy Migrate version, you can check out the version of the code base that you had prior to downgrading, and proceed to migrating to Alembic.
+3. If your database is not current, before upgrading to the 22.01 release or the current dev branch, run `manage_db.sh upgrade` to upgrade your database. 
+Once your database has the latest SQLAlchemy Migrate version, you can check out the new code base (22.01 release or the current dev branch) and proceed to migrating to Alembic.
 
-4. If you want Alembic to upgrade your database automatically, you can set the [`database_auto_migrate`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L170) configuration option and simply start Galaxy. Otherwise, use the `migrate_db.sh` script.
+4. If you want Alembic to upgrade your database automatically, you can set the [`database_auto_migrate`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L170) configuration option and simply start Galaxy. Otherwise, use the `run_alembic.sh` script.
 
 ## Developing Galaxy: creating new revisions
 
-When creating new revisions, as with upgrading/downgrading, you need to indicate the target branch. You use the same `migrate_db.sh` script; however, the syntax is slightly different:
+When creating new revisions, as with upgrading/downgrading, you need to indicate the target branch. You use the same `run_alembic.sh` script; however, the syntax is slightly different:
 
 To create a revision for the galaxy model:
-```./migrate_db.sh revision --head=gxy@head -m "your description"```
+```./run_alembic.sh revision --head=gxy@head -m "your description"```
 
 To create a revision for the install model:
-```./migrate_db.sh revision --head=tsi@head -m "your description"```
+```./run_alembic.sh revision --head=tsi@head -m "your description"```
 
 Alembic will generate a revision script in the appropriate version directory (the location of the version directories is specified in the `alembic.ini` file). You'll need to fill out the `upgrade()` and `downgrade` functions. Use Alembic documentation for examples:
 - [https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script](https://alembic.sqlalchemy.org/en/latest/tutorial.html#create-a-migration-script)
