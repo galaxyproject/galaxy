@@ -25,7 +25,7 @@
                         label="Filters"
                         label-for="show-all-running"
                         description="Select whether or not to use the cutoff, or show all jobs.">
-                        <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch>
+                        <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch @change="update">
                             {{ showAllRunning ? "Showing all currently running jobs" : "Time cutoff applied to query" }}
                         </b-form-checkbox>
                     </b-form-group>
