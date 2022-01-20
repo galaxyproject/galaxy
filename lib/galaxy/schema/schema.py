@@ -646,7 +646,7 @@ class UpdateHistoryContentsBatchPayload(BaseModel):
         description="A list of content items to update with the changes.",
     )
     deleted: Optional[bool] = Field(
-        default=False,
+        default=None,
         title="Deleted",
         description=(
             "This will check the uploading state if not deleting (i.e: deleted=False), "
@@ -654,7 +654,7 @@ class UpdateHistoryContentsBatchPayload(BaseModel):
         ),
     )
     visible: Optional[bool] = Field(
-        default=False,
+        default=None,
         title="Visible",
         description=(
             "Show or hide history contents"
