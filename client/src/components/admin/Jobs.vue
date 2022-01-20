@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 id="jobs-title">Jobs</h2>
-        <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
+        <b-alert v-if="this.message" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
         <p>
