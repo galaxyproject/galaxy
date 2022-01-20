@@ -16,7 +16,6 @@ VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
-PUBLICNAME_MIN_LEN = 1
 PUBLICNAME_MAX_LEN = 255
 VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
 VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
@@ -111,7 +110,7 @@ def transform_publicname(publicname):
     if publicname not in ['None', None, '']:
         publicname = publicname.lower()
         publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
-        publicname = publicname.ljust(PUBLICNAME_MIN_LEN, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
+    publicname = publicname[:PUBLICNAME_MAX_LEN]
     return publicname
 
 
