@@ -44,8 +44,8 @@ def validate_password_str(password):
 
 def validate_publicname_str(publicname):
     """Validates a string containing a public username."""
-    if len(publicname) < PUBLICNAME_MIN_LEN:
-        return "Public name must be at least %d characters in length." % (PUBLICNAME_MIN_LEN)
+    if not publicname:
+        return "Public name cannot be empty"
     if len(publicname) > PUBLICNAME_MAX_LEN:
         return "Public name cannot be more than %d characters in length." % (PUBLICNAME_MAX_LEN)
     if not(VALID_PUBLICNAME_RE.match(publicname)):
