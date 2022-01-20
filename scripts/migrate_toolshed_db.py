@@ -2,7 +2,7 @@
 This script parses the Tool Shed config file for database connection
 and then delegates to sqlalchemy_migrate shell main function in
 migrate.versioning.shell.
-It is wrapped by migrate_toolshed_db.sh (see that file for usage).
+It is wrapped by manage_db.sh (see that file for usage).
 """
 import logging
 import os.path

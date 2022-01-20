@@ -153,7 +153,7 @@ def get_config(argv, use_argparse=True, cwd=None):
 
 def manage_db():
     # This is a duplicate implementation of scripts/migrate_db.py.
-    # See migrate_db.sh for usage.
+    # See run_alembic.sh for usage.
     def _insert_x_argument(key, value):
         sys.argv.insert(1, f'{key}={value}')
         sys.argv.insert(1, '-x')
