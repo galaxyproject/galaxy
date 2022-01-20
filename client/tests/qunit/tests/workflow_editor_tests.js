@@ -1288,9 +1288,12 @@ QUnit.test("simple mapping over collection outputs works correctly", function (a
     this.verifyNotAttachable(assert, testTerminal1, connectedOutput);
 });
 
-QUnit.test("node input parameter mapping state over collection outputs works correctly", function (assert) {
+QUnit.test("node input terminal mapping state over collection outputs works correctly", function (assert) {
     const inputTerminal = this.newInputTerminal();
     this.verifyDefaultMapOver(assert, inputTerminal);
+});
+
+QUnit.test("node input parameter terminal mapping state over collection outputs works correctly", function (assert) {
     const inputParameterTerminal = this.newInputParameterTerminal();
     this.verifyDefaultMapOver(assert, inputParameterTerminal);
 });
