@@ -21,6 +21,7 @@
                 caption-top
                 :busy="loading"
                 fixed
+                class="invocations-table"
             >
                 <template v-slot:row-details="row">
                     <b-card>
@@ -151,12 +152,13 @@ export default {
 };
 </script>
 <style scoped>
-.toggle-invocation-details {
-    overflow-wrap: break-word;
+.invocations-table {
+    min-width: 40rem;
 }
 .table::v-deep .col-name {
-    width: 40%;
-    min-width: 20ch;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .table::v-deep .col-history {
     width: 20%;
