@@ -1,12 +1,20 @@
 import os
 import re
+import sys
 from typing import (
     List,
-    NamedTuple,
     Optional,
     Tuple,
 )
 
+import alembic.config
+
+from galaxy.model.database_utils import is_one_database
+from galaxy.model.migrations import (
+    DatabaseConfig,
+    GXY,
+    TSI,
+)
 from galaxy.util.properties import (
     find_config_file,
     get_data_dir,
@@ -18,20 +26,6 @@ CONFIG_FILE_ARG = '--galaxy-config'
 CONFIG_DIR_NAME = 'config'
 GXY_CONFIG_PREFIX = 'GALAXY_CONFIG_'
 TSI_CONFIG_PREFIX = 'GALAXY_INSTALL_CONFIG_'
-
-
-class DatabaseConfig(NamedTuple):
-    url: str
-    template: str
-    encoding: str
-
-
-def _pop_config_file(argv: List[str]) -> Optional[str]:
-    if CONFIG_FILE_ARG in argv:
-        pos = argv.index(CONFIG_FILE_ARG)
-        argv.pop(pos)  # pop argument name
-        return argv.pop(pos)  # pop and return argument value
-    return None
 
 
 def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
@@ -63,10 +57,17 @@ def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, Databa
     return (gxy_config, tsi_config, is_auto_migrate)
 
 
-def add_db_urls_to_command_arguments(argv: List[str], cwd: str) -> None:
-    gxy_config, tsi_config, _ = get_configuration(argv, cwd)
-    _insert_x_argument(argv, 'tsi_url', tsi_config.url)
-    _insert_x_argument(argv, 'gxy_url', gxy_config.url)
+def _pop_config_file(argv: List[str]) -> Optional[str]:
+    if CONFIG_FILE_ARG in argv:
+        pos = argv.index(CONFIG_FILE_ARG)
+        argv.pop(pos)  # pop argument name
+        return argv.pop(pos)  # pop and return argument value
+    return None
+
+
+def add_db_urls_to_command_arguments(argv: List[str], gxy_url: str, tsi_url: str) -> None:
+    _insert_x_argument(argv, 'tsi_url', tsi_url)
+    _insert_x_argument(argv, 'gxy_url', gxy_url)
 
 
 def _insert_x_argument(argv, key: str, value: str) -> None:
@@ -75,63 +76,124 @@ def _insert_x_argument(argv, key: str, value: str) -> None:
     argv.insert(1, '-x')
 
 
+def invoke_alembic() -> None:
+    """
+    Invoke the Alembic command line runner.
+
+    Accept 'heads' as the target revision argument to enable upgrading both gxy and tsi in one command.
+    This is consistent with Alembic's CLI, which allows `upgrade heads`. However, this would not work for
+    separate gxy and tsi databases: we can't attach a database url to a revision after Alembic has been
+    invoked with the 'upgrade' command and the 'heads' argument. So, instead we invoke Alembic for each head.
+    """
+    if 'heads' in sys.argv and 'upgrade' in sys.argv:
+        i = sys.argv.index('heads')
+        sys.argv[i] = f'{GXY}@head'
+        alembic.config.main()
+        sys.argv[i] = f'{TSI}@head'
+        alembic.config.main()
+    else:
+        alembic.config.main()
+
+
+class LegacyScriptsException(Exception):
+    # Misc. errors caused by incorrect arguments passed to a legacy script.
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class LegacyScripts:
 
     LEGACY_CONFIG_FILE_ARG_NAMES = ['-c', '--config', '--config-file']
     ALEMBIC_CONFIG_FILE_ARG = '--alembic-config'  # alembic config file, set in the calling script
+    DEFAULT_DB_ARG = 'default'
 
-    def pop_database_argument(self, argv: List[str]) -> str:
+    def __init__(self, argv: List[str], cwd: Optional[str] = None) -> None:
+        self.argv = argv
+        self.cwd = cwd or os.getcwd()
+        self.database = self.DEFAULT_DB_ARG
+
+    def run(self) -> None:
         """
-        If last argument is a valid database name, pop and return it; otherwise return default.
+        Convert legacy arguments to current spec required by Alembic,
+        then add db url arguments required by Alembic
         """
-        arg = argv[-1]
+        self.convert_args()
+        add_db_urls_to_command_arguments(self.argv, self.gxy_url, self.tsi_url)
+
+    def convert_args(self) -> None:
+        """
+        Convert legacy arguments to current spec required by Alembic.
+
+        Note: The following method calls must be done in this sequence.
+        """
+        self.pop_database_argument()
+        self.rename_config_argument()
+        self.rename_alembic_config_argument()
+        self._get_db_urls()
+        self.convert_version_argument()
+
+    def pop_database_argument(self) -> None:
+        """
+        If last argument is a valid database name, pop and assign it; otherwise assign default.
+        """
+        arg = self.argv[-1]
         if arg in ['galaxy', 'install']:
-            return argv.pop()
-        return 'galaxy'
+            self.database = self.argv.pop()
 
-    def rename_config_argument(self, argv: List[str]) -> None:
+    def rename_config_argument(self) -> None:
         """
         Rename the optional config argument: we can't use '-c' because that option is used by Alembic.
         """
         for arg in self.LEGACY_CONFIG_FILE_ARG_NAMES:
-            if arg in argv:
-                self._rename_arg(argv, arg, CONFIG_FILE_ARG)
+            if arg in self.argv:
+                self._rename_arg(arg, CONFIG_FILE_ARG)
                 return
 
-    def rename_alembic_config_argument(self, argv: List[str]) -> None:
+    def rename_alembic_config_argument(self) -> None:
         """
         Rename argument name: `--alembic-config` to `-c`. There should be no `-c` argument present.
         """
-        if '-c' in argv:
-            raise Exception('Cannot rename alembic config argument: `-c` argument present.')
-        self._rename_arg(argv, self.ALEMBIC_CONFIG_FILE_ARG, '-c')
+        if '-c' in self.argv:
+            raise LegacyScriptsException('Cannot rename alembic config argument: `-c` argument present.')
+        self._rename_arg(self.ALEMBIC_CONFIG_FILE_ARG, '-c')
 
-    def convert_version_argument(self, argv: List[str], database: str) -> None:
+    def convert_version_argument(self) -> None:
         """
         Convert legacy version argument to current spec required by Alembic.
         """
-        if '--version' in argv:
+        if '--version' in self.argv:
             # Just remove it: the following argument should be the version/revision identifier.
-            pos = argv.index('--version')
-            argv.pop(pos)
+            pos = self.argv.index('--version')
+            self.argv.pop(pos)
         else:
             # If we find --version=foo, extract foo and replace arg with foo (which is the revision identifier)
             p = re.compile(r'--version=([0-9A-Fa-f]+)')
-            for i, arg in enumerate(argv):
+            for i, arg in enumerate(self.argv):
                 m = p.match(arg)
                 if m:
-                    argv[i] = m.group(1)
+                    self.argv[i] = m.group(1)
                     return
-            # No version argumen found: construct branch@head argument for an upgrade operation.
+            # No version argument found: construct argument for an upgrade operation.
             # Raise exception otherwise.
-            if 'upgrade' not in argv:
-                raise Exception('If no `--version` argument supplied, `upgrade` argument is requried')
+            if 'upgrade' not in self.argv:
+                raise LegacyScriptsException('If no `--version` argument supplied, `upgrade` argument is requried')
 
-            if database == 'galaxy':
-                argv.append('gxy@head')
-            elif database == 'install':
-                argv.append('tsi@head')
+            if self._is_one_database():  # upgrade both regardless of database argument
+                self.argv.append('heads')
+            else:  # for separate databases, choose one
+                if self.database in ['galaxy', self.DEFAULT_DB_ARG]:
+                    self.argv.append('gxy@head')
+                elif self.database == 'install':
+                    self.argv.append('tsi@head')
 
-    def _rename_arg(self, argv, old_name, new_name) -> None:
-        pos = argv.index(old_name)
-        argv[pos] = new_name
+    def _rename_arg(self, old_name, new_name) -> None:
+        pos = self.argv.index(old_name)
+        self.argv[pos] = new_name
+
+    def _get_db_urls(self) -> None:
+        gxy_config, tsi_config, _ = get_configuration(self.argv, self.cwd)
+        self.gxy_url = gxy_config.url
+        self.tsi_url = tsi_config.url
+
+    def _is_one_database(self):
+        return is_one_database(self.gxy_url, self.tsi_url)

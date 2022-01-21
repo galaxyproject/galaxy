@@ -7,7 +7,8 @@ INPUT:                        |   OUTPUT:
 ----------------------------------------------------------
 upgrade --version=foo         |   upgrade foo
 upgrade --version foo         |   upgrade foo
-upgrade                       |   upgrade gxy@head
+upgrade                       |   upgrade heads (if using a combined db for galaxy and install)
+upgrade                       |   upgrade gxy@head (if using separate dbs for galaxy and install)
 upgrade install               |   upgrade tsi@head
 upgrade --version=bar install |   upgrade bar
 upgrade -c path-to-galaxy.yml |   upgrade --galaxy-config path-to-galaxy.yml gxy@head
@@ -19,24 +20,18 @@ The optional `-c` argument name is renamed to `--galaxy-config`.
 import os
 import sys
 
-import alembic.config
-
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 from galaxy.model.migrations.scripts import (
-    add_db_urls_to_command_arguments,
+    invoke_alembic,
     LegacyScripts,
 )
 
 
 def run():
-    ls = LegacyScripts()
-    target_database = ls.pop_database_argument(sys.argv)
-    ls.rename_config_argument(sys.argv)
-    ls.rename_alembic_config_argument(sys.argv)
-    ls.convert_version_argument(sys.argv, target_database)
-    add_db_urls_to_command_arguments(sys.argv, os.getcwd())
-    alembic.config.main()
+    ls = LegacyScripts(sys.argv, os.getcwd())
+    ls.run()
+    invoke_alembic()
 
 
 if __name__ == '__main__':
