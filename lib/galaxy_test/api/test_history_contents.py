@@ -249,6 +249,32 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert objects[0]["deleted"] is False
         assert objects[0]["visible"] is True
 
+    def test_update_batch_collections(self):
+        hdca = self._create_pair_collection()
+        assert hdca["deleted"] is False
+        assert hdca["visible"] is True
+
+        # update deleted flag => true
+        payload = dict(items=[{"history_content_type": "dataset_collection", "id": hdca["id"]}], deleted=True)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is True
+
+        # update visibility flag => false
+        payload = dict(items=[{"history_content_type": "dataset_collection", "id": hdca["id"]}], visible=False)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is True
+        assert objects[0]["visible"] is False
+
+        # update both flags
+        payload = dict(items=[{"history_content_type": "dataset_collection", "id": hdca["id"]}], deleted=False, visible=True)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"] is False
+        assert objects[0]["visible"] is True
+
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
         update_response = self._raw_update(hda1["id"], dict(deleted='not valid'))
