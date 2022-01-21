@@ -117,8 +117,8 @@ export default {
     data() {
         const fields = [
             { key: "expand", label: "", class: "col-button" },
-            { key: "workflow_id", label: "Workflow", class: "col-name" },
-            { key: "history_id", label: "History", class: "col-history" },
+            { key: "workflow_id", label: "Workflow", class: "col-name truncate" },
+            { key: "history_id", label: "History", class: "col-history truncate" },
             { key: "create_time", label: "Invoked", class: "col-small" },
             { key: "update_time", label: "Updated", class: "col-small" },
             { key: "state", class: "col-small" },
@@ -173,9 +173,7 @@ export default {
     min-width: 40rem;
 }
 .table::v-deep .col-name {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    width: 40%;
 }
 .table::v-deep .col-history {
     width: 20%;
@@ -185,5 +183,10 @@ export default {
 }
 .table::v-deep .col-button {
     width: 50px;
+}
+.table::v-deep .truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 </style>
