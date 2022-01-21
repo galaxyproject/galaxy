@@ -272,6 +272,32 @@ steps:
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
+    def test_non_data_map_over_carried_through(self):
+        # Use auto_layout=false, which prevents placing any
+        # step outside of the scroll area
+        # xref: https://github.com/galaxyproject/galaxy/issues/13211
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list"
+steps:
+  param_value_from_file:
+    tool_id: param_value_from_file
+    in:
+      input1: input_collection
+  text_input_step:
+    tool_id: param_text_option
+    in:
+      text_param: param_value_from_file/text_param
+  collection_input:
+    tool_id: identifier_collection
+""", auto_layout=False)
+        self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
+        self.assert_connected("text_input_step#out_file1", "collection_input#input1")
+
+    @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
 
@@ -628,11 +654,12 @@ steps:
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
 
-    def open_in_workflow_editor(self, yaml_content):
+    def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Layout")
+        if auto_layout:
+            self.workflow_editor_click_option("Auto Layout")
         return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
