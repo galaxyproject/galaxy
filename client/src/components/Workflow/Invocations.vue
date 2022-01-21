@@ -35,22 +35,20 @@
                     </b-card>
                 </template>
                 <template v-slot:cell(expand)="data">
-                    <div class="toggle-invocation-details">
-                        <b-link
-                            v-b-tooltip.hover.top
-                            title="Show Invocation Details"
-                            class="btn-sm fa fa-chevron-down"
-                            v-if="!data.detailsShowing"
-                            @click.stop="swapRowDetails(data)"
-                        />
-                        <b-link
-                            v-b-tooltip.hover.top
-                            title="Hide Invocation Details"
-                            class="btn-sm fa fa-chevron-up"
-                            v-if="data.detailsShowing"
-                            @click.stop="swapRowDetails(data)"
-                        />
-                    </div>
+                    <b-link
+                        v-b-tooltip.hover.top
+                        title="Show Invocation Details"
+                        class="btn-sm fa fa-chevron-down toggle-invocation-details"
+                        v-if="!data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                    <b-link
+                        v-b-tooltip.hover.top
+                        title="Hide Invocation Details"
+                        class="btn-sm fa fa-chevron-up toggle-invocation-details"
+                        v-if="data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
                 </template>
                 <template v-slot:cell(workflow_id)="data">
                     <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)">
