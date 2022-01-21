@@ -35,42 +35,39 @@
                     </b-card>
                 </template>
                 <template v-slot:cell(expand)="data">
-                    <b-link
-                        v-b-tooltip.hover.bottom
-                        title="Show Invocation Details"
-                        class="btn-sm fa fa-chevron-down"
-                        v-if="!data.detailsShowing"
-                        @click.stop="swapRowDetails(data)"
-                    />
-                    <b-link
-                        v-b-tooltip.hover.bottom
-                        title="Hide Invocation Details"
-                        class="btn-sm fa fa-chevron-up"
-                        v-if="data.detailsShowing"
-                        @click.stop="swapRowDetails(data)"
-                    />
+                    <div class="toggle-invocation-details">
+                        <b-link
+                            v-b-tooltip.hover.top
+                            title="Show Invocation Details"
+                            class="btn-sm fa fa-chevron-down"
+                            v-if="!data.detailsShowing"
+                            @click.stop="swapRowDetails(data)"
+                        />
+                        <b-link
+                            v-b-tooltip.hover.top
+                            title="Hide Invocation Details"
+                            class="btn-sm fa fa-chevron-up"
+                            v-if="data.detailsShowing"
+                            @click.stop="swapRowDetails(data)"
+                        />
+                    </div>
                 </template>
                 <template v-slot:cell(workflow_id)="data">
-                    <b-link
-                        class="toggle-invocation-details"
-                        v-b-tooltip
-                        :title="getWorkflowNameByInstanceId(data.item.workflow_id)"
-                        href="#"
-                        @click.stop="swapRowDetails(data)"
-                    >
-                        <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
-                    </b-link>
+                    <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)">
+                        <b-link href="#" @click.stop="swapRowDetails(data)">
+                            <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        </b-link>
+                    </div>
                 </template>
                 <template v-slot:cell(history_id)="data">
-                    <b-link
-                        id="switch-to-history"
-                        v-b-tooltip
-                        title="Switch to History"
-                        href="#"
-                        @click.stop="switchHistory(data.item.history_id)"
+                    <div
+                        v-b-tooltip.hover.top
+                        :title="`Switch to History: ${getHistoryNameById(data.item.history_id)}`"
                     >
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
-                    </b-link>
+                        <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
+                            <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        </b-link>
+                    </div>
                 </template>
                 <template v-slot:cell(create_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
