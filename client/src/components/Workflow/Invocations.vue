@@ -51,7 +51,11 @@
                     />
                 </template>
                 <template v-slot:cell(workflow_id)="data">
-                    <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)">
+                    <div
+                        v-b-tooltip.hover.top
+                        :title="getWorkflowNameByInstanceId(data.item.workflow_id)"
+                        class="truncate"
+                    >
                         <b-link href="#" @click.stop="swapRowDetails(data)">
                             <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
                         </b-link>
@@ -59,8 +63,9 @@
                 </template>
                 <template v-slot:cell(history_id)="data">
                     <div
-                        v-b-tooltip.hover.top
-                        :title="`Switch to History: ${getHistoryNameById(data.item.history_id)}`"
+                        v-b-tooltip.hover.top.html
+                        :title="`<b>Switch to History:</b><br>${getHistoryNameById(data.item.history_id)}`"
+                        class="truncate"
                     >
                         <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
                             <b>{{ getHistoryNameById(data.item.history_id) }}</b>
@@ -112,8 +117,8 @@ export default {
     data() {
         const fields = [
             { key: "expand", label: "", class: "col-button" },
-            { key: "workflow_id", label: "Workflow", class: "col-name truncate" },
-            { key: "history_id", label: "History", class: "col-history truncate" },
+            { key: "workflow_id", label: "Workflow", class: "col-name" },
+            { key: "history_id", label: "History", class: "col-history" },
             { key: "create_time", label: "Invoked", class: "col-small" },
             { key: "update_time", label: "Updated", class: "col-small" },
             { key: "state", class: "col-small" },
