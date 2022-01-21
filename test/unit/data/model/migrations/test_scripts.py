@@ -6,6 +6,16 @@ from galaxy.model.migrations.scripts import (
 )
 
 
+@pytest.fixture(autouse=True)
+def set_db_urls(monkeypatch):
+    # Do not try to access galaxy config; values not needed.
+    def no_config_call(self):
+        self.gxy_url = 'a string'
+        self.tsi_url = 'a stirng'
+
+    monkeypatch.setattr(LegacyScripts, '_get_db_urls', no_config_call)
+
+
 @pytest.fixture(autouse=True)  # set combined db for all tests
 def set_combined(monkeypatch):
     monkeypatch.setattr(LegacyScripts, '_is_one_database', lambda self: True)
