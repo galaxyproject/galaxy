@@ -25,7 +25,6 @@ parse_common_args() {
                 ;;
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
-                circusctl_args="$circusctl_args quit"
                 paster_args="$paster_args --stop-daemon"
                 add_pid_arg=1
                 uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
@@ -33,7 +32,6 @@ parse_common_args() {
                 shift
                 ;;
             --restart|restart)
-                circusctl_args="$circusctl_args restart"
                 paster_args="$paster_args restart"
                 add_pid_arg=1
                 add_log_arg=1
@@ -43,7 +41,6 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                circusd_args="$circusd_args --daemon --log-output $LOG_FILE"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
                 GALAXY_DAEMON_LOG="$GALAXY_LOG"
@@ -57,7 +54,6 @@ parse_common_args() {
                 ;;
             --status|status)
                 paster_args="$paster_args $1"
-                circusctl_args="$circusctl_args $1"
                 add_pid_arg=1
                 shift
                 ;;
@@ -70,7 +66,6 @@ parse_common_args() {
                 ;;
             *)
                 paster_args="$paster_args $1"
-                circusctl_args="$circusctl_args $1"
                 uwsgi_args="$uwsgi_args $1"
                 shift
                 ;;
@@ -154,15 +149,9 @@ find_server() {
     server_config=$1
     server_app=$2
     arg_getter_args=
-    default_webserver="paste"
-    case "$server_config" in
-        *.y*ml|''|none)
-            default_webserver="uwsgi"  # paste incapable of this
-            ;;
-    esac
+    default_webserver="gravity"
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
-    CIRCUS_CONFIG_FILE=${CIRCUS_CONFIG_FILE:-config/dev.ini}
     if [ "$APP_WEBSERVER" = "uwsgi" ]; then
         # Look for uwsgi
         if [ -z "$skip_venv" ] && [ -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
@@ -190,16 +179,7 @@ find_server() {
         if [ "$add_log_arg" -eq 1 ]; then
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
-    elif [ "$APP_WEBSERVER" = "dev" ]; then
-        if [ -n "$circusctl_args" ]; then
-            run_server="circusctl"
-            server_args="$circusctl_args"
-        else
-            run_server="circusd"
-            export GALAXY_DAEMON_LOG=$GALAXY_DAEMON_LOG
-            server_args="$CIRCUS_CONFIG_FILE $circusd_args"
-        fi
-    else
+    elif [ "$APP_WEBSERVER" = "paste" ]; then
         run_server="python"
         server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
         if [ "$add_pid_arg" -eq 1 ]; then
@@ -208,6 +188,9 @@ find_server() {
         if [ "$add_log_arg" -eq 1 ]; then
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
+    else
+        run_server="galaxy"
+        server_args=
     fi
 }
 
