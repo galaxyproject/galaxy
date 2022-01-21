@@ -25,6 +25,7 @@ parse_common_args() {
                 ;;
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
+                gravity_args="stop"
                 paster_args="$paster_args --stop-daemon"
                 add_pid_arg=1
                 uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
@@ -32,6 +33,7 @@ parse_common_args() {
                 shift
                 ;;
             --restart|restart)
+                gravity_args="restart"
                 paster_args="$paster_args restart"
                 add_pid_arg=1
                 add_log_arg=1
@@ -41,6 +43,7 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
+                gravity_args="start"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
                 GALAXY_DAEMON_LOG="$GALAXY_LOG"
@@ -53,6 +56,7 @@ parse_common_args() {
                 shift
                 ;;
             --status|status)
+                gravity_args="status"
                 paster_args="$paster_args $1"
                 add_pid_arg=1
                 shift
@@ -189,8 +193,13 @@ find_server() {
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
     else
-        run_server="galaxy"
-        server_args=
+        if [ -n "$gravity_args" ]; then
+            run_server="galaxyctl"
+            server_args="$gravity_args"
+        else
+            run_server="galaxy"
+            server_args=
+        fi
     fi
 }
 
