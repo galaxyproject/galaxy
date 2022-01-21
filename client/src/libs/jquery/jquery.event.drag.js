@@ -322,6 +322,7 @@ drag = $special.drag = {
 		// assign the drop targets information
 		obj.drop = drag.flatten( ( ia.drop || [] ).slice() );
 		obj.available = drag.flatten( ( ia.droppable || [] ).slice() );
+		obj.update();
 		return obj;	
 	},
 	
