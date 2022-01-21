@@ -34,11 +34,27 @@
                         />
                     </b-card>
                 </template>
+                <template v-slot:cell(expand)="data">
+                    <b-link
+                        v-b-tooltip.hover.bottom
+                        title="Show Invocation Details"
+                        class="btn-sm fa fa-chevron-down"
+                        v-if="!data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                    <b-link
+                        v-b-tooltip.hover.bottom
+                        title="Hide Invocation Details"
+                        class="btn-sm fa fa-chevron-up"
+                        v-if="data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                </template>
                 <template v-slot:cell(workflow_id)="data">
                     <b-link
                         class="toggle-invocation-details"
                         v-b-tooltip
-                        title="Show Invocation details"
+                        :title="getWorkflowNameByInstanceId(data.item.workflow_id)"
                         href="#"
                         @click.stop="swapRowDetails(data)"
                     >
@@ -100,12 +116,13 @@ export default {
     },
     data() {
         const fields = [
+            { key: "expand", label: "", class: "col-button" },
             { key: "workflow_id", label: "Workflow", class: "col-name" },
             { key: "history_id", label: "History", class: "col-history" },
             { key: "create_time", label: "Invoked", class: "col-small" },
             { key: "update_time", label: "Updated", class: "col-small" },
             { key: "state", class: "col-small" },
-            { key: "execute", label: "", class: "col-execute" },
+            { key: "execute", label: "", class: "col-button" },
         ];
         return {
             invocationItemsModel: [],
@@ -166,7 +183,7 @@ export default {
 .table::v-deep .col-small {
     width: 100px;
 }
-.table::v-deep .col-execute {
+.table::v-deep .col-button {
     width: 50px;
 }
 </style>
