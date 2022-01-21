@@ -154,7 +154,18 @@ find_server() {
     server_config=$1
     server_app=$2
     arg_getter_args=
-    default_webserver="gravity"
+    default_webserver="gunicorn"
+
+    case "$server_app" in
+        galaxy)
+            default_webserver="gravity"
+            gunicorn_args="$gunicorn_args -k galaxy.webapps.galaxy.workers.Worker"
+            ;;
+        reports)
+            # TODO: don't override this var, and is this really the only way to configure the port?
+            GUNICORN_CMD_ARGS="--bind=localhost:9001"
+            ;;
+    esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
     if [ "$APP_WEBSERVER" = "uwsgi" ]; then
@@ -177,7 +188,7 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\" $gunicorn_args"
+        server_args="$APP_WEBSERVER 'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
