@@ -1,0 +1,40 @@
+<tool id="CONVERTER_uncompressed_to_gz" name="Convert uncompressed file to compressed" hidden="true" version="1.0.0" profile="20.01">
+    <requirements>
+        <requirement type="package" version="1.0.8">bzip2</requirement>
+    </requirements>
+    <command><![CDATA[
+cp '$ext_config' 'galaxy.json' &&
+#if $input1.ext == 'vcf'
+    bgzip -ci '$input1' > '$output1'
+#else
+    gzip -cf '$input1' > '$output1'
+#end if
+    ]]></command>
+    <configfiles>
+        <configfile name="ext_config">{"output1": {
+  "name": "${input1.name+'.gz' if not $input1.name.endswith('.vcf') else $input1.name+'.bgzip'} compressed",
+  "ext": "${input1.ext+'.gz' if $input1.ext != 'vcf' else 'vcf_bgzip'}"
+}}</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input1" type="data" format="data" label="Choose uncompressed file"/>
+    </inputs>
+    <outputs>
+        <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
+        <data name="output1" format="auto"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="test.vcf.gz" ftype="vcf_bgzip"/>
+            <output name="output1" file="test.vcf" ftype="vcf"/>
+        </test>
+    </tests>
+    <help>
+    Hello, world!
+    </help>
+    <citations>
+        <citation type="doi">10.1093/bioinformatics/btv688</citation>
+        <citation type="doi">10.1093/bioinformatics/btu266</citation>
+        <citation type="doi">10.1093/bioinformatics/btv337</citation>
+    </citations>
+</tool>
