@@ -1,8 +1,8 @@
 import os
 
 from galaxy_test.base.populators import skip_if_toolshed_down
+from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
-from .uses_shed import UsesShed
 
 
 class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
