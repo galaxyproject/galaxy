@@ -5,38 +5,33 @@
             v-if="errorMessage"
             :show="dismissCountDown"
             variant="info"
-            @dismissed="dismissCountDown = 0"
-        >
+            @dismissed="dismissCountDown = 0">
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <multiselect v-model="currentValue" 
-                    :options="optArray"
-                    label="label"
-                    track-by="value" 
-                    />
-                    {{ currentValue }}
+                <multiselect v-model="currentValue" :options="optArray" label="label" track-by="value" />
             </b-col>
         </b-row>
     </div>
 </template>
 
 <script>
-
-import Multiselect from 'vue-multiselect'
+import Multiselect from "vue-multiselect";
 
 export default {
     components: {
-        Multiselect
+        Multiselect,
     },
     props: {
         value: {
             required: true,
-        },
-        default_value: {
             type: String,
-            required: true,
+        },
+        defaultValue: {
+            type: String,
+            required: false,
+            default: "",
         },
         options: {
             type: Array,
@@ -46,39 +41,45 @@ export default {
     },
     data() {
         return {
+            // Currently never set?
             errorMessage: "",
         };
     },
     computed: {
         optArray() {
-            const formattedOptions = []
-            for (let i = 0, len = this.options.length; i < len; i++){
-                formattedOptions[i] = {"label": this.options[i][0], "value": this.options[i][1], "default": this.options[i][2]}
+            const formattedOptions = [];
+            for (let i = 0, len = this.options.length; i < len; i++) {
+                formattedOptions[i] = {
+                    label: this.options[i][0],
+                    value: this.options[i][1],
+                    default: this.options[i][2],
+                };
             }
-            return formattedOptions
+            return formattedOptions;
         },
         currentValue: {
             get() {
-                return this.value
+                // My understanding of this is that if we start with a value prop, use it.
+                // If there's a defaultValue set, find it in the array and use that.
+                // If there's no default value set, use the first item in the array with 'default' set to true.
+                // Lastly, just default to the first element in the array.
+                if (this.value !== "") {
+                    return this.optArray.find((element) => element.value === this.value);
+                } else if (this.defaultValue !== "") {
+                    return this.optArray.find((element) => element.default === this.defaultValue);
+                } else {
+                    for (let i = 0, len = this.optArray.length; i < len; i++) {
+                        if (this.optArray[i].default === true) {
+                            return this.optArray[i];
+                        }
+                    }
+                    return this.optArray[0];
+                }
             },
             set(val) {
                 this.$emit("input", val.value);
             },
         },
-    },
-    // methods: {
-    //     onInputChange(value) {
-    //         // hide error message after value has changed
-    //         this.currentValue = value
-    //         console.log('helloworld"')
-    //         this.$emit("input", this.currentValue.value);
-    //     },
-    //     onSelectItem(currentValue) {
-    //         this.$emit("update:currentValue", currentValue);
-    //     },
-    // },
-    created() {
-        this.currentValue = this.optArray.find(element => element.value == this.default_value) || this.optArray[0];
     },
 };
 </script>
