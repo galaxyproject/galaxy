@@ -21,6 +21,7 @@
                 caption-top
                 :busy="loading"
                 fixed
+                class="invocations-table"
             >
                 <template v-slot:row-details="row">
                     <b-card>
@@ -33,27 +34,43 @@
                         />
                     </b-card>
                 </template>
-                <template v-slot:cell(workflow_id)="data">
+                <template v-slot:cell(expand)="data">
                     <b-link
-                        class="toggle-invocation-details"
-                        v-b-tooltip
-                        title="Show Invocation details"
-                        href="#"
+                        v-b-tooltip.hover.top
+                        title="Show Invocation Details"
+                        class="btn-sm fa fa-chevron-down toggle-invocation-details"
+                        v-if="!data.detailsShowing"
                         @click.stop="swapRowDetails(data)"
+                    />
+                    <b-link
+                        v-b-tooltip.hover.top
+                        title="Hide Invocation Details"
+                        class="btn-sm fa fa-chevron-up toggle-invocation-details"
+                        v-if="data.detailsShowing"
+                        @click.stop="swapRowDetails(data)"
+                    />
+                </template>
+                <template v-slot:cell(workflow_id)="data">
+                    <div
+                        v-b-tooltip.hover.top
+                        :title="getWorkflowNameByInstanceId(data.item.workflow_id)"
+                        class="truncate"
                     >
-                        <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
-                    </b-link>
+                        <b-link href="#" @click.stop="swapRowDetails(data)">
+                            <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        </b-link>
+                    </div>
                 </template>
                 <template v-slot:cell(history_id)="data">
-                    <b-link
-                        id="switch-to-history"
-                        v-b-tooltip
-                        title="Switch to History"
-                        href="#"
-                        @click.stop="switchHistory(data.item.history_id)"
+                    <div
+                        v-b-tooltip.hover.top.html
+                        :title="`<b>Switch to History:</b><br>${getHistoryNameById(data.item.history_id)}`"
+                        class="truncate"
                     >
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
-                    </b-link>
+                        <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
+                            <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        </b-link>
+                    </div>
                 </template>
                 <template v-slot:cell(create_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -99,12 +116,13 @@ export default {
     },
     data() {
         const fields = [
-            { key: "workflow_id", label: "Workflow" },
-            { key: "history_id", label: "History" },
-            { key: "create_time", label: "Invoked" },
-            { key: "update_time", label: "Updated" },
-            { key: "state" },
-            { key: "execute", label: "" },
+            { key: "expand", label: "", class: "col-button" },
+            { key: "workflow_id", label: "Workflow", class: "col-name" },
+            { key: "history_id", label: "History", class: "col-history" },
+            { key: "create_time", label: "Invoked", class: "col-small" },
+            { key: "update_time", label: "Updated", class: "col-small" },
+            { key: "state", class: "col-small" },
+            { key: "execute", label: "", class: "col-button" },
         ];
         return {
             invocationItemsModel: [],
@@ -150,3 +168,25 @@ export default {
     },
 };
 </script>
+<style scoped>
+.invocations-table {
+    min-width: 40rem;
+}
+.table::v-deep .col-name {
+    width: 40%;
+}
+.table::v-deep .col-history {
+    width: 20%;
+}
+.table::v-deep .col-small {
+    width: 100px;
+}
+.table::v-deep .col-button {
+    width: 50px;
+}
+.table::v-deep .truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+</style>
