@@ -298,6 +298,7 @@ export default {
             this.$emit("onChange");
         },
         setData(data) {
+            this.content_id = data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
             this.tooltip = data.tooltip || "";
@@ -311,7 +312,6 @@ export default {
         },
         initData(data) {
             this.uuid = data.uuid;
-            this.content_id = data.config_form?.id || data.content_id;
             this.annotation = data.annotation;
             this.label = data.label;
             this.setData(data);
