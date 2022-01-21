@@ -4,6 +4,7 @@ from typing import (
     cast,
     Dict,
     Iterable,
+    NamedTuple,
     NewType,
     NoReturn,
     Optional,
@@ -30,7 +31,6 @@ from sqlalchemy.engine import (
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.mapping import create_additional_database_objects
-from galaxy.model.migrations.scripts import DatabaseConfig
 from galaxy.model.tool_shed_install import Base as tsi_base
 
 ModelId = NewType('ModelId', str)
@@ -45,6 +45,12 @@ SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
 SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 179
 SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
 log = logging.getLogger(__name__)
+
+
+class DatabaseConfig(NamedTuple):
+    url: str
+    template: str
+    encoding: str
 
 
 class NoVersionTableError(Exception):
