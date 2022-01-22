@@ -1224,6 +1224,7 @@ class Anndata(H5):
             return f"Binary Anndata file ({nice_size(dataset.get_size())})"
 
 
+@build_sniff_from_prefix
 class Grib(Binary):
     """
     Class describing an GRIB file
