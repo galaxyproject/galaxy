@@ -100,6 +100,12 @@ class TagHandlerTestCase(BaseTestCase):
         self.tag_handler.delete_item_tags(user=self.user, item=hda)
         self.assertEqual(hda.tags, [])
 
+    def test_unique_constraint_applied(self):
+        tag_name = 'abc'
+        tag = self.tag_handler._create_tag_instance(tag_name)
+        same_tag = self.tag_handler._create_tag_instance(tag_name)
+        assert tag.id == same_tag.id
+
     def test_item_has_tag(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1']
