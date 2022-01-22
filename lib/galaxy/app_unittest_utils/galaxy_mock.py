@@ -98,6 +98,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.file_sources = Bunch(to_dict=lambda *args, **kwargs: {})
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
+        self.biotools_metadata_source = None
         rebind_container_to_task(self)
 
         def url_for(*args, **kwds):
@@ -189,6 +190,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.monitor_thread_join_timeout = 1
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get('vault_config_file')
+        self.max_discovered_files = 10000
 
     @property
     def config_dict(self):

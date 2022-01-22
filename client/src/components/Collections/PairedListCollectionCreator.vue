@@ -437,7 +437,10 @@ export default {
     mixins: [mixin],
     created() {
         this.strategy = this.autopairLCS;
-        this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
+        //TODO convert to Fwd/Rev
+        // Setup inital filters and shallow copy the items
+        this.forwardFilter = this.commonFilters[this.DEFAULT_FILTERS][0];
+        this.reverseFilter = this.commonFilters[this.DEFAULT_FILTERS][1];
         this._elementsSetUp();
     },
     components: {
@@ -462,15 +465,15 @@ export default {
                 dot12s: [".1.fastq", ".2.fastq"],
             },
             DEFAULT_FILTERS: "illumina",
-            filters: this.DEFAULT_FILTERS,
+            forwardFilter: "",
+            reverseFilter: "",
             automaticallyPair: true,
             initialPairsPossible: true,
             matchPercentage: 0.99,
             twoPassAutoPairing: true,
             removeExtensions: true,
             workingElements: [],
-            forwardFilter: "",
-            reverseFilter: "",
+
             selectedForwardElement: null,
             selectedReverseElement: null,
             /** autopair by exact match */
@@ -837,7 +840,7 @@ export default {
             var _regexps = [];
             function getRegExps() {
                 if (!_regexps.length) {
-                    _regexps = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
+                    _regexps = [new RegExp(this.forwardFilter), new RegExp(this.reverseFilter)];
                 }
                 return _regexps;
             }
@@ -925,8 +928,8 @@ export default {
             };
         },
         changeFilters: function (filter) {
-            this.filters[0] = this.forwardFilter = this.commonFilters[filter][0];
-            this.filters[1] = this.reverseFilter = this.commonFilters[filter][1];
+            this.forwardFilter = this.commonFilters[filter][0];
+            this.reverseFilter = this.commonFilters[filter][1];
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
@@ -946,7 +949,6 @@ export default {
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
-                    console.log("found a dupe");
                     this.duplicatePairNames.push(pair.name);
                 }
                 existingPairNames[pair.name] = true;

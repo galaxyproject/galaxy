@@ -5,8 +5,8 @@ import string
 from nose.plugins.skip import SkipTest
 
 from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
 from galaxy_test.driver import integration_util
-from .uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
 
 FETCH_TOOL_ID = 'toolshed.g2.bx.psu.edu/repos/devteam/data_manager_fetch_genome_dbkeys_all_fasta/data_manager_fetch_genome_all_fasta_dbkey/0.0.3'
 FETCH_GENOME_DBKEYS_ALL_FASTA_INPUT = {

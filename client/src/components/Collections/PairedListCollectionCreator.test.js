@@ -102,4 +102,39 @@ describe("PairedListCollectionCreator", () => {
         const pairname = wrapper.find("span.pair-name");
         expect(pairname.text()).toBe("UII_moo_1");
     });
+
+    it("autopairs correctly when filters are typed in", async () => {
+        wrapper = mount(PairedListCollectionCreator, {
+            propsData: {
+                initialElements: DATA._4,
+                creationFn: () => {
+                    return;
+                },
+                oncreate: () => {
+                    return;
+                },
+                oncancel: () => {
+                    return;
+                },
+                hideSourceItems: false,
+            },
+        });
+        await wrapper.vm.$nextTick();
+        //change filter to _R1/_R2
+        wrapper.find("div.forward-unpaired-filter > input").setValue("_R1");
+        await wrapper.vm.$nextTick();
+        wrapper.find("div.reverse-unpaired-filter > input").setValue("_R2");
+        await wrapper.vm.$nextTick();
+        //assert forward filter
+        const forwardFilter = wrapper.find("div.forward-unpaired-filter > input").element.value;
+        expect(forwardFilter).toBe("_R1");
+        //assert reverse filter
+        const reverseFilter = wrapper.find("div.reverse-unpaired-filter > input").element.value;
+        expect(reverseFilter).toBe("_R2");
+        // click Autopair
+        wrapper.find("a.autopair-link").trigger("click");
+        await wrapper.vm.$nextTick();
+        //assert all pairs matched
+        expect(wrapper.findAll("li.dataset unpaired").length == 0).toBeTruthy();
+    });
 });

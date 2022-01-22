@@ -66,7 +66,7 @@ def test_job_context_discover_outputs_flushes_once(mocker):
     collection_description = FilePatternDatasetCollectionDescription(pattern="__name__")
     collection = model.DatasetCollection(collection_type='list', populated=False)
     sa_session.add(collection)
-    job_context = JobContext(tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state)
+    job_context = JobContext(tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store, final_job_state, max_discovered_files=100)
     collection_builder = builder.BoundCollectionBuilder(collection)
     dataset_collectors = [dataset_collector(collection_description)]
     output_name = 'output'

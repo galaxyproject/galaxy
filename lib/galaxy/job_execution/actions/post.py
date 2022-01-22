@@ -58,7 +58,7 @@ class EmailAction(DefaultJobAction):
                 else:
                     host = socket.getfqdn()
                 frm = f'galaxy-no-reply@{host}'
-            to = job.user.email
+            to = job.get_user_email()
             subject = f"Galaxy job completion notification from history '{job.history.name}'"
             outdata = ',\n'.join(ds.dataset.display_name() for ds in job.output_datasets)
             body = f"Your Galaxy job generating dataset(s):\n\n{outdata}\n\nis complete as of {datetime.datetime.now().strftime('%I:%M')}. Click the link below to access your data: \n{link}"

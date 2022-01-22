@@ -254,6 +254,7 @@ def _parse_test(i, test_dict):
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
+    test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     return test_dict
 
 

@@ -325,15 +325,20 @@ class HasName:
 
 class UsesCreateAndUpdateTime:
 
+    update_time: DateTime
+
     @property
     def seconds_since_updated(self):
-        update_time = self.update_time or galaxy.model.orm.now.now()  # In case not yet flushed
-        return (galaxy.model.orm.now.now() - update_time).total_seconds()
+        update_time = self.update_time or now()  # In case not yet flushed
+        return (now() - update_time).total_seconds()
 
     @property
     def seconds_since_created(self):
-        create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
-        return (galaxy.model.orm.now.now() - create_time).total_seconds()
+        create_time = self.create_time or now()  # In case not yet flushed
+        return (now() - create_time).total_seconds()
+
+    def update(self):
+        self.update_time = now()
 
 
 class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
@@ -805,7 +810,7 @@ class PasswordResetToken(Base, _HasTable):
         else:
             self.token = unique_id()
         self.user = user
-        self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
+        self.expiration_time = now() + timedelta(hours=24)
 
 
 class DynamicTool(Base, Dictifiable, RepresentById):
@@ -1142,6 +1147,15 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_tool_id(self, tool_id):
         self.tool_id = tool_id
 
+    def get_user_email(self):
+        if self.user is not None:
+            return self.user.email
+        elif self.galaxy_session is not None and self.galaxy_session.user is not None:
+            return self.galaxy_session.user.email
+        elif self.history is not None and self.history.user is not None:
+            return self.history.user.email
+        return None
+
     def set_tool_version(self, tool_version):
         self.tool_version = tool_version
 
@@ -1353,6 +1367,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         job_attrs['exit_code'] = self.exit_code
         job_attrs['create_time'] = self.create_time.isoformat()
         job_attrs['update_time'] = self.update_time.isoformat()
+        job_attrs['job_messages'] = self.job_messages
 
         # Get the job's parameters
         param_dict = self.raw_param_dict()
@@ -1474,7 +1489,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             WHERE job_id = :job_id;
         '''
         sa_session = object_session(self)
-        update_time = galaxy.model.orm.now.now()
+        update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
@@ -1546,7 +1561,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             );
         ''']
         sa_session = object_session(self)
-        update_time = galaxy.model.orm.now.now()
+        update_time = now()
         self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session, supports_skip_locked=supports_skip_locked)
         params = {
             'job_id': self.id,
@@ -3499,7 +3514,7 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     return ret
 
 
-class DatasetInstance(_HasTable):
+class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
@@ -3551,9 +3566,6 @@ class DatasetInstance(_HasTable):
     @peek.setter
     def peek(self, peek):
         self._peek = unicodify(peek, strip_null=True)
-
-    def update(self):
-        self.update_time = galaxy.model.orm.now.now()
 
     @property
     def ext(self):
@@ -5480,7 +5492,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return rval
 
 
-class DatasetCollectionInstance(HasName):
+class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
 
     @property
     def state(self):
@@ -5723,6 +5735,8 @@ class HistoryDatasetCollectionAssociation(
                 deleted=self.deleted,
                 job_source_id=self.job_source_id,
                 job_source_type=self.job_source_type,
+                create_time=self.create_time.isoformat(),
+                update_time=self.update_time.isoformat(),
                 **self._base_to_dict(view=view)
             )
 

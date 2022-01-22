@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 id="jobs-title">Jobs</h2>
-        <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
+        <b-alert v-if="this.message" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
         <p>
@@ -20,12 +20,20 @@
         <div v-else>
             <h3>Job Details</h3>
             <b-row>
-                <b-col>
+                <b-col class="col-sm-4">
+                    <b-form-group
+                        label="Filters"
+                        label-for="show-all-running"
+                        description="Select whether or not to use the cutoff, or show all jobs.">
+                        <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch @change="update">
+                            {{ showAllRunning ? "Showing all currently running jobs" : "Time cutoff applied to query" }}
+                        </b-form-checkbox>
+                    </b-form-group>
                     <b-form name="jobs" @submit.prevent="onRefresh">
                         <b-form-group
                             id="cutoff"
                             label="Cutoff time period"
-                            label-for="cutoff-minutes"
+                            :disabled="showAllRunning"
                             description="in minutes">
                             <b-input-group>
                                 <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
@@ -35,8 +43,6 @@
                             </b-input-group>
                         </b-form-group>
                     </b-form>
-                </b-col>
-                <b-col>
                     <b-form-group
                         label="Filter Jobs"
                         label-for="filter-regex"
@@ -68,7 +74,9 @@
             </transition>
             <h4>Unfinished Jobs</h4>
             <b-alert v-if="!unfinishedJobs.length" variant="secondary" show>
-                There are no unfinished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
+                There are no unfinished jobs<template v-if="!showAllRunning">
+                    to show with current cutoff time of {{ cutoffMin }} minutes</template
+                >.
             </b-alert>
             <b-table
                 v-else
@@ -108,32 +116,34 @@
                 </template>
             </b-table>
 
-            <h4>Finished Jobs</h4>
-            <b-alert v-if="!finishedJobs.length" variant="secondary" show>
-                There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
-            </b-alert>
+            <template v-if="!showAllRunning">
+                <h4>Finished Jobs</h4>
+                <b-alert v-if="!finishedJobs.length" variant="secondary" show>
+                    There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
+                </b-alert>
 
-            <b-table
-                v-else
-                :fields="finishedJobFields"
-                :items="finishedJobs"
-                :filter="filter"
-                hover
-                responsive
-                striped
-                caption-top
-                @row-clicked="toggleDetails"
-                :busy="busy">
-                <template v-slot:table-caption>
-                    These jobs have completed in the previous {{ cutoffMin }} minutes.
-                </template>
-                <template v-slot:cell(update_time)="data">
-                    <utc-date :date="data.value" mode="elapsed" />
-                </template>
-                <template v-slot:row-details="row">
-                    <job-details :job="row.item" />
-                </template>
-            </b-table>
+                <b-table
+                    v-else
+                    :fields="finishedJobFields"
+                    :items="finishedJobs"
+                    :filter="filter"
+                    hover
+                    responsive
+                    striped
+                    caption-top
+                    @row-clicked="toggleDetails"
+                    :busy="busy">
+                    <template v-slot:table-caption>
+                        These jobs have completed in the previous {{ cutoffMin }} minutes.
+                    </template>
+                    <template v-slot:cell(update_time)="data">
+                        <utc-date :date="data.value" mode="elapsed" />
+                    </template>
+                    <template v-slot:row-details="row">
+                        <job-details :job="row.item" />
+                    </template>
+                </b-table>
+            </template>
         </div>
     </div>
 </template>
@@ -177,6 +187,7 @@ export default {
             loading: true,
             busy: true,
             cutoffMin: 5,
+            showAllRunning: false,
         };
     },
     watch: {
@@ -211,10 +222,14 @@ export default {
         update() {
             this.busy = true;
             let params = [];
-            const cutoff = Math.floor(this.cutoffMin);
-            const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
-            params.push(`date_range_min=${dateRangeMin}`);
             params.push("view=admin_job_list");
+            if (this.showAllRunning) {
+                params.push("state=running");
+            } else {
+                const cutoff = Math.floor(this.cutoffMin);
+                const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
+                params.push(`date_range_min=${dateRangeMin}`);
+            }
             params = params.join("&");
             axios
                 .get(`${getAppRoot()}api/jobs?${params}`)

@@ -62,6 +62,12 @@ from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web_stack import get_stack_facts
 from ..version import VERSION_MAJOR, VERSION_MINOR
 
+try:
+    from importlib.resources import files  # type: ignore[attr-defined]
+except ImportError:
+    # Python < 3.9
+    from importlib_resources import files  # type: ignore[no-redef]
+
 if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.tool_util.deps.containers import ContainerFinder
@@ -72,7 +78,9 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 GALAXY_APP_NAME = 'galaxy'
-GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
+GALAXY_SCHEMAS_PATH = files('galaxy.config') / 'schemas'
+GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / 'config_schema.yml'
+UWSGI_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / 'uwsgi_schema.yml'
 LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     'disable_existing_loggers': False,
     'version': 1,
@@ -623,14 +631,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._process_config(kwargs)
 
     def _load_schema(self):
-        # Schemas are symlinked to the root of the galaxy-app package
-        config_schema_path = os.path.join(os.path.dirname(__file__), os.pardir, 'config_schema.yml')
-        if os.path.exists(GALAXY_CONFIG_SCHEMA_PATH):
-            config_schema_path = GALAXY_CONFIG_SCHEMA_PATH
-        elif not os.path.exists(config_schema_path):
-            # Not a package, but cwd is not galaxy_root
-            config_schema_path = os.path.join(self.root, GALAXY_CONFIG_SCHEMA_PATH)
-        return AppSchema(config_schema_path, GALAXY_APP_NAME)
+        return AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
@@ -740,7 +741,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             for ip in kwargs.get("fetch_url_allowlist", "").split(',')
             if len(ip.strip()) > 0
         ]
-        self.template_path = self._in_root_dir(kwargs.get("template_path", "templates"))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 

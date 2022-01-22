@@ -38,7 +38,9 @@ ENTRY_POINTS = '''
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    'galaxy': [
+    'galaxy': [],
+    'galaxy_test': [
+        'galaxy_test/base/tool_sheds_conf.xml',
     ],
 }
 PACKAGE_DIR = {

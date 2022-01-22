@@ -1029,8 +1029,9 @@ class Tool(Dictifiable):
         has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
         if has_missing_data:
             biotools_reference = self.biotools_reference
-            if biotools_reference:
-                biotools_entry = self.app.biotools_metadata_source.get_biotools_metadata(biotools_reference)
+            metadata_source = self.app.biotools_metadata_source
+            if biotools_reference and metadata_source:
+                biotools_entry = metadata_source.get_biotools_metadata(biotools_reference)
                 if biotools_entry:
                     edam_info = biotools_entry.edam_info
                     if len(edam_operations) == 0:
@@ -2114,6 +2115,7 @@ class Tool(Dictifiable):
             object_store=tool.app.object_store,
             final_job_state=final_job_state,
             flush_per_n_datasets=tool.app.config.flush_per_n_datasets,
+            max_discovered_files=tool.app.config.max_discovered_files,
         )
         collected = output_collect.collect_primary_datasets(
             job_context,

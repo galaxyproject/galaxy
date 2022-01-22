@@ -22,4 +22,12 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     meta.bind = migrate_engine
-    vault.drop()
+    # This revision is not part of 21.09, but in 22.01 it will be handled by Alembic.
+    # It is possible to reach a state (via upgrading/downgrading) where this table
+    # will have been dropped by Alembic, but SQLAlchemy Migrate (our previous
+    # db migrations tool) will have version 180 (which includes this table).
+    # Downgrading from such a state would raise an error - which this code prevents.
+    try:
+        vault.drop()
+    except Exception:
+        pass

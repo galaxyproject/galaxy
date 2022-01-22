@@ -12,7 +12,7 @@ import tempfile
 
 import yaml
 
-from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.data import get_file_peek, Headers, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -883,6 +883,13 @@ class Yaml(Text):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/yaml'
+
+    def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
+        # Override non-standard application/yaml mediatype with
+        # non-standard text/x-yaml, so preview is shown in preview iframe,
+        # instead of downloading the file.
+        headers['content-type'] = 'text/x-yaml'
+        return super()._yield_user_file_content(trans, from_dataset, filename, headers)
 
     def _looks_like_yaml(self, file_prefix: FilePrefix):
         # Pattern used by SequenceSplitLocations

@@ -3,8 +3,6 @@ import { getLocalVue } from "jest/helpers";
 import Vue from "vue";
 import FormElement from "./FormElement";
 
-jest.mock("app");
-
 const localVue = getLocalVue();
 
 describe("FormElement", () => {

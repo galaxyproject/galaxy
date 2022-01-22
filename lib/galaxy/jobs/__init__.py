@@ -51,6 +51,7 @@ from galaxy.jobs.mapper import (
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import store
+from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
@@ -1731,6 +1732,8 @@ class JobWrapper(HasResourceParameters):
                     tag_handler=self.app.tag_handler.create_tag_handler_session(),
                 )
                 import_model_store.perform_import(history=job.history, job=job)
+                if job.state == job.states.ERROR:
+                    final_job_state = job.state
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
@@ -1762,7 +1765,11 @@ class JobWrapper(HasResourceParameters):
                     )
                 if not final_job_state == job.states.ERROR:
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
-            self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+            try:
+                self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
+            except MaxDiscoveredFilesExceededError as e:
+                final_job_state = job.states.ERROR
+                job.job_messages = [str(e)]
 
         if job.states.ERROR == final_job_state:
             for dataset_assoc in output_dataset_associations:
@@ -2061,6 +2068,7 @@ class JobWrapper(HasResourceParameters):
                                                                         tool=self.tool,
                                                                         job=job,
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                        max_discovered_files=self.app.config.max_discovered_files,
                                                                         validate_outputs=self.validate_outputs,
                                                                         link_data_only=self.__link_file_check(),
                                                                         **kwds)
@@ -2143,12 +2151,9 @@ class JobWrapper(HasResourceParameters):
     @property
     def user(self):
         job = self.get_job()
-        if job.user is not None:
-            return job.user.email
-        elif job.galaxy_session is not None and job.galaxy_session.user is not None:
-            return job.galaxy_session.user.email
-        elif job.history is not None and job.history.user is not None:
-            return job.history.user.email
+        user_email = job.get_user_email()
+        if user_email:
+            return user_email
         elif job.galaxy_session is not None:
             return f"anonymous@{job.galaxy_session.remote_addr.split()[-1]}"
         else:

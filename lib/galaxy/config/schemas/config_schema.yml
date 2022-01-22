@@ -2623,6 +2623,16 @@ mapping:
           Higher values will lead to fewer database flushes and faster execution, but require
           more memory. Set to -1 to disable creating datasets in batches.
 
+      max_discovered_files:
+        type: int
+        default: 10000
+        required: false
+        desc: |
+          Set this to a positive integer value to limit the number of datasets that can be discovered by
+          a single job. This prevents accidentally creating large numbers of datasets when running tools
+          that create a potentially unlimited number of output datasets, such as tools that split a file
+          into a collection of datasets for each line in an input dataset.
+
       history_local_serial_workflow_scheduling:
         type: bool
         default: false

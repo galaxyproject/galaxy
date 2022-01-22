@@ -63,6 +63,7 @@ class ToolApp(MinimalToolApp):
         self.genome_builds = GenomeBuilds(self)
         self.tool_data_tables = tool_data_table_manager
         self.file_sources = file_sources
+        self.biotools_metadata_source = None
 
 
 def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):

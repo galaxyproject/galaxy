@@ -103,6 +103,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
+                                                                     max_discovered_files=app.config.max_discovered_files,
                                                                      validate_outputs=validate_outputs,
                                                                      job=job,
                                                                      kwds={'overwrite': overwrite})

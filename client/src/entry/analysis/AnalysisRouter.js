@@ -453,11 +453,14 @@ export const getAnalysisRouter = (Galaxy) => {
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm: function (params) {
             //TODO: load tool form code async
+            // If there's a + in tool_id or version param (the only valid
+            // character we use that is 'problematic' like this), then assume it
+            // is already decoded; avoid double decoding.
             if (params.tool_id) {
-                params.id = decodeUriComponent(params.tool_id);
+                params.id = params.tool_id.indexOf("+") >= 0 ? params.tool_id : decodeUriComponent(params.tool_id);
             }
             if (params.version) {
-                params.version = decodeUriComponent(params.version);
+                params.version = params.version.indexOf("+") >= 0 ? params.version : decodeUriComponent(params.version);
             }
             this._display_vue_helper(ToolForm, params);
         },

@@ -80,9 +80,13 @@ def handle_upload(
     if requested_ext != 'auto':
         datatype = registry.get_datatype_by_extension(requested_ext)
         # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
-        if check_content and hasattr(datatype, 'sniff') and not datatype.sniff(path):
-            stdout = ("Warning: The file 'Type' was set to '{ext}' but the file does not appear to be of that"
-                      " type".format(ext=requested_ext))
+        if check_content and hasattr(datatype, 'sniff'):
+            try:
+                is_of_datatype = datatype.sniff(path)
+            except Exception:
+                is_of_datatype = False
+            if not is_of_datatype:
+                stdout = f"Warning: The file 'Type' was set to '{requested_ext}' but the file does not appear to be of that type"
 
     # Handle unsniffable binaries
     if is_binary and ext == 'binary':

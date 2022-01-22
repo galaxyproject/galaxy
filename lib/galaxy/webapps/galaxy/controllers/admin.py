@@ -70,6 +70,19 @@ class UserListGrid(grids.Grid):
                 return self.format(user.galaxy_sessions[0].update_time)
             return 'never'
 
+        def sort(self, trans, query, ascending, column_name=None):
+            last_login_subquery = trans.sa_session.query(
+                model.GalaxySession.table.c.user_id,
+                func.max(model.GalaxySession.table.c.update_time).label("last_login")
+            ).group_by(model.GalaxySession.table.c.user_id).subquery()
+            query = query.outerjoin((last_login_subquery, model.User.table.c.id == last_login_subquery.c.user_id))
+
+            if not ascending:
+                query = query.order_by((last_login_subquery.c.last_login).desc().nullslast())
+            else:
+                query = query.order_by((last_login_subquery.c.last_login).asc().nullsfirst())
+            return query
+
     class TimeCreatedColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             return user.create_time.strftime('%x')
@@ -113,7 +126,7 @@ class UserListGrid(grids.Grid):
                        key="username",
                        attach_popup=False,
                        filterable="advanced"),
-        LastLoginColumn("Last Login", format=time_ago),
+        LastLoginColumn("Last Login", format=time_ago, key="last_login", sortable=True),
         DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
         StatusColumn("Status", attach_popup=False, key="deleted"),
         TimeCreatedColumn("Created", attach_popup=False, key="create_time"),
