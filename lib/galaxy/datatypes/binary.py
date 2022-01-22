@@ -1245,11 +1245,11 @@ class Grib(Binary):
         super().__init__(**kwd)
         self._magic = b'GRIB'
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         # The first 4 bytes of any GRIB file are GRIB
         try:
-            if sniff_prefix.startswith_bytes(self._magic):
-                tmp = contents_header_bytes[:4]
+            if file_prefix.startswith_bytes(self._magic):
+                tmp = file_prefix.contents_header_bytes[:4]
                 _uint8struct = struct.Struct(b">B")
                 edition = _uint8struct.unpack_from(tmp, 3)[0]
                 if edition == 1 or edition == 2:
