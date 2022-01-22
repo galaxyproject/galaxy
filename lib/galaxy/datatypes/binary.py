@@ -36,7 +36,7 @@ from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
 )
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import build_sniff_from_prefix, FilePrefix
 from galaxy.datatypes.text import Html
 from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
