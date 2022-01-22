@@ -2,6 +2,8 @@ import logging
 import re
 from typing import Dict, List, Optional, Tuple
 
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
@@ -245,7 +247,18 @@ class TagHandler:
         return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name).first()
 
     def _create_tag_instance(self, tag_name):
-        return galaxy.model.Tag(type=0, name=tag_name)
+        # For good performance caller should first check if there's already an appropriate tag
+        Session = sessionmaker(self.sa_session.bind)
+        tag = galaxy.model.Tag(type=0, name=tag_name)
+        with Session() as separate_session:
+            separate_session.add(tag)
+            try:
+                separate_session.commit()
+                separate_session.flush()
+            except IntegrityError:
+                # tag already exists, get from database
+                separate_session.rollback()
+        return self._get_tag(tag_name)
 
     def _get_or_create_tag(self, tag_str):
         """Get or create a Tag object from a tag string."""

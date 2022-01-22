@@ -73,12 +73,12 @@ describe("Invocations.vue with invocation", () => {
         expect(rows.length).toBe(1);
         const row = rows[0];
         const columns = row.findAll("td");
-        expect(columns.at(0).text()).toBe("workflow name");
-        expect(columns.at(1).text()).toBe("history name");
-        expect(columns.at(2).text()).toBe(moment.utc(invocationData.create_time).fromNow());
-        expect(columns.at(3).text()).toBe(moment.utc(invocationData.update_time).fromNow());
-        expect(columns.at(4).text()).toBe("scheduled");
-        expect(columns.at(5).text()).toBe("");
+        expect(columns.at(1).text()).toBe("workflow name");
+        expect(columns.at(2).text()).toBe("history name");
+        expect(columns.at(3).text()).toBe(moment.utc(invocationData.create_time).fromNow());
+        expect(columns.at(4).text()).toBe(moment.utc(invocationData.update_time).fromNow());
+        expect(columns.at(5).text()).toBe("scheduled");
+        expect(columns.at(6).text()).toBe("");
     });
 
     it("toggles detail rendering", async () => {
