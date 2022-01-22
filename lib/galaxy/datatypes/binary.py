@@ -1279,13 +1279,13 @@ class Grib(Binary):
         dataset.metadata.grib_edition = self._get_grib_edition(dataset.file_name)
 
     def _get_grib_edition(self, filename):
-         _uint8struct = struct.Struct(b">B")
-         edition = 0
-          with open(filename) as f:
-               header = f.read(4)
-               tmp = f.read(4)
-               edition = _uint8struct.unpack_from(tmp, 3)[0]
-           return edition
+        _uint8struct = struct.Struct(b">B")
+        edition = 0
+        with open(filename) as f:
+            header = f.read(4)
+            tmp = f.read(4)
+            edition = _uint8struct.unpack_from(tmp, 3)[0]
+        return edition
 
 
 @build_sniff_from_prefix
