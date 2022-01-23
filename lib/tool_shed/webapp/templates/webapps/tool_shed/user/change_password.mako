@@ -14,10 +14,10 @@
         %endif
         <div class="form-row">
             <label>New password:</label>
-            <input type="password" name="password" value="" size="40"/>
+            <input id="password_input" type="password" name="password" value="" size="40"/>
         </div>
         <div class="progress">
-            <div id="complexity-bar" class="progress-bar" role="progressbar">
+            <div id="password_strength" class="progress-bar" role="progressbar">
                 Strength
             </div>
         </div>
