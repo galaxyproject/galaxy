@@ -53,7 +53,6 @@
     "jquery-migrate": "~1.4",
     "jquery-mousewheel": "^3.1.13",
     "jquery-ui": "^1.12.1",
-    "jquery.complexify": "^0.5.2",
     "jquery.cookie": "^1.4.1",
     "jspdf": "^2.4.0",
     "linkifyjs": "^2.1.9",

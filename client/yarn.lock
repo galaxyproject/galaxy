@@ -7509,11 +7509,6 @@ jquery-ui@^1.12.1:
   dependencies:
     jquery ">=1.8.0 <4.0.0"
 
-jquery.complexify@^0.5.2:
-  version "0.5.2"
-  resolved "https://registry.yarnpkg.com/jquery.complexify/-/jquery.complexify-0.5.2.tgz#8c8834ca08cee9476f1d975128d49526adcc4ae9"
-  integrity sha1-jIg0ygjO6UdvHZdRKNSVJq3MSuk=
-
 jquery.cookie@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/jquery.cookie/-/jquery.cookie-1.4.1.tgz#d63dce209eab691fe63316db08ca9e47e0f9385b"
