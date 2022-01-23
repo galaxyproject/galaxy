@@ -77,13 +77,25 @@
                 $(".errormessage").html(message);
             }
 
-            $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){
-                var progressBar = $('.progress-bar');
-                var color = valid ? 'lightgreen' : 'red';
+            var pwInput = document.getElementById('password_input');
+            pwInput.onkeyup = function() {
+                var pw = pwInput.value;
+                var progress_bar = document.getElementById('password_strength');
 
-                progressBar.css('background-color', color);
-                progressBar.css({'width': complexity + '%'});
-            });
+                var strongPasswordRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#\$%\^&\*])(?=.{8,})");
+                var mediumPasswordRegex = new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})");
+
+                if (strongPasswordRegex.test(pw)) {
+                    progress_bar.style.backgroundColor = 'lightgreen';
+                    progress_bar.style.width = '100%';
+                } else if (mediumPasswordRegex.test(pw)) {
+                    progress_bar.style.backgroundColor = 'orange';
+                    progress_bar.style.width = '60%';
+                } else {
+                    progress_bar.style.backgroundColor = 'red';
+                    progress_bar.style.width = '30%';
+                }
+            };
 
             $('#registration').bind('submit', function(e) {
                 $('#send').attr('disabled', 'disabled');
@@ -131,7 +143,7 @@
                 <input id="password_input" type="password" name="password" value="" size="40"/>
             </div>
             <div class="progress">
-                <div id="complexity-bar" class="progress-bar" role="progressbar">
+                <div id="password_strength" class="progress-bar" role="progressbar">
                     Strength
                 </div>
             </div>
