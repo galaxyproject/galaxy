@@ -51,7 +51,6 @@ const paths = {
         backbone: ["backbone.js", "backbone.js"],
         "@galaxyproject/bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
