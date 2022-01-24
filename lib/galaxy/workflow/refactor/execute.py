@@ -391,6 +391,10 @@ class WorkflowRefactorExecutor:
         self._inject_for_updated_step(step, execution)
         step_def["tool_version"] = tool_version
         step_def["tool_state"] = step.module.get_tool_state()
+        if step_def.get("tool_id"):
+            step_def["tool_id"] = step.module.get_content_id()
+        if step_def.get("content_id"):
+            step_def["content_id"] = step.module.get_content_id()
         self._patch_step(execution, step, step_def)
 
     def _apply_upgrade_all_steps(self, action: UpgradeAllStepsAction, execution: RefactorActionExecution):

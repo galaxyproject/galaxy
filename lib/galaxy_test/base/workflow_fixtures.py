@@ -423,6 +423,10 @@ steps:
     in:
       input1: nested_workflow/workflow_output
       queries_0|input2: nested_workflow/workflow_output
+  compose_text_param:
+    tool_id: compose_text_param
+    tool_version: 0.1.0
+    label: compose_text_param
 """
 
 WORKFLOW_WITH_OUTPUT_ACTIONS = """

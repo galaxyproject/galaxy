@@ -19,6 +19,9 @@ from galaxy.workflow.refactor.schema import (
 from galaxy_test.base.populators import (
     WorkflowPopulator,
 )
+from galaxy_test.base.uses_shed import (
+    UsesShed
+)
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -42,7 +45,7 @@ steps:
 """
 
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase):
+class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
 
     framework_tool_and_types = True
 
@@ -693,6 +696,8 @@ steps:
         assert message.output_label == "outer_output"
 
     def test_upgrade_all_steps(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
+        self.install_repository("iuc", "compose_text_param", "e188c9826e0f")  # 0.1.1
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL)
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert self._latest_workflow.step_by_label("tool_update_step").tool_version == "0.1"
@@ -716,13 +721,15 @@ steps:
         nested_stored_workflow = self._recent_stored_workflow(2)
         updated_nested_step = nested_stored_workflow.latest_workflow.step_by_label("random_lines")
         assert updated_nested_step.tool_inputs["num_lines"] == "2"
+        assert self._latest_workflow.step_by_label("compose_text_param").tool_version == '0.1.1'
+        assert self._latest_workflow.step_by_label("compose_text_param").tool_id == 'toolshed.g2.bx.psu.edu/repos/iuc/compose_text_param/compose_text_param/0.1.1'
 
         assert len(action_executions) == 1
         messages = action_executions[0].messages
         assert len(messages) == 1
         message = messages[0]
         assert message.message_type == RefactorActionExecutionMessageTypeEnum.connection_drop_forced
-        assert message.order_index == 1
+        assert message.order_index == 2
         assert message.step_label == "tool_update_step"
         assert message.output_name == "output"
 
