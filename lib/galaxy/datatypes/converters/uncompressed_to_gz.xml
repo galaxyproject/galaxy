@@ -1,4 +1,9 @@
-<tool id="CONVERTER_uncompressed_to_gz" name="Convert uncompressed file to compressed" hidden="true" version="1.0.0" profile="20.01">
+<tool id="CONVERTER_uncompressed_to_gz" name="Convert uncompressed file to compressed" hidden="true" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="20.01">
+    <token name="@TOOL_VERSION@">1.11</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <requirements>
+        <requirement type="package" version="@TOOL_VERSION@">gzip</requirement>
+    </requirements>
     <command><![CDATA[
 cp '$ext_config' 'galaxy.json' &&
 #if $input1.ext == 'vcf'
@@ -14,16 +19,24 @@ cp '$ext_config' 'galaxy.json' &&
 }}</configfile>
     </configfiles>
     <inputs>
-        <param name="input1" type="data" format="data" label="Choose uncompressed file"/>
+        <param name="input" type="data" format="data" label="Choose uncompressed file"/>
     </inputs>
     <outputs>
         <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
-        <data name="output1" format="auto"/>
+        <data name="output" format="auto"/>
     </outputs>
     <tests>
         <test>
-            <param name="input1" value="test.vcf.gz" ftype="vcf"/>
-            <output name="output1" file="test.vcf.gz" ftype="vcf_bgzip"/>
+            <param name="input" value="1.vcf" ftype="vcf"/>
+            <output name="output" file="1.vcf_bgzip" ftype="vcf_bgzip"/>
+        </test>
+        <test>
+            <param name="input" value="sequence.fasta" ftype="fasta"/>
+            <output name="output" file="1.fasta.gz" ftype="fasta.gz"/>
+        </test>
+        <test>
+            <param name="input" value="1.fastqsanger" ftype="fastqsanger"/>
+            <output name="output" file="1.fastqsanger.gz" ftype="fastqsanger.gz"/>
         </test>
     </tests>
     <help>
