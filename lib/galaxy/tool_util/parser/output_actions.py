@@ -400,6 +400,7 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
         self.column = elem.get('column', None)  # None is append
         if self.column:
             self.column = int(self.column)
+        # TODO not supported in xsd
         self.iterate = util.string_as_bool(elem.get("iterate", 'False'))
 
     def filter_options(self, options, other_values):
@@ -583,6 +584,7 @@ for filter_type in [ParamValueToolOutputActionOptionFilter, InsertColumnToolOutp
 
 # helper classes
 # determine cast function
+# TODO add float
 def parse_cast_attribute(cast):
     if cast == 'string_as_bool':
         cast = util.string_as_bool
