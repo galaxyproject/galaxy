@@ -281,7 +281,7 @@ export default {
     },
     created() {
         this.lastQueue = new LastQueue();
-        getDatatypesMapper().then((mapper) => {
+        getDatatypesMapper(false).then((mapper) => {
             this.datatypesMapper = mapper;
             this.datatypes = mapper.datatypes;
 

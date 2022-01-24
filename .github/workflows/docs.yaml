@@ -3,9 +3,11 @@ on:
   push:
     paths-ignore:
       - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: true
