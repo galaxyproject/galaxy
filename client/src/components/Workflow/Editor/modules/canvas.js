@@ -136,9 +136,7 @@ class CanvasManager {
     init_drag() {
         var self = this;
         // Dragging within canvas background
-        this.cc.each(function () {
-            this.scroll_panel = new ScrollPanel(this);
-        });
+        this.scrollPanel = new ScrollPanel(this.cc);
         var x_adjust;
         var y_adjust;
         this.cv
