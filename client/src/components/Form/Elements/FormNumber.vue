@@ -16,11 +16,12 @@
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput"
                     v-model="currentValue"
+                    :step="step"
                     size="sm"
                     type="number" />
             </b-col>
             <b-col class="pl-0" v-if="isRangeValid">
-                <b-form-input v-model="currentValue" :min="min" :max="max" type="range" />
+                <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
             </b-col>
         </b-row>
     </div>
@@ -56,6 +57,7 @@ export default {
             errorMessage: "",
             fractionWarning: "This output doesn't allow fractions!",
             currentValue: this.value,
+            decimalPlaces: this.isInteger ? 0 : this.getNumberOfDecimals(this.value),
         };
     },
     computed: {
@@ -64,6 +66,23 @@ export default {
         },
         isInteger() {
             return this.type.toLowerCase() === "integer";
+        },
+        /**
+         * Dynamically sets the step value depending on the
+         * current value precision when float number.
+         */
+        step() {
+            if (this.isInteger) {
+                return 1;
+            }
+            const numDecimals = this.decimalPlaces;
+            if (numDecimals < 2) {
+                return 0.1;
+            }
+            if (numDecimals < 3) {
+                return 0.01;
+            }
+            return 0.001;
         },
     },
     methods: {
@@ -81,6 +100,9 @@ export default {
                 this.currentValue = value > this.max ? this.max : this.min;
                 this.showAlert(errorMessage);
             }
+            if (!this.isInteger) {
+                this.decimalPlaces = this.getNumberOfDecimals(this.currentValue);
+            }
             this.$emit("input", this.currentValue);
         },
         showAlert(error) {
@@ -91,6 +113,25 @@ export default {
         },
         getOutOfRangeWarning(value) {
             return `${value} is out of ${this.min} - ${this.max} range!`;
+        },
+        /**
+         * https://stackoverflow.com/questions/10454518/javascript-how-to-retrieve-the-number-of-decimals-of-a-string-number
+         */
+        getNumberOfDecimals(value) {
+            if (value == null) {
+                return 0;
+            }
+            var match = value.toString().match(/(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/);
+            if (!match) {
+                return 0;
+            }
+            return Math.max(
+                0,
+                // Number of digits right of decimal point.
+                (match[1] ? match[1].length : 0) -
+                    // Adjust for scientific notation.
+                    (match[2] ? +match[2] : 0)
+            );
         },
     },
 };
