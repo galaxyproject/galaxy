@@ -71,6 +71,24 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library['description'] == 'ChangedDescription'
         assert library['synopsis'] == 'ChangedSynopsis'
 
+    def test_update_non_admins_with_permission(self):
+        library = self.library_populator.new_library("UpdateTestLibraryNonAdmin")
+        library_id = library["id"]
+        role_id = self.library_populator.user_private_role_id()
+        data = dict(name='ChangedName', description='ChangedDescription', synopsis='ChangedSynopsis')
+        # User has no permission by default
+        create_response = self._patch(f"libraries/{library['id']}", data=data)
+        self._assert_status_code_is(create_response, 403)
+        # Grant modify permission
+        self.library_populator.set_modify_permission(library_id, role_id)
+        create_response = self._patch(f"libraries/{library['id']}", data=data)
+        self._assert_status_code_is(create_response, 200)
+        library = create_response.json()
+        self._assert_has_keys(library, 'name', 'description', 'synopsis')
+        assert library['name'] == 'ChangedName'
+        assert library['description'] == 'ChangedDescription'
+        assert library['synopsis'] == 'ChangedSynopsis'
+
     def test_create_private_library_legacy_permissions(self):
         library = self.library_populator.new_library("LegacyPermissionTestLibrary")
         library_id = library["id"]

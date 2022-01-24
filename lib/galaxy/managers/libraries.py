@@ -71,7 +71,11 @@ class LibraryManager:
         """
         changed = False
         if not trans.user_is_admin:
-            raise exceptions.ItemAccessibilityException('Only administrators can update libraries.')
+            current_user_roles = trans.get_current_user_roles()
+            library_modify_roles = self.get_modify_roles(trans, library)
+            user_can_modify = any(role in library_modify_roles for role in current_user_roles)
+            if not user_can_modify:
+                raise exceptions.ItemAccessibilityException("You don't have permission update libraries.")
         if library.deleted:
             raise exceptions.RequestParameterInvalidException('You cannot modify a deleted library. Undelete it first.')
         if name is not None:

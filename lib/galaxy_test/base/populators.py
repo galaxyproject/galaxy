@@ -1629,8 +1629,7 @@ class LibraryPopulator:
             "LIBRARY_ADD_in": perm_list,
             "LIBRARY_MANAGE_in": perm_list,
         }
-        response = self.galaxy_interactor.post(f"libraries/{library_id}/permissions", data=permissions, admin=True, json=True)
-        api_asserts.assert_status_code_is(response, 200)
+        self._set_permissions(library_id, permissions)
 
     def set_permissions_with_action(self, library_id, role_id=None, action=None):
         perm_list = role_id or []
@@ -1642,6 +1641,29 @@ class LibraryPopulator:
             "manage_ids[]": perm_list,
             "modify_ids[]": perm_list,
         }
+        self._set_permissions(library_id, permissions)
+
+    def set_access_permission(self, library_id, role_id, action=None):
+        self._set_single_permission(library_id, role_id, permission="access_ids[]", action=action)
+
+    def set_add_permission(self, library_id, role_id, action=None):
+        self._set_single_permission(library_id, role_id, permission="add_ids[]", action=action)
+
+    def set_manage_permission(self, library_id, role_id, action=None):
+        self._set_single_permission(library_id, role_id, permission="manage_ids[]", action=action)
+
+    def set_modify_permission(self, library_id, role_id, action=None):
+        self._set_single_permission(library_id, role_id, permission="modify_ids[]", action=action)
+
+    def _set_single_permission(self, library_id, role_id, permission, action=None):
+        action = action or "set_permissions"
+        permissions = {
+            "action": action,
+            permission: role_id or [],
+        }
+        self._set_permissions(library_id, permissions)
+
+    def _set_permissions(self, library_id, permissions):
         response = self.galaxy_interactor.post(f"libraries/{library_id}/permissions", data=permissions, admin=True, json=True)
         api_asserts.assert_status_code_is(response, 200)
 
