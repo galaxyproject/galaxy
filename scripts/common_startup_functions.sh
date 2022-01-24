@@ -189,7 +189,8 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER 'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
+        run_server="gunicorn"
+        server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
