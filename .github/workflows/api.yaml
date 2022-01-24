@@ -4,14 +4,17 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
 concurrency:
   group: api-${{ github.ref }}
   cancel-in-progress: true
