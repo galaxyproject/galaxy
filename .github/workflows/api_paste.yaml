@@ -14,6 +14,7 @@ env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
   GALAXY_TEST_USE_UVICORN: false
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
 concurrency:
   group: api-legacy-${{ github.ref }}
   cancel-in-progress: true

@@ -12,6 +12,7 @@ env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_TEST_SELENIUM_RETRIES: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
+  GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
 concurrency:
   group: integration-selenium-${{ github.ref }}
   cancel-in-progress: true
