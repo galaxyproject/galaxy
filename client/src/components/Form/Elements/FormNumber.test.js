@@ -107,4 +107,27 @@ describe("FormInput", () => {
             await checkFractionsAlert(key);
         }
     });
+
+    it("should calculate the right step for floats", async () => {
+        const expectStep = async (value, expectedStep) => {
+            const props = { value: value, type: "float", min: 0, max: 1 };
+            const wrapper = await mountFormNumber(props);
+            expect(wrapper.vm.step).toBe(expectedStep);
+        };
+
+        //minimum step 0.1 - maximum step 0.001
+        const testValues = [
+            { value: undefined, step: 0.1 },
+            { value: "", step: 0.1 },
+            { value: 0, step: 0.1 },
+            { value: 0.5, step: 0.1 },
+            { value: 0.55, step: 0.01 },
+            { value: 0.555, step: 0.001 },
+            { value: 0.5555, step: 0.001 },
+            { value: 25e-100, step: 0.001 },
+        ];
+        for (let index = 0; index < testValues.length; index++) {
+            expectStep(testValues[index].value, testValues[index].step);
+        }
+    });
 });
