@@ -3,6 +3,7 @@
     <token name="@VERSION_SUFFIX@">0</token>
     <requirements>
         <requirement type="package" version="@TOOL_VERSION@">gzip</requirement>
+        <requirement type="package" version="1.11">tabix</requirement>
     </requirements>
     <command><![CDATA[
 cp '$ext_config' 'galaxy.json' &&
