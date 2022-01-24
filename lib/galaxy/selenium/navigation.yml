@@ -579,6 +579,10 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'select2-chosen')]
+    select_dataype_text_search:
+      type: xpath
+      selector: >
+        //div[@class="select2-search" and not(ancestor::div[contains(@style,'display: none')])]//input
     select_datatype:
       type: xpath
       selector: >

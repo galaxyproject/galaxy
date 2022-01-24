@@ -128,8 +128,9 @@ def dump_test_information(self, name_prefix):
             write_file("page_source.txt", self.driver.page_source)
             write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
         except Exception:
-            print("Failed to use test driver to recover debug information from Selenium.")
-            write_file("selenium_exception.txt", traceback.format_exc())
+            formatted_exception = traceback.format_exc()
+            print(f"Failed to use test driver to recover debug information from Selenium: {formatted_exception}")
+            write_file("selenium_exception.txt", formatted_exception)
 
         for log_type in ["browser", "driver"]:
             try:

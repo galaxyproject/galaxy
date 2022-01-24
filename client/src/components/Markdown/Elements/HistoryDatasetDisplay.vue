@@ -33,44 +33,42 @@
         </b-card-header>
         <b-card-body>
             <UrlDataProvider :url="itemUrl" v-slot="{ result: itemContent, loading, error }">
-                <LoadingSpan v-if="loading" message="Loading Dataset" />
-                <div v-else-if="error">{{ error }}</div>
-                <div v-else class="embedded-dataset content-height">
-                    <UrlDataProvider :url="datatypesUrl" v-slot="{ result: datatypesModel, loading: datatypesLoading }">
-                        <LoadingSpan v-if="datatypesLoading" message="Loading Datatypes" />
-                        <div v-else>
-                            <b-embed
-                                v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
-                                type="iframe"
-                                aspect="16by9"
-                                :src="displayUrl"
-                            />
-                            <div v-else-if="itemContent.item_data">
-                                <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
-                                    <UrlDataProvider
-                                        :url="metaUrl"
-                                        v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
-                                    >
-                                        <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
-                                        <div v-else-if="metaError">{{ metaError }}</div>
-                                        <b-table
-                                            v-else
-                                            striped
-                                            hover
-                                            :fields="getFields(metaData)"
-                                            :items="getItems(itemContent.item_data, metaData)"
-                                        />
-                                    </UrlDataProvider>
-                                </div>
-                                <pre v-else>
+                <UrlDataProvider :url="datatypesUrl" v-slot="{ result: datatypesModel, loading: datatypesLoading }">
+                    <LoadingSpan v-if="loading" message="Loading Dataset" />
+                    <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
+                    <div v-else-if="error">{{ error }}</div>
+                    <div v-else class="embedded-dataset content-height">
+                        <b-embed
+                            v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
+                            type="iframe"
+                            aspect="16by9"
+                            :src="displayUrl"
+                        />
+                        <div v-else-if="itemContent.item_data">
+                            <div v-if="isSubTypeOfAny(datasetType, ['tabular'], datatypesModel)">
+                                <UrlDataProvider
+                                    :url="metaUrl"
+                                    v-slot="{ result: metaData, loading: metaLoading, error: metaError }"
+                                >
+                                    <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
+                                    <div v-else-if="metaError">{{ metaError }}</div>
+                                    <b-table
+                                        v-else
+                                        striped
+                                        hover
+                                        :fields="getFields(metaData)"
+                                        :items="getItems(itemContent.item_data, metaData)"
+                                    />
+                                </UrlDataProvider>
+                            </div>
+                            <pre v-else>
                                     <code class="text-normalwrap">{{ itemContent.item_data }}</code>
                                 </pre>
-                            </div>
-                            <div v-else>No content found.</div>
-                            <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
                         </div>
-                    </UrlDataProvider>
-                </div>
+                        <div v-else>No content found.</div>
+                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                    </div>
+                </UrlDataProvider>
             </UrlDataProvider>
         </b-card-body>
     </b-card>
