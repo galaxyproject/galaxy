@@ -155,11 +155,12 @@ find_server() {
     server_app=$2
     arg_getter_args=
     default_webserver="gunicorn"
+    default_gunicorn_worker="uvicorn.workers.UvicornWorker"
 
     case "$server_app" in
         galaxy)
             default_webserver="gravity"
-            gunicorn_args="$gunicorn_args -k galaxy.webapps.galaxy.workers.Worker"
+            gunicorn_worker="galaxy.webapps.galaxy.workers.Worker"
             ;;
         reports)
             # TODO: don't override this var, and is this really the only way to configure the port?
@@ -188,7 +189,7 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER 'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib $gunicorn_args"
+        server_args="$APP_WEBSERVER 'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
