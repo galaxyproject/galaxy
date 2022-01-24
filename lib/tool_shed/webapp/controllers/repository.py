@@ -2156,7 +2156,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 tip = repository.tip()
                 for selected_file in selected_files_to_delete:
                     try:
-                        hg_util.remove_file(repo_dir, selected_file)
+                        hg_util.remove_path(repo_dir, selected_file)
                     except Exception as e:
                         status = 'error'
                         message = f"Error removing file {selected_file} in mercurial repo:\n{e}"
