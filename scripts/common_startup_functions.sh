@@ -46,7 +46,7 @@ parse_common_args() {
                 gravity_args="start"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
-                GALAXY_DAEMON_LOG="$GALAXY_LOG"
+                export GALAXY_DAEMON_LOG="${GALAXY_LOG:-galaxy.log}"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
