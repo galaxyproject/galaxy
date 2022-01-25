@@ -5762,11 +5762,11 @@ The ``<exit_code>`` tag's supported attributes are as follows:
 
 * ``range``: This indicates the range of exit codes to check. The range can be one of the following:
   * ``n``: the exit code will only be compared to n;
-  * ``[m:n]``: the exit code must be greater than or equal to m and less than or equal to n;
-  * ``[m:]``: the exit code must be greater than or equal to m;
-  * ``[:n]``: the exit code must be less than or equal to n.
+  * ``m:n``: the exit code must be greater than or equal to m and less than or equal to n;
+  * ``m:``: the exit code must be greater than or equal to m;
+  * ``:n``: the exit code must be less than or equal to n.
 * ``level``: This indicates the error level of the exit code. If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
-  * ``log`` and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``log``, ``qc``, and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'QC:', 'Log:' or 'Warning:'. This will not cause the tool to fail.
   * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail.
   * ``fatal_oom``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. Depending on the job configuration, a fatal_oom-level error will cause the tool to be resubmitted or fail.
 * ``description``: This is an optional description of the error that corresponds to the exit code.
@@ -5793,19 +5793,19 @@ marked as having failed.
 
 ]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="range" type="RangeType">
+    <xs:attribute name="range" type="RangeType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Exit code range. Can be a single number or a range given by ``start:end``, where start and end are integers, if omitted negative or positive infinity is assumed</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="level" type="LevelType">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Error level: one of ``qc``, ``warning``, ``log``, ``fatal`` (default), ``fatal_oom``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="description" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Description. Error message presented to the user</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5835,7 +5835,7 @@ A regular expression includes the following attributes:
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
 * ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the ``<regex>`` tag does not contain the match attribute, then the ``<regex>`` tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
 * ``level``: This works very similarly to the ``<exit_code>`` tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
-  * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``log``, ``qc``, and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'QC:', 'Log:', or 'Warning:'. This will not cause the tool to fail.
   * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail.
   * ``fatal_oom``: In contrast to fatal the job might be resubmitted if possible according to the job configuration.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
@@ -5905,10 +5905,10 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:</xs:documentation>
+        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="match" type="xs:string">
+    <xs:attribute name="match" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This is the regular expression that will be used to match against stdout and/or stderr.</xs:documentation>
       </xs:annotation>
@@ -6270,7 +6270,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Documentation for RangeType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:pattern value="\-?(\d)*:?\-?(\d)*"/>
+      <xs:pattern value="((-?\d+)?:(-?\d+)?)|(-?\d+)"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="SourceType">
