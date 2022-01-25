@@ -8,7 +8,7 @@
     </requirements>
     <command><![CDATA[
 cp '$ext_config' 'galaxy.json' &&
-bgzip -ci '$input1' > '$output1'
+bgzip -@ \${GALAXY_SLOTS:-1} -ci '$input1' > '$output1'
     ]]></command>
     <configfiles>
         <configfile name="ext_config">{"output1": {
