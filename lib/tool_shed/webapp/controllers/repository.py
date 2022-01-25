@@ -2156,29 +2156,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 tip = repository.tip()
                 for selected_file in selected_files_to_delete:
                     try:
-                        hg_util.remove_file(repo_dir, selected_file, force=True)
+                        hg_util.remove_path(repo_dir, selected_file)
                     except Exception as e:
-                        log.debug("Error removing the following file using the mercurial API:\n %s", selected_file)
-                        log.debug("The error was: %s", util.unicodify(e))
-                        log.debug("Attempting to remove the file using a different approach.")
-                        relative_selected_file = selected_file.split('repo_%d' % repository.id)[1].lstrip('/')
-                        repo.dirstate.remove(relative_selected_file)
-                        repo.dirstate.write()
-                        absolute_selected_file = os.path.abspath(selected_file)
-                        if os.path.isdir(absolute_selected_file):
-                            try:
-                                os.rmdir(absolute_selected_file)
-                            except OSError:
-                                # The directory is not empty
-                                pass
-                        elif os.path.isfile(absolute_selected_file):
-                            os.remove(absolute_selected_file)
-                            dir = os.path.split(absolute_selected_file)[0]
-                            try:
-                                os.rmdir(dir)
-                            except OSError:
-                                # The directory is not empty
-                                pass
+                        status = 'error'
+                        message = f"Error removing file {selected_file} in mercurial repo:\n{e}"
+                        log.debug(message)
                 # Commit the change set.
                 if not commit_message:
                     commit_message = 'Deleted selected files'
