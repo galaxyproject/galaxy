@@ -46,7 +46,6 @@ parse_common_args() {
                 gravity_args="start"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
-                export GALAXY_DAEMON_LOG="${GALAXY_LOG:-galaxy.log}"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
@@ -207,6 +206,10 @@ find_server() {
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
     else
+        if [ "$add_log_arg" -eq 1 ]; then
+            GALAXY_DAEMON_LOG="${GALAXY_LOG:-galaxy.log}"
+            export GALAXY_DAEMON_LOG
+        fi
         if [ -n "$gravity_args" ]; then
             run_server="galaxyctl"
             server_args="$gravity_args"
