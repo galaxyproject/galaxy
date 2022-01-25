@@ -4,16 +4,11 @@
         <token name="@VERSION_SUFFIX@">0</token>
     </macros>
     <requirements>
-        <requirement type="package" version="@TOOL_VERSION@">gzip</requirement>
         <requirement type="package" version="1.11">tabix</requirement>
     </requirements>
     <command><![CDATA[
 cp '$ext_config' 'galaxy.json' &&
-#if $input1.ext == 'vcf'
-    bgzip -ci '$input1' > '$output1'
-#else
-    gzip -cf '$input1' > '$output1'
-#end if
+bgzip -ci '$input1' > '$output1'
     ]]></command>
     <configfiles>
         <configfile name="ext_config">{"output1": {
