@@ -13,7 +13,6 @@ from json import dump, load, loads
 from typing import Dict
 
 from galaxy.datatypes import sniff
-from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
 from galaxy.util import (
     bunch,
@@ -21,7 +20,6 @@ from galaxy.util import (
     safe_makedirs,
     unicodify
 )
-from galaxy.util.compression_utils import CompressedFile
 
 assert sys.version_info[:2] >= (2, 7)
 
@@ -79,7 +77,6 @@ def parse_outputs(args):
 
 
 def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
-    ext = None
     compression_type = None
     line_count = None
     link_data_only_str = dataset.get('link_data_only', 'copy_files')
@@ -115,6 +112,10 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
     # decompressing archive files before sniffing.
     auto_decompress = dataset.get('auto_decompress', True)
+
+    # Datatypes can provide functionality that cleans the data, this is enabled by default
+    groom_content = dataset.get('groom_content', True)
+
     try:
         dataset.file_type
     except AttributeError:
@@ -130,7 +131,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
 
-    stdout, ext, datatype, is_binary, converted_path, _, _ = handle_upload(
+    stdout, ext, is_binary, converted_path, _, _ = handle_upload(
         registry=registry,
         path=dataset.path,
         requested_ext=dataset.file_type,
@@ -145,14 +146,14 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
         convert_spaces_to_tabs=dataset.space_to_tab,
     )
 
-    # Strip compression extension from name
-    if compression_type and not getattr(datatype, 'compressed', False) and dataset.name.endswith('.' + compression_type):
+    # Strip compression extension from name FIXME: compression_type never true
+    if compression_type and not getattr(registry.get_datatype_by_extension(ext), 'compressed', False) and dataset.name.endswith('.' + compression_type):
         dataset.name = dataset.name[:-len('.' + compression_type)]
 
     # Move dataset
     if link_data_only:
         # Never alter a file that will not be copied to Galaxy's local file store.
-        if datatype.dataset_content_needs_grooming(dataset.path):
+        if groom_content and registry.get_datatype_by_extension(ext).dataset_content_needs_grooming(dataset.path):
             err_msg = 'The uploaded files need grooming, so change your <b>Copy data into Galaxy?</b> selection to be ' + \
                 '<b>Copy files into Galaxy</b> instead of <b>Link to files without copying into Galaxy</b> so grooming can be performed.'
             raise UploadProblemException(err_msg)
@@ -184,9 +185,11 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     if dataset.get('uuid', None) is not None:
         info['uuid'] = dataset.get('uuid')
     # FIXME: does this belong here? also not output-adjacent-tmpdir aware =/
-    if not link_data_only and datatype and datatype.dataset_content_needs_grooming(output_path):
-        # Groom the dataset content if necessary
-        datatype.groom_dataset_content(output_path)
+    if not link_data_only and groom_content:
+        datatype = registry.get_datatype_by_extension(ext)
+        if datatype.dataset_content_needs_grooming(output_path):
+            # Groom the dataset content if necessary
+            datatype.groom_dataset_content(output_path)
     return info
 
 
@@ -214,6 +217,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
         safe_makedirs(files_path)
 
     def stage_file(name, composite_file_path, is_binary=False):
+        from galaxy.util.compression_utils import CompressedFile
         dp = composite_file_path['path']
         path, isa_url = to_path(dp)
         if isa_url:
@@ -303,6 +307,20 @@ def output_adjacent_tmpdir(output_path):
     return os.path.dirname(output_path)
 
 
+class LazyRegistry:
+    def __init__(self, *args, **kwargs):
+        self._registry = None
+        self._args = args
+        self._kwargs = kwargs
+
+    def __getattr__(self, attr):
+        if not self._registry:
+            from galaxy.datatypes.registry import Registry
+            self._registry = Registry()
+            self._registry.load_datatypes(*self._args, **self._kwargs)
+        return getattr(self._registry, attr)
+
+
 def __main__():
 
     if len(sys.argv) < 4:
@@ -311,8 +329,7 @@ def __main__():
 
     output_paths = parse_outputs(sys.argv[4:])
 
-    registry = Registry()
-    registry.load_datatypes(root_dir=sys.argv[1], config=sys.argv[2])
+    registry = LazyRegistry(root_dir=sys.argv[1], config=sys.argv[2])
 
     try:
         datasets = __read_paramfile(sys.argv[3])

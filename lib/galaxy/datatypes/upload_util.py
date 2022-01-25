@@ -1,7 +1,7 @@
 import os
 from typing import NamedTuple, Optional
 
-from galaxy.datatypes import data, sniff
+from galaxy.datatypes import sniff
 from galaxy.util.checkers import (
     check_binary,
     is_single_file_zip,
@@ -16,7 +16,6 @@ class UploadProblemException(Exception):
 class HandleUploadResponse(NamedTuple):
     stdout: Optional[str]
     ext: str
-    datatype: data.Data
     is_binary: bool
     converted_path: Optional[str]
     converted_newlines: bool
@@ -77,10 +76,10 @@ def handle_upload(
     converted_path = None if converted_path == path else converted_path
 
     # Validate datasets where the filetype was explicitly set using the filetype's sniffer (if any)
-    if requested_ext != 'auto':
+    if check_content and requested_ext != 'auto':
         datatype = registry.get_datatype_by_extension(requested_ext)
         # Enable sniffer "validate mode" (prevents certain sniffers from disabling themselves)
-        if check_content and hasattr(datatype, 'sniff'):
+        if hasattr(datatype, 'sniff'):
             try:
                 is_of_datatype = datatype.sniff(path)
             except Exception:
@@ -100,8 +99,7 @@ def handle_upload(
             stdout = ("The uploaded binary file format cannot be determined automatically, please set the file 'Type'"
                       " manually")
 
-    datatype = registry.get_datatype_by_extension(ext)
-    if multi_file_zip and not getattr(datatype, 'compressed', False):
+    if multi_file_zip and not getattr(registry.get_datatype_by_extension(ext), 'compressed', False):
         stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
 
-    return HandleUploadResponse(stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces)
+    return HandleUploadResponse(stdout, ext, is_binary, converted_path, converted_newlines, converted_spaces)

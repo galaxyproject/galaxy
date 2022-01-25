@@ -43,6 +43,7 @@
       <param name="uuid" type="hidden" required="False" />
       <param name="to_posix_lines" type="hidden" value="Yes" />
       <param name="auto_decompress" type="hidden" value="Yes" />
+      <param name="groom_content" type="hidden" value="Yes" />
       <!-- allow per-file override of dbkey -->
       <param name="file_type" type="hidden" value="" />
       <param name="dbkey" type="hidden" value="" />

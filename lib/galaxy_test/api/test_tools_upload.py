@@ -1,10 +1,12 @@
 import json
 import os
+import tempfile
 import urllib.parse
 
 import pytest
 from tusclient import client
 
+from galaxy.datatypes.binary import Bam
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
@@ -589,6 +591,14 @@ class ToolsUploadTestCase(ApiTestCase):
             details = self._upload_and_get_details(fh, file_type="auto")
         assert details["state"] == "ok"
         assert details["file_ext"] == "bam", details
+
+    def test_upload_skip_grooming(self):
+        bam_path = TestDataResolver().get_filename("2.shuffled.unsorted.bam")
+        with open(bam_path, "rb") as fh, tempfile.NamedTemporaryFile(prefix="skip_grooming") as ct:
+            content = self._upload_and_get_content(fh, file_type="auto", groom_content=None)
+            ct.write(content)
+            b = Bam()
+            assert b.dataset_content_needs_grooming(ct.name) is True
 
     def test_fetch_metadata(self):
         table = ONE_TO_SIX_WITH_SPACES

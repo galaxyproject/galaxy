@@ -685,6 +685,8 @@ class BaseDatasetPopulator(BasePopulator):
             upload_params["files_0|space_to_tab"] = kwds["space_to_tab"]
         if "auto_decompress" in kwds:
             upload_params["files_0|auto_decompress"] = kwds["auto_decompress"]
+        if "groom_content" in kwds:
+            upload_params["files_0|groom_content"] = kwds["groom_content"]
         upload_params.update(kwds.get("extra_inputs", {}))
         return self.run_tool_payload(
             tool_id='upload1',

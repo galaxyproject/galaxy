@@ -233,7 +233,7 @@ def _fetch_target(upload_config, target):
             registry = upload_config.registry
             check_content = upload_config.check_content
 
-            stdout, ext, datatype, is_binary, converted_path, converted_newlines, converted_spaces = handle_upload(
+            stdout, ext, is_binary, converted_path, converted_newlines, converted_spaces = handle_upload(
                 registry=registry,
                 path=path,
                 requested_ext=requested_ext,
@@ -247,6 +247,7 @@ def _fetch_target(upload_config, target):
                 convert_to_posix_lines=to_posix_lines,
                 convert_spaces_to_tabs=space_to_tab,
             )
+            datatype = registry.get_datatype_by_extension(ext)
             transform = []
             if converted_newlines:
                 transform.append({"action": "to_posix_lines"})

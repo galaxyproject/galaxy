@@ -235,6 +235,7 @@ class Dataset(Bunch):
     primary_file: str
     to_posix_lines: bool
     auto_decompress: bool
+    groom_content: bool
     ext: str
     space_to_tab: bool
 
@@ -454,6 +455,9 @@ class UploadDataset(Group):
             auto_decompress = False
             if context.get('auto_decompress', None) not in ["None", None, False]:
                 auto_decompress = True
+            groom_content = False
+            if context.get('groom_content', None) not in ["None", None, False]:
+                groom_content = True
             space_to_tab = False
             if context.get('space_to_tab', None) not in ["None", None, False]:
                 space_to_tab = True
@@ -495,6 +499,7 @@ class UploadDataset(Group):
                         break
             file_bunch.to_posix_lines = to_posix_lines
             file_bunch.auto_decompress = auto_decompress
+            file_bunch.groom_content = groom_content
             file_bunch.space_to_tab = space_to_tab
             file_bunch.uuid = uuid
             if file_type is not None:
@@ -518,6 +523,9 @@ class UploadDataset(Group):
             auto_decompress = False
             if context.get('auto_decompress', None) not in ["None", None, False]:
                 auto_decompress = True
+            groom_content = False
+            if context.get('groom_content', None) not in ["None", None, False]:
+                groom_content = True
             space_to_tab = False
             if context.get('space_to_tab', None) not in ["None", None, False]:
                 space_to_tab = True
@@ -526,6 +534,7 @@ class UploadDataset(Group):
             if file_bunch.path:
                 file_bunch.to_posix_lines = to_posix_lines
                 file_bunch.auto_decompress = auto_decompress
+                file_bunch.groom_content = groom_content
                 file_bunch.space_to_tab = space_to_tab
                 if file_type is not None:
                     file_bunch.file_type = file_type
@@ -538,6 +547,7 @@ class UploadDataset(Group):
                     file_bunch.uuid = uuid
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.auto_decompress = auto_decompress
+                    file_bunch.groom_content = groom_content
                     file_bunch.space_to_tab = space_to_tab
                     if file_type is not None:
                         file_bunch.file_type = file_type
@@ -582,6 +592,7 @@ class UploadDataset(Group):
                 if file_bunch.path:
                     file_bunch.to_posix_lines = to_posix_lines
                     file_bunch.auto_decompress = auto_decompress
+                    file_bunch.groom_content = groom_content
                     file_bunch.space_to_tab = space_to_tab
                     if file_type is not None:
                         file_bunch.file_type = file_type
@@ -633,6 +644,7 @@ class UploadDataset(Group):
                 dataset.primary_file = temp_name
                 dataset.to_posix_lines = True
                 dataset.auto_decompress = True
+                dataset.groom_content = True
                 dataset.space_to_tab = False
             else:
                 file_bunch, warnings = get_one_filename(groups_incoming[0])
@@ -640,6 +652,7 @@ class UploadDataset(Group):
                 dataset.primary_file = file_bunch.path
                 dataset.to_posix_lines = file_bunch.to_posix_lines
                 dataset.auto_decompress = file_bunch.auto_decompress
+                dataset.groom_content = file_bunch.groom_content
                 dataset.space_to_tab = file_bunch.space_to_tab
                 if file_bunch.file_type:
                     dataset.file_type = file_type
