@@ -1231,10 +1231,10 @@ class Grib(Binary):
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.grib')
-    >>> Grib().sniff(fname)
+    >>> Grib().sniff_prefix(FilePrefix(fname))
     True
-    >>> fname = get_test_fname('interval.interval')
-    >>> Grib().sniff(fname)
+    >>> fname = FilePrefix(get_test_fname('interval.interval'))
+    >>> Grib().sniff_prefix(fname)
     False
     """
     file_ext = "grib"
@@ -1250,7 +1250,7 @@ class Grib(Binary):
         # The first 4 bytes of any GRIB file are GRIB
         try:
             if file_prefix.startswith_bytes(self._magic):
-                tmp = file_prefix.contents_header_bytes[:4]
+                tmp = file_prefix.contents_header_bytes[4:8]
                 _uint8struct = struct.Struct(b">B")
                 edition = _uint8struct.unpack_from(tmp, 3)[0]
                 if edition == 1 or edition == 2:
