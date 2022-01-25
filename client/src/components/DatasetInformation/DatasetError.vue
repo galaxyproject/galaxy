@@ -58,23 +58,25 @@
                         show
                         >{{ resultMessage[0] }}</b-alert
                     >
-                    <FormElement
-                        v-if="!jobDetails.user_email"
-                        id="dataset-error-email"
-                        v-model="email"
-                        title="Please provide your email:" />
-                    <FormElement
-                        id="dataset-error-message"
-                        v-model="message"
-                        :area="true"
-                        title="Please provide detailed information on the activities leading to this issue:" />
-                    <b-button
-                        id="dataset-error-submit"
-                        variant="primary"
-                        @click="submit(dataset, jobDetails.user_email)"
-                        class="mt-3">
-                        <font-awesome-icon icon="bug" class="mr-1" />Report
-                    </b-button>
+                    <div v-if="showForm" id="fieldsAndButton">
+                        <FormElement
+                            v-if="!jobDetails.user_email"
+                            id="dataset-error-email"
+                            v-model="email"
+                            title="Please provide your email:" />
+                        <FormElement
+                            id="dataset-error-message"
+                            v-model="message"
+                            :area="true"
+                            title="Please provide detailed information on the activities leading to this issue:" />
+                        <b-button
+                            id="dataset-error-submit"
+                            variant="primary"
+                            @click="submit(dataset, jobDetails.user_email)"
+                            class="mt-3">
+                            <font-awesome-icon icon="bug" class="mr-1" />Report
+                        </b-button>
+                    </div>
                 </div>
             </JobDetailsProvider>
         </DatasetProvider>
@@ -131,6 +133,13 @@ export default {
                     this.errorMessage = errorMessage;
                 }
             );
+        },
+    },
+    computed: {
+        showForm() {
+            const noResult = !this.resultMessages.length;
+            const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
+            return noResult || hasError;
         },
     },
 };
