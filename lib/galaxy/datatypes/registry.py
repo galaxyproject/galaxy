@@ -876,7 +876,7 @@ class Registry:
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
                 if issubclass(source_datatype, converter_datatype):
-                    converters.update(converters_dict)
+                    converters.update({k: v for k, v in converters_dict.items() if k != ext})
             # Ensure ext-level converters are present
             if ext in self.datatype_converters.keys():
                 converters.update(self.datatype_converters[ext])
