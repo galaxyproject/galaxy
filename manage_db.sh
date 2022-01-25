@@ -41,7 +41,7 @@ cd `dirname $0`
 setup_python
 
 for i; do :; done
-if [ "$i" == "tool_shed" ]; then
+if [ "$i" = "tool_shed" ]; then
     python ./scripts/migrate_toolshed_db.py "$@" tool_shed
 else
     find lib/galaxy/model/migrations/alembic -name '*.pyc' -delete
