@@ -1,6 +1,8 @@
 <tool id="CONVERTER_uncompressed_to_gz" name="Convert uncompressed file to compressed" hidden="true" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="20.01">
-    <token name="@TOOL_VERSION@">1.11</token>
-    <token name="@VERSION_SUFFIX@">0</token>
+    <macros>
+        <token name="@TOOL_VERSION@">1.11</token>
+        <token name="@VERSION_SUFFIX@">0</token>
+    </macros>
     <requirements>
         <requirement type="package" version="@TOOL_VERSION@">gzip</requirement>
         <requirement type="package" version="1.11">tabix</requirement>
