@@ -1282,7 +1282,7 @@ class Grib(Binary):
     def _get_grib_edition(self, filename):
         _uint8struct = struct.Struct(b">B")
         edition = 0
-        with open(filename) as f:
+        with open(filename, 'rb') as f:
             f.seek(4)
             tmp = f.read(4)
             edition = _uint8struct.unpack_from(tmp, 3)[0]
