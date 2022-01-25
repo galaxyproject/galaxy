@@ -378,7 +378,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = [
+        expected = [  # This list is subject to change, but it's unlikely we'll be removing converters
             'CONVERTER_bed_to_fli_0',
             'CONVERTER_interval_to_bed_0',
             'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
@@ -392,7 +392,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         actual = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
-        assert sorted(actual) == sorted(expected)
+        missing_expected_converters = set(expected) - set(actual)
+        assert not missing_expected_converters, f"Expected converter(s) {', '.join(missing_expected_converters)} missing from response"
 
     def test_get_suitable_converters_different_datatypes_matches(self):
         response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
@@ -414,11 +415,11 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         hdca_list_id = response.json()["outputs"][0]["id"]
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
-        expected = ['tabular_to_csv']
+        expected = 'tabular_to_csv'
         actual = []
         for converter in converters.json():
             actual.append(converter["tool_id"])
-        assert sorted(actual) == sorted(expected)
+        assert expected in actual
 
     def test_get_suitable_converters_different_datatypes_no_matches(self):
         response = self.dataset_collection_populator.upload_collection(self.history_id, "list:paired", elements=[
