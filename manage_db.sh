@@ -42,7 +42,7 @@ setup_python
 
 for i; do :; done
 if [ "$i" == "tool_shed" ]; then
-    python ./scripts/migrate_toolshed_db.py $@ tool_shed
+    python ./scripts/migrate_toolshed_db.py "$@" tool_shed
 else
     find lib/galaxy/model/migrations/alembic -name '*.pyc' -delete
     python ./scripts/manage_db_adapter.py --alembic-config "$ALEMBIC_CONFIG" "$@"
