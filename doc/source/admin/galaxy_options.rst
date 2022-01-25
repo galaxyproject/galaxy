@@ -1977,7 +1977,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ``None``
+:Default: ``https://help.galaxyproject.org/``
 :Type: str
 
 
@@ -4807,13 +4807,17 @@
 :Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~
 ``vault_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Vault configuration
+    Vault config file.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``vault_conf.yml``
 :Type: str
+
+
+

@@ -1030,7 +1030,7 @@ galaxy:
   #logo_src_secondary: null
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
-  #helpsite_url: null
+  #helpsite_url: https://help.galaxyproject.org/
 
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/

@@ -1432,7 +1432,8 @@ mapping:
 
       helpsite_url:
         type: str
-        required: false
+        required: true
+        default: https://help.galaxyproject.org/
         per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
