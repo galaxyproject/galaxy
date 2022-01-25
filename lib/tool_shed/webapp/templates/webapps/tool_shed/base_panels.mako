@@ -138,9 +138,6 @@
                 ## Help tab.
                 <%
                     menu_options = []
-                    qa_url = app.config.get( "qa_url", None )
-                    if qa_url:
-                        menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
                     menu_options.extend( [
                         [_('Tool Shed Wiki'), app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
                         [_('Support'), app.config.get( "support_url", "https://galaxyproject.org/support" ), "_blank" ],

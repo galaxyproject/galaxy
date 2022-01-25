@@ -2064,18 +2064,6 @@
 :Type: str
 
 
-~~~~~~~~~~
-``qa_url``
-~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-    Galaxy Q&A site is under development; when the site is done, this
-    URL will be set and uncommented.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~
 ``static_enabled``
 ~~~~~~~~~~~~~~~~~~

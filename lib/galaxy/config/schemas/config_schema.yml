@@ -1500,14 +1500,6 @@ mapping:
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
 
-      qa_url:
-        type: str
-        required: false
-        desc: |
-          The URL linked by the "Galaxy Q&A" link in the "Help" menu
-          The Galaxy Q&A site is under development; when the site is done, this URL
-          will be set and uncommented.
-
       static_enabled:
         type: bool
         default: true

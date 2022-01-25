@@ -1058,11 +1058,6 @@ galaxy:
   # activation emails.
   #terms_url: null
 
-  # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-  # Galaxy Q&A site is under development; when the site is done, this
-  # URL will be set and uncommented.
-  #qa_url: null
-
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so
   # are not documented individually.  You can use these paths (or ones
