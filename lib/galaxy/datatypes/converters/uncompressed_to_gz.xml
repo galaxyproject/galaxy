@@ -17,24 +17,24 @@ bgzip -@ \${GALAXY_SLOTS:-1} -ci '$input1' > '$output1'
 }}</configfile>
     </configfiles>
     <inputs>
-        <param name="input" type="data" format="data" label="Choose uncompressed file"/>
+        <param name="input1" type="data" format="data" label="Choose uncompressed file"/>
     </inputs>
     <outputs>
         <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
-        <data name="output" format="auto"/>
+        <data name="output1" format="auto"/>
     </outputs>
     <tests>
         <test>
-            <param name="input" value="1.vcf" ftype="vcf"/>
-            <output name="output" file="1.vcf_bgzip" ftype="vcf_bgzip"/>
+            <param name="input1" value="1.vcf" ftype="vcf"/>
+            <output name="output1" file="1.vcf_bgzip" ftype="vcf_bgzip"/>
         </test>
         <test>
-            <param name="input" value="sequence.fasta" ftype="fasta"/>
-            <output name="output" file="1.fasta.gz" ftype="fasta.gz"/>
+            <param name="input1" value="sequence.fasta" ftype="fasta"/>
+            <output name="output1" file="1.fasta.gz" ftype="fasta.gz"/>
         </test>
         <test>
-            <param name="input" value="1.fastqsanger" ftype="fastqsanger"/>
-            <output name="output" file="1.fastqsanger.gz" ftype="fastqsanger.gz"/>
+            <param name="input1" value="1.fastqsanger" ftype="fastqsanger"/>
+            <output name="output1" file="1.fastqsanger.gz" ftype="fastqsanger.gz"/>
         </test>
     </tests>
     <help>
