@@ -37,7 +37,7 @@ class YamlToolSource(ToolSource):
         return self._source_path
 
     def parse_tool_type(self):
-        return 'yml'
+        return self.root_dict.get("tool_type")
 
     def parse_id(self):
         return self.root_dict.get("id")
