@@ -62,7 +62,7 @@ describe("DatasetError", () => {
         expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
     });
 
-    it("success message hides form fields and button", async () => {
+    it("hides form fields and button on success", async () => {
         const wrapper = buildWrapper();
         const fieldsAndButton = "#fieldsAndButton";
         expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
@@ -70,7 +70,7 @@ describe("DatasetError", () => {
         expect(wrapper.find(fieldsAndButton).exists()).toBe(false);
     });
 
-    it("error message does not hide form fields and button", async () => {
+    it("does not hide form fields and button on error", async () => {
         const wrapper = buildWrapper();
         const fieldsAndButton = "#fieldsAndButton";
         expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
