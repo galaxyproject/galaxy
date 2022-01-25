@@ -36,7 +36,7 @@ from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
 )
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import build_sniff_from_prefix, FilePrefix
 from galaxy.datatypes.text import Html
 from galaxy.util import compression_utils, nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
@@ -1222,6 +1222,71 @@ class Anndata(H5):
             return dataset.peek
         except Exception:
             return f"Binary Anndata file ({nice_size(dataset.get_size())})"
+
+
+@build_sniff_from_prefix
+class Grib(Binary):
+    """
+    Class describing an GRIB file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.grib')
+    >>> Grib().sniff_prefix(FilePrefix(fname))
+    True
+    >>> fname = FilePrefix(get_test_fname('interval.interval'))
+    >>> Grib().sniff_prefix(fname)
+    False
+    """
+    file_ext = "grib"
+    # GRIB not yet in EDAM (work in progress). For now, so set to binary
+    edam_format = "format_2333"
+    MetadataElement(name="grib_edition", default=1, desc="GRIB edition", readonly=True, visible=True, optional=True, no_value=0)
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b'GRIB'
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        # The first 4 bytes of any GRIB file are GRIB
+        try:
+            if file_prefix.startswith_bytes(self._magic):
+                tmp = file_prefix.contents_header_bytes[4:8]
+                _uint8struct = struct.Struct(b">B")
+                edition = _uint8struct.unpack_from(tmp, 3)[0]
+                if edition == 1 or edition == 2:
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GRIB file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary GRIB file ({nice_size(dataset.get_size())})"
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set the GRIB edition.
+        """
+        dataset.metadata.grib_edition = self._get_grib_edition(dataset.file_name)
+
+    def _get_grib_edition(self, filename):
+        _uint8struct = struct.Struct(b">B")
+        edition = 0
+        with open(filename, 'rb') as f:
+            f.seek(4)
+            tmp = f.read(4)
+            edition = _uint8struct.unpack_from(tmp, 3)[0]
+        return edition
 
 
 @build_sniff_from_prefix
