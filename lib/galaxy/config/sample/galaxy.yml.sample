@@ -1038,9 +1038,6 @@ galaxy:
   # The URL linked for quota information in the UI.
   #quota_url: https://galaxyproject.org/support/account-quotas/
 
-  # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: https://galaxyproject.org/support/
-
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: https://galaxyproject.org/citing-galaxy
 

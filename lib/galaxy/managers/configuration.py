@@ -142,7 +142,6 @@ class ConfigSerializer(base.ModelSerializer):
             'mailing_lists': _defaults_to(self.app.config.mailing_lists_url),
             'screencasts_url': _use_config,
             'citation_url': _use_config,
-            'support_url': _use_config,
             'quota_url': _use_config,
             'helpsite_url': _use_config,
             'lims_doc_url': _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),

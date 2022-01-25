@@ -2001,16 +2001,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~
-``support_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Support" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/support/``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~
 ``citation_url``
 ~~~~~~~~~~~~~~~~

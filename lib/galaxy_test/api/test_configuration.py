@@ -9,7 +9,6 @@ TEST_KEYS_FOR_ALL_USERS = [
     'enable_unique_workflow_defaults',
     'ftp_upload_site',
     'wiki_url',
-    'support_url',
     'logo_url',
     'terms_url',
     'allow_user_dataset_purge',

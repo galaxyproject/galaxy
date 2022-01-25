@@ -1453,14 +1453,6 @@ mapping:
         desc: |
           The URL linked for quota information in the UI.
 
-      support_url:
-        type: str
-        default: https://galaxyproject.org/support/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Support" link in the "Help" menu.
-
       citation_url:
         type: str
         default: https://galaxyproject.org/citing-galaxy
