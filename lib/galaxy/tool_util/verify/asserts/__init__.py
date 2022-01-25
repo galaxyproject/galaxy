@@ -1,6 +1,6 @@
 import logging
 import sys
-from inspect import getfullargspec
+from inspect import getfullargspec, getmembers
 
 from galaxy.util import unicodify
 
@@ -12,16 +12,19 @@ assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
 # create a new module of assertion functions, create the needed python
 # source file "test/base/asserts/<MODULE_NAME>.py" and add
 # <MODULE_NAME> to the list of assertion module names defined above.
-assertion_modules = []
+assertion_functions = {}
 for assertion_module_name in assertion_module_names:
     full_assertion_module_name = f"galaxy.tool_util.verify.asserts.{assertion_module_name}"
     try:
         # Dynamically import module
         __import__(full_assertion_module_name)
         assertion_module = sys.modules[full_assertion_module_name]
-        assertion_modules.append(assertion_module)
     except Exception:
         log.exception('Failed to load assertion module: %s', assertion_module_name)
+        continue
+    for member, value in getmembers(assertion_module):
+        if member.startswith("assert_"):
+            assertion_functions[member] = value
 
 
 def verify_assertions(data, assertion_description_list):
@@ -33,14 +36,11 @@ def verify_assertions(data, assertion_description_list):
 
 def verify_assertion(data, assertion_description):
     tag = assertion_description["tag"]
-    assert_function_name = f"assert_{tag}"
-    assert_function = None
-    for assertion_module in assertion_modules:
-        if hasattr(assertion_module, assert_function_name):
-            assert_function = getattr(assertion_module, assert_function_name)
+    assert_function_name = "assert_" + tag
+    assert_function = assertion_functions.get(assert_function_name)
 
     if assert_function is None:
-        errmsg = f"Unable to find test function associated with XML tag '{tag}'. Check your tool file syntax."
+        errmsg = f"Unable to find test function associated with XML tag {tag}. Check your tool file syntax."
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args
