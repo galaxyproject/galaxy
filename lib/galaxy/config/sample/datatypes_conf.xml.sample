@@ -728,7 +728,7 @@
     <datatype extension="fps" type="galaxy.datatypes.molecules:FPS" mimetype="text/html" display_in_upload="true"/>
     <datatype extension="obfs" type="galaxy.datatypes.molecules:OBFS" mimetype="text/html" display_in_upload="true"/>
     <datatype extension="drf" type="galaxy.datatypes.molecules:DRF" display_in_upload="true"/>
-    <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="false"/>
+    <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="true"/>
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="true">
       <display file="icn3d/icn3d_simple.xml"/>
       <converter file="pdb_to_gro.xml" target_datatype="gro"/>
