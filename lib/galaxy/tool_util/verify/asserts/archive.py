@@ -49,7 +49,7 @@ def _list_from_zip(bytes, path):
     return sorted(lst)
 
 
-def assert_has_archive_member(output_bytes, path, verify_assertions_function, children, all="false", n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_archive_member(output_bytes, path, verify_assertions_function, children, all="false", n: Optional[Union[str, int]] = None, delta: Union[str, int] = 0, min: Optional[Union[str, int]] = None, max: Optional[Union[str, int]] = None, negate: bool = False):
     """ Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.
     Currently supported formats: .zip, .tar, .tar.gz."""
