@@ -380,7 +380,6 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         converters = self._get("dataset_collections/" + hdca_list_id + "/suitable_converters")
         expected = [  # This list is subject to change, but it's unlikely we'll be removing converters
             'CONVERTER_bed_to_fli_0',
-            'CONVERTER_interval_to_bed_0',
             'CONVERTER_bed_gff_or_vcf_to_bigwig_0',
             'CONVERTER_bed_to_gff_0',
             'CONVERTER_interval_to_bgzip_0',
