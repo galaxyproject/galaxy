@@ -77,8 +77,8 @@ describe("FormDisplay", () => {
     });
 
     it("parameter replacement", async () => {
-        const textInput = wrapper.find("[id='field-text_name']");
-        const conditionalInput = wrapper.find("[id='field-conditional_section|conditional_leaf']");
+        const textInput = wrapper.find("#text_name");
+        const conditionalInput = wrapper.find("#conditional_section__conditional_leaf");
         expect(textInput.element.value).toEqual("text_value");
         expect(conditionalInput.element.value).toEqual("conditional_leaf_value");
         await wrapper.setProps({
@@ -94,10 +94,10 @@ describe("FormDisplay", () => {
     it("conditional switch", async () => {
         const conditionalBool = wrapper.find("[type='checkbox']");
         await conditionalBool.setChecked(false);
-        const conditionalInputUnchecked = wrapper.findAll("[id='field-conditional_section|conditional_leaf']");
+        const conditionalInputUnchecked = wrapper.findAll("#conditional_section__conditional_leaf");
         expect(conditionalInputUnchecked.length).toEqual(0);
         await conditionalBool.setChecked(true);
-        const conditionalInputChecked = wrapper.findAll("[id='field-conditional_section|conditional_leaf']");
+        const conditionalInputChecked = wrapper.findAll("#conditional_section__conditional_leaf");
         expect(conditionalInputChecked.length).toEqual(1);
         await wrapper.setProps({
             sustainConditionals: true,

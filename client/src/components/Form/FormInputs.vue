@@ -4,7 +4,7 @@
             <div v-if="input.type == 'conditional'">
                 <FormElement
                     v-model="input.test_param.value"
-                    :id="conditionalPrefix(input, input.test_param.name)"
+                    :id="clearId(conditionalPrefix(input, input.test_param.name))"
                     :title="input.test_param.label"
                     :type="input.test_param.type"
                     :help="input.test_param.help"
@@ -60,7 +60,7 @@
             <FormElement
                 v-else
                 v-model="input.value"
-                :id="getPrefix(input.name)"
+                :id="clearId(getPrefix(input.name))"
                 :title="input.label || input.name"
                 :type="input.type"
                 :error="input.error"
@@ -83,7 +83,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import { matchCase } from "components/Form/utilities";
+import { getClearId, matchCase } from "components/Form/utilities";
 
 library.add(faPlus, faTrashAlt);
 
@@ -137,6 +137,9 @@ export default {
         },
     },
     methods: {
+        clearId(id) {
+            return getClearId(id);
+        },
         getPrefix(name, index) {
             if (index !== undefined) {
                 name = `${name}_${index}`;

@@ -1247,16 +1247,16 @@ class NavigatesGalaxy(HasDriver):
     def tool_parameter_div(self, expanded_parameter_id):
         return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
-    def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
+    def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
         edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
         edit_button_element.click()
 
-    def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
+    def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
         if expected_type in ["select", "data", "data_collection"]:
-            div_selector = f"div.ui-form-element[tour_id$='{expanded_parameter_id}']"
+            div_selector = f"div.ui-form-element[id$='form-element-{expanded_parameter_id}']"
             self.select2_set_value(div_selector, value)
         else:
             input_element = div_element.find_element_by_css_selector("input")

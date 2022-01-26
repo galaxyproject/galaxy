@@ -42,13 +42,13 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.submit_login(self.user_email, retries=2)
 
     def add_custom_build(self, build_name, build_key):
-        name_input = self.wait_for_selector('input[tour_id="name"]')
+        name_input = self.wait_for_selector('input[id="name"]')
         name_input.send_keys(build_name)
 
-        key_input = self.wait_for_selector('input[tour_id="id"]')
+        key_input = self.wait_for_selector('input[id="id"]')
         key_input.send_keys(build_key)
 
-        len_type_select = self.wait_for_selector('select[tour_id="type"]')
+        len_type_select = self.wait_for_selector('select[id="type"]')
         len_type_select.click()
 
         option = self.wait_for_sizzle_selector_clickable('option[value="text"]')

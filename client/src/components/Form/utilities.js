@@ -166,9 +166,9 @@ export function validateInputs(index, values) {
  * approach and to cover corner cases.
  * @param{string}   id      - Input identifier e.g. "repeat_0|name"
  */
-export function getElementId(id) {
+export function getClearId(id) {
     if (id) {
-        const clearId = id.replace(/\|/g, "-");
-        return `form-element-${clearId}`;
+        const clearId = id.replace(/\|/g, "__");
+        return `${clearId}`;
     }
 }
