@@ -4857,9 +4857,6 @@ Galaxy, including:
   <xs:complexType name="Actions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-The functionality of the ``actions`` tag should be replaced by 
-[tool provided metadata](https://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata).
-
 The ``actions`` directive allows tools to dynamically take actions related to an
 ``output`` either unconditionally or conditionally based on inputs. These
 actions currently include setting metadata values and the output's data format.
