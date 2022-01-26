@@ -146,6 +146,9 @@ export default {
             this.onChange(true);
         },
         onCloneInputs() {
+            visitInputs(this.inputs, (input) => {
+                input.error = null;
+            });
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
             this.onCreateIndex();
         },
