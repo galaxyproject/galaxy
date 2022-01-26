@@ -13,10 +13,37 @@ describe("FormDisplay", () => {
             id: "input",
             inputs: [
                 {
-                    name: "name",
+                    name: "text_name",
+                    value: "text_value",
+                    help: "text_help",
                     type: "text",
-                    value: "value",
-                    help: "help",
+                },
+                {
+                    type: "conditional",
+                    name: "conditional_section",
+                    test_param: {
+                        name: "conditional_bool",
+                        label: "conditional_bool_label",
+                        type: "boolean",
+                        value: "true",
+                        help: "",
+                    },
+                    cases: [
+                        {
+                            value: "true",
+                            inputs: [
+                                {
+                                    name: "conditional_leaf",
+                                    value: "conditional_leaf_value",
+                                    type: "text",
+                                },
+                            ],
+                        },
+                        {
+                            value: "false",
+                            inputs: [],
+                        },
+                    ],
                 },
             ],
             errors: {},
@@ -39,22 +66,43 @@ describe("FormDisplay", () => {
 
     it("error highlighting", async () => {
         await wrapper.setProps({
-            validationScrollTo: ["name", "error_message"],
+            validationScrollTo: ["text_name", "error_message"],
         });
         const error = wrapper.find(".ui-form-error-text");
         expect(error.text()).toEqual("error_message");
         await wrapper.setProps({
-            errors: { name: "error_message_2" },
+            errors: { text_name: "error_message_2" },
         });
         expect(error.text()).toEqual("error_message_2");
     });
 
     it("parameter replacement", async () => {
-        const input = wrapper.find("[id='field-name']");
-        expect(input.element.value).toEqual("value");
+        const textInput = wrapper.find("[id='field-text_name']");
+        const conditionalInput = wrapper.find("[id='field-conditional_section|conditional_leaf']");
+        expect(textInput.element.value).toEqual("text_value");
+        expect(conditionalInput.element.value).toEqual("conditional_leaf_value");
         await wrapper.setProps({
-            replaceParams: { name: "replaced" },
+            replaceParams: {
+                text_name: "replaced",
+                "conditional_section|conditional_leaf": "conditional_leaf_value_new",
+            },
         });
-        expect(input.element.value).toEqual("replaced");
+        expect(textInput.element.value).toEqual("replaced");
+        expect(conditionalInput.element.value).toEqual("conditional_leaf_value_new");
+    });
+
+    it("conditional switch", async () => {
+        const conditionalBool = wrapper.find("[type='checkbox']");
+        await conditionalBool.setChecked(false);
+        const conditionalInputUnchecked = wrapper.findAll("[id='field-conditional_section|conditional_leaf']");
+        expect(conditionalInputUnchecked.length).toEqual(0);
+        await conditionalBool.setChecked(true);
+        const conditionalInputChecked = wrapper.findAll("[id='field-conditional_section|conditional_leaf']");
+        expect(conditionalInputChecked.length).toEqual(1);
+        await wrapper.setProps({
+            sustainConditionals: true,
+        });
+        const conditionalBoolDisabled = wrapper.findAll("[type='checkbox']");
+        expect(conditionalBoolDisabled.length).toEqual(0);
     });
 });
