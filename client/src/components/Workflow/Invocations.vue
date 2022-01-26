@@ -112,6 +112,7 @@ export default {
         noInvocationsMessage: { type: String, default: "No Workflow Invocations to display" },
         headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true },
+        userId: { type: String, default: null },
     },
     data() {
         const fields = [
@@ -168,6 +169,9 @@ export default {
         provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
+            if (this.userId) {
+                extraParams["user_id"] = this.userId;
+            }
             this.invocationItems = invocationsProvider(ctx, this.setRows, extraParams);
             return this.invocationItems;
         },

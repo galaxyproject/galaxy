@@ -1,7 +1,6 @@
 // Public exports
 export {
     buildHistoryMonitor,
-    createContentMonitor,
     datasetMonitor,
     datasetCollectionMonitor,
     getHistoryMonitor,
