@@ -1303,7 +1303,7 @@ def test_tool_and_macro_xml(lint_ctx):
         tool_xml, _ = load_with_references(tool_path)
 
     tool_source = XmlToolSource(tool_xml)
-    lint_tool_source_with(lint_ctx, tool_source)
+    lint_tool_source_with(lint_ctx, tool_source, silent=True)
 
     asserts = (
         ("Select parameter [select] has multiple options with the same value", "tool.xml", 5, "/tool/inputs/param[1]"),

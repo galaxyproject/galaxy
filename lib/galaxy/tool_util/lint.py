@@ -12,15 +12,36 @@ LEVEL_ERROR = "error"
 
 
 def lint_tool_source(tool_source, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None):
+    """
+    apply all (applicable) linters from the linters submodule
+    and the ones in extramodules
+
+    immediately print linter messages (wrt level) and return if linting failed (wrt fail_level)
+    """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
     lint_context = LintContext(level=level, skip_types=skip_types, object_name=name)
     lint_tool_source_with(lint_context, tool_source, extra_modules)
-
     return not lint_context.failed(fail_level)
 
 
+def lint_context_for_tool_source(tool_source, extra_modules=None, skip_types=None, name=None):
+    """
+    this is the silent variant of lint_tool_source
+    it returns the LintContext from which all linter messages
+    and the status can be obtained
+    """
+    extra_modules = extra_modules or []
+    skip_types = skip_types or []
+    lint_context = LintContext(level="all", skip_types=skip_types, object_name=name)
+    lint_tool_source_with(lint_context, tool_source, extra_modules, silent=True)
+    return lint_context
+
+
 def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None):
+    """
+    silently lint an xml tool
+    """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
     lint_context = LintContext(level=level, skip_types=skip_types, object_name=name)
@@ -29,7 +50,7 @@ def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=Non
     return not lint_context.failed(fail_level)
 
 
-def lint_tool_source_with(lint_context, tool_source, extra_modules=None):
+def lint_tool_source_with(lint_context, tool_source, extra_modules=None, silent=False):
     extra_modules = extra_modules or []
     import galaxy.tool_util.linters
     tool_xml = getattr(tool_source, "xml_tree", None)
@@ -52,15 +73,16 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None):
                         # XML linter and non-XML tool, skip for now
                         continue
                     else:
-                        lint_context.lint(name, value, tool_xml)
+                        lint_context.lint(name, value, tool_xml, silent)
                 else:
-                    lint_context.lint(name, value, tool_source)
+                    lint_context.lint(name, value, tool_source, silent)
+    return lint_context
 
 
 def lint_xml_with(lint_context, tool_xml, extra_modules=None):
     extra_modules = extra_modules or []
     tool_source = get_tool_source(xml_tree=tool_xml)
-    return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
+    lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
 
 
 class LintMessage:
@@ -102,61 +124,66 @@ class LintContext:
         self.skip_types = skip_types or []
         self.level = level
         self.object_name = object_name
-        self.found_errors = False
-        self.found_warns = False
         self.message_list = []
 
-    def lint(self, name, lint_func, lint_target):
+    @property
+    def found_errors(self):
+        return len(self.error_messages) > 0
+
+    @property
+    def found_warns(self):
+        return len(self.warn_messages) > 0
+
+    def lint(self, name, lint_func, lint_target, silent=False):
         name = name.replace("tsts", "tests")[len("lint_"):]
         if name in self.skip_types:
             return
-        self.printed_linter_info = False
-        tmp_message_list = list(self.message_list)
-        self.message_list = []
+
+        if not silent:
+            # this is a relict from the past where the lint context
+            # was reset when called with a new lint_func, as workaround
+            # we safe the message list, apply the lint_func (which then
+            # adds to the message_list) and restore the message list
+            # at the end (+ append the new messages)
+            tmp_message_list = list(self.message_list)
+            self.message_list = []
 
         # call linter
         lint_func(lint_target, self)
-        # TODO: colorful emoji if in click CLI.
-        if self.error_messages:
-            status = "FAIL"
-        elif self.warn_messages:
-            status = "WARNING"
-        else:
-            status = "CHECK"
 
-        def print_linter_info():
-            if self.printed_linter_info:
-                return
-            self.printed_linter_info = True
-            print(f"Applying linter {name}... {status}")
+        if not silent:
+            # TODO: colorful emoji if in click CLI.
+            if self.error_messages:
+                status = "FAIL"
+            elif self.warn_messages:
+                status = "WARNING"
+            else:
+                status = "CHECK"
 
-        for message in self.message_list:
-            if message.level != "error":
-                continue
-            self.found_errors = True
-            print_linter_info()
-            print(f"{message}")
+            def print_linter_info(printed_linter_info):
+                if printed_linter_info:
+                    return True
+                print(f"Applying linter {name}... {status}")
+                return True
 
-        if self.level != LEVEL_ERROR:
-            for message in self.message_list:
-                if message.level != "warning":
-                    continue
-                self.found_warns = True
-                print_linter_info()
+            plf = False
+            for message in self.error_messages:
+                plf = print_linter_info(plf)
                 print(f"{message}")
 
-        if self.level == LEVEL_ALL:
-            for message in self.message_list:
-                if message.level != "info":
-                    continue
-                print_linter_info()
-                print(f"{message}")
-            for message in self.message_list:
-                if message.level != "check":
-                    continue
-                print_linter_info()
-                print(f"{message}")
-        self.message_list = tmp_message_list + self.message_list
+            if self.level != LEVEL_ERROR:
+                for message in self.warn_messages:
+                    plf = print_linter_info(plf)
+                    print(f"{message}")
+
+            if self.level == LEVEL_ALL:
+                for message in self.info_messages:
+                    plf = print_linter_info(plf)
+                    print(f"{message}")
+                for message in self.valid_messages:
+                    plf = print_linter_info(plf)
+                    print(f"{message}")
+            self.message_list = tmp_message_list + self.message_list
 
     @property
     def valid_messages(self):
