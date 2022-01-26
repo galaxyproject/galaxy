@@ -394,21 +394,22 @@ class Bed(Interval):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
-            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
-                line = line.rstrip('\r\n')
-                if line and not line.startswith('#'):
-                    elems = line.split('\t')
-                    if len(elems) > 2:
-                        if len(elems) > 3:
-                            if overwrite or not dataset.metadata.element_is_set('nameCol'):
-                                dataset.metadata.nameCol = 4
-                        if len(elems) < 6:
-                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                dataset.metadata.strandCol = 0
-                        else:
-                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                dataset.metadata.strandCol = 6
-                        break
+            with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+                for i, line in enumerate(in_fh):  # noqa: B007
+                    line = line.rstrip('\r\n')
+                    if line and not line.startswith('#'):
+                        elems = line.split('\t')
+                        if len(elems) > 2:
+                            if len(elems) > 3:
+                                if overwrite or not dataset.metadata.element_is_set('nameCol'):
+                                    dataset.metadata.nameCol = 4
+                            if len(elems) < 6:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 0
+                            else:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 6
+                            break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset, **kwd):
