@@ -35,11 +35,11 @@ class Ply:
     subtype = ''
     # Add metadata elements.
     MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="vertex", default=None, desc="Vertex",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="face", default=None, desc="Face",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="other_elements", default=[], desc="Other elements",
                     readonly=True, optional=True, visible=True, no_value=[])
 
@@ -176,11 +176,11 @@ class Vtk:
     subtype = ''
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="dataset_type", default=None, desc="Dataset type",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # STRUCTURED_GRID data_type.
     MetadataElement(name="dimensions", default=[], desc="Dimensions",
@@ -192,19 +192,19 @@ class Vtk:
 
     # POLYDATA data_type (Points element is also a component of UNSTRUCTURED_GRID..
     MetadataElement(name="points", default=None, desc="Points",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="vertices", default=None, desc="Vertices",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="lines", default=None, desc="Lines",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="polygons", default=None, desc="Polygons",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="triangle_strips", default=None, desc="Triangle strips",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # UNSTRUCTURED_GRID data_type.
     MetadataElement(name="cells", default=None, desc="Cells",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # Additional elements not categorized by data_type.
     MetadataElement(name="field_names", default=[], desc="Field names",
@@ -506,9 +506,9 @@ class NeperTess(data.Text):
         number_of_cells
     """
     file_ext = "neper.tess"
-    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True)
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -569,12 +569,12 @@ class NeperTesr(Binary):
         number_of_cells
     """
     file_ext = "neper.tesr"
-    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="size", default=[], desc="size", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="voxsize", default=[], desc="voxsize", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="origin", default=[], desc="origin", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
+    MetadataElement(name="size", default=[], desc="size", readonly=True, visible=True)
+    MetadataElement(name="voxsize", default=[], desc="voxsize", readonly=True, visible=True)
+    MetadataElement(name="origin", default=[], desc="origin", readonly=True, visible=True)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True)
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -639,7 +639,7 @@ class NeperPoints(data.Text):
     Neper position format has 1 - 3 floats per line separated by white space.
     """
     file_ext = "neper.points"
-    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
@@ -708,8 +708,8 @@ class NeperMultiScaleCell(data.Text):
 class GmshMsh(Binary):
     """Gmsh Mesh File"""
     file_ext = "gmsh.msh"
-    MetadataElement(name="version", default=None, desc="version", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="version", default=None, desc="version", readonly=True, visible=True)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)

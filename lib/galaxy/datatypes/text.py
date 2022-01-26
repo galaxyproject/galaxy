@@ -118,7 +118,7 @@ class ExpressionJson(Json):
     """ Represents the non-data input or output to a tool or workflow.
     """
     file_ext = "json"
-    MetadataElement(name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -221,7 +221,7 @@ class Biom1(Json):
     MetadataElement(name="table_format_url", default="", desc="table_format_url", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value="")
     MetadataElement(name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
     MetadataElement(name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None)
+    MetadataElement(name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True)
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
     MetadataElement(name="table_column_metadata_headers", default=[], desc="table_column_metadata_headers", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
 
@@ -568,8 +568,8 @@ class SnpEffDb(Text):
     """Class describing a SnpEff genome build"""
     edam_format = "format_3624"
     file_ext = "snpeffdb"
-    MetadataElement(name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="snpeff_version", default="SnpEff4.0", desc="SnpEff Version", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="genome_version", default=None, desc="Genome Version", readonly=True, visible=True)
+    MetadataElement(name="snpeff_version", default="SnpEff4.0", desc="SnpEff Version", readonly=True, visible=True)
     MetadataElement(name="regulation", default=[], desc="Regulation Names", readonly=True, visible=True, no_value=[], optional=True)
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[], optional=True)
 
@@ -654,8 +654,8 @@ class SnpSiftDbNSFP(Text):
     composite_type = 'auto_primary_file'
 
     MetadataElement(name='reference_name', default='dbSNFP', desc='Reference Name', readonly=True, visible=True, set_in_upload=True, no_value='dbSNFP')
-    MetadataElement(name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True, no_value=None)
-    MetadataElement(name="index", default=None, desc="Tabix Index File", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="bgzip", default=None, desc="dbNSFP bgzip", readonly=True, visible=True)
+    MetadataElement(name="index", default=None, desc="Tabix Index File", readonly=True, visible=True)
     MetadataElement(name="annotation", default=[], desc="Annotation Names", readonly=True, visible=True, no_value=[])
 
     def __init__(self, **kwd):

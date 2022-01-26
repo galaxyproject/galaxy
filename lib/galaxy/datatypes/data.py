@@ -154,7 +154,7 @@ class Data(metaclass=DataMeta):
     metadata_spec: metadata.MetadataSpecCollection
 
     # Add metadata elements
-    MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?")
+    MetadataElement(name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, optional=True, no_value="?")
     # Stores the set of display applications, and viewing methods, supported by this datatype
     supported_display_apps: Dict[str, Any] = {}
     # If False, the peek is regenerated whenever a dataset of this type is copied
@@ -227,21 +227,24 @@ class Data(metaclass=DataMeta):
 
     def missing_meta(self, dataset, check=None, skip=None):
         """
-        Checks for empty metadata values, Returns True if non-optional metadata is missing
+        Checks for empty metadata values.
+        Returns False if no non-optional metadata is missing and the missing metadata key otherwise.
         Specifying a list of 'check' values will only check those names provided; when used, optionality is ignored
-        Specifying a list of 'skip' items will return True even when a named metadata value is missing
+        Specifying a list of 'skip' items will return True even when a named metadata value is missing; when used, optionality is ignored
         """
         if skip is None:
             skip = []
         if check:
-            to_check = ((to_check, dataset.metadata.get(to_check)) for to_check in check)
+            to_check = check
         else:
-            to_check = dataset.metadata.items()
-        for key, value in to_check:
-            if key in skip or (not check and dataset.metadata.spec[key].get("optional")):
+            to_check = dataset.metadata.keys()
+        for key in to_check:
+            if key in skip:
+                continue
+            if not check and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
                 continue  # we skip check for optional and nonrequested values here
-            if not value:
-                return True
+            if not dataset.metadata.element_is_set(key):
+                return key
         return False
 
     def set_max_optional_metadata_filesize(self, max_value):

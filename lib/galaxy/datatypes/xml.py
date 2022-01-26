@@ -112,15 +112,15 @@ class Dzi(GenericXml):
 
     # General elements.
     MetadataElement(name="base_name", desc="Base name for this dataset", default='DeepZoomImage', readonly=True, set_in_upload=True)
-    MetadataElement(name="format", desc="File format of the tiles", default=None, readonly=True, visible=True, no_value=None)
-    MetadataElement(name="tile_size", desc="Size of tiles", default=None, readonly=True, visible=True, no_value=None)
+    MetadataElement(name="format", desc="File format of the tiles", default=None, readonly=True, visible=True)
+    MetadataElement(name="tile_size", desc="Size of tiles", default=None, readonly=True, visible=True)
     # Collection elements.
-    MetadataElement(name="max_level", desc="Max pyramid level", default=None, readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="quality", desc="Quality", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="max_level", desc="Max pyramid level", default=None, readonly=True, optional=True, visible=True)
+    MetadataElement(name="quality", desc="Quality", default=None, readonly=True, optional=True, visible=True)
     # Image elements.
-    MetadataElement(name="height", desc="Size height", default=None, readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="overlap", desc="Overlap of all four sides of tiles", default=None, readonly=True, optional=True, visible=True, no_value=None)
-    MetadataElement(name="width", desc="Size width", default=None, readonly=True, optional=True, visible=True, no_value=None)
+    MetadataElement(name="height", desc="Size height", default=None, readonly=True, optional=True, visible=True)
+    MetadataElement(name="overlap", desc="Overlap of all four sides of tiles", default=None, readonly=True, optional=True, visible=True)
+    MetadataElement(name="width", desc="Size width", default=None, readonly=True, optional=True, visible=True)
 
     file_ext = 'dzi'
 

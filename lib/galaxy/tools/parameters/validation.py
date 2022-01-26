@@ -355,7 +355,7 @@ class DatasetOkValidator(Validator):
     >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="dataset_ok_validator"/>
     ... </param>
     ... '''))
@@ -366,7 +366,7 @@ class DatasetOkValidator(Validator):
     ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="dataset_ok_validator" negate="true"/>
     ... </param>
     ... '''))
@@ -512,7 +512,7 @@ class MetadataValidator(Validator):
     Validator that checks for missing metadata
 
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
+    >>> from galaxy.model import Dataset, History, HistoryDatasetAssociation, set_datatypes_registry
     >>> from galaxy.model.mapping import init
     >>> from galaxy.util import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
@@ -522,62 +522,75 @@ class MetadataValidator(Validator):
     >>> sa_session.add(hist)
     >>> sa_session.flush()
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
+    >>> fname = get_test_fname('1.bed')
+    >>> bedds = Dataset(external_filename=fname)
+    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='bed', create_dataset=True, sa_session=sa_session, dataset=bedds))
     >>> hda.set_dataset_state(model.Dataset.states.OK)
-    >>> # TODO I did not find a way to remove a metadata from the hda, therefore I used two parameters, ideas?
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="metadata" check="dbkey" skip="absent_metadata"/>
-    ... </param>
-    ... '''))
-    >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="metadata" check="absent_metadata" skip="dbkey"/>
-    ... </param>
-    ... '''))
+    >>> hda.set_meta()
+    >>> hda.metadata.strandCol = hda.metadata.spec["strandCol"].no_value
+    >>> param_xml = '''<param name="blah" type="data">
+    ...     <validator type="metadata" check="{check}" skip="{skip}"/>
+    ... </param>'''
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="nameCol", skip="")))
     >>> t = p.validate(hda)
-    >>> t = p2.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="metadata" check="dbkey" skip="absent_metadata" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> p2 = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="metadata" check="absent_metadata" skip="dbkey" negate="true"/>
-    ... </param>
-    ... '''))
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="strandCol", skip="")))
     >>> t = p.validate(hda)
     Traceback (most recent call last):
         ...
-    ValueError: Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> t = p2.validate(hda)
+    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> param_xml_negate = '''<param name="blah" type="data">
+    ...     <validator type="metadata" check="{check}" skip="{skip}" negate="true"/>
+    ... </param>'''
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="strandCol", skip="")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="nameCol", skip="")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
+    >>> t = p.validate(hda)
+    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
+    >>> t = p.validate(hda)
+    Traceback (most recent call last):
+        ...
+    ValueError: At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
     """
     requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
         message = elem.get('message', None)
-        if not message:
-            # TODO message not useful for negate="true" .. but maybe OK since the validator itself is not useful then
-            message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
         return cls(message=message,
                    check=elem.get('check', ""),
                    skip=elem.get('skip', ""),
                    negate=elem.get('negate', 'false'))
 
     def __init__(self, message=None, check="", skip="", negate='false'):
+        if not message:
+            if not util.asbool(negate):
+                message = "Metadata '%s' missing, click the pencil icon in the history item to edit / save the metadata attributes"
+            else:
+                if check != '':
+                    message = f"At least one of the checked metadata '{check}' is set, click the pencil icon in the history item to edit / save the metadata attributes"
+                elif skip != '':
+                    message = f"At least one of the non skipped metadata '{skip}' is set, click the pencil icon in the history item to edit / save the metadata attributes"
         super().__init__(message, negate)
-        self.check = check.split(",")
-        self.skip = skip.split(",")
+        self.check = check.split(",") if check else None
+        self.skip = skip.split(",") if skip else None
 
     def validate(self, value, trans=None):
         if value:
             # TODO why this validator checks for isinstance(value, model.DatasetInstance)
-            super().validate(isinstance(value, model.DatasetInstance) and not value.missing_meta(check=self.check, skip=self.skip))
+            missing = value.missing_meta(check=self.check, skip=self.skip)
+            super().validate(isinstance(value, model.DatasetInstance) and not missing, value_to_show=missing)
 
 
 class UnspecifiedBuildValidator(Validator):
@@ -602,7 +615,7 @@ class UnspecifiedBuildValidator(Validator):
     >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="unspecified_build"/>
     ... </param>
     ... '''))
@@ -613,7 +626,7 @@ class UnspecifiedBuildValidator(Validator):
     ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
     >>>
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
+    ... <param name="blah" type="data" no_validation="true">
     ...     <validator type="unspecified_build" negate="true"/>
     ... </param>
     ... '''))
