@@ -13,7 +13,7 @@ def _assert_h5py():
         raise Exception(IMPORT_MISSING_MESSAGE)
 
 
-def assert_has_h5_attribute(output_bytes, key, value):
+def assert_has_h5_attribute(output_bytes: bytes, key: str, value: str):
     """Asserts the specified HDF5 output has a given key-value pair as HDF5
     attribute"""
     _assert_h5py()
@@ -24,7 +24,7 @@ def assert_has_h5_attribute(output_bytes, key, value):
 
 
 # TODO the function actually queries groups. so the function and argument name are misleading
-def assert_has_h5_keys(output_bytes, keys):
+def assert_has_h5_keys(output_bytes: bytes, keys: str):
     """ Asserts the specified HDF5 output has the given keys."""
     _assert_h5py()
     keys = [k.strip() for k in keys.strip().split(',')]

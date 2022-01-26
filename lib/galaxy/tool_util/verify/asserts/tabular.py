@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from ._util import _assert_number
 
@@ -17,7 +18,14 @@ def get_first_line(output, comment):
         return match.group(1)
 
 
-def assert_has_n_columns(output, n: int = None, delta: int = 0, min: int = None, max: int = None, sep='\t', comment="", negate: bool = False):
+def assert_has_n_columns(output: str,
+                         n: Optional[int] = None,
+                         delta: int = 0,
+                         min: Optional[int] = None,
+                         max: Optional[int] = None,
+                         sep: str = '\t',
+                         comment: str = "",
+                         negate: bool = False):
     """ Asserts the tabular output contains n columns. The optional
     sep argument specifies the column seperator used to determine the
     number of columns. The optional comment argument specifies

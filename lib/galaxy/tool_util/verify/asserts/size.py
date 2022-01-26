@@ -1,7 +1,14 @@
+from typing import Optional
+
 from ._util import _assert_number
 
 
-def assert_has_size(output_bytes, value: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_size(output_bytes: bytes,
+                    value: Optional[int] = None,
+                    delta: int = 0,
+                    min: Optional[int] = None,
+                    max: Optional[int] = None,
+                    negate: bool = False):
     """
     Asserts the specified output has a size of the specified value,
     allowing for absolute (delta) and relative (delta_frac) difference.

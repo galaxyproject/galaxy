@@ -1,8 +1,10 @@
 import logging
 import sys
 from inspect import getfullargspec, getmembers
+from typing import get_args, get_origin, get_type_hints
 
-from galaxy.util import unicodify
+from galaxy.util import asbool, unicodify
+from galaxy.util.bytesize import parse_bytesize
 
 log = logging.getLogger(__name__)
 
@@ -44,10 +46,20 @@ def verify_assertion(data, assertion_description):
         raise AssertionError(errmsg)
 
     assert_function_args = getfullargspec(assert_function).args
+    assert_function_annotations = getfullargspec(assert_function).annotations
     args = {}
     for attribute, value in assertion_description["attributes"].items():
         if attribute in assert_function_args:
-            args[attribute] = value
+            # in python 3.10 issubclass(xyz, assert_function_annotations[attribute]) should work
+            types = assert_function_annotations[attribute]
+            if get_origin(assert_function_annotations[attribute]) is not None:
+                types = get_args(assert_function_annotations[attribute])
+            if issubclass(int, types):
+                args[attribute] = parse_bytesize(value)
+            elif issubclass(bool, types):
+                args[attribute] = asbool(value)
+            else:
+                args[attribute] = value
 
     # Three special arguments automatically populated independently of
     # tool XML attributes. output is passed in as the contents of the

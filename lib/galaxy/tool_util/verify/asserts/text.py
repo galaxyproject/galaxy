@@ -1,9 +1,16 @@
 import re
+from typing import Optional
 
 from ._util import _assert_number, _assert_presence_number
 
 
-def assert_has_text(output, text, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_text(output: str,
+                    text: str,
+                    n: Optional[int] = None,
+                    delta: int = 0,
+                    min: Optional[int] = None,
+                    max: Optional[int] = None,
+                    negate: bool = False):
     """ Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
     optionally specified by the argument n"""
@@ -16,14 +23,20 @@ def assert_has_text(output, text, n: str = None, delta: str = 0, min: str = None
         "{expected} that the number of occurences of '{text}' in output is in [{min}:{max}] ('{output}')")
 
 
-def assert_not_has_text(output, text):
+def assert_not_has_text(output: str, text: str):
     """ Asserts specified output does not contain the substring
     specified by the argument text"""
     assert output is not None, "Checking not_has_text assertion on empty output (None)"
     assert output.find(text) < 0, f"Output file contains unexpected text '{text}'"
 
 
-def assert_has_line(output, line, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_line(output: str,
+                    line: str,
+                    n: Optional[int] = None,
+                    delta: int = 0,
+                    min: Optional[int] = None,
+                    max: Optional[int] = None,
+                    negate: bool = False):
     """ Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
     specified by the argument n"""
@@ -36,7 +49,12 @@ def assert_has_line(output, line, n: str = None, delta: str = 0, min: str = None
         "{expected} that the number of lines '{text}' in output is in [{min}:{max}] ('{output}')")
 
 
-def assert_has_n_lines(output, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_n_lines(output: str,
+                       n: Optional[int] = None,
+                       delta: int = 0,
+                       min: Optional[int] = None,
+                       max: Optional[int] = None,
+                       negate: bool = False):
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
     or relative differebce in the number of lines"""
@@ -47,7 +65,12 @@ def assert_has_n_lines(output, n: str = None, delta: str = 0, min: str = None, m
         "{expected} the number of line to be in [{min}:{max}]")
 
 
-def assert_has_text_matching(output, expression, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_text_matching(output: str, expression: str,
+                             n: Optional[int] = None,
+                             delta: int = 0,
+                             min: Optional[int] = None,
+                             max: Optional[int] = None,
+                             negate: bool = False):
     """ Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
     If n is given the assertion checks for exacly n (nonoverlapping)
@@ -61,7 +84,12 @@ def assert_has_text_matching(output, expression, n: str = None, delta: str = 0, 
         "{expected} that the number of (non-overlapping) matches for '{text}' in output is in [{min}:{max}] ('{output}')")
 
 
-def assert_has_line_matching(output, expression, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
+def assert_has_line_matching(output: str, expression: str,
+                             n: Optional[int] = None,
+                             delta: int = 0,
+                             min: Optional[int] = None,
+                             max: Optional[int] = None,
+                             negate: bool = False):
     """ Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
     the assertion checks for exactly n occurences."""

@@ -579,7 +579,7 @@ TESTS = [
     # test has_size .. bytes suffix .. negative
     (
         SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1Mi", delta="10k"), TEXT_DATA_HAS_TEXT * 100,
-        lambda x: 'Expected file size of 1Mi+-10k found 1000' in x
+        lambda x: 'Expected file size of 1048576+-10000 found 1000' in x,
     ),
     # test is_valid_xml
     (
@@ -1009,4 +1009,4 @@ def test_assertions(assertion_xml, data, assert_func):
         assert_list = e.args
     else:
         assert_list = ()
-    assert assert_func(assert_list), assert_list
+    assert assert_func(assert_list), f"{assert_list=}"

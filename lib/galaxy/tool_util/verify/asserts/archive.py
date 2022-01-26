@@ -3,8 +3,9 @@ import re
 import tarfile
 import tempfile
 import zipfile
+from typing import Callable, List, Optional
 
-from galaxy.util import asbool
+from galaxy.util import etree
 from ._util import _assert_presence_number
 
 
@@ -49,11 +50,19 @@ def _list_from_zip(bytes, path):
     return sorted(lst)
 
 
-def assert_has_archive_member(output_bytes, path, verify_assertions_function, children, all="false", n: Optional[Union[str, int]] = None, delta: Union[str, int] = 0, min: Optional[Union[str, int]] = None, max: Optional[Union[str, int]] = None, negate: bool = False):
+def assert_has_archive_member(output_bytes: bytes,
+                              path: str,
+                              verify_assertions_function: Callable,
+                              children: List[etree.Element],
+                              all: bool = "false",
+                              n: Optional[int] = None,
+                              delta: int = 0,
+                              min: Optional[int] = None,
+                              max: Optional[int] = None,
+                              negate: bool = False):
     """ Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.
     Currently supported formats: .zip, .tar, .tar.gz."""
-    all = asbool(all)
     extract_foo = None
     # from python 3.9 is_tarfile supports file like objects then we do not need
     # the tempfile detour but can use io.BytesIO(output_bytes)
