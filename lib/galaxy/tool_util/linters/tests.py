@@ -1,12 +1,13 @@
 """This module contains a linting functions for tool tests."""
 from inspect import Parameter, signature
 
-from ._util import is_datasource, node_props
+from ._util import is_datasource, node_props_factory
 from ..verify import asserts
 
 
 # Misspelled so as not be picked up by nosetests.
 def lint_tsts(tool_xml, lint_ctx):
+    node_props = node_props_factory(tool_xml)
     # determine node to report for general problems with tests
     general_node = tool_xml.find("./tests")
     if general_node is None:
@@ -16,9 +17,9 @@ def lint_tsts(tool_xml, lint_ctx):
     datasource = is_datasource(tool_xml)
     if not tests:
         if not datasource:
-            lint_ctx.warn("No tests found, most tools should define test cases.", **node_props(general_node, tool_xml))
+            lint_ctx.warn("No tests found, most tools should define test cases.", **node_props(general_node))
         elif datasource:
-            lint_ctx.info("No tests found, that should be OK for data_sources.", **node_props(general_node, tool_xml))
+            lint_ctx.info("No tests found, that should be OK for data_sources.", **node_props(general_node))
         return
 
     num_valid_tests = 0
@@ -37,14 +38,14 @@ def lint_tsts(tool_xml, lint_ctx):
             if len(assertions) > 1:
                 lint_ctx.error("Test {test_idx}: More than one {ta} found. Only the first is considered.")
             has_test = True
-            _check_asserts(test_idx, assertions, lint_ctx)
-        _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
+            _check_asserts(test_idx, assertions, lint_ctx, node_props)
+        _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx, node_props)
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):
             name = param.attrib.get("name", None)
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", **node_props(param, tool_xml))
+                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", **node_props(param))
                 continue
             name = name.split("|")[-1]
             xpaths = [f"@name='{name}'",
@@ -62,7 +63,7 @@ def lint_tsts(tool_xml, lint_ctx):
                     found = True
                     break
             if not found:
-                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", **node_props(param, tool_xml))
+                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", **node_props(param))
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
@@ -74,28 +75,28 @@ def lint_tsts(tool_xml, lint_ctx):
             else:
                 valid_names = output_collection_names
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", **node_props(output, tool_xml))
+                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", **node_props(output))
             else:
                 if name not in valid_names:
-                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", **node_props(output, tool_xml))
+                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", **node_props(output))
 
         if "expect_failure" in test.attrib and found_output_test:
-            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", **node_props(test, tool_xml))
+            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", **node_props(test))
             continue
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", **node_props(test, tool_xml))
+            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", **node_props(test))
         else:
             num_valid_tests += 1
 
     if num_valid_tests or datasource:
-        lint_ctx.valid(f"{num_valid_tests} test(s) found.", **node_props(general_node, tool_xml))
+        lint_ctx.valid(f"{num_valid_tests} test(s) found.", **node_props(general_node))
     else:
-        lint_ctx.warn("No valid test(s) found.", **node_props(general_node, tool_xml))
+        lint_ctx.warn("No valid test(s) found.", **node_props(general_node))
 
 
-def _check_asserts(test_idx, assertions, lint_ctx):
+def _check_asserts(test_idx, assertions, lint_ctx, node_props):
     """
     assertions is a list of assert_contents, assert_stdout, assert_stderr, assert_command
     in practice only for the first case the list may be longer than one
@@ -106,32 +107,34 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 continue
             assert_function_name = "assert_" + a.tag
             if assert_function_name not in asserts.assertion_functions:
-                lint_ctx.error(f"Test {test_idx}: unknown assertion {a.tag}")
+                lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", **node_props(a))
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
             # check type of the attributes (int, float ...)
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
-                    lint_ctx.error(f"Test {test_idx}: unknown attribute {attrib} for {a.tag}")
+                    lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", **node_props(a))
                     continue
                 if assert_function_sig.parameters[attrib].annotation is not Parameter.empty:
                     try:
                         assert_function_sig.parameters[attrib].annotation(a.attrib[attrib])
                     except ValueError:
-                        lint_ctx.error(f"Test {test_idx}: attribute {attrib} for {a.tag} needs to be {assert_function_sig.parameters[attrib].annotation.__name__} got {a.attrib[attrib]}")
+                        lint_ctx.error(
+                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{assert_function_sig.parameters[attrib].annotation.__name__}' got '{a.attrib[attrib]}'",
+                            **node_props(a))
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:
                     continue
                 if assert_function_sig.parameters[p].default is Parameter.empty and p not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: missing attribute {p} for {a.tag}")
+                    lint_ctx.error(f"Test {test_idx}: missing attribute '{p}' for '{a.tag}'", **node_props(a))
             # has_n_lines, has_n_columns, and has_size need to specify n/value, min, or max
             if a.tag in ["has_n_lines", "has_n_columns"]:
                 if "n" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", **node_props(a))
             if a.tag == "has_size":
                 if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", **node_props(a))
 
 
 def _collect_output_names(tool_xml):

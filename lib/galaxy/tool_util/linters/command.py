@@ -3,26 +3,27 @@
 A command description describes how to build the command-line to execute
 from supplied inputs.
 """
-from ._util import node_props
+from ._util import node_props_factory
 
 
 def lint_command(tool_xml, lint_ctx):
     """Ensure tool contains exactly one command and check attributes."""
     root = tool_xml.getroot()
+    node_props = node_props_factory(tool_xml)
     commands = root.findall("command")
     if len(commands) > 1:
-        lint_ctx.error("More than one command tag found, behavior undefined.", **node_props(commands[1], tool_xml))
+        lint_ctx.error("More than one command tag found, behavior undefined.", **node_props(commands[1]))
         return
 
     if len(commands) == 0:
-        lint_ctx.error("No command tag found, must specify a command template to execute.", **node_props(root, tool_xml))
+        lint_ctx.error("No command tag found, must specify a command template to execute.", **node_props(root))
         return
 
     command = get_command(tool_xml)
     if command.text is None:
-        lint_ctx.error("Command is empty.", **node_props(root, tool_xml))
+        lint_ctx.error("Command is empty.", **node_props(root))
     elif "TODO" in command.text:
-        lint_ctx.warn("Command template contains TODO text.", **node_props(command, tool_xml))
+        lint_ctx.warn("Command template contains TODO text.", **node_props(command))
 
     command_attrib = command.attrib
     interpreter_type = None
@@ -32,14 +33,14 @@ def lint_command(tool_xml, lint_ctx):
         elif key == "detect_errors":
             detect_errors = value
             if detect_errors not in ["default", "exit_code", "aggressive"]:
-                lint_ctx.warn(f"Unknown detect_errors attribute [{detect_errors}]", **node_props(command, tool_xml))
+                lint_ctx.warn(f"Unknown detect_errors attribute [{detect_errors}]", **node_props(command))
 
     interpreter_info = ""
     if interpreter_type:
         interpreter_info = f" with interpreter of type [{interpreter_type}]"
     if interpreter_type:
-        lint_ctx.warn("Command uses deprecated 'interpreter' attribute.", **node_props(command, tool_xml))
-    lint_ctx.info(f"Tool contains a command{interpreter_info}.", **node_props(command, tool_xml))
+        lint_ctx.warn("Command uses deprecated 'interpreter' attribute.", **node_props(command))
+    lint_ctx.info(f"Tool contains a command{interpreter_info}.", **node_props(command))
 
 
 def get_command(tool_xml):
