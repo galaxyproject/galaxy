@@ -16,6 +16,7 @@ from galaxy.security.validate_user_input import (
 from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
+from tool_shed.webapp.framework.decorators import require_login
 
 log = logging.getLogger(__name__)
 
@@ -282,7 +283,7 @@ class User(BaseUser):
                                    status=status)
 
     @web.expose
-    @web.require_login()
+    @require_login()
     def api_keys(self, trans, cntrller, **kwd):
         params = util.Params(kwd)
         message = escape(util.restore_text(params.get('message', '')))
@@ -299,7 +300,7 @@ class User(BaseUser):
 
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
-    @web.require_login("to manage the public name")
+    @require_login("to manage the public name")
     def edit_username(self, trans, cntrller, **kwd):
         params = util.Params(kwd)
         is_admin = cntrller == 'admin' and trans.user_is_admin
