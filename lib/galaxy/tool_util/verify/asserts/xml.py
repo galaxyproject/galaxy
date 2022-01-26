@@ -27,7 +27,7 @@ def assert_has_element_with_path(output, path, negate: bool = False):
     assert_xml_element(output, path, negate=negate)
 
 
-def assert_has_n_elements_with_path(output, path, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False):
+def assert_has_n_elements_with_path(output, path, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
     """ Asserts the specified output has exactly n elements matching the
     path specified."""
     assert_xml_element(output, path, n=n, delta=delta, min=min, max=max, negate=negate)
@@ -65,7 +65,7 @@ def assert_element_text(output, path, verify_assertions_function, children, nega
     assert_xml_element(output, path, verify_assertions_function, children, negate=negate)
 
 
-def assert_xml_element(output, path, verify_assertions_function=None, children=None, attribute=None, all=False, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False):
+def assert_xml_element(output, path, verify_assertions_function=None, children=None, attribute=None, all=False, n: str = None, delta: str = 0, min: str = None, max: str = None, negate: bool = False):
     """
     Check if path occurs in the xml. If n and delta or min and max are given
     also the number of occurences is checked.
