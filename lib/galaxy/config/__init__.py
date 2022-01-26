@@ -1353,7 +1353,7 @@ class ConfiguresGalaxyMixin:
         from galaxy.datatypes import registry
         # Create an empty datatypes registry.
         self.datatypes_registry = registry.Registry(self.config)
-        if installed_repository_manager:
+        if installed_repository_manager and self.config.load_tool_shed_datatypes:
             # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
             # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
             # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
