@@ -157,20 +157,18 @@ class TagHandler:
         return False
 
     def apply_item_tag(self, user, item, name, value=None, flush=True):
-        # Use lowercase name for searching/creating tag.
         if name is None:
             return
-        lc_name = name.lower()
         # Get or create item-tag association.
-        item_tag_assoc = self._get_item_tag_assoc(user, item, lc_name)
+        item_tag_assoc = self._get_item_tag_assoc(user, item, name)
         # If the association does not exist, or if it has a different value, add another.
         # We do allow multiple associations with different values.
         if not item_tag_assoc or (item_tag_assoc and item_tag_assoc.value != value):
             # Create item-tag association.
             # Create tag; if None, skip the tag (and log error).
-            tag = self._get_or_create_tag(lc_name)
+            tag = self._get_or_create_tag(name)
             if not tag:
-                log.warning(f"Failed to create tag with name {lc_name}")
+                log.warning(f"Failed to create tag with name {name}")
                 return
             # Create tag association based on item class.
             item_tag_assoc_class = self.get_tag_assoc_class(item.__class__)
@@ -180,12 +178,9 @@ class TagHandler:
             item_tag_assoc.tag = tag
             item_tag_assoc.user = user
         # Apply attributes to item-tag association. Strip whitespace from user name and tag.
-        lc_value = None
-        if value:
-            lc_value = value.lower()
         item_tag_assoc.user_tname = name
         item_tag_assoc.user_value = value
-        item_tag_assoc.value = lc_value
+        item_tag_assoc.value = value
         if flush:
             self.sa_session.flush()
         return item_tag_assoc
@@ -219,7 +214,7 @@ class TagHandler:
     def get_tag_by_name(self, tag_name):
         """Get a Tag object from a tag name (string)."""
         if tag_name:
-            return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name.lower()).first()
+            return self.sa_session.query(galaxy.model.Tag).filter_by(name=tag_name).first()
         return None
 
     def _create_tag(self, tag_str: str):
