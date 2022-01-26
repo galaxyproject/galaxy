@@ -433,6 +433,7 @@
       <converter file="vcf_to_vcf_bgzip_converter.xml" target_datatype="vcf_bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      <converter file="uncompressed_to_gz.xml" target_datatype="vcf_bgzip"/>
       <display file="ucsc/vcf.xml"/>
       <display file="igv/vcf.xml"/>
       <display file="rviewer/vcf.xml" inherit="true"/>
