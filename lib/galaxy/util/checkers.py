@@ -21,13 +21,17 @@ from galaxy.util.image_util import image_type
 
 HTML_CHECK_LINES = 100
 CHUNK_SIZE = 2 ** 15  # 32Kb
-HTML_REGEXPS = (
-    re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I),
-    re.compile(r"<IFRAME[^>]*>", re.I),
-    re.compile(r"<FRAMESET[^>]*>", re.I),
-    re.compile(r"<META[\W][^>]*>", re.I),
-    re.compile(r"<SCRIPT[^>]*>", re.I),
-)
+HTML_REGEXPS = {
+    "link": re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I),
+    "iframe": re.compile(r"<IFRAME[^>]*>", re.I),
+    "frameset": re.compile(r"<FRAMESET[^>]*>", re.I),
+    "meta": re.compile(r"<META[\W][^>]*>", re.I),
+    "script": re.compile(r"<SCRIPT[^>]*>", re.I),
+}
+
+HTML_ALLOWLIST = {
+    "meta": re.compile(r'<meta name="qrichtext" content="1"\s*/>', re.I),
+}
 
 
 class CompressionChecker(Protocol):
@@ -51,8 +55,15 @@ def check_html(name, file_path: bool = True) -> bool:
             line = temp.readline(CHUNK_SIZE)
             if not line:
                 break
-            if any(regexp.search(line) for regexp in HTML_REGEXPS):
-                return True
+            for tag, regexp in HTML_REGEXPS.items():
+                if regexp.search(line):
+                    # The SBML format is an XML dialect that contains one specific meta-element.
+                    # We skip this here.
+                    for allow_tag, allow_regex in HTML_ALLOWLIST.items():
+                        if tag == allow_tag and allow_regex.search(line):
+                            continue
+                        else:
+                            return True
     except UnicodeDecodeError:
         return False
     finally:
