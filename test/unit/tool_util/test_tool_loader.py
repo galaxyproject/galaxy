@@ -1,4 +1,5 @@
 import os
+import re
 from shutil import rmtree
 from tempfile import mkdtemp
 
@@ -638,12 +639,15 @@ def test_loader_specify_nested_macro_by_token():
 ''', name="external.xml")
 
         xml = tool_dir.load()
-        assert xml_to_string(xml, pretty=True) == '''<?xml version="1.0" ?>
+        # test with re because loading from external macros
+        # adds a xml:base property (containing the source path)
+        # to the node which is printed
+        assert re.match(r"""<\?xml version="1\.0" \?>
 <tool>
     <macros/>
-    <A/>
-    <B/>
-</tool>'''
+    <A xml:base=".*/external.xml"/>
+    <B xml:base=".*/external.xml"/>
+</tool>""", xml_to_string(xml, pretty=True), re.MULTILINE)
 
 
 def test_loader_circular_macros():
