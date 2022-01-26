@@ -240,6 +240,7 @@ class Meryldb(CompressedArchive):
         return False
 
 
+@build_sniff_from_prefix
 class Bref3(Binary):
     """Bref3 format is a binary format for storing phased, non-missing genotypes for a list of samples."""
 
@@ -874,7 +875,7 @@ class H5(Binary):
     Class describing an HDF5 file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.mz5')
+    >>> fname = get_test_fname('test.h5')
     >>> H5().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')
@@ -921,7 +922,7 @@ class Loom(H5):
     >>> fname = get_test_fname('test.loom')
     >>> Loom().sniff(fname)
     True
-    >>> fname = get_test_fname('test.mz5')
+    >>> fname = get_test_fname('test.h5')
     >>> Loom().sniff(fname)
     False
     """
@@ -1024,7 +1025,7 @@ class Anndata(H5):
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
     True
-    >>> Anndata().sniff(get_test_fname('test.mz5'))
+    >>> Anndata().sniff(get_test_fname('test.h5'))
     False
     >>> Anndata().sniff(get_test_fname('import.loom.krumsiek11.h5ad'))
     True
@@ -1408,7 +1409,7 @@ class Biom2(H5):
         >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
         >>> Biom2().sniff(fname)
         True
-        >>> fname = get_test_fname('test.mz5')
+        >>> fname = get_test_fname('test.h5')
         >>> Biom2().sniff(fname)
         False
         >>> fname = get_test_fname('wiggle.wig')
@@ -1476,7 +1477,7 @@ class Cool(H5):
         >>> fname = get_test_fname('matrix.cool')
         >>> Cool().sniff(fname)
         True
-        >>> fname = get_test_fname('test.mz5')
+        >>> fname = get_test_fname('test.h5')
         >>> Cool().sniff(fname)
         False
         >>> fname = get_test_fname('wiggle.wig')
@@ -1532,7 +1533,7 @@ class MCool(H5):
         >>> fname = get_test_fname('matrix.cool')
         >>> MCool().sniff(fname)
         False
-        >>> fname = get_test_fname('test.mz5')
+        >>> fname = get_test_fname('test.h5')
         >>> MCool().sniff(fname)
         False
         >>> fname = get_test_fname('wiggle.wig')
@@ -2813,7 +2814,7 @@ class PostgresqlArchive(CompressedArchive):
     Class describing a Postgresql database packed into a tar archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('postgresql_fake.tar.bz2')
+    >>> fname = get_test_fname('postgresql_fake.tar.bz2.postgresql')
     >>> PostgresqlArchive().sniff(fname)
     True
     >>> fname = get_test_fname('test.fast5.tar')
@@ -3230,7 +3231,7 @@ class Parquet(Binary):
     >>> fname = get_test_fname('example.parquet')
     >>> Parquet().sniff(fname)
     True
-    >>> fname = get_test_fname('test.mz5')
+    >>> fname = get_test_fname('test.h5')
     >>> Parquet().sniff(fname)
     False
     """

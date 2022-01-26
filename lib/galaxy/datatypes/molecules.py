@@ -95,7 +95,7 @@ class SDF(GenericMolFile):
         >>> fname = get_test_fname('github88.v3k.sdf')
         >>> SDF().sniff(fname)
         True
-        >>> fname = get_test_fname('chebi_57262.v3k.mol')
+        >>> fname = get_test_fname('chebi_57262.v3k.mol.txt')
         >>> SDF().sniff(fname)
         False
         """

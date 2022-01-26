@@ -4,6 +4,7 @@ Image classes
 import base64
 import json
 import logging
+import warnings
 import zipfile
 from io import StringIO
 from urllib.parse import quote_plus
@@ -341,8 +342,10 @@ class Mrc2014(Binary):
             # An exception is thrown
             # if the file is not an
             # mrc2014 file.
-            if mrcfile.validate(filename, print_file=StringIO()):
-                return True
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', RuntimeWarning)
+                if mrcfile.validate(filename, print_file=StringIO()):
+                    return True
         except Exception:
             return False
         return False

@@ -24,8 +24,8 @@
             <output name="out_file1" file="1.fastqsanger" ftype="fastqsanger" />
         </test>
         <test>
-            <param name="input1" value="1.fastqsolexa" ftype="fastqsolexa" />
-            <output name="out_file1" file="1.fastqsolexa" ftype="fastqsolexa" />
+            <param name="input1" value="1.fastq" ftype="fastqsolexa" />
+            <output name="out_file1" file="1.fastq" ftype="fastqsolexa" />
         </test>
     </tests>
     <help>

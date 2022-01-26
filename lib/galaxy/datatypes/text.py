@@ -730,7 +730,7 @@ class IQTree(Text):
         >>> IQTree().sniff(fname)
         True
 
-        >>> fname = get_test_fname('temp.txt')
+        >>> fname = get_test_fname('temp.tabular')
         >>> IQTree().sniff(fname)
         False
 

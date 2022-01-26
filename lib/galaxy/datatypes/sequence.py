@@ -688,8 +688,8 @@ class BaseFastq(Sequence):
         False
         >>> Fastq().sniff(fname)
         True
-        >>> fname = get_test_fname('2.fastq')
-        >>> Fastq().sniff(fname)
+        >>> fname = get_test_fname('2.fastqsolexa')
+        >>> FastqSolexa().sniff(fname)
         True
         >>> FastqSanger().sniff(fname)
         False
@@ -836,7 +836,7 @@ class FastqSanger(Fastq):
         return True if the qualities are compatible with sanger encoding
         """
         for line in islice(lines, 3, None, 4):
-            if not all(q >= '!' and q <= 'S' for q in line[0]):
+            if not all(q >= '!' and q <= 'S' for q in line[0].strip()):
                 return False
         return True
 
@@ -856,7 +856,7 @@ class FastqSolexa(Fastq):
         return True if the qualities are compatible with sanger encoding
         """
         for line in islice(lines, 3, None, 4):
-            if not all(q >= ';' and q <= 'h' for q in line[0]):
+            if not all(q >= ';' and q <= 'h' for q in line[0].strip()):
                 return False
         return True
 

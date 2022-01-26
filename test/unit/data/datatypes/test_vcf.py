@@ -13,7 +13,7 @@ from .util import (
 def test_vcf_sniff():
     vcf_datatype = Vcf()
     vcf_bgzip_datatype = VcfGz()
-    with get_input_files('1.vcf_bgzip', '1.vcf', 'vcf_gzipped.vcf.gz') as input_files:
+    with get_input_files('1.vcf_bgzip', '1.vcf', 'vcf_gzipped.vcf.gz.tabular') as input_files:
         vcf_bgzip, uncompressed, compressed = input_files
         assert vcf_bgzip_datatype.sniff(vcf_bgzip) is True
         assert vcf_bgzip_datatype.sniff(uncompressed) is False

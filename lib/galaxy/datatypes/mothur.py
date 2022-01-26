@@ -86,7 +86,7 @@ class Otu(Text):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.otu' )
         >>> Otu().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.otu' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.otu.txt' )
         >>> Otu().sniff( fname )
         False
         """
@@ -131,7 +131,7 @@ class Sabund(Otu):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.sabund' )
         >>> Sabund().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.sabund' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.sabund.interval' )
         >>> Sabund().sniff( fname )
         False
         """
@@ -207,7 +207,7 @@ class GroupAbund(Otu):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.shared' )
         >>> GroupAbund().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.shared' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.shared.txt' )
         >>> GroupAbund().sniff( fname )
         False
         """
@@ -255,7 +255,7 @@ class SecondaryStructureMap(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.map' )
         >>> SecondaryStructureMap().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.map' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.map.txt' )
         >>> SecondaryStructureMap().sniff( fname )
         False
         """
@@ -366,7 +366,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.lower.dist' )
         >>> LowerTriangleDistanceMatrix().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.lower.dist' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.lower.dist.txt' )
         >>> LowerTriangleDistanceMatrix().sniff( fname )
         False
         """
@@ -430,7 +430,7 @@ class SquareDistanceMatrix(DistanceMatrix):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.square.dist' )
         >>> SquareDistanceMatrix().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.square.dist' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.square.dist.mothur.axes' )
         >>> SquareDistanceMatrix().sniff( fname )
         False
         """
@@ -489,7 +489,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.pair.dist' )
         >>> PairwiseDistanceMatrix().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.pair.dist' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.pair.dist.tabular' )
         >>> PairwiseDistanceMatrix().sniff( fname )
         False
         """
@@ -599,7 +599,7 @@ class Oligos(Text):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.oligos' )
         >>> Oligos().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.oligos' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.oligos.tabular' )
         >>> Oligos().sniff( fname )
         False
         """
@@ -647,11 +647,11 @@ class Frequency(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.freq' )
         >>> Frequency().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.freq.tabular' )
         >>> Frequency().sniff( fname )
         False
         >>> # Expression count matrix (EdgeR wrapper)
-        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false_2.mothur.freq.tabular' )
         >>> Frequency().sniff( fname )
         False
         """
@@ -711,7 +711,7 @@ class Quantile(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.quan' )
         >>> Quantile().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.quan' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.quan.tabular' )
         >>> Quantile().sniff( fname )
         False
         """
@@ -750,7 +750,7 @@ class LaneMask(Text):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.filter' )
         >>> LaneMask().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.filter' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.filter.txt' )
         >>> LaneMask().sniff( fname )
         False
         """
@@ -847,7 +847,7 @@ class RefTaxonomy(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.ref.taxonomy' )
         >>> RefTaxonomy().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.ref.taxonomy' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.ref.taxonomy.txt' )
         >>> RefTaxonomy().sniff( fname )
         False
         """
@@ -926,7 +926,7 @@ class Axes(Tabular):
         >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.axes' )
         >>> Axes().sniff( fname )
         True
-        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.axes' )
+        >>> fname = get_test_fname( 'mothur_datatypetest_false.mothur.axes.tabular' )
         >>> Axes().sniff( fname )
         False
         """
