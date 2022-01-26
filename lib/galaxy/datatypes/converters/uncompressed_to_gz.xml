@@ -25,16 +25,12 @@ bgzip -@ \${GALAXY_SLOTS:-1} -ci '$input1' > '$output1'
     </outputs>
     <tests>
         <test>
-            <param name="input1" value="1.vcf" ftype="vcf"/>
-            <output name="output1" file="1.vcf_bgzip" ftype="vcf_bgzip"/>
+            <param name="input1" value="test.vcf" ftype="vcf"/>
+            <output name="output1" file="test.vcf.gz" ftype="vcf_bgzip" decompress="true"/>
         </test>
         <test>
-            <param name="input1" value="sequence.fasta" ftype="fasta"/>
-            <output name="output1" file="1.fasta.gz" ftype="fasta.gz"/>
-        </test>
-        <test>
-            <param name="input1" value="1.fastqsanger" ftype="fastqsanger"/>
-            <output name="output1" file="1.fastqsanger.gz" ftype="fastqsanger.gz"/>
+            <param name="input1" value="1.fasta" ftype="fasta"/>
+            <output name="output1" file="1.fasta.gz" ftype="fasta.gz" decompress="true"/>
         </test>
     </tests>
     <help>
