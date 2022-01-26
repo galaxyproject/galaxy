@@ -27,6 +27,7 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter, summarize_job_metrics
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -1219,6 +1220,61 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             decoded_invocation_step_id
         )
         return self.__encode_invocation_step(trans, invocation_step)
+
+    def _generate_invocation_metrics(self, trans, invocation_id, **kwd):
+        """
+        build a dictionary of invocation metrics
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+
+        metrics, h_metrics = {}, {}
+
+        for i, step in enumerate(workflow_invocation.steps):
+            if step.workflow_step.type == 'tool':
+                for job in step.jobs:
+                    job_metrics = summarize_job_metrics(trans, job)
+                    metrics[i] = {
+                        'tool_id': job.tool_id,
+                        'tool_version': job.tool_version,
+                        'galaxy_slots': '',
+                        'runtime_seconds': '',
+                        'job_inputs': [],
+                        'job_outputs': []
+                    }
+                    for value in [x for x in job_metrics if x['name'] == 'galaxy_slots']:
+                        metrics[i]['galaxy_slots'] = value['raw_value']
+                    for value in [x for x in job_metrics if x['name'] == 'runtime_seconds']:
+                        metrics[i]['runtime_seconds'] = value['raw_value']
+                    for job_input in job.input_datasets:
+                        if job_input.dataset.dataset:
+                            dataset = job_input.dataset
+                            dataset_metrics = {
+                                'total_size': int(dataset.total_size),
+                                'id': trans.security.encode_id(dataset.id),
+                                'model_class': dataset.__class__.__name__,
+                                'job_input_name': job_input.name
+                            }
+                            metrics[i]['job_inputs'].append(dataset_metrics)
+                    for job_output in job.output_datasets:
+                        if job_output.dataset.dataset:
+                            dataset = job_output.dataset
+                            h_metrics = {
+                                'total_size': int(dataset.total_size),
+                                'id': trans.security.encode_id(dataset.id),
+                                'model_class': dataset.__class__.__name__,
+                                'job_output_name': job_output.name
+                            }
+                                metrics[i]['job_outputs'].append(h_metrics)
+        return metrics
+
+    @expose_api
+    def export_invocation_metrics(self, trans, invocation_id, **kwd):
+        '''
+        GET /api/invocations/{invocations_id}/invocation_metrics
+        Return a dictionary with metrics from a workflow invocation.
+        '''
+        return self._generate_invocation_metrics(trans, invocation_id, **kwd)
 
     @expose_api_anonymous_and_sessionless
     def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
