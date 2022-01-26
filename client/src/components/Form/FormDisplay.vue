@@ -181,7 +181,10 @@ export default {
                     const elementId = getElementId(inputId);
                     const element = this.$el.querySelector(`#${elementId}`);
                     if (element) {
-                        document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));
+                        const centerPanel = document.querySelector(".center-panel");
+                        if (centerPanel) {
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                        }
                     }
                 }
             }
