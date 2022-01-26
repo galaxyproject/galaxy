@@ -72,16 +72,15 @@ export function matchCase(input, value) {
 }
 
 /** Match server validation response to highlight errors
- * @param{dict}   response  - Nested dictionary with error messages
  * @param{dict}   index     - Index of input elements
+ * @param{dict}   response  - Nested dictionary with error messages
  */
-export function matchErrors(response, index) {
+export function matchErrors(index, response) {
     var result = {};
     function search(id, head) {
         if (typeof head === "string") {
-            var input_id = index[id];
-            if (input_id) {
-                result[input_id] = head;
+            if (index[id]) {
+                result[id] = head;
             }
         } else {
             for (var i in head) {

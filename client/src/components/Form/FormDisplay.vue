@@ -9,7 +9,6 @@
         :collapsed-enable-icon="collapsedEnableIcon"
         :collapsed-disable-text="collapsedDisableText"
         :collapsed-disable-icon="collapsedDisableIcon"
-        :errors="errors"
         :on-change="onChange"
         :on-change-form="onChangeForm" />
 </template>
@@ -108,7 +107,7 @@ export default {
         errors() {
             this.resetError();
             if (this.errors) {
-                const errorMessages = matchErrors(this.errors, this.formIndex);
+                const errorMessages = matchErrors(this.formIndex, this.errors);
                 for (const inputId in errorMessages) {
                     this.setError(inputId, errorMessages[inputId]);
                 }
