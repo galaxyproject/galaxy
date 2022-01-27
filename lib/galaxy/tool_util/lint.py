@@ -4,10 +4,9 @@ import inspect
 from typing import (
     Callable,
     List,
-    NoReturn,
     Optional,
-    TypeVar,
-    Union
+    Type,
+    TypeVar
 )
 
 from galaxy.tool_util.parser import get_tool_source
@@ -23,14 +22,11 @@ class LintMessage:
     """
     a message from the linter
     """
-    def __init__(self, level: str, message: str, line, fname, xpath=None):
+    def __init__(self, level: str, message: str, **kwargs):
         self.level = level
         self.message = message
-        self.line = line  # 1 based
-        self.fname = fname
-        self.xpath = xpath
 
-    def __eq__(self, other: Union[str, 'LintMessage']) -> bool:
+    def __eq__(self, other) -> bool:
         """
         add equal operator to easy lookup of a message in a
         List[LintMessage] which is usefull in tests
@@ -47,23 +43,40 @@ class LintMessage:
     def __repr__(self) -> str:
         return f"LintMessage({self.message})"
 
-    def pretty_print(self, level: bool = True, fname: bool = True, xpath: bool = False) -> str:
+    def pretty_print(self, level: bool = True, **kwargs) -> str:
         rval = ""
         if level:
             rval += f".. {self.level.upper()}: "
         rval += "{self.message}"
-        if fname and self.line is not None:
+        return rval
+
+
+class XMLLintMessage(LintMessage):
+    def __init__(self, level: str, message: str, line="", fname="", xpath=None):
+        super().__init__(level, message)
+        self.line = line  # 1 based
+        self.fname = fname
+        self.xpath = xpath
+
+    def pretty_print(self, level: bool = True, **kwargs) -> str:
+        """
+        returns the string produced by LintMessage.pretty_print
+        plus filename/line and xpath information if kwargs['fname'] or
+        kwargs['xpath'] is True, respectively
+        """
+        rval = super().pretty_print(level)
+        if kwargs.get("fname", False) and self.line is not None:
             rval += " ("
             if self.fname:
                 rval += f"{self.fname}:"
             rval += str(self.line)
             rval += ")"
-        if xpath and self.xpath is not None:
+        if kwargs.get("xpath", False) and self.xpath is not None:
             rval += f" [{self.xpath}]"
         return rval
 
 
-LintTargetType = TypeVar('LintTarget')
+LintTargetType = TypeVar('LintTargetType')
 
 
 # TODO: Nothing inherently tool-y about LintContext and in fact
@@ -71,10 +84,15 @@ LintTargetType = TypeVar('LintTarget')
 # be moved to galaxy.util.lint.
 class LintContext:
 
-    def __init__(self, level: str, skip_types: Optional[List[str]] = None, object_name: Optional[str] = None):
+    def __init__(self,
+                 level: str,
+                 lint_message_class: Type[LintMessage] = LintMessage,
+                 skip_types: Optional[List[str]] = None,
+                 object_name: Optional[str] = None):
         self.skip_types: List[str] = skip_types or []
         self.level: str = level
-        self.object_name: str = object_name
+        self.lint_message_class = lint_message_class
+        self.object_name: Optional[str] = object_name
         self.message_list: List[LintMessage] = []
 
     @property
@@ -87,7 +105,7 @@ class LintContext:
 
     def lint(self,
              name: str,
-             lint_func: Callable[['LintContext', LintTargetType], NoReturn],
+             lint_func: Callable[[LintTargetType, 'LintContext'], None],
              lint_target: LintTargetType,
              silent: bool = False):
         name = name.replace("tsts", "tests")[len("lint_"):]
@@ -156,23 +174,22 @@ class LintContext:
     def error_messages(self) -> List[LintMessage]:
         return [x for x in self.message_list if x.level == "error"]
 
-    def __handle_message(self, level: str, message: str, line: int, fname: str, xpath: str, *args) -> NoReturn:
+    def __handle_message(self, level: str, message: str, *args, **kwargs) -> None:
         if args:
             message = message % args
-        self.message_list.append(LintMessage(level=level, message=message,
-                                 line=line, fname=fname, xpath=xpath))
+        self.message_list.append(self.lint_message_class(level=level, message=message, **kwargs))
 
-    def valid(self, message: str, line: Optional[str] = None, fname: Optional[str] = None, xpath: Optional[str] = None, *args) -> NoReturn:
-        self.__handle_message("check", message, line, fname, xpath, *args)
+    def valid(self, message: str, *args, **kwargs) -> None:
+        self.__handle_message("check", message, *args, **kwargs)
 
-    def info(self, message: str, line: Optional[str] = None, fname: Optional[str] = None, xpath: Optional[str] = None, *args) -> NoReturn:
-        self.__handle_message("info", message, line, fname, xpath, *args)
+    def info(self, message: str, *args, **kwargs) -> None:
+        self.__handle_message("info", message, *args, **kwargs)
 
-    def error(self, message: str, line: Optional[str] = None, fname: Optional[str] = None, xpath: Optional[str] = None, *args) -> NoReturn:
-        self.__handle_message("error", message, line, fname, xpath, *args)
+    def error(self, message: str, *args, **kwargs) -> None:
+        self.__handle_message("error", message, *args, **kwargs)
 
-    def warn(self, message: str, line: Optional[str] = None, fname: Optional[str] = None, xpath: Optional[str] = None, *args) -> NoReturn:
-        self.__handle_message("warning", message, line, fname, xpath, *args)
+    def warn(self, message: str, *args, **kwargs) -> None:
+        self.__handle_message("warning", message, *args, **kwargs)
 
     def failed(self, fail_level: str) -> bool:
         found_warns = self.found_warns
@@ -217,7 +234,7 @@ def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=Non
     """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
-    lint_context = LintContext(level=level, skip_types=skip_types, object_name=name)
+    lint_context = LintContext(level=level, lint_message_class=XMLLintMessage, skip_types=skip_types, object_name=name)
     lint_xml_with(lint_context, tool_xml, extra_modules)
 
     return not lint_context.failed(fail_level)
@@ -227,10 +244,10 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None, silent=
     extra_modules = extra_modules or []
     import galaxy.tool_util.linters
     tool_xml = getattr(tool_source, "xml_tree", None)
+    tool_type = tool_source.parse_tool_type() or "default"
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters, ordered=True)
     linter_modules.extend(extra_modules)
     for module in linter_modules:
-        tool_type = tool_source.parse_tool_type() or "default"
         lint_tool_types = getattr(module, "lint_tool_types", ["default"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue

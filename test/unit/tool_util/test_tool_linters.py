@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from galaxy.tool_util.lint import lint_tool_source_with, LintContext
+from galaxy.tool_util.lint import lint_tool_source_with, LintContext, XMLLintMessage
 from galaxy.tool_util.linters import (
     citations,
     command,
@@ -622,7 +622,7 @@ XML_ORDER = """
 
 @pytest.fixture()
 def lint_ctx():
-    return LintContext('all')
+    return LintContext('all', lint_message_class=XMLLintMessage)
 
 
 def get_xml_tool_source(xml_string):
