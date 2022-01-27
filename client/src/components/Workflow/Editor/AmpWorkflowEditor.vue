@@ -1,3 +1,4 @@
+<!-- AMP Customization - TODO if not used later, remove it -->
 <template>
     <div id="columns" class="workflow-client">
         <StateUpgradeModal :stateMessages="stateMessages" />
