@@ -28,6 +28,7 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.schema import InvocationIndexPayload
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -779,7 +780,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             return invocations[0]
 
     @expose_api
-    def index_invocations(self, trans: GalaxyWebTransaction, workflow_id=None, **kwd):
+    def index_invocations(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations
         GET /api/invocations
@@ -815,64 +816,34 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        if workflow_id is not None:
-            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id, instance=kwd.get('instance', False)).id
-        else:
-            stored_workflow_id = None
-
-        encoded_history_id = kwd.get("history_id", None)
-        if encoded_history_id:
-            history = self.history_manager.get_accessible(self.decode_id(encoded_history_id), trans.user, current_history=trans.history)
-            history_id = history.id
-        else:
-            history_id = None
-
-        encoded_job_id = kwd.get("job_id", None)
-        if encoded_job_id:
-            job_id = self.decode_id(encoded_job_id)
-        else:
-            job_id = None
-
-        encoded_user_id = kwd.get("user_id", None)
-        if encoded_user_id:
-            target_user_id = self.decode_id(encoded_user_id)
-        else:
-            target_user_id = None
-
+        invocation_payload = InvocationIndexPayload(**kwd)
+        workflow_id = invocation_payload.workflow_id
+        if invocation_payload.instance:
+            invocation_payload.workflow_id = self.__get_stored_workflow(trans, trans.security.encode_id(workflow_id), instance=True).id
+        if invocation_payload.history_id:
+            # access check
+            self.history_manager.get_accessible(invocation_payload.history_id, trans.user, current_history=trans.history)
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
+            # Endpoint requires user login, so trans.user.id is never None
+            # TODO: user_id should be optional!
             user_id = trans.user.id
-            if target_user_id and user_id != target_user_id:
+            if invocation_payload.user_id and invocation_payload.user_id != user_id:
                 raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
         else:
-            # Get all invocation if user is admin
-            user_id = target_user_id
-        sort_by = kwd.get('sortBy') or kwd.get('sort_by')
-        if sort_by and sort_by not in ['update_time', 'create_time']:
-            raise exceptions.RequestParameterInvalidException(f"Invalid sort_by paramerer '{sort_by}'")
-        sort_desc = util.string_as_bool(kwd.get('sortDesc', False) or kwd.get('sort_desc', False))
-        include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
-        limit = kwd.get("limit", kwd.get("perPage"))
-        offset = None
-        if limit is not None:
-            limit = int(limit)
-        currentPage = kwd.get("currentPage", None)
-        if currentPage is not None:
-            currentPage = int(currentPage)
-        if currentPage and limit:
-            offset = (currentPage - 1) * limit
-
+            # Get all invocation if user is admin (and user_id is None)
+            user_id = invocation_payload.user_id
         invocations, total_matches = self.workflow_manager.build_invocations_query(
             trans,
-            stored_workflow_id=stored_workflow_id,
-            history_id=history_id,
-            job_id=job_id,
+            stored_workflow_id=invocation_payload.workflow_id,
+            history_id=invocation_payload.history_id,
+            job_id=invocation_payload.job_id,
             user_id=user_id,
-            include_terminal=include_terminal,
-            limit=limit,
-            offset=offset,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
+            include_terminal=invocation_payload.include_terminal,
+            limit=invocation_payload.limit,
+            offset=invocation_payload.offset,
+            sort_by=invocation_payload.sort_by,
+            sort_desc=invocation_payload.sort_desc,
         )
         trans.response.headers['total_matches'] = total_matches
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
