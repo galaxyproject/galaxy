@@ -187,7 +187,7 @@ import WorkflowNode from "./Node";
 import Vue from "vue";
 
 export default {
-    name: 'WorkflowEditorAmp',
+    name: 'AmpWorkflowEditor',
     components: {
         MarkdownEditor,
         SidePanel,

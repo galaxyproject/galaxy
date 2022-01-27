@@ -31,7 +31,7 @@ import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
-import WorkflowEditorAmp from "components/Workflow/Editor/WorkflowEditorAmp.vue";
+import AmpWorkflowEditor from "components/Workflow/Editor/AmpWorkflowEditor.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
@@ -351,7 +351,9 @@ export const getAnalysisRouter = (Galaxy) =>
         },
 
         show_workflow_edit_amp: function () {
-            this._display_vue_helper(WorkflowEditorAmp);
+            this._display_vue_helper(AmpWorkflowEditor, {
+                id: "4011851c940e7469"
+            });
         },
 
         show_workflows_run: function () {
