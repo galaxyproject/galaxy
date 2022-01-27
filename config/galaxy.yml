@@ -145,6 +145,7 @@ galaxy:
   # Below property is commented out as Galaxy always tries to create a new directory for it upon start,
   # which will cause error in our case, since /srv/amp/media/ already exists
   # AMP customization: points to media dir
+  # AMP customization 
   # library_import_dir: /srv/amp/media/
   
   # Allow admins to paste filesystem paths during upload. For libraries
@@ -155,6 +156,7 @@ galaxy:
   # to True to enable.  Please note the security implication that this
   # will give Galaxy Admins access to anything your Galaxy user has
   # access to.
+  # AMP customization 
   allow_path_paste: true
   
   # Force everyone to log in (disable anonymous access).
@@ -183,6 +185,17 @@ galaxy:
   # time; print(time.time())' | md5sum | cut -f 1 -d ' '
   # AMP customization: placeholder to be overwritten during deployment
   id_secret:
+       
+  # The following default adds a header to web request responses that
+  # will cause modern web browsers to not allow Galaxy to be embedded in
+  # the frames of web applications hosted at other hosts - this can help
+  # prevent a class of attack called clickjacking
+  # (https://www.owasp.org/index.php/Clickjacking).  If you configure a
+  # proxy in front of Galaxy - please ensure this header remains intact
+  # to protect your users.  Uncomment and leave empty to not set the
+  # `X-Frame-Options` header.
+  # AMP customization: set to blank to we can embed Galaxy workflow editor as iframe in AMP UI
+  x_frame_options:
           
   # AMP customization: logging configuration (with performance log added)
   logging:

@@ -31,6 +31,7 @@ import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
+// import AmpWorkflowEditor from "components/Workflow/Editor/AmpWorkflowEditor.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
@@ -84,6 +85,7 @@ export const getAnalysisRouter = (Galaxy) =>
             // "(/)workflows/invocations/view_bco": "show_invocation_bco",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
+            // "(/)workflow/editor_amp(/)": "show_workflow_edit_amp",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
             "(/)histories(/)sharing(/)": "show_histories_sharing",
@@ -347,6 +349,12 @@ export const getAnalysisRouter = (Galaxy) =>
                 })
             );
         },
+
+        // show_workflow_edit_amp: function () {
+        //     this._display_vue_helper(AmpWorkflowEditor, {
+        //         id: "4011851c940e7469"
+        //     });
+        // },
 
         show_workflows_run: function () {
             this._loadWorkflow();
