@@ -3,7 +3,6 @@
 For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
-from ._util import node_props_factory
 
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
@@ -47,7 +46,6 @@ DATASOURCE_TAG_ORDER = [
 # by the tool author best practices.
 def lint_xml_order(tool_xml, lint_ctx):
     tool_root = tool_xml.getroot()
-    node_props = node_props_factory(tool_xml)
 
     if tool_root.attrib.get('tool_type', '') == 'data_source':
         tag_ordering = DATASOURCE_TAG_ORDER
@@ -62,8 +60,8 @@ def lint_xml_order(tool_xml, lint_ctx):
             key = tag_ordering.index(tag)
             if last_key:
                 if last_key > key:
-                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]", **node_props(elem))
+                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]", node=elem)
             last_tag = tag
             last_key = key
         else:
-            lint_ctx.info(f"Unknown tag [{tag}] encountered, this may result in a warning in the future.", **node_props(elem))
+            lint_ctx.info(f"Unknown tag [{tag}] encountered, this may result in a warning in the future.", node=elem)

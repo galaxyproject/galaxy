@@ -10,8 +10,7 @@ from typing import (
 )
 
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.util import submodules
-
+from galaxy.util import etree, submodules
 
 LEVEL_ALL = "all"
 LEVEL_WARN = "warn"
@@ -52,11 +51,16 @@ class LintMessage:
 
 
 class XMLLintMessage(LintMessage):
-    def __init__(self, level: str, message: str, line="", fname="", xpath=None):
+    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
         super().__init__(level, message)
-        self.line = line  # 1 based
-        self.fname = fname
-        self.xpath = xpath
+        self.line = None
+        self.fname = None
+        self.xpath = None
+        if node is not None:
+            self.line = node.sourceline
+            self.fname = node.base
+            tool_xml = node.getroottree()
+            self.xpath = tool_xml.getpath(node)
 
     def pretty_print(self, level: bool = True, **kwargs) -> str:
         """
@@ -65,7 +69,7 @@ class XMLLintMessage(LintMessage):
         kwargs['xpath'] is True, respectively
         """
         rval = super().pretty_print(level)
-        if kwargs.get("fname", False) and self.line is not None:
+        if kwargs.get("fname", True) and self.line is not None:
             rval += " ("
             if self.fname:
                 rval += f"{self.fname}:"
