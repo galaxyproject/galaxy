@@ -31,7 +31,7 @@ import TrsSearch from "components/Workflow/TrsSearch.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools.vue";
 import LibraryFolder from "components/LibraryFolder/LibraryFolder.vue";
 import WorkflowList from "components/Workflow/WorkflowList.vue";
-import AmpWorkflowEditor from "components/Workflow/Editor/AmpWorkflowEditor.vue";
+// import AmpWorkflowEditor from "components/Workflow/Editor/AmpWorkflowEditor.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
