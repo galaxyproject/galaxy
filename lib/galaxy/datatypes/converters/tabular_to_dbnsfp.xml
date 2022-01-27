@@ -1,4 +1,4 @@
-<tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.1" profile="16.04">
+<tool id="CONVERTER_tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.1" profile="16.04">
     <description></description>
     <requirements>
         <requirement type="package" version="0.15.4">pysam</requirement>

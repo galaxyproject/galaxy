@@ -1,4 +1,4 @@
-<tool id="tabular_to_csv" name="Convert tabular to CSV" version="1.0.0" profile="16.04">
+<tool id="CONVERTER_tabular_to_csv" name="Convert tabular to CSV" version="1.0.0" profile="16.04">
     <description></description>
     <requirements>
         <requirement type="package" version="3.7">python</requirement>
