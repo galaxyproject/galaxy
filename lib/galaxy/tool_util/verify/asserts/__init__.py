@@ -4,7 +4,7 @@ from inspect import getfullargspec, getmembers
 
 # typing_extensions can be removed for python >=3.8
 try:
-    from typing import get_args, get_origin
+    from typing import get_args, get_origin  # type: ignore
 except ImportError:
     from typing_extensions import get_args, get_origin
 

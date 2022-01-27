@@ -27,8 +27,7 @@ def assert_has_h5_attribute(output_bytes: bytes, key: str, value: str):
 def assert_has_h5_keys(output_bytes: bytes, keys: str):
     """ Asserts the specified HDF5 output has the given keys."""
     _assert_h5py()
-    keys = [k.strip() for k in keys.strip().split(',')]
-    h5_keys = sorted(keys)
+    h5_keys = sorted([k.strip() for k in keys.split(',')])
     output_temp = io.BytesIO(output_bytes)
     local_keys = []
 
