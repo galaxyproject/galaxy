@@ -1,7 +1,12 @@
 import logging
 import sys
 from inspect import getfullargspec, getmembers
-from typing import get_args, get_origin, get_type_hints
+
+# typing_extensions can be removed for python >=3.8
+try:
+    from typing import get_args, get_origin
+except ImportError:
+    from typing_extensions import get_args, get_origin
 
 from galaxy.util import asbool, unicodify
 from galaxy.util.bytesize import parse_bytesize
