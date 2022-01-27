@@ -26,11 +26,11 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
-    AnyHDA,
-    AnyHistoryContentItem,
-    DatasetAssociationRoles,
+    AnyHDAResponse,
+    AnyHistoryContentItemResponse,
+    DatasetAssociationRolesResponse,
     DatasetSourceType,
     UpdateDatasetPermissionsPayload,
 )
@@ -42,7 +42,7 @@ from galaxy.webapps.galaxy.api.common import (
 )
 from galaxy.webapps.galaxy.services.datasets import (
     ConvertedDatasetsMap,
-    DatasetInheritanceChain,
+    DatasetInheritanceChainEntry,
     DatasetsService,
     DatasetStorageDetails,
     DatasetTextContentDetails,
@@ -58,9 +58,9 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["datasets"])
 
-DatasetIDPathParam: EncodedDatabaseIdField = Path(..., description="The encoded database identifier of the dataset.")
+DatasetIDPathParam: DecodedDatabaseIdField = Path(..., description="The encoded database identifier of the dataset.")
 
-HistoryIDPathParam: EncodedDatabaseIdField = Path(..., description="The encoded database identifier of the History.")
+HistoryIDPathParam: DecodedDatabaseIdField = Path(..., description="The encoded database identifier of the History.")
 
 DatasetSourceQueryParam: DatasetSourceType = Query(
     default=DatasetSourceType.hda,
@@ -79,13 +79,13 @@ class FastAPIDatasets:
     def index(
         self,
         trans=DependsOnTrans,
-        history_id: Optional[EncodedDatabaseIdField] = Query(
+        history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
             description="Optional identifier of a History. Use it to restrict the search whithin a particular History.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ) -> List[AnyHistoryContentItem]:
+    ) -> List[AnyHistoryContentItemResponse]:
         return self.service.index(trans, history_id, serialization_params, filter_query_params)
 
     @router.get(
@@ -95,7 +95,7 @@ class FastAPIDatasets:
     def show_storage(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
     ) -> DatasetStorageDetails:
         return self.service.show_storage(trans, dataset_id, hda_ldda)
@@ -108,9 +108,9 @@ class FastAPIDatasets:
     def show_inheritance_chain(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-    ) -> DatasetInheritanceChain:
+    ) -> List[DatasetInheritanceChainEntry]:
         return self.service.show_inheritance_chain(trans, dataset_id, hda_ldda)
 
     @router.get(
@@ -120,7 +120,7 @@ class FastAPIDatasets:
     def get_content_as_text(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
     ) -> DatasetTextContentDetails:
         return self.service.get_content_as_text(trans, dataset_id)
 
@@ -131,13 +131,13 @@ class FastAPIDatasets:
     def converted_ext(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
         ext: str = Path(
             ...,
             description="File extension of the new format to convert this dataset to.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHDA:
+    ) -> AnyHDAResponse:
         """
         Return information about datasets made by converting this dataset to a new format.
 
@@ -154,7 +154,7 @@ class FastAPIDatasets:
     def converted(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
     ) -> ConvertedDatasetsMap:
         """
         Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
@@ -168,13 +168,13 @@ class FastAPIDatasets:
     def update_permissions(
         self,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
         # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
         payload: Dict[str, Any] = Body(
             default=...,
             example=UpdateDatasetPermissionsPayload(),
         ),
-    ) -> DatasetAssociationRoles:
+    ) -> DatasetAssociationRolesResponse:
         """Set permissions of the given history dataset to the given role ids."""
         update_payload = get_update_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
@@ -187,8 +187,8 @@ class FastAPIDatasets:
     def extra_files(
         self,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
     ):
         return self.service.extra_files(trans, history_content_id)
 
@@ -203,8 +203,8 @@ class FastAPIDatasets:
         self,
         request: Request,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
         preview: bool = Query(
             default=False,
             description=(
@@ -248,10 +248,10 @@ class FastAPIDatasets:
     def get_metadata_file(
         self,
         trans=DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
-        metadata_file: str = Query(
-            ...,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+        metadata_file: Optional[str] = Query(
+            default=None,
             description="The name of the metadata file to retrieve.",
         ),
     ):
@@ -266,7 +266,7 @@ class FastAPIDatasets:
         self,
         request: Request,
         trans=DependsOnTrans,
-        dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = Query(
             default=DatasetSourceType.hda,
             description=("The type of information about the dataset to be requested."),

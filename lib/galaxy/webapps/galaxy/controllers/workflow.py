@@ -973,7 +973,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 )
             )
 
-    def get_item(self, trans, id):
+    def get_item(self, trans, id: str):
         return self.get_stored_workflow(trans, id)
 
     def _workflow_to_svg_canvas(self, trans, stored):

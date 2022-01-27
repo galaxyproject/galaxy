@@ -402,7 +402,7 @@ class VisualizationController(
     @web.expose
     @web.require_login()
     def copy(self, trans, id, **kwargs):
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False)
         user = trans.get_user()
         owner = visualization.user == user
         new_title = f"Copy of '{visualization.title}'"
@@ -422,9 +422,9 @@ class VisualizationController(
 
     @web.expose
     @web.require_login("use Galaxy visualizations")
-    def set_accessible_async(self, trans, id=None, accessible=False):
+    def set_accessible_async(self, trans, id, accessible=False):
         """Set visualization's importable attribute and slug."""
-        visualization = self.get_visualization(trans, id)
+        visualization = self.get_visualization(trans, self.decode_id(id))
 
         # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
         importable = accessible in ["True", "true", "t", "T"]
@@ -443,7 +443,7 @@ class VisualizationController(
     def rate_async(self, trans, id, rating):
         """Rate a visualization asynchronously and return updated community data."""
 
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
         if not visualization:
             return trans.show_error_message("The specified visualization does not exist.")
 
@@ -465,7 +465,7 @@ class VisualizationController(
 
         # Do import.
         session = trans.sa_session
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False)
         if visualization.importable is False:
             return trans.show_error_message(
                 f"The owner of this visualization has disabled imports via this link.<br>You can {referer_message}",
@@ -554,7 +554,7 @@ class VisualizationController(
     @web.require_login("get item name and link")
     def get_name_and_link_async(self, trans, id=None):
         """Returns visualization's name and link."""
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
 
         if self.slug_builder.create_item_slug(trans.sa_session, visualization):
             trans.sa_session.flush()
@@ -574,7 +574,7 @@ class VisualizationController(
         """Returns item content in HTML format."""
 
         # Get visualization, making sure it's accessible.
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
         if visualization is None:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -613,7 +613,7 @@ class VisualizationController(
         if not id:
             return self.message_exception(trans, "No visualization id received for editing.")
         trans_user = trans.get_user()
-        v = self.get_visualization(trans, id, check_ownership=True)
+        v = self.get_visualization(trans, self.decode_id(id), check_ownership=True)
         if trans.request.method == "GET":
             if v.slug is None:
                 self.slug_builder.create_item_slug(trans.sa_session, v)
@@ -730,7 +730,7 @@ class VisualizationController(
         # check the id and load the saved visualization
         if id is None:
             return HTTPBadRequest("A valid visualization id is required to load a visualization")
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+        visualization = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
 
         # re-add title to kwargs for passing to render
         if title:
@@ -761,7 +761,7 @@ class VisualizationController(
         # TODO: would be easier if this returned the visualization directly
         # check security if posting to existing visualization
         if id is not None:
-            self.get_visualization(trans, id, check_ownership=True, check_accessible=False)
+            self.get_visualization(trans, self.decode_id(id), check_ownership=True, check_accessible=False)
             # ??: on not owner: error raised, but not returned (status = 200)
         # TODO: there's no security check in save visualization (if passed an id)
         returned = self.save_visualization(trans, config, type, id, title)
@@ -804,7 +804,7 @@ class VisualizationController(
             app["default_dbkey"] = dbkey
         else:
             # load saved visualization
-            vis = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+            vis = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
             app["viz_config"] = self.get_visualization_config(trans, vis)
 
         # backup id
@@ -837,7 +837,7 @@ class VisualizationController(
         # Get/create vis.
         if id:
             # Display existing viz.
-            vis = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
+            vis = self.get_visualization(trans, self.decode_id(id), check_ownership=False, check_accessible=True)
             dbkey = vis.dbkey
         else:
             # Create new viz.
@@ -897,7 +897,7 @@ class VisualizationController(
 
         if id:
             # Loading a shared visualization.
-            viz = self.get_visualization(trans, id)
+            viz = self.get_visualization(trans, self.decode_id(id))
             viz_config = self.get_visualization_config(trans, viz)
             decoded_id = self.decode_id(viz_config["dataset_id"])
             dataset = self.hda_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
@@ -914,8 +914,8 @@ class VisualizationController(
 
         return trans.fill_template_mako("visualization/sweepster.mako", config=viz_config)
 
-    def get_item(self, trans, id):
-        return self.get_visualization(trans, id)
+    def get_item(self, trans, id: str):
+        return self.get_visualization(trans, self.decode_id(id))
 
     @web.expose
     def phyloviz(self, trans, id=None, dataset_id=None, tree_index=0, **kwargs):
@@ -924,7 +924,7 @@ class VisualizationController(
 
         # if id, then this is a saved visualization; get its config and the dataset_id from there
         if id:
-            visualization = self.get_visualization(trans, id)
+            visualization = self.get_visualization(trans, self.decode_id(id))
             config = self.get_visualization_config(trans, visualization)
             dataset_id = config.get("dataset_id", None)
 

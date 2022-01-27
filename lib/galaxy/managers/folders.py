@@ -28,7 +28,7 @@ class FolderManager:
     Interface/service object for interacting with folders.
     """
 
-    def get(self, trans, decoded_folder_id, check_manageable=False, check_accessible=True):
+    def get(self, trans, decoded_folder_id: int, check_manageable=False, check_accessible=True):
         """
         Get the folder from the DB.
 

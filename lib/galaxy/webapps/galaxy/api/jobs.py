@@ -27,7 +27,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
     view_show_job,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -53,10 +53,10 @@ class FastAPIJobs:
     job_search: JobSearch = depends(JobSearch)
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
-    @router.get("/api/jobs/{id}")
+    @router.get("/api/jobs/{job_id}")
     def show(
         self,
-        id: EncodedDatabaseIdField,
+        job_id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
         full: typing.Optional[bool] = False,
     ) -> typing.Dict:
@@ -67,8 +67,7 @@ class FastAPIJobs:
         - id: ID of job to return
         - full: Return extra information ?
         """
-        id = trans.app.security.decode_id(id)
-        job = self.job_manager.get_accessible_job(trans, id)
+        job = self.job_manager.get_accessible_job(trans, job_id)
         return view_show_job(trans, job, bool(full))
 
 

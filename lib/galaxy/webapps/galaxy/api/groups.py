@@ -9,7 +9,11 @@ from typing import (
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    GroupDefinitionModel,
+    GroupUpdateModel,
+)
 from galaxy.web import (
     expose_api,
     require_admin,
@@ -23,7 +27,7 @@ log = logging.getLogger(__name__)
 
 
 class GroupAPIController(BaseGalaxyAPIController):
-    manager = depends(GroupsManager)
+    manager: GroupsManager = depends(GroupsManager)
 
     @expose_api
     @require_admin
@@ -41,22 +45,24 @@ class GroupAPIController(BaseGalaxyAPIController):
         POST /api/groups
         Creates a new group.
         """
-        return self.manager.create(trans, payload)
+        return self.manager.create(trans, GroupDefinitionModel(**payload))
 
     @expose_api
     @require_admin
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, **kwd):
+    def show(self, trans: ProvidesAppContext, id: DecodedDatabaseIdField, **kwd):
         """
         GET /api/groups/{encoded_group_id}
         Displays information about a group.
         """
+        id = self.decode_id(id)
         return self.manager.show(trans, id)
 
     @expose_api
     @require_admin
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, payload: Dict[str, Any], **kwd):
+    def update(self, trans: ProvidesAppContext, id: DecodedDatabaseIdField, payload: Dict[str, Any], **kwd):
         """
         PUT /api/groups/{encoded_group_id}
         Modifies a group.
         """
-        self.manager.update(trans, id, payload)
+        id = self.decode_id(id)
+        self.manager.update(trans, id, GroupUpdateModel(**payload))

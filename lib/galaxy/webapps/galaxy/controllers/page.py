@@ -702,7 +702,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         else:
             return self.security_check(trans, page, check_ownership, check_accessible)
 
-    def get_item(self, trans, id):
+    def get_item(self, trans, id: str):
         return self.get_page(trans, id)
 
     def _get_embedded_history_html(self, trans, decoded_id):
@@ -737,7 +737,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         """
         Returns html suitable for embedding visualizations in another page.
         """
-        visualization = self.get_visualization(trans, encoded_id, False, True)
+        visualization = self.get_visualization(trans, trans.security.decode_id(encoded_id), False, True)
         visualization.annotation = self.get_item_annotation_str(trans.sa_session, visualization.user, visualization)
         if not visualization:
             return None
@@ -749,11 +749,10 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             # if a registry visualization, load a version into an iframe :(
             # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
             # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
-            encoded_visualization_id = trans.security.encode_id(visualization.id)
             return trans.fill_template(
                 "visualization/embed_in_frame.mako",
                 item=visualization,
-                encoded_visualization_id=encoded_visualization_id,
+                encoded_visualization_id=encoded_id,
                 content_only=True,
             )
 

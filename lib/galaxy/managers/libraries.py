@@ -32,7 +32,7 @@ class LibraryManager:
     Interface/service object for interacting with libraries.
     """
 
-    def get(self, trans, decoded_library_id, check_accessible=True):
+    def get(self, trans, decoded_library_id: int, check_accessible: bool = True):
         """
         Get the library from the DB.
 
@@ -238,9 +238,7 @@ class LibraryManager:
         allowed_library_add_ids = prefetched_ids.get("allowed_library_add_ids", None) if prefetched_ids else None
         allowed_library_modify_ids = prefetched_ids.get("allowed_library_modify_ids", None) if prefetched_ids else None
         allowed_library_manage_ids = prefetched_ids.get("allowed_library_manage_ids", None) if prefetched_ids else None
-        library_dict = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
-        )
+        library_dict = library.to_dict(view="element")
         library_dict["public"] = False if (restricted_library_ids and library.id in restricted_library_ids) else True
         library_dict["create_time_pretty"] = pretty_print_time_interval(library.create_time, precise=True)
         if not trans.user_is_admin:

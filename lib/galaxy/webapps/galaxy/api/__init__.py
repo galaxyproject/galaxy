@@ -44,7 +44,7 @@ from galaxy.exceptions import (
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
@@ -114,7 +114,7 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: Optional[str] = Query(None),
     x_api_key: Optional[str] = Header(None),
-    run_as: Optional[EncodedDatabaseIdField] = Header(
+    run_as: Optional[DecodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
         description=(

@@ -32,21 +32,22 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
+    DecodedDatabaseIdField,
     OrderParamField,
 )
 from galaxy.schema.schema import (
-    AnyHistoryView,
+    AnyHistoryViewResponse,
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
-    HistoryArchiveExportResult,
-    JobExportHistoryArchiveCollection,
+    JobExportHistoryArchiveCollectionResponse,
+    JobExportHistoryArchiveModelResponse,
+    JobIdResponse,
     JobImportHistoryResponse,
     SetSlugPayload,
     ShareWithPayload,
-    ShareWithStatus,
-    SharingStatus,
+    ShareWithStatusResponse,
+    SharingStatusResponse,
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.webapps.galaxy.api.common import query_serialization_params
@@ -63,11 +64,11 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
 
-HistoryIDPathParam: EncodedDatabaseIdField = Path(
+HistoryIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="History ID", description="The encoded database identifier of the History."
 )
 
-JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
+JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     default="latest",
     title="Job Export History ID",
     description=(
@@ -116,7 +117,7 @@ class FastAPIHistories:
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
-    ) -> List[AnyHistoryView]:
+    ) -> List[AnyHistoryViewResponse]:
         return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
 
     @router.get(
@@ -128,7 +129,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         params: HistoryIndexParams = Depends(HistoryIndexParams),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> List[AnyHistoryView]:
+    ) -> List[AnyHistoryViewResponse]:
         return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
 
     @router.get(
@@ -140,7 +141,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
-    ) -> List[AnyHistoryView]:
+    ) -> List[AnyHistoryViewResponse]:
         return self.service.published(trans, serialization_params, filter_params)
 
     @router.get(
@@ -152,7 +153,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_params: HistoryFilterQueryParams = Depends(HistoryFilterQueryParams),
-    ) -> List[AnyHistoryView]:
+    ) -> List[AnyHistoryViewResponse]:
         return self.service.shared_with_me(trans, serialization_params, filter_params)
 
     @router.get(
@@ -163,7 +164,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHistoryView:
+    ) -> AnyHistoryViewResponse:
         return self.service.show(trans, serialization_params)
 
     @router.get(
@@ -173,9 +174,9 @@ class FastAPIHistories:
     def show(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHistoryView:
+    ) -> AnyHistoryViewResponse:
         return self.service.show(trans, serialization_params, id)
 
     @router.get(
@@ -185,7 +186,7 @@ class FastAPIHistories:
     def citations(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> List[Any]:
         return self.service.citations(trans, id)
 
@@ -199,7 +200,7 @@ class FastAPIHistories:
         payload: CreateHistoryPayload = Depends(CreateHistoryFormData.as_form),
         payload_as_json: Optional[Any] = Depends(try_get_request_body_as_json),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> Union[JobImportHistoryResponse, AnyHistoryView]:
+    ) -> Union[JobImportHistoryResponse, AnyHistoryViewResponse]:
         """The new history can also be copied form a existing history or imported from an archive or URL."""
         # This action needs to work both with json and x-www-form-urlencoded payloads.
         # The way to support different content types on the same path operation is reading
@@ -218,11 +219,11 @@ class FastAPIHistories:
     def delete(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: bool = Query(default=False),
         payload: Optional[DeleteHistoryPayload] = Body(default=None),
-    ) -> AnyHistoryView:
+    ) -> AnyHistoryViewResponse:
         if payload:
             purge = payload.purge
         return self.service.delete(trans, id, serialization_params, purge)
@@ -234,9 +235,9 @@ class FastAPIHistories:
     def undelete(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHistoryView:
+    ) -> AnyHistoryViewResponse:
         return self.service.undelete(trans, id, serialization_params)
 
     @router.put(
@@ -246,13 +247,13 @@ class FastAPIHistories:
     def update(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: Any = Body(
             ...,
             description="Object containing any of the editable fields of the history.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHistoryView:
+    ) -> AnyHistoryViewResponse:
         return self.service.update(trans, id, payload, serialization_params)
 
     @router.get(
@@ -262,10 +263,10 @@ class FastAPIHistories:
     def index_exports(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> JobExportHistoryArchiveCollection:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> JobExportHistoryArchiveCollectionResponse:
         exports = self.service.index_exports(trans, id)
-        return JobExportHistoryArchiveCollection.parse_obj(exports)
+        return JobExportHistoryArchiveCollectionResponse.parse_obj(exports)
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{id}/exports",
@@ -273,9 +274,11 @@ class FastAPIHistories:
         responses={
             200: {
                 "description": "Object containing url to fetch export from.",
+                "model": JobExportHistoryArchiveModelResponse,
             },
             202: {
                 "description": "The exported archive file is not ready yet.",
+                "model": JobIdResponse,
             },
         },
     )
@@ -283,9 +286,9 @@ class FastAPIHistories:
         self,
         response: Response,
         trans=DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: Optional[ExportHistoryArchivePayload] = Body(None),
-    ) -> HistoryArchiveExportResult:
+    ):
         """This will start a job to create a history export archive.
 
         Calling this endpoint multiple times will return the 202 status code until the archive
@@ -315,8 +318,8 @@ class FastAPIHistories:
     def archive_download(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-        jeha_id: Union[EncodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+        jeha_id: Union[DecodedDatabaseIdField, LatestLiteral] = JehaIDPathParam,
     ):
         """
         See ``PUT /api/histories/{id}/exports`` to initiate the creation
@@ -339,7 +342,7 @@ class FastAPIHistories:
     def get_custom_builds_metadata(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> CustomBuildsMetadataResponse:
         return self.service.get_custom_builds_metadata(trans, id)
 
@@ -350,8 +353,8 @@ class FastAPIHistories:
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> SharingStatus:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> SharingStatusResponse:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
 
@@ -362,8 +365,8 @@ class FastAPIHistories:
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> SharingStatus:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> SharingStatusResponse:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
 
@@ -374,8 +377,8 @@ class FastAPIHistories:
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> SharingStatus:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> SharingStatusResponse:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
 
@@ -386,8 +389,8 @@ class FastAPIHistories:
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> SharingStatus:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> SharingStatusResponse:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
 
@@ -398,8 +401,8 @@ class FastAPIHistories:
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
-    ) -> SharingStatus:
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> SharingStatusResponse:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
 
@@ -410,9 +413,9 @@ class FastAPIHistories:
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: ShareWithPayload = Body(...),
-    ) -> ShareWithStatus:
+    ) -> ShareWithStatusResponse:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
@@ -424,7 +427,7 @@ class FastAPIHistories:
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""

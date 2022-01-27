@@ -152,14 +152,14 @@ def encode_with_security(security: IdEncodingHelper, id: Any):
     return security.encode_id(id)
 
 
-def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
+def get_object(trans, id: Union[str, int], class_name, check_ownership=False, check_accessible=False, deleted=None):
     """
     Convenience method to get a model object with the specified checks. This is
     a generic method for dealing with objects uniformly from the older
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    decoded_id = decode_id(trans.app, id)
+    decoded_id = decode_id(trans.app, id) if isinstance(id, str) else id
     try:
         item_class = get_class(class_name)
         assert item_class is not None

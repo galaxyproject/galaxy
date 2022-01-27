@@ -28,7 +28,7 @@ class RoleManager(base.ModelManager):
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
 
-    def get(self, trans: ProvidesUserContext, decoded_role_id):
+    def get(self, trans: ProvidesUserContext, decoded_role_id: int):
         """
         Method loads the role from the DB based on the given role id.
 
@@ -74,8 +74,8 @@ class RoleManager(base.ModelManager):
 
         role = Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
-        users = [trans.sa_session.query(model.User).get(trans.security.decode_id(i)) for i in user_ids]
-        groups = [trans.sa_session.query(model.Group).get(trans.security.decode_id(i)) for i in group_ids]
+        users = [trans.sa_session.query(model.User).get(user_id) for user_id in user_ids]
+        groups = [trans.sa_session.query(model.Group).get(group_id) for group_id in group_ids]
 
         # Create the UserRoleAssociations
         for user in users:

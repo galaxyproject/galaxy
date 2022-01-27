@@ -14,15 +14,14 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryPayload,
-    LibraryAvailablePermissions,
-    LibraryCurrentPermissions,
-    LibraryLegacySummary,
+    LibraryAvailablePermissionsResponse,
+    LibraryCurrentPermissionsResponse,
+    LibraryLegacySummaryResponse,
     LibraryPermissionScope,
-    LibrarySummary,
-    LibrarySummaryList,
+    LibrarySummaryListResponse,
+    LibrarySummaryResponse,
     UpdateLibraryPayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -51,7 +50,7 @@ class LibrariesService(ServiceBase):
         self.library_manager = library_manager
         self.role_manager = role_manager
 
-    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> LibrarySummaryList:
+    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> LibrarySummaryListResponse:
         """Returns a list of summary data for all libraries.
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
@@ -67,9 +66,9 @@ class LibrariesService(ServiceBase):
         libraries = []
         for library in query:
             libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return LibrarySummaryList.parse_obj(libraries)
+        return LibrarySummaryListResponse.parse_obj(libraries)
 
-    def show(self, trans, id: EncodedDatabaseIdField) -> LibrarySummary:
+    def show(self, trans, id: int) -> LibrarySummaryResponse:
         """Returns detailed information about a library.
 
         :param  id:      the encoded id of the library
@@ -84,11 +83,11 @@ class LibrariesService(ServiceBase):
 
         :raises: MalformedId, ObjectNotFound
         """
-        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
+        library = self.library_manager.get(trans, id)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.parse_obj(library_dict)
+        return LibrarySummaryResponse.parse_obj(library_dict)
 
-    def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
+    def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummaryResponse:
         """Creates a new library.
 
         .. note:: Currently, only admin users can create libraries.
@@ -107,9 +106,9 @@ class LibrariesService(ServiceBase):
         """
         library = self.library_manager.create(trans, payload.name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.parse_obj(library_dict)
+        return LibrarySummaryResponse.parse_obj(library_dict)
 
-    def update(self, trans, id: EncodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
+    def update(self, trans, id: int, payload: UpdateLibraryPayload) -> LibrarySummaryResponse:
         """Updates the library defined by an ``encoded_id`` with the data in the payload.
 
         :param  id:      the encoded id of the library
@@ -126,7 +125,7 @@ class LibrariesService(ServiceBase):
         :rtype:     dict
         :raises: RequestParameterMissingException
         """
-        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
+        library = self.library_manager.get(trans, id)
         name = payload.name
         if name == "":
             raise exceptions.RequestParameterMissingException(
@@ -134,9 +133,9 @@ class LibrariesService(ServiceBase):
             )
         updated_library = self.library_manager.update(trans, library, name, payload.description, payload.synopsis)
         library_dict = self.library_manager.get_library_dict(trans, updated_library)
-        return LibrarySummary.parse_obj(library_dict)
+        return LibrarySummaryResponse.parse_obj(library_dict)
 
-    def delete(self, trans, id: EncodedDatabaseIdField, undelete: Optional[bool] = False) -> LibrarySummary:
+    def delete(self, trans, id: int, undelete: Optional[bool] = False) -> LibrarySummaryResponse:
         """Marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete libraries.
@@ -152,21 +151,21 @@ class LibrariesService(ServiceBase):
 
         .. seealso:: :attr:`galaxy.model.Library.dict_element_visible_keys`
         """
-        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
+        library = self.library_manager.get(trans, id)
         library = self.library_manager.delete(trans, library, undelete)
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.parse_obj(library_dict)
+        return LibrarySummaryResponse.parse_obj(library_dict)
 
     def get_permissions(
         self,
         trans,
-        id: EncodedDatabaseIdField,
+        id: int,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
         page: Optional[int] = 1,
         page_limit: Optional[int] = 10,
         query: Optional[str] = None,
-    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
+    ) -> Union[LibraryCurrentPermissionsResponse, LibraryAvailablePermissionsResponse]:
         """Load all permissions for the given library id and return it.
 
         :param  id:     the encoded id of the library
@@ -185,7 +184,7 @@ class LibrariesService(ServiceBase):
         """
         current_user_roles = trans.get_current_user_roles()
         is_admin = trans.user_is_admin
-        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
+        library = self.library_manager.get(trans, id)
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException(
                 "You do not have proper permission to access permissions of this library."
@@ -193,7 +192,7 @@ class LibrariesService(ServiceBase):
 
         if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return LibraryCurrentPermissions.parse_obj(roles)
+            return LibraryCurrentPermissionsResponse.parse_obj(roles)
 
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
@@ -205,15 +204,17 @@ class LibrariesService(ServiceBase):
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
                 return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return LibraryAvailablePermissions(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
+            return LibraryAvailablePermissionsResponse(
+                roles=return_roles, page=page, page_limit=page_limit, total=total_roles
+            )
         else:
             raise exceptions.RequestParameterInvalidException(
                 "The value of 'scope' parameter is invalid. Alllowed values: current, available"
             )
 
     def set_permissions(
-        self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
+        self, trans, id: int, payload: Dict[str, Any]
+    ) -> Union[LibraryLegacySummaryResponse, LibraryCurrentPermissionsResponse]:  # Old legacy response
         """Set permissions of the given library to the given role ids.
 
         :param  id:      the encoded id of the library to set the permissions of
@@ -240,7 +241,7 @@ class LibrariesService(ServiceBase):
         """
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
+        library = self.library_manager.get(trans, id)
 
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException(
@@ -268,7 +269,7 @@ class LibrariesService(ServiceBase):
             valid_access_roles = []
             invalid_access_roles_names = []
             for role_id in new_access_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(
                     trans, library, is_library_access=True
                 )
@@ -278,6 +279,7 @@ class LibrariesService(ServiceBase):
                     invalid_access_roles_names.append(role_id)
             if len(invalid_access_roles_names) > 0:
                 log.warning(
+                    # InvalidRequestParameter ?
                     f"The following roles could not be added to the library access permission: {str(invalid_access_roles_names)}"
                 )
 
@@ -285,7 +287,7 @@ class LibrariesService(ServiceBase):
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_add_roles.append(role)
@@ -293,6 +295,7 @@ class LibrariesService(ServiceBase):
                     invalid_add_roles_names.append(role_id)
             if len(invalid_add_roles_names) > 0:
                 log.warning(
+                    # InvalidRequestParameter ?
                     f"The following roles could not be added to the add library item permission: {str(invalid_add_roles_names)}"
                 )
 
@@ -300,7 +303,7 @@ class LibrariesService(ServiceBase):
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_manage_roles.append(role)
@@ -308,6 +311,7 @@ class LibrariesService(ServiceBase):
                     invalid_manage_roles_names.append(role_id)
             if len(invalid_manage_roles_names) > 0:
                 log.warning(
+                    # InvalidRequestParameter ?
                     f"The following roles could not be added to the manage library permission: {str(invalid_manage_roles_names)}"
                 )
 
@@ -315,7 +319,7 @@ class LibrariesService(ServiceBase):
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, library)
                 if role in valid_roles:
                     valid_modify_roles.append(role)
@@ -323,6 +327,7 @@ class LibrariesService(ServiceBase):
                     invalid_modify_roles_names.append(role_id)
             if len(invalid_modify_roles_names) > 0:
                 log.warning(
+                    # InvalidRequestParameter ?
                     f"The following roles could not be added to the modify library permission: {str(invalid_modify_roles_names)}"
                 )
 
@@ -341,21 +346,19 @@ class LibrariesService(ServiceBase):
                 'Allowed values are: "remove_restrictions", set_permissions"'
             )
         roles = self.library_manager.get_current_roles(trans, library)
-        return LibraryCurrentPermissions.parse_obj(roles)
+        return LibraryCurrentPermissionsResponse.parse_obj(roles)
 
-    def set_permissions_old(self, trans, library, payload) -> LibraryLegacySummary:
+    def set_permissions_old(self, trans, library, payload) -> LibraryLegacySummaryResponse:
         """
         *** old implementation for backward compatibility ***
 
         Updates the library permissions.
         """
-        params = util.Params(payload)
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
-            role_params = params.get(f"{k}_in", [])
+            role_params = payload.get(f"{k}_in", [])
             in_roles = [
-                trans.sa_session.query(trans.app.model.Role).get(trans.security.decode_id(x))
-                for x in util.listify(role_params)
+                trans.sa_session.query(trans.app.model.Role).get(role_id) for role_id in util.listify(role_params)
             ]
             permissions[trans.app.security_agent.get_action(v.action)] = in_roles
         trans.app.security_agent.set_all_library_permissions(trans, library, permissions)
@@ -363,6 +366,6 @@ class LibrariesService(ServiceBase):
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
         item = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
+            view="element",
         )
-        return LibraryLegacySummary.parse_obj(item)
+        return LibraryLegacySummaryResponse.parse_obj(item)

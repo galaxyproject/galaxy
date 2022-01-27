@@ -11,6 +11,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from sqlalchemy import (
@@ -32,9 +33,11 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.schema.schema import (
-    HDABasicInfo,
-    ShareHistoryExtra,
+    HDABasicInfoResponse,
+    ShareHistoryExtraResponse,
+    ShareWithExtraResponse,
 )
+from galaxy.schema.types import LatestLiteral
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -254,9 +257,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def get_sharing_extra_information(
         self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[sharable.ShareWithExtra]:
+    ) -> Optional[ShareWithExtraResponse]:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
-        extra = ShareHistoryExtra()
+        extra = ShareHistoryExtraResponse()
         history = cast(model.History, item)
         if history.empty:
             errors.add("You cannot share an empty history.")
@@ -291,7 +294,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 else:
                     hda_id = trans.security.encode_id(hda.id)
-                    hda_info = HDABasicInfo(id=hda_id, name=hda.name)
+                    hda_info = HDABasicInfoResponse(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
                         can_change_dict[hda_id] = hda_info
                     else:
@@ -341,18 +344,21 @@ class HistoryExportView:
     def __init__(self, app: MinimalManagerApp):
         self.app = app
 
-    def get_exports(self, trans, history_id):
+    def get_exports(self, trans, history_id: int):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans, history_id, jeha):
+    def serialize(self, trans, history_id: int, jeha):
         rval = jeha.to_dict()
         encoded_jeha_id = trans.security.encode_id(jeha.id)
-        api_url = trans.url_builder("history_archive_download", id=history_id, jeha_id=encoded_jeha_id)
-        external_url = trans.url_builder("history_archive_download", id=history_id, jeha_id="latest", qualified=True)
+        encoded_history_id = trans.security.encode_id(history_id)
+        api_url = trans.url_builder("history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id)
+        external_url = trans.url_builder(
+            "history_archive_download", id=encoded_history_id, jeha_id="latest", qualified=True
+        )
         external_permanent_url = trans.url_builder(
-            "history_archive_download", id=history_id, jeha_id=encoded_jeha_id, qualified=True
+            "history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
         )
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
@@ -360,12 +366,11 @@ class HistoryExportView:
         rval = trans.security.encode_all_ids(rval)
         return rval
 
-    def get_ready_jeha(self, trans, history_id, jeha_id="latest"):
+    def get_ready_jeha(self, trans, history_id, jeha_id: Union[int, LatestLiteral] = "latest"):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         if jeha_id != "latest":
-            decoded_jeha_id = trans.security.decode_id(jeha_id)
-            matching_exports = [e for e in matching_exports if e.id == decoded_jeha_id]
+            matching_exports = [e for e in matching_exports if e.id == jeha_id]
         if len(matching_exports) == 0:
             raise glx_exceptions.ObjectNotFound("Failed to find target history export")
 
@@ -375,11 +380,9 @@ class HistoryExportView:
 
         return jeha
 
-    def _history(self, trans, history_id):
+    def _history(self, trans, history_id: Optional[int] = None) -> model.History:
         if history_id is not None:
-            history = self.app.history_manager.get_accessible(
-                trans.security.decode_id(history_id), trans.user, current_history=trans.history
-            )
+            history = self.app.history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
         else:
             history = trans.history
         return history

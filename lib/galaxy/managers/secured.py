@@ -32,7 +32,7 @@ class AccessibleManagerMixin:
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id, user, **kwargs):
+    def get_accessible(self, id: int, user, **kwargs):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
@@ -98,7 +98,7 @@ class OwnableManagerMixin:
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_owned(self, id, user, **kwargs):
+    def get_owned(self, id: int, user, **kwargs):
         """
         Return the item with the given id if owned by the user,
         otherwise raise an error.

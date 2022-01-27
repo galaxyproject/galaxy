@@ -9,7 +9,7 @@ from pydantic import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import ItemTagAssociation
 from galaxy.model.tags import GalaxyTagHandlerSession
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import TagCollection
 
 taggable_item_names = {item: item for item in ItemTagAssociation.associated_item_names}
@@ -19,7 +19,7 @@ TaggableItemClass = Enum("TaggableItemClass", taggable_item_names)  # type: igno
 
 
 class ItemTagsPayload(BaseModel):
-    item_id: EncodedDatabaseIdField = Field(
+    item_id: DecodedDatabaseIdField = Field(
         ...,  # This field is required
         title="Item ID",
         description="The `encoded identifier` of the item whose tags will be updated.",
@@ -59,8 +59,7 @@ class TagsManager:
         Get an item based on type and id.
         """
         tag_handler = GalaxyTagHandlerSession(trans.sa_session)
-        id = trans.security.decode_id(payload.item_id)
         item_class_name = str(payload.item_class)
         item_class = tag_handler.item_tag_assoc_info[item_class_name].item_class
-        item = trans.sa_session.query(item_class).filter(item_class.id == id).first()
+        item = trans.sa_session.query(item_class).filter(item_class.id == payload.item_id).first()
         return item

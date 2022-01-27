@@ -28,7 +28,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         self.app = app
         self.tag_handler = tags.GalaxyTagHandler(app.model.context)
 
-    def get(self, trans, decoded_library_dataset_id, check_accessible=True):
+    def get(self, trans, decoded_library_dataset_id: int, check_accessible=True):
         """
         Get the library dataset from the DB.
 

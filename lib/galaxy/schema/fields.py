@@ -68,16 +68,31 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
     def validate(cls, v):
         if isinstance(v, int):
             return cls(cls.security.encode_id(v))
+        # Extended validation may not be necessary, we know Galaxy produced this value
         if not isinstance(v, str):
             raise TypeError("String required")
-        if v.startswith("F"):
-            # Library Folder ids start with an additional "F"
-            len_v = len(v) - 1
-        else:
-            len_v = len(v)
+        len_v = len(v)
         if len_v % ENCODED_ID_LENGTH_MULTIPLE:
             raise ValueError("Invalid id length, must be multiple of 16")
-        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
+        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v[1:].lower())
+        if not m:
+            raise ValueError("Invalid characters in encoded ID")
+        return cls(v)
+
+
+class FolderEncodedDatabaseIdField(str, BaseDatabaseIdField):
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, int):
+            return cls(f"F{cls.security.encode_id(v)}")
+        # Extended validation may not be necessary, we know Galaxy produced this value
+        if not isinstance(v, str):
+            raise TypeError("String required")
+        assert v.startswith("F")
+        len_v = len(v)
+        if (len_v - 1) % ENCODED_ID_LENGTH_MULTIPLE:
+            raise ValueError("Invalid id length, must be multiple of 16")
+        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v[1:].lower())
         if not m:
             raise ValueError("Invalid characters in encoded ID")
         return cls(v)

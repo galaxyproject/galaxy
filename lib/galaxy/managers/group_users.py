@@ -1,16 +1,16 @@
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
 )
 
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    UserEmailUrlResponse,
+    UserEmailUrlResponseList,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import url_for
 
@@ -23,20 +23,16 @@ class GroupUsersManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField) -> List[Dict[str, Any]]:
+    def index(self, trans: ProvidesAppContext, group_id: int) -> UserEmailUrlResponseList:
         """
         Returns a collection (list) with some information about users associated with the given group.
         """
         group = self._get_group(trans, group_id)
-        rval = []
-        for uga in group.users:
-            group_user = self._serialize_group_user(group_id, uga.user)
-            rval.append(group_user)
-        return rval
+        return UserEmailUrlResponseList(
+            __root__=(self._serialize_group_user(group_id, uga.user) for uga in group.users)
+        )
 
-    def show(
-        self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField
-    ) -> Dict[str, Any]:
+    def show(self, trans: ProvidesAppContext, id: int, group_id: int) -> UserEmailUrlResponse:
         """
         Returns information about a group user.
         """
@@ -49,7 +45,7 @@ class GroupUsersManager:
 
         return self._serialize_group_user(group_id, user)
 
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def update(self, trans: ProvidesAppContext, id: int, group_id: int) -> UserEmailUrlResponse:
         """
         Adds a user to a group.
         """
@@ -62,7 +58,7 @@ class GroupUsersManager:
 
         return self._serialize_group_user(group_id, user)
 
-    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def delete(self, trans: ProvidesAppContext, id: int, group_id: int) -> UserEmailUrlResponse:
         """
         Removes a user from a group.
         """
@@ -75,18 +71,16 @@ class GroupUsersManager:
         self._remove_user_from_group(trans, group_user)
         return self._serialize_group_user(group_id, user)
 
-    def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
-        decoded_group_id = decode_id(self._app, encoded_group_id)
-        group = trans.sa_session.query(model.Group).get(decoded_group_id)
+    def _get_group(self, trans: ProvidesAppContext, group_id: int) -> Any:
+        group = trans.sa_session.query(model.Group).get(group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+            raise ObjectNotFound("Group not found.")
         return group
 
-    def _get_user(self, trans: ProvidesAppContext, encoded_user_id: EncodedDatabaseIdField) -> model.User:
-        decoded_user_id = decode_id(self._app, encoded_user_id)
-        user = trans.sa_session.query(model.User).get(decoded_user_id)
+    def _get_user(self, trans: ProvidesAppContext, user_id: int) -> model.User:
+        user = trans.sa_session.query(model.User).get(user_id)
         if user is None:
-            raise ObjectNotFound(f"User with id {encoded_user_id} was not found.")
+            raise ObjectNotFound("User not found.")
         return user
 
     def _get_group_user(
@@ -107,10 +101,9 @@ class GroupUsersManager:
         trans.sa_session.delete(group_user)
         trans.sa_session.flush()
 
-    def _serialize_group_user(self, encoded_group_id: EncodedDatabaseIdField, user: model.User):
+    def _serialize_group_user(self, group_id: int, user: model.User):
         encoded_user_id = self._app.security.encode_id(user.id)
-        return {
-            "id": encoded_user_id,
-            "email": user.email,
-            "url": url_for("group_user", group_id=encoded_group_id, id=encoded_user_id),
-        }
+        encoded_group_id = self._app.security.encode_id(group_id)
+        return UserEmailUrlResponse(
+            id=user.id, email=user.email, url=url_for("group_user", group_id=encoded_group_id, id=encoded_user_id)
+        )

@@ -6,9 +6,7 @@ from typing import (
 
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -20,14 +18,14 @@ class GroupRolesManager:
     def __init__(self, app: MinimalManagerApp) -> None:
         self._app = app
 
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField):
+    def index(self, trans: ProvidesAppContext, group_id: int):
         """
         Returns a collection roles associated with the given group.
         """
         group = self._get_group(trans, group_id)
         return group.roles
 
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def show(self, trans: ProvidesAppContext, id: int, group_id: int):
         """
         Returns information about a group role.
         """
@@ -39,7 +37,7 @@ class GroupRolesManager:
             raise ObjectNotFound(f"Role {role.name} not in group {group.name}")
         return role
 
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def update(self, trans: ProvidesAppContext, id: int, group_id: int):
         """
         Adds a role to a group if it is not already associated.
         """
@@ -51,7 +49,7 @@ class GroupRolesManager:
             self._add_role_to_group(trans, group, role)
         return role
 
-    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField):
+    def delete(self, trans: ProvidesAppContext, id: int, group_id: int):
         """
         Removes a role from a group.
         """
@@ -64,18 +62,16 @@ class GroupRolesManager:
         self._remove_role_from_group(trans, group_role)
         return role
 
-    def _get_group(self, trans: ProvidesAppContext, encoded_group_id: EncodedDatabaseIdField) -> Any:
-        decoded_group_id = decode_id(self._app, encoded_group_id)
-        group = trans.sa_session.query(model.Group).get(decoded_group_id)
+    def _get_group(self, trans: ProvidesAppContext, group_id: int) -> Any:
+        group = trans.sa_session.query(model.Group).get(group_id)
         if not group:
-            raise ObjectNotFound(f"Group with id {encoded_group_id} was not found.")
+            raise ObjectNotFound("Group not found.")
         return group
 
-    def _get_role(self, trans: ProvidesAppContext, encoded_role_id: EncodedDatabaseIdField) -> model.Role:
-        decoded_role_id = decode_id(self._app, encoded_role_id)
-        role = trans.sa_session.query(model.Role).get(decoded_role_id)
+    def _get_role(self, trans: ProvidesAppContext, role_id: int) -> model.Role:
+        role = trans.sa_session.query(model.Role).get(role_id)
         if not role:
-            raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
+            raise ObjectNotFound("Role not found.")
         return role
 
     def _get_group_role(

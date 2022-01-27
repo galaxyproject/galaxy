@@ -126,8 +126,7 @@ class CreatesCollectionsMixin:
             #    src = 'collection'#?
             # elif isinstance( element, model.LibraryDatasetDatasetAssociation ):
             #    src = 'ldda'#?
-            encoded_id = self.trans.security.encode_id(element.id)
-            identifier_list.append(dict(src=src, name=element.name, id=encoded_id))
+            identifier_list.append(dict(src=src, name=element.name, id=element.id))
         return identifier_list
 
 

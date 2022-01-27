@@ -203,7 +203,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
         hdca_id = kwd.get("hdca_id", None)
         if hdca_id:
-            hdca = self.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+            decoded_hdca_id = trans.security.decode_id(hdca_id)
+            hdca = self.app.dataset_collection_manager.get_dataset_collection_instance(
+                trans, "history", decoded_hdca_id
+            )
             del kwd["hdca_id"]
             kwd["hdca"] = hdca
         # Ensure offset is an integer before passing through to datatypes.

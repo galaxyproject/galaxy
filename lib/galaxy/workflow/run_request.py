@@ -365,7 +365,9 @@ def build_workflow_run_configs(trans, workflow, payload):
                     )
                     content = history.add_dataset(dataset)
                 elif input_source == "hdca":
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(
+                        trans, "history", trans.security.decode_id(input_id)
+                    )
                 else:
                     raise exceptions.RequestParameterInvalidException(
                         f"Unknown workflow input source '{input_source}' specified."

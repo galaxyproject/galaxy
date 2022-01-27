@@ -969,7 +969,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         self.set_as_current(trans, id=hist_id)
         return trans.response.send_redirect(url_for("/"))
 
-    def get_item(self, trans, id):
+    def get_item(self, trans, id: str):
         return self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
         # TODO: override of base ui controller?
 

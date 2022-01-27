@@ -2,6 +2,7 @@
 Manager and Serializer for TS groups.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy import (
     false,
@@ -33,7 +34,7 @@ class GroupManager:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def get(self, trans, decoded_group_id=None, name=None):
+    def get(self, trans, decoded_group_id: Optional[int] = None, name: Optional[str] = None):
         """
         Get the group from the DB based on its ID or name.
 

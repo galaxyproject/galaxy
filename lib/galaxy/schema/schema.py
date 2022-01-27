@@ -10,6 +10,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 
@@ -33,6 +34,7 @@ from galaxy.model import (
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
+    FolderEncodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.types import RelativeUrl
@@ -76,6 +78,12 @@ AccessibleField: bool = Field(
 )
 
 EncodedEntityIdField: EncodedDatabaseIdField = Field(
+    ...,
+    title="ID",
+    description="The encoded ID of this entity.",
+)
+
+DecodedEntityIdField: DecodedDatabaseIdField = Field(
     ...,
     title="ID",
     description="The encoded ID of this entity.",
@@ -145,7 +153,13 @@ ElementsField = Field(
     description="The summary information of each of the elements inside the dataset collection.",
 )
 
-HistoryIdField: EncodedDatabaseIdField = Field(
+EncodedHistoryIdField: EncodedDatabaseIdField = Field(
+    ...,
+    title="History ID",
+    description="The encoded ID of the history associated with this item.",
+)
+
+DecodedHistoryIdField: DecodedDatabaseIdField = Field(
     ...,
     title="History ID",
     description="The encoded ID of the history associated with this item.",
@@ -169,6 +183,19 @@ ContentsUrlField = Field(
 )
 
 
+WorkflowIdField = Field(..., title="Workflow ID", description="The encoded ID of a workflow.")
+JobIdField = Field(
+    ...,
+    title="Job ID",
+    description="The encoded database ID of a job.",
+)
+UserIdField = Field(
+    ...,
+    title="User ID",
+    description="The encoded ID of a user.",
+)
+
+
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
 
@@ -177,7 +204,11 @@ class Model(BaseModel):
         allow_population_by_field_name = True
 
 
-class UserModel(Model):
+class ResponseModel(Model):
+    """Response Model Base."""
+
+
+class UserResponseModel(ResponseModel):
     """User in a transaction context."""
 
     id: EncodedDatabaseIdField = Field(title="ID", description="User ID")
@@ -193,7 +224,7 @@ class GroupModel(BaseModel):
     """User group model"""
 
     model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = Field(
+    id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
         description="Encoded group ID",
@@ -287,12 +318,12 @@ class MetadataFile(Model):
 class DatasetPermissions(Model):
     """Role-based permissions for accessing and managing a dataset."""
 
-    manage: List[EncodedDatabaseIdField] = Field(
+    manage: List[DecodedDatabaseIdField] = Field(
         [],
         title="Management",
         description="The set of roles (encoded IDs) that can manage this dataset.",
     )
-    access: List[EncodedDatabaseIdField] = Field(
+    access: List[DecodedDatabaseIdField] = Field(
         [],
         title="Access",
         description="The set of roles (encoded IDs) that can access this dataset.",
@@ -337,7 +368,7 @@ class Visualization(Model):  # TODO annotate this model
         extra = Extra.allow  # Allow any fields temporarily until the model is annotated
 
 
-class HistoryItemBase(Model):
+class HistoryItemBaseResponse(ResponseModel):
     """Basic information provided by items contained in a History."""
 
     id: EncodedDatabaseIdField = EncodedEntityIdField
@@ -345,7 +376,7 @@ class HistoryItemBase(Model):
         title="Name",
         description="The name of the item.",
     )
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: EncodedDatabaseIdField = EncodedHistoryIdField
     hid: int = Field(
         ...,
         title="HID",
@@ -368,7 +399,7 @@ class HistoryItemBase(Model):
     )
 
 
-class HistoryItemCommon(HistoryItemBase):
+class HistoryItemCommonResponse(HistoryItemBaseResponse):
     """Common information provided by items contained in a History."""
 
     class Config:
@@ -391,7 +422,7 @@ class HistoryItemCommon(HistoryItemBase):
     tags: TagCollection
 
 
-class HDASummary(HistoryItemCommon):
+class HDASummaryResponse(HistoryItemCommonResponse):
     """History Dataset Association summary information."""
 
     dataset_id: EncodedDatabaseIdField = Field(
@@ -413,7 +444,7 @@ class HDASummary(HistoryItemCommon):
     )
 
 
-class HDAInaccessible(HistoryItemBase):
+class HDAInaccessibleResponse(HistoryItemBaseResponse):
     """History Dataset Association information when the user can not access it."""
 
     accessible: bool = AccessibleField
@@ -429,7 +460,7 @@ HdaLddaField = Field(
 )
 
 
-class HDADetailed(HDASummary):
+class HDADetailedResponse(HDASummaryResponse):
     """History Dataset Association detailed information."""
 
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
@@ -492,7 +523,7 @@ class HDADetailed(HDASummary):
         title="Peek",
         description="A few lines of contents from the start of the file.",
     )
-    creating_job: str = Field(
+    creating_job: Optional[EncodedDatabaseIdField] = Field(
         ...,
         title="Creating Job ID",
         description="The encoded ID of the job that created this dataset.",
@@ -561,7 +592,7 @@ class HDADetailed(HDASummary):
     )
 
 
-class HDAExtended(HDADetailed):
+class HDAExtendedResponse(HDADetailedResponse):
     """History Dataset Association extended information."""
 
     tool_version: str = Field(
@@ -581,7 +612,7 @@ class HDAExtended(HDADetailed):
     )
 
 
-class DCSummary(Model):
+class DCSummaryResponse(ResponseModel):
     """Dataset Collection summary information."""
 
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
@@ -594,20 +625,20 @@ class DCSummary(Model):
     element_count: Optional[int] = ElementCountField
 
 
-class HDAObject(Model):
+class HDAObjectResponse(ResponseModel):
     """History Dataset Association Object"""
 
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
-    history_id: EncodedDatabaseIdField = HistoryIdField
+    history_id: EncodedDatabaseIdField = EncodedHistoryIdField
 
     class Config:
         extra = Extra.allow  # Can contain more fields like metadata_*
 
 
-class DCObject(Model):
+class DCObjectResponse(ResponseModel):
     """Dataset Collection Object"""
 
     id: EncodedDatabaseIdField = EncodedEntityIdField
@@ -616,10 +647,10 @@ class DCObject(Model):
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
     contents_url: Optional[RelativeUrl] = ContentsUrlField
-    elements: List["DCESummary"] = ElementsField
+    elements: List["DCESummaryResponse"] = ElementsField
 
 
-class DCESummary(Model):
+class DCESummaryResponse(ResponseModel):
     """Dataset Collection Element summary information."""
 
     id: EncodedDatabaseIdField = EncodedEntityIdField
@@ -639,94 +670,24 @@ class DCESummary(Model):
         title="Element Type",
         description="The type of the element. Used to interpret the `object` field.",
     )
-    object: Union[HDAObject, HDADetailed, DCObject] = Field(
+    object: Union[HDAObjectResponse, HDADetailedResponse, DCObjectResponse] = Field(
         ...,
         title="Object",
         description="The element's specific data depending on the value of `element_type`.",
     )
 
 
-DCObject.update_forward_refs()
+DCObjectResponse.update_forward_refs()
 
 
-class DCDetailed(DCSummary):
+class DCDetailedResponse(DCSummaryResponse):
     """Dataset Collection detailed information."""
 
     populated: bool = PopulatedField
-    elements: List[DCESummary] = ElementsField
+    elements: List[DCSummaryResponse] = ElementsField
 
 
-class HDCJobStateSummary(Model):
-    """Overview of the job states working inside a dataset collection."""
-
-    all_jobs: int = Field(
-        0,
-        title="All jobs",
-        description="Total number of jobs associated with a dataset collection.",
-    )
-    new: int = Field(
-        0,
-        title="New jobs",
-        description="Number of jobs in the `new` state.",
-    )
-    waiting: int = Field(
-        0,
-        title="Waiting jobs",
-        description="Number of jobs in the `waiting` state.",
-    )
-    running: int = Field(
-        0,
-        title="Running jobs",
-        description="Number of jobs in the `running` state.",
-    )
-    error: int = Field(
-        0,
-        title="Jobs with errors",
-        description="Number of jobs in the `error` state.",
-    )
-    paused: int = Field(
-        0,
-        title="Paused jobs",
-        description="Number of jobs in the `paused` state.",
-    )
-    deleted_new: int = Field(
-        0,
-        title="Deleted new jobs",
-        description="Number of jobs in the `deleted_new` state.",
-    )
-    resubmitted: int = Field(
-        0,
-        title="Resubmitted jobs",
-        description="Number of jobs in the `resubmitted` state.",
-    )
-    queued: int = Field(
-        0,
-        title="Queued jobs",
-        description="Number of jobs in the `queued` state.",
-    )
-    ok: int = Field(
-        0,
-        title="OK jobs",
-        description="Number of jobs in the `ok` state.",
-    )
-    failed: int = Field(
-        0,
-        title="Failed jobs",
-        description="Number of jobs in the `failed` state.",
-    )
-    deleted: int = Field(
-        0,
-        title="Deleted jobs",
-        description="Number of jobs in the `deleted` state.",
-    )
-    upload: int = Field(
-        0,
-        title="Upload jobs",
-        description="Number of jobs in the `upload` state.",
-    )
-
-
-class HDCASummary(HistoryItemCommon):
+class HDCASummaryResponse(HistoryItemCommonResponse):
     """History Dataset Collection Association summary information."""
 
     model_class: str = ModelClassField(
@@ -752,27 +713,14 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
-    job_state_summary: Optional[HDCJobStateSummary] = Field(
-        None,
-        title="Job State Summary",
-        description="Overview of the job states working inside the dataset collection.",
-    )
     contents_url: RelativeUrl = ContentsUrlField
-    collection_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Collection ID",
-        description="The encoded ID of the dataset collection associated with this HDCA.",
-    )
 
 
-class HDCADetailed(HDCASummary):
+class HDCADetailedResponse(HDCASummaryResponse):
     """History Dataset Collection Association detailed information."""
 
     populated: bool = PopulatedField
-    elements: List[DCESummary] = ElementsField
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
-    )
+    elements: List[DCESummaryResponse] = ElementsField
 
 
 class HistoryBase(BaseModel):
@@ -783,6 +731,10 @@ class HistoryBase(BaseModel):
         extra = Extra.allow  # Allow any other extra fields
 
 
+class HistoryBaseResponse(HistoryBase):
+    """Response model base for History models."""
+
+
 class UpdateContentItem(HistoryBase):
     """Used for updating a particular HDA. All fields are optional."""
 
@@ -791,7 +743,7 @@ class UpdateContentItem(HistoryBase):
         title="Content Type",
         description="The type of this item.",
     )
-    id: EncodedDatabaseIdField = EncodedEntityIdField
+    id: DecodedDatabaseIdField = DecodedEntityIdField
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -824,7 +776,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
         }
 
 
-class HistorySummary(HistoryBase):
+class HistorySummaryResponse(HistoryBaseResponse):
     """History summary information."""
 
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
@@ -878,7 +830,7 @@ HistoryStateCounts = Dict[Dataset.states, int]
 HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
 
 
-class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
+class HistoryDetailedResponse(HistorySummaryResponse):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
 
     contents_url: RelativeUrl = ContentsUrlField
@@ -887,11 +839,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Size",
         description="The total size of the contents of this history in bytes.",
     )
-    user_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="User ID",
-        description="The encoded ID of the user that owns this History.",
-    )
+    user_id: EncodedDatabaseIdField = UserIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     importable: bool = Field(
@@ -933,7 +881,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
     )
 
 
-class HistoryBeta(HistoryDetailed):
+class HistoryBetaResponse(HistoryDetailedResponse):
     """History detailed information used in the new Beta History."""
 
     annotation: Optional[str] = AnnotationField
@@ -963,10 +911,10 @@ class HistoryBeta(HistoryDetailed):
     )
 
 
-AnyHistoryView = Union[
-    HistoryBeta,
-    HistoryDetailed,
-    HistorySummary,
+AnyHistoryViewResponse = Union[
+    HistoryBetaResponse,
+    HistoryDetailedResponse,
+    HistorySummaryResponse,
     # Any will cover those cases in which only specific `keys` are requested
     # otherwise the validation will fail because the required fields are not returned
     Any,
@@ -1046,7 +994,7 @@ class CreateHistoryPayload(Model):
         title="Name",
         description="The new history name.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="History ID",
         description=(
@@ -1088,7 +1036,7 @@ class CollectionElementIdentifier(Model):
         title="Source",
         description="The source of the element.",
     )
-    id: Optional[EncodedDatabaseIdField] = Field(
+    id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         title="ID",
         description="The encoded ID of the element.",
@@ -1138,27 +1086,23 @@ class CreateNewCollectionPayload(Model):
         title="Instance Type",
         description="The type of the instance, either `history` (default) or `library`.",
     )
-    history_id: Optional[EncodedDatabaseIdField] = Field(
+    history_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         description="The ID of the history that will contain the collection. Required if `instance_type=history`.",
     )
-    folder_id: Optional[EncodedDatabaseIdField] = Field(
+    folder_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,
         description="The ID of the history that will contain the collection. Required if `instance_type=library`.",
     )
 
 
-class JobExportHistoryArchiveModel(Model):
+class JobExportHistoryArchiveModelResponse(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The encoded database ID of the job that is currently processing a particular request.",
     )
-    job_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Job ID",
-        description="The encoded database ID of the job that generated this history export archive.",
-    )
+    job_id: EncodedDatabaseIdField = JobIdField
     ready: bool = Field(
         ...,
         title="Ready",
@@ -1191,8 +1135,8 @@ class JobExportHistoryArchiveModel(Model):
     )
 
 
-class JobExportHistoryArchiveCollection(Model):
-    __root__: List[JobExportHistoryArchiveModel]
+class JobExportHistoryArchiveCollectionResponse(Model):
+    __root__: List[JobExportHistoryArchiveModelResponse]
 
 
 class LabelValuePair(BaseModel):
@@ -1237,7 +1181,98 @@ class JobIdResponse(BaseModel):
     )
 
 
-class JobBaseModel(Model):
+class HDCJobStateSummaryResponse(ResponseModel):
+    """Overview of the job states working inside a dataset collection."""
+
+    all_jobs: int = Field(
+        0,
+        title="All jobs",
+        description="Total number of jobs associated with a dataset collection.",
+    )
+    new: int = Field(
+        0,
+        title="New jobs",
+        description="Number of jobs in the `new` state.",
+    )
+    waiting: int = Field(
+        0,
+        title="Waiting jobs",
+        description="Number of jobs in the `waiting` state.",
+    )
+    running: int = Field(
+        0,
+        title="Running jobs",
+        description="Number of jobs in the `running` state.",
+    )
+    error: int = Field(
+        0,
+        title="Jobs with errors",
+        description="Number of jobs in the `error` state.",
+    )
+    paused: int = Field(
+        0,
+        title="Paused jobs",
+        description="Number of jobs in the `paused` state.",
+    )
+    deleted_new: int = Field(
+        0,
+        title="Deleted new jobs",
+        description="Number of jobs in the `deleted_new` state.",
+    )
+    resubmitted: int = Field(
+        0,
+        title="Resubmitted jobs",
+        description="Number of jobs in the `resubmitted` state.",
+    )
+    queued: int = Field(
+        0,
+        title="Queued jobs",
+        description="Number of jobs in the `queued` state.",
+    )
+    ok: int = Field(
+        0,
+        title="OK jobs",
+        description="Number of jobs in the `ok` state.",
+    )
+    failed: int = Field(
+        0,
+        title="Failed jobs",
+        description="Number of jobs in the `failed` state.",
+    )
+    deleted: int = Field(
+        0,
+        title="Deleted jobs",
+        description="Number of jobs in the `deleted` state.",
+    )
+    upload: int = Field(
+        0,
+        title="Upload jobs",
+        description="Number of jobs in the `upload` state.",
+    )
+
+
+class HDCABetaResponse(HDCADetailedResponse):  # TODO: change HDCABeta name to a more appropriate one.
+    """History Dataset Collection Association information used in the new Beta History."""
+
+    # Equivalent to `betawebclient` serialization view for HDCAs
+    collection_id: EncodedDatabaseIdField = Field(
+        # TODO: inconsistency? the equivalent counterpart for HDAs, `dataset_id`, is declared in `HDASummary` scope
+        # while in HDCAs it is only serialized in the new `betawebclient` view?
+        ...,
+        title="Collection ID",
+        description="The encoded ID of the dataset collection associated with this HDCA.",
+    )
+    job_state_summary: Optional[HDCJobStateSummaryResponse] = Field(
+        None,
+        title="Job State Summary",
+        description="Overview of the job states working inside the dataset collection.",
+    )
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
+
+
+class JobBaseModelResponse(ResponseModel):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
     tool_id: str = Field(
@@ -1270,7 +1305,7 @@ class JobBaseModel(Model):
     )
 
 
-class JobImportHistoryResponse(JobBaseModel):
+class JobImportHistoryResponse(JobBaseModelResponse):
     message: str = Field(
         ...,
         title="Message",
@@ -1278,7 +1313,7 @@ class JobImportHistoryResponse(JobBaseModel):
     )
 
 
-class JobStateSummary(Model):
+class JobStateSummaryResponse(ResponseModel):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
@@ -1287,15 +1322,15 @@ class JobStateSummary(Model):
     )
 
 
-class ImplicitCollectionJobsStateSummary(JobStateSummary):
+class ImplicitCollectionJobsStateSummary(JobStateSummaryResponse):
     model: str = ModelClassField("ImplicitCollectionJobs")
 
 
-class WorkflowInvocationStateSummary(JobStateSummary):
+class WorkflowInvocationStateSummaryResponse(JobStateSummaryResponse):
     model: str = ModelClassField("WorkflowInvocation")
 
 
-class JobSummary(JobBaseModel):
+class JobSummaryResponse(JobBaseModelResponse):
     """Basic information about a job."""
 
     external_id: Optional[str] = Field(
@@ -1323,7 +1358,7 @@ class JobSummary(JobBaseModel):
     )
 
 
-class DatasetJobInfo(Model):
+class DatasetJobInfoResponse(ResponseModel):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     src: DatasetSourceType = Field(
         ...,
@@ -1333,7 +1368,7 @@ class DatasetJobInfo(Model):
     uuid: UUID4 = UuidField
 
 
-class JobDetails(JobSummary):
+class JobDetailsResponse(JobSummaryResponse):
     command_version: str = Field(
         ...,
         title="Command Version",
@@ -1347,19 +1382,19 @@ class JobDetails(JobSummary):
             "The specific parameters depend on the tool itself."
         ),
     )
-    inputs: Dict[str, DatasetJobInfo] = Field(
+    inputs: Dict[str, DatasetJobInfoResponse] = Field(
         {},
         title="Inputs",
         description="Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.",
     )
-    outputs: Dict[str, DatasetJobInfo] = Field(
+    outputs: Dict[str, DatasetJobInfoResponse] = Field(
         {},
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.",
     )
 
 
-class JobMetric(Model):
+class JobMetricResponse(ResponseModel):
     title: str = Field(
         ...,
         title="Title",
@@ -1398,17 +1433,17 @@ class JobMetric(Model):
         }
 
 
-class JobMetricCollection(Model):
+class JobMetricCollectionResponse(ResponseModel):
     """Represents a collection of metrics associated with a Job."""
 
-    __root__: List[JobMetric] = Field(
+    __root__: List[JobMetricResponse] = Field(
         [],
         title="Job Metrics",
         description="Collections of metrics provided by `JobInstrumenter` plugins on a particular job.",
     )
 
 
-class JobFullDetails(JobDetails):
+class JobFullDetailsResponse(JobDetailsResponse):
     tool_stdout: str = Field(
         ...,
         title="Tool Standard Output",
@@ -1444,7 +1479,7 @@ class JobFullDetails(JobDetails):
         title="Job Messages",
         description="List with additional information and possible reasons for a failed job.",
     )
-    job_metrics: Optional[JobMetricCollection] = Field(
+    job_metrics: Optional[JobMetricCollectionResponse] = Field(
         None,
         title="Job Metrics",
         description=(
@@ -1454,7 +1489,7 @@ class JobFullDetails(JobDetails):
     )
 
 
-class StoredWorkflowSummary(Model):
+class StoredWorkflowSummaryResponse(ResponseModel):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
     create_time: datetime = CreateTimeField
@@ -1627,9 +1662,7 @@ class SubworkflowStep(WorkflowStepBase):
     type: WorkflowModuleType = Field(
         WorkflowModuleType.subworkflow, const=True, title="Type", description="The type of workflow module."
     )
-    workflow_id: EncodedDatabaseIdField = Field(
-        ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
-    )
+    workflow_id: DecodedDatabaseIdField = WorkflowIdField
 
 
 class Creator(BaseModel):
@@ -1708,7 +1741,7 @@ class Person(Creator):
     )
 
 
-class StoredWorkflowDetailed(StoredWorkflowSummary):
+class StoredWorkflowDetailedResponse(StoredWorkflowSummaryResponse):
     annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
     license: Optional[str] = Field(
         None, title="License", description="SPDX Identifier of the license associated with this workflow."
@@ -1936,13 +1969,13 @@ RoleNameField = Field(title="Name", description="Name of the role")
 RoleDescriptionField = Field(title="Description", description="Description of the role")
 
 
-class BasicRoleModel(BaseModel):
+class BasicRoleModelResponse(ResponseModel):
     id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     type: str = Field(title="Type", description="Type or category of the role")
 
 
-class RoleModel(BasicRoleModel):
+class RoleModelResponse(BasicRoleModelResponse):
     description: Optional[str] = RoleDescriptionField
     url: str = Field(title="URL", description="URL for the role")
     model_class: str = ModelClassField("Role")
@@ -1951,30 +1984,46 @@ class RoleModel(BasicRoleModel):
 class RoleDefinitionModel(BaseModel):
     name: str = RoleNameField
     description: str = RoleDescriptionField
-    user_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="User IDs", default=[])
-    group_ids: Optional[List[EncodedDatabaseIdField]] = Field(title="Group IDs", default=[])
+    user_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="User IDs", default=[])
+    group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
 
-class RoleListModel(BaseModel):
-    __root__: List[RoleModel]
+class RoleListModelResponse(ResponseModel):
+    __root__: List[RoleModelResponse]
 
 
 # The tuple should probably be another proper model instead?
 # Keeping it as a Tuple for now for backward compatibility
-# TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
-RoleNameIdTuple = List[str]  # Tuple[str, EncodedDatabaseIdField]
+RoleNameIdTuple = Tuple[str, EncodedDatabaseIdField]
 
 # Group_Roles -----------------------------------------------------------------
 
 
-class GroupRoleModel(BaseModel):
+class GroupRoleModelResponse(ResponseModel):
     id: EncodedDatabaseIdField = RoleIdField
     name: str = RoleNameField
     url: RelativeUrl = RelativeUrlField
 
 
-class GroupRoleListModel(BaseModel):
-    __root__: List[GroupRoleModel]
+class GroupRoleListModelResponse(ResponseModel):
+    __root__: List[GroupRoleModelResponse]
+
+
+UserIdsField = Field(title="User IDs", description="List of User IDs that should be part of this Group", default=[])
+RoleIdsField = Field(title="Role IDs", description="List of Role IDs that should be part of this Group", default=[])
+
+
+class BaseGroupModel(BaseModel):
+    user_ids: List[DecodedDatabaseIdField] = UserIdsField
+    role_ids: List[DecodedDatabaseIdField] = RoleIdsField
+
+
+class GroupDefinitionModel(BaseGroupModel):
+    name: str = Field(title="name", description="Name of Group")
+
+
+class GroupUpdateModel(BaseGroupModel):
+    name: Optional[str] = Field(title="name", description="New name of Group")
 
 
 # Libraries -----------------------------------------------------------------
@@ -1985,7 +2034,7 @@ class LibraryPermissionScope(str, Enum):
     available = "available"
 
 
-class LibraryLegacySummary(BaseModel):
+class LibraryLegacySummaryResponse(ResponseModel):
     model_class: str = ModelClassField("Library")
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -2007,7 +2056,7 @@ class LibraryLegacySummary(BaseModel):
         title="Description",
         description="A short text describing the contents of the Library.",
     )
-    root_folder_id: EncodedDatabaseIdField = Field(
+    root_folder_id: FolderEncodedDatabaseIdField = Field(
         ...,
         title="Root Folder ID",
         description="Encoded ID of the Library's base folder.",
@@ -2024,7 +2073,7 @@ class LibraryLegacySummary(BaseModel):
     )
 
 
-class LibrarySummary(LibraryLegacySummary):
+class LibrarySummaryResponse(LibraryLegacySummaryResponse):
     create_time_pretty: str = Field(  # This is somewhat redundant, maybe the client can do this with `create_time`?
         ...,
         title="Create Time Pretty",
@@ -2053,8 +2102,8 @@ class LibrarySummary(LibraryLegacySummary):
     )
 
 
-class LibrarySummaryList(BaseModel):
-    __root__: List[LibrarySummary] = Field(
+class LibrarySummaryListResponse(ResponseModel):
+    __root__: List[LibrarySummaryResponse] = Field(
         default=[],
         title="List with summary information of Libraries.",
     )
@@ -2104,7 +2153,7 @@ class DeleteLibraryPayload(BaseModel):
     )
 
 
-class LibraryCurrentPermissions(BaseModel):
+class LibraryCurrentPermissionsResponse(ResponseModel):
     access_library_role_list: List[RoleNameIdTuple] = Field(
         ...,
         title="Access Role List",
@@ -2128,8 +2177,8 @@ class LibraryCurrentPermissions(BaseModel):
 
 
 RoleIdList = Union[
-    List[EncodedDatabaseIdField], EncodedDatabaseIdField
-]  # Should we support just List[EncodedDatabaseIdField] in the future?
+    List[DecodedDatabaseIdField], DecodedDatabaseIdField
+]  # Should we support just List[DecodedDatabaseIdField] in the future?
 
 
 class LegacyLibraryPermissionsPayload(BaseModel):
@@ -2228,9 +2277,9 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
     )
 
 
-class LibraryFolderDetails(BaseModel):
+class LibraryFolderDetailsResponse(ResponseModel):
     model_class: str = ModelClassField("LibraryFolder")
-    id: EncodedDatabaseIdField = Field(
+    id: FolderEncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the library folder.",
@@ -2247,7 +2296,7 @@ class LibraryFolderDetails(BaseModel):
         title="Parent Library ID",
         description="Encoded ID of the Library this folder belongs to.",
     )
-    parent_id: Optional[EncodedDatabaseIdField] = Field(
+    parent_id: Optional[FolderEncodedDatabaseIdField] = Field(
         None,
         title="Parent Folder ID",
         description="Encoded ID of the parent folder. Empty if it's the root folder.",
@@ -2284,8 +2333,8 @@ class UpdateLibraryFolderPayload(BaseModel):
     )
 
 
-class LibraryAvailablePermissions(BaseModel):
-    roles: List[BasicRoleModel] = Field(
+class LibraryAvailablePermissionsResponse(ResponseModel):
+    roles: List[BasicRoleModelResponse] = Field(
         ...,
         title="Roles",
         description="A list available roles that can be assigned to a particular permission.",
@@ -2307,7 +2356,7 @@ class LibraryAvailablePermissions(BaseModel):
     )
 
 
-class LibraryFolderCurrentPermissions(BaseModel):
+class LibraryFolderCurrentPermissionsResponse(ResponseModel):
     modify_folder_role_list: List[RoleNameIdTuple] = Field(
         ...,
         title="Modify Role List",
@@ -2325,7 +2374,7 @@ class LibraryFolderCurrentPermissions(BaseModel):
     )
 
 
-class DatasetAssociationRoles(Model):
+class DatasetAssociationRolesResponse(ResponseModel):
     access_dataset_roles: List[RoleNameIdTuple] = Field(
         default=[],
         title="Access Roles",
@@ -2381,7 +2430,7 @@ class UpdateDatasetPermissionsPayload(Model):
     )
 
 
-class CustomHistoryItem(Model):
+class CustomHistoryItemResponse(ResponseModel):
     """Can contain any serializable property of the item.
 
     Allows arbitrary custom keys to be specified in the serialization
@@ -2392,22 +2441,22 @@ class CustomHistoryItem(Model):
         extra = Extra.allow
 
 
-AnyHDA = Union[HDADetailed, HDASummary]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
-AnyHistoryContentItem = Union[
-    AnyHDA,
-    AnyHDCA,
-    CustomHistoryItem,
+AnyHDAResponse = Union[HDADetailedResponse, HDASummaryResponse]
+AnyHDCAResponse = Union[HDCADetailedResponse, HDCASummaryResponse]
+AnyHistoryContentItemResponse = Union[
+    AnyHDAResponse,
+    AnyHDCAResponse,
+    CustomHistoryItemResponse,
 ]
 
 
-AnyJobStateSummary = Union[
-    JobStateSummary,
+AnyJobStateSummaryResponse = Union[
+    JobStateSummaryResponse,
     ImplicitCollectionJobsStateSummary,
-    WorkflowInvocationStateSummary,
+    WorkflowInvocationStateSummaryResponse,
 ]
 
-HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
+HistoryArchiveExportResult = Union[JobExportHistoryArchiveModelResponse, JobIdResponse]
 
 
 class DeleteHistoryContentPayload(BaseModel):
@@ -2423,7 +2472,7 @@ class DeleteHistoryContentPayload(BaseModel):
     )
 
 
-class DeleteHistoryContentResult(CustomHistoryItem):
+class DeleteHistoryContentResponse(CustomHistoryItemResponse):
     """Contains minimum information about the deletion state of a history item.
 
     Can also contain any other properties of the item."""
@@ -2459,7 +2508,7 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
-class ContentsNearStats(BaseModel):
+class ContentsNearStatsResponse(ResponseModel):
     """Stats used by the `contents_near` endpoint."""
 
     matches: int
@@ -2484,17 +2533,17 @@ class ContentsNearStats(BaseModel):
         return headers
 
 
-class HistoryContentsResult(Model):
+class HistoryContentsResponse(ResponseModel):
     """Collection of history content items.
     Can contain different views and kinds of items.
     """
 
-    __root__: List[AnyHistoryContentItem]
+    __root__: List[AnyHistoryContentItemResponse]
 
 
-class ContentsNearResult(BaseModel):
-    contents: HistoryContentsResult
-    stats: ContentsNearStats
+class ContentsNearResponse(BaseModel):
+    contents: HistoryContentsResponse
+    stats: ContentsNearStatsResponse
 
 
 # Sharing -----------------------------------------------------------------
@@ -2508,7 +2557,7 @@ class SharingOptions(str, Enum):
     no_changes = "no_changes"
 
 
-class ShareWithExtra(BaseModel):
+class ShareWithExtraResponse(ResponseModel):
     can_share: bool = Field(
         False,
         title="Can Share",
@@ -2519,7 +2568,7 @@ class ShareWithExtra(BaseModel):
         extra = Extra.allow
 
 
-UserIdentifier = Union[EncodedDatabaseIdField, str]
+UserIdentifier = Union[DecodedDatabaseIdField, str]
 
 
 class ShareWithPayload(BaseModel):
@@ -2551,7 +2600,7 @@ class SetSlugPayload(BaseModel):
     )
 
 
-class UserEmail(BaseModel):
+class UserEmailResponse(ResponseModel):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="User ID",
@@ -2564,7 +2613,15 @@ class UserEmail(BaseModel):
     )
 
 
-class SharingStatus(BaseModel):
+class UserEmailUrlResponse(UserEmailResponse):
+    url: str = Field(..., title="URL", description="API url for group user")
+
+
+class UserEmailUrlResponseList(ResponseModel):
+    __root__: List[UserEmailUrlResponse]
+
+
+class SharingStatusResponse(BaseModel):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2585,7 +2642,7 @@ class SharingStatus(BaseModel):
         title="Published",
         description="Whether this resource is currently published.",
     )
-    users_shared_with: List[UserEmail] = Field(
+    users_shared_with: List[UserEmailResponse] = Field(
         [],
         title="Users shared with",
         description="The list of encoded ids for users the resource has been shared.",
@@ -2597,13 +2654,13 @@ class SharingStatus(BaseModel):
     )
 
 
-class ShareWithStatus(SharingStatus):
+class ShareWithStatusResponse(SharingStatusResponse):
     errors: List[str] = Field(
         [],
         title="Errors",
         description="Collection of messages indicating that the resource was not shared with some (or all users) due to an error.",
     )
-    extra: Optional[ShareWithExtra] = Field(
+    extra: Optional[ShareWithExtraResponse] = Field(
         None,
         title="Extra",
         description=(
@@ -2613,13 +2670,13 @@ class ShareWithStatus(SharingStatus):
     )
 
 
-class HDABasicInfo(BaseModel):
+class HDABasicInfoResponse(BaseModel):
     id: EncodedDatabaseIdField
     name: str
 
 
-class ShareHistoryExtra(ShareWithExtra):
-    can_change: List[HDABasicInfo] = Field(
+class ShareHistoryExtraResponse(ShareWithExtraResponse):
+    can_change: List[HDABasicInfoResponse] = Field(
         [],
         title="Can Change",
         description=(
@@ -2627,7 +2684,7 @@ class ShareHistoryExtra(ShareWithExtra):
             "and that can be made accessible for others by the user sharing the history."
         ),
     )
-    cannot_change: List[HDABasicInfo] = Field(
+    cannot_change: List[HDABasicInfoResponse] = Field(
         [],
         title="Cannot Change",
         description=(
@@ -2685,7 +2742,7 @@ class CreatePagePayload(PageSummaryBase):
         title="Annotation",
         description="Annotation that will be attached to the page.",
     )
-    invocation_id: Optional[EncodedDatabaseIdField] = Field(
+    invocation_id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
@@ -2696,7 +2753,7 @@ class CreatePagePayload(PageSummaryBase):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class PageSummary(PageSummaryBase):
+class PageSummaryResponse(PageSummaryBase):
     id: EncodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
@@ -2740,7 +2797,7 @@ class PageSummary(PageSummaryBase):
     )
 
 
-class PageDetails(PageSummary):
+class PageDetailsResponse(PageSummaryResponse):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     generate_version: Optional[str] = Field(
@@ -2758,8 +2815,8 @@ class PageDetails(PageSummary):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class PageSummaryList(BaseModel):
-    __root__: List[PageSummary] = Field(
+class PageSummaryListResponse(ResponseModel):
+    __root__: List[PageSummaryResponse] = Field(
         default=[],
         title="List with summary information of Pages.",
     )

@@ -619,13 +619,13 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     slug_builder = SlugBuilder()
 
-    def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
+    def get_visualization(self, trans, id: int, check_ownership=True, check_accessible=False):
         """
         Get a Visualization from the database by id, verifying ownership.
         """
         # Load workflow from database
         try:
-            visualization = trans.sa_session.query(trans.model.Visualization).get(trans.security.decode_id(id))
+            visualization = trans.sa_session.query(trans.model.Visualization).get(id)
         except TypeError:
             visualization = None
         if not visualization:
@@ -1393,7 +1393,7 @@ class SharableMixin:
         """Returns item content in HTML format."""
         raise NotImplementedError()
 
-    def get_item(self, trans, id):
+    def get_item(self, trans, id: str):
         """Return item based on id."""
         raise NotImplementedError()
 

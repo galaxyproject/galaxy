@@ -14,7 +14,6 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 
 
@@ -33,15 +32,15 @@ class ServiceBase:
     def __init__(self, security: IdEncodingHelper):
         self.security = security
 
-    def decode_id(self, id: EncodedDatabaseIdField) -> int:
+    def decode_id(self, id: str) -> int:
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id)
 
-    def encode_id(self, id: int) -> EncodedDatabaseIdField:
+    def encode_id(self, id: int) -> str:
         """Encodes a raw database ID."""
         return encode_with_security(self.security, id)
 
-    def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
+    def decode_ids(self, ids: List[str]) -> List[int]:
         """
         Decodes all encoded IDs in the given list.
         """

@@ -14,19 +14,19 @@ from fastapi import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryPayload,
     DeleteLibraryPayload,
     LegacyLibraryPermissionsPayload,
-    LibraryAvailablePermissions,
-    LibraryCurrentPermissions,
-    LibraryLegacySummary,
+    LibraryAvailablePermissionsResponse,
+    LibraryCurrentPermissionsResponse,
+    LibraryLegacySummaryResponse,
     LibraryPermissionAction,
     LibraryPermissionScope,
     LibraryPermissionsPayload,
-    LibrarySummary,
-    LibrarySummaryList,
+    LibrarySummaryListResponse,
+    LibrarySummaryResponse,
     UpdateLibraryPayload,
 )
 from galaxy.webapps.galaxy.services.libraries import LibrariesService
@@ -44,7 +44,7 @@ DeletedQueryParam: Optional[bool] = Query(
     default=None, title="Display deleted", description="Whether to include deleted libraries in the result."
 )
 
-LibraryIdPathParam: EncodedDatabaseIdField = Path(
+LibraryIdPathParam: DecodedDatabaseIdField = Path(
     ..., title="Library ID", description="The encoded identifier of the Library."
 )
 
@@ -65,7 +65,7 @@ class FastAPILibraries:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: Optional[bool] = DeletedQueryParam,
-    ) -> LibrarySummaryList:
+    ) -> LibrarySummaryListResponse:
         """Returns a list of summary data for all libraries."""
         return self.service.index(trans, deleted)
 
@@ -76,7 +76,7 @@ class FastAPILibraries:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> LibrarySummaryList:
+    ) -> LibrarySummaryListResponse:
         """Returns a list of summary data for all libraries marked as deleted."""
         return self.service.index(trans, True)
 
@@ -87,8 +87,8 @@ class FastAPILibraries:
     def show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
-    ) -> LibrarySummary:
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
+    ) -> LibrarySummaryResponse:
         """Returns summary information about a particular library."""
         return self.service.show(trans, id)
 
@@ -101,7 +101,7 @@ class FastAPILibraries:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreateLibraryPayload = Body(...),
-    ) -> LibrarySummary:
+    ) -> LibrarySummaryResponse:
         """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
         return self.service.create(trans, payload)
 
@@ -112,9 +112,9 @@ class FastAPILibraries:
     def update(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         payload: UpdateLibraryPayload = Body(...),
-    ) -> LibrarySummary:
+    ) -> LibrarySummaryResponse:
         """
         Updates the information of an existing library.
         """
@@ -128,10 +128,10 @@ class FastAPILibraries:
     def delete(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         undelete: Optional[bool] = UndeleteQueryParam,
         payload: Optional[DeleteLibraryPayload] = Body(default=None),
-    ) -> LibrarySummary:
+    ) -> LibrarySummaryResponse:
         """Marks the specified library as deleted (or undeleted).
         Currently, only admin users can delete or restore libraries."""
         if payload:
@@ -145,7 +145,7 @@ class FastAPILibraries:
     def get_permissions(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
             None,
             title="Scope",
@@ -165,7 +165,7 @@ class FastAPILibraries:
         q: Optional[str] = Query(
             None, title="Query", description="Optional search text to retrieve only the roles matching this query."
         ),
-    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
+    ) -> Union[LibraryCurrentPermissionsResponse, LibraryAvailablePermissionsResponse]:
         """Gets the current or available permissions of a particular library.
         The results can be paginated and additionally filtered by a query."""
         return self.service.get_permissions(
@@ -185,7 +185,7 @@ class FastAPILibraries:
     def set_permissions(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         action: Optional[LibraryPermissionAction] = Query(
             default=None,
             title="Action",
@@ -195,7 +195,7 @@ class FastAPILibraries:
             LibraryPermissionsPayload,
             LegacyLibraryPermissionsPayload,
         ] = Body(...),
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
+    ) -> Union[LibraryLegacySummaryResponse, LibraryCurrentPermissionsResponse]:  # Old legacy response
         """Sets the permissions to access and manipulate a library."""
         payload_dict = payload.dict(by_alias=True)
         if isinstance(payload, LibraryPermissionsPayload) and action is not None:

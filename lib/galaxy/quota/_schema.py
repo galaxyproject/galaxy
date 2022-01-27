@@ -15,7 +15,7 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     GroupModel,
-    UserModel,
+    UserResponseModel,
 )
 
 QUOTA_MODEL_CLASS_NAME = "Quota"
@@ -82,7 +82,7 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
 
 class UserQuota(BaseModel):
     model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
-    user: UserModel = Field(
+    user: UserResponseModel = Field(
         ...,
         title="User",
         description="Information about a user associated with a quota.",
@@ -98,7 +98,7 @@ class GroupQuota(BaseModel):
     )
 
 
-class QuotaBase(BaseModel):
+class QuotaBaseResponse(BaseModel):
     """Base model containing common fields for Quotas."""
 
     model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
@@ -110,7 +110,7 @@ class QuotaBase(BaseModel):
     name: str = QuotaNameField
 
 
-class QuotaSummary(QuotaBase):
+class QuotaSummaryResponse(QuotaBaseResponse):
     """Contains basic information about a Quota"""
 
     url: str = Field(
@@ -122,13 +122,13 @@ class QuotaSummary(QuotaBase):
 
 
 class QuotaSummaryList(BaseModel):
-    __root__: List[QuotaSummary] = Field(
+    __root__: List[QuotaSummaryResponse] = Field(
         default=[],
         title="List with summary information of Quotas.",
     )
 
 
-class QuotaDetails(QuotaBase):
+class QuotaDetailsResponse(QuotaBaseResponse):
     description: str = QuotaDescriptionField
     bytes: int = Field(
         ...,
@@ -158,7 +158,7 @@ class QuotaDetails(QuotaBase):
     )
 
 
-class CreateQuotaResult(QuotaSummary):
+class CreateQuotaResult(QuotaSummaryResponse):
     message: str = Field(
         ...,
         title="Message",

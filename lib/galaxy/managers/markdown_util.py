@@ -99,88 +99,79 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         job_manager = JobManager(trans.app)
         collection_manager = trans.app.dataset_collection_manager
 
-        def _check_object(object_id, line):
-            if object_id is None:
-                raise MalformedContents(f"Missing object identifier [{line}].")
-
         def _remap(container, line):
-            id_match = re.search(UNENCODED_ID_PATTERN, line)
-            object_id = None
-            encoded_id = None
-            if id_match:
-                object_id = int(id_match.group(2))
-                encoded_id = trans.security.encode_id(object_id)
-                line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
-            if container == "history_link":
-                _check_object(object_id, line)
-                history = history_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_history_link(line, history)
-            elif container == "history_dataset_display":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
-            elif container == "history_dataset_link":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
-            elif container == "history_dataset_index":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_display(line, hda)
-            elif container == "history_dataset_embedded":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_embedded(line, hda)
-            elif container == "history_dataset_as_image":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_as_image(line, hda)
-            elif container == "history_dataset_peek":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_peek(line, hda)
-            elif container == "history_dataset_info":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_info(line, hda)
-            elif container == "history_dataset_type":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_type(line, hda)
-            elif container == "history_dataset_name":
-                _check_object(object_id, line)
-                hda = hda_manager.get_accessible(object_id, trans.user)
-                rval = self.handle_dataset_name(line, hda)
-            elif container == "workflow_display":
-                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                rval = self.handle_workflow_display(line, stored_workflow)
-            elif container == "history_dataset_collection_display":
-                hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
-                rval = self.handle_dataset_collection_display(line, hdca)
-            elif container == "tool_stdout":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stdout(line, job)
-            elif container == "tool_stderr":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_tool_stderr(line, job)
-            elif container == "job_parameters":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_job_parameters(line, job)
-            elif container == "job_metrics":
-                job = job_manager.get_accessible_job(trans, object_id)
-                rval = self.handle_job_metrics(line, job)
+            object_identifier_needed = False
+            if container == "visualization":
+                rval = None
             elif container == "generate_galaxy_version":
                 version = trans.app.config.version_major
                 rval = self.handle_generate_galaxy_version(line, version)
             elif container == "generate_time":
                 rval = self.handle_generate_time(line, now())
-            elif container == "invocation_time":
-                invocation = workflow_manager.get_invocation(trans, object_id)
-                rval = self.handle_invocation_time(line, invocation)
-            elif container == "visualization":
-                rval = None
             else:
-                raise MalformedContents(f"Unknown Galaxy Markdown directive encountered [{container}].")
+                object_identifier_needed = True
+
+            if object_identifier_needed:
+                id_match = re.search(UNENCODED_ID_PATTERN, line)
+                if id_match:
+                    object_id = int(id_match.group(2))
+                    encoded_id = trans.security.encode_id(object_id)
+                    line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
+                else:
+                    raise MalformedContents(f"Missing object identifier [{line}].")
+                if container == "workflow_display":
+                    stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                    rval = self.handle_workflow_display(line, stored_workflow)
+                elif container == "history_link":
+                    history = history_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_history_link(line, history)
+                elif container == "history_dataset_display":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
+                elif container == "history_dataset_link":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
+                elif container == "history_dataset_index":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_display(line, hda)
+                elif container == "history_dataset_embedded":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_embedded(line, hda)
+                elif container == "history_dataset_as_image":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_as_image(line, hda)
+                elif container == "history_dataset_peek":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_peek(line, hda)
+                elif container == "history_dataset_info":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_info(line, hda)
+                elif container == "history_dataset_type":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_type(line, hda)
+                elif container == "history_dataset_name":
+                    hda = hda_manager.get_accessible(object_id, trans.user)
+                    rval = self.handle_dataset_name(line, hda)
+                elif container == "history_dataset_collection_display":
+                    hdca = collection_manager.get_dataset_collection_instance(trans, "history", object_id)
+                    rval = self.handle_dataset_collection_display(line, hdca)
+                elif container == "tool_stdout":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_tool_stdout(line, job)
+                elif container == "tool_stderr":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_tool_stderr(line, job)
+                elif container == "job_parameters":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_job_parameters(line, job)
+                elif container == "job_metrics":
+                    job = job_manager.get_accessible_job(trans, object_id)
+                    rval = self.handle_job_metrics(line, job)
+                elif container == "invocation_time":
+                    invocation = workflow_manager.get_invocation(trans, object_id)
+                    rval = self.handle_invocation_time(line, invocation)
+                else:
+                    raise MalformedContents(f"Unknown Galaxy Markdown directive encountered [{container}].")
             if rval is not None:
                 return rval
             else:

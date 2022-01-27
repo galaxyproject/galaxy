@@ -30,15 +30,15 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
-    AnyHistoryContentItem,
-    AnyJobStateSummary,
-    DatasetAssociationRoles,
+    AnyHistoryContentItemResponse,
+    AnyJobStateSummaryResponse,
+    DatasetAssociationRolesResponse,
     DeleteHistoryContentPayload,
-    DeleteHistoryContentResult,
+    DeleteHistoryContentResponse,
     HistoryContentsArchiveDryRunResult,
-    HistoryContentsResult,
+    HistoryContentsResponse,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -70,13 +70,13 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
 
-HistoryIDPathParam: EncodedDatabaseIdField = Path(..., title="History ID", description="The ID of the History.")
+HistoryIDPathParam: DecodedDatabaseIdField = Path(..., title="History ID", description="The ID of the History.")
 
-HistoryItemIDPathParam: EncodedDatabaseIdField = Path(
+HistoryItemIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="History Item ID", description="The ID of the item (`HDA`/`HDCA`) contained in the history."
 )
 
-HistoryHDCAIDPathParam: EncodedDatabaseIdField = Path(
+HistoryHDCAIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="History Dataset Collection ID", description="The ID of the `HDCA` contained in the history."
 )
 
@@ -201,7 +201,7 @@ def parse_legacy_index_query_params(
     else:
         content_types = [e.value for e in HistoryContentType]
 
-    id_list: Optional[List[EncodedDatabaseIdField]] = None
+    id_list: Optional[List[DecodedDatabaseIdField]] = None
     if ids:
         id_list = util.listify(ids)
         # If explicit ids given, always used detailed result.
@@ -310,7 +310,7 @@ class FastAPIHistoryContents:
     def index(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
@@ -341,10 +341,10 @@ class FastAPIHistoryContents:
     def show_jobs_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypeQueryParam,
-    ) -> AnyJobStateSummary:
+    ) -> AnyJobStateSummaryResponse:
         """Return detailed information about an `HDA` or `HDCAs` jobs.
 
         **Warning**: We allow anyone to fetch job state information about any object they
@@ -370,8 +370,8 @@ class FastAPIHistoryContents:
     def show(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypeQueryParam,
         fuzzy_count: Optional[int] = Query(
             default=None,
@@ -393,7 +393,7 @@ class FastAPIHistoryContents:
             ),
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> AnyHistoryContentItem:
+    ) -> AnyHistoryContentItemResponse:
         """
         Return detailed information about an `HDA` or `HDCA` within a history.
 
@@ -414,9 +414,9 @@ class FastAPIHistoryContents:
     def index_jobs_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
-    ) -> List[AnyJobStateSummary]:
+    ) -> List[AnyJobStateSummaryResponse]:
         """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
 
         **Warning**: We allow anyone to fetch job state information about any object they
@@ -440,8 +440,8 @@ class FastAPIHistoryContents:
     def download_dataset_collection(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
@@ -463,7 +463,7 @@ class FastAPIHistoryContents:
     def create(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         type: Optional[HistoryContentType] = Query(
             default=None,
             title="Content Type",
@@ -472,7 +472,7 @@ class FastAPIHistoryContents:
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: CreateHistoryContentPayload = Body(...),
-    ) -> AnyHistoryContentItem:
+    ) -> AnyHistoryContentItemResponse:
         """Create a new `HDA` or `HDCA` in the given History."""
         payload.type = type or payload.type
         return self.service.create(trans, history_id, payload, serialization_params)
@@ -484,14 +484,14 @@ class FastAPIHistoryContents:
     def update_permissions(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        dataset_id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        dataset_id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
         payload: Dict[str, Any] = Body(
             default=...,
             example=UpdateDatasetPermissionsPayload(),
         ),
-    ) -> DatasetAssociationRoles:
+    ) -> DatasetAssociationRolesResponse:
         """Set permissions of the given history dataset to the given role ids."""
         update_payload = get_update_permission_payload(payload)
         return self.service.update_permissions(trans, dataset_id, update_payload)
@@ -503,17 +503,17 @@ class FastAPIHistoryContents:
     def update_batch(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: UpdateHistoryContentsBatchPayload = Body(...),
-    ) -> HistoryContentsResult:
+    ) -> HistoryContentsResponse:
         """Batch update specific properties of a set items contained in the given History.
 
         If you provide an invalid/unknown property key the request will not fail, but no changes
         will be made to the items.
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
-        return HistoryContentsResult.parse_obj(result)
+        return HistoryContentsResponse.parse_obj(result)
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}/validate",
@@ -522,8 +522,8 @@ class FastAPIHistoryContents:
     def validate(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
     ) -> dict:  # TODO: define a response?
         """Validates the metadata associated with a dataset within a History."""
         return self.service.validate(trans, history_id, id)
@@ -542,12 +542,12 @@ class FastAPIHistoryContents:
     def update(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypeQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         payload: UpdateHistoryContentsPayload = Body(...),
-    ) -> AnyHistoryContentItem:
+    ) -> AnyHistoryContentItemResponse:
         """Updates the values for the history content item with the given ``ID``."""
         return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
 
@@ -562,8 +562,8 @@ class FastAPIHistoryContents:
     def delete(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        id: EncodedDatabaseIdField = HistoryItemIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypeQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: Optional[bool] = Query(
@@ -579,7 +579,7 @@ class FastAPIHistoryContents:
             deprecated=True,
         ),
         payload: DeleteHistoryContentPayload = Body(None),
-    ) -> DeleteHistoryContentResult:
+    ) -> DeleteHistoryContentResponse:
         """
         Delete the history content with the given ``ID`` and specified type (defaults to dataset).
 
@@ -610,7 +610,7 @@ class FastAPIHistoryContents:
     def archive(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         filename: Optional[str] = Query(
             default=None,
             description="The name that the Archive will have (defaults to history name).",
@@ -645,7 +645,7 @@ class FastAPIHistoryContents:
         request: Request,
         response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         hid: int = Path(
             ...,
             title="Target HID",
@@ -667,7 +667,7 @@ class FastAPIHistoryContents:
             ),
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> HistoryContentsResult:
+    ) -> HistoryContentsResponse:
         """
         **Warning**: For internal use to support the scroller functionality.
 

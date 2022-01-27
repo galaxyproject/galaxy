@@ -22,17 +22,14 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
-    ModelClassField,
-)
+from galaxy.schema.fields import ModelClassField
 from galaxy.schema.schema import (
-    AnyHDCA,
+    AnyHDCAResponse,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
-    DCESummary,
+    DCESummaryResponse,
     DCEType,
-    HDCADetailed,
+    HDCADetailedResponse,
     TagCollection,
 )
 from galaxy.security.idencoding import IdEncodingHelper
@@ -74,10 +71,10 @@ class SuitableConverters(BaseModel):
     __root__: List[SuitableConverter]
 
 
-class DatasetCollectionContentElements(BaseModel):
+class DatasetCollectionContentElementsResponse(BaseModel):
     """Represents a collection of elements contained in the dataset collection."""
 
-    __root__: List[DCESummary]
+    __root__: List[DCESummaryResponse]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -95,7 +92,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         self.collection_manager = collection_manager
         self.datatypes_registry = datatypes_registry
 
-    def create(self, trans: ProvidesHistoryContext, payload: CreateNewCollectionPayload) -> HDCADetailed:
+    def create(self, trans: ProvidesHistoryContext, payload: CreateNewCollectionPayload) -> HDCADetailedResponse:
         """
         Create a new dataset collection instance.
 
@@ -113,8 +110,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         if payload.instance_type == DatasetCollectionInstanceType.history:
             if payload.history_id is None:
                 raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")
-            history_id = self.decode_id(payload.history_id)
-            history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
         elif payload.instance_type == DatasetCollectionInstanceType.library:
@@ -133,9 +129,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         )
         return rval
 
-    def copy(
-        self, trans: ProvidesHistoryContext, id: EncodedDatabaseIdField, payload: UpdateCollectionAttributePayload
-    ):
+    def copy(self, trans: ProvidesHistoryContext, id: int, payload: UpdateCollectionAttributePayload):
         """
         Iterate over all datasets of a collection and copy datasets with new attributes to a new collection.
         e.g attributes = {'dbkey': 'dm3'}
@@ -147,7 +141,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def attributes(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        id: int,
         instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
     ) -> DatasetCollectionAttributesResult:
         """
@@ -162,7 +156,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def suitable_converters(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        id: int,
         instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
     ) -> SuitableConverters:
         """
@@ -174,9 +168,9 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def show(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        id: int,
         instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
-    ) -> AnyHDCA:
+    ) -> AnyHDCAResponse:
         """
         Returns information about a particular dataset collection.
         """
@@ -204,12 +198,12 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
     def contents(
         self,
         trans: ProvidesHistoryContext,
-        hdca_id: EncodedDatabaseIdField,
-        parent_id: EncodedDatabaseIdField,
+        hdca_id: int,
+        parent_id: int,
         instance_type: DatasetCollectionInstanceType = DatasetCollectionInstanceType.history,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
-    ) -> DatasetCollectionContentElements:
+    ) -> DatasetCollectionContentElementsResponse:
         """
         Shows direct child contents of indicated dataset collection parent id
 
@@ -231,17 +225,16 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         )
 
         # check to make sure the dsc is part of the validated hdca
-        decoded_parent_id = self.decode_id(parent_id)
-        if parent_id != hdca_id and not hdca.contains_collection(decoded_parent_id):
+        if parent_id != hdca_id and not hdca.contains_collection(parent_id):
             raise exceptions.ObjectNotFound(
                 "Requested dataset collection is not contained within indicated history content"
             )
 
         # retrieve contents
-        contents = self.collection_manager.get_collection_contents(trans, decoded_parent_id, limit=limit, offset=offset)
+        contents = self.collection_manager.get_collection_contents(trans, parent_id, limit=limit, offset=offset)
 
         # dictify and tack on a collection_url for drilling down into nested collections
-        def serialize_element(dsc_element) -> DCESummary:
+        def serialize_element(dsc_element) -> DCESummaryResponse:
             result = dictify_element_reference(dsc_element, recursive=False, security=trans.security)
             if result["element_type"] == DCEType.dataset_collection:
                 assert trans.url_builder
@@ -254,4 +247,4 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             return result
 
         rval = [serialize_element(el) for el in contents]
-        return DatasetCollectionContentElements.parse_obj(rval)
+        return DatasetCollectionContentElementsResponse.parse_obj(rval)
