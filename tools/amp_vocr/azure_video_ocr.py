@@ -36,12 +36,17 @@ def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
 	amp_ocr = VideoOcr()
 
 	# Create the resolution obj
-	width = azure_ocr_json["width"]
-	height = azure_ocr_json["height"]
+# 	width = azure_ocr_json["width"]
+# 	height = azure_ocr_json["height"]
+	# Recent versions of azure return the width/height for every frame.  Let's assume
+	# that the data for the first image is indicative of the rest.
+	width = azure_ocr_json["Results"][0]["Ocr"]["pages"][0]["width"]
+	height = azure_ocr_json["Results"][0]["Ocr"]["pages"][0]["height"]
 	resolution = VideoOcrResolution(width, height)
 
 	# Create the media object
-	frameRate = azure_ocr_json["framerate"]	
+# 	frameRate = azure_ocr_json["framerate"]	
+	frameRate = azure_ocr_json["Fps"]
 	duration = azure_index_json["summarizedInsights"]["duration"]["seconds"]
 	frames = int(frameRate * duration)
 	amp_media  = VideoOcrMedia(duration, input_video, frameRate, frames, resolution)
@@ -60,14 +65,16 @@ def create_amp_ocr(input_video, azure_index_json, azure_ocr_json):
 
 # Convert the timestamp to total seconds
 def convertTimestampToSeconds(timestamp):
-	try:
-		x = datetime.strptime(timestamp, '%H:%M:%S.%f')
-	except ValueError:
-		x = datetime.strptime(timestamp, '%H:%M:%S')
-	hourSec = x.hour * 60.0 * 60.0
-	minSec = x.minute * 60.0
-	total_seconds = hourSec + minSec + x.second + x.microsecond/600000
+# 	try:
+# 		x = datetime.strptime(timestamp, '%H:%M:%S.%f')
+# 	except ValueError:
+# 		x = datetime.strptime(timestamp, '%H:%M:%S')
+# 	hourSec = x.hour * 60.0 * 60.0
+# 	minSec = x.minute * 60.0
+# 	total_seconds = hourSec + minSec + x.second + x.microsecond/600000
 
+	(h, m, s) = [float(x) for x in timestamp.split(':')]
+	total_seconds = (h * 3600) + (m * 60) + s
 	return total_seconds
 
 # Calculate the frame index based on the start time and frames per second
