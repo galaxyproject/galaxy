@@ -177,7 +177,7 @@ class LintContext:
         if self.level < LintLevel.SILENT:
             # this is a relict from the past where the lint context
             # was reset when called with a new lint_func, as workaround
-            # we safe the message list, apply the lint_func (which then
+            # we save the message list, apply the lint_func (which then
             # adds to the message_list) and restore the message list
             # at the end (+ append the new messages)
             tmp_message_list = list(self.message_list)
