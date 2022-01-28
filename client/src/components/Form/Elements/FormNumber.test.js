@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
 import FormNumber from "./FormNumber";
-import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
 
@@ -49,6 +49,7 @@ describe("FormInput", () => {
 
     it("range should be respected", async () => {
         const checkOutOfRangeAlert = async (number) => {
+            const props = { value: 50, type: "float", min: 10, max: 100 };
             const wrapper = await mountFormNumber(props);
             const input = await getInput(wrapper);
             input.setValue(number);
@@ -60,20 +61,8 @@ describe("FormInput", () => {
             wrapper.destroy();
         };
 
-        const numberWithinRange = 75;
         const numberBiggerThanRange = [110, Number.MAX_VALUE];
         const numberSmallerThanRange = [1, 0, -1, Number.MIN_VALUE];
-        const props = { value: 50, type: "float", min: 10, max: 100 };
-
-        // const wrapper = await mountFormNumber(props);
-        const wrapper = await mountFormNumber(props);
-
-        const input = await getInput(wrapper);
-
-        // both inputs should have the same value
-        input.setValue(numberWithinRange);
-        const inputRange = await getInputRange(wrapper);
-        expect(parseFloat(inputRange.element.value)).toBe(numberWithinRange);
 
         //alert should be shown
         for (const value of numberSmallerThanRange) {
