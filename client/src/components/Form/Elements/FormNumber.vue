@@ -21,7 +21,13 @@
                     type="number" />
             </b-col>
             <b-col class="pl-0" v-if="isRangeValid">
-                <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
+                <b-form-input
+                    v-model="currentValue"
+                    :min="min"
+                    :max="max"
+                    :step="step"
+                    type="range"
+                    @change="notifyValueChange" />
             </b-col>
         </b-row>
     </div>
@@ -103,7 +109,7 @@ export default {
             if (!this.isInteger) {
                 this.decimalPlaces = this.getNumberOfDecimals(this.currentValue);
             }
-            this.$emit("input", this.currentValue);
+            this.notifyValueChange();
         },
         showAlert(error) {
             if (error) {
@@ -132,6 +138,9 @@ export default {
                     // Adjust for scientific notation.
                     (match[2] ? +match[2] : 0)
             );
+        },
+        notifyValueChange() {
+            this.$emit("input", this.currentValue);
         },
     },
 };
