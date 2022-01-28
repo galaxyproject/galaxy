@@ -1,4 +1,4 @@
-import { combineLatest, concat, race, timer, merge, partition, Observable, BehaviorSubject, Subject } from "rxjs";
+import { concat, race, timer, partition, Observable, BehaviorSubject, Subject } from "rxjs";
 import {
     debounceTime,
     distinctUntilChanged,
@@ -16,8 +16,7 @@ import {
     window,
     withLatestFrom,
 } from "rxjs/operators";
-import { chunk, show } from "utils/observable";
-import { isValidNumber } from "utils/validation";
+import { show } from "utils/observable";
 import { CurveFit } from "components/History/model/CurveFit";
 import { ScrollPos } from "components/History/model/ScrollPos";
 import { SearchParams } from "components/providers/History/SearchParams";
@@ -46,8 +45,7 @@ export const contentPayload = (cfg = {}) => {
         debug = false,
         // optional feedback indicators
         loadingEvents$ = new Subject(),
-        resetPos$ = new Subject(),
-        chunkSize = pageSize
+        resetPos$ = new Subject()
     } = cfg;
 
     // These running totals are shared between instances of content payload because a lot of the
@@ -61,22 +59,10 @@ export const contentPayload = (cfg = {}) => {
 
         // #region establish HID by either having exact value or estimating from scroll position
 
-        const [ noKey$, hasKey$ ] = partition(pos$, (pos) => pos.key === null);
+        const [ hasKey$ ] = partition(pos$, (pos) => pos.key === null);
 
         const knownHid$ = hasKey$.pipe(
             pluck('key')
-        );
-
-        const cursor$ = noKey$.pipe(
-            pluck('cursor'),
-        );
-
-        // only have cursor height, need to make a guess
-        const estimatedHid$ = combineLatest(cursor$, cursorToHid$).pipe(
-            map((inputs) => estimateHid(...inputs)),
-            map(hid => Math.round(hid)),
-            distinctUntilChanged(),
-            show(debug, hid => console.log("estimatedHid", hid, history)),
         );
 
         const hid$ = knownHid$.pipe(
@@ -201,23 +187,6 @@ export const contentPayload = (cfg = {}) => {
             return sub;
         })
     })
-};
-
-const estimateHid = (cursor, fit) => {
-    // do an estimate/retrieval
-    const result = fit.get(cursor, { interpolate: true });
-    if (isValidNumber(result)) {
-        return result;
-    }
-
-    // give them the top of the data
-    if (fit.hasData) {
-        console.log("invalid curve fit", result, cursor, fit.domain);
-        return fit.get(0);
-    }
-
-    // we're screwed
-    return undefined;
 };
 
 const adjustCursorToHid = (result, fit) => {

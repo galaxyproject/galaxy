@@ -69,7 +69,7 @@ export const ContentProvider = {
     created() {
         this.params$ = this.watch$("params");
         this.scrollPos$ = this.watch$("scrollPos");
-        const { payload$, loading$, scrolling$, resetPos$ = NEVER } = this.initStreams();
+        const { payload$, loading$, scrolling$ } = this.initStreams();
 
         this.listenTo(scrolling$, (val) => (this.scrolling = val));
         this.listenTo(loading$, (val) => (this.loading = val));

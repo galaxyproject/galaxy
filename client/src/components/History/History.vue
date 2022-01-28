@@ -52,7 +52,7 @@
                             @resetSelection="resetSelection"
                             @selectAllContent="selectItems(payload.contents)"
                             :expanded-count="expandedCount"
-                            :setResetHistoryContents="setResetHistoryContents"
+                            :set-reset-history-contents="setResetHistoryContents"
                             @collapseAllContent="collapseAll" />
                     </template>
 
@@ -61,18 +61,18 @@
                         <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
                         <InfiniteHistory
                             v-show="payload"
-                            :setScrollPos="setScrollPos"
+                            :set-scroll-pos="setScrollPos"
                             :payload="payload"
-                            :showSelection="showSelection"
-                            :isExpanded="isExpanded"
-                            :setExpanded="setExpanded"
-                            :isSelected="isSelected"
-                            :setSelected="setSelected"
+                            :show-selection="showSelection"
+                            :is-expanded="isExpanded"
+                            :set-expanded="setExpanded"
+                            :is-selected="isSelected"
+                            :set-selected="setSelected"
                             :loading="loading"
-                            :pageSize="params.pageSize"
-                            :historyId="history.id"
-                            :setResetHistoryContents="setResetHistoryContents"
-                            :resetHistoryContents="resetHistoryContents"/>
+                            :page-size="params.pageSize"
+                            :history-id="history.id"
+                            :set-reset-history-contents="setResetHistoryContents"
+                            :reset-history-contents="resetHistoryContents" />
                     </template>
 
                     <template v-slot:modals>

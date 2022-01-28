@@ -85,13 +85,13 @@ export default {
                 });
             }
         },
-        resetHistoryContents: function(newVal, oldVal) {
+        resetHistoryContents: function (newVal, oldVal) {
             if (newVal) {
                 this.data = [];
-                this.setScrollPos({ key: this.maxHid })
+                this.setScrollPos({ key: this.maxHid });
                 this.setResetHistoryContents(false);
             }
-        }
+        },
     },
     props: {
         setScrollPos: { type: Function, required: true },
@@ -103,8 +103,8 @@ export default {
         setSelected: { type: Function, required: true },
         loading: { type: Boolean, required: true },
         historyId: { type: String, required: true },
-        resetHistoryContents: {required: true},
-        setResetHistoryContents: {required: true}
+        resetHistoryContents: { required: true },
+        setResetHistoryContents: { required: true },
     },
     methods: {
         handleScroll(event) {

@@ -194,7 +194,7 @@ export default {
         totalMatches: { type: Number, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
         debug: { type: Boolean, default: false },
-        setResetHistoryContents: {required: true}
+        setResetHistoryContents: { required: true },
     },
     data() {
         return {

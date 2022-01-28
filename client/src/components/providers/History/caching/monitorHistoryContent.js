@@ -1,7 +1,6 @@
 import { merge } from "rxjs";
 import { map, distinctUntilChanged, publish, withLatestFrom, share } from "rxjs/operators";
 import { content$, dscContent$, buildContentId, buildCollectionId } from "./db/observables";
-import { show } from "utils/observable";
 import { monitorQuery } from "./db/monitorQuery";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { deepEqual } from "deep-equal";
