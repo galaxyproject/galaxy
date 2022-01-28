@@ -18,8 +18,7 @@
             caption-top
             fixed
             show-empty
-            class="invocations-table"
-        >
+            class="invocations-table">
             <template v-slot:empty>
                 <b-alert id="no-invocations" variant="info" show>
                     {{ noInvocationsMessage }}
@@ -39,15 +38,13 @@
                     title="Show Invocation Details"
                     class="btn-sm fa fa-chevron-down toggle-invocation-details"
                     v-if="!data.detailsShowing"
-                    @click.stop="swapRowDetails(data)"
-                />
+                    @click.stop="swapRowDetails(data)" />
                 <b-link
                     v-b-tooltip.hover.top
                     title="Hide Invocation Details"
                     class="btn-sm fa fa-chevron-up toggle-invocation-details"
                     v-if="data.detailsShowing"
-                    @click.stop="swapRowDetails(data)"
-                />
+                    @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
                 <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)" class="truncate">
@@ -60,8 +57,7 @@
                 <div
                     v-b-tooltip.hover.top.html
                     :title="`<b>Switch to History:</b><br>${getHistoryNameById(data.item.history_id)}`"
-                    class="truncate"
-                >
+                    class="truncate">
                     <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
                         <b>{{ getHistoryNameById(data.item.history_id) }}</b>
                     </b-link>
@@ -79,16 +75,14 @@
                     id="run-workflow"
                     title="Run Workflow"
                     class="workflow-run btn-sm btn-primary fa fa-play"
-                    @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)"
-                />
+                    @click.stop="executeWorkflow(getWorkflowByInstanceId(data.item.workflow_id).id)" />
             </template>
         </b-table>
         <b-pagination
             v-model="currentPage"
             :per-page="perPage"
             :total-rows="rows"
-            aria-controls="invocation-list-table"
-        ></b-pagination>
+            aria-controls="invocation-list-table"></b-pagination>
     </div>
 </template>
 
