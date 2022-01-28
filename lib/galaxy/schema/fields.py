@@ -7,14 +7,18 @@ from pydantic import (
     Field,
 )
 
+from galaxy.security.idencoding import IdEncodingHelper
+
 ENCODED_DATABASE_ID_PATTERN = re.compile('f?[0-9a-f]+')
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
-class EncodedDatabaseIdField(str):
+class BaseDatabaseIdField:
     """
-    Encoded Database ID validation.
+    Database ID validation.
     """
+
+    security: IdEncodingHelper
 
     @classmethod
     def __get_validators__(cls):
@@ -24,6 +28,10 @@ class EncodedDatabaseIdField(str):
         yield cls.validate
 
     @classmethod
+    def validate(cls, v):
+        return v
+
+    @classmethod
     def __modify_schema__(cls, field_schema):
         # __modify_schema__ should mutate the dict it receives in place,
         # the returned value will be ignored
@@ -31,10 +39,37 @@ class EncodedDatabaseIdField(str):
             min_length=16,
             pattern='[0-9a-fA-F]+',
             examples=['0123456789ABCDEF'],
+            type="string",
         )
+
+    def __repr__(self):
+        return f'DatabaseID ({super().__repr__()})'
+
+
+class DecodedDatabaseIdField(int, BaseDatabaseIdField):
 
     @classmethod
     def validate(cls, v):
+        if not isinstance(v, str):
+            raise TypeError('String required')
+        if v.startswith("F"):
+            # Library Folder ids start with an additional "F"
+            v = v[1:]
+        len_v = len(v)
+        if len_v % ENCODED_ID_LENGTH_MULTIPLE:
+            raise ValueError('Invalid id length, must be multiple of 16')
+        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
+        if not m:
+            raise ValueError('Invalid characters in encoded ID')
+        return cls(cls.security.decode_id(v))
+
+
+class EncodedDatabaseIdField(str, BaseDatabaseIdField):
+
+    @classmethod
+    def validate(cls, v):
+        if isinstance(v, int):
+            return cls(cls.security.encode_id(v))
         if not isinstance(v, str):
             raise TypeError('String required')
         if v.startswith("F"):
@@ -48,9 +83,6 @@ class EncodedDatabaseIdField(str):
         if not m:
             raise ValueError('Invalid characters in encoded ID')
         return cls(v)
-
-    def __repr__(self):
-        return f'EncodedDatabaseID ({super().__repr__()})'
 
 
 def ModelClassField(class_name: str) -> str:

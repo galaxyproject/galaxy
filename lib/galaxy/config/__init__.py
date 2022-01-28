@@ -43,6 +43,7 @@ from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
 from galaxy.model.database_utils import database_exists
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
+from galaxy.schema.fields import BaseDatabaseIdField
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util import (
     ExecutionTimer,
@@ -1376,6 +1377,7 @@ class ConfiguresGalaxyMixin:
     def _configure_security(self):
         from galaxy.security import idencoding
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
+        BaseDatabaseIdField.security = self.security
 
     def _configure_tool_shed_registry(self):
         import galaxy.tool_shed.tool_shed_registry

@@ -31,6 +31,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     ModelClassField,
 )
@@ -904,6 +905,43 @@ class ExportHistoryArchivePayload(Model):
         title="Force Rebuild",
         description="Whether to force a rebuild of the history archive.",
         hidden=True,  # Avoids displaying this field in the documentation
+    )
+
+
+class SortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    none = None
+
+
+class InvocationIndexPayload(Model):
+    workflow_id: Optional[DecodedDatabaseIdField] = Field(title="Workflow ID", description="Return only invocations for this Workflow ID")
+    history_id: Optional[DecodedDatabaseIdField] = Field(title="History ID", description="Return only invocations for this History ID")
+    job_id: Optional[DecodedDatabaseIdField] = Field(title="Job ID", description="Return only invocations for this Job ID")
+    user_id: Optional[DecodedDatabaseIdField] = Field(title="User ID", description="Return invocations for this User ID")
+    sort_by: Optional[SortByEnum] = Field(
+        title="Sort By",
+        description="Sort Workflow Invocations by this attribute"
+    )
+    sort_desc: bool = Field(
+        default=False,
+        descritpion="Sort in descending order?"
+    )
+    include_terminal: bool = Field(
+        default=True,
+        description="Set to false to only include terminal Invocations."
+    )
+    limit: Optional[int] = Field(
+        default=100,
+        lt=1000,
+    )
+    offset: Optional[int] = Field(
+        default=0,
+        description="Number of invocations to skip"
+    )
+    instance: bool = Field(
+        default=False,
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?"
     )
 
 

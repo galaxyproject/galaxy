@@ -1,7 +1,7 @@
 import { of, race, pipe, concat, iif } from "rxjs";
 import { filter, map, mergeMap, switchMap, delay, share, repeat, take, takeWhile } from "rxjs/operators";
 import { cacheContent, monitorContentQuery, loadHistoryContents } from "components/providers/History/caching";
-import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "./fetch";
+import { fetchDatasetById, fetchDatasetCollectionById, fetchInvocationStepById } from "../fetch";
 
 // prettier-ignore
 export const datasetMonitor = (cfg = {}) => {
@@ -125,20 +125,4 @@ export const buildHistoryMonitor = (historyId, monitorEvery = 3000) => {
         delay(monitorEvery),
         repeat(),
         share());
-};
-
-export const monitorHistoryUntilTrue = (condition, historyId, monitorEvery = 3000) => {
-    // monitorHistory until condition is true, then fetch one last update
-    const historyMonitor$ = getHistoryMonitor(historyId, monitorEvery);
-    const primaryHistoryMonitor$ = historyMonitor$.pipe(
-        takeWhile(() => !condition()),
-        share()
-    );
-    return concat(
-        primaryHistoryMonitor$,
-        historyMonitor$.pipe(
-            // get one more update after invocation is terminal
-            take(1)
-        )
-    );
 };

@@ -4189,6 +4189,54 @@ input:
         pja = pjas[0]
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
+    def test_invocation_filtering(self):
+        with self._different_user(email=f"{uuid4()}@test.com"):
+            # new user, start with no invocations
+            assert not self._assert_invocation_for_url_is('invocations')
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+""", wait=False)
+            first_invocation = self._assert_invocation_for_url_is('invocations')
+            new_history_id = self.dataset_populator.new_history()
+            # new history has no invocations
+            assert not self._assert_invocation_for_url_is(f"invocations?history_id={new_history_id}")
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+    optional: true
+steps: []
+""", history_id=new_history_id, wait=False)
+            # new history has one invocation now
+            new_invocation = self._assert_invocation_for_url_is(f"invocations?history_id={new_history_id}")
+            # filter invocation by workflow instance id
+            self._assert_invocation_for_url_is(f"invocations?workflow_id={first_invocation['workflow_id']}&instance=true", first_invocation)
+            # limit to 1, newest invocation first by default
+            self._assert_invocation_for_url_is("invocations?limit=1", target_invocation=new_invocation)
+            # limit to 1, descending sort on date
+            self._assert_invocation_for_url_is("invocations?limit=1&sort_by=create_time&sort_desc=true", target_invocation=new_invocation)
+            # limit to 1, ascending sort on date
+            self._assert_invocation_for_url_is("invocations?limit=1&sort_by=create_time&sort_desc=false", target_invocation=first_invocation)
+            # limit to 1, ascending sort on date, offset 1
+            self._assert_invocation_for_url_is("invocations?limit=1&sort_by=create_time&sort_desc=false&offset=1", target_invocation=new_invocation)
+
+    def _assert_invocation_for_url_is(self, route, target_invocation=None):
+        response = self._get(route)
+        self._assert_status_code_is(response, 200)
+        invocations = response.json()
+        if target_invocation:
+            assert len(invocations) == 1
+            assert invocations[0]['id'] == target_invocation['id']
+        if invocations:
+            assert len(invocations) == 1
+            return invocations[0]
+
     @skip_without_tool("cat1")
     def test_only_own_invocations_indexed_and_accessible(self):
         workflow_id, usage = self._run_workflow_once_get_invocation("test_usage_accessiblity")
