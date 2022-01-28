@@ -14,6 +14,7 @@
 </template>
 
 <script>
+import Vue from "vue";
 import FormInputs from "./FormInputs";
 import { visitInputs, validateInputs, matchErrors, getElementId } from "./utilities";
 export default {
@@ -145,10 +146,10 @@ export default {
             this.onChange(true);
         },
         onCloneInputs() {
-            visitInputs(this.inputs, (input) => {
-                input.error = null;
-            });
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
+            visitInputs(this.formInputs, (input) => {
+                Vue.set(input, "error", null);
+            });
             this.onCreateIndex();
         },
         onChange(refreshOnChange) {
