@@ -283,6 +283,15 @@ def _imported_macro_paths_from_el(macros_el):
 
 def _load_macro_file(path, xml_base_dir):
     tree = parse_xml(path, strip_whitespace=False)
+    for node in tree.iter():
+        # little hack: node.base contains that path to the file which is used in
+        # the linter. it is a property that apparently is determined from the
+        # xmltree, so if the macro is inserted into the main xml node.base will
+        # give the path of the main xml file.
+        # luckily lxml allows to set the property by adding xml:base to the node
+        # which will be returned if the property is read
+        # https://github.com/lxml/lxml/blob/5a5c7fb01d15af58def4bab2ba7b15c937042835/src/lxml/etree.pyx#L1106
+        node.base = node.base
     root = tree.getroot()
     return _load_macros(root, xml_base_dir)
 

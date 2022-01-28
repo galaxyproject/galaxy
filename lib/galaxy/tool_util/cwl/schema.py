@@ -41,12 +41,6 @@ class SchemaLoader:
             suffix = ''
             if '#' in path:
                 path, suffix = path.split('#')
-            print(f""" -------
-
-{open(path).read()}
-
-            -------
-            """)
             processed_path = os.path.join(output_dir, os.path.basename(path))
             path = os.path.abspath(path)
             uri = f"file://{path}"
@@ -56,12 +50,6 @@ class SchemaLoader:
                 exit_code = cwl_expression_refactor.main([output_dir, path, '--skip-some1', '--skip-some2'])
                 if exit_code == 0:
                     uri = f"file://{processed_path}"
-                    print(f""" -------
-
-{open(processed_path).read()}
-
-            -------
-                    """)
             if suffix:
                 uri = f"{uri}#{suffix}"
             loading_context, process_object, uri = load_tool.fetch_document(uri, loadingContext=loading_context)

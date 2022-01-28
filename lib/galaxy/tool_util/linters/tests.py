@@ -7,25 +7,17 @@ from ..verify import asserts
 
 # Misspelled so as not be picked up by nosetests.
 def lint_tsts(tool_xml, lint_ctx):
-    # determine line to report for general problems with tests
-    try:
-        tests_line = tool_xml.find("./tests").sourceline
-        tests_path = tool_xml.getpath(tool_xml.find("./tests"))
-    except AttributeError:
-        tests_line = 1
-        tests_path = None
-    try:
-        tests_line = tool_xml.find("./tool").sourceline
-        tests_path = tool_xml.getpath(tool_xml.find("./tool"))
-    except AttributeError:
-        pass
+    # determine node to report for general problems with tests
     tests = tool_xml.findall("./tests/test")
+    general_node = tool_xml.find("./tests")
+    if general_node is None:
+        general_node = tool_xml.getroot()
     datasource = is_datasource(tool_xml)
     if not tests:
         if not datasource:
-            lint_ctx.warn("No tests found, most tools should define test cases.", line=tests_line, xpath=tests_path)
+            lint_ctx.warn("No tests found, most tools should define test cases.", node=general_node)
         elif datasource:
-            lint_ctx.info("No tests found, that should be OK for data_sources.", line=tests_line, xpath=tests_path)
+            lint_ctx.info("No tests found, that should be OK for data_sources.", node=general_node)
         return
 
     num_valid_tests = 0
@@ -51,7 +43,7 @@ def lint_tsts(tool_xml, lint_ctx):
         for param in test.findall("param"):
             name = param.attrib.get("name", None)
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", line=param.sourceline, xpath=tool_xml.getpath(param))
+                lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", node=param)
                 continue
             name = name.split("|")[-1]
             xpaths = [f"@name='{name}'",
@@ -69,7 +61,7 @@ def lint_tsts(tool_xml, lint_ctx):
                     found = True
                     break
             if not found:
-                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", line=param.sourceline, xpath=tool_xml.getpath(param))
+                lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", node=param)
 
         output_data_names, output_collection_names = _collect_output_names(tool_xml)
         found_output_test = False
@@ -81,25 +73,25 @@ def lint_tsts(tool_xml, lint_ctx):
             else:
                 valid_names = output_collection_names
             if not name:
-                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", line=output.sourceline, xpath=tool_xml.getpath(output))
+                lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", node=output)
             else:
                 if name not in valid_names:
-                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", line=output.sourceline, xpath=tool_xml.getpath(output))
+                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", node=output)
 
         if "expect_failure" in test.attrib and found_output_test:
-            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.")
+            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
             continue
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", line=test.sourceline, xpath=tool_xml.getpath(test))
+            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", node=test)
         else:
             num_valid_tests += 1
 
     if num_valid_tests or datasource:
-        lint_ctx.valid(f"{num_valid_tests} test(s) found.", line=tests_line, xpath=tests_path)
+        lint_ctx.valid(f"{num_valid_tests} test(s) found.", node=general_node)
     else:
-        lint_ctx.warn("No valid test(s) found.", line=tests_line, xpath=tests_path)
+        lint_ctx.warn("No valid test(s) found.", node=general_node)
 
 
 def _check_asserts(test_idx, assertions, lint_ctx):
@@ -113,32 +105,34 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 continue
             assert_function_name = "assert_" + a.tag
             if assert_function_name not in asserts.assertion_functions:
-                lint_ctx.error(f"Test {test_idx}: unknown assertion {a.tag}")
+                lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", node=a)
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
             # check type of the attributes (int, float ...)
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
-                    lint_ctx.error(f"Test {test_idx}: unknown attribute {attrib} for {a.tag}")
+                    lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
                     continue
                 if assert_function_sig.parameters[attrib].annotation is not Parameter.empty:
                     try:
                         assert_function_sig.parameters[attrib].annotation(a.attrib[attrib])
                     except ValueError:
-                        lint_ctx.error(f"Test {test_idx}: attribute {attrib} for {a.tag} needs to be {assert_function_sig.parameters[attrib].annotation.__name__} got {a.attrib[attrib]}")
+                        lint_ctx.error(
+                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{assert_function_sig.parameters[attrib].annotation.__name__}' got '{a.attrib[attrib]}'",
+                            node=a)
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:
                     continue
                 if assert_function_sig.parameters[p].default is Parameter.empty and p not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: missing attribute {p} for {a.tag}")
+                    lint_ctx.error(f"Test {test_idx}: missing attribute '{p}' for '{a.tag}'", node=a)
             # has_n_lines, has_n_columns, and has_size need to specify n/value, min, or max
             if a.tag in ["has_n_lines", "has_n_columns"]:
                 if "n" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
             if a.tag == "has_size":
                 if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: {a.tag} needs to specify 'n', 'min', or 'max'")
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
 
 
 def _collect_output_names(tool_xml):
