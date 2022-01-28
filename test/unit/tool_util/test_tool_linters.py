@@ -3,7 +3,7 @@ import tempfile
 
 import pytest
 
-from galaxy.tool_util.lint import lint_tool_source_with, LintContext, XMLLintMessage
+from galaxy.tool_util.lint import lint_tool_source_with, LintContext, XMLLintMessageLine, XMLLintMessageXPath
 from galaxy.tool_util.linters import (
     citations,
     command,
@@ -622,7 +622,12 @@ XML_ORDER = """
 
 @pytest.fixture()
 def lint_ctx():
-    return LintContext('all', lint_message_class=XMLLintMessage)
+    return LintContext('all', lint_message_class=XMLLintMessageLine)
+
+
+@pytest.fixture()
+def lint_ctx_xpath():
+    return LintContext('all', lint_message_class=XMLLintMessageXPath)
 
 
 def get_xml_tool_source(xml_string):
@@ -644,12 +649,8 @@ def failed_assert_print(lint_ctx):
 
 def run_lint(lint_ctx, lint_func, lint_target):
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
-    # check if the lint messages can be pretty printed
-    # and if there are line numbers (except for the general linter
-    # which can not generate line numbers)
+    # check if the lint messages have the line
     for message in lint_ctx.message_list:
-        message.pretty_print(level=True, fname=True, xpath=True)
-        # TODO would be nice if lint_general would have full context as well
         if lint_func != general.lint_general:
             assert message.line is not None, f"No context found for message: {message.message}"
 
@@ -1284,7 +1285,7 @@ COMPLETE_MACROS = """<macros>
 """
 
 
-def test_tool_and_macro_xml(lint_ctx):
+def test_tool_and_macro_xml(lint_ctx_xpath):
     """
     test linters (all of them via lint_tool_source_with) on a tool and macro xml file
     checking a list of asserts, where each assert is a 4-tuple:
@@ -1303,7 +1304,7 @@ def test_tool_and_macro_xml(lint_ctx):
         tool_xml, _ = load_with_references(tool_path)
 
     tool_source = XmlToolSource(tool_xml)
-    lint_tool_source_with(lint_ctx, tool_source, silent=True)
+    lint_tool_source_with(lint_ctx_xpath, tool_source)
 
     asserts = (
         ("Select parameter [select] has multiple options with the same value", "tool.xml", 5, "/tool/inputs/param[1]"),
@@ -1313,13 +1314,11 @@ def test_tool_and_macro_xml(lint_ctx):
     for a in asserts:
         message, fname, line, xpath = a
         found = False
-        for lint_message in lint_ctx.message_list:
+        for lint_message in lint_ctx_xpath.message_list:
             if lint_message.message != message:
                 continue
             found = True
-            assert lint_message.line == line, f"Assumed line {line} found {lint_message.line} for: {message}"
             assert lint_message.xpath == xpath, f"Assumed xpath {xpath} xpath {lint_message.xpath} for: {message}"
-            assert lint_message.fname.endswith(fname), f"Assumed file {fname} found {lint_message.fname} for: {message}"
         assert found, f"Did not find {message}"
 
 

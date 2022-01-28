@@ -1,20 +1,73 @@
-"""This modules contains the functions that drive the tool linting framework."""
+"""This modules contains the functions that drive the tool linting framework.
+
+LintContext: a container for LintMessages
+LintMessage: the actual message and level
+
+The idea is to define a LintContext and to apply a linting function `foo` on a
+`target`. The `level` (defined by `LintLevel`) determines which linting messages
+are shown.
+
+```
+lint_ctx = LintContext(level) # level is the reporting level
+lint_ctx.lint(..., lint_func = foo, lint_target = target, ...)
+```
+
+The `lint` function essentially calls `foo(target, self)`. Hence
+the function `foo` must have two parameters
+
+1. the object to lint
+2. the lint context
+
+In `foo` the lint context can be used to add LintMessages to the lint context by
+using its `valid`, `info`, `warn`, and `error` functions:
+
+```
+lint_foo(target, lint_ctx):
+    lint_ctx.error("target is screwed")
+```
+
+Calling `lint` prints out the messages emmited by the linter
+function immediately. Which messages are shown can be determined with the
+`level` argument of the LintContext constructor. If set to `SILENT`,
+no messages will be printed.
+
+For special lint targets it might be useful to have additional information
+in the lint messages. This can be achieved by sublassing `LintMessage`.
+See for instance `XMLLintMessageLine` which has an additional agrument `node`
+in its constructor which is used to determine the line and filename in
+an XML document that caused the message.
+
+In order to use this.
+
+- the lint context needs to be initialized with the additional parameter
+  `lint_message_class=XMLLintMessageLine`
+- the additional parameter needs to be added as well to calls adding messages
+  to the lint context, e.g. `lint_ctx.error("some message", node=X)`. Note
+  that the additional properties must be given as keyword arguments.
+"""
 
 import inspect
+from enum import IntEnum
 from typing import (
     Callable,
     List,
     Optional,
     Type,
-    TypeVar
+    TypeVar,
+    Union
 )
 
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import etree, submodules
 
-LEVEL_ALL = "all"
-LEVEL_WARN = "warn"
-LEVEL_ERROR = "error"
+
+class LintLevel(IntEnum):
+    SILENT = 5
+    ERROR = 4
+    WARN = 3
+    INFO = 2
+    VALID = 1
+    ALL = 0
 
 
 class LintMessage:
@@ -42,40 +95,38 @@ class LintMessage:
     def __repr__(self) -> str:
         return f"LintMessage({self.message})"
 
-    def pretty_print(self, level: bool = True, **kwargs) -> str:
-        rval = ""
-        if level:
-            rval += f".. {self.level.upper()}: "
-        rval += "{self.message}"
-        return rval
 
-
-class XMLLintMessage(LintMessage):
+class XMLLintMessageLine(LintMessage):
     def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
         super().__init__(level, message)
         self.line = None
         self.fname = None
-        self.xpath = None
         if node is not None:
             self.line = node.sourceline
             self.fname = node.base
-            tool_xml = node.getroottree()
-            self.xpath = tool_xml.getpath(node)
 
-    def pretty_print(self, level: bool = True, **kwargs) -> str:
-        """
-        returns the string produced by LintMessage.pretty_print
-        plus filename/line and xpath information if kwargs['fname'] or
-        kwargs['xpath'] is True, respectively
-        """
-        rval = super().pretty_print(level)
-        if kwargs.get("fname", True) and self.line is not None:
+    def __str__(self) -> str:
+        rval = super().__str__()
+        if self.line is not None:
             rval += " ("
             if self.fname:
                 rval += f"{self.fname}:"
             rval += str(self.line)
             rval += ")"
-        if kwargs.get("xpath", False) and self.xpath is not None:
+        return rval
+
+
+class XMLLintMessageXPath(LintMessage):
+    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
+        super().__init__(level, message)
+        self.xpath = None
+        if node is not None:
+            tool_xml = node.getroottree()
+            self.xpath = tool_xml.getpath(node)
+
+    def __str__(self) -> str:
+        rval = super().__str__()
+        if self.xpath is not None:
             rval += f" [{self.xpath}]"
         return rval
 
@@ -87,17 +138,25 @@ LintTargetType = TypeVar('LintTargetType')
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
 class LintContext:
+    skip_types: List[str]
+    level: LintLevel
+    lint_message_class: Type[LintMessage]
+    object_name: Optional[str]
+    message_list: List[LintMessage]
 
     def __init__(self,
-                 level: str,
+                 level: Union[LintLevel, str],
                  lint_message_class: Type[LintMessage] = LintMessage,
                  skip_types: Optional[List[str]] = None,
                  object_name: Optional[str] = None):
-        self.skip_types: List[str] = skip_types or []
-        self.level: str = level
+        self.skip_types = skip_types or []
+        if isinstance(level, str):
+            self.level = LintLevel[level.upper()]
+        else:
+            self.level = level
         self.lint_message_class = lint_message_class
-        self.object_name: Optional[str] = object_name
-        self.message_list: List[LintMessage] = []
+        self.object_name = object_name
+        self.message_list = []
 
     @property
     def found_errors(self) -> bool:
@@ -110,13 +169,12 @@ class LintContext:
     def lint(self,
              name: str,
              lint_func: Callable[[LintTargetType, 'LintContext'], None],
-             lint_target: LintTargetType,
-             silent: bool = False):
+             lint_target: LintTargetType):
         name = name.replace("tsts", "tests")[len("lint_"):]
         if name in self.skip_types:
             return
 
-        if not silent:
+        if self.level < LintLevel.SILENT:
             # this is a relict from the past where the lint context
             # was reset when called with a new lint_func, as workaround
             # we safe the message list, apply the lint_func (which then
@@ -128,7 +186,7 @@ class LintContext:
         # call linter
         lint_func(lint_target, self)
 
-        if not silent:
+        if self.level < LintLevel.SILENT:
             # TODO: colorful emoji if in click CLI.
             if self.error_messages:
                 status = "FAIL"
@@ -148,15 +206,16 @@ class LintContext:
                 plf = print_linter_info(plf)
                 print(f"{message}")
 
-            if self.level != LEVEL_ERROR:
+            if self.level <= LintLevel.WARN:
                 for message in self.warn_messages:
                     plf = print_linter_info(plf)
                     print(f"{message}")
 
-            if self.level == LEVEL_ALL:
+            if self.level <= LintLevel.INFO:
                 for message in self.info_messages:
                     plf = print_linter_info(plf)
                     print(f"{message}")
+            if self.level <= LintLevel.VALID:
                 for message in self.valid_messages:
                     plf = print_linter_info(plf)
                     print(f"{message}")
@@ -195,17 +254,20 @@ class LintContext:
     def warn(self, message: str, *args, **kwargs) -> None:
         self.__handle_message("warning", message, *args, **kwargs)
 
-    def failed(self, fail_level: str) -> bool:
+    def failed(self, fail_level: Union[LintLevel, str]) -> bool:
+        if isinstance(fail_level, str):
+            fail_level = LintLevel[fail_level.upper()]
+
         found_warns = self.found_warns
         found_errors = self.found_errors
-        if fail_level == LEVEL_WARN:
+        if fail_level >= LintLevel.WARN:
             lint_fail = (found_warns or found_errors)
-        else:
+        elif fail_level >= LintLevel.ERROR:
             lint_fail = found_errors
         return lint_fail
 
 
-def lint_tool_source(tool_source, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None) -> bool:
+def lint_tool_source(tool_source, level=LintLevel.ALL, fail_level=LintLevel.WARN, extra_modules=None, skip_types=None, name=None) -> bool:
     """
     apply all (applicable) linters from the linters submodule
     and the ones in extramodules
@@ -227,29 +289,29 @@ def get_lint_context_for_tool_source(tool_source, extra_modules=None, skip_types
     """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
-    lint_context = LintContext(level="all", skip_types=skip_types, object_name=name)
-    lint_tool_source_with(lint_context, tool_source, extra_modules, silent=True)
+    lint_context = LintContext(level=LintLevel.SILENT, skip_types=skip_types, object_name=name)
+    lint_tool_source_with(lint_context, tool_source, extra_modules)
     return lint_context
 
 
-def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=None, skip_types=None, name=None) -> bool:
+def lint_xml(tool_xml, level=LintLevel.ALL, fail_level=LintLevel.WARN, lint_message_class=LintMessage, extra_modules=None, skip_types=None, name=None) -> bool:
     """
-    silently lint an xml tool
+    lint an xml tool
     """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
-    lint_context = LintContext(level=level, lint_message_class=XMLLintMessage, skip_types=skip_types, object_name=name)
+    lint_context = LintContext(level=level, lint_message_class=lint_message_class, skip_types=skip_types, object_name=name)
     lint_xml_with(lint_context, tool_xml, extra_modules)
 
     return not lint_context.failed(fail_level)
 
 
-def lint_tool_source_with(lint_context, tool_source, extra_modules=None, silent=False) -> LintContext:
+def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
     import galaxy.tool_util.linters
     tool_xml = getattr(tool_source, "xml_tree", None)
     tool_type = tool_source.parse_tool_type() or "default"
-    linter_modules = submodules.import_submodules(galaxy.tool_util.linters, ordered=True)
+    linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
     linter_modules.extend(extra_modules)
     for module in linter_modules:
         lint_tool_types = getattr(module, "lint_tool_types", ["default"])
@@ -267,9 +329,9 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None, silent=
                         # XML linter and non-XML tool, skip for now
                         continue
                     else:
-                        lint_context.lint(name, value, tool_xml, silent)
+                        lint_context.lint(name, value, tool_xml)
                 else:
-                    lint_context.lint(name, value, tool_source, silent)
+                    lint_context.lint(name, value, tool_source)
     return lint_context
 
 
