@@ -263,9 +263,9 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
         assert len([x for x in content.split("\n") if x]) == 3, content
 
-    def _set_num_lines_to_3(self, tour_id):
+    def _set_num_lines_to_3(self, element_id):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         # runtime parameters not being set to tool default value:
         # https://github.com/galaxyproject/galaxy/pull/7157
@@ -274,9 +274,9 @@ steps:
         input_element.clear()
         input_element.send_keys("3")
 
-    def _set_replacement_parameter(self, tour_id, value):
+    def _set_replacement_parameter(self, element_id, value):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         initial_value = input_element.get_attribute("value")
         assert initial_value == "", initial_value

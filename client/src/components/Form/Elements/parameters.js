@@ -51,7 +51,7 @@ export default Backbone.View.extend({
     /** Data input field */
     _fieldData: function (input_def) {
         return new SelectContent.View({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             extensions: input_def.extensions,
             optional: input_def.optional,
             multiple: input_def.multiple,
@@ -95,7 +95,7 @@ export default Backbone.View.extend({
             }
         }
         return new Ui.TextSelect({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             data: input_def.data,
             options: input_def.options,
             display: input_def.display,
@@ -120,7 +120,7 @@ export default Backbone.View.extend({
 
         // create drill down field
         return new Ui.Drilldown.View({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             data: input_def.options,
             display: input_def.display,
             optional: input_def.optional,
@@ -155,7 +155,7 @@ export default Backbone.View.extend({
         }
         // create input element
         return new inputClass({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             type: input_def.type,
             area: input_def.area,
             readonly: input_def.readonly,
@@ -171,7 +171,7 @@ export default Backbone.View.extend({
     /** Data dialog picker field */
     _fieldDialog: function (input_def) {
         return new DataPicker({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
         });
@@ -180,7 +180,7 @@ export default Backbone.View.extend({
     /** Library dataset field */
     _fieldLibrary: function (input_def) {
         return new SelectLibrary.View({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
@@ -190,7 +190,7 @@ export default Backbone.View.extend({
     /** FTP file field */
     _fieldFtp: function (input_def) {
         return new SelectFtp.View({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
@@ -199,7 +199,7 @@ export default Backbone.View.extend({
 
     _fieldRulesEdit: function (input_def) {
         return new RulesEdit.View({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             onchange: input_def.onchange,
             target: input_def.target,
         });
@@ -208,7 +208,7 @@ export default Backbone.View.extend({
     /** Upload file field */
     _fieldUpload: function (input_def) {
         return new Ui.Upload({
-            id: `field-${input_def.id}`,
+            id: input_def.id,
             onchange: input_def.onchange,
         });
     },

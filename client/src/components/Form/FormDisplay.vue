@@ -16,7 +16,7 @@
 <script>
 import Vue from "vue";
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchErrors, getElementId } from "./utilities";
+import { visitInputs, validateInputs, matchErrors } from "./utilities";
 export default {
     components: {
         FormInputs,
@@ -178,8 +178,7 @@ export default {
                 const message = validation[1];
                 this.setError(inputId, message);
                 if (!silent && inputId) {
-                    const elementId = getElementId(inputId);
-                    const element = this.$el.querySelector(`#${elementId}`);
+                    const element = this.$el.querySelector(`[id='form-element-${inputId}']`);
                     if (element) {
                         const centerPanel = document.querySelector(".center-panel");
                         if (centerPanel) {

@@ -44,9 +44,9 @@ describe("FormDefault", () => {
         expect(title).toBe("node-title");
         const inputCount = wrapper.findAll("input").length;
         expect(inputCount).toBe(3);
-        const outputLabelCount = wrapper.findAll("div[tour_id='__label__output-name']").length;
+        const outputLabelCount = wrapper.findAll("#__label__output-name").length;
         expect(outputLabelCount).toBe(1);
-        const otherLabelCount = wrapper.findAll("div[tour_id='__label__other-name']").length;
+        const otherLabelCount = wrapper.findAll("#__label__other-name").length;
         expect(otherLabelCount).toBe(1);
     });
 });

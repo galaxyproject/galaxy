@@ -62,7 +62,7 @@ class ChangePasswordTestCase(SeleniumTestCase):
 
     def fill_input_fields(self, current, password, confirm):
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.driver.find_element_by_css_selector("[tour_id='current'] input").send_keys(current)
-        self.driver.find_element_by_css_selector("[tour_id='password'] input").send_keys(password)
-        self.driver.find_element_by_css_selector("[tour_id='confirm'] input").send_keys(confirm)
+        self.driver.find_element_by_css_selector("input[id='current']").send_keys(current)
+        self.driver.find_element_by_css_selector("input[id='password']").send_keys(password)
+        self.driver.find_element_by_css_selector("input[id='confirm']").send_keys(confirm)
         self.components.change_user_password.submit.wait_for_and_click()
