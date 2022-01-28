@@ -1,4 +1,4 @@
-import { visitInputs, validateInputs, matchCase } from "./utilities";
+import { visitInputs, validateInputs, matchCase, matchErrors } from "./utilities";
 import toolModel from "./test-data/tool";
 
 function visitInputsString(inputs) {
@@ -116,5 +116,22 @@ describe("form component utilities", () => {
         values.input_c.values = [];
         result = validateInputs(index, values);
         expect(JSON.stringify(result)).toEqual('["input_c","Please provide data for this input."]');
+    });
+
+    it("test error matching", () => {
+        const index = {
+            input_a: {},
+            input_b_0: {},
+            "input_c|input_d": {},
+        };
+        const values = {
+            input_a: "error_a",
+            input_b: ["error_b"],
+            input_c: { input_d: "error_d" },
+        };
+        const result = matchErrors(index, values);
+        expect(result["input_a"]).toEqual("error_a");
+        expect(result["input_b_0"]).toEqual("error_b");
+        expect(result["input_c|input_d"]).toEqual("error_d");
     });
 });

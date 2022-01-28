@@ -9,12 +9,12 @@
         :collapsed-enable-icon="collapsedEnableIcon"
         :collapsed-disable-text="collapsedDisableText"
         :collapsed-disable-icon="collapsedDisableIcon"
-        :errors="errors"
         :on-change="onChange"
         :on-change-form="onChangeForm" />
 </template>
 
 <script>
+import Vue from "vue";
 import FormInputs from "./FormInputs";
 import { visitInputs, validateInputs, matchErrors, getElementId } from "./utilities";
 export default {
@@ -108,7 +108,7 @@ export default {
         errors() {
             this.resetError();
             if (this.errors) {
-                const errorMessages = matchErrors(this.errors, this.formIndex);
+                const errorMessages = matchErrors(this.formIndex, this.errors);
                 for (const inputId in errorMessages) {
                     this.setError(inputId, errorMessages[inputId]);
                 }
@@ -147,6 +147,9 @@ export default {
         },
         onCloneInputs() {
             this.formInputs = JSON.parse(JSON.stringify(this.inputs));
+            visitInputs(this.formInputs, (input) => {
+                Vue.set(input, "error", null);
+            });
             this.onCreateIndex();
         },
         onChange(refreshOnChange) {
@@ -178,7 +181,10 @@ export default {
                     const elementId = getElementId(inputId);
                     const element = this.$el.querySelector(`#${elementId}`);
                     if (element) {
-                        document.querySelector(".center-panel").scrollTo(0, this.getOffsetTop(element));
+                        const centerPanel = document.querySelector(".center-panel");
+                        if (centerPanel) {
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                        }
                     }
                 }
             }
