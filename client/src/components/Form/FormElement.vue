@@ -1,5 +1,5 @@
 <template>
-    <div v-show="!isHidden" :id="getId(id)" :class="['ui-form-element section-row', cls]">
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text" v-html="error" />
@@ -148,6 +148,9 @@ export default {
         };
     },
     computed: {
+        elementId() {
+            return `form-element-${this.id}`;
+        },
         argument() {
             return this.attrs["argument"];
         },
@@ -217,10 +220,6 @@ export default {
         this.initialState();
     },
     methods: {
-        /** Returns id for element wrapper */
-        getId(id) {
-            return `form-element-${id}`;
-        },
         /** Submits a changed value. */
         setValue(value) {
             this.$emit("input", value, this.id);
