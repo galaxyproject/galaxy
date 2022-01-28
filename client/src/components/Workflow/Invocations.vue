@@ -98,7 +98,6 @@ import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import UtcDate from "components/UtcDate";
-import LoadingSpan from "components/LoadingSpan";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 
@@ -106,7 +105,6 @@ export default {
     components: {
         UtcDate,
         WorkflowInvocationState,
-        LoadingSpan,
     },
     props: {
         noInvocationsMessage: { type: String, default: "No Workflow Invocations to display" },
