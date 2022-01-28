@@ -573,7 +573,7 @@ workflow_editor:
     label_output:
       type: xpath
       selector: >
-        //div[@id='form-__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@id='form-element-__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
     rename_output:
       type: xpath
       selector: >
