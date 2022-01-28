@@ -69,7 +69,7 @@ def main():
 						"text": result["text"][i],
 						"score": {
 							"type":"confidence",
-							"scoreValue": result["conf"][i]
+							"value": result["conf"][i]
 								},
 							# relative coords
 							"vertices": {
