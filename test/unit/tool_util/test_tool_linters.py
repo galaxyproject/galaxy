@@ -572,17 +572,11 @@ ASSERTS = """
                 <has_text text="blah" n="1"/>
                 <has_line line="blah"/>
             </assert_stdout>
-            <assert_stderr>
-                <invalid/>
-            </assert_stderr>
-            <assert_command>
-                <has_text invalid_attrib="blah"/>
-            </assert_command>
             <output name="out_archive">
                 <assert_contents>
-                    <has_size value="500k" delta="1O"/>
+                    <has_size value="500k" delta="10"/>
                     <has_archive_member path=".*/my-file.txt">
-                        <not_has_text invalid_attrib_also_checked_in_nested_asserts="Blah" text="EDK72998.1" />
+                        <not_has_text text="EDK72998.1" />
                     </has_archive_member>
                 </assert_contents>
             </output>
