@@ -25,7 +25,7 @@ parse_common_args() {
                 ;;
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
-                circusctl_args="$circusctl_args quit"
+                gravity_args="stop"
                 paster_args="$paster_args --stop-daemon"
                 add_pid_arg=1
                 uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
@@ -33,7 +33,7 @@ parse_common_args() {
                 shift
                 ;;
             --restart|restart)
-                circusctl_args="$circusctl_args restart"
+                gravity_args="restart"
                 paster_args="$paster_args restart"
                 add_pid_arg=1
                 add_log_arg=1
@@ -43,10 +43,9 @@ parse_common_args() {
                 shift
                 ;;
             --daemon|start)
-                circusd_args="$circusd_args --daemon --log-output $LOG_FILE"
+                gravity_args="start"
                 paster_args="$paster_args --daemon"
                 gunicorn_args="$gunicorn_args --daemon"
-                GALAXY_DAEMON_LOG="$GALAXY_LOG"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
@@ -56,8 +55,8 @@ parse_common_args() {
                 shift
                 ;;
             --status|status)
+                gravity_args="status"
                 paster_args="$paster_args $1"
-                circusctl_args="$circusctl_args $1"
                 add_pid_arg=1
                 shift
                 ;;
@@ -70,7 +69,6 @@ parse_common_args() {
                 ;;
             *)
                 paster_args="$paster_args $1"
-                circusctl_args="$circusctl_args $1"
                 uwsgi_args="$uwsgi_args $1"
                 shift
                 ;;
@@ -133,6 +131,17 @@ setup_python() {
     python ./scripts/check_python.py || exit 1
 }
 
+setup_gravity_state_dir() {
+    # $GALAXY_VIRTUAL_ENV is expected to be set, and cwd must be galaxy root
+    if ! grep -q '^GRAVITY_STATE_DIR=' "${GALAXY_VIRTUAL_ENV}/bin/activate"; then
+        echo "Setting \$GRAVITY_STATE_DIR in ${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo '' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo '# Galaxy Gravity per-instance state directory configured by Galaxy common_startup.sh' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo "GRAVITY_STATE_DIR='$(pwd)/database/gravity'" >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo 'export GRAVITY_STATE_DIR' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+    fi
+}
+
 set_galaxy_config_file_var() {
     if [ -z "$GALAXY_CONFIG_FILE" ]; then
         GALAXY_CONFIG_FILE=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['galaxy', 'universe_wsgi']) or '')")
@@ -144,15 +153,21 @@ find_server() {
     server_config=$1
     server_app=$2
     arg_getter_args=
-    default_webserver="paste"
-    case "$server_config" in
-        *.y*ml|''|none)
-            default_webserver="uwsgi"  # paste incapable of this
+    default_webserver="gunicorn"
+    default_gunicorn_worker="uvicorn.workers.UvicornWorker"
+
+    case "$server_app" in
+        galaxy)
+            default_webserver="gravity"
+            gunicorn_worker="galaxy.webapps.galaxy.workers.Worker"
+            ;;
+        reports)
+            # TODO: don't override this var, and is this really the only way to configure the port?
+            GUNICORN_CMD_ARGS="--bind=localhost:9001"
             ;;
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
-    CIRCUS_CONFIG_FILE=${CIRCUS_CONFIG_FILE:-config/dev.ini}
     if [ "$APP_WEBSERVER" = "uwsgi" ]; then
         # Look for uwsgi
         if [ -z "$skip_venv" ] && [ -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
@@ -173,23 +188,15 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\" $gunicorn_args"
+        run_server="gunicorn"
+        server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
         if [ "$add_log_arg" -eq 1 ]; then
             server_args="$server_args --log-file \"$LOG_FILE\""
         fi
-    elif [ "$APP_WEBSERVER" = "dev" ]; then
-        if [ -n "$circusctl_args" ]; then
-            run_server="circusctl"
-            server_args="$circusctl_args"
-        else
-            run_server="circusd"
-            export GALAXY_DAEMON_LOG=$GALAXY_DAEMON_LOG
-            server_args="$CIRCUS_CONFIG_FILE $circusd_args"
-        fi
-    else
+    elif [ "$APP_WEBSERVER" = "paste" ]; then
         run_server="python"
         server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
         if [ "$add_pid_arg" -eq 1 ]; then
@@ -197,6 +204,18 @@ find_server() {
         fi
         if [ "$add_log_arg" -eq 1 ]; then
             server_args="$server_args --log-file \"$LOG_FILE\""
+        fi
+    else
+        if [ "$add_log_arg" -eq 1 ]; then
+            GALAXY_DAEMON_LOG="${GALAXY_LOG:-galaxy.log}"
+            export GALAXY_DAEMON_LOG
+        fi
+        if [ -n "$gravity_args" ]; then
+            run_server="galaxyctl"
+            server_args="$gravity_args"
+        else
+            run_server="galaxy"
+            server_args=
         fi
     fi
 }
