@@ -164,7 +164,7 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-        
+
         expected_count = attributes.get("count", None)
 
         self.wait_for_jobs(history_id, jobs, maxseconds)
@@ -184,7 +184,6 @@ class GalaxyInteractorApi:
                 found_outputs += 1
         if expected_count is not None and expected_count != found_outputs:
             raise AssertionError(f"Output '{name}': expected to have '{expected_count}' elements, but it had '{found_outputs}'")
-
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -889,13 +888,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
     def verify_elements(element_objects, element_tests):
         expected_sort_order = {}
-
         eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
+            expected_count = element_attrib.get("count", None)
             if 'expected_sort_order' in element_attrib:
                 expected_sort_order[element_attrib['expected_sort_order']] = element_identifier
 
@@ -906,10 +905,14 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
+                found_outputs = 1
                 verify_dataset(element, element_attrib, element_outfile)
             else:
                 elements = element["object"]["elements"]
+                found_outputs = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
+            if expected_count is not None and expected_count != found_outputs:
+                raise AssertionError(f"Element '{element_identifier}': expected to have '{expected_count}' elements, but it had '{found_outputs}'")
 
         if len(expected_sort_order) > 0:
             generated_sort_order = [_["element_identifier"] for _ in element_objects]

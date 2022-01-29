@@ -79,15 +79,32 @@ true
         </collection>
     </outputs>
     <tests>
-        <!-- dataset -->
+        <!-- dataset with
+             - correct expect_num_outputs and count
+             - wrong expect_num_outputs
+             - wrong count -->
         <test expect_num_outputs="1">
-            <param name="produce_dataset" value="true" />
-            <output name="dataset">
+            <param name="produce_dataset" value="true"/>
+            <output name="dataset" count="1">
+                <expand macro="content_assertion"/>
+            </output>
+        </test>
+        <test expect_num_outputs="2" expect_test_failure="true">
+            <param name="produce_dataset" value="true"/>
+            <output name="dataset" count="1">
+                <expand macro="content_assertion"/>
+            </output>
+        </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_dataset" value="true"/>
+            <output name="dataset" count="2">
                 <expand macro="content_assertion"/>
             </output>
         </test>
 
-        <!-- discovered datasets -->
+        <!-- discovered datasets with 
+             - correct expect_num_outputs and count
+             - wrong count -->
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset" value="true" />
             <output name="discovered_dataset" count="3">
@@ -100,11 +117,37 @@ true
                 </discovered_dataset>
             </output>
         </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_discovered_dataset" value="true" />
+            <output name="discovered_dataset" count="2">
+                <expand macro="content_assertion"/>
+                <discovered_dataset designation="2" ftype="txt">
+                    <expand macro="content_assertion"/>
+                </discovered_dataset>
+                <discovered_dataset designation="3" ftype="txt">
+                    <expand macro="content_assertion"/>
+                </discovered_dataset>
+            </output>
+        </test>
 
-        <!-- discovered datasets invisible -->
+        <!-- discovered datasets invisible with
+             - correct expect_num_outputs and count
+             - wrong count -->
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset_invisible" value="true" />
             <output name="discovered_dataset_invisible" count="3">
+                <expand macro="content_assertion"/>
+                <discovered_dataset designation="2" ftype="txt">
+                    <expand macro="content_assertion"/>
+                </discovered_dataset>
+                <discovered_dataset designation="3" ftype="txt">
+                    <expand macro="content_assertion"/>
+                </discovered_dataset>
+            </output>
+        </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_discovered_dataset_invisible" value="true" />
+            <output name="discovered_dataset_invisible" count="2">
                 <expand macro="content_assertion"/>
                 <discovered_dataset designation="2" ftype="txt">
                     <expand macro="content_assertion"/>
@@ -189,23 +232,91 @@ true
             </output_collection>
         </test>
 
-        <!-- list of pairs with discovered elements -->
+        <!-- list of pairs with discovered elements with
+             - correct expect_num_outputs, count (output_collection), count (outer element), count (inner element)
+             - wrong count (output_collection)
+             - wrong count (outer element)
+             - wrong count (inner element)
+        -->
         <test expect_num_outputs="1">
             <param name="produce_paired_list" value="true" />
             <output_collection name="paired_list" type="list:paired" count="2">
-                <element name="p1">
-                    <element name="forward">
+                <element name="p1" count="2">
+                    <element name="forward" count="1">
                         <expand macro="content_assertion"/>
                     </element>
-                    <element name="reverse">
+                    <element name="reverse" count="1">
                         <expand macro="content_assertion"/>
                     </element>
                 </element>
-                <element name="p2">
-                    <element name="forward">
+                <element name="p2" count="2">
+                    <element name="forward" count="1">
                         <expand macro="content_assertion"/>
                     </element>
-                    <element name="reverse">
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_paired_list" value="true" />
+            <output_collection name="paired_list" type="list:paired" count="3">
+                <element name="p1" count="2">
+                    <element name="forward" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+                <element name="p2" count="2">
+                    <element name="forward" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_paired_list" value="true" />
+            <output_collection name="paired_list" type="list:paired" count="2">
+                <element name="p1" count="3">
+                    <element name="forward" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+                <element name="p2" count="2">
+                    <element name="forward" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+        <test expect_num_outputs="1" expect_test_failure="true">
+            <param name="produce_paired_list" value="true" />
+            <output_collection name="paired_list" type="list:paired" count="2">
+                <element name="p1" count="2">
+                    <element name="forward" count="2">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                </element>
+                <element name="p2" count="2">
+                    <element name="forward" count="1">
+                        <expand macro="content_assertion"/>
+                    </element>
+                    <element name="reverse" count="1">
                         <expand macro="content_assertion"/>
                     </element>
                 </element>
