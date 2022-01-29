@@ -1986,10 +1986,9 @@ This value is the same as the value of the ``name`` attribute of the
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expected collection type (e.g. ``list``, ``paired``,
-or ``list:paired``).</xs:documentation>
+        <xs:documentation xml:lang="en">Expected collection type (e.g. ``list``, ``paired``, ``list:paired``, or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="count" type="xs:integer">
@@ -3405,11 +3404,11 @@ file (use the file extension). Used only when the ``type`` attribute value is
 ``data`` or ``data_collection``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="collection_type" type="xs:string">
+        <xs:attribute name="collection_type" type="CollectionType">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
 Restrict the kind of collection that can be consumed by this parameter (e.g.
-``paired``, ``list:paired``, ``list``). Multiple such collection types can be
+``paired``, ``list:paired``, ``list``, ``list:list``). Multiple such collection types can be
 specified here as a comma-separated list. Used only when the ``type`` attribute
 value is ``data_collection``.
               ]]></xs:documentation>
@@ -5077,9 +5076,9 @@ Creating collections in tools is covered in-depth in
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, ``list:paired`` or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
@@ -5115,7 +5114,7 @@ This tag describes an output to the tool.
     </xs:attribute>
     <xs:attribute name="collection_type" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, ``list:paired``, or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="collection_type_source" type="xs:string">
@@ -6901,5 +6900,15 @@ is the only supported options.</xs:documentation>
       <xs:enumeration value="aggressive"/>
     </xs:restriction>
   </xs:simpleType>
-
+  <xs:simpleType name="CollectionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="list"/>
+      <xs:enumeration value="paired"/>
+      <xs:enumeration value="list:list"/>
+      <xs:enumeration value="list:paired"/>
+    </xs:restriction>
+  </xs:simpleType>
 </xs:schema>
