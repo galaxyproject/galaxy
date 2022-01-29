@@ -90,7 +90,7 @@ true
         <!-- discovered datasets -->
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset" value="true" />
-            <output name="discovered_dataset">
+            <output name="discovered_dataset" count="3">
                 <expand macro="content_assertion"/>
                 <discovered_dataset designation="2" ftype="txt">
                     <expand macro="content_assertion"/>
@@ -104,7 +104,7 @@ true
         <!-- discovered datasets invisible -->
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset_invisible" value="true" />
-            <output name="discovered_dataset_invisible">
+            <output name="discovered_dataset_invisible" count="3">
                 <expand macro="content_assertion"/>
                 <discovered_dataset designation="2" ftype="txt">
                     <expand macro="content_assertion"/>
@@ -118,7 +118,7 @@ true
         <!-- discovered datasets invisible -->
         <test expect_num_outputs="1">
             <param name="produce_discovered_dataset_not_assign_primary" value="true" />
-            <output name="discovered_dataset_not_assign_primary">
+            <output name="discovered_dataset_not_assign_primary" count="4">
                 <discovered_dataset designation="1" ftype="txt">
                     <expand macro="content_assertion"/>
                 </discovered_dataset>

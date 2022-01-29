@@ -622,8 +622,9 @@ def __parse_output_elem(output_elem):
     name = attrib.pop('name', None)
     if name is None:
         raise Exception("Test output does not have a 'name'")
-
     file, attributes = __parse_test_attributes(output_elem, attrib, parse_discovered_datasets=True)
+    if "count" in attrib:
+        attributes["count"] = int(attrib.pop('count'))
     return name, file, attributes
 
 

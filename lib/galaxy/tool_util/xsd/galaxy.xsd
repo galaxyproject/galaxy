@@ -1677,6 +1677,11 @@ When this attribute is true and ``compare`` is set to ``diff``, try to decompres
         <xs:documentation xml:lang="en">If ``compare`` is set to ``sim_size``, this is the maximum allowed relative size difference between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute. A value of 0.1 means that the file that is generated in the test can differ by at most 10% of the file in ``test-data``. The default is not to check for  relative size difference. Can be combined with ``delta``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="count" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Number or datasets for this output. Should be used for outputs with ``discover_datasets``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestOutputElement">
     <xs:choice>

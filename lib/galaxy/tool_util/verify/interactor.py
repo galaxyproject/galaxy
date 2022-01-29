@@ -164,6 +164,9 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
+        
+        expected_count = attributes.get("count", None)
+
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
@@ -173,9 +176,15 @@ class GalaxyInteractorApi:
             raise AssertionError(f"Output {name}: {str(e)}")
 
         primary_datasets = attributes.get('primary_datasets', {})
-        if primary_datasets:
-            job_id = self._dataset_provenance(history_id, hid)["job_id"]
-            outputs = self._get(f"jobs/{job_id}/outputs").json()
+        job_id = self._dataset_provenance(history_id, hid)["job_id"]
+        outputs = self._get(f"jobs/{job_id}/outputs").json()
+        found_outputs = 0
+        for output in outputs:
+            if output["name"] == name or output["name"].startswith(f'__new_primary_file_{name}|'):
+                found_outputs += 1
+        if expected_count is not None and expected_count != found_outputs:
+            raise AssertionError(f"Output '{name}': expected to have '{expected_count}' elements, but it had '{found_outputs}'")
+
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
