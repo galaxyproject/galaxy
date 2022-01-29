@@ -5,7 +5,6 @@ from ..job import BaseJobExec, job_states
 
 log = getLogger(__name__)
 
-ERROR_MESSAGE_UNRECOGNIZED_ARG = 'Unrecognized long argument passed to Torque CLI plugin: %s'
 
 argmap = {'destination': '-q',
           'Execution_Time': '-a',
@@ -31,6 +30,8 @@ argmap = {'destination': '-q',
 
 class Torque(BaseJobExec):
 
+    ERROR_MESSAGE_UNRECOGNIZED_ARG = 'Unrecognized long argument passed to Torque CLI plugin: %s'
+
     def job_script_kwargs(self, ofile, efile, job_name):
         pbsargs = {'-o': ofile,
                    '-e': efile,
@@ -43,7 +44,7 @@ class Torque(BaseJobExec):
                     k = argmap[k]
                 pbsargs[k] = v
             except KeyError:
-                log.warning(ERROR_MESSAGE_UNRECOGNIZED_ARG % k)
+                log.warning(self.ERROR_MESSAGE_UNRECOGNIZED_ARG, k)
         template_pbsargs = ''
         for k, v in pbsargs.items():
             template_pbsargs += f'#PBS {k} {v}\n'
