@@ -1181,13 +1181,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
 
-    maxseconds = testdef.maxseconds
-    if testdef.num_outputs is not None:
-        expected = testdef.num_outputs
-        actual = len(data_list) + len(data_collection_list)
-        if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
-            raise Exception(message)
     found_exceptions = []
 
     def register_exception(e):
@@ -1202,6 +1195,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         if testdef.outputs:
             raise Exception("Cannot specify outputs in a test expecting failure.")
 
+    maxseconds = testdef.maxseconds
     # Wait for the job to complete and register expections if the final
     # status was not what test was expecting.
     job_failed = False
@@ -1213,6 +1207,14 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             found_exceptions.append(e)
 
     job_stdio = galaxy_interactor.get_job_stdio(job['id'])
+
+    if testdef.num_outputs is not None:
+        expected = testdef.num_outputs
+        actual = len(data_list) + len(data_collection_list)
+        if expected != actual:
+            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
+            error = AssertionError(message)
+            register_exception(error)
 
     if not job_failed and testdef.expect_failure:
         error = AssertionError("Expected job to fail but Galaxy indicated the job successfully completed.")
