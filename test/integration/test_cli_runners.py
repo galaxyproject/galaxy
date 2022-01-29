@@ -48,6 +48,8 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
     if 'openpbs' in image:
         time.sleep(PBS_STARTUP_DELAY)
     if sys.platform != 'darwin':
+        # Change testuser's uid to match current user id. This ensures that /home/testuser/.ssh/authorized_keys
+        # is owned by the right user and that job outputs can be cleaned up.
         subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
     return RemoteConnection('localhost', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
 
