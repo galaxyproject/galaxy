@@ -9,7 +9,6 @@ import pytest
 from fastapi import FastAPI
 from fastapi.param_functions import Depends
 from httpx import AsyncClient
-pytest.importorskip("starlette_context")
 from starlette_context import context as request_context
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
