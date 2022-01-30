@@ -118,15 +118,3 @@ testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
-
-[tool.isort]
-force_alphabetical_sort_within_sections = true
-multi_line_output = 3
-force_grid_wrap = 2
-include_trailing_comma = true
-src_paths = ['lib']
-known_first_party = ['galaxy_test']
-no_lines_before = ['LOCALFOLDER']
-reverse_relative = true
-skip_gitignore = true
-line_length = 200
