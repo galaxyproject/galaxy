@@ -38,35 +38,33 @@ from urllib.parse import (
 )
 
 import requests
+from boltons.iterutils import (
+    default_enter,
+    remap,
+)
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None  # type: ignore[assignment]
-from boltons.iterutils import (
-    default_enter,
-    remap,
-)
+try:
+    import uwsgi
+except ImportError:
+    uwsgi = None
 LXML_AVAILABLE = True
 try:
     from lxml import etree
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-
 try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
     docutils_core = None  # type: ignore[assignment]
     docutils_html4css1 = None  # type: ignore[assignment]
-
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 
 from .custom_logging import get_logger
 from .inflection import Inflector
