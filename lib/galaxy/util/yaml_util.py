@@ -3,11 +3,11 @@ import os
 from collections import OrderedDict
 
 import yaml
+from yaml.constructor import ConstructorError
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
     from yaml import SafeLoader  # type: ignore[misc]
-from yaml.constructor import ConstructorError
 
 
 log = logging.getLogger(__name__)
