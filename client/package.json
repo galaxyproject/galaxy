@@ -167,7 +167,7 @@
     "karma-webpack": "^5.0.0",
     "mini-css-extract-plugin": "^2.5.3",
     "postcss-loader": "^6.2.1",
-    "prettier": "^2.4.1",
+    "prettier": "^2.5.1",
     "process": "^0.11.10",
     "qunit": "^2.17.2",
     "raw-loader": "^4.0.2",
