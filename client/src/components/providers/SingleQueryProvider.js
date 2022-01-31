@@ -42,11 +42,16 @@ export const SingleQueryProvider = (lookup) => {
         },
         mounted() {
             if (this.autoRefresh) {
-                setInterval(() => {
+                this.interval = setInterval(() => {
                     this.doQuery();
                 }, this.autoTime);
             } else {
                 this.doQuery();
+            }
+        },
+        destroyed() {
+            if (this.interval) {
+                clearInterval(this.interval);
             }
         },
         render() {

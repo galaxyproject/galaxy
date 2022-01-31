@@ -115,13 +115,11 @@ export default {
             return this.history.id;
         },
         dataUrl() {
-            console.log(this.maxHid);
             return `api/histories/${this.historyId}/contents/before/${this.maxHid}/40`;
         },
     },
     methods: {
         onScroll(newHid) {
-            console.log(newHid);
             this.maxHid = newHid;
         },
     },
