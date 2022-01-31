@@ -140,6 +140,17 @@ galaxy:
   # <config_dir>.
   tool_config_file: tool_conf.xml  
 
+  # Monitor the tools and tool directories listed in any tool config
+  # file specified in tool_config_file option.  If changes are found,
+  # tools are automatically reloaded. Watchdog (
+  # https://pypi.org/project/watchdog/ ) must be installed and available
+  # to Galaxy to use this option. Other options include 'auto' which
+  # will attempt to watch tools if the watchdog library is available but
+  # won't fail to load Galaxy if it is not and 'polling' which will use
+  # a less efficient monitoring scheme that may work in wider range of
+  # scenarios than the watchdog default.
+  watch_tools: polling
+  
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
   # Below property is commented out as Galaxy always tries to create a new directory for it upon start,
