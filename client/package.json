@@ -127,6 +127,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.16.12",
+    "@babel/eslint-parser": "^7.16.5",
     "@babel/helper-validator-identifier": "^7.16.7",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-transform-runtime": "^7.16.10",
@@ -139,7 +140,6 @@
     "autoprefixer": "^10.4.2",
     "axios-mock-adapter": "^1.20.0",
     "babel-core": "^7.0.0-bridge.0",
-    "babel-eslint": "^10.1.0",
     "babel-jest": "^27.4.6",
     "babel-loader": "^8.2.3",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
