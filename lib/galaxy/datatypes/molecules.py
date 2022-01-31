@@ -26,6 +26,12 @@ from galaxy.util import (
     unicodify
 )
 
+# optional import to enhance metadata
+try:
+    import ase
+except ImportError:
+    ase = None
+
 log = logging.getLogger(__name__)
 
 
@@ -679,7 +685,7 @@ class PQR(GenericMolFile):
 
 class Cell(GenericMolFile):
     """
-    CELL format.
+    CASTEP CELL format.
     """
 
     file_ext = "cell"
