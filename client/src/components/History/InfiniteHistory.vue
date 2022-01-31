@@ -68,10 +68,7 @@ export default {
             return reverse(this.getData.filter((n) => n));
         },
         getData() {
-            return this.data.length > 0 ? this.data : this.payload.contents;
-        },
-        startKey() {
-            return this.payload.startKey;
+            return this.data.length > 0 ? this.data : this.payload;
         },
     },
     watch: {
@@ -79,8 +76,8 @@ export default {
             this.changeHistory();
         },
         payload: function () {
-            if (this.payload?.contents.length > 0) {
-                this.payload.contents.forEach((element) => {
+            if (this.payload?.length > 0) {
+                this.payload.forEach((element) => {
                     Vue.set(this.data, element.hid, element);
                 });
             }
