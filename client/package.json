@@ -123,7 +123,7 @@
     "jest": "jest --config tests/jest/jest.config.js",
     "jest-watch": "jest --config tests/jest/jest.config.js --watch",
     "qunit": "karma start tests/karma/karma.config.qunit.js",
-    "eslint": "eslint -c .eslintrc.js src --ext .js,.vue"
+    "eslint": "eslint -c .eslintrc.json src --ext .js,.vue"
   },
   "devDependencies": {
     "@babel/core": "^7.16.12",
