@@ -20,8 +20,6 @@ describe("FormInput", () => {
         const wrapper = await mountFormNumber({ value: 1, type: "float" });
         await flushPromises();
         const input = await getInput(wrapper);
-        // console.log(wrapper);
-        console.log(input);
         expect(input.exists()).toBe(true);
     });
 
