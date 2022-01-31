@@ -33,12 +33,29 @@
                         <HistoryMessages class="m-2" :history="history" />
                     </template>
 
+                    <template v-slot:listcontrols>
+                        <ContentOperations
+                            :history="history"
+                            :total-matches="100"
+                            :loading="loading"
+                            :params.sync="params"
+                            :content-selection="selectedItems"
+                            @update:content-selection="selectItems"
+                            :show-selection="showSelection"
+                            @update:show-selection="setShowSelection"
+                            @resetSelection="resetSelection"
+                            @selectAllContent="selectItems(payload.contents)"
+                            :expanded-count="expandedCount"
+                            :set-reset-history-contents="setResetHistoryContents"
+                            @collapseAllContent="collapseAll" />
+                    </template>
+
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
                         <b-alert v-else-if="loading" class="m-2" variant="info" show>
                             <LoadingSpan message="Loading History" />
                         </b-alert>
-                        <InfiniteHistory
+                        <HistoryListing
                             v-else
                             @scroll="onScroll"
                             :payload="payload"
@@ -78,7 +95,7 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
-import InfiniteHistory from "./InfiniteHistory";
+import HistoryListing from "./HistoryListing";
 
 export default {
     filters: {
@@ -91,12 +108,12 @@ export default {
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryMenu,
+        HistoryListing,
         ContentOperations,
         ToolHelpModal,
         ExpandedItems,
         SelectedItems,
-        HistoryMenu,
-        InfiniteHistory,
     },
     props: {
         history: { type: History, required: true },
@@ -125,3 +142,13 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+@import "scss/mixins.scss";
+.scrollContainer {
+    .listing {
+        overflow-y: scroll;
+        z-index: 0;
+    }
+}
+</style>

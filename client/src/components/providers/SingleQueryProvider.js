@@ -1,4 +1,5 @@
 import hash from "object-hash";
+import { LastQueue } from "utils/promise-queue";
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
@@ -8,6 +9,7 @@ import hash from "object-hash";
  *                              whose properties are the attributes assigned to the provider component
  * @return  {VueComponentOptions} Vue component options definition
  */
+const queue = new LastQueue();
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
 
@@ -23,7 +25,7 @@ export const SingleQueryProvider = (lookup) => {
             },
             autoTime: {
                 type: Number,
-                default: 1000,
+                default: 3000,
             },
         },
         data() {
@@ -71,7 +73,7 @@ export const SingleQueryProvider = (lookup) => {
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {
-                    lookupPromise = lookup(this.$attrs);
+                    lookupPromise = queue.enqueue(lookup, this.$attrs);
                 }
                 lookupPromise.then(
                     (result) => {

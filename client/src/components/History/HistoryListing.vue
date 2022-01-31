@@ -1,9 +1,6 @@
 <template>
     <div ref="container" class="scrollContainer">
-        <div
-            infinite-scroll-disabled="busy"
-            @scroll="handleScroll"
-            :class="{ loadingBackground: loading, listing: true }">
+        <div @scroll="handleScroll" :class="{ loadingBackground: loading, listing: true }">
             <div v-for="(item, index, rowKey) in getData" :key="rowKey">
                 <HistoryContentItem
                     :item="item"
@@ -38,6 +35,7 @@ export default {
             initialLoad: true,
             data: [],
             maxHid: 0,
+            maxNew: 10,
             debouncedScroll: () => {},
         };
     },
@@ -85,8 +83,8 @@ export default {
     methods: {
         handleScroll(event) {
             const percent = event.target.scrollTop / event.target.scrollHeight;
-            const index = Math.floor(percent * this.getData.length);
-            this.$emit("scroll", this.getData[index].hid);
+            const index = Math.max(Math.min(Math.floor(percent * this.getData.length), 0), this.getData.length - 1);
+            this.$emit("scroll", this.getData[index].hid + this.maxNew);
         },
         changeHistory() {
             this.data = [];
@@ -99,13 +97,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-@import "scss/mixins.scss";
-.scrollContainer {
-    .listing {
-        overflow-y: scroll;
-        z-index: 0;
-    }
-}
-</style>
