@@ -42,7 +42,7 @@
                         <HistoryEmpty v-if="history.empty" class="m-2" />
                         <InfiniteHistory
                             v-show="payload"
-                            :set-scroll-pos="setScrollPos"
+                            @scroll="onScroll"
                             :payload="payload"
                             :show-selection="showSelection"
                             :is-expanded="isExpanded"
@@ -107,10 +107,7 @@ export default {
             useItemSelection: false,
             resetHistoryContents: false,
             setResetHistoryContents: () => {},
-            setScrollPos: (newId) => {
-                this.maxHid = newId.key;
-            },
-            maxHid: 0,
+            maxHid: this.history.hid_counter,
         };
     },
     computed: {
@@ -119,7 +116,13 @@ export default {
         },
         dataUrl() {
             console.log(this.maxHid);
-            return `api/histories/${this.historyId}/contents/near/${this.maxHid}/60`;
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid}/40`;
+        },
+    },
+    methods: {
+        onScroll(newHid) {
+            console.log(newHid);
+            this.maxHid = newHid;
         },
     },
 };
