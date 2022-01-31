@@ -25,7 +25,7 @@
     "@hirez_io/observer-spy": "^2.1.2",
     "@johmun/vue-tags-input": "^2.1.0",
     "@sentry/browser": "^5.20.1",
-    "axios": "^0.21.1",
+    "axios": "^0.25.0",
     "babel-runtime": "^6.26.0",
     "backbone": "1.4.0",
     "bootstrap": "4.6",
