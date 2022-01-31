@@ -8,9 +8,9 @@ Create Date: 2021-11-05 16:32:43.243049
 
 
 # revision identifiers, used by Alembic.
-revision = 'e7b6dcb09efd'
+revision = "e7b6dcb09efd"
 down_revision = None
-branch_labels = ('gxy',)
+branch_labels = ("gxy",)
 depends_on = None
 
 

@@ -32,16 +32,15 @@ from .common import (  # noqa: F401  (url_factory is a fixture we have to import
 )
 
 # Revision numbers from test versions directories
-GXY_REVISION_0 = '62695fac6cc0'  # oldest/base
-GXY_REVISION_1 = '2e8a580bc79a'
-GXY_REVISION_2 = 'e02cef55763c'  # current/head
-TSI_REVISION_0 = '1bceec30363a'  # oldest/base
-TSI_REVISION_1 = '8364ef1cab05'
-TSI_REVISION_2 = '0e28bf2fb7b5'  # current/head
+GXY_REVISION_0 = "62695fac6cc0"  # oldest/base
+GXY_REVISION_1 = "2e8a580bc79a"
+GXY_REVISION_2 = "e02cef55763c"  # current/head
+TSI_REVISION_0 = "1bceec30363a"  # oldest/base
+TSI_REVISION_1 = "8364ef1cab05"
+TSI_REVISION_2 = "0e28bf2fb7b5"  # current/head
 
 
 class TestAlembicManager:
-
     def test_is_at_revision__one_head_one_revision(self, url_factory):  # noqa: F811
         # Use case: Check if separate tsi database is at a given revision.
         db_url = url_factory()
@@ -147,7 +146,7 @@ class TestAlembicManager:
             with disposing_engine(db_url) as engine:
                 am = AlembicManagerForTests(engine)
                 with pytest.raises(alembic.util.exc.CommandError):
-                    am._get_revision('invalid')
+                    am._get_revision("invalid")
 
     def test_get_model_db_head(self, url_factory):  # noqa: F811
         db_url = url_factory()
@@ -169,7 +168,6 @@ class TestAlembicManager:
 
 
 class TestDatabaseStateCache:
-
     def test_is_empty(self, url_factory, metadata_state1_gxy):  # noqa: F811
         db_url, metadata = url_factory(), metadata_state1_gxy
         with create_and_drop_database(db_url):
@@ -204,13 +202,14 @@ class TestDatabaseStateCache:
                 load_metadata(metadata_state2_gxy, engine)
                 load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION_GXY - 1)
                 assert not DatabaseStateCache(engine).is_last_sqlalchemymigrate_version(
-                    SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
+                    SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+                )
                 load_sqlalchemymigrate_version(db_url, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
-                assert DatabaseStateCache(engine).is_last_sqlalchemymigrate_version(
-                    SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
+                assert DatabaseStateCache(engine).is_last_sqlalchemymigrate_version(SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
 
 # Database fixture tests
+
 
 class TestDatabaseFixtures:
     # Verify that database fixtures have the expected state.
@@ -219,7 +218,6 @@ class TestDatabaseFixtures:
     # to databases that HAVE BEEN CREATED. Thus, we are not wrapping them here
     # in the `create_and_drop_database` context manager: they are wrapped already.
     class TestState1:
-
         def test_database_gxy(self, db_state1_gxy, metadata_state1_gxy):
             self.verify_state(db_state1_gxy, metadata_state1_gxy)
 
@@ -237,7 +235,6 @@ class TestDatabaseFixtures:
                 assert not db.has_alembic_version_table()
 
     class TestState2:
-
         def test_database_gxy(self, db_state2_gxy, metadata_state2_gxy):
             self.verify_state(db_state2_gxy, metadata_state2_gxy)
 
@@ -257,7 +254,6 @@ class TestDatabaseFixtures:
                 assert not db.has_alembic_version_table()
 
     class TestState3:
-
         def test_database_gxy(self, db_state3_gxy, metadata_state3_gxy):
             self.verify_state(db_state3_gxy, metadata_state3_gxy, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
@@ -276,7 +272,6 @@ class TestDatabaseFixtures:
                 assert not db.has_alembic_version_table()
 
     class TestState4:
-
         def test_database_gxy(self, db_state4_gxy, metadata_state4_gxy):
             self.verify_state(db_state4_gxy, metadata_state4_gxy, GXY_REVISION_0, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
@@ -285,7 +280,11 @@ class TestDatabaseFixtures:
 
         def test_database_combined(self, db_state4_combined, metadata_state4_combined):
             self.verify_state(
-                db_state4_combined, metadata_state4_combined, [GXY_REVISION_0, TSI_REVISION_0], SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
+                db_state4_combined,
+                metadata_state4_combined,
+                [GXY_REVISION_0, TSI_REVISION_0],
+                SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
+            )
 
         def verify_state(self, db_url, metadata, revision, last_version):
             assert is_metadata_loaded(db_url, metadata)
@@ -297,7 +296,6 @@ class TestDatabaseFixtures:
                 assert AlembicManagerForTests.is_at_revision(engine, revision)
 
     class TestState5:
-
         def test_database_gxy(self, db_state5_gxy, metadata_state5_gxy):
             self.verify_state(db_state5_gxy, metadata_state5_gxy, GXY_REVISION_1)
 
@@ -305,8 +303,7 @@ class TestDatabaseFixtures:
             self.verify_state(db_state5_tsi, metadata_state5_tsi, TSI_REVISION_1)
 
         def test_database_combined(self, db_state5_combined, metadata_state5_combined):
-            self.verify_state(
-                db_state5_combined, metadata_state5_combined, [GXY_REVISION_1, TSI_REVISION_1])
+            self.verify_state(db_state5_combined, metadata_state5_combined, [GXY_REVISION_1, TSI_REVISION_1])
 
         def verify_state(self, db_url, metadata, revision):
             assert is_metadata_loaded(db_url, metadata)
@@ -317,7 +314,6 @@ class TestDatabaseFixtures:
                 assert AlembicManagerForTests.is_at_revision(engine, revision)
 
     class TestState6:
-
         def test_database_gxy(self, db_state6_gxy, metadata_state6_gxy):
             self.verify_state(db_state6_gxy, metadata_state6_gxy, GXY_REVISION_2)
 
@@ -325,8 +321,7 @@ class TestDatabaseFixtures:
             self.verify_state(db_state6_tsi, metadata_state6_tsi, TSI_REVISION_2)
 
         def test_database_combined(self, db_state6_combined, metadata_state6_combined):
-            self.verify_state(
-                db_state6_combined, metadata_state6_combined, [GXY_REVISION_2, TSI_REVISION_2])
+            self.verify_state(db_state6_combined, metadata_state6_combined, [GXY_REVISION_2, TSI_REVISION_2])
 
         def verify_state(self, db_url, metadata, revision):
             assert is_metadata_loaded(db_url, metadata)
@@ -336,7 +331,6 @@ class TestDatabaseFixtures:
                 assert db.has_alembic_version_table()
 
     class TestState6GxyState3TsiNoSam:
-
         def test_database_combined(self, db_state6_gxy_state3_tsi_no_sam, metadata_state6_gxy_state3_tsi_no_sam):
             db_url = db_state6_gxy_state3_tsi_no_sam
             metadata = metadata_state6_gxy_state3_tsi_no_sam
@@ -540,12 +534,7 @@ class TestDatabaseStates:
         # Expect:
         # a) auto-migrate enabled: database upgraded to current version.
         # b) auto-migrate disabled: fail with appropriate message.
-        def test_combined_database_automigrate(
-            self,
-            db_state5_combined,
-            metadata_state6_combined,
-            set_automigrate
-        ):
+        def test_combined_database_automigrate(self, db_state5_combined, metadata_state6_combined, set_automigrate):
             db_url = db_state5_combined
             with disposing_engine(db_url) as engine:
                 _verify_databases(engine)
@@ -553,12 +542,7 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
         def test_separate_databases_automigrate(
-            self,
-            db_state5_gxy,
-            db_state5_tsi,
-            metadata_state6_gxy,
-            metadata_state6_tsi,
-            set_automigrate
+            self, db_state5_gxy, db_state5_tsi, metadata_state6_gxy, metadata_state6_tsi, set_automigrate
         ):
             db1_url, db2_url = db_state5_gxy, db_state5_tsi
             with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
@@ -591,13 +575,7 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
                 assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
-        def test_separate_databases(
-            self,
-            db_state6_gxy,
-            db_state6_tsi,
-            metadata_state6_gxy,
-            metadata_state6_tsi
-        ):
+        def test_separate_databases(self, db_state6_gxy, db_state6_tsi, metadata_state6_gxy, metadata_state6_tsi):
             db1_url, db2_url = db_state6_gxy, db_state6_tsi
             with disposing_engine(db1_url) as engine1, disposing_engine(db2_url) as engine2:
                 _verify_databases(engine1, engine2)
@@ -670,47 +648,44 @@ class TestDatabaseStates:
 
 # Test helpers + their tests, misc. fixtures
 
+
 @pytest.fixture(autouse=True)  # always override AlembicManager
 def set_create_additional(monkeypatch):
-    monkeypatch.setattr(DatabaseStateVerifier, '_create_additional_database_objects', lambda *_: None)
+    monkeypatch.setattr(DatabaseStateVerifier, "_create_additional_database_objects", lambda *_: None)
 
 
 @pytest.fixture
 def set_automigrate(monkeypatch):
-    monkeypatch.setattr(DatabaseStateVerifier, 'is_auto_migrate', True)
+    monkeypatch.setattr(DatabaseStateVerifier, "is_auto_migrate", True)
 
 
 @pytest.fixture(autouse=True)  # always override AlembicManager
 def set_alembic_manager(monkeypatch):
-    monkeypatch.setattr(
-        migrations, 'get_alembic_manager', lambda engine: AlembicManagerForTests(engine))
+    monkeypatch.setattr(migrations, "get_alembic_manager", lambda engine: AlembicManagerForTests(engine))
 
 
 @pytest.fixture(autouse=True)  # always override gxy_metadata
 def set_gxy_metadata(monkeypatch, metadata_state6_gxy):
-    monkeypatch.setattr(
-        migrations, 'get_gxy_metadata', lambda: metadata_state6_gxy)
+    monkeypatch.setattr(migrations, "get_gxy_metadata", lambda: metadata_state6_gxy)
 
 
 @pytest.fixture(autouse=True)  # always override tsi_metadata
 def set_tsi_metadata(monkeypatch, metadata_state6_tsi):
-    monkeypatch.setattr(
-        migrations, 'get_tsi_metadata', lambda: metadata_state6_tsi)
+    monkeypatch.setattr(migrations, "get_tsi_metadata", lambda: metadata_state6_tsi)
 
 
 class AlembicManagerForTests(AlembicManager):
-
     def __init__(self, engine):
         path1, path2 = self._get_paths_to_version_locations()
-        config_dict = {'version_locations': f'{path1};{path2}'}
+        config_dict = {"version_locations": f"{path1};{path2}"}
         super().__init__(engine, config_dict)
 
     def _get_paths_to_version_locations(self):
         # One does not simply use a relative path for both tests and package tests.
         basepath = os.path.abspath(os.path.dirname(__file__))
-        basepath = os.path.join(basepath, 'versions')
-        path1 = os.path.join(basepath, 'db1')
-        path2 = os.path.join(basepath, 'db2')
+        basepath = os.path.join(basepath, "versions")
+        path1 = os.path.join(basepath, "db1")
+        path2 = os.path.join(basepath, "db2")
         return path1, path2
 
 
@@ -769,9 +744,9 @@ def database_is_up_to_date(db_url, current_state_metadata, model):
     # passed as an argument. That's why we ensure that the passed metadata is current
     # (this guards againt an incorrect test).
     if model == GXY:
-        current_tables = {'gxy_table1', 'gxy_table2', 'gxy_table3'}
+        current_tables = {"gxy_table1", "gxy_table2", "gxy_table3"}
     elif model == TSI:
-        current_tables = {'tsi_table1', 'tsi_table2', 'tsi_table3'}
+        current_tables = {"tsi_table1", "tsi_table2", "tsi_table3"}
     is_metadata_current = current_tables <= set(current_state_metadata.tables)
 
     with disposing_engine(db_url) as engine:
@@ -787,7 +762,7 @@ def test_database_is_up_to_date(url_factory, metadata_state6_gxy):  # noqa F811
             assert not database_is_up_to_date(db_url, metadata, GXY)
             load_metadata(metadata, engine)
             am = AlembicManagerForTests(engine)
-            am.stamp_revision('heads')
+            am.stamp_revision("heads")
             assert database_is_up_to_date(db_url, metadata, GXY)
 
 
@@ -799,7 +774,7 @@ def test_database_is_up_to_date_for_passed_model_only(url_factory, metadata_stat
             assert not database_is_up_to_date(db_url, metadata, TSI)
             load_metadata(metadata, engine)
             am = AlembicManagerForTests(engine)
-            am.stamp_revision('heads')
+            am.stamp_revision("heads")
             assert database_is_up_to_date(db_url, metadata, GXY)
             assert not database_is_up_to_date(db_url, metadata, TSI)
 
@@ -810,7 +785,7 @@ def test_database_is_not_up_to_date_if_noncurrent_metadata_passed(url_factory, m
         with disposing_engine(db_url) as engine:
             load_metadata(metadata, engine)
             am = AlembicManagerForTests(engine)
-            am.stamp_revision('heads')
+            am.stamp_revision("heads")
             assert not database_is_up_to_date(db_url, metadata, GXY)
 
 
@@ -819,7 +794,7 @@ def test_database_is_not_up_to_date_if_metadata_not_loaded(url_factory, metadata
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
             am = AlembicManagerForTests(engine)
-            am.stamp_revision('heads')
+            am.stamp_revision("heads")
             assert not database_is_up_to_date(db_url, metadata, GXY)
 
 

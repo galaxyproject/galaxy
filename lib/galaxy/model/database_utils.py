@@ -129,4 +129,4 @@ def is_one_database(db1_url: str, db2_url: Optional[str]):
     """
     # TODO: Consider more aggressive check here that this is not the same
     # database file under the hood.
-    return not(db1_url and db2_url and db1_url != db2_url)
+    return not (db1_url and db2_url and db1_url != db2_url)

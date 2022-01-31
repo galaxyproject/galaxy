@@ -18,7 +18,7 @@ from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from galaxy.model.database_utils import create_database
 
-DbUrl = NewType('DbUrl', str)
+DbUrl = NewType("DbUrl", str)
 
 # Fixture and helper functions used to generate urls for postgresql and sqlite databases
 
@@ -30,6 +30,7 @@ def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
     If _get_connection_url() returns a value, the database is postgresql; otherwise, it's
     sqlite (referring to a location witin the /tmp directory).
     """
+
     def url() -> DbUrl:
         database = _generate_unique_database_name()
         connection_url = _get_connection_url()
@@ -37,6 +38,7 @@ def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
             return _make_postgres_db_url(DbUrl(connection_url), database)
         else:
             return _make_sqlite_db_url(tmp_directory, database)
+
     return url
 
 
@@ -78,20 +80,20 @@ def drop_database(url: DbUrl) -> Iterator[None]:
 
 
 def _generate_unique_database_name() -> str:
-    return f'galaxytest_{uuid.uuid4().hex}'
+    return f"galaxytest_{uuid.uuid4().hex}"
 
 
 def _get_connection_url() -> Optional[str]:
-    return os.environ.get('GALAXY_TEST_DBURI')
+    return os.environ.get("GALAXY_TEST_DBURI")
 
 
 def _is_postgres(url: DbUrl) -> bool:
-    return url.startswith('postgres')
+    return url.startswith("postgres")
 
 
 def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
     path = os.path.join(tmpdir, database)
-    return DbUrl(f'sqlite:///{path}')
+    return DbUrl(f"sqlite:///{path}")
 
 
 def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
@@ -103,11 +105,11 @@ def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
 def _drop_postgres_database(url: DbUrl) -> None:
     db_url = make_url(url)
     database = db_url.database
-    connection_url = db_url.set(database='postgres')
-    engine = create_engine(connection_url, isolation_level='AUTOCOMMIT')
+    connection_url = db_url.set(database="postgres")
+    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
     preparer = IdentifierPreparer(engine.dialect)
     database = preparer.quote(database)
-    stmt = f'DROP DATABASE IF EXISTS {database}'
+    stmt = f"DROP DATABASE IF EXISTS {database}"
     with engine.connect() as conn:
         conn.execute(stmt)
     engine.dispose()

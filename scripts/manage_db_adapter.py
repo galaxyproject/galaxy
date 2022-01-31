@@ -20,7 +20,7 @@ The optional `-c` argument name is renamed to `--galaxy-config`.
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrations.scripts import (
     invoke_alembic,
@@ -34,5 +34,5 @@ def run():
     invoke_alembic()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

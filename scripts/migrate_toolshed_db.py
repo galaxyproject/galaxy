@@ -10,7 +10,7 @@ import sys
 
 from migrate.versioning.shell import main
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.orm.scripts import get_config
 
@@ -21,8 +21,8 @@ log = logging.getLogger(__name__)
 def invoke_migrate_main():
     # Migrate has its own args, so cannot use argparse
     config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
-    db_url = config['db_url']
-    repo = config['repo']
+    db_url = config["db_url"]
+    repo = config["repo"]
 
     main(repository=repo, url=db_url)
 

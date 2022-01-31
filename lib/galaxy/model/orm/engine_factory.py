@@ -53,7 +53,7 @@ def build_engine(
     trace_logger=None,
     slow_query_log_threshold=0,
     thread_local_log=None,
-    log_query_counts=False
+    log_query_counts=False,
 ):
     if database_query_profiling_proxy or slow_query_log_threshold or thread_local_log or log_query_counts:
 

@@ -26,13 +26,30 @@ class GalaxyModelMapping(SharedModelMapping):
     GalaxySession: Type
 
 
-def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
-        database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0, thread_local_log: Optional[local] = None, log_query_counts=False) -> GalaxyModelMapping:
+def init(
+    file_path,
+    url,
+    engine_options=None,
+    create_tables=False,
+    map_install_models=False,
+    database_query_profiling_proxy=False,
+    object_store=None,
+    trace_logger=None,
+    use_pbkdf2=True,
+    slow_query_log_threshold=0,
+    thread_local_log: Optional[local] = None,
+    log_query_counts=False,
+) -> GalaxyModelMapping:
     # Build engine
     engine = build_engine(
-        url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold,
-        thread_local_log=thread_local_log, log_query_counts=log_query_counts)
+        url,
+        engine_options,
+        database_query_profiling_proxy,
+        trace_logger,
+        slow_query_log_threshold,
+        thread_local_log=thread_local_log,
+        log_query_counts=log_query_counts,
+    )
 
     # Create tables if needed
     if create_tables:
@@ -40,6 +57,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
         create_additional_database_objects(engine)
         if map_install_models:
             from galaxy.model.tool_shed_install import mapping as install_mapping  # noqa: F401
+
             install_mapping.create_database_objects(engine)
 
     result.create_tables = create_tables

@@ -29,19 +29,22 @@ from sqlalchemy.engine import (
 )
 
 from galaxy.model import Base as gxy_base
-from galaxy.model.database_utils import create_database, database_exists
+from galaxy.model.database_utils import (
+    create_database,
+    database_exists,
+)
 from galaxy.model.mapping import create_additional_database_objects
 from galaxy.model.tool_shed_install import Base as tsi_base
 
-ModelId = NewType('ModelId', str)
+ModelId = NewType("ModelId", str)
 # These identifiers are used throughout the migrations system to distinquish
 # between the two models; they refer to version directories, branch labels, etc.
 # (if you rename these, you need to rename branch labels in alembic version directories)
-GXY = ModelId('gxy')  # galaxy model identifier
-TSI = ModelId('tsi')  # tool_shed_install model identifier
+GXY = ModelId("gxy")  # galaxy model identifier
+TSI = ModelId("tsi")  # tool_shed_install model identifier
 
-ALEMBIC_TABLE = 'alembic_version'
-SQLALCHEMYMIGRATE_TABLE = 'migrate_version'
+ALEMBIC_TABLE = "alembic_version"
+SQLALCHEMYMIGRATE_TABLE = "migrate_version"
 SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 179
 SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
 log = logging.getLogger(__name__)
@@ -57,7 +60,7 @@ class NoVersionTableError(Exception):
     # The database has no version table (neither SQLAlchemy Migrate, nor Alembic), so it is
     # impossible to automatically determine the state of the database. Manual update required.
     def __init__(self, model: str) -> None:
-        super().__init__(f'Your {model} database has no version table; manual update is required')
+        super().__init__(f"Your {model} database has no version table; manual update is required")
 
 
 class VersionTooOldError(Exception):
@@ -65,25 +68,26 @@ class VersionTooOldError(Exception):
     # {SQLALCHEMYMIGRATE_LAST_VERSION_GXY/TSI}, so it cannot be upgraded with Alembic.
     # Manual update required.
     def __init__(self, model: str) -> None:
-        super().__init__(f'Your {model} database version is too old; manual update is required')
+        super().__init__(f"Your {model} database version is too old; manual update is required")
 
 
 class OutdatedDatabaseError(Exception):
     # The database is under Alembic version control, but is out-of-date. Automatic upgrade possible.
     def __init__(self, model: str) -> None:
-        msg = f'Your {model} database is out-of-date; automatic update requires setting `database_auto_migrate`'
+        msg = f"Your {model} database is out-of-date; automatic update requires setting `database_auto_migrate`"
         super().__init__(msg)
 
 
 class InvalidModelIdError(Exception):
     def __init__(self, model: str) -> None:
-        super().__init__(f'Invalid model: {model}')
+        super().__init__(f"Invalid model: {model}")
 
 
 class AlembicManager:
     """
     Alembic operations on one database.
     """
+
     @staticmethod
     def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
         """
@@ -104,10 +108,10 @@ class AlembicManager:
 
     def _load_config(self, config_dict: Optional[dict]) -> Config:
         alembic_root = os.path.dirname(__file__)
-        _alembic_file = os.path.join(alembic_root, 'alembic.ini')
+        _alembic_file = os.path.join(alembic_root, "alembic.ini")
         config = Config(_alembic_file)
         url = get_url_string(self.engine)
-        config.set_main_option('sqlalchemy.url', url)
+        config.set_main_option("sqlalchemy.url", url)
         if config_dict:
             for key, value in config_dict.items():
                 config.set_main_option(key, value)
@@ -115,7 +119,7 @@ class AlembicManager:
 
     def stamp_model_head(self, model: ModelId) -> None:
         """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, f'{model}@head')
+        command.stamp(self.alembic_cfg, f"{model}@head")
         self._reset_db_heads()
 
     def stamp_revision(self, revision: Union[str, Iterable[str]]) -> None:
@@ -126,7 +130,7 @@ class AlembicManager:
     def upgrade(self, model: ModelId) -> None:
         """Partial proxy to alembic's upgrade command."""
         # This works with or without an existing alembic version table.
-        command.upgrade(self.alembic_cfg, f'{model}@head')
+        command.upgrade(self.alembic_cfg, f"{model}@head")
         self._reset_db_heads()
 
     def is_under_version_control(self, model: ModelId) -> bool:
@@ -187,7 +191,7 @@ class AlembicManager:
         try:
             return self.script_directory.get_revision(revision_id)
         except alembic.util.exc.CommandError as e:
-            log.error(f'Revision {revision_id} not found in the script directory')
+            log.error(f"Revision {revision_id} not found in the script directory")
             raise e
 
     def _reset_db_heads(self) -> None:
@@ -198,6 +202,7 @@ class DatabaseStateCache:
     """
     Snapshot of database state.
     """
+
     def __init__(self, engine: Engine) -> None:
         self._load_db(engine)
 
@@ -246,9 +251,13 @@ def verify_databases_via_script(
         tsi_engine = create_engine(tsi_config.url)
 
     verify_databases(
-        gxy_engine, gxy_config.template, gxy_config.encoding,
-        tsi_engine, tsi_config.template, tsi_config.encoding,
-        is_auto_migrate
+        gxy_engine,
+        gxy_config.template,
+        gxy_config.encoding,
+        tsi_engine,
+        tsi_config.template,
+        tsi_config.encoding,
+        is_auto_migrate,
     )
     gxy_engine.dispose()
     if tsi_engine:
@@ -265,8 +274,7 @@ def verify_databases(
     is_auto_migrate: bool,
 ) -> None:
     # Verify gxy model.
-    gxy_verifier = DatabaseStateVerifier(
-        gxy_engine, GXY, gxy_template, gxy_encoding, is_auto_migrate)
+    gxy_verifier = DatabaseStateVerifier(gxy_engine, GXY, gxy_template, gxy_encoding, is_auto_migrate)
     gxy_verifier.run()
 
     # New database = same engine, and gxy model has just been initialized.
@@ -276,21 +284,19 @@ def verify_databases(
     tsi_engine = tsi_engine or gxy_engine
 
     # Verify tsi model model.
-    tsi_verifier = DatabaseStateVerifier(
-        tsi_engine, TSI, tsi_template, tsi_encoding, is_auto_migrate, is_new_database)
+    tsi_verifier = DatabaseStateVerifier(tsi_engine, TSI, tsi_template, tsi_encoding, is_auto_migrate, is_new_database)
     tsi_verifier.run()
 
 
 class DatabaseStateVerifier:
-
     def __init__(
-            self,
-            engine: Engine,
-            model: ModelId,
-            database_template: Optional[str],
-            database_encoding: Optional[str],
-            is_auto_migrate: bool,
-            is_new_database: Optional[bool] = False,
+        self,
+        engine: Engine,
+        model: ModelId,
+        database_template: Optional[str],
+        database_encoding: Optional[str],
+        is_auto_migrate: bool,
+        is_new_database: Optional[bool] = False,
     ) -> None:
         self.engine = engine
         self.model = model
@@ -365,7 +371,7 @@ class DatabaseStateVerifier:
         model = self._get_model_name()
         # first check if this model is up to date
         if am.is_up_to_date(self.model):
-            log.info(f'Your {model} database is up-to-date')
+            log.info(f"Your {model} database is up-to-date")
             return
         # is outdated: try to upgrade
         if not self.is_auto_migrate:
@@ -375,25 +381,20 @@ class DatabaseStateVerifier:
             log.warning(msg)
             raise OutdatedDatabaseError(model)
         else:
-            log.info('Database is being upgraded to current version')
+            log.info("Database is being upgraded to current version")
             am.upgrade(self.model)
             return
 
-    def _get_upgrade_message(
-        self,
-        model: str,
-        db_version: str,
-        code_version: str
-    ) -> str:
-        msg = f'Your {model} database has version {db_version}, but this code expects '
-        msg += f'version {code_version}. '
-        msg += 'This database can be upgraded automatically if database_auto_migrate is set. '
-        msg += 'To upgrade manually, run `run_alembic.sh` (see instructions in that file). '
-        msg += 'Please remember to backup your database before migrating.'
+    def _get_upgrade_message(self, model: str, db_version: str, code_version: str) -> str:
+        msg = f"Your {model} database has version {db_version}, but this code expects "
+        msg += f"version {code_version}. "
+        msg += "This database can be upgraded automatically if database_auto_migrate is set. "
+        msg += "To upgrade manually, run `run_alembic.sh` (see instructions in that file). "
+        msg += "Please remember to backup your database before migrating."
         return msg
 
     def _get_model_name(self) -> str:
-        return 'galaxy' if self.model == GXY else 'tool shed install'
+        return "galaxy" if self.model == GXY else "tool shed install"
 
     def _no_model_tables_exist(self) -> bool:
         # True if there are no tables from `self.model` in the database.
@@ -405,13 +406,13 @@ class DatabaseStateVerifier:
 
     def _create_database(self, url: str) -> None:
         create_kwds = {}
-        message = f'Creating database for URI [{url}]'
+        message = f"Creating database for URI [{url}]"
         if self.database_template:
-            message += f' from template [{self.database_template}]'
-            create_kwds['template'] = self.database_template
+            message += f" from template [{self.database_template}]"
+            create_kwds["template"] = self.database_template
         if self.database_encoding:
-            message += f' with encoding [{self.database_encoding}]'
-            create_kwds['encoding'] = self.database_encoding
+            message += f" with encoding [{self.database_encoding}]"
+            create_kwds["encoding"] = self.database_encoding
         log.info(message)
         create_database(url, **create_kwds)
 
