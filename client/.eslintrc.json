@@ -43,5 +43,6 @@
         "vue/multiline-html-element-content-newline": "off",
         "vue/html-closing-bracket-newline": "off",
         "vue/html-closing-bracket-spacing": "off"
-    }
+    },
+    "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"]
 }
