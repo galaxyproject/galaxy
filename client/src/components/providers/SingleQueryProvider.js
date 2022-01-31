@@ -17,6 +17,14 @@ export const SingleQueryProvider = (lookup) => {
                 type: Boolean,
                 default: true,
             },
+            autoRefresh: {
+                type: Boolean,
+                default: false,
+            },
+            autoTime: {
+                type: Number,
+                default: 1000,
+            },
         },
         data() {
             return {
@@ -33,26 +41,13 @@ export const SingleQueryProvider = (lookup) => {
             },
         },
         mounted() {
-            let lookupPromise;
-            if (this.useCache) {
-                lookupPromise = promiseCache.get(this.cacheKey);
-                if (!lookupPromise) {
-                    lookupPromise = lookup(this.$attrs);
-                    promiseCache.set(this.cacheKey, lookupPromise);
-                }
+            if (this.autoRefresh) {
+                setInterval(() => {
+                    this.doQuery();
+                }, this.autoTime);
             } else {
-                lookupPromise = lookup(this.$attrs);
+                this.doQuery();
             }
-            lookupPromise.then(
-                (result) => {
-                    this.result = result;
-                },
-                (err) => {
-                    this.result = {};
-                    this.error = err;
-                    this.$emit("error", err);
-                }
-            );
         },
         render() {
             return this.$scopedSlots.default({
@@ -60,6 +55,30 @@ export const SingleQueryProvider = (lookup) => {
                 result: this.result,
                 error: this.error,
             });
+        },
+        methods: {
+            doQuery() {
+                let lookupPromise;
+                if (this.useCache) {
+                    lookupPromise = promiseCache.get(this.cacheKey);
+                    if (!lookupPromise) {
+                        lookupPromise = lookup(this.$attrs);
+                        promiseCache.set(this.cacheKey, lookupPromise);
+                    }
+                } else {
+                    lookupPromise = lookup(this.$attrs);
+                }
+                lookupPromise.then(
+                    (result) => {
+                        this.result = result;
+                    },
+                    (err) => {
+                        this.result = {};
+                        this.error = err;
+                        this.$emit("error", err);
+                    }
+                );
+            },
         },
     };
 };

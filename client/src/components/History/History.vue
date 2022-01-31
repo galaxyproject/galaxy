@@ -1,12 +1,11 @@
 <template>
-    <HistoryContentProvider
-        :parent="history"
-        :params="params"
-        :disable-poll="false"
-        :debug="false"
-        :debounce-period="500"
-        v-slot="{ loading, payload, setScrollPos, resetHistoryContents, setResetHistoryContents }">
+    <UrlDataProvider
+        :url="dataUrl"
+        :use-cache="false"
+        :auto-refresh="true"
+        v-slot="{ loading, result: payload }">
         <ExpandedItems
+            v-if="!loading"
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
@@ -39,26 +38,8 @@
                         <HistoryMessages class="m-2" :history="history" />
                     </template>
 
-                    <template v-slot:listcontrols>
-                        <ContentOperations
-                            :history="history"
-                            :total-matches="payload.totalMatches"
-                            :loading="loading"
-                            :params.sync="params"
-                            :content-selection="selectedItems"
-                            @update:content-selection="selectItems"
-                            :show-selection="showSelection"
-                            @update:show-selection="setShowSelection"
-                            @resetSelection="resetSelection"
-                            @selectAllContent="selectItems(payload.contents)"
-                            :expanded-count="expandedCount"
-                            :set-reset-history-contents="setResetHistoryContents"
-                            @collapseAllContent="collapseAll" />
-                    </template>
-
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
-                        <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
                         <InfiniteHistory
                             v-show="payload"
                             :set-scroll-pos="setScrollPos"
@@ -81,13 +62,13 @@
                 </Layout>
             </SelectedItems>
         </ExpandedItems>
-    </HistoryContentProvider>
+    </UrlDataProvider>
 </template>
 
 <script>
 import { History } from "./model";
 import { SearchParams } from "components/providers/History/SearchParams";
-import { HistoryContentProvider } from "components/providers/History/";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
 import SelectedItems from "./SelectedItems";
 import Layout from "./Layout";
@@ -105,7 +86,7 @@ export default {
         reportPayload,
     },
     components: {
-        HistoryContentProvider,
+        UrlDataProvider,
         Layout,
         HistoryMessages,
         HistoryDetails,
@@ -124,11 +105,21 @@ export default {
         return {
             params: new SearchParams(),
             useItemSelection: false,
+            resetHistoryContents: false,
+            setResetHistoryContents: () => {},
+            setScrollPos: (newId) => {
+                this.maxHid = newId.key;
+            },
+            maxHid: 0,
         };
     },
     computed: {
         historyId() {
             return this.history.id;
+        },
+        dataUrl() {
+            console.log(this.maxHid);
+            return `api/histories/${this.historyId}/contents/near/${this.maxHid}/60`;
         },
     },
 };
