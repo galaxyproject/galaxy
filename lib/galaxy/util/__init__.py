@@ -72,6 +72,28 @@ from .custom_logging import get_logger
 from .inflection import Inflector
 from .path import safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 
+# characters that do not need to be sanitized
+VALID_CHARACTERS = set(f"{string.ascii_letters}{string.digits} -=_.()/+*^,:?!")
+
+# characters that are allowed but need to be escaped
+MAPPED_CHARACTERS = {
+    '>': '__gt__',
+    '<': '__lt__',
+    "'": '__sq__',
+    '"': '__dq__',
+    '[': '__ob__',
+    ']': '__cb__',
+    '{': '__oc__',
+    '}': '__cc__',
+    '@': '__at__',
+    '\n': '__cn__',
+    '\r': '__cr__',
+    '\t': '__tc__',
+    '#': '__pd__'
+}
+
+INVALID_CHARACTER = 'X'
+
 inflector = Inflector()
 
 log = get_logger(__name__)
@@ -558,26 +580,7 @@ def pretty_print_json(json_data, is_json_string=False):
     return json.dumps(json_data, sort_keys=True, indent=4)
 
 
-# characters that are valid
-valid_chars = set(string.ascii_letters + string.digits + " -=_.()/+*^,:?!")
-
-# characters that are allowed but need to be escaped
-mapped_chars = {'>': '__gt__',
-                '<': '__lt__',
-                "'": '__sq__',
-                '"': '__dq__',
-                '[': '__ob__',
-                ']': '__cb__',
-                '{': '__oc__',
-                '}': '__cc__',
-                '@': '__at__',
-                '\n': '__cn__',
-                '\r': '__cr__',
-                '\t': '__tc__',
-                '#': '__pd__'}
-
-
-def restore_text(text, character_map=mapped_chars):
+def restore_text(text, character_map=MAPPED_CHARACTERS):
     """Restores sanitized text"""
     if not text:
         return text
@@ -586,7 +589,7 @@ def restore_text(text, character_map=mapped_chars):
     return text
 
 
-def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_text(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """
     Restricts the characters that are allowed in text; accepts both strings
     and lists of strings; non-string entities will be cast to strings.
@@ -598,7 +601,7 @@ def sanitize_text(text, valid_characters=valid_chars, character_map=mapped_chars
     return _sanitize_text_helper(text, valid_characters=valid_characters, character_map=character_map)
 
 
-def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def _sanitize_text_helper(text, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """Restricts the characters that are allowed in a string"""
 
     out = []
@@ -612,7 +615,7 @@ def _sanitize_text_helper(text, valid_characters=valid_chars, character_map=mapp
     return ''.join(out)
 
 
-def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_lists_to_string(values, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     if isinstance(values, list):
         rval = []
         for value in values:
@@ -626,7 +629,7 @@ def sanitize_lists_to_string(values, valid_characters=valid_chars, character_map
     return values
 
 
-def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_chars, invalid_character='X'):
+def sanitize_param(value, valid_characters=VALID_CHARACTERS, character_map=MAPPED_CHARACTERS, invalid_character=INVALID_CHARACTER):
     """Clean incoming parameters (strings or lists)"""
     if isinstance(value, str):
         return sanitize_text(value, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character)
@@ -827,9 +830,9 @@ def __merge_two_sorted_iterables(operator, iterable1, iterable2):
 class Params:
     """
     Stores and 'sanitizes' parameters. Alphanumeric characters and the
-    non-alphanumeric ones that are deemed safe are let to pass through (see L{valid_chars}).
+    non-alphanumeric ones that are deemed safe are let to pass through (see L{VALID_CHARACTERS}).
     Some non-safe characters are escaped to safe forms for example C{>} becomes C{__lt__}
-    (see L{mapped_chars}). All other characters are replaced with C{X}.
+    (see L{MAPPED_CHARACTERS}). All other characters are replaced with C{X}.
 
     Operates on string or list values only (HTTP parameters).
 

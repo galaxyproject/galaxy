@@ -1,4 +1,5 @@
 import errno
+import string
 import tempfile
 from io import StringIO
 from typing import Dict
@@ -17,6 +18,36 @@ SECTION_XML = """<?xml version="1.0" ?>
     </tool>
 </section>
 """
+
+
+def test_valid_characters():
+    """Set of characters that don't need to be sanitized."""
+    expected = set(f"{string.ascii_letters}{string.digits} -=_.()/+*^,:?!")
+    assert util.VALID_CHARACTERS == expected
+
+
+def test_mapped_characters():
+    """A mapping of non-safe characters to their safe forms."""
+    expected = {
+        '>': '__gt__',
+        '<': '__lt__',
+        "'": '__sq__',
+        '"': '__dq__',
+        '[': '__ob__',
+        ']': '__cb__',
+        '{': '__oc__',
+        '}': '__cc__',
+        '@': '__at__',
+        '\n': '__cn__',
+        '\r': '__cr__',
+        '\t': '__tc__',
+        '#': '__pd__'
+    }
+    assert util.MAPPED_CHARACTERS == expected
+
+
+def test_invalid_characger():
+    assert util.INVALID_CHARACTER == 'X'
 
 
 def test_strip_control_characters():

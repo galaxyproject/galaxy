@@ -4562,7 +4562,7 @@ is the ``none`` preset.</xs:documentation>
     </xs:sequence>
     <xs:attribute name="initial" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Initial character mapping (default is ``galaxy.util.mapped_chars``)</xs:documentation>
+        <xs:documentation xml:lang="en">Initial character mapping (default is ``galaxy.util.MAPPED_CHARACTERS``)</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
