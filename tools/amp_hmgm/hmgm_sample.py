@@ -7,7 +7,7 @@ import sys
 import traceback
 
 # Example implementation of a HMGM task
-# The task runner looks for specific exit codes in determining whether or not to terminate(0), requeue(1), or fail (-1)
+# The task runner looks for specific exit codes in determining whether or not to terminate(0), requeue(255), or fail (1)
 # This example uses a random number to determine when to terminate, but in the actual implementation it should look
 # for a specific file
 def main():
