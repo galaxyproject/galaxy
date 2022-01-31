@@ -1,11 +1,6 @@
 <template>
-    <UrlDataProvider
-        :url="dataUrl"
-        :use-cache="false"
-        :auto-refresh="true"
-        v-slot="{ loading, result: payload }">
+    <UrlDataProvider :url="dataUrl" :use-cache="false" :auto-refresh="true" v-slot="{ loading, result: payload }">
         <ExpandedItems
-            v-if="!loading"
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
@@ -40,8 +35,11 @@
 
                     <template v-slot:listing>
                         <HistoryEmpty v-if="history.empty" class="m-2" />
+                        <b-alert v-else-if="loading" class="m-2" variant="info" show>
+                            <LoadingSpan message="Loading History" />
+                        </b-alert>
                         <InfiniteHistory
-                            v-show="payload"
+                            v-else
                             @scroll="onScroll"
                             :payload="payload"
                             :show-selection="showSelection"
@@ -67,6 +65,7 @@
 
 <script>
 import { History } from "./model";
+import LoadingSpan from "components/LoadingSpan";
 import { SearchParams } from "components/providers/History/SearchParams";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
@@ -79,13 +78,14 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
-import InfiniteHistory from "./InfiniteHistory.vue";
+import InfiniteHistory from "./InfiniteHistory";
 
 export default {
     filters: {
         reportPayload,
     },
     components: {
+        LoadingSpan,
         UrlDataProvider,
         Layout,
         HistoryMessages,
