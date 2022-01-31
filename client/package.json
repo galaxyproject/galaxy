@@ -28,7 +28,7 @@
     "axios": "^0.21.1",
     "babel-runtime": "^6.26.0",
     "backbone": "1.4.0",
-    "bootstrap": "4.5.0",
+    "bootstrap": "4.6",
     "bootstrap-vue": "^2.21.2",
     "citation-js": "^0.5.1",
     "core-js": "^3.19.1",
