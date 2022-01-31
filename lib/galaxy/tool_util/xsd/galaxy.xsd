@@ -5334,7 +5334,6 @@ Galaxy, including:
   <xs:complexType name="Actions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
 The ``actions`` directive allows tools to dynamically take actions related to an
 ``output`` either unconditionally or conditionally based on inputs. These
 actions currently include setting metadata values and the output's data format.
@@ -5543,14 +5542,31 @@ if none of the nested options apply.</xs:documentation>
   </xs:complexType>
   <xs:complexType name="ActionsOption">
     <xs:annotation>
-      <xs:documentation xml:lang="en"></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[
+1. Load options from a data table, a parameter (or its metadata), or a file
+2. Filter the options using all filters defined by the contained ``filter`` tags.
+3. Chose a value in a given line (``offset``) and ``column``
+
+The options can be considered as a table where each line is an option. The values
+in the columns can be used for filtering.
+
+The different data sources can be loaded as follows:
+
+- ``from_data_table``: load the options from the data table with the given ``name``.
+- ``from_param``: Initialize a single option containing the value of the
+  referred parameter (``name``) or its metadata (``param_attribute``)
+- ``from_file``: Load the file the given ``name`` (in Galaxy's tool data path), columns
+  are defined by the given ``separator`` (default is tab).
+      ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="filter" type="ActionsConditionalFilter" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
-    <xs:attribute name="type" type="ActionsOptionType">
+    <xs:attribute name="type" type="ActionsOptionType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Source of the tabular data ``from_data_table``, ``from_param``, or ``from_file``.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
@@ -5629,72 +5645,154 @@ against.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="type" type="ActionsConditionalFilterType" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[]]></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+``param_value``
+
+- get the value of a refered parameter (``ref``) or the value given by ``value``
+  - if ``param_attribute`` is given the corresponding attribute of the value of the reffered parameter is used ``ref``
+- cast this value with the function given by ``cast``
+- compare the each the value in the column given by ``column`` (also casted) with the determined value using the function given by ``compare``
+- if the result of the comparison is equal to the boolean given by ``keep`` the value is kept
+
+``insert_column``
+
+- insert a column with a value in the options
+  - if ``column`` is given then the column is inserted before this column, otherwise the column is appended
+  - the value can be given by ``ref`` or ``value`` 
+
+``column_strip``
+
+Strip (remove certain characters from the suffix / prefix) values in a column.
+The characters to strip can be given by ``strip`` (deafult is whitespace
+characters)
+
+``multiple_splitter``
+
+Split the values in a ``column`` by a given ``separator``. And replace the
+original column with the with columns containing the result of splitting.
+
+``column_replace``
+
+Replace values in a column. The old and new values can be given
+
+- as static values ``old_value`` or ``new_value``
+- dynamically by the contents in (another) column ``old_column`` or ``new_colum``
+
+``metadata_value``
+
+Filter values in ``column`` by the metadata element ``name`` of the referred
+parameter ``ref`` depending on the results of the comparison function given by
+with ``compare`` and the value of ``keep`` (i.e. if the result of the
+comparision is equal to ``keep`` then keep the option).
+
+``boolean``
+
+Cast the values in ``column`` using the cast function given by ``cast``
+(unaccessible / uncastable values are interpreted as False).  The result of this
+cast is then casted with the bool function. If the final result is equal to
+``keep`` the option.
+
+``string_function``
+
+Apply a string function to the values in ``column``. The string function is given by ``name``.
+
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="compare" type="CompareType">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <!-- TOOD xsd only allows startswith and re_search code also supports eq, neq, gt, gte, lt, lte, in, endswith -->
+        <xs:documentation xml:lang="en"><![CDATA[
+Function to use for the comparision. One of startswith, re_search.
+Applies to: ``param_value``, ``metadata_value``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Name of an input parameter (parameters in conditionals or sections are referred using the dot syntax, e.g. ``cond.paramname``).
+Applies to ``param_value``, ``insert_column``, ``metadata_value``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Fixed value to use for the comparison.
+Applies to ``param_value``, ``insert_column``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Column of the options (0 based).
+Applies to ``param_value``, ``insert_column``, ``column_strip``, ``multiple_splitter``, ``column_replace``, ``metadata_value``, ``boolean``, ``string_function``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="keep" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Keep the value if the filter condition is met. default: true
+Applies to ``param_value``, ``metadata_value``, ``boolean``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="cast" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <!-- float might be nice -->
+        <xs:documentation xml:lang="en"><![CDATA[
+one of string_as_bool, int, str function used for casting the value.
+Applies to ``param_value``, ``boolean``</xs:documentation>
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="param_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">
+Which atttribute of the parameter value referred by ``ref`` to use. Separate with ``.``.
+Applies to ``param_value``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="separator" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``multiple_splitter``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="strip" type="PermissiveBoolean">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_strip``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="old_column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="old_value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="new_column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="new_value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_replace``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+For ``metadata_value`` this is the name of the metadata to use. For ``string``
+function the string function to use (currently ``lower`` or ``upper``).
+Applies to ``metadata_value``, ``string_function``
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
