@@ -3,9 +3,8 @@ import re
 import tarfile
 import tempfile
 import zipfile
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
-from galaxy.util import etree
 from ._util import _assert_presence_number
 
 
@@ -53,7 +52,7 @@ def _list_from_zip(bytes, path):
 def assert_has_archive_member(output_bytes: bytes,
                               path: str,
                               verify_assertions_function: Callable,
-                              children: List[etree.Element],
+                              children: List[Dict],
                               all: bool = False,
                               n: Optional[int] = None,
                               delta: int = 0,

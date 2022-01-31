@@ -1,11 +1,10 @@
 import re
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from lxml.etree import XMLSyntaxError
 
 from galaxy.tool_util.verify import asserts
 from galaxy.util import (
-    etree,
     parse_xml_string,
     unicodify,
 )
@@ -85,7 +84,7 @@ def assert_attribute_is(output: str,
 def assert_element_text(output: str,
                         path: str,
                         verify_assertions_function: Callable,
-                        children: List[etree.Element],
+                        children: List[Dict],
                         negate: bool = False):
     """ Recursively checks the specified assertions against the text of
     the first element matching the specified path."""
@@ -95,7 +94,7 @@ def assert_element_text(output: str,
 def assert_xml_element(output: str,
                        path: str,
                        verify_assertions_function: Optional[Callable] = None,
-                       children: Optional[List[etree.Element]] = None,
+                       children: Optional[List[Dict]] = None,
                        attribute: Optional[str] = None,
                        all: bool = False,
                        n: Optional[int] = None,
