@@ -4,7 +4,7 @@
         <!-- "workers" is the number of threads for the runner's work queue.
              The default from <plugins> is used if not defined for a <plugin>.
           -->
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="3"/>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
         <plugin id="hmgm" type="runner" load="galaxy.jobs.runners.amp_hmgm:HmgmRunner" workers="1"/>
      </plugins>
     <destinations default="local">
@@ -16,5 +16,6 @@
         <tool id="hmgm_transcript" destination="hmgm-container"/>
         <tool id="hmgm_ner" destination="hmgm-container"/>
         <tool id="hmgm_segmentation" destination="hmgm-container"/>
+        <tool id="aws_transcribe_stt" destination="hmgm-container"/>        
     </tools>
 </job_conf>

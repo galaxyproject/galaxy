@@ -24,7 +24,7 @@ def main():
 
     try:
         # if from_iiif is in error raise exception to notify HMGM job runner to fail the job
-        # otherwise if from_iiif doesn't exist yet, exit 1 to keep waiting
+        # otherwise if from_iiif doesn't exist yet, exit to requeue (keep waiting) 
         mgm_utils.exit_if_file_not_ready(from_iiif)
         print("Converting from IIIF " + from_iiif + " to NER " + to_ner)
 
@@ -46,11 +46,11 @@ def main():
         sys.stdout.flush()
         # as the last command in HMGM, implicitly exit 0 here to let the whole job complete in success
     except Exception as e:
-        # as the last command in HMGM, exit -1 to let the whole job fail
+        # as the last command in HMGM, exit 1 to let the whole job fail
         print ("Failed to convert from IIIF " + from_iiif + " to NER " + to_ner, e)
         traceback.print_exc()
         sys.stdout.flush()
-        exit(-1)            
+        exit(1)            
 
 
 # Build a dictionary for NER entities with start time as key and entity as value, to allow efficient searching of entity by timestamp.

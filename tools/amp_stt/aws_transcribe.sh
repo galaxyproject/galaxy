@@ -58,7 +58,9 @@ echo "Waiting for ${job_name} to finish ..." >> $log_file 2>&1
 # note: both AWS query and jq parsing returns field value with double quotes, which needs to be striped off when comparing to string literal
 while [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]] 
 do
-    sleep 60s
+# exit with code 255 to let LWLW job runner to requeue the job 
+    exit 255
+#    sleep 60s
 done
 
 # retrieve job response

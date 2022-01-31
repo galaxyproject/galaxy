@@ -58,12 +58,12 @@ def main():
 			print ("Input file " + input_json + " for HMGM " + task_type + " editor contains empty data, skipping HMGM task and copy the input to the output")
 			shutil.copy(input_json, output_json)
             # implicitly exit 0 as the current command completes
-		# otherwise, if HMGM task hasn't been created, create one, exit 1 to get re-queued	
+		# otherwise, if HMGM task hasn't been created, create one, exit to get requeued	
 		elif not task_created(task_json):
 			task = create_task(config, task_type, context, input_json, output_json, task_json)
-			print ("Successfully created HMGM task " + task.key + ", exit 1")
+			print ("Successfully created HMGM task " + task.key + ", exit 255 to requeue")
 			sys.stdout.flush()
-			exit(1) 
+			exit(255) 
 		# otherwise, check if HMGM task is completed
 		else:
 			editor_output = task_completed(config, output_json)
@@ -73,18 +73,18 @@ def main():
 				print ("Successfully closed HMGM task " + task.key)
 				sys.stdout.flush()
 				# implicitly exit 0 as the current command completes
-			# otherwise exit 1 to get re-queued
+			# otherwise exit to get requeued
 			else:
-				print ("Waiting for HMGM task to complete ... exit 1")
+				print ("Waiting for HMGM task to complete ... exit 255 to requeue")
 				sys.stdout.flush()
-				exit(1)        
-	# upon exception, create error file to notify the following conversion command to fail, and exit -1 (error) to avoid re-quene
+				exit(255)        
+	# upon exception, create error file to notify the following conversion command to fail, and exit 1 (error) to avoid requene
 	except Exception as e:
 		mgm_utils.create_err_file(output_json)
 		print ("Failed to handle HMGM task: uncorrected JSON: " + input_json + ", corrected JSON: " + output_json, e)
 		traceback.print_exc()
 		sys.stdout.flush()
-		exit(-1)
+		exit(1)
 
 
 # Desanitize all the names in the given context.
