@@ -11,8 +11,7 @@
   },
   "license": "AFL-3.0",
   "resolutions": {
-    "**/chokidar": "3.5.2",
-    "**/ua-parser-js": "0.7.30"
+    "**/chokidar": "3.5.2"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.4",
