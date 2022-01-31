@@ -1,10 +1,8 @@
 <template>
     <div ref="container" class="scrollContainer">
         <div
-            v-infinite-scroll="getMoreContent"
             infinite-scroll-disabled="busy"
-            infinite-scroll-distance="0"
-            @scroll="debouncedScroll"
+            @scroll="handleScroll"
             :class="{ loadingBackground: loading, listing: true }">
             <div v-for="(item, index, rowKey) in getDisplayData" :key="rowKey">
                 <HistoryContentItem
@@ -27,25 +25,12 @@
 </template>
 <script>
 import Vue from "vue";
-import { reverse, debounce } from "lodash";
+import { reverse } from "lodash";
 import { HistoryContentItem } from "./ContentItem";
-import infiniteScroll from "vue-infinite-scroll";
-import { setTimeout } from "timers";
-import axios from "axios";
 
 export default {
-    directives: { infiniteScroll },
     components: {
         HistoryContentItem,
-    },
-    created() {
-        this.pollAboveMaxHid();
-        // axios call to get max_hid TODO - should this be somewhere else? where?
-        axios.get(`/api/histories/${this.historyId}/contents/before/1/1`).then((data) => {
-            //this came back as a String, oddly, so I needed to coerce it to a Number
-            this.maxHid = data.headers.max_hid > 0 ? Number(data.headers.max_hid) : 0;
-        });
-        this.debouncedScroll = debounce((event) => this.handleScroll(event), 100);
     },
     data() {
         return {
@@ -83,15 +68,14 @@ export default {
             }
         },
         resetHistoryContents: function (newVal, oldVal) {
-            if (newVal) {
+            /*if (newVal) {
                 this.data = [];
                 this.setScrollPos({ key: this.maxHid });
                 this.setResetHistoryContents(false);
-            }
+            }*/
         },
     },
     props: {
-        setScrollPos: { type: Function, required: true },
         payload: { required: true },
         showSelection: { type: Boolean, required: true },
         isExpanded: { type: Function, required: true },
@@ -107,48 +91,16 @@ export default {
         handleScroll(event) {
             const percent = event.target.scrollTop / event.target.scrollHeight;
             const index = Math.floor(percent * this.getDisplayData.length);
-            this.setScrollPos({ key: this.getDisplayData[index].hid });
+            this.$emit("scroll", this.getDisplayData[index].hid);
         },
         changeHistory() {
             this.data = [];
             this.initialLoad = true;
             this.maxHid = 0;
         },
-        pollAboveMaxHid() {
-            this.maxHidPoll = setInterval(() => {
-                if (this.maxHid > 0 || this.getSortedData.length == 0) {
-                    axios.get(`/api/histories/${this.historyId}/contents/near/${this.maxHid}/60`).then((response) => {
-                        //this came back as a String, oddly, so I needed to coerce it to a Number
-                        const newMaxHid = response.headers.max_hid > 0 ? Number(response.headers.max_hid) : this.maxHid;
-                        if (newMaxHid !== this.maxHid) {
-                            this.maxHid = newMaxHid;
-                            response.data.forEach((element) => {
-                                Vue.set(this.data, element.hid, element);
-                            });
-                        }
-                    });
-                }
-            }, 3000);
-        },
         removeItem(event) {
             this.data[event].isDeleted = true;
         },
-        getMoreContent() {
-            this.busy = true;
-            setTimeout(() => {
-                if (this.initialLoad) {
-                    // Get all history items before, including the one at maxHid
-                    this.setScrollPos({ key: this.maxHid });
-                    this.initialLoad = false;
-                } else if (this.getSortedData.length > 0) {
-                    this.setScrollPos({ key: this.getSortedData[this.getSortedData.length - 1].hid });
-                }
-                this.busy = false;
-            }, 2000);
-        },
-    },
-    beforeDestroy() {
-        clearInterval(this.maxHidPoll);
     },
 };
 </script>
