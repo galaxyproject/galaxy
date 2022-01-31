@@ -1095,11 +1095,11 @@ specified and instead a series of assertions is made about the output.
     </xs:attribute>
     <xs:attribute name="expect_num_outputs" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Assert the number of statically defined outputs this test
-should produce. Where each `data` or `collection` tag that is listed in the
+        <xs:documentation xml:lang="en">Assert the number of statically defined items (datasets and collections) this test
+should produce. Each `data` or `collection` tag that is listed in the
 outputs section is a statically defined output and adds one to this count.  For
-instance a statically defined pair adds 3: 1 for the collection and 1 for each
-of the two data elements.  Dynamically defined outputs (``discover_datasets``)
+instance a statically defined pair adds a count of 3; 1 for the collection and 1 for each
+of the two datasets.  Dynamically defined output datasets (using ``discover_datasets`` tag)
 are not counted here, but note that the ``collection`` or ``data`` tag that
 includes the ``discover_datasets`` still adds a count of one.  This is useful to
 ensure ``filter`` directives are implemented correctly.  See
