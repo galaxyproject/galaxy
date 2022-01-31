@@ -33,6 +33,7 @@ module.exports = {
         "vue/require-default-prop": "warn",
         "vue/require-prop-types": "warn",
         "vue/prop-name-casing": "warn",
+        "vue/multi-word-component-names": "warn",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",
