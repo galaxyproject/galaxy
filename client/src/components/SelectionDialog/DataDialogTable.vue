@@ -1,5 +1,7 @@
 <template>
     <div>
+        <!-- todo: rewrite this to send events up instead of two way prop binding -->
+        <!-- eslint-disable vue/no-mutating-props-->
         <b-table
             small
             hover
