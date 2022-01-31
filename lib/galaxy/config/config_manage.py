@@ -769,6 +769,8 @@ def _parse_option_value(option_value):
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
         elif option.get("type", "str") == "int":
+            if value is None:
+                raise Exception(f"Failed to parse value for {option}, expected int got None")
             value = int(value)
     else:
         value = option_value
