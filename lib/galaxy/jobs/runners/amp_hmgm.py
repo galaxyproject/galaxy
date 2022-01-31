@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 stdout = ''
 stderr = 'None'
 
-DEFAULT_POOL_SLEEP_TIME = 5
+DEFAULT_POOL_SLEEP_TIME = 60
 
 class HmgmRunner(AsynchronousJobRunner):
     """
@@ -114,7 +114,7 @@ class HmgmRunner(AsynchronousJobRunner):
                 # self._fail_job_local(job_state.job_wrapper, "Unable to finish job")
             self.mark_as_finished(job_state)
             return None
-        # This is a HMGM is not complete, try again later
+        # This HMGM job is not complete, try again later
         # Note: using exit code 255 instead of 1 to avoid potential conflicts where tool scripts use 1  to represent error
         elif exit_code==255:
             job_state.running = False
