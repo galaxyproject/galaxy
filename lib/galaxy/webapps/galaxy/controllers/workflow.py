@@ -394,7 +394,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         """Imports a workflow shared by other users."""
         # Set referer message.
         referer = trans.request.referer
-        if referer:
+        if referer and not referer.startswith(f"{trans.request.application_url}{url_for('/login')}"):
             referer_message = f"<a href='{escape(referer)}'>return to the previous page</a>"
         else:
             referer_message = f"<a href='{url_for('/')}'>go to Galaxy's start page</a>"
