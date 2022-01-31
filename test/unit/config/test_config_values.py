@@ -139,7 +139,6 @@ class ExpectedValues:
             'object_store_config_file': self._in_config_dir('object_store_conf.xml'),
             'oidc_backends_config_file': self._in_config_dir('oidc_backends_config.xml'),
             'oidc_config_file': self._in_config_dir('oidc_config.xml'),
-            'openid_consumer_cache_path': self._in_cache_dir('openid_consumer_cache'),
             'sanitize_allowlist_file': self._in_managed_config_dir('sanitize_allowlist.txt'),
             'shed_data_manager_config_file': self._in_managed_config_dir('shed_data_manager_conf.xml'),
             'shed_tool_config_file': self._in_managed_config_dir('shed_tool_conf.xml'),

@@ -2701,21 +2701,6 @@ mapping:
           a real admin user account via API.
           You should probably not set this on a production server.
 
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable access to post-authentication options via OpenID.
-
-      openid_consumer_cache_path:
-        type: str
-        default: openid_consumer_cache
-        path_resolves_to: cache_dir
-        required: false
-        desc: |
-          If OpenID is enabled, consumer cache directory to use.
-
       enable_tool_tags:
         type: bool
         default: false
