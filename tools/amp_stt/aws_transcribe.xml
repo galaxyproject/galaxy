@@ -6,11 +6,6 @@
 	<requirement type="package" version="1.5">jq</requirement>
   </requirements>
   <command detect_errors="exit_code"><![CDATA[
-	echo 'before dummy' && 
-	dummy &&
-	echo 'after dummy'
-  ]]></command>
-  <command detect_errors="exit_code"><![CDATA[
 	'$__tool_directory__/aws_transcribe.sh' '$__root_dir__/../galaxy_work/aws/transcribe' '$input_audio' '$aws_transcript' '$audio_format' '$s3_bucket' '$s3_directory' &&
 	'$__tool_directory__/aws_transcript_to_amp_transcript.py' '$input_audio' '$aws_transcript' '$amp_transcript' '$amp_diarization'
   ]]></command>
