@@ -47,7 +47,7 @@ export default {
             // array (in the case where there is a gap between HIDs).
             // Filter out nulls and sort the array in descending order
             // for display
-            const data = this.data.length > 0 ? this.data : this.payload
+            const data = this.data.length > 0 ? this.data : this.payload;
             return reverse(data.filter((n) => n));
         },
     },
