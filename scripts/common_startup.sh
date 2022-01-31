@@ -116,7 +116,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.0' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.3' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
                 conda_activate
@@ -185,7 +185,7 @@ fi
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 : ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=19.0'
+    python -m pip install 'pip>=19.3'
 fi
 
 requirement_args="-r requirements.txt"
