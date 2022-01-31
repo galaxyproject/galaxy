@@ -25,7 +25,7 @@ def main():
 
     try:
         # if from_draftjs is in error raise exception to notify HMGM job runner to fail the job
-        # otherwise if from_draftjs doesn't exist yet, exit 1 to keep waiting
+        # otherwise if from_draftjs doesn't exist yet, exit to requeue (keep waiting)
         mgm_utils.exit_if_file_not_ready(from_draftjs)
         print("Converting DraftJs " + from_draftjs + " to Transcript " + to_transcript)
 
@@ -128,11 +128,11 @@ def main():
         print("Successfully converted from DraftJs " + from_draftjs + " to Transcript " + to_transcript)
         # as the last command in HMGM, implicitly exit 0 here to let the whole job complete in success
     except Exception as e:
-        # as the last command in HMGM, exit -1 to let the whole job fail
+        # as the last command in HMGM, exit 1 to let the whole job fail
         print ("Failed to convert from DraftJs " + from_draftjs + " to Transcript " + to_transcript, e)
         traceback.print_exc()
         sys.stdout.flush()
-        exit(-1)            
+        exit(1)            
 
 
 if __name__ == "__main__":

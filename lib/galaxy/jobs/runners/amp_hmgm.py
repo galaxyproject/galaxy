@@ -115,7 +115,8 @@ class HmgmRunner(AsynchronousJobRunner):
             self.mark_as_finished(job_state)
             return None
         # This is a HMGM is not complete, try again later
-        elif exit_code==1:
+        # Note: using exit code 255 instead of 1 to avoid potential conflicts where tool scripts use 1  to represent error
+        elif exit_code==255:
             job_state.running = False
             try:
                 # Write the output

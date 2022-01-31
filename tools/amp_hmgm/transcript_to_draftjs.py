@@ -20,7 +20,7 @@ def main():
 	sys.stderr = logger
 
 	try:
-		# exit 1 here if Transcript->DraftJs conversion already done
+		# exit to requeue here if Transcript->DraftJs conversion already done
 		mgm_utils.exit_if_file_generated(to_draftjs)
 		print("Converting from Transcript " + from_transcript + " to DraftJs: " + to_draftjs)	   	
 		
@@ -168,7 +168,7 @@ def main():
 		print ("Error: Failed to convert from Transcript " + from_transcript + " to DraftJs: " + to_draftjs, e)
 		traceback.print_exc()
 		sys.stdout.flush()
-		exit(-1)
+		exit(1)
 
 def createBlock(depth, data, entityRanges, transcript):
 	return {

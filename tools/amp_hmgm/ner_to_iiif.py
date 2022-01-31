@@ -24,7 +24,7 @@ def main():
     sys.stderr = logger
 
     try:
-        # exit 1 here if NER->IIIF conversion already done
+        # exit to requeue here if NER->IIIF conversion already done
         mgm_utils.exit_if_file_generated(to_iiif)
         print("Converting from NER " + from_ner + " to IIIF: " + to_iiif)
        
@@ -50,7 +50,7 @@ def main():
         print ("Error: Failed to convert from NER " + from_ner + " to IIIF: " + to_iiif, e)
         traceback.print_exc()
         sys.stdout.flush()
-        exit(-1)
+        exit(1)
 
 
 # Populate IIIF fields other than annotations, using the provide context and ner_data.

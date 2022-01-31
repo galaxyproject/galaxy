@@ -16,8 +16,8 @@ def main():
         if task_exists() == False:
             # Create the task
             create_task()
-            # Exit with status code 1 = re-queue
-            exit(1) 
+            # Exit to requeue
+            exit(255) 
         else:
             # Check to see if the task is complete
             task_complete = is_task_complete()
@@ -30,12 +30,12 @@ def main():
                 # Exit with success
                 exit(0)
             else:
-                # Exit - Tell process to re-queue
-                exit(1)        
+                # Exit to requeue
+                exit(255)        
     except Exception as e:
         print ("Failed to handle HMGM-Sample task", e)
         traceback.print_exc()
-        exit(-1)
+        exit(1)
 
 # Method stub to check and see if a task is complete.
 # Real implementation would include checking for a specific file (.complete, etc)

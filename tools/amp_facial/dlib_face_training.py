@@ -30,7 +30,7 @@ def train_faces(training_photos, root_dir):
 #     # exit in error if no training data found    
 #     if (len(person_dir_names) == 0):
 #         print("Training failed as training photos " + training_photos + " contains no sub-directory")
-#         exit(-1)
+#         exit(1)
          
     known_names = []
     known_faces = []
@@ -84,7 +84,7 @@ def train_faces(training_photos, root_dir):
     # otherwise report error and exit in error as FR can't continue without any trained results
     else:
         print("Error: Failed training as there is no valid face detected in the given training photos " + training_photos)
-        exit(-1)
+        exit(1)
 
 
 # Get the known faces names and encodings from previously trained face recognition model for training_photos.
@@ -134,7 +134,7 @@ def unzip_training_photos(training_photos, facial_dir):
     except Exception as e:
         print("Failed to unzip training photos " + training_photos + "into directory " + dirpath, e)
         traceback.print_exc()
-        exit(-1)
+        exit(1)
         # if training photos can't be unzipped, FR process can't continue, exit in error 
     
 
