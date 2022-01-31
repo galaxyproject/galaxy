@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from datetime import datetime
@@ -209,17 +210,24 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     return rev, label
 
 
-def remove_file(repo_path, selected_file, force=True):
-    cmd = ['hg', 'remove']
-    if force:
-        cmd.append('--force')
-    cmd.append(selected_file)
+def remove_path(repo_path, selected_file):
+    cmd = ['hg', 'remove', '--force', selected_file]
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = f"Error removing file '{selected_file}': {unicodify(e)}"
+        error_message = f"Error removing path '{selected_file}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += f"\nOutput was:\n{unicodify(e.output)}"
+            output = unicodify(e.output)
+            if 'is untracked' in output:
+                # That's ok, happens if we add a new file or directory via tarball upload,
+                # just delete the file or dir on disk
+                selected_file_path = os.path.join(repo_path, selected_file)
+                if os.path.isdir(selected_file_path):
+                    shutil.rmtree(selected_file_path)
+                else:
+                    os.remove(selected_file_path)
+                return
+            error_message += f"\nOutput was:\n{output}"
         raise Exception(error_message)
 
 
@@ -270,7 +278,7 @@ __all__ = (
     'get_revision_label_from_ctx',
     'get_rev_label_from_changeset_revision',
     'pull_repository',
-    'remove_file',
+    'remove_path',
     'reversed_lower_upper_bounded_changelog',
     'reversed_upper_bounded_changelog',
     'update_repository',

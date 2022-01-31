@@ -17,7 +17,7 @@ from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
 log = logging.getLogger(__name__)
 
-UNDESIRABLE_DIRS = ['.hg', '.svn', '.git', '.cvs']
+UNDESIRABLE_DIRS = ['.hg', '.svn', '.git', '.cvs', '.idea']
 UNDESIRABLE_FILES = ['.hg_archival.txt', 'hgrc', '.DS_Store', 'tool_test_output.html', 'tool_test_output.json']
 
 
@@ -155,7 +155,6 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [os.path.join(full_path, name) for name in filenames_in_archive]
-    repo = repository.hg_repo
     if remove_repo_files_not_in_tar and not repository.is_new():
         # We have a repository that is not new (it contains files), so discover those files that are in the
         # repository, but not in the uploaded archive.
@@ -177,27 +176,11 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             # Remove files in the repository (relative to the upload point) that are not in
             # the uploaded archive.
             try:
-                hg_util.remove_file(repo_path, repo_file, force=True)
+                hg_util.remove_path(repo_path, repo_file)
             except Exception as e:
-                log.debug(f"Error removing files using the mercurial API, so trying a different approach, the error was: {str(e)}")
-                relative_selected_file = repo_file.split('repo_%d' % repository.id)[1].lstrip('/')
-                repo.dirstate.remove(relative_selected_file)
-                repo.dirstate.write()
-                absolute_selected_file = os.path.abspath(repo_file)
-                if os.path.isdir(absolute_selected_file):
-                    try:
-                        os.rmdir(absolute_selected_file)
-                    except OSError:
-                        # The directory is not empty.
-                        pass
-                elif os.path.isfile(absolute_selected_file):
-                    os.remove(absolute_selected_file)
-                    dir = os.path.split(absolute_selected_file)[0]
-                    try:
-                        os.rmdir(dir)
-                    except OSError:
-                        # The directory is not empty.
-                        pass
+                error_message = (f"Error removing file {repo_file} in mercurial repo:\n{e}")
+                log.debug(error_message)
+                return 'error', error_message, files_to_remove, content_alert_str, 0, 0
     # See if any admin users have chosen to receive email alerts when a repository is updated.
     # If so, check every uploaded file to ensure content is appropriate.
     check_contents = check_file_contents_for_email_alerts(app)
