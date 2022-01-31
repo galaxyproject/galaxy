@@ -4,7 +4,7 @@
             infinite-scroll-disabled="busy"
             @scroll="handleScroll"
             :class="{ loadingBackground: loading, listing: true }">
-            <div v-for="(item, index, rowKey) in getDisplayData" :key="rowKey">
+            <div v-for="(item, index, rowKey) in getData" :key="rowKey">
                 <HistoryContentItem
                     :item="item"
                     :index="index"
@@ -42,18 +42,13 @@ export default {
         };
     },
     computed: {
-        getDisplayData() {
-            return this.getSortedData.filter((item) => item.visible && !item.isDeleted);
-        },
-        getSortedData() {
+        getData() {
             // Indexing the history items by their HID creates a sparse
             // array (in the case where there is a gap between HIDs).
             // Filter out nulls and sort the array in descending order
             // for display
-            return reverse(this.getData.filter((n) => n));
-        },
-        getData() {
-            return this.data.length > 0 ? this.data : this.payload;
+            const data = this.data.length > 0 ? this.data : this.payload
+            return reverse(data.filter((n) => n));
         },
     },
     watch: {
@@ -90,8 +85,8 @@ export default {
     methods: {
         handleScroll(event) {
             const percent = event.target.scrollTop / event.target.scrollHeight;
-            const index = Math.floor(percent * this.getDisplayData.length);
-            this.$emit("scroll", this.getDisplayData[index].hid);
+            const index = Math.floor(percent * this.getData.length);
+            this.$emit("scroll", this.getData[index].hid);
         },
         changeHistory() {
             this.data = [];
