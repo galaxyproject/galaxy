@@ -3701,28 +3701,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable access to post-authentication options via OpenID.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``openid_consumer_cache``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_tags``
 ~~~~~~~~~~~~~~~~~~~~
@@ -4823,13 +4801,17 @@
 :Default: ``plugins/welcome_page/new_user/static/topics/``
 :Type: str
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~~~~~~~~~~~~~~~~~~~~~
 ``vault_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Vault configuration
+    Vault config file.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``vault_conf.yml``
 :Type: str
+
+
+

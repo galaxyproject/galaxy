@@ -49,7 +49,6 @@ PACKAGES = [
     'galaxy.jobs.runners.util.job_script',
     'galaxy.jobs.splitters',
     'galaxy.managers',
-    'galaxy.openid',
     'galaxy.schema',
     'galaxy.tools',
     'galaxy.tools.actions',
