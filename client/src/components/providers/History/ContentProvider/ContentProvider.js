@@ -35,8 +35,6 @@ export const ContentProvider = {
                 // local vars/settings/props passthrough
                 scrollPos: this.scrollPos,
                 loading: this.loading,
-                resetHistoryContents: this.resetHistoryContents,
-                setResetHistoryContents: this.setResetHistoryContents,
                 scrolling: this.scrolling,
                 busy: this.busy,
                 params: this.params,
@@ -54,7 +52,6 @@ export const ContentProvider = {
             scrollPos: new ScrollPos(),
             loading: false,
             scrolling: false,
-            resetHistoryContents: false,
         };
     },
 
@@ -83,9 +80,6 @@ export const ContentProvider = {
     },
 
     methods: {
-        setResetHistoryContents(value) {
-            this.resetHistoryContents = value;
-        },
         resetScrollPos() {
             this.setScrollPos();
         },

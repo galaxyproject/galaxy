@@ -46,7 +46,6 @@
                             @resetSelection="resetSelection"
                             @selectAllContent="selectItems(payload.contents)"
                             :expanded-count="expandedCount"
-                            :set-reset-history-contents="setResetHistoryContents"
                             @collapseAllContent="collapseAll" />
                     </template>
 
@@ -66,9 +65,7 @@
                             :set-selected="setSelected"
                             :loading="loading"
                             :page-size="params.pageSize"
-                            :history-id="history.id"
-                            :set-reset-history-contents="setResetHistoryContents"
-                            :reset-history-contents="resetHistoryContents" />
+                            :history-id="history.id" />
                     </template>
 
                     <template v-slot:modals>
@@ -122,8 +119,6 @@ export default {
         return {
             params: new SearchParams(),
             useItemSelection: false,
-            resetHistoryContents: false,
-            setResetHistoryContents: () => {},
             maxHid: this.history.hid_counter,
         };
     },

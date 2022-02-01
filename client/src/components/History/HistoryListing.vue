@@ -31,8 +31,6 @@ export default {
         setSelected: { type: Function, required: true },
         loading: { type: Boolean, required: true },
         historyId: { type: String, required: true },
-        resetHistoryContents: { required: true },
-        setResetHistoryContents: { required: true },
     },
     data() {
         return {
