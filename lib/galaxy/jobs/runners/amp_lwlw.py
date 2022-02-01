@@ -34,17 +34,20 @@ stderr = 'None'
 
 DEFAULT_POOL_SLEEP_TIME = 60
 
-class HmgmRunner(AsynchronousJobRunner):
+# AMP customization
+# Job runner for Light-Weight-Long_Waiting (LWLW) jobs, which doesn't take much local CPU resource,
+# but involves unpredictable amount of waiting time. Typical such jobs include HMGM, cloud, and HPC MGMs.
+class LwlwRunner(AsynchronousJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
-    runner_name = "HmgmRunner"
+    runner_name = "LwlwRunner"
 
     def __init__(self, app, nworkers):
-        super(HmgmRunner, self).__init__(app, nworkers)
+        super(LwlwRunner, self).__init__(app, nworkers)
         self._init_monitor_thread()
         self._init_worker_threads()
-        log.info("initializing hmgm job runner")
+        log.info("initializing lwlw job runner")
 
     def queue_job(self, job_wrapper):
         self.prepare_job(job_wrapper)
@@ -61,7 +64,7 @@ class HmgmRunner(AsynchronousJobRunner):
             initially) or just override check_watched_item and allow the list processing to
             reuse the logic here.
             """
-#             log.debug("Inside hmgm.py check_watched_items")
+#             log.debug("Inside lwlw.py check_watched_items")
             new_watched = []
             for async_job_state in self.watched:
                 # AMPPD - don't fail the whole thing if we have a single error. 
@@ -78,7 +81,7 @@ class HmgmRunner(AsynchronousJobRunner):
                             log.debug("*** Async Job State: ****")
                             log.debug(repr(async_job_state))
                             log.debug("*** End Async Job State: ****")
-                            self._fail_job_local(async_job_state.job_wrapper, "Exception checking HMGM watched item")
+                            self._fail_job_local(async_job_state.job_wrapper, "Exception checking LWLW watched item")
                         else:
                             log.debug("Job state was empty")
                     except Exception as ex:
@@ -97,8 +100,8 @@ class HmgmRunner(AsynchronousJobRunner):
             return None
 
         exit_code = self._run_job(job_state.job_wrapper)
-        log.debug("Hmgm Exit Code: " + str(exit_code))
-        # This is a success code: The HMGM is complete
+        log.debug("Lwlw Exit Code: " + str(exit_code))
+        # This is a success code: The LWLW is complete
         
         if exit_code==0:
             job_state.running = False
@@ -114,7 +117,7 @@ class HmgmRunner(AsynchronousJobRunner):
                 # self._fail_job_local(job_state.job_wrapper, "Unable to finish job")
             self.mark_as_finished(job_state)
             return None
-        # This HMGM job is not complete, try again later
+        # This LWLW job is not complete, try again later
         # Note: using exit code 255 instead of 1 to avoid potential conflicts where tool scripts use 1  to represent error
         elif exit_code==255:
             job_state.running = False
@@ -180,7 +183,7 @@ class HmgmRunner(AsynchronousJobRunner):
         pid = int(pid)
         if not check_pg(pid):
             log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
-            # Kill works fine in cases where the job is actually running.  But in the case of HMGMs, this often isn't the case.  
+            # Kill works fine in cases where the job is actually running.  But in the case of LWLWs, this often isn't the case.  
             # Instead, mark the job as deleted and handle appropriately before we run it next time.  
             job_wrapper.change_state(model.Job.states.DELETED)
             return
