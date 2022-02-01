@@ -24,21 +24,20 @@ s3_directory=$6
 # AWS Transcribe service requires a unique job name when submitting a job under the same account.
 # Suffixing to the job name with hostname and timestamp shall make the name unique enough in real case.
 # In addition, all AWS job related files should go to a designated directory $job_directory, and file names can be prefixed by the job_name. 
-
 # Change for LWLW job:
 # Upon resume, the job needs to check if AWS request is already sent during previous run cycle;
 # thus the job name needs to be inferable from some static info known to the job;
 # timestamp is unique but previous timestamp is not known to the job;
 # the best option would be replace timestamp with the dataset ID in output_file, which is known to the job,
 # doesn't change upon resume, and being the Galaxy dataset filename, is unique in each Galaxy instance
-
-#job_name_prefix="AwsTranscribe"
-#job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
+#
+# job_name_prefix="AwsTranscribe"
+# job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
 hostname=`hostname -s`
-dataset=`basename ${output_file} .dat`
+dataset=`basename $output_file .dat`
 dataset_id=`echo "${dataset##*_}"`
-job_name=AwsTranscribe-${hostname}-${dataset_id}
-log_file=${job_directory}/${job_name}.log
+job_name=AwsTranscribe-$hostname-$dataset_id
+log_file=$job_directory/$job_name.log
 
 # create job_directory if not existing yet
 #if [ ! -d ${job_directory} ] 
@@ -57,7 +56,7 @@ if [! -f "$log_file"]; then
     echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1"
 
     # if s3_directory is empty or ends with "/" return it as is; otherwise append "/" at the end
-    s3_path=`echo $s3_directory| sed -E 's|([^/])$|\1/|'`
+    s3_path=`echo $s3_directory | sed -E 's|([^/])$|\1/|'`
 
     # upload media file from local Galaxy source file to S3 directory; note that log redirects to aws log file from now on
     echo "Uploading ${input_file} to s3://${s3_bucket}/${s3_path}" >> $log_file 2>&1 
@@ -78,14 +77,18 @@ fi
 
 # wait while job is running
 echo "Waiting for ${job_name} to finish ..." >> $log_file 2>&1
-# note: both AWS query and jq parsing returns field value with double quotes, which needs to be striped off when comparing to string literal
-while [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]] 
-do
-    # Change for LWLW job: 
-    # exit with code 255 to let LWLW job runner to requeue the job 
+# Note: both AWS query and jq parsing returns field value with double quotes, which needs to be striped off when comparing to string literal
+# Change for LWLW job:
+# instead of wait and sleep in while loop while job is still IN_PROGRESS, 
+# exit with code 255 to let LWLW job runner to requeue the job 
+#
+# while [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]] 
+# do
+#     sleep 60s
+# done
+if [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]]; then
     exit 255
-#    sleep 60s
-done
+fi
 
 # retrieve job response
 response_file=${job_directory}/${job_name}-response.json
