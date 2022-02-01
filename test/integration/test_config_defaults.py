@@ -81,7 +81,6 @@ PATH_CONFIG_PROPERTIES = [
     'object_store_config_file',
     'oidc_backends_config_file',
     'oidc_config_file',
-    'openid_consumer_cache_path',
     'sanitize_allowlist_file',
     'shed_data_manager_config_file',
     'shed_tool_config_file',

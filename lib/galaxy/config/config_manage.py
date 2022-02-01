@@ -313,6 +313,8 @@ OPTION_ACTIONS = {
     'communication_server_port': _DeprecatedAndDroppedAction(),
     'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
     'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
+    'enable_openid': _DeprecatedAndDroppedAction(),
+    'openid_consumer_cache_path': _DeprecatedAndDroppedAction(),
 }
 
 
