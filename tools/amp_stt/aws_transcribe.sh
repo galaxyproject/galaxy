@@ -48,10 +48,10 @@ log_file=$job_directory/$job_name.log
 # Change for LWLW job:
 # Skip all the operations prior to checking AWS job status, if this is a resume run. 
 # If the log file already exists, we can assume this is a resumed run; as otherwise,
-# if the previous run had failed (either before or after the resume point), a rerun would 
-# use a new output_file with new dataset_id, thus resulting in a new job_name and new log file
+# if the previous run had failed (either before or after the resume point), a rerun from Galaxy 
+# would use a new output_file with new dataset_id, thus resulting in a new job_name and new log file
 # A more absoulte check would be to query AWS whether the job exists, but that's more costly
-if [! -f "$log_file"]; then
+if [[ ! -f "$log_file" ]]; then
     # debug
     echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1"
 
