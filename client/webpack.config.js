@@ -34,6 +34,7 @@ module.exports = (env = {}, argv = {}) => {
                 timers: require.resolve("timers-browserify"),
                 stream: require.resolve("stream-browserify"),
                 "process/browser": require.resolve("process/browser"),
+                "querystring": require.resolve("querystring-es3"),
             },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
