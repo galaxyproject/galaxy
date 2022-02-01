@@ -104,7 +104,7 @@ jobs:
       - run: tox -e test_galaxy_packages
   js_lint:
     docker:
-      - image: cimg/node:14.15
+      - image: cimg/node:16.13.2
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
