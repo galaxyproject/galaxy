@@ -142,13 +142,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-@import "scss/mixins.scss";
-.scrollContainer {
-    .listing {
-        overflow-y: scroll;
-        z-index: 0;
-    }
-}
-</style>

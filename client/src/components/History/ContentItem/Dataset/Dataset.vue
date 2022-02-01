@@ -32,8 +32,7 @@ export default {
     },
     methods: {
         async onDelete(opts = {}) {
-            const ajaxResult = await deleteContent(this.item, opts);
-            this.$emit("deleted", this.item.hid);
+            await deleteContent(this.item, opts);
         },
         async onUnhide() {
             await this.onUpdate({ visible: true });
@@ -42,7 +41,7 @@ export default {
             await this.onUpdate({ deleted: false });
         },
         async onUpdate(changes) {
-            const newContent = await updateContentFields(this.item, changes);
+            await updateContentFields(this.item, changes);
         },
         onCopyLink() {
             const relPath = this.dataset.getUrl("download");
