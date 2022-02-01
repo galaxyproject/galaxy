@@ -2,9 +2,15 @@
     <div>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
+            <ButtonSpinner
+                class="float-right"
+                title="Run Workflow"
+                id="run-workflow"
+                :disabled="runButtonDisabled"
+                :tooltip="errorMessage"
+                @onClick="onExecute" />
         </div>
-        <b-alert v-if="!!errorMessage" variant="info" show>
+        <b-alert v-if="!!errorMessage" variant="info" class="validation-error" show>
             {{ errorMessage }}
         </b-alert>
         <FormDisplay :inputs="formInputs" @onChange="onChange" @onValidation="onValidation" />
@@ -73,6 +79,9 @@ export default {
                 this.inputTypes[stepName] = step.step_type;
             });
             return inputs;
+        },
+        runButtonDisabled() {
+            return this.errorMessage !== null;
         },
     },
     methods: {
