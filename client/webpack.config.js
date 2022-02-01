@@ -36,6 +36,7 @@ module.exports = (env = {}, argv = {}) => {
                 "process/browser": require.resolve("process/browser"),
                 querystring: require.resolve("querystring-es3"),
                 util: require.resolve("util/"),
+                assert: require.resolve("assert/"),
             },
             alias: {
                 jquery$: `${libsBase}/jquery.custom.js`,
