@@ -45,7 +45,8 @@ export const contentPayload = (cfg = {}) => {
         debug = false,
         // optional feedback indicators
         loadingEvents$ = new Subject(),
-        resetPos$ = new Subject()
+        resetPos$ = new Subject(),
+        chunkSize = pageSize
     } = cfg;
 
     // These running totals are shared between instances of content payload because a lot of the
@@ -76,6 +77,7 @@ export const contentPayload = (cfg = {}) => {
         // #region server loading
 
         const serverHid$ = hid$.pipe(
+            chunk({ chunkSize, debug, label: "serverHid" }),
             distinctUntilChanged(),
             debounceTime(debouncePeriod),
             show(debug, hid => console.log("serverHid", hid)),
