@@ -1811,14 +1811,6 @@ galaxy:
   # production server.
   #master_api_key: null
 
-  # Enable access to post-authentication options via OpenID.
-  #enable_openid: false
-
-  # If OpenID is enabled, consumer cache directory to use.
-  # The value of this option will be resolved with respect to
-  # <cache_dir>.
-  #openid_consumer_cache_path: openid_consumer_cache
-
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
   # on startup for large servers.
@@ -2353,7 +2345,8 @@ galaxy:
   # is relative to galaxy/static
   #welcome_directory: plugins/welcome_page/new_user/static/topics/
 
-  # Vault config file
+  # Vault config file.
   # The value of this option will be resolved with respect to
   # <config_dir>.
-  vault_config_file: vault_conf.yml
+  #vault_config_file: vault_conf.yml
+
