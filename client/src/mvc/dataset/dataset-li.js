@@ -279,7 +279,6 @@ export var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: (ev) => {
-                    console.log("model", this.model);
                     const Galaxy = getGalaxyInstance();
                     const showDetailsUrl = `/datasets/${this.model.get("element_id") || this.model.get("id")}/details`;
                     if (Galaxy.frame && Galaxy.frame.active) {
