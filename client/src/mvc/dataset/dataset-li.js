@@ -279,8 +279,9 @@ export var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: (ev) => {
+                    console.log("model", this.model);
                     const Galaxy = getGalaxyInstance();
-                    const showDetailsUrl = `/datasets/${this.model.get("id")}/details`;
+                    const showDetailsUrl = `/datasets/${this.model.get("element_id") || this.model.get("id")}/details`;
                     if (Galaxy.frame && Galaxy.frame.active) {
                         ev.preventDefault();
                         Galaxy.frame.add({
@@ -290,7 +291,7 @@ export var DatasetListItemView = _super.extend(
                     } else if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push(showDetailsUrl);
-                        Galaxy.trigger("activate-hda", this.model.get("id"));
+                        Galaxy.trigger("activate-hda", this.model.get("element_id") || this.model.get("id"));
                     }
                 },
             });
