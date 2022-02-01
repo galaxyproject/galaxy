@@ -24,41 +24,65 @@ s3_directory=$6
 # AWS Transcribe service requires a unique job name when submitting a job under the same account.
 # Suffixing to the job name with hostname and timestamp shall make the name unique enough in real case.
 # In addition, all AWS job related files should go to a designated directory $job_directory, and file names can be prefixed by the job_name. 
-job_name_prefix="AwsTranscribe"
-job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
-job_name=${job_name_prefix}-${job_name_suffix}
+
+# Change for LWLW job:
+# Upon resume, the job needs to check if AWS request is already sent during previous run cycle;
+# thus the job name needs to be inferable from some static info known to the job;
+# timestamp is unique but previous timestamp is not known to the job;
+# the best option would be replace timestamp with the dataset ID in output_file, which is known to the job,
+# doesn't change upon resume, and being the Galaxy dataset filename, is unique in each Galaxy instance
+
+#job_name_prefix="AwsTranscribe"
+#job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
+hostname=`hostname -s`
+dataset=`basename ${output_file} .dat`
+dataset_id=`echo "${dataset##*_}"`
+job_name=AwsTranscribe-${hostname}-${dataset_id}
 log_file=${job_directory}/${job_name}.log
+
 # create job_directory if not existing yet
 #if [ ! -d ${job_directory} ] 
 #then
 #    mkdir ${job_directory}
 #fi
-echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1" # debug
 
-# if s3_directory is empty or ends with "/" return it as is; otherwise append "/" at the end
-s3_path=`echo $s3_directory| sed -E 's|([^/])$|\1/|'`
-# upload media file from local Galaxy source file to S3 directory
-echo "Uploading ${input_file} to s3://${s3_bucket}/${s3_path}" >> $log_file 2>&1 
-aws s3 cp ${input_file} s3://${s3_bucket}/${s3_path} >> $log_file 2>&1
+# Change for LWLW job:
+# Skip all the operations prior to checking AWS job status, if this is a resume run. 
+# If the log file already exists, we can assume this is a resumed run; as otherwise,
+# if the previous run had failed (either before or after the resume point), a rerun would 
+# use a new output_file with new dataset_id, thus resulting in a new job_name and new log file
+# A more absoulte check would be to query AWS whether the job exists, but that's more costly
+if [! -f "$log_file"]; then
+    # debug
+    echo "echo ${input_file} ${output_file} ${audio_format} ${s3_bucket} ${s3_directory} ${job_directory} ${job_name} >> $log_file 2>&1"
 
-# create json file in the aws directory, i.e. <job_directory>/<job_name>_request.json
-request_file=${job_directory}/${job_name}-request.json
-input_file_name=$(basename ${input_file})
-media_file_url="http://${s3_bucket}.s3.amazonaws.com/${s3_path}${input_file_name}"
+    # if s3_directory is empty or ends with "/" return it as is; otherwise append "/" at the end
+    s3_path=`echo $s3_directory| sed -E 's|([^/])$|\1/|'`
 
-# use user-specified bucket for output for easier access control
-jq -n "{ \"TranscriptionJobName\": \"${job_name}\", \"LanguageCode\": \"en-US\", \"MediaFormat\": \"${audio_format}\", \"Media\": { \"MediaFileUri\": \"${media_file_url}\" }, \"OutputBucketName\": \"${s3_bucket}\", \"Settings\":{ \"ShowSpeakerLabels\": true, \"MaxSpeakerLabels\": 10 } }" > ${request_file}
- 
-# submit transcribe job
-echo "Starting transcription job ${job_name} using request file ${request_file}" >> $log_file 2>&1
-aws transcribe start-transcription-job --cli-input-json file://${request_file} >> $log_file 2>&1
+    # upload media file from local Galaxy source file to S3 directory; note that log redirects to aws log file from now on
+    echo "Uploading ${input_file} to s3://${s3_bucket}/${s3_path}" >> $log_file 2>&1 
+    aws s3 cp ${input_file} s3://${s3_bucket}/${s3_path} >> $log_file 2>&1
+
+    # create json file in the aws directory, i.e. <job_directory>/<job_name>_request.json
+    request_file=${job_directory}/${job_name}-request.json
+    input_file_name=$(basename ${input_file})
+    media_file_url="http://${s3_bucket}.s3.amazonaws.com/${s3_path}${input_file_name}"
+
+    # use user-specified bucket for output for easier access control
+    jq -n "{ \"TranscriptionJobName\": \"${job_name}\", \"LanguageCode\": \"en-US\", \"MediaFormat\": \"${audio_format}\", \"Media\": { \"MediaFileUri\": \"${media_file_url}\" }, \"OutputBucketName\": \"${s3_bucket}\", \"Settings\":{ \"ShowSpeakerLabels\": true, \"MaxSpeakerLabels\": 10 } }" > ${request_file}
+    
+    # submit transcribe job
+    echo "Starting transcription job ${job_name} using request file ${request_file}" >> $log_file 2>&1
+    aws transcribe start-transcription-job --cli-input-json file://${request_file} >> $log_file 2>&1
+fi
 
 # wait while job is running
 echo "Waiting for ${job_name} to finish ..." >> $log_file 2>&1
 # note: both AWS query and jq parsing returns field value with double quotes, which needs to be striped off when comparing to string literal
 while [[ `aws transcribe get-transcription-job --transcription-job-name "${job_name}" --query "TranscriptionJob"."TranscriptionJobStatus" | sed -e 's/"//g'` = "IN_PROGRESS" ]] 
 do
-# exit with code 255 to let LWLW job runner to requeue the job 
+    # Change for LWLW job: 
+    # exit with code 255 to let LWLW job runner to requeue the job 
     exit 255
 #    sleep 60s
 done
