@@ -1,4 +1,4 @@
-__version__ = "22.1.0.dev0"
+__version__ = "22.1.0rc1"
 
 PROJECT_NAME = "galaxy-files"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
