@@ -25,9 +25,9 @@ from galaxy.util import (
 
 # optional import to enhance metadata
 try:
-    import ase
+    from ase import io as ase_io
 except ImportError:
-    ase = None
+    ase_io = None
 
 log = logging.getLogger(__name__)
 
@@ -690,28 +690,31 @@ class Cell(GenericMolFile):
         name="atom_data",
         default=[],
         desc="Atom symbols and positions",
-        readonly=False,
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
+        name="number_atoms",
+        desc="Number of atoms",
+        readonly=True,
         visible=True,
     )
     MetadataElement(
         name="chemical_formula",
-        default="",
         desc="Chemical formula",
-        readonly=False,
+        readonly=True,
         visible=True,
     )
     MetadataElement(
-        name="is_periodic",
-        default=False,
-        desc="System is periodic",
-        readonly=False,
+        name="pbc",
+        desc="Periodic boundary conditions",
+        readonly=True,
         visible=True,
     )
     MetadataElement(
         name="lattice_parameters",
-        default=[0,0,0],
         desc="Lattice parameters",
-        readonly=False,
+        readonly=True,
         visible=True,
     )
 
@@ -750,25 +753,34 @@ class Cell(GenericMolFile):
         """
         Find Atom IDs for metadata.
         """
-        if ase:
+        # CELL file can only have one molecule
+        dataset.metadata.number_of_molecules = 1
+
+        if ase_io:
             # enhanced metadata
             try:
-                ase_data = ase.io.read(dataset.file_name, format="castep-cell")
+                ase_data = ase_io.read(dataset.file_name, format="castep-cell")
             except ValueError:
                 log.error("Could not read cell structure data: %s", unicodify(e))
                 raise
+
             try:
-                atom_data = [
+                dataset.metadata.atom_data = [
                     str(sym) + str(pos)
                     for sym, pos in zip(
                         ase_data.get_chemical_symbols(), ase_data.get_positions()
                     )
                 ]
-                dataset.metadata.atom_data = atom_data
+                dataset.metadata.number_of_atoms=len(dataset.metadata.atom_data)
                 dataset.metadata.chemical_formula=ase_data.get_chemical_formula()
-                dataset.metadata.is_periodic=ase_data.get_pbc()
+                pbc = ase_data.get_pbc()
+                try:
+                    dataset.metadata.is_periodic=1 if pbc else 0
+                except ValueError: # pbc is an array
+                    dataset.metadata.is_periodic=1 if pbc.any() else 0
                 cell_data = ase_data.get_cell()
-                dataset.metadata.lattice_parameters=cell_data.cellpar()
+                dataset.metadata.lattice_parameters=list(cell_data.cellpar())
+                log.warning("metadata is: %s", dataset.metadata)
             except Exception as e:
                 log.error("Error finding metadata: %s", unicodify(e))
                 raise
@@ -780,6 +792,7 @@ class Cell(GenericMolFile):
             try:
                 block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS')[0].split('\n')[1:-1]
                 dataset.metadata.atom_data = [atom.strip() for atom in block]
+                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
                 log.error("Error finding atom_data: %s", unicodify(e))
                 raise
@@ -787,9 +800,13 @@ class Cell(GenericMolFile):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            if ase:
+            if ase_io:
                 # enhanced peek
-                dataset.blurb = f"Structure of {dataset.metadata.chemical_formula}. Lattice parameters in axis-angle format: {dataset.metadata.lattice_parameters}. Cell contains {len(dataset.metadata.atom_data)} atoms. Periodicity: {dataset.metadata.is_periodic}."
+                dataset.blurb = f"Structure of {dataset.metadata.chemical_formula}.\nAtoms in file: {len(dataset.metadata.atom_data)}."
+                if dataset.metadata.is_periodic:
+                    dataset.blurb += f"\nPeriodic.\nLattice parameters in axis-angle format:\n{[round(x,2) for x in dataset.metadata.lattice_parameters]}."
+                else:
+                    dataset.blurb += "Not periodic."
             else:
                 # simple peek
                 dataset.blurb = f"CASTEP cell file containing {len(dataset.metadata.atom_data)} atoms"
