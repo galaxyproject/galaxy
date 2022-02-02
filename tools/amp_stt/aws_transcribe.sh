@@ -43,9 +43,9 @@ s3_directory=$6
 # job_name=AWST=$hostname=$galaxy_root=$dataset_id
 #
 hostname=`hostname -s`
-# replace "/" with ":" to not interfere with filename
-dataset=${output_file//[\/]/:} 
-job_name=AWST=$hostname=$dataset
+# replace "/" with "-" to not interfere with filename. Note that job name can only contain letters, digits and [.-_]
+dataset=${output_file//[\/]/-} 
+job_name=AWST-$hostname$dataset
 log_file=$job_directory/$job_name.log
 
 # Note: It's assumed that galaxy/../galaxy_work/aws/transcribe dir exists prior to the job run.
