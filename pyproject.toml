@@ -90,8 +90,8 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
-cwltest = "2.2.20210901154959"
 black = "^22.1.0"
+cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
 httpx = "*"
@@ -127,8 +127,9 @@ line-length = 120
 target-version = ['py37']
 include = '\.pyi?$'
 extend-exclude = '''
-/(
+^/(
   | packages
   | tools
 )/
 '''
+force-exclude = 'lib/galaxy/util/jstree.py'
