@@ -95,6 +95,7 @@
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
   <tool file="exit_code_from_env.xml" />
+  <tool file="exit_code_from_env_default_fail.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="options_from_metadata_file.xml" />
   <tool file="output_order.xml" />

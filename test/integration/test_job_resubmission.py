@@ -12,6 +12,7 @@ JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "
 JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_small_memory_resubmission_to_large_job_conf.xml")
 JOB_RESUBMISSION_TOOL_DETECTED_ALWAYS_ERROR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_tool_detected_always_error_job_conf.xml")
 JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_tool_detected_resubmit_job_conf.xml")
+JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_TWICE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_tool_detected_resubmit_twice_job_conf.xml")
 JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_resource_parameters_conf.xml")
 JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_pulsar_job_conf.xml")
 
@@ -180,7 +181,19 @@ class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmis
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
-        self._assert_job_passes(tool_id="exit_code_from_env")
+        self._assert_job_passes(tool_id="exit_code_from_env_default_fail")
+
+
+# Verify the test tool will resubmit on failure tested above and will then pass in
+# an environment without a tool indicated error.
+class JobResubmissionToolDetectedErrorResubmitsTwiceIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_TWICE_JOB_CONFIG_FILE
+
+    def test_dynamic_resubmission(self):
+        self._assert_job_passes(tool_id="exit_code_from_env_default_fail")
 
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
