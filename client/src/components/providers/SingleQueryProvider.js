@@ -30,13 +30,13 @@ export const SingleQueryProvider = (lookup) => {
         },
         data() {
             return {
-                result: undefined,
-                error: undefined,
+                result: null,
+                error: null,
             };
         },
         computed: {
             loading() {
-                return this.result === undefined;
+                return this.result === null;
             },
             cacheKey() {
                 return hash(this.$attrs || {});
@@ -77,12 +77,13 @@ export const SingleQueryProvider = (lookup) => {
                 lookupPromise.then(
                     (result) => {
                         this.result = result;
+                        this.error = null;
                     },
                     (err) => {
                         this.result = {};
                         this.error = err;
                         this.$emit("error", err);
-                        console.debug("Failed to complete queued promise.", err);
+                        console.debug("Failed to fulfill promise.", err);
                     }
                 );
             },

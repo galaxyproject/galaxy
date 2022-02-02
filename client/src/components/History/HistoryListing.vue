@@ -11,15 +11,20 @@
                     @update:selected="setSelected(item, $event)"
                     @viewCollection="$emit('viewCollection', item)" />
             </div>
+            <div class="m-2">
+                <LoadingSpan message="Please wait" />
+            </div>
         </div>
     </div>
 </template>
 <script>
 import { reverse, throttle } from "lodash";
+import LoadingSpan from "components/LoadingSpan";
 import { HistoryContentItem } from "./ContentItem";
 
 export default {
     components: {
+        LoadingSpan,
         HistoryContentItem,
     },
     props: {
