@@ -203,7 +203,7 @@ class FastAPILibraries:
             LibraryPermissionsPayload,
             LegacyLibraryPermissionsPayload,
         ] = Body(...),
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions,]:  # Old legacy response
+    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
         """Sets the permissions to access and manipulate a library."""
         payload_dict = payload.dict(by_alias=True)
         if isinstance(payload, LibraryPermissionsPayload) and action is not None:

@@ -215,7 +215,7 @@ class LibrariesService(ServiceBase):
 
     def set_permissions(
         self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions,]:  # Old legacy response
+    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
         """Set permissions of the given library to the given role ids.
 
         :param  id:      the encoded id of the library to set the permissions of

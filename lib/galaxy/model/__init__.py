@@ -535,17 +535,17 @@ class User(Base, Dictifiable, RepresentById):
     default_permissions = relationship("DefaultUserPermissions", back_populates="user")
     groups = relationship("UserGroupAssociation", back_populates="user")
     histories = relationship(
-        "History", back_populates="user", order_by=lambda: desc(History.update_time)
-    )  # type: ignore[has-type]
+        "History", back_populates="user", order_by=lambda: desc(History.update_time)  # type: ignore[has-type]
+    )
     active_histories = relationship(
         "History",
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted))),  # type: ignore[has-type]
         viewonly=True,
-        order_by=lambda: desc(History.update_time),
-    )  # type: ignore[has-type]
+        order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
+    )
     galaxy_sessions = relationship(
-        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
-    )  # type: ignore[has-type]
+        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)  # type: ignore[has-type]
+    )
     quotas = relationship("UserQuotaAssociation", back_populates="user")
     social_auth = relationship("UserAuthnzToken", back_populates="user")
     stored_workflow_menu_entries = relationship(
@@ -561,8 +561,8 @@ class User(Base, Dictifiable, RepresentById):
     )
     _preferences = relationship("UserPreference", collection_class=attribute_mapped_collection("name"))
     values = relationship(
-        "FormValues", primaryjoin=(lambda: User.form_values_id == FormValues.id)
-    )  # type: ignore[has-type]
+        "FormValues", primaryjoin=(lambda: User.form_values_id == FormValues.id)  # type: ignore[has-type]
+    )
     # Add type hint (will this work w/SA?)
     api_keys: "List[APIKeys]" = relationship(
         "APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time)
@@ -570,16 +570,16 @@ class User(Base, Dictifiable, RepresentById):
     data_manager_histories = relationship("DataManagerHistoryAssociation", back_populates="user")
     roles = relationship("UserRoleAssociation", back_populates="user")
     stored_workflows = relationship(
-        "StoredWorkflow", back_populates="user", primaryjoin=(lambda: User.id == StoredWorkflow.user_id)
-    )  # type: ignore[has-type]
+        "StoredWorkflow", back_populates="user", primaryjoin=(lambda: User.id == StoredWorkflow.user_id)  # type: ignore[has-type]
+    )
     non_private_roles = relationship(
         "UserRoleAssociation",
         viewonly=True,
         primaryjoin=(
             lambda: (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
             & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
-            & not_(Role.name == User.email)
-        ),  # type: ignore[has-type]
+            & not_(Role.name == User.email)  # type: ignore[has-type]
+        ),
     )
 
     preferences: association_proxy  # defined at the end of this module
@@ -2422,8 +2422,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     published = Column(Boolean, index=True, default=False)
 
     datasets = relationship(
-        "HistoryDatasetAssociation", back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)
-    )  # type: ignore[has-type]
+        "HistoryDatasetAssociation", back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
+    )
     exports = relationship(
         "JobExportHistoryArchive",
         back_populates="history",
@@ -2435,8 +2435,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         primaryjoin=(
             lambda: and_(
                 HistoryDatasetAssociation.history_id == History.id,  # type: ignore[attr-defined]
-                not_(HistoryDatasetAssociation.deleted),
-            )  # type: ignore[has-type]
+                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+            )
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
         viewonly=True,
@@ -2448,9 +2448,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             lambda: (
                 and_(
                     HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore[has-type]
-                    not_(HistoryDatasetCollectionAssociation.deleted),
+                    not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[has-type]
                 )
-            )  # type: ignore[has-type]
+            )
         ),
         order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore[has-type]
         viewonly=True,
@@ -2460,9 +2460,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         primaryjoin=(
             lambda: and_(
                 HistoryDatasetAssociation.history_id == History.id,  # type: ignore[attr-defined]
-                not_(HistoryDatasetAssociation.deleted),
-                HistoryDatasetAssociation.visible,
-            )  # type: ignore[has-type]
+                not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
+                HistoryDatasetAssociation.visible,  # type: ignore[has-type]
+            )
         ),
         order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
         viewonly=True,
@@ -2473,8 +2473,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             lambda: and_(
                 HistoryDatasetCollectionAssociation.history_id == History.id,  # type: ignore[has-type]
                 not_(HistoryDatasetCollectionAssociation.deleted),  # type: ignore[has-type]
-                HistoryDatasetCollectionAssociation.visible,
-            )  # type: ignore[has-type]
+                HistoryDatasetCollectionAssociation.visible,  # type: ignore[has-type]
+            )
         ),
         order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore[has-type]
         viewonly=True,
@@ -5252,8 +5252,8 @@ class LibraryInfoAssociation(Base, RepresentById):
         "FormDefinition", primaryjoin=lambda: LibraryInfoAssociation.form_definition_id == FormDefinition.id
     )
     info = relationship(
-        "FormValues", primaryjoin=lambda: LibraryInfoAssociation.form_values_id == FormValues.id
-    )  # type: ignore[has-type]
+        "FormValues", primaryjoin=lambda: LibraryInfoAssociation.form_values_id == FormValues.id  # type: ignore[has-type]
+    )
 
     def __init__(self, library, form_definition, info, inheritable=False):
         self.library = library
@@ -5283,8 +5283,8 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
         "FormDefinition", primaryjoin=(lambda: LibraryFolderInfoAssociation.form_definition_id == FormDefinition.id)
     )
     info = relationship(
-        "FormValues", primaryjoin=(lambda: LibraryFolderInfoAssociation.form_values_id == FormValues.id)
-    )  # type: ignore[has-type]
+        "FormValues", primaryjoin=(lambda: LibraryFolderInfoAssociation.form_values_id == FormValues.id)  # type: ignore[has-type]
+    )
 
     def __init__(self, folder, form_definition, info, inheritable=False):
         self.folder = folder
@@ -5319,8 +5319,8 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
         primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_definition_id == FormDefinition.id),
     )
     info = relationship(
-        "FormValues", primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_values_id == FormValues.id)
-    )  # type: ignore[has-type]
+        "FormValues", primaryjoin=(lambda: LibraryDatasetDatasetInfoAssociation.form_values_id == FormValues.id)  # type: ignore[has-type]
+    )
 
     def __init__(self, library_dataset_dataset_association, form_definition, info):
         # TODO: need to figure out if this should be inheritable to the associated LibraryDataset
@@ -5433,8 +5433,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         "DatasetCollectionElement",
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),  # type: ignore[has-type]
         back_populates="collection",
-        order_by=lambda: DatasetCollectionElement.element_index,
-    )  # type: ignore[has-type]
+        order_by=lambda: DatasetCollectionElement.element_index,  # type: ignore[has-type]
+    )
 
     dict_collection_visible_keys = ["id", "collection_type"]
     dict_element_visible_keys = ["id", "collection_type"]
@@ -6485,8 +6485,8 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         back_populates="stored_workflow",
         cascade="all, delete-orphan",
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore[has-type]
-        order_by=lambda: -Workflow.id,
-    )  # type: ignore[has-type]
+        order_by=lambda: -Workflow.id,  # type: ignore[has-type]
+    )
     latest_workflow = relationship(
         "Workflow",
         post_update=True,
@@ -7990,8 +7990,8 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     form_definition_current = relationship(
         "FormDefinitionCurrent",
         back_populates="forms",
-        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id),
-    )  # type: ignore[has-type]
+        primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id),  # type: ignore[has-type]
+    )
 
     # The following form_builder classes are supported by the FormDefinition class.
     supported_field_types = [
