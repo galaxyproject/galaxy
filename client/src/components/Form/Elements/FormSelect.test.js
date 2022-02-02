@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import FormSelect from "./FormSelect";
+import Multiselect from "vue-multiselect";
 import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
@@ -65,18 +66,21 @@ describe("FormSelect", () => {
             localVue,
         });
         const input = wrapper.find("input");
-        expect(wrapper.vm.currentValue).toStrictEqual({"label": "test1", "value": "T", "default": false});
+        expect(wrapper.vm.currentValue).toStrictEqual({"label": "test2", "value": "2", "default": false});
     })
-    it("Returns a new value after being switched over", async() => {
-        let wrapper;
-        wrapper = mount(FormSelect, {
+    it("Changes value after new selection is made", async() => {
+        const wrapper = mount(FormSelect, {
             propsData: {
-                value: "",
-                defaultValue: "",
+                value: "T",
+                defaultValue: "T",
                 options: [["test1", "T", false], ["test2", "2", false]],
             },
             localVue,
         });
-        wrapper.setValue()
-    }
+    
+        const multiselect = wrapper.findComponent( Multiselect );
+        multiselect.vm.select(wrapper.vm.options[1]);
+        expect(multiselect.emitted().input).toEqual([[["test2", "2", false], null]]);
+        expect(multiselect.emitted().select).toEqual([[["test2", "2", false], null]]);
+    })
 });
