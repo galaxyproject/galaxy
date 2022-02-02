@@ -12,7 +12,7 @@ const localVue = getLocalVue();
 //             propsData: props,
 //             localVue,
 //         });
-    // const getInput = async (wrapper) => await wrapper.find("input[type='select']");
+// const getInput = async (wrapper) => await wrapper.find("input[type='select']");
 
 //     it("input should be rendered with select type", async () => {
 //         const wrapper = await mountFormSelect({
@@ -35,52 +35,64 @@ describe("FormSelect", () => {
             propsData: {
                 value: "",
                 defaultValue: "",
-                options: [["test1", "T", false], ["test2", "2", false]],
+                options: [
+                    ["test1", "T", false],
+                    ["test2", "2", false],
+                ],
             },
             localVue,
         });
         const input = wrapper.find("input");
-        expect(wrapper.vm.currentValue).toStrictEqual({"label": "test1", "value": "T", "default": false});
-    })
+        expect(wrapper.vm.currentValue).toStrictEqual({ label: "test1", value: "T", default: false });
+    });
     it("Sets default currentValue to object with 'default: true' when default not provided from defaultValue", async () => {
         let wrapper;
         wrapper = mount(FormSelect, {
             propsData: {
                 value: "",
                 defaultValue: "",
-                options: [["test1", "T", false], ["test2", "2", true]],
+                options: [
+                    ["test1", "T", false],
+                    ["test2", "2", true],
+                ],
             },
             localVue,
         });
         const input = wrapper.find("input");
-        expect(wrapper.vm.currentValue).toStrictEqual({"label": "test2", "value": "2", "default": true});
-    })
+        expect(wrapper.vm.currentValue).toStrictEqual({ label: "test2", value: "2", default: true });
+    });
     it("Sets default from defaultValue", async () => {
         let wrapper;
         wrapper = mount(FormSelect, {
             propsData: {
                 value: "2",
                 defaultValue: "2",
-                options: [["test1", "T", false], ["test2", "2", false]],
+                options: [
+                    ["test1", "T", false],
+                    ["test2", "2", false],
+                ],
             },
             localVue,
         });
         const input = wrapper.find("input");
-        expect(wrapper.vm.currentValue).toStrictEqual({"label": "test2", "value": "2", "default": false});
-    })
-    it("Changes value after new selection is made", async() => {
+        expect(wrapper.vm.currentValue).toStrictEqual({ label: "test2", value: "2", default: false });
+    });
+    it("Changes value after new selection is made", async () => {
         const wrapper = mount(FormSelect, {
             propsData: {
                 value: "T",
                 defaultValue: "T",
-                options: [["test1", "T", false], ["test2", "2", false]],
+                options: [
+                    ["test1", "T", false],
+                    ["test2", "2", false],
+                ],
             },
             localVue,
         });
-    
-        const multiselect = wrapper.findComponent( Multiselect );
+
+        const multiselect = wrapper.findComponent(Multiselect);
         multiselect.vm.select(wrapper.vm.options[1]);
         expect(multiselect.emitted().input).toEqual([[["test2", "2", false], null]]);
         expect(multiselect.emitted().select).toEqual([[["test2", "2", false], null]]);
-    })
+    });
 });
