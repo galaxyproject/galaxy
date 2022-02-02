@@ -17,7 +17,7 @@ export const SingleQueryProvider = (lookup) => {
         props: {
             useCache: {
                 type: Boolean,
-                default: true,
+                default: false,
             },
             autoRefresh: {
                 type: Boolean,
@@ -25,7 +25,7 @@ export const SingleQueryProvider = (lookup) => {
             },
             autoTime: {
                 type: Number,
-                default: 3000,
+                default: 2000,
             },
         },
         data() {
@@ -43,12 +43,11 @@ export const SingleQueryProvider = (lookup) => {
             },
         },
         mounted() {
+            this.doQuery();
             if (this.autoRefresh) {
                 this.interval = setInterval(() => {
                     this.doQuery();
                 }, this.autoTime);
-            } else {
-                this.doQuery();
             }
         },
         destroyed() {
