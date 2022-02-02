@@ -9,9 +9,9 @@ import { LastQueue } from "utils/promise-queue";
  *                              whose properties are the attributes assigned to the provider component
  * @return  {VueComponentOptions} Vue component options definition
  */
-const queue = new LastQueue();
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
+    const queue = new LastQueue();
 
     return {
         props: {
@@ -82,6 +82,7 @@ export const SingleQueryProvider = (lookup) => {
                         this.result = {};
                         this.error = err;
                         this.$emit("error", err);
+                        console.debug("Failed to complete queued promise.", err);
                     }
                 );
             },
