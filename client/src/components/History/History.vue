@@ -60,12 +60,9 @@
                             :payload="payload"
                             :show-selection="showSelection"
                             :is-expanded="isExpanded"
-                            :set-expanded="setExpanded"
                             :is-selected="isSelected"
-                            :set-selected="setSelected"
-                            :loading="loading"
-                            :page-size="params.pageSize"
-                            :history-id="history.id" />
+                            :set-expanded="setExpanded"
+                            :set-selected="setSelected" />
                     </template>
 
                     <template v-slot:modals>

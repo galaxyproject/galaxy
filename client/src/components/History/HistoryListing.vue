@@ -31,11 +31,9 @@ export default {
         payload: { required: true },
         showSelection: { type: Boolean, required: true },
         isExpanded: { type: Function, required: true },
-        setExpanded: { type: Function, required: true },
         isSelected: { type: Function, required: true },
+        setExpanded: { type: Function, required: true },
         setSelected: { type: Function, required: true },
-        loading: { type: Boolean, required: true },
-        historyId: { type: String, required: true },
     },
     data() {
         return {
