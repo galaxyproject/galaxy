@@ -737,7 +737,9 @@ class EmptyTextfieldValidator(Validator):
         return cls(message, negate)
 
     def validate(self, value, trans=None):
-        super().validate(value != '')
+        # Ideally the empty string validator should only check against an actual empty string,
+        # but the fill_defaults logic will store the result of `get_initial_value``, which is None.
+        super().validate(value not in ('', None))
 
 
 class MetadataInFileColumnValidator(Validator):
