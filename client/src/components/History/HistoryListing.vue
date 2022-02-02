@@ -1,6 +1,6 @@
 <template>
     <div class="history-listing">
-        <div @scroll="onScroll" class="listing">
+        <div @scroll="onScrollThrottle" class="listing">
             <div v-for="(item, index) in getItems" :key="index">
                 <HistoryContentItem
                     :item="item"
@@ -15,7 +15,7 @@
     </div>
 </template>
 <script>
-import { reverse } from "lodash";
+import { reverse, throttle } from "lodash";
 import { HistoryContentItem } from "./ContentItem";
 
 export default {
@@ -36,10 +36,14 @@ export default {
         return {
             items: [],
             maxNew: 10,
+            throttlePeriod: 100,
         };
     },
     created() {
         this.updateItems();
+        this.onScrollThrottle = throttle((event) => {
+            this.onScroll(event);
+        }, this.throttlePeriod);
     },
     watch: {
         payload() {
@@ -61,9 +65,16 @@ export default {
             }
         },
         onScroll(event) {
-            const percent = event.target.scrollTop / event.target.scrollHeight;
-            const index = Math.max(Math.min(Math.floor(percent * this.getItems.length), 0), this.getItems.length - 1);
-            this.$emit("scroll", this.getItems[index].hid + this.maxNew);
+            let topIndex = 0;
+            for (const index in event.target.childNodes) {
+                const child = event.target.childNodes[index];
+                if (child.offsetTop > event.target.scrollTop) {
+                    topIndex = index - 1;
+                    break;
+                }
+            }
+            topIndex = Math.min(Math.max(topIndex, 0), this.getItems.length - 1);
+            this.$emit("scroll", this.getItems[topIndex].hid);
         },
     },
 };
@@ -74,6 +85,7 @@ export default {
 .history-listing {
     .listing {
         overflow-y: scroll;
+        overflow-x: hidden;
         z-index: 0;
     }
 }

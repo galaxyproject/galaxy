@@ -25,7 +25,7 @@ export const SingleQueryProvider = (lookup) => {
             },
             autoTime: {
                 type: Number,
-                default: 2000,
+                default: 1000,
             },
         },
         data() {
