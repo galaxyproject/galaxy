@@ -15,8 +15,6 @@ import DataPicker from "mvc/ui/ui-data-picker";
 export default Backbone.View.extend({
     /** Available parameter types */
     types: {
-        text: "_fieldText",
-        password: "_fieldText",
         select: "_fieldSelect",
         data_column: "_fieldSelect",
         genomebuild: "_fieldSelect",
@@ -125,46 +123,6 @@ export default Backbone.View.extend({
             display: input_def.display,
             optional: input_def.optional,
             onchange: input_def.onchange,
-        });
-    },
-
-    /** Text input field */
-    _fieldText: function (input_def) {
-        // field replaces e.g. a select field
-        const inputClass = input_def.optional && input_def.type === "select" ? Ui.NullableText : Ui.Input;
-        if (
-            ["SelectTagParameter", "ColumnListParameter"].includes(input_def.model_class) ||
-            (input_def.options && input_def.data)
-        ) {
-            input_def.area = input_def.multiple;
-            if (Utils.isEmpty(input_def.value)) {
-                input_def.value = null;
-            } else {
-                if (Array.isArray(input_def.value)) {
-                    var str_value = "";
-                    for (var i in input_def.value) {
-                        str_value += String(input_def.value[i]);
-                        if (!input_def.multiple) {
-                            break;
-                        }
-                        str_value += "\n";
-                    }
-                    input_def.value = str_value;
-                }
-            }
-        }
-        // create input element
-        return new inputClass({
-            id: input_def.id,
-            type: input_def.type,
-            area: input_def.area,
-            readonly: input_def.readonly,
-            color: input_def.color,
-            style: input_def.style,
-            placeholder: input_def.placeholder,
-            datalist: input_def.datalist,
-            onchange: input_def.onchange,
-            value: input_def.value,
         });
     },
 

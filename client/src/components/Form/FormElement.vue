@@ -29,7 +29,19 @@
                 :min="attrs.min"
                 :type="type"
                 v-model="currentValue"
-                :id="id" />
+                :id="id"
+            />
+            <FormText
+                v-else-if="type == 'text' || type == 'password'"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :placeholder="attrs.placeholder"
+                :color="attrs.color"
+                :style="attrs.style"
+                :datalist="attrs.datalist"
+                :type="type"
+                :id="id"
+            />
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
@@ -39,7 +51,8 @@
                 :data-label="title"
                 :type="type"
                 :attributes="attrs"
-                ref="params" />
+                ref="params"
+            />
             <FormInput v-else v-model="currentValue" :id="id" :area="attrs['area']" />
         </div>
         <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
@@ -56,6 +69,7 @@ import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
+import FormText from "./Elements/FormText";
 
 export default {
     components: {
@@ -63,6 +77,7 @@ export default {
         FormHidden,
         FormInput,
         FormNumber,
+        FormText,
         FormColor,
         FormParameter,
         FormDirectory,
