@@ -273,7 +273,11 @@ from `dataset.metadata.number_of_sequences`.
 - `visible` (default `True`): determines if the metadata element is visible to the user
 - `readonly` (default `False`): determines if the user can change the value. 
 - `set_in_upload` (default `False`)
-- `param` ??? e.g. `param=FileParameter`
+- `param` ???
+   https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/metadata.py
+   SelectParameter, DBKeyParameter, RangeParameter, ColumnParameter,
+   ColumnParameter, ListParameter, DictParameter, PythonObjectParameter, FileParameter, 
+   e.g. `param=FileParameter`
 - `file_ext` ??? 
 
 
