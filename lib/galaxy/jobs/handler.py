@@ -350,6 +350,7 @@ class JobHandlerQueue(Monitors):
         try:
             config_job_destination = self.app.job_config.get_destination(job.destination_id)
             job_destination.resubmit = config_job_destination.resubmit
+            job_destination.env = config_job_destination.env
         except KeyError:
             log.debug(
                 "(%s) Recovered destination id (%s) does not exist in job config (but this may be normal in the case of a dynamically generated destination)",
