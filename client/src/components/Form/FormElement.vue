@@ -31,6 +31,16 @@
                 :min="attrs.min"
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
+            <FormText
+                v-else-if="type == 'text' || type == 'password'"
+                :id="id"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :placeholder="attrs.placeholder"
+                :color="attrs.color"
+                :style="attrs.style"
+                :datalist="attrs.datalist"
+                :type="type" />
             <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
@@ -57,6 +67,7 @@ import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
+import FormText from "./Elements/FormText";
 
 export default {
     components: {
@@ -64,6 +75,7 @@ export default {
         FormHidden,
         FormInput,
         FormNumber,
+        FormText,
         FormColor,
         FormParameter,
         FormDirectory,
