@@ -39,8 +39,15 @@ that exceed the rsquare threshold with the first SNP.
 """
 from __future__ import print_function
 
-from getopt import getopt, GetoptError
-from sys import argv, exit, stderr
+from getopt import (
+    getopt,
+    GetoptError,
+)
+from sys import (
+    argv,
+    exit,
+    stderr,
+)
 
 __author__ = "Aakrosh Ratan"
 __email__ = "ratan@bx.psu.edu"

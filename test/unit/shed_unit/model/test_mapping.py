@@ -1,5 +1,8 @@
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+)
 from uuid import uuid4
 
 import pytest
@@ -21,15 +24,14 @@ class BaseTest:
         Assumptions: if the class under test is Foo, then the class grouping
         the tests should be a subclass of BaseTest, named TestFoo.
         """
-        prefix = len('Test')
+        prefix = len("Test")
         class_name = self.__class__.__name__[prefix:]
         return getattr(model, class_name)
 
 
 class TestAPIKeys(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'api_keys'
+        assert cls_.__tablename__ == "api_keys"
 
     def test_columns(self, session, cls_, user):
         create_time, user_id, key = datetime.now(), user.id, get_unique_value()
@@ -51,14 +53,13 @@ class TestAPIKeys(BaseTest):
 
 
 class TestCategory(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'category'
+        assert cls_.__tablename__ == "category"
 
     def test_columns(self, session, cls_):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        name, description, deleted = get_unique_value(), 'b', True
+        name, description, deleted = get_unique_value(), "b", True
 
         obj = cls_()
         obj.create_time = create_time
@@ -87,12 +88,11 @@ class TestCategory(BaseTest):
 
 
 class TestComponent(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'component'
+        assert cls_.__tablename__ == "component"
 
     def test_columns(self, session, cls_):
-        name, description = 'a', 'b'
+        name, description = "a", "b"
         obj = cls_(name=name, description=description)
 
         with dbcleanup(session, obj) as obj_id:
@@ -103,16 +103,15 @@ class TestComponent(BaseTest):
 
 
 class TestComponentReview(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'component_review'
+        assert cls_.__tablename__ == "component_review"
 
     def test_columns(self, session, cls_, repository_review, component):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        comment = 'a'
+        comment = "a"
         private = True
-        approved = 'b'
+        approved = "b"
         rating = 1
         deleted = True
 
@@ -152,17 +151,16 @@ class TestComponentReview(BaseTest):
 
 
 class TestGalaxySession(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'galaxy_session'
+        assert cls_.__tablename__ == "galaxy_session"
 
     def test_columns(self, session, cls_, user, galaxy_session):
 
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        remote_host = 'a'
-        remote_addr = 'b'
-        referer = 'c'
+        remote_host = "a"
+        remote_addr = "b"
+        referer = "c"
         session_key = get_unique_value()
         is_valid = True
         last_action = update_time + timedelta(hours=1)
@@ -202,9 +200,8 @@ class TestGalaxySession(BaseTest):
 
 
 class TestGroup(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'galaxy_group'
+        assert cls_.__tablename__ == "galaxy_group"
 
     def test_columns(self, session, cls_):
         create_time = datetime.now()
@@ -245,9 +242,8 @@ class TestGroup(BaseTest):
 
 
 class TestGroupRoleAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'group_role_association'
+        assert cls_.__tablename__ == "group_role_association"
 
     def test_columns(self, session, cls_, group, role):
         obj = cls_(group, role)
@@ -274,9 +270,8 @@ class TestGroupRoleAssociation(BaseTest):
 
 
 class TestPasswordResetToken(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'password_reset_token'
+        assert cls_.__tablename__ == "password_reset_token"
 
     def test_columns_and_relationships(self, session, cls_, user):
         token = get_unique_value()
@@ -297,19 +292,18 @@ class TestPasswordResetToken(BaseTest):
 
 
 class TestRepository(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository'
+        assert cls_.__tablename__ == "repository"
 
     def test_columns(self, session, cls_, user):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        name = 'a'
-        type = 'b'
-        remote_repository_url = 'c'
-        homepage_url = 'd'
-        description = 'e'
-        long_description = 'f'
+        name = "a"
+        type = "b"
+        remote_repository_url = "c"
+        homepage_url = "d"
+        description = "e"
+        long_description = "f"
         private = True
         deleted = True
         email_alerts = False
@@ -408,9 +402,8 @@ class TestRepository(BaseTest):
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_category_association'
+        assert cls_.__tablename__ == "repository_category_association"
 
     def test_columns(self, session, cls_, repository, category):
         obj = cls_(repository=repository, category=category)
@@ -431,17 +424,16 @@ class TestRepositoryCategoryAssociation(BaseTest):
 
 
 class TestRepositoryMetadata(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.table.name == 'repository_metadata'
+        assert cls_.table.name == "repository_metadata"
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        changeset_revision = 'a'
+        changeset_revision = "a"
         numeric_revision = 1
-        metadata = 'b'
-        tool_versions = 'c'
+        metadata = "b"
+        tool_versions = "c"
         malicious = True
         downloadable = False
         missing_test_components = True
@@ -498,7 +490,7 @@ class TestRepositoryMetadata(BaseTest):
 
         obj = cls_()
         obj.repository = repository
-        obj.changeset_revision = 'nonempty'
+        obj.changeset_revision = "nonempty"
 
         # create 3 reviews
         review1 = repository_review_factory()
@@ -518,7 +510,7 @@ class TestRepositoryMetadata(BaseTest):
         # set the same changeset for reviews 1,2
         review1.changeset_revision = obj.changeset_revision
         review2.changeset_revision = obj.changeset_revision
-        review3.changeset_revision = 'something else'  # this won't be in reviews for this metadata
+        review3.changeset_revision = "something else"  # this won't be in reviews for this metadata
 
         # add to session
         session.add(review1)
@@ -534,15 +526,14 @@ class TestRepositoryMetadata(BaseTest):
 
 
 class TestRepositoryRatingAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_rating_association'
+        assert cls_.__tablename__ == "repository_rating_association"
 
     def test_columns(self, session, cls_, repository, user):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         rating = 1
-        comment = 'a'
+        comment = "a"
 
         obj = cls_()
         obj.create_time = create_time
@@ -574,15 +565,14 @@ class TestRepositoryRatingAssociation(BaseTest):
 
 
 class TestRepositoryReview(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_review'
+        assert cls_.__tablename__ == "repository_review"
 
     def test_columns(self, session, cls_, repository, user):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        changeset_revision = 'a'
-        approved = 'b'
+        changeset_revision = "a"
+        approved = "b"
         rating = 1
         deleted = True
 
@@ -609,16 +599,10 @@ class TestRepositoryReview(BaseTest):
             assert stored_obj.deleted == deleted
 
     def test_relationships(
-        self,
-        session,
-        cls_,
-        repository,
-        user,
-        repository_metadata_factory,
-        component_review_factory
+        self, session, cls_, repository, user, repository_metadata_factory, component_review_factory
     ):
         obj = cls_()
-        changeset = 'nonempty'
+        changeset = "nonempty"
         obj.changeset_revision = changeset
         obj.repository = repository
         obj.user = user
@@ -628,7 +612,7 @@ class TestRepositoryReview(BaseTest):
         metadata1.repository = repository
         metadata2.repository = repository
         metadata1.changeset_revision = changeset
-        metadata2.changeset_revision = 'something else'
+        metadata2.changeset_revision = "something else"
 
         component_review1 = component_review_factory()
         component_review1.repository_review = obj
@@ -653,9 +637,8 @@ class TestRepositoryReview(BaseTest):
 
 
 class TestRepositoryRoleAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_role_association'
+        assert cls_.__tablename__ == "repository_role_association"
 
     def test_columns(self, session, cls_, repository, role):
         create_time = datetime.now()
@@ -682,12 +665,11 @@ class TestRepositoryRoleAssociation(BaseTest):
 
 
 class TestRole(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'role'
+        assert cls_.__tablename__ == "role"
 
     def test_columns(self, session, cls_):
-        name, description, type_, deleted = get_unique_value(), 'b', cls_.types.SYSTEM, True
+        name, description, type_, deleted = get_unique_value(), "b", cls_.types.SYSTEM, True
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, type_, deleted)
@@ -713,7 +695,7 @@ class TestRole(BaseTest):
         group_role_association_factory,
         group,
     ):
-        name, description, type_ = get_unique_value(), 'b', cls_.types.SYSTEM
+        name, description, type_ = get_unique_value(), "b", cls_.types.SYSTEM
         obj = cls_(name, description, type_)
         obj.repositories.append(repository_role_association)
         obj.users.append(user_role_association)
@@ -731,10 +713,9 @@ class TestRole(BaseTest):
 
 
 class TestTag(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'tag'
-        assert has_unique_constraint(cls_.table, ('name',))
+        assert cls_.__tablename__ == "tag"
+        assert has_unique_constraint(cls_.table, ("name",))
 
     def test_columns(self, session, cls_):
         parent_tag = cls_()
@@ -775,16 +756,15 @@ class TestTag(BaseTest):
 
 
 class TestUser(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'galaxy_user'
+        assert cls_.__tablename__ == "galaxy_user"
 
     def test_columns(self, session, cls_):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         email = get_unique_value()
         username = get_unique_value()
-        password = 'c'
+        password = "c"
         external = True
         new_repo_alert = True
         deleted = True
@@ -828,11 +808,11 @@ class TestUser(BaseTest):
         user_group_association,
         user_role_association,
         role_factory,
-        user_role_association_factory
+        user_role_association_factory,
     ):
         obj = cls_()
         obj.email = get_unique_value()
-        obj.password = 'a'
+        obj.password = "a"
         obj.active_repositories.append(repository)
         obj.galaxy_sessions.append(galaxy_session)
         obj.api_keys.append(api_keys)
@@ -844,7 +824,7 @@ class TestUser(BaseTest):
         private_user_role = user_role_association_factory(obj, _private_role)
         obj.roles.append(private_user_role)
 
-        _non_private_role = role_factory(name='a')
+        _non_private_role = role_factory(name="a")
         non_private_user_role = user_role_association_factory(obj, _non_private_role)
         obj.roles.append(non_private_user_role)
 
@@ -863,9 +843,8 @@ class TestUser(BaseTest):
 
 
 class TestUserGroupAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'user_group_association'
+        assert cls_.__tablename__ == "user_group_association"
 
     def test_columns(self, session, cls_, user, group):
         create_time = datetime.now()
@@ -892,9 +871,8 @@ class TestUserGroupAssociation(BaseTest):
 
 
 class TestUserRoleAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'user_role_association'
+        assert cls_.__tablename__ == "user_role_association"
 
     def test_columns(self, session, cls_, user, role):
         create_time = datetime.now()
@@ -930,7 +908,7 @@ def ensure_database_is_empty(session, model):
     For fixture instantiation order, see:
     https://docs.pytest.org/en/6.2.x/fixture.html#fixture-instantiation-order
     """
-    models = (cls_ for cls_ in model.__dict__.values() if hasattr(cls_, '__mapper__'))
+    models = (cls_ for cls_ in model.__dict__.values() if hasattr(cls_, "__mapper__"))
     # For each mapped class, check that the database table to which it is mapped is empty
     for m in models:
         stmt = select(func.count()).select_from(m)
@@ -938,10 +916,10 @@ def ensure_database_is_empty(session, model):
         assert result == 0
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def model():
-    db_uri = 'sqlite:///:memory:'
-    return mapping.init('/tmp', db_uri, create_tables=True)
+    db_uri = "sqlite:///:memory:"
+    return mapping.init("/tmp", db_uri, create_tables=True)
 
 
 @pytest.fixture
@@ -1040,7 +1018,7 @@ def role(model, session):
 
 @pytest.fixture
 def user(model, session):
-    instance = model.User(email=get_unique_value(), password='password')
+    instance = model.User(email=get_unique_value(), password="password")
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -1058,10 +1036,12 @@ def user_role_association(model, session, user, role):
 
 # Fixtures yielding factory functions.
 
+
 @pytest.fixture
 def component_review_factory(model):
     def make_instance(*args, **kwds):
         return model.ComponentReview(*args, **kwds)
+
     return make_instance
 
 
@@ -1069,6 +1049,7 @@ def component_review_factory(model):
 def group_role_association_factory(model):
     def make_instance(*args, **kwds):
         return model.GroupRoleAssociation(*args, **kwds)
+
     return make_instance
 
 
@@ -1076,6 +1057,7 @@ def group_role_association_factory(model):
 def repository_metadata_factory(model):
     def make_instance(*args, **kwds):
         return model.RepositoryMetadata(*args, **kwds)
+
     return make_instance
 
 
@@ -1083,6 +1065,7 @@ def repository_metadata_factory(model):
 def repository_review_factory(model):
     def make_instance(*args, **kwds):
         return model.RepositoryReview(*args, **kwds)
+
     return make_instance
 
 
@@ -1090,6 +1073,7 @@ def repository_review_factory(model):
 def role_factory(model):
     def make_instance(*args, **kwds):
         return model.Role(*args, **kwds)
+
     return make_instance
 
 
@@ -1098,8 +1082,9 @@ def user_factory(model):
     def make_instance(*args, **kwds):
         user = model.User(*args, **kwds)
         user.email = get_unique_value()
-        user.password = 'a'
+        user.password = "a"
         return user
+
     return make_instance
 
 
@@ -1107,10 +1092,12 @@ def user_factory(model):
 def user_role_association_factory(model):
     def make_instance(*args, **kwds):
         return model.UserRoleAssociation(*args, **kwds)
+
     return make_instance
 
 
 # Test utilities
+
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
     with dbcleanup(session, obj, where_clause):

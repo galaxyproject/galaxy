@@ -5,7 +5,12 @@ library_info_association, library_folder_info_association, library_dataset_datas
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.migrate.versions.util import engine_false
 
@@ -21,7 +26,7 @@ def upgrade(migrate_engine):
     try:
         LibraryInfoAssociation_table = Table("library_info_association", metadata, autoload=True)
         c = Column("deleted", Boolean, index=True, default=False)
-        c.create(LibraryInfoAssociation_table, index_name='ix_library_info_association_deleted')
+        c.create(LibraryInfoAssociation_table, index_name="ix_library_info_association_deleted")
         assert c is LibraryInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_info_association' table failed.")
@@ -33,7 +38,7 @@ def upgrade(migrate_engine):
     try:
         LibraryFolderInfoAssociation_table = Table("library_folder_info_association", metadata, autoload=True)
         c = Column("deleted", Boolean, index=True, default=False)
-        c.create(LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_deleted')
+        c.create(LibraryFolderInfoAssociation_table, index_name="ix_library_folder_info_association_deleted")
         assert c is LibraryFolderInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_folder_info_association' table failed.")
@@ -43,9 +48,13 @@ def upgrade(migrate_engine):
     except Exception:
         log.exception("deleted to false in library_folder_info_association failed.")
     try:
-        LibraryDatasetDatasetInfoAssociation_table = Table("library_dataset_dataset_info_association", metadata, autoload=True)
+        LibraryDatasetDatasetInfoAssociation_table = Table(
+            "library_dataset_dataset_info_association", metadata, autoload=True
+        )
         c = Column("deleted", Boolean, index=True, default=False)
-        c.create(LibraryDatasetDatasetInfoAssociation_table, index_name='ix_library_dataset_dataset_info_association_deleted')
+        c.create(
+            LibraryDatasetDatasetInfoAssociation_table, index_name="ix_library_dataset_dataset_info_association_deleted"
+        )
         assert c is LibraryDatasetDatasetInfoAssociation_table.c.deleted
     except Exception:
         log.exception("Adding column 'deleted' to 'library_dataset_dataset_info_association' table failed.")

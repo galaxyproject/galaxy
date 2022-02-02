@@ -24,7 +24,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolShedAuthenticationController(AuthenticationController):
-
     @expose_api_raw_anonymous_and_sessionless
     def get_tool_shed_api_key(self, trans, **kwd):
         """

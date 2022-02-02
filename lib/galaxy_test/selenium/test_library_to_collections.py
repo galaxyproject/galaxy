@@ -1,7 +1,7 @@
 from .framework import (
     selenium_test,
     SeleniumTestCase,
-    UsesLibraryAssertions
+    UsesLibraryAssertions,
 )
 
 
@@ -61,8 +61,9 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
         if collection_option is not None:
             self.components.libraries.folder.export_to_history_paired_option(
-                collection_option=collection_option).wait_for_and_click()
-        self.screenshot(f'libraries_to_collection_landing_is_new_history={is_new_history}')
+                collection_option=collection_option
+            ).wait_for_and_click()
+        self.screenshot(f"libraries_to_collection_landing_is_new_history={is_new_history}")
         self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
         self.build_collection_and_assert()
         if is_new_history:
@@ -70,16 +71,21 @@ class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
 
     def list_of_pairs_export(self, is_new_history=False):
         history_name = self._get_random_name()
-        self.prepare_library_for_data_export(["bam_from_sam.bam", "asian_chars_1.txt", "1.bam", "1.bed"],
-                                             history_name if is_new_history else None)
+        self.prepare_library_for_data_export(
+            ["bam_from_sam.bam", "asian_chars_1.txt", "1.bam", "1.bed"], history_name if is_new_history else None
+        )
         self.components.libraries.folder.export_to_history_options.wait_for_and_click()
-        self.components.libraries.folder.export_to_history_paired_option(collection_option="list:paired").wait_for_and_click()
-        self.screenshot(f'test_export_pairs_list={is_new_history}')
+        self.components.libraries.folder.export_to_history_paired_option(
+            collection_option="list:paired"
+        ).wait_for_and_click()
+        self.screenshot(f"test_export_pairs_list={is_new_history}")
         self.components.libraries.folder.import_datasets_ok_button.wait_for_and_click()
         self.components.libraries.folder.clear_filters.wait_for_and_click()
         self.collection_builder_click_paired_item("forward", 0)
         self.collection_builder_click_paired_item("reverse", 1)
-        self.components.libraries.folder.export_to_history_collection_name.wait_for_and_send_keys(self._get_random_name())
+        self.components.libraries.folder.export_to_history_collection_name.wait_for_and_send_keys(
+            self._get_random_name()
+        )
         self.collection_builder_create()
         self.home()
         self.history_panel_wait_for_hid_ok(3)

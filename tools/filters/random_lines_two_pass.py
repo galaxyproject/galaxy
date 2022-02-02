@@ -9,7 +9,7 @@ import optparse
 import random
 from math import (
     ceil,
-    log
+    log,
 )
 
 

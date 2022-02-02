@@ -28,7 +28,7 @@ from galaxy.schema.schema import (
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless
+    expose_api_raw_anonymous_and_sessionless,
 )
 from galaxy.webapps.galaxy.services.pages import PagesService
 from . import (
@@ -40,18 +40,14 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['pages'])
+router = Router(tags=["pages"])
 
 DeletedQueryParam: bool = Query(
-    default=False,
-    title="Display deleted",
-    description="Whether to include deleted pages in the result."
+    default=False, title="Display deleted", description="Whether to include deleted pages in the result."
 )
 
 PageIdPathParam: EncodedDatabaseIdField = Path(
-    ...,  # Required
-    title="Page ID",
-    description="The encoded database identifier of the Page."
+    ..., title="Page ID", description="The encoded database identifier of the Page."  # Required
 )
 
 
@@ -60,7 +56,7 @@ class FastAPIPages:
     service: PagesService = depends(PagesService)
 
     @router.get(
-        '/api/pages',
+        "/api/pages",
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
     )
@@ -73,7 +69,7 @@ class FastAPIPages:
         return self.service.index(trans, deleted)
 
     @router.post(
-        '/api/pages',
+        "/api/pages",
         summary="Create a page and return summary information.",
         response_description="The page summary information.",
     )
@@ -86,7 +82,7 @@ class FastAPIPages:
         return self.service.create(trans, payload)
 
     @router.delete(
-        '/api/pages/{id}',
+        "/api/pages/{id}",
         summary="Marks the specific Page as deleted.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
@@ -100,7 +96,7 @@ class FastAPIPages:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
-        '/api/pages/{id}.pdf',
+        "/api/pages/{id}.pdf",
         summary="Return a PDF document of the last revision of the Page.",
         response_class=StreamingResponse,
         responses={
@@ -108,9 +104,7 @@ class FastAPIPages:
                 "description": "PDF document with the last revision of the page.",
                 "content": {"application/pdf": {}},
             },
-            501: {
-                "description": "PDF conversion service not available."
-            }
+            501: {"description": "PDF conversion service not available."},
         },
     )
     async def show_pdf(
@@ -126,7 +120,7 @@ class FastAPIPages:
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
     @router.get(
-        '/api/pages/{id}',
+        "/api/pages/{id}",
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
     )
@@ -139,7 +133,7 @@ class FastAPIPages:
         return self.service.show(trans, id)
 
     @router.get(
-        '/api/pages/{id}/sharing',
+        "/api/pages/{id}/sharing",
         summary="Get the current sharing status of the given Page.",
     )
     def sharing(
@@ -151,7 +145,7 @@ class FastAPIPages:
         return self.service.shareable_service.sharing(trans, id)
 
     @router.put(
-        '/api/pages/{id}/enable_link_access',
+        "/api/pages/{id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
@@ -163,7 +157,7 @@ class FastAPIPages:
         return self.service.shareable_service.enable_link_access(trans, id)
 
     @router.put(
-        '/api/pages/{id}/disable_link_access',
+        "/api/pages/{id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
@@ -175,7 +169,7 @@ class FastAPIPages:
         return self.service.shareable_service.disable_link_access(trans, id)
 
     @router.put(
-        '/api/pages/{id}/publish',
+        "/api/pages/{id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
@@ -187,7 +181,7 @@ class FastAPIPages:
         return self.service.shareable_service.publish(trans, id)
 
     @router.put(
-        '/api/pages/{id}/unpublish',
+        "/api/pages/{id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
@@ -199,20 +193,20 @@ class FastAPIPages:
         return self.service.shareable_service.unpublish(trans, id)
 
     @router.put(
-        '/api/pages/{id}/share_with_users',
+        "/api/pages/{id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = PageIdPathParam,
-        payload: ShareWithPayload = Body(...)
+        payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
-        '/api/pages/{id}/slug',
+        "/api/pages/{id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
@@ -231,6 +225,7 @@ class PagesController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with pages.
     """
+
     service: PagesService = depends(PagesService)
 
     @expose_api_anonymous_and_sessionless

@@ -6,7 +6,6 @@ import subprocess
 import sys
 from distutils.version import StrictVersion
 
-
 DEV_RELEASE = os.environ.get("DEV_RELEASE", None) == "1"
 PROJECT_DIRECTORY = os.getcwd()
 PROJECT_DIRECTORY_NAME = os.path.basename(os.path.abspath(PROJECT_DIRECTORY))

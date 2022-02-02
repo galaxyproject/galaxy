@@ -1,5 +1,8 @@
 """This module contains a linting functions for tool tests."""
-from inspect import Parameter, signature
+from inspect import (
+    Parameter,
+    signature,
+)
 
 from ._util import is_datasource
 from ..verify import asserts
@@ -46,13 +49,9 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", node=param)
                 continue
             name = name.split("|")[-1]
-            xpaths = [f"@name='{name}'",
-                      f"@argument='{name}'",
-                      f"@argument='-{name}'",
-                      f"@argument='--{name}'"]
+            xpaths = [f"@name='{name}'", f"@argument='{name}'", f"@argument='-{name}'", f"@argument='--{name}'"]
             if "_" in name:
-                xpaths += [f"@argument='-{name.replace('_', '-')}'",
-                           f"@argument='--{name.replace('_', '-')}'"]
+                xpaths += [f"@argument='-{name.replace('_', '-')}'", f"@argument='--{name.replace('_', '-')}'"]
             found = False
             for xp in xpaths:
                 inxpath = f".//inputs//param[{xp}]"
@@ -76,7 +75,10 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", node=output)
             else:
                 if name not in valid_names:
-                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]", node=output)
+                    lint_ctx.error(
+                        f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names [{valid_names}]",
+                        node=output,
+                    )
 
         if "expect_failure" in test.attrib and found_output_test:
             lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
@@ -84,7 +86,10 @@ def lint_tsts(tool_xml, lint_ctx):
 
         has_test = has_test or found_output_test
         if not has_test:
-            lint_ctx.warn(f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.", node=test)
+            lint_ctx.warn(
+                f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.",
+                node=test,
+            )
         else:
             num_valid_tests += 1
 
@@ -119,7 +124,8 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                     except ValueError:
                         lint_ctx.error(
                             f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{assert_function_sig.parameters[attrib].annotation.__name__}' got '{a.attrib[attrib]}'",
-                            node=a)
+                            node=a,
+                        )
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:

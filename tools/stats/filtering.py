@@ -1,12 +1,19 @@
 #!/usr/bin/env python
 # This tool takes a tab-delimited text file as input and creates filters on columns based on certain properties.
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
-from __future__ import division, print_function
+from __future__ import (
+    division,
+    print_function,
+)
 
 import json
 import re
 import sys
-from ast import Module, parse, walk
+from ast import (
+    Module,
+    parse,
+    walk,
+)
 
 AST_NODE_TYPE_WHITELIST = [
     'Expr', 'Load', 'Str', 'Num', 'BoolOp', 'Compare', 'And', 'Eq', 'NotEq',

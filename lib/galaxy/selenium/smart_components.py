@@ -31,8 +31,7 @@ class SmartComponent:
 
 
 class SmartTarget:
-    """Wrap a Target with driver aware methods.
-    """
+    """Wrap a Target with driver aware methods."""
 
     def __init__(self, target, has_driver):
         self._target = target

@@ -5,7 +5,6 @@ from .test_galaxy_mapping import BaseModelTestCase
 
 
 class MutableColumnTest(BaseModelTestCase):
-
     def persist_and_reload(self, item):
         item_id = item.id
         self.model.session.flush()
@@ -16,16 +15,16 @@ class MutableColumnTest(BaseModelTestCase):
         w = model.Workflow()
         self.model.session.add(w)
         self.model.session.flush()
-        w.reports_config = {'x': 'z'}
+        w.reports_config = {"x": "z"}
         persisted = self.persist_and_reload(w)
-        assert persisted.reports_config == {'x': 'z'}
-        persisted.reports_config['x'] = '1'
+        assert persisted.reports_config == {"x": "z"}
+        persisted.reports_config["x"] = "1"
         persisted = self.persist_and_reload(persisted)
-        assert persisted.reports_config['x'] == '1'
+        assert persisted.reports_config["x"] == "1"
         # test string
-        persisted.reports_config = 'abcdefg'
+        persisted.reports_config = "abcdefg"
         persisted = self.persist_and_reload(persisted)
-        assert persisted.reports_config == 'abcdefg'
+        assert persisted.reports_config == "abcdefg"
         # test int
         persisted.reports_config = 1
         persisted = self.persist_and_reload(persisted)
@@ -39,22 +38,22 @@ class MutableColumnTest(BaseModelTestCase):
         persisted = self.persist_and_reload(persisted)
         assert persisted.reports_config is True
         # Test nested dict/list
-        persisted.reports_config = {'list': [[1, 2, 3]]}
+        persisted.reports_config = {"list": [[1, 2, 3]]}
         persisted = self.persist_and_reload(persisted)
-        assert persisted.reports_config == {'list': [[1, 2, 3]]}
+        assert persisted.reports_config == {"list": [[1, 2, 3]]}
         copy.deepcopy(persisted.reports_config)
-        assert persisted.reports_config.pop('list') == [[1, 2, 3]]
+        assert persisted.reports_config.pop("list") == [[1, 2, 3]]
         persisted = self.persist_and_reload(persisted)
         assert persisted.reports_config == {}
-        persisted.reports_config.update({'x': 'z'})
+        persisted.reports_config.update({"x": "z"})
         persisted = self.persist_and_reload(persisted)
-        assert persisted.reports_config == {'x': 'z'}
-        del persisted.reports_config['x']
+        assert persisted.reports_config == {"x": "z"}
+        del persisted.reports_config["x"]
         persisted = self.persist_and_reload(persisted)
         assert persisted.reports_config == {}
-        persisted.reports_config = {'x': {'y': 'z'}}
+        persisted.reports_config = {"x": {"y": "z"}}
         persisted = self.persist_and_reload(persisted)
-        assert persisted.reports_config == {'x': {'y': 'z'}}
+        assert persisted.reports_config == {"x": {"y": "z"}}
         # These tests are failing ... at least since 20.09,
         # but nested mutable change tracking might have
         # never worked

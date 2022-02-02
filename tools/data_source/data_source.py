@@ -3,8 +3,14 @@
 # Data source application parameters are temporarily stored in the dataset file.
 import os
 import sys
-from json import dumps, loads
-from urllib.parse import urlencode, urlparse
+from json import (
+    dumps,
+    loads,
+)
+from urllib.parse import (
+    urlencode,
+    urlparse,
+)
 from urllib.request import urlopen
 
 from galaxy.datatypes import sniff
@@ -12,7 +18,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.jobs import TOOL_PROVIDED_JOB_METADATA_FILE
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
-    get_charset_from_http_headers
+    get_charset_from_http_headers,
 )
 
 GALAXY_PARAM_PREFIX = 'GALAXY'

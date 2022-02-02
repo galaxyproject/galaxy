@@ -36,9 +36,10 @@ TransferJob_table = Table(
     Column("path", String(1024)),
     Column("params", JSONType),
     Column("pid", Integer),
-    Column("socket", Integer))
+    Column("socket", Integer),
+)
 
-transfer_job_id = Column('transfer_job_id', Integer, ForeignKey('transfer_job.id'), index=True)
+transfer_job_id = Column("transfer_job_id", Integer, ForeignKey("transfer_job.id"), index=True)
 
 
 def upgrade(migrate_engine):
@@ -47,7 +48,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        drop_column(transfer_job_id.name, 'genome_index_tool_data', metadata)
+        drop_column(transfer_job_id.name, "genome_index_tool_data", metadata)
         drop_table(TransferJob_table)
     except Exception:
         log.exception("Dropping transfer_job table failed")
@@ -59,6 +60,8 @@ def downgrade(migrate_engine):
 
     try:
         create_table(TransferJob_table)
-        add_column(transfer_job_id, 'genome_index_tool_data', metadata, index_name='ix_genome_index_tool_data_transfer_job_id')
+        add_column(
+            transfer_job_id, "genome_index_tool_data", metadata, index_name="ix_genome_index_tool_data_transfer_job_id"
+        )
     except Exception:
         log.exception("Creating transfer_job table failed")

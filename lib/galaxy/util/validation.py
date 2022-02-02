@@ -9,8 +9,7 @@ from galaxy.util.sanitize_html import sanitize_html
 
 def validate_and_sanitize_basestring(key, val):
     if not isinstance(val, str):
-        raise exceptions.RequestParameterInvalidException('%s must be a string or unicode: %s'
-                                                          % (key, str(type(val))))
+        raise exceptions.RequestParameterInvalidException("%s must be a string or unicode: %s" % (key, str(type(val))))
     return sanitize_html(val)
 
 
@@ -19,14 +18,12 @@ def validate_and_sanitize_basestring_list(key, val):
         assert isinstance(val, list)
         return [sanitize_html(t) for t in val]
     except (AssertionError, TypeError):
-        raise exceptions.RequestParameterInvalidException('%s must be a list of strings: %s'
-                                                          % (key, str(type(val))))
+        raise exceptions.RequestParameterInvalidException("%s must be a list of strings: %s" % (key, str(type(val))))
 
 
 def validate_boolean(key, val):
     if not isinstance(val, bool):
-        raise exceptions.RequestParameterInvalidException('%s must be a boolean: %s'
-                                                          % (key, str(type(val))))
+        raise exceptions.RequestParameterInvalidException("%s must be a boolean: %s" % (key, str(type(val))))
     return val
 
 

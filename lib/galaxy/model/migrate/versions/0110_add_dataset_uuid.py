@@ -4,7 +4,11 @@ Add UUID column to dataset table
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.custom_types import UUIDType
 

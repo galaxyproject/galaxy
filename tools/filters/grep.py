@@ -17,7 +17,10 @@ import os
 import re
 import subprocess
 import sys
-from subprocess import PIPE, Popen
+from subprocess import (
+    PIPE,
+    Popen,
+)
 from tempfile import NamedTemporaryFile
 
 

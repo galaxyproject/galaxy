@@ -6,5 +6,6 @@ otherwise.
 try:
     from galaxy.web_stack import register_postfork_function
 except ImportError:
+
     def register_postfork_function(f, *args, **kwargs):
         f(*args, **kwargs)

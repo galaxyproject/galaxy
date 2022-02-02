@@ -6,7 +6,7 @@ def encode_dataset_user(trans, dataset, user):
     # encode user id using the dataset create time as the key
     dataset_hash = trans.security.encode_id(dataset.id)
     if user is None:
-        user_hash = 'None'
+        user_hash = "None"
     else:
         security = IdEncodingHelper(id_secret=dataset.create_time)
         user_hash = security.encode_id(user.id)
@@ -19,7 +19,7 @@ def decode_dataset_user(trans, dataset_hash, user_hash):
     dataset_id = trans.security.decode_id(dataset_hash)
     dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(dataset_id)
     assert dataset, "Bad Dataset id provided to decode_dataset_user"
-    if user_hash in [None, 'None']:
+    if user_hash in [None, "None"]:
         user = None
     else:
         security = IdEncodingHelper(id_secret=dataset.create_time)

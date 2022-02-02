@@ -9,7 +9,7 @@ from .. import formatting
 from ..collectl import (
     cli,
     processes,
-    subsystems
+    subsystems,
 )
 
 log = logging.getLogger(__name__)
@@ -27,11 +27,12 @@ FORMATTED_RESOURCE_TITLES = {
     "WSYS": "Disk Writes",
 }
 
-EMPTY_COLLECTL_FILE_MESSAGE = "Skipping process summary due to empty file... job probably did not run long enough for collectl to gather data."
+EMPTY_COLLECTL_FILE_MESSAGE = (
+    "Skipping process summary due to empty file... job probably did not run long enough for collectl to gather data."
+)
 
 
 class CollectlFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         if key == "pid":
             return ("Process ID", int(value))
@@ -52,9 +53,10 @@ class CollectlFormatter(formatting.JobMetricFormatter):
 
 
 class CollectlPlugin(InstrumentPlugin):
-    """ Run collectl along with job to capture system and/or process data
+    """Run collectl along with job to capture system and/or process data
     according to specified collectl subsystems.
     """
+
     plugin_type = "collectl"
     formatter = CollectlFormatter()
 
@@ -71,7 +73,9 @@ class CollectlPlugin(InstrumentPlugin):
         self.log_collectl_program_output = util.asbool(kwargs.get("log_collectl_program_output", False))
         if self.summarize_process_data:
             if subsystems.get_subsystem("process") not in self.subsystems:
-                raise Exception("Collectl plugin misconfigured - cannot summarize_process_data without process subsystem being enabled.")
+                raise Exception(
+                    "Collectl plugin misconfigured - cannot summarize_process_data without process subsystem being enabled."
+                )
 
             process_statistics = kwargs.get("process_statistics", None)
             # None will let processes module use default set of statistics
@@ -82,7 +86,7 @@ class CollectlPlugin(InstrumentPlugin):
         commands = []
         # Capture PID of process so we can walk its ancestors when building
         # statistics for the whole job.
-        commands.append(f'''echo "$$" > '{self.__pid_file(job_directory)}' ''')
+        commands.append(f"""echo "$$" > '{self.__pid_file(job_directory)}' """)
         # Run collectl in record mode to capture process and system level
         # statistics according to supplied subsystems.
         commands.append(self.__collectl_record_command(job_directory))
@@ -167,11 +171,7 @@ class CollectlPlugin(InstrumentPlugin):
         self.collectl_recorder_args = collectl_recorder_args
 
     def __summarize_process_data(self, pid, collectl_log_path):
-        playback_cli_args = dict(
-            collectl_path=self.local_collectl_path,
-            playback_path=collectl_log_path,
-            sep="9"
-        )
+        playback_cli_args = dict(collectl_path=self.local_collectl_path, playback_path=collectl_log_path, sep="9")
         if not os.stat(collectl_log_path).st_size:
             log.debug(EMPTY_COLLECTL_FILE_MESSAGE)
             return []
@@ -212,4 +212,4 @@ def procfilt_argument(procfilt_on):
         return ""
 
 
-__all__ = ('CollectlPlugin', )
+__all__ = ("CollectlPlugin",)

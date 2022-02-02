@@ -138,4 +138,4 @@ class CollectlCli:
             raise Exception("Problem running collectl command.")
 
 
-__all__ = ('CollectlCli', )
+__all__ = ("CollectlCli",)

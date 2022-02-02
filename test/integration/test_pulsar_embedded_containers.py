@@ -1,8 +1,6 @@
 import os
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import (
     disable_dependency_resolution,
@@ -38,18 +36,20 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
 
 class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     # singularity passes $HOME by default
-    default_container_home_dir = os.environ.get('HOME', '/')
+    default_container_home_dir = os.environ.get("HOME", "/")
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_SINGULARITY
-    container_type = 'singularity'
+    container_type = "singularity"
 
 
 class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
-    container_type = 'docker'
+    container_type = "docker"
 
 
 instance = integration_util.integration_module_instance(EmbeddedSingularityPulsarIntegrationTestCase)
 
-test_tools = integration_util.integration_tool_runner([
-    "tool_directory_docker",
-])
+test_tools = integration_util.integration_tool_runner(
+    [
+        "tool_directory_docker",
+    ]
+)

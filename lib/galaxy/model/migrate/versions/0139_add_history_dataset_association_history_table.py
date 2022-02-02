@@ -11,16 +11,16 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     MetaData,
-    Table
+    Table,
 )
 
 from galaxy.model.custom_types import (
     MetadataType,
-    TrimmedString
+    TrimmedString,
 )
 from galaxy.model.migrate.versions.util import (
     create_table,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
@@ -28,14 +28,15 @@ now = datetime.datetime.utcnow
 metadata = MetaData()
 
 HistoryDatasetAssociationHistory_table = Table(
-    "history_dataset_association_history", metadata,
+    "history_dataset_association_history",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
     Column("update_time", DateTime, default=now),
     Column("version", Integer, index=True),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", MetadataType, key='_metadata'),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 

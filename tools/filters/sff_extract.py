@@ -31,7 +31,10 @@ import struct
 import subprocess
 import sys
 import tempfile
-from typing import Dict, List
+from typing import (
+    Dict,
+    List,
+)
 
 __author__ = 'Jose Blanca and Bastien Chevreux'
 __copyright__ = 'Copyright 2008, Jose Blanca, COMAV, and Bastien Chevreux'
@@ -1219,7 +1222,10 @@ def version_string():
 def read_config():
     '''It reads the configuration options from the command line arguments and
     it returns a dict with them.'''
-    from optparse import OptionParser, OptionGroup
+    from optparse import (
+        OptionGroup,
+        OptionParser,
+    )
     usage = "usage: %prog [options] sff1 sff2 ..."
     desc = "Extract sequences from 454 SFF files into FASTA, FASTA quality"\
            " and XML traceinfo format. When a paired-end linker sequence"\

@@ -11,10 +11,13 @@ def dyndest_chain_2(tmp_dir_prefix):
     # Chain to yet a third
     return JobDestination(
         runner="dynamic",
-        params={'type': 'python',
-                'function': 'dyndest_chain_3',
-                'rules_module': 'integration.chained_dyndest_rules.module3',
-                'tmp_dir_prefix_two': '%sand2' % tmp_dir_prefix})
+        params={
+            "type": "python",
+            "function": "dyndest_chain_3",
+            "rules_module": "integration.chained_dyndest_rules.module3",
+            "tmp_dir_prefix_two": "%sand2" % tmp_dir_prefix,
+        },
+    )
 
 
 def dyndest_chain_3():

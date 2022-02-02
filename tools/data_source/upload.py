@@ -9,17 +9,24 @@ import errno
 import os
 import shutil
 import sys
-from json import dump, load, loads
+from json import (
+    dump,
+    load,
+    loads,
+)
 from typing import Dict
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
+from galaxy.datatypes.upload_util import (
+    handle_upload,
+    UploadProblemException,
+)
 from galaxy.util import (
     bunch,
     is_url,
     safe_makedirs,
-    unicodify
+    unicodify,
 )
 from galaxy.util.compression_utils import CompressedFile
 

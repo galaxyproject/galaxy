@@ -19,7 +19,10 @@ import tempfile
 import bx.seq.nib
 import bx.seq.twobit
 from bx.cookbook import doc_optparse
-from bx.tabular.io import Comment, Header
+from bx.tabular.io import (
+    Comment,
+    Header,
+)
 
 from galaxy.datatypes.util import gff_util
 from galaxy.tools.util.galaxyops import parse_cols_arg

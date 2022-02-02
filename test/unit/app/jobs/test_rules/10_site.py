@@ -2,26 +2,25 @@ from galaxy.jobs import JobDestination
 
 
 def upload():
-    return 'local_runner'
+    return "local_runner"
 
 
 def tophat():
-    return 'site_dest_id'
+    return "site_dest_id"
 
 
 def tool1():
     # tool1 is id to test tool mocked out in test_mapper.py, without specify
     # function name in dynamic destination - this function should be used by
     # default.
-    return 'tool1_dest_id'
+    return "tool1_dest_id"
 
 
 def dynamic_chain_1():
     # Check whether chaining dynamic job destinations work
-    return JobDestination(runner="dynamic",
-                          params={'type': 'python',
-                                  'function': 'dynamic_chain_2',
-                                  'test_param': 'my_test_param'})
+    return JobDestination(
+        runner="dynamic", params={"type": "python", "function": "dynamic_chain_2", "test_param": "my_test_param"}
+    )
 
 
 def dynamic_chain_2(test_param):
@@ -49,7 +48,7 @@ def check_rule_params(
     assert app == job_wrapper.app
     assert rule_helper is not None
     assert isinstance(referrer, JobDestination)
-    assert referrer.params['param1'] == "referrer_param"
+    assert referrer.params["param1"] == "referrer_param"
 
     assert job.user == user
     assert user.id == 6789

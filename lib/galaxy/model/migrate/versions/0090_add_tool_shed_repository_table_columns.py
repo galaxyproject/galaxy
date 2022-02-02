@@ -8,13 +8,13 @@ from sqlalchemy import (
     Boolean,
     Column,
     MetaData,
-    Table
+    Table,
 )
 
 from galaxy.model.migrate.versions.util import (
     add_column,
     drop_column,
-    engine_false
+    engine_false,
 )
 
 log = logging.getLogger(__name__)
@@ -47,6 +47,6 @@ def downgrade(migrate_engine):
 
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
     # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
-    if migrate_engine.name != 'sqlite':
-        drop_column('uninstalled', ToolShedRepository_table)
-        drop_column('dist_to_shed', ToolShedRepository_table)
+    if migrate_engine.name != "sqlite":
+        drop_column("uninstalled", ToolShedRepository_table)
+        drop_column("dist_to_shed", ToolShedRepository_table)

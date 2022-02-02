@@ -14,7 +14,10 @@ import sys
 
 import bx.align.maf
 from bx.align.tools.fuse import FusingAlignmentWriter
-from bx.align.tools.thread import get_components_for_species, remove_all_gap_columns
+from bx.align.tools.thread import (
+    get_components_for_species,
+    remove_all_gap_columns,
+)
 
 
 def main():

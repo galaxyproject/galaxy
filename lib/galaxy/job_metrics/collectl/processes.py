@@ -84,7 +84,7 @@ DEFAULT_STATISTICS = [
 
 
 def parse_process_statistics(statistics):
-    """ Turn string or list of strings into list of tuples in format ( stat,
+    """Turn string or list of strings into list of tuples in format ( stat,
     resource ) where stat is a value from STATISTIC_TYPES and resource is a
     value from PROCESS_COLUMNS.
     """
@@ -103,8 +103,7 @@ def parse_process_statistics(statistics):
 
 
 def generate_process_statistics(collectl_playback_cli, pid, statistics=DEFAULT_STATISTICS):
-    """ Playback collectl file and generate summary statistics.
-    """
+    """Playback collectl file and generate summary statistics."""
     with tempfile.NamedTemporaryFile() as tmp_tsv:
         collectl_playback_cli.run(stdout=tmp_tsv)
         with open(tmp_tsv.name) as tsv_file:
@@ -139,7 +138,6 @@ def _read_process_statistics(tsv_file, pid, statistics):
 
 
 class CollectlProcessSummarizer:
-
     def __init__(self, pid, statistics):
         self.pid = pid
         self.statistics = statistics
@@ -223,7 +221,7 @@ class CollectlProcessSummarizer:
 
 
 class CollectlProcessInterval:
-    """ Represent all rows in collectl playback file for given time slice with
+    """Represent all rows in collectl playback file for given time slice with
     ability to filter out just rows corresponding to the process tree
     corresponding to a given pid.
     """
@@ -248,4 +246,4 @@ def _tuplize_statistic(statistic):
     return statistic
 
 
-__all__ = ('generate_process_statistics', )
+__all__ = ("generate_process_statistics",)

@@ -46,24 +46,18 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['libraries'])
+router = Router(tags=["libraries"])
 
 DeletedQueryParam: Optional[bool] = Query(
-    default=None,
-    title="Display deleted",
-    description="Whether to include deleted libraries in the result."
+    default=None, title="Display deleted", description="Whether to include deleted libraries in the result."
 )
 
 LibraryIdPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title="Library ID",
-    description="The encoded identifier of the Library."
+    ..., title="Library ID", description="The encoded identifier of the Library."
 )
 
 UndeleteQueryParam: Optional[bool] = Query(
-    default=None,
-    title="Undelete",
-    description="Whether to restore a deleted library."
+    default=None, title="Undelete", description="Whether to restore a deleted library."
 )
 
 
@@ -72,7 +66,7 @@ class FastAPILibraries:
     service: LibrariesService = depends(LibrariesService)
 
     @router.get(
-        '/api/libraries',
+        "/api/libraries",
         summary="Returns a list of summary data for all libraries.",
     )
     def index(
@@ -84,7 +78,7 @@ class FastAPILibraries:
         return self.service.index(trans, deleted)
 
     @router.get(
-        '/api/libraries/deleted',
+        "/api/libraries/deleted",
         summary="Returns a list of summary data for all libraries marked as deleted.",
     )
     def index_deleted(
@@ -95,7 +89,7 @@ class FastAPILibraries:
         return self.service.index(trans, True)
 
     @router.get(
-        '/api/libraries/{id}',
+        "/api/libraries/{id}",
         summary="Returns summary information about a particular library.",
     )
     def show(
@@ -107,7 +101,7 @@ class FastAPILibraries:
         return self.service.show(trans, id)
 
     @router.post(
-        '/api/libraries',
+        "/api/libraries",
         summary="Creates a new library and returns its summary information.",
         require_admin=True,
     )
@@ -120,7 +114,7 @@ class FastAPILibraries:
         return self.service.create(trans, payload)
 
     @router.put(
-        '/api/libraries/{id}',
+        "/api/libraries/{id}",
         summary="Updates the information of an existing library.",
         require_admin=True,
     )
@@ -135,7 +129,7 @@ class FastAPILibraries:
         return self.service.update(trans, id, payload)
 
     @router.delete(
-        '/api/libraries/{id}',
+        "/api/libraries/{id}",
         summary="Marks the specified library as deleted (or undeleted).",
         require_admin=True,
     )
@@ -153,7 +147,7 @@ class FastAPILibraries:
         return self.service.delete(trans, id, undelete)
 
     @router.get(
-        '/api/libraries/{id}/permissions',
+        "/api/libraries/{id}/permissions",
         summary="Gets the current or available permissions of a particular library.",
     )
     def get_permissions(
@@ -161,26 +155,23 @@ class FastAPILibraries:
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = LibraryIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
-            None, title="Scope",
-            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`."
+            None,
+            title="Scope",
+            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
         ),
         is_library_access: Optional[bool] = Query(
-            None, title="Is Library Access",
-            description="Indicates whether the roles available for the library access are requested."
+            None,
+            title="Is Library Access",
+            description="Indicates whether the roles available for the library access are requested.",
         ),
         page: Optional[int] = Query(
-            default=1,
-            title="Page",
-            description="The page number to retrieve when paginating the available roles."
+            default=1, title="Page", description="The page number to retrieve when paginating the available roles."
         ),
         page_limit: Optional[int] = Query(
-            default=10,
-            title="Page Limit",
-            description="The maximum number of permissions per page when paginating."
+            default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
         q: Optional[str] = Query(
-            None, title="Query",
-            description="Optional search text to retrieve only the roles matching this query."
+            None, title="Query", description="Optional search text to retrieve only the roles matching this query."
         ),
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
@@ -196,7 +187,7 @@ class FastAPILibraries:
         )
 
     @router.post(
-        '/api/libraries/{id}/permissions',
+        "/api/libraries/{id}/permissions",
         summary="Sets the permissions to access and manipulate a library.",
     )
     def set_permissions(
@@ -212,10 +203,7 @@ class FastAPILibraries:
             LibraryPermissionsPayload,
             LegacyLibraryPermissionsPayload,
         ] = Body(...),
-    ) -> Union[
-        LibraryLegacySummary,  # Old legacy response
-        LibraryCurrentPermissions,
-    ]:
+    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions,]:  # Old legacy response
         """Sets the permissions to access and manipulate a library."""
         payload_dict = payload.dict(by_alias=True)
         if isinstance(payload, LibraryPermissionsPayload) and action is not None:
@@ -242,7 +230,7 @@ class LibrariesController(BaseGalaxyAPIController):
         .. seealso:: :attr:`galaxy.model.Library.dict_collection_visible_keys`
 
         """
-        deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
+        deleted = util.string_as_bool_or_none(kwd.get("deleted", None))
         return self.service.index(trans, deleted)
 
     @expose_api_anonymous
@@ -292,24 +280,24 @@ class LibrariesController(BaseGalaxyAPIController):
     @expose_api
     def update(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Dict[str, str], **kwd):
         """
-        * PATCH /api/libraries/{encoded_id}
-           Updates the library defined by an ``encoded_id`` with the data in the payload.
+         * PATCH /api/libraries/{encoded_id}
+            Updates the library defined by an ``encoded_id`` with the data in the payload.
 
-       .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
+        .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
 
-        :param  id:      the encoded id of the library
-        :type   id:      an encoded id string
-        :param  payload: dictionary structure containing::
-            :param name:         new library's name, cannot be empty
-            :type  name:         str
-            :param description:  new library's description
-            :type  description:  str
-            :param synopsis:     new library's synopsis
-            :type  synopsis:     str
-        :type   payload: dict
-        :returns:   detailed library information
-        :rtype:     dict
-        :raises: RequestParameterMissingException
+         :param  id:      the encoded id of the library
+         :type   id:      an encoded id string
+         :param  payload: dictionary structure containing::
+             :param name:         new library's name, cannot be empty
+             :type  name:         str
+             :param description:  new library's description
+             :type  description:  str
+             :param synopsis:     new library's synopsis
+             :type  synopsis:     str
+         :type   payload: dict
+         :returns:   detailed library information
+         :rtype:     dict
+         :raises: RequestParameterMissingException
         """
         update_payload = UpdateLibraryPayload(**payload)
         return self.service.update(trans, id, update_payload)
@@ -336,7 +324,7 @@ class LibrariesController(BaseGalaxyAPIController):
         """
         if payload:
             kwd.update(payload)
-        undelete = util.string_as_bool(kwd.get('undelete', False))
+        undelete = util.string_as_bool(kwd.get("undelete", False))
         return self.service.delete(trans, id, undelete)
 
     @expose_api
@@ -360,26 +348,30 @@ class LibrariesController(BaseGalaxyAPIController):
 
         :raises: InsufficientPermissionsException
         """
-        scope = kwd.get('scope', None)
-        is_library_access = util.string_as_bool(kwd.get('is_library_access', False))
-        page = kwd.get('page', None)
+        scope = kwd.get("scope", None)
+        is_library_access = util.string_as_bool(kwd.get("is_library_access", False))
+        page = kwd.get("page", None)
         if page is not None:
             page = int(page)
         else:
             page = 1
 
-        page_limit = kwd.get('page_limit', None)
+        page_limit = kwd.get("page_limit", None)
         if page_limit is not None:
             page_limit = int(page_limit)
         else:
             page_limit = 10
 
-        query = kwd.get('q', None)
+        query = kwd.get("q", None)
 
-        return self.service.get_permissions(trans, encoded_library_id, scope, is_library_access, page, page_limit, query)
+        return self.service.get_permissions(
+            trans, encoded_library_id, scope, is_library_access, page, page_limit, query
+        )
 
     @expose_api
-    def set_permissions(self, trans: ProvidesUserContext, encoded_library_id: EncodedDatabaseIdField, payload: Dict[str, Any], **kwd):
+    def set_permissions(
+        self, trans: ProvidesUserContext, encoded_library_id: EncodedDatabaseIdField, payload: Dict[str, Any], **kwd
+    ):
         """
         POST /api/libraries/{encoded_library_id}/permissions
 

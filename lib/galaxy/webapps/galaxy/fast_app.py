@@ -1,7 +1,10 @@
 from pathlib import Path
 from typing import cast
 
-from fastapi import FastAPI, Request
+from fastapi import (
+    FastAPI,
+    Request,
+)
 from fastapi.middleware.wsgi import WSGIMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
@@ -15,7 +18,6 @@ from galaxy.webapps.base.api import (
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
-
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -59,7 +61,6 @@ api_tags_metadata = [
 
 
 class GalaxyCORSMiddleware(CORSMiddleware):
-
     def __init__(self, *args, **kwds):
         self.config = kwds.pop("config")
         super().__init__(*args, **kwds)
@@ -75,7 +76,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
         @app.middleware("http")
         async def add_x_frame_options(request: Request, call_next):
             response = await call_next(request)
-            response.headers['X-Frame-Options'] = x_frame_options
+            response.headers["X-Frame-Options"] = x_frame_options
             return response
 
     nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
@@ -83,6 +84,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
 
     if gx_app.config.sentry_dsn:
         from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
         app.add_middleware(SentryAsgiMiddleware)
 
     if nginx_x_accel_redirect_base or apache_xsendfile:
@@ -95,12 +97,12 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             response = cast(FileResponse, response)
             if nginx_x_accel_redirect_base:
                 full_path = Path(nginx_x_accel_redirect_base) / response.path
-                response.headers['X-Accel-Redirect'] = str(full_path)
+                response.headers["X-Accel-Redirect"] = str(full_path)
             if apache_xsendfile:
-                response.headers['X-Sendfile'] = str(response.path)
+                response.headers["X-Sendfile"] = str(response.path)
             return response
 
-    if gx_app.config.get('allowed_origin_hostnames', None):
+    if gx_app.config.get("allowed_origin_hostnames", None):
         app.add_middleware(
             GalaxyCORSMiddleware,
             config=gx_app.config,
@@ -111,11 +113,11 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
     else:
 
         # handle CORS preflight requests - synchronize with wsgi behavior.
-        @app.options('/api/{rest_of_path:path}')
+        @app.options("/api/{rest_of_path:path}")
         async def preflight_handler(request: Request, rest_of_path: str) -> Response:
             response = Response()
-            response.headers['Access-Control-Allow-Headers'] = '*'
-            response.headers['Access-Control-Max-Age'] = '600'
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Max-Age"] = "600"
             return response
 
 
@@ -128,10 +130,10 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
-    include_all_package_routers(app, 'galaxy.webapps.galaxy.api')
+    include_all_package_routers(app, "galaxy.webapps.galaxy.api")
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
-    app.mount('/', wsgi_handler)
-    if gx_app.config.galaxy_url_prefix != '/':
+    app.mount("/", wsgi_handler)
+    if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
         return parent_app

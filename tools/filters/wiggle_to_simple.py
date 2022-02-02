@@ -12,7 +12,7 @@ import bx.wiggle
 
 from galaxy.util.ucsc import (
     UCSCLimitException,
-    UCSCOutWrapper
+    UCSCOutWrapper,
 )
 
 

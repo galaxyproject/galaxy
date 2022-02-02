@@ -4,11 +4,24 @@ from __future__ import print_function
 import re
 import sys
 import tempfile
+
 try:
-    from rpy2.rpy_classic import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
+    from rpy2.rpy_classic import (
+        BASIC_CONVERSION,
+        NO_CONVERSION,
+        r,
+        RException,
+        set_default_mode,
+    )
 except ImportError:
     # RPy isn't maintained, and doesn't work with R>3.0, use it as a fallback
-    from rpy import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
+    from rpy import (
+        BASIC_CONVERSION,
+        NO_CONVERSION,
+        r,
+        RException,
+        set_default_mode,
+    )
 
 
 def stop_err(msg):

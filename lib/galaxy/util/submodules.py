@@ -6,7 +6,7 @@ log = logging.getLogger(__name__)
 
 
 def import_submodules(module, ordered=True, recursive=False):
-    """ Import all submodules of a module
+    """Import all submodules of a module
 
     :param module: module (package name or actual module)
     :type module: str | module
@@ -29,7 +29,7 @@ def import_submodules(module, ordered=True, recursive=False):
 
 
 def __import_submodules_impl(module, recursive=False):
-    """ Implementation of import only, without sorting.
+    """Implementation of import only, without sorting.
 
     :param module: module (package name or actual module)
     :type module: str | module

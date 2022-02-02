@@ -10,7 +10,7 @@ from ._util import _assert_presence_number
 
 def _extract_from_tar(bytes, fn):
     with io.BytesIO(bytes) as temp:
-        with tarfile.open(fileobj=temp, mode='r') as tar_temp:
+        with tarfile.open(fileobj=temp, mode="r") as tar_temp:
             ti = tar_temp.getmember(fn)
             # zip treats directories like empty files.
             # so make this consistent for tar
@@ -23,7 +23,7 @@ def _extract_from_tar(bytes, fn):
 def _list_from_tar(bytes, path):
     lst = list()
     with io.BytesIO(bytes) as temp:
-        with tarfile.open(fileobj=temp, mode='r') as tar_temp:
+        with tarfile.open(fileobj=temp, mode="r") as tar_temp:
             for fn in tar_temp.getnames():
                 if not re.match(path, fn):
                     continue
@@ -33,7 +33,7 @@ def _list_from_tar(bytes, path):
 
 def _extract_from_zip(bytes, fn):
     with io.BytesIO(bytes) as temp:
-        with zipfile.ZipFile(temp, mode='r') as zip_temp:
+        with zipfile.ZipFile(temp, mode="r") as zip_temp:
             with zip_temp.open(fn) as member_fh:
                 return member_fh.read()
 
@@ -41,7 +41,7 @@ def _extract_from_zip(bytes, fn):
 def _list_from_zip(bytes, path):
     lst = list()
     with io.BytesIO(bytes) as temp:
-        with zipfile.ZipFile(temp, mode='r') as zip_temp:
+        with zipfile.ZipFile(temp, mode="r") as zip_temp:
             for fn in zip_temp.namelist():
                 if not re.match(path, fn):
                     continue
@@ -49,8 +49,19 @@ def _list_from_zip(bytes, path):
     return sorted(lst)
 
 
-def assert_has_archive_member(output_bytes, path, verify_assertions_function, children, all="false", n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False):
-    """ Recursively checks the specified children assertions against the text of
+def assert_has_archive_member(
+    output_bytes,
+    path,
+    verify_assertions_function,
+    children,
+    all="false",
+    n: int = None,
+    delta: int = 0,
+    min: int = None,
+    max: int = None,
+    negate: bool = False,
+):
+    """Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.
     Currently supported formats: .zip, .tar, .tar.gz."""
     all = asbool(all)
@@ -72,12 +83,20 @@ def assert_has_archive_member(output_bytes, path, verify_assertions_function, ch
     # min, max (slightly abusing the output and text as well as the function
     # parameters)
     fns = list_foo(output_bytes, path)
-    _assert_presence_number(None, path, n, delta, min, max, negate,
+    _assert_presence_number(
+        None,
+        path,
+        n,
+        delta,
+        min,
+        max,
+        negate,
         lambda o, t: len(fns) > 0,
         lambda o, t: len(fns),
         "{expected} path '{text}' in archive",
         "{expected} {n}+-{delta} matches for path '{text}' in archive",
-        "{expected} that the number of matches for path '{text}' in archive is in [{min}:{max}]")
+        "{expected} that the number of matches for path '{text}' in archive is in [{min}:{max}]",
+    )
 
     # check sub-assertions on members matching path
     for fn in fns:

@@ -27,7 +27,6 @@ from ..panel import (
     ToolSectionLabel,
 )
 
-
 log = logging.getLogger(__name__)
 
 
@@ -69,7 +68,6 @@ class StaticToolPanelView(ToolPanelView):
         self._definition = definition
 
     def apply_view(self, base_tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRegistry) -> ToolPanelElements:
-
         def apply_filter(definition, elems):
             excludes = self._all_excludes(definition)
             if excludes:
@@ -103,7 +101,9 @@ class StaticToolPanelView(ToolPanelView):
                     else:
                         closest_section = base_tool_panel.closest_section(section_def.id, section_def.name)
                         if closest_section is None:
-                            log.warning(f"Failed to find matching section for (id, name) = ({section_def.id}, {section_def.name})")
+                            log.warning(
+                                f"Failed to find matching section for (id, name) = ({section_def.id}, {section_def.name})"
+                            )
                             continue
                         section = closest_section.copy()
                         if section_def.id is not None:
@@ -116,7 +116,9 @@ class StaticToolPanelView(ToolPanelView):
                     assert allow_sections
                     closest_section = base_tool_panel.closest_section(element.section, element.section)
                     if closest_section is None:
-                        log.warning(f"Failed to find matching section for (id, name) = ({element.section}, {element.section})")
+                        log.warning(
+                            f"Failed to find matching section for (id, name) = ({element.section}, {element.section})"
+                        )
                         continue
                     section = closest_section.copy()
                     apply_filter(element, section.elems)
@@ -133,7 +135,9 @@ class StaticToolPanelView(ToolPanelView):
                 elif element.content_type == "tool":
                     tool_id = element.id
                     if not toolbox_registry.has_tool(tool_id):
-                        log.warning(f"Failed to find tool_id {tool_id} from parent toolbox, cannot load into panel view")
+                        log.warning(
+                            f"Failed to find tool_id {tool_id} from parent toolbox, cannot load into panel view"
+                        )
                         continue
                     tool = toolbox_registry.get_tool(tool_id)
                     toolbox_registry.add_tool_to_tool_panel_view(tool, new_panel)

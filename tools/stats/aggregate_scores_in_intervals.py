@@ -7,7 +7,10 @@ usage: %prog score_file interval_file chrom start stop [out_file] [options]
     -c, --chrom_buffer=INT: number of chromosomes (default is 3) to keep in memory when using a user supplied score file
 """
 
-from __future__ import division, print_function
+from __future__ import (
+    division,
+    print_function,
+)
 
 import os
 import os.path
@@ -18,11 +21,17 @@ from collections import Mapping
 from math import isnan
 
 import bx.wiggle
-from bx.binned_array import BinnedArray, FileBinnedArray
+from bx.binned_array import (
+    BinnedArray,
+    FileBinnedArray,
+)
 from bx.bitset_builders import binned_bitsets_from_file
 from bx.cookbook import doc_optparse
 
-from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
+from galaxy.util.ucsc import (
+    UCSCLimitException,
+    UCSCOutWrapper,
+)
 
 
 class PositionalScoresOnDisk(object):

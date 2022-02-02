@@ -11,30 +11,36 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     MetaData,
-    Table
+    Table,
 )
 
 from galaxy.model.migrate.versions.util import (
     create_table,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
 metadata = MetaData()
 
-RepositoryDependency_table = Table("repository_dependency", metadata,
-                                   Column("id", Integer, primary_key=True),
-                                   Column("create_time", DateTime, default=now),
-                                   Column("update_time", DateTime, default=now, onupdate=now),
-                                   Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=False))
+RepositoryDependency_table = Table(
+    "repository_dependency",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=False),
+)
 
-RepositoryRepositoryDependencyAssociation_table = Table("repository_repository_dependency_association", metadata,
-                                                        Column("id", Integer, primary_key=True),
-                                                        Column("create_time", DateTime, default=now),
-                                                        Column("update_time", DateTime, default=now, onupdate=now),
-                                                        Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True),
-                                                        Column("repository_dependency_id", Integer, ForeignKey("repository_dependency.id"), index=True))
+RepositoryRepositoryDependencyAssociation_table = Table(
+    "repository_repository_dependency_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True),
+    Column("repository_dependency_id", Integer, ForeignKey("repository_dependency.id"), index=True),
+)
 
 
 def upgrade(migrate_engine):

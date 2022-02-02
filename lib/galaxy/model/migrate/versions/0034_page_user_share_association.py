@@ -4,15 +4,24 @@ Migration script to create a table for page-user share association.
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-PageUserShareAssociation_table = Table("page_user_share_association", metadata,
-                                       Column("id", Integer, primary_key=True),
-                                       Column("page_id", Integer, ForeignKey("page.id"), index=True),
-                                       Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+PageUserShareAssociation_table = Table(
+    "page_user_share_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("page_id", Integer, ForeignKey("page.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+)
 
 
 def upgrade(migrate_engine):

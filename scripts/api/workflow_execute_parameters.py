@@ -20,12 +20,12 @@ def main():
     try:
         print("workflow_execute:py:")
         data = {}
-        data['workflow_id'] = sys.argv[3]
-        data['history'] = sys.argv[4]
-        data['ds_map'] = {}
+        data["workflow_id"] = sys.argv[3]
+        data["history"] = sys.argv[4]
+        data["ds_map"] = {}
 
         # Trying to pass in parameter for my own dictionary
-        data['parameters'] = {}
+        data["parameters"] = {}
 
         # DBTODO If only one input is given, don't require a step
         # mapping, just use it for everything?
@@ -34,22 +34,22 @@ def main():
             print(v)
 
             try:
-                step, src, ds_id = v.split('=')
-                data['ds_map'][step] = {'src': src, 'id': ds_id}
+                step, src, ds_id = v.split("=")
+                data["ds_map"][step] = {"src": src, "id": ds_id}
 
             except ValueError:
                 print("VALUE ERROR:")
-                wtype, wtool, wparam, wvalue = v.split('=')
+                wtype, wtool, wparam, wvalue = v.split("=")
                 try:
-                    data['parameters'][wtool] = {'param': wparam, 'value': wvalue}
+                    data["parameters"][wtool] = {"param": wparam, "value": wvalue}
                 except ValueError:
                     print("TOOL ID ERROR:")
 
     except IndexError:
-        print('usage: %s key url workflow_id history step=src=dataset_id' % os.path.basename(sys.argv[0]))
+        print("usage: %s key url workflow_id history step=src=dataset_id" % os.path.basename(sys.argv[0]))
         sys.exit(1)
     submit(sys.argv[1], sys.argv[2], data)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

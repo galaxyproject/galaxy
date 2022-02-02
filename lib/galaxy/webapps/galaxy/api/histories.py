@@ -23,9 +23,7 @@ from pydantic.fields import Field
 from pydantic.main import BaseModel
 from starlette.responses import FileResponse
 
-from galaxy import (
-    util
-)
+from galaxy import util
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -52,9 +50,7 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.util import (
-    string_as_bool
-)
+from galaxy.util import string_as_bool
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -72,27 +68,25 @@ from . import (
     depends,
     DependsOnTrans,
     Router,
-    try_get_request_body_as_json
+    try_get_request_body_as_json,
 )
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['histories'])
+router = Router(tags=["histories"])
 
 HistoryIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title="History ID",
-    description="The encoded database identifier of the History."
+    ..., title="History ID", description="The encoded database identifier of the History."
 )
 
 JehaIDPathParam: Union[EncodedDatabaseIdField, LatestLiteral] = Path(
     default="latest",
-    title='Job Export History ID',
+    title="Job Export History ID",
     description=(
-        'The ID of the specific Job Export History Association or '
-        '`latest` (default) to download the last generated archive.'
+        "The ID of the specific Job Export History Association or "
+        "`latest` (default) to download the last generated archive."
     ),
-    example="latest"
+    example="latest",
 )
 
 
@@ -106,9 +100,7 @@ class HistoryIndexParams(HistoryFilterQueryParams):
 
 class DeleteHistoryPayload(BaseModel):
     purge: bool = Field(
-        default=False,
-        title="Purge",
-        description="Whether to definitely remove this history from disk."
+        default=False, title="Purge", description="Whether to definitely remove this history from disk."
     )
 
 
@@ -122,8 +114,8 @@ class FastAPIHistories:
     service: HistoriesService = depends(HistoriesService)
 
     @router.get(
-        '/api/histories',
-        summary='Returns histories for the current user.',
+        "/api/histories",
+        summary="Returns histories for the current user.",
     )
     def index(
         self,
@@ -135,13 +127,13 @@ class FastAPIHistories:
             title="Deleted Only",
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
-        )
+        ),
     ) -> List[AnyHistoryView]:
         return self.service.index(trans, serialization_params, params, deleted_only=deleted, all_histories=params.all)
 
     @router.get(
-        '/api/histories/deleted',
-        summary='Returns deleted histories for the current user.',
+        "/api/histories/deleted",
+        summary="Returns deleted histories for the current user.",
     )
     def index_deleted(
         self,
@@ -152,8 +144,8 @@ class FastAPIHistories:
         return self.service.index(trans, serialization_params, params, deleted_only=True, all_histories=params.all)
 
     @router.get(
-        '/api/histories/published',
-        summary='Return all histories that are published.',
+        "/api/histories/published",
+        summary="Return all histories that are published.",
     )
     def published(
         self,
@@ -164,8 +156,8 @@ class FastAPIHistories:
         return self.service.published(trans, serialization_params, filter_params)
 
     @router.get(
-        '/api/histories/shared_with_me',
-        summary='Return all histories that are shared with the current user.',
+        "/api/histories/shared_with_me",
+        summary="Return all histories that are shared with the current user.",
     )
     def shared_with_me(
         self,
@@ -176,8 +168,8 @@ class FastAPIHistories:
         return self.service.shared_with_me(trans, serialization_params, filter_params)
 
     @router.get(
-        '/api/histories/most_recently_used',
-        summary='Returns the most recently used history of the user.',
+        "/api/histories/most_recently_used",
+        summary="Returns the most recently used history of the user.",
     )
     def show_recent(
         self,
@@ -187,8 +179,8 @@ class FastAPIHistories:
         return self.service.show(trans, serialization_params)
 
     @router.get(
-        '/api/histories/{id}',
-        summary='Returns the history with the given ID.',
+        "/api/histories/{id}",
+        summary="Returns the history with the given ID.",
     )
     def show(
         self,
@@ -199,8 +191,8 @@ class FastAPIHistories:
         return self.service.show(trans, serialization_params, id)
 
     @router.get(
-        '/api/histories/{id}/citations',
-        summary='Return all the citations for the tools used to produce the datasets in the history.',
+        "/api/histories/{id}/citations",
+        summary="Return all the citations for the tools used to produce the datasets in the history.",
     )
     def citations(
         self,
@@ -210,8 +202,8 @@ class FastAPIHistories:
         return self.service.citations(trans, id)
 
     @router.post(
-        '/api/histories',
-        summary='Creates a new history.',
+        "/api/histories",
+        summary="Creates a new history.",
     )
     def create(
         self,
@@ -232,8 +224,8 @@ class FastAPIHistories:
         return self.service.create(trans, payload, serialization_params)
 
     @router.delete(
-        '/api/histories/{id}',
-        summary='Marks the history with the given ID as deleted.',
+        "/api/histories/{id}",
+        summary="Marks the history with the given ID as deleted.",
     )
     def delete(
         self,
@@ -241,14 +233,14 @@ class FastAPIHistories:
         id: EncodedDatabaseIdField = HistoryIDPathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: bool = Query(default=False),
-        payload: Optional[DeleteHistoryPayload] = Body(default=None)
+        payload: Optional[DeleteHistoryPayload] = Body(default=None),
     ) -> AnyHistoryView:
         if payload:
             purge = payload.purge
         return self.service.delete(trans, id, serialization_params, purge)
 
     @router.post(
-        '/api/histories/deleted/{id}/undelete',
+        "/api/histories/deleted/{id}/undelete",
         summary="Restores a deleted history with the given ID (that hasn't been purged).",
     )
     def undelete(
@@ -260,7 +252,7 @@ class FastAPIHistories:
         return self.service.undelete(trans, id, serialization_params)
 
     @router.put(
-        '/api/histories/{id}',
+        "/api/histories/{id}",
         summary="Updates the values for the history with the given ID.",
     )
     def update(
@@ -276,10 +268,8 @@ class FastAPIHistories:
         return self.service.update(trans, id, payload, serialization_params)
 
     @router.get(
-        '/api/histories/{id}/exports',
-        summary=(
-            "Get previous history exports (to links). Effectively returns serialized JEHA objects."
-        ),
+        "/api/histories/{id}/exports",
+        summary=("Get previous history exports (to links). Effectively returns serialized JEHA objects."),
     )
     def index_exports(
         self,
@@ -290,17 +280,15 @@ class FastAPIHistories:
         return JobExportHistoryArchiveCollection.parse_obj(exports)
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
-        '/api/histories/{id}/exports',
-        summary=(
-            "Start job (if needed) to create history export for corresponding history."
-        ),
+        "/api/histories/{id}/exports",
+        summary=("Start job (if needed) to create history export for corresponding history."),
         responses={
             200: {
                 "description": "Object containing url to fetch export from.",
             },
             202: {
                 "description": "The exported archive file is not ready yet.",
-            }
+            },
         },
     )
     def archive_export(
@@ -326,11 +314,9 @@ class FastAPIHistories:
         return export_result
 
     @router.get(
-        '/api/histories/{id}/exports/{jeha_id}',
+        "/api/histories/{id}/exports/{jeha_id}",
         name="history_archive_download",
-        summary=(
-            "If ready and available, return raw contents of exported history as a downloadable archive."
-        ),
+        summary=("If ready and available, return raw contents of exported history as a downloadable archive."),
         response_class=FileResponse,
         responses={
             200: {
@@ -359,7 +345,7 @@ class FastAPIHistories:
         )
 
     @router.get(
-        '/api/histories/{id}/custom_builds_metadata',
+        "/api/histories/{id}/custom_builds_metadata",
         summary="Returns meta data for custom builds.",
     )
     def get_custom_builds_metadata(
@@ -370,7 +356,7 @@ class FastAPIHistories:
         return self.service.get_custom_builds_metadata(trans, id)
 
     @router.get(
-        '/api/histories/{id}/sharing',
+        "/api/histories/{id}/sharing",
         summary="Get the current sharing status of the given item.",
     )
     def sharing(
@@ -382,7 +368,7 @@ class FastAPIHistories:
         return self.service.shareable_service.sharing(trans, id)
 
     @router.put(
-        '/api/histories/{id}/enable_link_access',
+        "/api/histories/{id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
@@ -394,7 +380,7 @@ class FastAPIHistories:
         return self.service.shareable_service.enable_link_access(trans, id)
 
     @router.put(
-        '/api/histories/{id}/disable_link_access',
+        "/api/histories/{id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
@@ -406,7 +392,7 @@ class FastAPIHistories:
         return self.service.shareable_service.disable_link_access(trans, id)
 
     @router.put(
-        '/api/histories/{id}/publish',
+        "/api/histories/{id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
@@ -418,7 +404,7 @@ class FastAPIHistories:
         return self.service.shareable_service.publish(trans, id)
 
     @router.put(
-        '/api/histories/{id}/unpublish',
+        "/api/histories/{id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
@@ -430,20 +416,20 @@ class FastAPIHistories:
         return self.service.shareable_service.unpublish(trans, id)
 
     @router.put(
-        '/api/histories/{id}/share_with_users',
+        "/api/histories/{id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = HistoryIDPathParam,
-        payload: ShareWithPayload = Body(...)
+        payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
         return self.service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
-        '/api/histories/{id}/slug',
+        "/api/histories/{id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
@@ -462,7 +448,7 @@ class HistoriesController(BaseGalaxyAPIController):
     service: HistoriesService = depends(HistoriesService)
 
     @expose_api_anonymous
-    def index(self, trans, deleted='False', **kwd):
+    def index(self, trans, deleted="False", **kwd):
         """
         GET /api/histories
 
@@ -554,13 +540,13 @@ class HistoriesController(BaseGalaxyAPIController):
         'order' defaults to 'create_time-dsc'
         """
         deleted_only = util.string_as_bool(deleted)
-        all_histories = util.string_as_bool(kwd.get('all', False))
+        all_histories = util.string_as_bool(kwd.get("all", False))
         serialization_params = parse_serialization_params(**kwd)
         filter_parameters = HistoryFilterQueryParams(**kwd)
         return self.service.index(trans, serialization_params, filter_parameters, deleted_only, all_histories)
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans, id, deleted="False", **kwd):
         """
         show( trans, id, deleted='False' )
         * GET /api/histories/{id}:
@@ -678,10 +664,10 @@ class HistoriesController(BaseGalaxyAPIController):
         """
         history_id = id
         # a request body is optional here
-        purge = string_as_bool(kwd.get('purge', False))
+        purge = string_as_bool(kwd.get("purge", False))
         # for backwards compat, keep the payload sub-dictionary
-        if kwd.get('payload', None):
-            purge = string_as_bool(kwd['payload'].get('purge', purge))
+        if kwd.get("payload", None):
+            purge = string_as_bool(kwd["payload"].get("purge", purge))
 
         serialization_params = parse_serialization_params(**kwd)
         return self.service.delete(trans, history_id, serialization_params, purge)

@@ -3,6 +3,7 @@
 import ast
 import os
 import re
+
 try:
     from setuptools import setup
 except ImportError:

@@ -4,7 +4,12 @@ Migration script to add 'info' column to the transfer_job table.
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

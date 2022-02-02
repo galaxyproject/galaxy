@@ -8,7 +8,7 @@ def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
+        s.connect(("10.255.255.255", 1))
         ip = s.getsockname()[0]
     except Exception:
         ip = None
@@ -27,7 +27,7 @@ def unused_port(range=None):
 def __unused_port_rangeless():
     # TODO: Allow ranges (though then need to guess and check)...
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(('localhost', 0))
+    s.bind(("localhost", 0))
     addr, port = s.getsockname()
     s.close()
     return port
@@ -41,11 +41,11 @@ def __unused_port_on_range(range):
     stdout = commands.execute(cmd_netstat)
 
     occupied_ports = set()
-    for line in stdout.split('\n'):
-        if line.startswith('tcp') or line.startswith('tcp6'):
+    for line in stdout.split("\n"):
+        if line.startswith("tcp") or line.startswith("tcp6"):
             col = line.split()
             local_address = col[3]
-            local_port = local_address.split(':')[1]
+            local_port = local_address.split(":")[1]
             occupied_ports.add(int(local_port))
 
     # Generate random free port number.

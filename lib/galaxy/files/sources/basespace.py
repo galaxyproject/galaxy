@@ -7,7 +7,7 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class BaseSpaceFilesSource(PyFilesystem2FilesSource):
-    plugin_type = 'basespace'
+    plugin_type = "basespace"
     required_module = BASESPACEFS
     required_package = "fs-basespace"
 
@@ -17,4 +17,4 @@ class BaseSpaceFilesSource(PyFilesystem2FilesSource):
         return handle
 
 
-__all__ = ('BaseSpaceFilesSource',)
+__all__ = ("BaseSpaceFilesSource",)

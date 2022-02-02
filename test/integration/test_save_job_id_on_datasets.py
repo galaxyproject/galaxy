@@ -18,9 +18,9 @@ class TestConfig:
 
 
 TEST_TOOL_IDS = [
-    'boolean_conditional',  # 1 job >> 1 dataset
-    'color_param',          # 1 job >> multiple datasets
-    'multi_output',         # 1 job >> 1 dataset + 1 discovered dataset
+    "boolean_conditional",  # 1 job >> 1 dataset
+    "color_param",  # 1 job >> multiple datasets
+    "multi_output",  # 1 job >> 1 dataset + 1 discovered dataset
     # test upload?            # not implemented
 ]
 
@@ -35,14 +35,14 @@ def test_driver():
         driver.tear_down()
 
 
-@pytest.mark.parametrize('tool_id', TEST_TOOL_IDS)
+@pytest.mark.parametrize("tool_id", TEST_TOOL_IDS)
 def test_tool_datasets(tool_id, test_driver):
     test_driver.run_tool_test(tool_id)
     session = test_driver.app.model.context.current
     job = session.query(model.Job).order_by(model.Job.id.desc()).first()
     datasets = session.query(model.Dataset).filter(model.Dataset.job_id == job.id).all()
 
-    if tool_id == 'boolean_conditional':
+    if tool_id == "boolean_conditional":
         assert len(datasets) == 1
-    elif tool_id in ('color_param', 'multi_output'):
+    elif tool_id in ("color_param", "multi_output"):
         assert len(datasets) == 2

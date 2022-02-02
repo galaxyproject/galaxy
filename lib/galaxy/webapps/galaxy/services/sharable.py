@@ -6,21 +6,15 @@ from typing import (
     Tuple,
 )
 
-from sqlalchemy import (
-    false,
-)
+from sqlalchemy import false
 
 from galaxy import exceptions
-from galaxy.managers import (
-    base,
-)
+from galaxy.managers import base
 from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
 )
-from galaxy.model import (
-    User,
-)
+from galaxy.model import User
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
@@ -113,9 +107,11 @@ class ShareableService:
         return item
 
     def _get_sharing_status(self, trans, item):
-        status = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        status["users_shared_with"] = [{"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        status = self.serializer.serialize_to_view(item, user=trans.user, trans=trans, default_view="sharing")
+        status["users_shared_with"] = [
+            {"id": self.manager.app.security.encode_id(a.user.id), "email": a.user.email}
+            for a in item.users_shared_with
+        ]
         return SharingStatus.parse_obj(status)
 
     def _get_users(self, trans, emails_or_ids: Optional[List] = None) -> Tuple[Set[User], Set[str]]:
@@ -129,10 +125,11 @@ class ShareableService:
                 continue
 
             send_to_user = None
-            if '@' in email_or_id:
+            if "@" in email_or_id:
                 email_address = email_or_id
-                send_to_user = self.manager.user_manager.by_email(email_address,
-                    filters=[User.table.c.deleted == false()])
+                send_to_user = self.manager.user_manager.by_email(
+                    email_address, filters=[User.table.c.deleted == false()]
+                )
             else:
                 try:
                     decoded_user_id = trans.security.decode_id(email_or_id)

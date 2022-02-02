@@ -26,8 +26,15 @@ from __future__ import print_function
 import heapq
 import os
 from functools import total_ordering
-from getopt import getopt, GetoptError
-from sys import argv, exit, stderr
+from getopt import (
+    getopt,
+    GetoptError,
+)
+from sys import (
+    argv,
+    exit,
+    stderr,
+)
 
 __author__ = "Aakrosh Ratan"
 __email__ = "ratan@bx.psu.edu"

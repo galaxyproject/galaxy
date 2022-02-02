@@ -7,4 +7,4 @@ except ImportError:
     # is fine - we shouldn't be using this entry point anyway.
     app_factory = None  # type: ignore[misc, assignment]
 
-__all__ = ('app_factory', )
+__all__ = ("app_factory",)

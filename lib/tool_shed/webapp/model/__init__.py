@@ -3,9 +3,13 @@ import os
 import weakref
 from datetime import (
     datetime,
-    timedelta
+    timedelta,
 )
-from typing import Any, Mapping, TYPE_CHECKING
+from typing import (
+    Any,
+    Mapping,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     Boolean,
@@ -30,7 +34,10 @@ from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
-from galaxy.model.custom_types import MutableJSONType, TrimmedString
+from galaxy.model.custom_types import (
+    MutableJSONType,
+    TrimmedString,
+)
 from galaxy.model.orm.now import now
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import unique_id
@@ -40,17 +47,19 @@ from galaxy.util.hash_util import new_secure_hash
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.util import (
     hg_util,
-    metadata_util
+    metadata_util,
 )
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 
-WEAK_HG_REPO_CACHE: Mapping['Repository', Any] = weakref.WeakKeyDictionary()
+WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
+
     class _HasTable:
         table: Table
+
 else:
     _HasTable = object
 
@@ -70,17 +79,17 @@ class Base(metaclass=DeclarativeMeta):
 
 
 class APIKeys(Base, _HasTable):
-    __tablename__ = 'api_keys'
+    __tablename__ = "api_keys"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
-    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
-    user = relationship('User', back_populates='api_keys')
+    user = relationship("User", back_populates="api_keys")
 
 
 class User(Base, Dictifiable, _HasTable):
-    __tablename__ = 'galaxy_user'
+    __tablename__ = "galaxy_user"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -92,33 +101,33 @@ class User(Base, Dictifiable, _HasTable):
     new_repo_alert = Column(Boolean, default=False)
     deleted = Column(Boolean, index=True, default=False)
     purged = Column(Boolean, index=True, default=False)
-    active_repositories = relationship('Repository',
+    active_repositories = relationship(
+        "Repository",
         primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore[has-type]
-        back_populates='user',
-        order_by=lambda: desc(Repository.name))  # type: ignore[has-type]
-    galaxy_sessions = relationship('GalaxySession',
-        back_populates='user',
-        order_by=lambda: desc(GalaxySession.update_time))  # type: ignore[has-type]
-    api_keys = relationship(
-        'APIKeys',
-        back_populates='user',
-        order_by=lambda: desc(APIKeys.create_time))
-    reset_tokens = relationship('PasswordResetToken', back_populates='user')
-    groups = relationship('UserGroupAssociation', back_populates='user')
+        back_populates="user",
+        order_by=lambda: desc(Repository.name),
+    )  # type: ignore[has-type]
+    galaxy_sessions = relationship(
+        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
+    )  # type: ignore[has-type]
+    api_keys = relationship("APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time))
+    reset_tokens = relationship("PasswordResetToken", back_populates="user")
+    groups = relationship("UserGroupAssociation", back_populates="user")
 
-    dict_collection_visible_keys = ['id', 'username']
-    dict_element_visible_keys = ['id', 'username']
+    dict_collection_visible_keys = ["id", "username"]
+    dict_element_visible_keys = ["id", "username"]
     bootstrap_admin_user = False
-    roles = relationship('UserRoleAssociation', back_populates='user')
+    roles = relationship("UserRoleAssociation", back_populates="user")
     non_private_roles = relationship(
-        'UserRoleAssociation',
+        "UserRoleAssociation",
         viewonly=True,
-        primaryjoin=(lambda:
-            (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
+        primaryjoin=(
+            lambda: (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
             & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
-            & not_(Role.name == User.email))  # type: ignore[has-type]
+            & not_(Role.name == User.email)
+        ),  # type: ignore[has-type]
     )
-    repository_reviews = relationship('RepositoryReview', back_populates='user')
+    repository_reviews = relationship("RepositoryReview", back_populates="user")
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -161,12 +170,12 @@ class User(Base, Dictifiable, _HasTable):
 
 
 class PasswordResetToken(Base, _HasTable):
-    __tablename__ = 'password_reset_token'
+    __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
     expiration_time = Column(DateTime)
-    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
-    user = relationship('User', back_populates='reset_tokens')
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
+    user = relationship("User", back_populates="reset_tokens")
 
     def __init__(self, user, token=None):
         if token:
@@ -178,18 +187,18 @@ class PasswordResetToken(Base, _HasTable):
 
 
 class Group(Base, Dictifiable, _HasTable):
-    __tablename__ = 'galaxy_group'
+    __tablename__ = "galaxy_group"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
     name = Column(String(255), index=True, unique=True)
     deleted = Column(Boolean, index=True, default=False)
-    roles = relationship('GroupRoleAssociation', back_populates='group')
-    users = relationship('UserGroupAssociation', back_populates='group')
+    roles = relationship("GroupRoleAssociation", back_populates="group")
+    users = relationship("UserGroupAssociation", back_populates="group")
 
-    dict_collection_visible_keys = ['id', 'name']
-    dict_element_visible_keys = ['id', 'name']
+    dict_collection_visible_keys = ["id", "name"]
+    dict_element_visible_keys = ["id", "name"]
 
     def __init__(self, name=None):
         self.name = name
@@ -197,7 +206,7 @@ class Group(Base, Dictifiable, _HasTable):
 
 
 class Role(Base, Dictifiable, _HasTable):
-    __tablename__ = 'role'
+    __tablename__ = "role"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -206,18 +215,14 @@ class Role(Base, Dictifiable, _HasTable):
     description = Column(TEXT)
     type = Column(String(40), index=True)
     deleted = Column(Boolean, index=True, default=False)
-    repositories = relationship('RepositoryRoleAssociation', back_populates='role')
-    groups = relationship('GroupRoleAssociation', back_populates='role')
-    users = relationship('UserRoleAssociation', back_populates='role')
+    repositories = relationship("RepositoryRoleAssociation", back_populates="role")
+    groups = relationship("GroupRoleAssociation", back_populates="role")
+    users = relationship("UserRoleAssociation", back_populates="role")
 
-    dict_collection_visible_keys = ['id', 'name']
-    dict_element_visible_keys = ['id', 'name', 'description', 'type']
+    dict_collection_visible_keys = ["id", "name"]
+    dict_element_visible_keys = ["id", "name", "description", "type"]
     private_id = None
-    types = Bunch(PRIVATE='private',
-                  SYSTEM='system',
-                  USER='user',
-                  ADMIN='admin',
-                  SHARING='sharing')
+    types = Bunch(PRIVATE="private", SYSTEM="system", USER="user", ADMIN="admin", SHARING="sharing")
 
     def __init__(self, name=None, description=None, type=types.SYSTEM, deleted=False):
         self.name = name
@@ -236,15 +241,15 @@ class Role(Base, Dictifiable, _HasTable):
 
 
 class UserGroupAssociation(Base, _HasTable):
-    __tablename__ = 'user_group_association'
+    __tablename__ = "user_group_association"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
-    group_id = Column(ForeignKey('galaxy_group.id'), index=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
+    group_id = Column(ForeignKey("galaxy_group.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user = relationship('User', back_populates='groups')
-    group = relationship('Group', back_populates='users')
+    user = relationship("User", back_populates="groups")
+    group = relationship("Group", back_populates="users")
 
     def __init__(self, user, group):
         self.user = user
@@ -252,15 +257,15 @@ class UserGroupAssociation(Base, _HasTable):
 
 
 class UserRoleAssociation(Base, _HasTable):
-    __tablename__ = 'user_role_association'
+    __tablename__ = "user_role_association"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(ForeignKey('galaxy_user.id'), index=True)
-    role_id = Column(ForeignKey('role.id'), index=True)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
+    role_id = Column(ForeignKey("role.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    user = relationship('User', back_populates='roles')
-    role = relationship('Role', back_populates='users')
+    user = relationship("User", back_populates="roles")
+    role = relationship("Role", back_populates="users")
 
     def __init__(self, user, role):
         self.user = user
@@ -268,15 +273,15 @@ class UserRoleAssociation(Base, _HasTable):
 
 
 class GroupRoleAssociation(Base, _HasTable):
-    __tablename__ = 'group_role_association'
+    __tablename__ = "group_role_association"
 
     id = Column(Integer, primary_key=True)
     group_id = Column(ForeignKey("galaxy_group.id"), index=True)
     role_id = Column(ForeignKey("role.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    group = relationship('Group', back_populates='roles')
-    role = relationship('Role', back_populates='groups')
+    group = relationship("Group", back_populates="roles")
+    role = relationship("Role", back_populates="groups")
 
     def __init__(self, group, role):
         self.group = group
@@ -284,15 +289,15 @@ class GroupRoleAssociation(Base, _HasTable):
 
 
 class RepositoryRoleAssociation(Base, _HasTable):
-    __tablename__ = 'repository_role_association'
+    __tablename__ = "repository_role_association"
 
     id = Column(Integer, primary_key=True)
     repository_id = Column(ForeignKey("repository.id"), index=True)
     role_id = Column(ForeignKey("role.id"), index=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    repository = relationship('Repository', back_populates='roles')
-    role = relationship('Role', back_populates='repositories')
+    repository = relationship("Repository", back_populates="roles")
+    role = relationship("Role", back_populates="repositories")
 
     def __init__(self, repository, role):
         self.repository = repository
@@ -300,7 +305,7 @@ class RepositoryRoleAssociation(Base, _HasTable):
 
 
 class GalaxySession(Base, _HasTable):
-    __tablename__ = 'galaxy_session'
+    __tablename__ = "galaxy_session"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -315,7 +320,7 @@ class GalaxySession(Base, _HasTable):
     # saves a reference to the previous session so we have a way to chain them together
     prev_session_id = Column(Integer)
     last_action = Column(DateTime)
-    user = relationship('User', back_populates='galaxy_sessions')
+    user = relationship("User", back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
@@ -324,7 +329,7 @@ class GalaxySession(Base, _HasTable):
 
 
 class Repository(Base, Dictifiable, _HasTable):
-    __tablename__ = 'repository'
+    __tablename__ = "repository"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -341,30 +346,58 @@ class Repository(Base, Dictifiable, _HasTable):
     email_alerts = Column(MutableJSONType, nullable=True)
     times_downloaded = Column(Integer)
     deprecated = Column(Boolean, default=False)
-    categories = relationship('RepositoryCategoryAssociation', back_populates='repository')
-    ratings = relationship('RepositoryRatingAssociation',
-        order_by=lambda: desc(RepositoryRatingAssociation.update_time), back_populates='repository')
-    user = relationship('User', back_populates='active_repositories')
-    downloadable_revisions = relationship('RepositoryMetadata',
+    categories = relationship("RepositoryCategoryAssociation", back_populates="repository")
+    ratings = relationship(
+        "RepositoryRatingAssociation",
+        order_by=lambda: desc(RepositoryRatingAssociation.update_time),
+        back_populates="repository",
+    )
+    user = relationship("User", back_populates="active_repositories")
+    downloadable_revisions = relationship(
+        "RepositoryMetadata",
         primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[attr-defined,has-type]
         viewonly=True,
-        order_by=lambda: desc(RepositoryMetadata.update_time))  # type: ignore[attr-defined]
-    metadata_revisions = relationship('RepositoryMetadata',
+        order_by=lambda: desc(RepositoryMetadata.update_time),
+    )  # type: ignore[attr-defined]
+    metadata_revisions = relationship(
+        "RepositoryMetadata",
         order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
-        back_populates='repository')
-    roles = relationship('RepositoryRoleAssociation', back_populates='repository')
-    reviews = relationship('RepositoryReview', back_populates='repository')
-    reviewers = relationship('User', secondary=lambda: RepositoryReview.__table__, viewonly=True)  # type: ignore
+        back_populates="repository",
+    )
+    roles = relationship("RepositoryRoleAssociation", back_populates="repository")
+    reviews = relationship("RepositoryReview", back_populates="repository")
+    reviewers = relationship("User", secondary=lambda: RepositoryReview.__table__, viewonly=True)  # type: ignore
 
-    dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
-                                    'times_downloaded', 'deprecated', 'create_time']
-    dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
-                                 'deleted', 'times_downloaded', 'deprecated', 'create_time']
-    file_states = Bunch(NORMAL='n',
-                        NEEDS_MERGING='m',
-                        MARKED_FOR_REMOVAL='r',
-                        MARKED_FOR_ADDITION='a',
-                        NOT_TRACKED='?')
+    dict_collection_visible_keys = [
+        "id",
+        "name",
+        "type",
+        "remote_repository_url",
+        "homepage_url",
+        "description",
+        "user_id",
+        "private",
+        "deleted",
+        "times_downloaded",
+        "deprecated",
+        "create_time",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "name",
+        "type",
+        "remote_repository_url",
+        "homepage_url",
+        "description",
+        "long_description",
+        "user_id",
+        "private",
+        "deleted",
+        "times_downloaded",
+        "deprecated",
+        "create_time",
+    ]
+    file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
     def __init__(self, private=False, times_downloaded=0, deprecated=False, **kwd):
         super().__init__(**kwd)
@@ -377,29 +410,32 @@ class Repository(Base, Dictifiable, _HasTable):
     def hg_repo(self):
         from mercurial import (
             hg,
-            ui
+            ui,
         )
+
         if not WEAK_HG_REPO_CACHE.get(self):
-            WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode('utf-8')))
+            WEAK_HG_REPO_CACHE[self] = hg.cachedlocalrepo(hg.repository(ui.ui(), self.repo_path().encode("utf-8")))
         return WEAK_HG_REPO_CACHE[self].fetch()[0]
 
     @property
     def admin_role(self):
-        admin_role_name = f'{str(self.name)}_{str(self.user.username)}_admin'
+        admin_role_name = f"{str(self.name)}_{str(self.user.username)}_admin"
         for rra in self.roles:
             role = rra.role
             if str(role.name) == admin_role_name:
                 return role
-        raise Exception('Repository %s owned by %s is not associated with a required administrative role.' %
-                        (str(self.name), str(self.user.username)))
+        raise Exception(
+            "Repository %s owned by %s is not associated with a required administrative role."
+            % (str(self.name), str(self.user.username))
+        )
 
     def allow_push(self):
         hgrc_file = hg_util.get_hgrc_path(self.repo_path())
         with open(hgrc_file) as fh:
             for line in fh.read().splitlines():
-                if line.startswith('allow_push = '):
-                    return line[len('allow_push = '):]
-        return ''
+                if line.startswith("allow_push = "):
+                    return line[len("allow_push = ") :]
+        return ""
 
     def can_change_type(self):
         # Allow changing the type only if the repository has no contents, has never been installed, or has
@@ -431,9 +467,7 @@ class Repository(Base, Dictifiable, _HasTable):
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
-        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app,
-                                                                                                   self,
-                                                                                                   changeset)
+        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app, self, changeset)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -450,7 +484,7 @@ class Repository(Base, Dictifiable, _HasTable):
         changeset_revision = metadata_util.get_next_downloadable_changeset_revision(app, self, changeset_revision)
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
-                return downloadable_revision.metadata.get('tool_dependencies', {})
+                return downloadable_revision.metadata.get("tool_dependencies", {})
         return {}
 
     def installable_revisions(self, app, sort_revisions=True):
@@ -469,7 +503,7 @@ class Repository(Base, Dictifiable, _HasTable):
         tip_ctx = repo[repo.changelog.tip()]
         return f"{str(tip_ctx.rev())}:{str(tip_ctx)}"
 
-    def set_allow_push(self, usernames, remove_auth=''):
+    def set_allow_push(self, usernames, remove_auth=""):
         allow_push = util.listify(self.allow_push())
         if remove_auth:
             allow_push.remove(remove_auth)
@@ -484,10 +518,10 @@ class Repository(Base, Dictifiable, _HasTable):
         hgrc_file = hg_util.get_hgrc_path(repo_dir)
         with open(hgrc_file) as fh:
             lines = fh.readlines()
-        with open(hgrc_file, 'w') as fh:
+        with open(hgrc_file, "w") as fh:
             for line in lines:
-                if line.startswith('allow_push'):
-                    fh.write(f'allow_push = {allow_push}')
+                if line.startswith("allow_push"):
+                    fh.write(f"allow_push = {allow_push}")
                 else:
                     fh.write(line)
 
@@ -495,51 +529,64 @@ class Repository(Base, Dictifiable, _HasTable):
         repo = self.hg_repo
         return str(repo[repo.changelog.tip()])
 
-    def to_dict(self, view='collection', value_mapper=None):
+    def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
-        if 'user_id' in rval:
-            rval['owner'] = self.user.username
+        if "user_id" in rval:
+            rval["owner"] = self.user.username
         return rval
 
 
 class RepositoryReview(Base, Dictifiable, _HasTable):
-    __tablename__ = 'repository_review'
+    __tablename__ = "repository_review"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
     update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(ForeignKey('repository.id'), index=True)
+    repository_id = Column(ForeignKey("repository.id"), index=True)
     changeset_revision = Column(TrimmedString(255), index=True)
-    user_id = Column(ForeignKey('galaxy_user.id'), index=True, nullable=False)
+    user_id = Column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     approved = Column(TrimmedString(255))
     rating = Column(Integer, index=True)
     deleted = Column(Boolean, index=True, default=False)
-    repository = relationship('Repository', back_populates='reviews')
+    repository = relationship("Repository", back_populates="reviews")
     # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
     # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
     # reset on a repository!
-    repository_metadata = relationship('RepositoryMetadata',
+    repository_metadata = relationship(
+        "RepositoryMetadata",
         viewonly=True,
         foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore[has-type]
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),  # type: ignore[has-type]
-        back_populates='reviews')
-    user = relationship('User', back_populates='repository_reviews')
+        primaryjoin=lambda: (
+            (RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore[has-type]
+            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)
+        ),  # type: ignore[has-type]
+        back_populates="reviews",
+    )
+    user = relationship("User", back_populates="repository_reviews")
 
-    component_reviews = relationship('ComponentReview',
+    component_reviews = relationship(
+        "ComponentReview",
         viewonly=True,
-        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false())),  # type: ignore[has-type]
-        back_populates='repository_review')
+        primaryjoin=lambda: (
+            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
+            & (ComponentReview.deleted == false())
+        ),  # type: ignore[has-type]
+        back_populates="repository_review",
+    )
 
-    private_component_reviews = relationship('ComponentReview',
+    private_component_reviews = relationship(
+        "ComponentReview",
         viewonly=True,
-        primaryjoin=lambda: ((RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false()) & (ComponentReview.private == true())))  # type: ignore[has-type]
+        primaryjoin=lambda: (
+            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
+            & (ComponentReview.deleted == false())
+            & (ComponentReview.private == true())
+        ),
+    )  # type: ignore[has-type]
 
-    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
-    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
-    approved_states = Bunch(NO='no', YES='yes')
+    dict_collection_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
+    dict_element_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
+    approved_states = Bunch(NO="no", YES="yes")
 
     def __init__(self, deleted=False, **kwd):
         super().__init__(**kwd)
@@ -547,7 +594,7 @@ class RepositoryReview(Base, Dictifiable, _HasTable):
 
 
 class ComponentReview(Base, Dictifiable, _HasTable):
-    __tablename__ = 'component_review'
+    __tablename__ = "component_review"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -559,12 +606,28 @@ class ComponentReview(Base, Dictifiable, _HasTable):
     approved = Column(TrimmedString(255))
     rating = Column(Integer)
     deleted = Column(Boolean, index=True, default=False)
-    repository_review = relationship('RepositoryReview', back_populates='component_reviews')
-    component = relationship('Component')
+    repository_review = relationship("RepositoryReview", back_populates="component_reviews")
+    component = relationship("Component")
 
-    dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
-    dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
-    approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
+    dict_collection_visible_keys = [
+        "id",
+        "repository_review_id",
+        "component_id",
+        "private",
+        "approved",
+        "rating",
+        "deleted",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "repository_review_id",
+        "component_id",
+        "private",
+        "approved",
+        "rating",
+        "deleted",
+    ]
+    approved_states = Bunch(NO="no", YES="yes", NA="not_applicable")
 
     def __init__(self, private=False, approved=False, deleted=False, **kwd):
         super().__init__(**kwd)
@@ -574,7 +637,7 @@ class ComponentReview(Base, Dictifiable, _HasTable):
 
 
 class Component(Base, _HasTable):
-    __tablename__ = 'component'
+    __tablename__ = "component"
 
     id = Column(Integer, primary_key=True)
     name = Column(TrimmedString(255))
@@ -582,8 +645,7 @@ class Component(Base, _HasTable):
 
 
 class ItemRatingAssociation(_HasTable):
-
-    def __init__(self, id=None, user=None, item=None, rating=0, comment=''):
+    def __init__(self, id=None, user=None, item=None, rating=0, comment=""):
         self.id = id
         self.user = user
         self.item = item
@@ -591,11 +653,11 @@ class ItemRatingAssociation(_HasTable):
         self.comment = comment
 
     def set_item(self, item):
-        """ Set association's item. """
+        """Set association's item."""
 
 
 class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
-    __tablename__ = 'repository_rating_association'
+    __tablename__ = "repository_rating_association"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -604,15 +666,15 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
     user_id = Column(ForeignKey("galaxy_user.id"), index=True)
     rating = Column(Integer, index=True)
     comment = Column(TEXT)
-    repository = relationship('Repository', back_populates='ratings')
-    user = relationship('User')
+    repository = relationship("Repository", back_populates="ratings")
+    user = relationship("User")
 
     def set_item(self, repository):
         self.repository = repository
 
 
 class Category(Base, Dictifiable, _HasTable):
-    __tablename__ = 'category'
+    __tablename__ = "category"
 
     id = Column(Integer, primary_key=True)
     create_time = Column(DateTime, default=now)
@@ -620,10 +682,10 @@ class Category(Base, Dictifiable, _HasTable):
     name = Column(TrimmedString(255), index=True, unique=True)
     description = Column(TEXT)
     deleted = Column(Boolean, index=True, default=False)
-    repositories = relationship('RepositoryCategoryAssociation', back_populates='category')
+    repositories = relationship("RepositoryCategoryAssociation", back_populates="category")
 
-    dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
-    dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
+    dict_collection_visible_keys = ["id", "name", "description", "deleted"]
+    dict_element_visible_keys = ["id", "name", "description", "deleted"]
 
     def __init__(self, deleted=False, **kwd):
         super().__init__(**kwd)
@@ -631,13 +693,13 @@ class Category(Base, Dictifiable, _HasTable):
 
 
 class RepositoryCategoryAssociation(Base, _HasTable):
-    __tablename__ = 'repository_category_association'
+    __tablename__ = "repository_category_association"
 
     id = Column(Integer, primary_key=True)
-    repository_id = Column(ForeignKey('repository.id'), index=True)
-    category_id = Column(ForeignKey('category.id'), index=True)
-    category = relationship('Category', back_populates='repositories')
-    repository = relationship('Repository', back_populates='categories')
+    repository_id = Column(ForeignKey("repository.id"), index=True)
+    category_id = Column(ForeignKey("category.id"), index=True)
+    category = relationship("Category", back_populates="repositories")
+    repository = relationship("Repository", back_populates="categories")
 
     def __init__(self, repository=None, category=None):
         self.repository = repository
@@ -645,17 +707,15 @@ class RepositoryCategoryAssociation(Base, _HasTable):
 
 
 class Tag(Base, _HasTable):
-    __tablename__ = 'tag'
-    __table_args__ = (
-        UniqueConstraint('name'),
-    )
+    __tablename__ = "tag"
+    __table_args__ = (UniqueConstraint("name"),)
 
     id = Column(Integer, primary_key=True)
     type = Column(Integer)
-    parent_id = Column(ForeignKey('tag.id'))
+    parent_id = Column(ForeignKey("tag.id"))
     name = Column(TrimmedString(255))
-    children = relationship('Tag', back_populates='parent')
-    parent = relationship('Tag', back_populates='children', remote_side=[id])
+    children = relationship("Tag", back_populates="parent")
+    parent = relationship("Tag", back_populates="children", remote_side=[id])
 
     def __str__(self):
         return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
@@ -664,38 +724,82 @@ class Tag(Base, _HasTable):
 # The RepositoryMetadata model is mapped imperatively (for details see discussion in PR #12064).
 # TLDR: a declaratively-mapped class cannot have a .metadata attribute (it is used by SQLAlchemy's DeclarativeBase).
 
+
 class RepositoryMetadata(Dictifiable, _HasTable):
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.
-    table = Table('repository_metadata', mapper_registry.metadata,
-        Column('id', Integer, primary_key=True),
-        Column('create_time', DateTime, default=now),
-        Column('update_time', DateTime, default=now, onupdate=now),
-        Column('repository_id', ForeignKey('repository.id'), index=True),
-        Column('changeset_revision', TrimmedString(255), index=True),
-        Column('numeric_revision', Integer, index=True),
-        Column('metadata', MutableJSONType, nullable=True),
-        Column('tool_versions', MutableJSONType, nullable=True),
-        Column('malicious', Boolean, default=False),
-        Column('downloadable', Boolean, default=True),
-        Column('missing_test_components', Boolean, default=False, index=True),
-        Column('has_repository_dependencies', Boolean, default=False, index=True),
-        Column('includes_datatypes', Boolean, default=False, index=True),
-        Column('includes_tools', Boolean, default=False, index=True),
-        Column('includes_tool_dependencies', Boolean, default=False, index=True),
-        Column('includes_workflows', Boolean, default=False, index=True))
+    table = Table(
+        "repository_metadata",
+        mapper_registry.metadata,
+        Column("id", Integer, primary_key=True),
+        Column("create_time", DateTime, default=now),
+        Column("update_time", DateTime, default=now, onupdate=now),
+        Column("repository_id", ForeignKey("repository.id"), index=True),
+        Column("changeset_revision", TrimmedString(255), index=True),
+        Column("numeric_revision", Integer, index=True),
+        Column("metadata", MutableJSONType, nullable=True),
+        Column("tool_versions", MutableJSONType, nullable=True),
+        Column("malicious", Boolean, default=False),
+        Column("downloadable", Boolean, default=True),
+        Column("missing_test_components", Boolean, default=False, index=True),
+        Column("has_repository_dependencies", Boolean, default=False, index=True),
+        Column("includes_datatypes", Boolean, default=False, index=True),
+        Column("includes_tools", Boolean, default=False, index=True),
+        Column("includes_tool_dependencies", Boolean, default=False, index=True),
+        Column("includes_workflows", Boolean, default=False, index=True),
+    )
 
-    dict_collection_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                    'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                    'includes_tools_for_display_in_tool_panel', 'includes_workflows']
-    dict_element_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
-                                 'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
-                                 'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
+    dict_collection_visible_keys = [
+        "id",
+        "repository_id",
+        "numeric_revision",
+        "changeset_revision",
+        "malicious",
+        "downloadable",
+        "missing_test_components",
+        "has_repository_dependencies",
+        "includes_datatypes",
+        "includes_tools",
+        "includes_tool_dependencies",
+        "includes_tools_for_display_in_tool_panel",
+        "includes_workflows",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "repository_id",
+        "numeric_revision",
+        "changeset_revision",
+        "malicious",
+        "downloadable",
+        "missing_test_components",
+        "has_repository_dependencies",
+        "includes_datatypes",
+        "includes_tools",
+        "includes_tool_dependencies",
+        "includes_tools_for_display_in_tool_panel",
+        "includes_workflows",
+        "repository_dependencies",
+    ]
 
-    def __init__(self, id=None, repository_id=None, numeric_revision=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
-                 downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
-                 has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
-                 includes_workflows=False):
+    def __init__(
+        self,
+        id=None,
+        repository_id=None,
+        numeric_revision=None,
+        changeset_revision=None,
+        metadata=None,
+        tool_versions=None,
+        malicious=False,
+        downloadable=False,
+        missing_test_components=None,
+        tools_functionally_correct=False,
+        test_install_error=False,
+        has_repository_dependencies=False,
+        includes_datatypes=False,
+        includes_tools=False,
+        includes_tool_dependencies=False,
+        includes_workflows=False,
+    ):
         self.id = id
         self.repository_id = repository_id
         self.numeric_revision = numeric_revision
@@ -715,30 +819,42 @@ class RepositoryMetadata(Dictifiable, _HasTable):
     @property
     def includes_tools_for_display_in_tool_panel(self):
         if self.metadata:
-            tool_dicts = self.metadata.get('tools', [])
+            tool_dicts = self.metadata.get("tools", [])
             for tool_dict in tool_dicts:
-                if tool_dict.get('add_to_tool_panel', True):
+                if tool_dict.get("add_to_tool_panel", True):
                     return True
         return False
 
     @property
     def repository_dependencies(self):
         if self.has_repository_dependencies:
-            return [repository_dependency for repository_dependency in self.metadata['repository_dependencies']['repository_dependencies']]
+            return [
+                repository_dependency
+                for repository_dependency in self.metadata["repository_dependencies"]["repository_dependencies"]
+            ]
         return []
 
 
 # After the map_imperatively statement has been executed, the members of the
 # properties dictionary (repository, reviews) will be available as instrumented
 # class attributes on RepositoryMetadata.
-mapper_registry.map_imperatively(RepositoryMetadata, RepositoryMetadata.table, properties=dict(
-    repository=relationship(Repository, back_populates='metadata_revisions'),
-    reviews=relationship(RepositoryReview,
-        viewonly=True,
-        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-        primaryjoin=lambda: ((RepositoryReview.repository_id == RepositoryMetadata.repository_id)
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)),
-        back_populates='repository_metadata')))
+mapper_registry.map_imperatively(
+    RepositoryMetadata,
+    RepositoryMetadata.table,
+    properties=dict(
+        repository=relationship(Repository, back_populates="metadata_revisions"),
+        reviews=relationship(
+            RepositoryReview,
+            viewonly=True,
+            foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
+            primaryjoin=lambda: (
+                (RepositoryReview.repository_id == RepositoryMetadata.repository_id)
+                & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)
+            ),
+            back_populates="repository_metadata",
+        ),
+    ),
+)
 
 
 # Utility methods

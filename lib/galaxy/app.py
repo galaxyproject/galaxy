@@ -2,13 +2,22 @@ import logging
 import signal
 import sys
 import time
-from typing import Any, Callable, List, Tuple
+from typing import (
+    Any,
+    Callable,
+    List,
+    Tuple,
+)
 
 import galaxy.model
 import galaxy.model.security
 import galaxy.queues
 import galaxy.security
-from galaxy import auth, config, jobs
+from galaxy import (
+    auth,
+    config,
+    jobs,
+)
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.datatypes.registry import Registry
@@ -43,11 +52,14 @@ from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
 )
-from galaxy.quota import get_quota_agent, QuotaAgent
+from galaxy.quota import (
+    get_quota_agent,
+    QuotaAgent,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
     Vault,
-    VaultFactory
+    VaultFactory,
 )
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
@@ -55,12 +67,15 @@ from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tools.cache import (
     ToolCache,
-    ToolShedRepositoryCache
+    ToolShedRepositoryCache,
 )
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import build_tours_registry, ToursRegistry
+from galaxy.tours import (
+    build_tours_registry,
+    ToursRegistry,
+)
 from galaxy.util import (
     ExecutionTimer,
     heartbeat,
@@ -72,11 +87,18 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
-from galaxy.web_stack import application_stack_instance, ApplicationStack
+from galaxy.web_stack import (
+    application_stack_instance,
+    ApplicationStack,
+)
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
-from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
+from .structured_app import (
+    BasicSharedApp,
+    MinimalManagerApp,
+    StructuredApp,
+)
 
 log = logging.getLogger(__name__)
 app = None
@@ -106,7 +128,13 @@ class SentryClientMixin:
         self.sentry_client = None
         if self.config.sentry_dsn:
             event_level = self.config.sentry_event_level.upper()
-            assert event_level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], f"Invalid sentry event level '{self.config.sentry.event_level}'"
+            assert event_level in [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL",
+            ], f"Invalid sentry event level '{self.config.sentry.event_level}'"
 
             def postfork_sentry_client():
                 import sentry_sdk
@@ -114,12 +142,12 @@ class SentryClientMixin:
 
                 sentry_logging = LoggingIntegration(
                     level=logging.INFO,  # Capture info and above as breadcrumbs
-                    event_level=getattr(logging, event_level)  # Send errors as events
+                    event_level=getattr(logging, event_level),  # Send errors as events
                 )
                 self.sentry_client = sentry_sdk.init(
                     self.config.sentry_dsn,
                     release=f"{self.config.version_major}.{self.config.version_minor}",
-                    integrations=[sentry_logging]
+                    integrations=[sentry_logging],
                 )
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
@@ -141,7 +169,7 @@ class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, Hal
             # an appropriately configured logger in configure_logging below.
             logging.basicConfig(level=logging.DEBUG)
         log.debug("python path is: %s", ", ".join(sys.path))
-        self.name = 'galaxy'
+        self.name = "galaxy"
         self.is_webapp = False
         self.new_installation = False
         # Read config file and check for errors
@@ -150,7 +178,7 @@ class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, Hal
         if configure_logging:
             config.configure_logging(self.config)
         self._configure_object_store(fsmon=True)
-        config_file = kwargs.get('global_conf', {}).get('__file__', None)
+        config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
@@ -165,7 +193,8 @@ class MinimalGalaxyApplication(BasicSharedApp, config.ConfiguresGalaxyMixin, Hal
     def configure_fluent_log(self):
         if self.config.fluent_log:
             from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
-            self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
+
+            self.trace_logger = FluentTraceLogger("galaxy", self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None
 
@@ -182,12 +211,16 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)
-        self.execution_timer_factory = self._register_singleton(ExecutionTimerFactory, ExecutionTimerFactory(self.config))
+        self.execution_timer_factory = self._register_singleton(
+            ExecutionTimerFactory, ExecutionTimerFactory(self.config)
+        )
         self.configure_fluent_log()
         self.application_stack = self._register_singleton(ApplicationStack, application_stack_instance(app=self))
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
-        self.job_metrics = self._register_singleton(JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self))
+        self.job_metrics = self._register_singleton(
+            JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self)
+        )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
 
@@ -206,17 +239,22 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         from galaxy.jobs.manager import JobManager
+
         self.job_manager = self._register_singleton(JobManager)
 
         # ConfiguredFileSources
-        self.file_sources = self._register_singleton(ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config))
+        self.file_sources = self._register_singleton(
+            ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
+        )
 
         self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
         self._configure_tool_config_files()
-        self.installed_repository_manager = self._register_singleton(InstalledRepositoryManager, InstalledRepositoryManager(self))
+        self.installed_repository_manager = self._register_singleton(
+            InstalledRepositoryManager, InstalledRepositoryManager(self)
+        )
         self._configure_datatypes_registry(self.installed_repository_manager)
         self._register_singleton(Registry, self.datatypes_registry)
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
@@ -244,7 +282,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self._register_singleton(StructuredApp, self)
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
-        self.config.reload_sanitize_allowlist(explicit='sanitize_allowlist_file' in kwargs)
+        self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
@@ -252,8 +290,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
         self._configure_tool_shed_registry()
 
-        self.dependency_resolvers_view = self._register_singleton(DependencyResolversView, DependencyResolversView(self))
-        self.test_data_resolver = self._register_singleton(TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories))
+        self.dependency_resolvers_view = self._register_singleton(
+            DependencyResolversView, DependencyResolversView(self)
+        )
+        self.test_data_resolver = self._register_singleton(
+            TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
+        )
         self.dynamic_tool_manager = self._register_singleton(DynamicToolManager)
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
@@ -268,7 +310,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.data_provider_registry = self._register_singleton(DataProviderRegistry)
 
         # Initialize error report plugins.
-        self.error_reports = self._register_singleton(ErrorReports, ErrorReports(self.config.error_report_file, app=self))
+        self.error_reports = self._register_singleton(
+            ErrorReports, ErrorReports(self.config.error_report_file, app=self)
+        )
 
         # Setup a Tool Cache
         self.tool_cache = self._register_singleton(ToolCache)
@@ -279,7 +323,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)
         # Load the update repository manager.
-        self.update_repository_manager = self._register_singleton(UpdateRepositoryManager, UpdateRepositoryManager(self))
+        self.update_repository_manager = self._register_singleton(
+            UpdateRepositoryManager, UpdateRepositoryManager(self)
+        )
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -292,10 +338,14 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         load_lib_tools(self.toolbox)
         self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
-        self.visualizations_registry = self._register_singleton(VisualizationsRegistry, VisualizationsRegistry(
-            self,
-            directories_setting=self.config.visualization_plugins_directory,
-            template_cache_dir=self.config.template_cache_path))
+        self.visualizations_registry = self._register_singleton(
+            VisualizationsRegistry,
+            VisualizationsRegistry(
+                self,
+                directories_setting=self.config.visualization_plugins_directory,
+                template_cache_dir=self.config.template_cache_path,
+            ),
+        )
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
@@ -305,8 +355,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model,
-            permitted_actions=self.security_agent.permitted_actions)
+            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+        )
         # Load quota management.
         self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
         # Heartbeat for thread profiling
@@ -317,9 +367,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         if self.config.use_heartbeat:
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat(
-                    self.config,
-                    period=self.config.heartbeat_interval,
-                    fname=self.config.heartbeat_log
+                    self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
                 )
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
@@ -327,15 +375,15 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.authnz_manager = None
         if self.config.enable_oidc:
             from galaxy.authnz import managers
-            self.authnz_manager = managers.AuthnzManager(self,
-                                                         self.config.oidc_config_file,
-                                                         self.config.oidc_backends_config_file)
+
+            self.authnz_manager = managers.AuthnzManager(
+                self, self.config.oidc_config_file, self.config.oidc_backends_config_file
+            )
 
         self.containers = {}
         if self.config.enable_beta_containers_interface:
             self.containers = build_container_interfaces(
-                self.config.containers_config_file,
-                containers_conf=self.config.containers_conf
+                self.config.containers_config_file, containers_conf=self.config.containers_conf
             )
 
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
@@ -344,7 +392,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                 name="HistoryAuditTablePruneTask",
                 interval=self.config.history_audit_table_prune_interval,
                 immediate_start=False,
-                time_execution=True)
+                time_execution=True,
+            )
             self.application_stack.register_postfork_function(self.prune_history_audit_task.start)
             self.haltables.append(("HistoryAuditTablePruneTask", self.prune_history_audit_task.shutdown))
         # Start the job manager
@@ -355,6 +404,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.proxy_manager = ProxyManager(self.config)
 
         from galaxy.workflow import scheduling_manager
+
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
@@ -372,9 +422,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
-        self.database_heartbeat = DatabaseHeartbeat(
-            application_stack=self.application_stack
-        )
+        self.database_heartbeat = DatabaseHeartbeat(application_stack=self.application_stack)
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
@@ -382,7 +430,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.application_stack.register_postfork_function(self.application_stack.start)
         self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
         # Delay toolbox index until after startup
-        self.application_stack.register_postfork_function(lambda: send_local_control_task(self, 'rebuild_toolbox_search_index'))
+        self.application_stack.register_postfork_function(
+            lambda: send_local_control_task(self, "rebuild_toolbox_search_index")
+        )
 
         # Inject url_for for components to more easily optionally depend
         # on url_for.
@@ -420,32 +470,33 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     @property
     def is_job_handler(self) -> bool:
-        return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database
+        return (
+            self.config.track_jobs_in_database and self.job_config.is_handler
+        ) or not self.config.track_jobs_in_database
 
 
 class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
-
     def __init__(self, galaxy_statsd_client, *args, **kwds):
         self.galaxy_statsd_client = galaxy_statsd_client
         super().__init__(*args, **kwds)
 
     def to_str(self, **kwd):
-        self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000., kwd)
+        self.galaxy_statsd_client.timing(self.timer_id, self.elapsed * 1000.0, kwd)
         return super().to_str(**kwd)
 
 
 class ExecutionTimerFactory:
-
     def __init__(self, config):
         statsd_host = getattr(config, "statsd_host", None)
         if statsd_host:
             from galaxy.web.framework.middleware.statsd import GalaxyStatsdClient
+
             self.galaxy_statsd_client = GalaxyStatsdClient(
                 statsd_host,
-                getattr(config, 'statsd_port', 8125),
-                getattr(config, 'statsd_prefix', 'galaxy'),
-                getattr(config, 'statsd_influxdb', False),
-                getattr(config, 'statsd_mock_calls', False),
+                getattr(config, "statsd_port", 8125),
+                getattr(config, "statsd_prefix", "galaxy"),
+                getattr(config, "statsd_influxdb", False),
+                getattr(config, "statsd_mock_calls", False),
             )
         else:
             self.galaxy_statsd_client = None

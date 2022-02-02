@@ -31,13 +31,11 @@ from . import (
 log = logging.getLogger(__name__)
 
 
-router = Router(tags=['quotas'])
+router = Router(tags=["quotas"])
 
 
 QuotaIdPathParam: EncodedDatabaseIdField = Path(
-    ...,  # Required
-    title="Quota ID",
-    description="The encoded identifier of the Quota."
+    ..., title="Quota ID", description="The encoded identifier of the Quota."  # Required
 )
 
 
@@ -46,7 +44,7 @@ class FastAPIQuota:
     service: QuotasService = depends(QuotasService)
 
     @router.get(
-        '/api/quotas',
+        "/api/quotas",
         summary="Displays a list with information of quotas that are currently active.",
         require_admin=True,
     )
@@ -58,7 +56,7 @@ class FastAPIQuota:
         return self.service.index(trans)
 
     @router.get(
-        '/api/quotas/deleted',
+        "/api/quotas/deleted",
         summary="Displays a list with information of quotas that have been deleted.",
         require_admin=True,
     )
@@ -70,20 +68,18 @@ class FastAPIQuota:
         return self.service.index(trans, deleted=True)
 
     @router.get(
-        '/api/quotas/{id}',
+        "/api/quotas/{id}",
         summary="Displays details on a particular active quota.",
         require_admin=True,
     )
     def show(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = QuotaIdPathParam
+        self, trans: ProvidesUserContext = DependsOnTrans, id: EncodedDatabaseIdField = QuotaIdPathParam
     ) -> QuotaDetails:
         """Displays details on a particular active quota."""
         return self.service.show(trans, id)
 
     @router.get(
-        '/api/quotas/deleted/{id}',
+        "/api/quotas/deleted/{id}",
         summary="Displays details on a particular quota that has been deleted.",
         require_admin=True,
     )
@@ -96,7 +92,7 @@ class FastAPIQuota:
         return self.service.show(trans, id, deleted=True)
 
     @router.post(
-        '/api/quotas',
+        "/api/quotas",
         summary="Creates a new quota.",
         require_admin=True,
     )
@@ -109,7 +105,7 @@ class FastAPIQuota:
         return self.service.create(trans, payload)
 
     @router.put(
-        '/api/quotas/{id}',
+        "/api/quotas/{id}",
         summary="Updates an existing quota.",
         require_admin=True,
     )
@@ -123,7 +119,7 @@ class FastAPIQuota:
         return self.service.update(trans, id, payload)
 
     @router.delete(
-        '/api/quotas/{id}',
+        "/api/quotas/{id}",
         summary="Deletes an existing quota.",
         require_admin=True,
     )
@@ -137,7 +133,7 @@ class FastAPIQuota:
         return self.service.delete(trans, id, payload)
 
     @router.post(
-        '/api/quotas/deleted/{id}/undelete',
+        "/api/quotas/deleted/{id}/undelete",
         summary="Restores a previously deleted quota.",
         require_admin=True,
     )
@@ -156,7 +152,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
 
     @web.require_admin
     @web.expose_api
-    def index(self, trans, deleted='False', **kwd):
+    def index(self, trans, deleted="False", **kwd):
         """
         GET /api/quotas
         GET /api/quotas/deleted
@@ -167,7 +163,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
 
     @web.require_admin
     @web.expose_api
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans, id, deleted="False", **kwd):
         """
         GET /api/quotas/{encoded_quota_id}
         GET /api/quotas/deleted/{encoded_quota_id}
@@ -204,7 +200,7 @@ class QuotaAPIController(BaseGalaxyAPIController):
         Deletes a quota
         """
         # a request body is optional here
-        payload = DeleteQuotaPayload(**kwd.get('payload', {}))
+        payload = DeleteQuotaPayload(**kwd.get("payload", {}))
         return self.service.delete(trans, id, payload)
 
     @web.require_admin

@@ -6,28 +6,27 @@ from galaxy_test.base.api_util import TEST_USER
 from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [
-    'enable_unique_workflow_defaults',
-    'ftp_upload_site',
-    'wiki_url',
-    'support_url',
-    'logo_url',
-    'terms_url',
-    'allow_user_dataset_purge',
+    "enable_unique_workflow_defaults",
+    "ftp_upload_site",
+    "wiki_url",
+    "support_url",
+    "logo_url",
+    "terms_url",
+    "allow_user_dataset_purge",
 ]
 TEST_KEYS_FOR_ADMIN_ONLY = [
-    'library_import_dir',
-    'user_library_import_dir',
-    'allow_library_path_paste',
-    'allow_user_deletion',
+    "library_import_dir",
+    "user_library_import_dir",
+    "allow_library_path_paste",
+    "allow_user_deletion",
 ]
 
 
 class ConfigurationApiTestCase(ApiTestCase):
-
     def test_whoami(self):
         response = self._get("whoami")
         self._assert_status_code_is(response, 200)
-        assert response.json()['email'] == TEST_USER
+        assert response.json()["email"] == TEST_USER
 
     def test_normal_user_configuration(self):
         config = self._get_configuration()
@@ -54,5 +53,5 @@ class ConfigurationApiTestCase(ApiTestCase):
         response = self._get("version")
         self._assert_status_code_is(response, 200)
         data = response.json()
-        assert 'version_major' in data
-        assert 'version_minor' in data
+        assert "version_major" in data
+        assert "version_minor" in data

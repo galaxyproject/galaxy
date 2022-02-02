@@ -9,7 +9,6 @@ import threading
 import markupsafe
 from paste import response
 
-
 template = """
 <script>
 function show_profile_output()
@@ -63,19 +62,20 @@ class ProfileMiddleware:
 
         def run_app():
             body.extend(self.app(environ, replace_start_response))
+
         # Run in profiler
         prof = cProfile.Profile()
         prof.runctx("run_app()", globals(), locals())
         # Build up body with stats
-        body = ''.join(body)
+        body = "".join(body)
         headers = catch_response[1]
-        content_type = response.header_value(headers, 'content-type')
-        if not content_type.startswith('text/html'):
+        content_type = response.header_value(headers, "content-type")
+        if not content_type.startswith("text/html"):
             # We can't add info to non-HTML output
             return [body]
         stats = pstats.Stats(prof)
         stats.strip_dirs()
-        stats.sort_stats('time', 'calls')
+        stats.sort_stats("time", "calls")
         output = pstats_as_html(stats, self.limit)
         body += template % output
         return [body]
@@ -87,8 +87,10 @@ def pstats_as_html(stats, *sel_list):
     """
     rval = []
     # Number of function calls, primitive calls, total time
-    rval.append("<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-                % (stats.total_calls, stats.prim_calls, stats.total_tt))
+    rval.append(
+        "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
+        % (stats.total_calls, stats.prim_calls, stats.total_tt)
+    )
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
@@ -100,12 +102,14 @@ def pstats_as_html(stats, *sel_list):
     if list:
         rval.append("<table>")
         # Header
-        rval.append("<tr><th>ncalls</th>"
-                    "<th>tottime</th>"
-                    "<th>percall</th>"
-                    "<th>cumtime</th>"
-                    "<th>percall</th>"
-                    "<th>filename:lineno(function)</th></tr>")
+        rval.append(
+            "<tr><th>ncalls</th>"
+            "<th>tottime</th>"
+            "<th>percall</th>"
+            "<th>cumtime</th>"
+            "<th>percall</th>"
+            "<th>filename:lineno(function)</th></tr>"
+        )
         for func in funcs:
             rval.append("<tr>")
             # Calculate each field
@@ -163,11 +167,11 @@ def func_std_string(func_name):
     """
     Match what old profile produced
     """
-    if func_name[:2] == ('~', 0):
+    if func_name[:2] == ("~", 0):
         # special case for built-in functions
         name = func_name[2]
-        if name.startswith('<') and name.endswith('>'):
-            return '{%s}' % name[1:-1]
+        if name.startswith("<") and name.endswith(">"):
+            return "{%s}" % name[1:-1]
         else:
             return name
     else:

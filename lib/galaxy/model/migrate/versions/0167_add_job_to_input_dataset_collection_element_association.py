@@ -4,17 +4,26 @@ Migration script to add a new job_to_input_dataset_collection_element table to t
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    Unicode,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 job_to_input_dataset_collection_element_table = Table(
-    "job_to_input_dataset_collection_element", metadata,
+    "job_to_input_dataset_collection_element",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_collection_element_id", Integer, ForeignKey("dataset_collection_element.id"), index=True),
-    Column("name", Unicode(255)))
+    Column("name", Unicode(255)),
+)
 
 
 def upgrade(migrate_engine):
