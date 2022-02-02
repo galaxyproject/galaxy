@@ -24,21 +24,32 @@ s3_directory=$6
 # AWS Transcribe service requires a unique job name when submitting a job under the same account.
 # Suffixing to the job name with hostname and timestamp shall make the name unique enough in real case.
 # In addition, all AWS job related files should go to a designated directory $job_directory, and file names can be prefixed by the job_name. 
+#
+# job_name_prefix="AwsTranscribe"
+# job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
+#
 # Change for LWLW job:
 # Upon resume, the job needs to check if AWS request is already sent during previous run cycle;
 # thus the job name needs to be inferable from some static info known to the job;
 # timestamp is unique but previous timestamp is not known to the job;
-# the best option would be replace timestamp with the dataset ID in output_file, which is known to the job,
-# doesn't change upon resume, and being the Galaxy dataset filename, is unique in each Galaxy instance
+# the best option would be replace timestamp with the param output_file, which is known to the job,
+# doesn't change upon resume, and being the Galaxy dataset filename, is unique in each Galaxy instance.
 #
-# job_name_prefix="AwsTranscribe"
-# job_name_suffix=$(printf "%s-%s-%s" $(hostname -s) $(date +%Y%m%d%H%M%S) $$)
+# To shorten the job name, only the part useful for uniqueness is needed within output_file path, i.e.
+# galaxy root (in case there're multiple galaxy instances on the same host) plus the dataset number.  
+# dataset=`basename $output_file .dat`
+# dataset_id=`echo "${dataset##*_}"`
+# galaxy_root=
+# job_name=AWST=$hostname=$galaxy_root=$dataset_id
+#
 hostname=`hostname -s`
-dataset=`basename $output_file .dat`
-dataset_id=`echo "${dataset##*_}"`
-job_name=AwsTranscribe-$hostname-$dataset_id
+# replace "/" with ":" to not interfere with filename
+dataset=${output_file//[\/]/:} 
+job_name=AWST=$hostname=$dataset
 log_file=$job_directory/$job_name.log
 
+# Note: It's assumed that galaxy/../galaxy_work/aws/transcribe dir exists prior to the job run.
+#
 # create job_directory if not existing yet
 #if [ ! -d ${job_directory} ] 
 #then

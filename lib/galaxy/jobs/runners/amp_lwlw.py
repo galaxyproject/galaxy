@@ -32,7 +32,7 @@ log = logging.getLogger(__name__)
 stdout = ''
 stderr = 'None'
 
-DEFAULT_POOL_SLEEP_TIME = 60
+DEFAULT_POOL_SLEEP_TIME = 10
 
 # AMP customization
 # Job runner for Light-Weight-Long_Waiting (LWLW) jobs, which doesn't take much local CPU resource,
