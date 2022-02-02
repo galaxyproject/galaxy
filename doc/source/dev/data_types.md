@@ -246,14 +246,34 @@ entries inside your class like this:
 class GenBank(data.Text):
     file_ext = "genbank"
 
-    MetadataElement(name="number_of_sequences", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(name="number_of_sequences", default=0, desc="Number of sequences", readonly=True, visible=True, optional=True, no_value="?")
 ```
 
-Here we have a `MetadataElement`, accessible in
-methods with a dataset parameter from
-`dataset.metadata.number_of_sequences`. There are a
-couple relevant functions you'll want to override
-here:
+Here we have a `MetadataElement`, accessible in methods with a dataset parameter
+from `dataset.metadata.number_of_sequences`. 
+
+- `default` (default is `None`): the default value that is set if neither
+  `set_meta` (see below) nor the user (if allowed, see `readonly`) has set a value
+- `no_value` (defaults to `None`): a value that indicates that the metadata has
+  not been set. In most cases `no_value` should be an invalid value, in particulat
+  one that can not be set by `set_meta`. In general `no_value` should be
+  different from `default`. Having a `no_value` different from `None` can be of
+  interest for user editable metadata (see `readonly`) - a good example is
+  `dbkey` which has `no_value="?"`. `no_value` is relevant for instance:
+  
+  1. for the metadata validator that verifies that all mandatory metadata data is
+     set (note that such a validator is added implicitly for all dataset
+     parameters), 
+  2. For metadata filters (applied to dynamic options), where unset
+     metadata is ignored.  
+
+- `optional` (default `False`): determines if it is OK that metadata is unset, in
+  particular if the default metadata validator should ignore it.
+- `visible` (default `True`): determines if the metadata element is visible to the user
+- `readonly` (default `False`): determines if the user can change the value. 
+- `set_in_upload` (default `False`)
+
+There are a couple relevant functions you'll want to override here:
 
 *  ```python
    set_peek(self, dataset, is_multi_byte=False)
