@@ -828,7 +828,7 @@ class InputParameterModule(WorkflowModule):
     name = "Input parameter"
     default_parameter_type = "text"
     default_optional = False
-    default_default_value = ''
+    default_default_value = None
     parameter_type = default_parameter_type
     optional = default_optional
     default_value = default_default_value
@@ -1015,6 +1015,7 @@ class InputParameterModule(WorkflowModule):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
+        default_value = parameter_def.get("default", self.default_default_value)
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
@@ -1044,7 +1045,7 @@ class InputParameterModule(WorkflowModule):
                 options = None
                 if static_options and len(static_options) == 1:
                     # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
-                    options = [{"label": o[0], "value": o[1]} for o in static_options[0]]
+                    options = [{"label": o[0], "value": o[1], "selected": default_value and o[1] == default_value} for o in static_options[0]]
                 elif static_options:
                     # Intersection based on values of multiple option connections.
                     intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
@@ -1052,7 +1053,7 @@ class InputParameterModule(WorkflowModule):
                     d = defaultdict(set)  # Collapse labels with same values
                     for label, value, _ in intxn_opts:
                         d[value].add(label)
-                    options = [{"label": ', '.join(label), "value": value, "selected": False} for value, label in d.items()]
+                    options = [{"label": ', '.join(label), "value": value, "selected": default_value and value == default_value} for value, label in d.items()]
 
                 if options is not None:
                     parameter_kwds["options"] = options
@@ -1089,8 +1090,10 @@ class InputParameterModule(WorkflowModule):
         parameter_class = parameter_types[client_parameter_type]
 
         if optional:
-            default_value = parameter_def.get("default", self.default_default_value)
-            parameter_kwds["value"] = default_value
+            if client_parameter_type == "select":
+                parameter_kwds['selected'] = default_value
+            else:
+                parameter_kwds["value"] = default_value
             if parameter_type == 'boolean':
                 parameter_kwds['checked'] = default_value
 
