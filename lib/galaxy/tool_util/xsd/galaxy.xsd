@@ -6946,11 +6946,12 @@ Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
 	
 ```xml
-   <!-- Example: this tool is seqtk -->
+   <!-- Example: this tool is dada2 -->
    <xrefs>
-	<xref type="bio.tools">seqtk</xref>
+       <xref type="bio.tools">dada2</xref>
+       <xref type="bioconductor">dada2</xref>
    </xrefs>
-   <!-- https://bio.tools/seqtk -->
+   <!-- https://bio.tools/dada2 -->
 ```
 
 ]]></xs:documentation>
@@ -6969,8 +6970,8 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``
-is the only supported options.</xs:documentation>
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -6982,6 +6983,7 @@ is the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
+      <xs:enumeration value="bioconductor"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
