@@ -67,7 +67,6 @@ importlib-metadata==4.10.1; python_version == "3.7" and (python_version >= "3.7"
 importlib-resources==5.4.0; python_version >= "3.6"
 isa-rwval==0.10.10
 isodate==0.6.1; python_version >= "3.7" and python_version < "4"
-isort==5.10.1; python_full_version >= "3.6.1" and python_version < "4.0"
 jsonschema==4.4.0; python_version >= "3.7"
 kombu==5.2.3; python_version >= "3.7"
 lagom==1.7.0; python_version >= "3.6" and python_version < "4.0"
