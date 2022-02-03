@@ -166,13 +166,12 @@ class MetadataCollection(Mapping):
         :returns: True if the value differes from the no_value
                   False if its equal of if no metadata with the name is specified
         """
+        meta_val = self[name]
         try:
-            meta_val = self[name]
+            meta_spec = self.parent.metadata.spec[name]
         except KeyError:
-            log.debug(f"no metadata with name {name} found")
+            log.debug(f"No metadata element with name '{name}' found")
             return False
-
-        meta_spec = self.parent.metadata.spec[name]
         return meta_val != meta_spec.no_value
 
     def get_metadata_parameter(self, name, **kwd):
