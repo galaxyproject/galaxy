@@ -2537,7 +2537,9 @@ class RData(CompressedArchive):
     file_ext = 'rdata'
     check_required_metadata = True
 
-    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False)
+    # Tools may in the past have output rdata files that are actually RDS files, and so parsing the version fails,
+    # that is why we have to keep optional="True".
+    MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=True)
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
