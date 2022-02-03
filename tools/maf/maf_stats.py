@@ -61,7 +61,17 @@ def __main__():
     species_summary = {}
     total_length = 0
     # loop through interval file
-    for num_region, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(input_interval_filename, 'r'), chrom_col=chr_col, start_col=start_col, end_col=end_col, fix_strand=True, return_header=False, return_comments=False)):  # noqa: B007
+    for num_region, region in enumerate(  # noqa: B007
+        bx.intervals.io.NiceReaderWrapper(
+            open(input_interval_filename, "r"),
+            chrom_col=chr_col,
+            start_col=start_col,
+            end_col=end_col,
+            fix_strand=True,
+            return_header=False,
+            return_comments=False,
+        )
+    ):
         src = "%s.%s" % (dbkey, region.chrom)
         region_length = region.end - region.start
         if region_length < 1:

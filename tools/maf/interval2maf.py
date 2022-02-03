@@ -109,7 +109,18 @@ def __main__():
     # Iterate over input regions
     num_blocks = 0
     num_regions = None
-    for num_regions, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(interval_file), chrom_col=chromCol, start_col=startCol, end_col=endCol, strand_col=strandCol, fix_strand=True, return_header=False, return_comments=False)):  # noqa: B007
+    for num_regions, region in enumerate(  # noqa: B007
+        bx.intervals.io.NiceReaderWrapper(
+            open(interval_file),
+            chrom_col=chromCol,
+            start_col=startCol,
+            end_col=endCol,
+            strand_col=strandCol,
+            fix_strand=True,
+            return_header=False,
+            return_comments=False,
+        )
+    ):
         src = maf_utilities.src_merge(dbkey, region.chrom)
         for block in index.get_as_iterator(src, region.start, region.end):
             if split_blocks_by_species:
