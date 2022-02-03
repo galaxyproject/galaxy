@@ -14,6 +14,7 @@
             <div v-if="loading" class="m-2">
                 <LoadingSpan message="Please wait" />
             </div>
+            <b-alert v-else-if="!hasItems" variant="info" class="m-2" show> No entries found. </b-alert>
         </div>
     </div>
 </template>
@@ -60,6 +61,9 @@ export default {
         loading() {
             return this.payload.length == this.pageSize;
         },
+        hasItems() {
+            return this.items.length > 0;
+        },
         getItems() {
             return reverse(this.items.filter((n) => n));
         },
@@ -77,7 +81,7 @@ export default {
             }
         },
         onScroll(event) {
-            const itemCount = this.getItems.length;
+            const itemCount = this.items.length;
             if (itemCount > 0) {
                 let topIndex = 0;
                 for (const index in event.target.childNodes) {
