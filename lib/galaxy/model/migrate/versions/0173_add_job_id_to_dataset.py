@@ -25,12 +25,12 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    job_id_column = Column('job_id', Integer, ForeignKey('job.id'), index=True)
-    add_column(job_id_column, 'dataset', metadata, index_name='ix_dataset_job_id')
+    job_id_column = Column("job_id", Integer, ForeignKey("job.id"), index=True)
+    add_column(job_id_column, "dataset", metadata, index_name="ix_dataset_job_id")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column('job_id', 'dataset', metadata)
+    drop_column("job_id", "dataset", metadata)

@@ -5,9 +5,13 @@ import re
 import string
 
 from galaxy.util import is_uuid
-from ._base import BaseObjectStoreIntegrationTestCase, files_count
+from ._base import (
+    BaseObjectStoreIntegrationTestCase,
+    files_count,
+)
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
+    """<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="files1" type="disk" weight="1" store_by="uuid">
@@ -22,7 +26,8 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
         </backend>
     </backends>
 </object_store>
-""")
+"""
+)
 
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 
@@ -37,8 +42,7 @@ class MixedStoreByObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestC
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
 
     def test_both_types(self):
-        """Test each object store configures files correctly.
-        """
+        """Test each object store configures files correctly."""
         i = 0
         with self.dataset_populator.test_history() as history_id:
             # Loop breaks once each object store has at least once file of each type.
@@ -52,10 +56,12 @@ class MixedStoreByObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestC
                     break
                 i += 1
                 if i > 50:
-                    raise Exception("Problem with logic of test, randomly each object store should have at least one file by now")
+                    raise Exception(
+                        "Problem with logic of test, randomly each object store should have at least one file by now"
+                    )
 
             def strip_to_id(x):
-                match = re.match(r'dataset_(.*)\.dat', os.path.basename(x))
+                match = re.match(r"dataset_(.*)\.dat", os.path.basename(x))
                 assert match
                 return match.group(1)
 

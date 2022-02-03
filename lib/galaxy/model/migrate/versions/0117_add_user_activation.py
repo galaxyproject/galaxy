@@ -4,7 +4,12 @@ Adds 'active' and 'activation_token' columns to the galaxy_user table.
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.custom_types import TrimmedString
 
@@ -39,7 +44,7 @@ def downgrade(migrate_engine):
     try:
         user_table = Table("galaxy_user", metadata, autoload=True)
         # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
-        if migrate_engine.name != 'sqlite':
+        if migrate_engine.name != "sqlite":
             user_active = user_table.c.active
             user_active.drop()
         user_activation_token = user_table.c.activation_token

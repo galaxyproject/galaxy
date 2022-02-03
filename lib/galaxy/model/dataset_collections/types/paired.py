@@ -1,4 +1,7 @@
-from galaxy.model import DatasetCollectionElement, HistoryDatasetAssociation
+from galaxy.model import (
+    DatasetCollectionElement,
+    HistoryDatasetAssociation,
+)
 from ..types import BaseDatasetCollectionType
 
 FORWARD_IDENTIFIER = "forward"
@@ -9,6 +12,7 @@ class PairedDatasetCollectionType(BaseDatasetCollectionType):
     """
     Paired (left/right) datasets.
     """
+
     collection_type = "paired"
 
     def __init__(self):

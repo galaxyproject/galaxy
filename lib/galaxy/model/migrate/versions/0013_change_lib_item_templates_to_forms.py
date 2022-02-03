@@ -19,56 +19,71 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     MetaData,
-    Table
+    Table,
 )
 
 from galaxy.model.migrate.versions.util import (
     create_table,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 OLD_TABLE_NAMES = [
-    'library_item_info_permissions',
-    'library_item_info_template_permissions',
-    'library_item_info_element',
-    'library_item_info_template_element',
-    'library_info_template_association',
-    'library_folder_info_template_association',
-    'library_dataset_info_template_association',
-    'library_dataset_dataset_info_template_association',
-    'library_info_association',
-    'library_folder_info_association',
-    'library_dataset_info_association',
-    'library_dataset_dataset_info_association',
-    'library_item_info',
-    'library_item_info_template',
+    "library_item_info_permissions",
+    "library_item_info_template_permissions",
+    "library_item_info_element",
+    "library_item_info_template_element",
+    "library_info_template_association",
+    "library_folder_info_template_association",
+    "library_dataset_info_template_association",
+    "library_dataset_dataset_info_template_association",
+    "library_info_association",
+    "library_folder_info_association",
+    "library_dataset_info_association",
+    "library_dataset_dataset_info_association",
+    "library_item_info",
+    "library_item_info_template",
 ]
 
-LibraryInfoAssociation_table = Table('library_info_association', metadata,
-                                     Column("id", Integer, primary_key=True),
-                                     Column("library_id", Integer, ForeignKey("library.id"), index=True),
-                                     Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                                     Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True))
+LibraryInfoAssociation_table = Table(
+    "library_info_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("library_id", Integer, ForeignKey("library.id"), index=True),
+    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
+    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+)
 
-LibraryFolderInfoAssociation_table = Table('library_folder_info_association', metadata,
-                                           Column("id", Integer, primary_key=True),
-                                           Column("library_folder_id", Integer, ForeignKey("library_folder.id"), nullable=True, index=True),
-                                           Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                                           Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True))
+LibraryFolderInfoAssociation_table = Table(
+    "library_folder_info_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("library_folder_id", Integer, ForeignKey("library_folder.id"), nullable=True, index=True),
+    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
+    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+)
 
-LibraryDatasetDatasetInfoAssociation_table = Table('library_dataset_dataset_info_association', metadata,
-                                                   Column("id", Integer, primary_key=True),
-                                                   Column("library_dataset_dataset_association_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True, index=True),
-                                                   Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
-                                                   Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True))
+LibraryDatasetDatasetInfoAssociation_table = Table(
+    "library_dataset_dataset_info_association",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column(
+        "library_dataset_dataset_association_id",
+        Integer,
+        ForeignKey("library_dataset_dataset_association.id"),
+        nullable=True,
+        index=True,
+    ),
+    Column("form_definition_id", Integer, ForeignKey("form_definition.id"), index=True),
+    Column("form_values_id", Integer, ForeignKey("form_values.id"), index=True),
+)
 
 NEW_TABLES = [
     LibraryInfoAssociation_table,
     LibraryFolderInfoAssociation_table,
-    LibraryDatasetDatasetInfoAssociation_table
+    LibraryDatasetDatasetInfoAssociation_table,
 ]
 
 

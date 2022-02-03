@@ -2,7 +2,12 @@
 API operations on remote files.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 from fastapi.param_functions import Query
 
@@ -24,15 +29,12 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['remote files'])
+router = Router(tags=["remote files"])
 
 TargetQueryParam: str = Query(
     default=RemoteFilesTarget.ftpdir,
     title="Target source",
-    description=(
-        "The source to load datasets from."
-        " Possible values: ftpdir, userdir, importdir"
-    ),
+    description=("The source to load datasets from." " Possible values: ftpdir, userdir, importdir"),
 )
 
 FormatQueryParam: Optional[RemoteFilesFormat] = Query(
@@ -49,8 +51,7 @@ RecursiveQueryParam: Optional[bool] = Query(
     default=None,
     title="Recursive",
     description=(
-        "Wether to recursively lists all sub-directories."
-        " This will be `True` by default depending on the `target`."
+        "Wether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
     ),
 )
 
@@ -70,7 +71,7 @@ class FastAPIRemoteFiles:
     manager: RemoteFilesManager = depends(RemoteFilesManager)
 
     @router.get(
-        '/api/remote_files',
+        "/api/remote_files",
         summary="Displays remote files available to the user.",
         response_description="A list with details about the remote files available to the user.",
     )
@@ -80,13 +81,13 @@ class FastAPIRemoteFiles:
         target: str = TargetQueryParam,
         format: Optional[RemoteFilesFormat] = FormatQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
-        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam
+        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
     ) -> List[Dict[str, Any]]:
         """Lists all remote files available to the user from different sources."""
         return self.manager.index(user_ctx, target, format, recursive, disable)
 
     @router.get(
-        '/api/remote_files/plugins',
+        "/api/remote_files/plugins",
         summary="Display plugin information for each of the gxfiles:// URI targets available.",
         response_description="A list with details about each plugin.",
     )
@@ -119,10 +120,10 @@ class RemoteFilesAPIController(BaseGalaxyAPIController):
         :rtype:     list
         """
         # If set, target must be one of 'ftpdir' (default), 'userdir', 'importdir'
-        target = kwd.get('target', 'ftpdir')
-        format = kwd.get('format', None)
-        recursive = kwd.get('recursive', None)
-        disable = kwd.get('disable', None)
+        target = kwd.get("target", "ftpdir")
+        format = kwd.get("format", None)
+        recursive = kwd.get("recursive", None)
+        disable = kwd.get("disable", None)
 
         return self.manager.index(trans, target, format, recursive, disable)
 

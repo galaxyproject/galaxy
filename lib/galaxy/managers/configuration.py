@@ -22,9 +22,10 @@ from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.web.framework.base import server_starttime
+
 log = logging.getLogger(__name__)
 
-VERSION_JSON_FILE = 'version.json'
+VERSION_JSON_FILE = "version.json"
 
 
 class ConfigurationManager:
@@ -34,9 +35,7 @@ class ConfigurationManager:
         self._app = app
 
     def get_configuration(
-        self,
-        trans: ProvidesUserContext,
-        serialization_params: SerializationParams
+        self, trans: ProvidesUserContext, serialization_params: SerializationParams
     ) -> Dict[str, Any]:
         is_admin = trans.user_is_admin
         host = getattr(trans, "host", None)
@@ -56,9 +55,9 @@ class ConfigurationManager:
             with open(json_file) as f:
                 extra_info = json.load(f)
         except OSError:
-            log.info('Galaxy extra version JSON file %s not loaded.', json_file)
+            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
         else:
-            version_info['extra'] = extra_info
+            version_info["extra"] = extra_info
         return version_info
 
     def decode_id(
@@ -66,7 +65,7 @@ class ConfigurationManager:
         encoded_id: EncodedDatabaseIdField,
     ) -> Dict[str, int]:
         # Handle the special case for library folders
-        if ((len(encoded_id) % 16 == 1) and encoded_id.startswith('F')):
+        if (len(encoded_id) % 16 == 1) and encoded_id.startswith("F"):
             encoded_id = cast(EncodedDatabaseIdField, encoded_id[1:])
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
@@ -79,7 +78,7 @@ class ConfigurationManager:
             except AttributeError:
                 pass
             else:
-                entry = {'id': id, 'lineage': lineage_dict}
+                entry = {"id": id, "lineage": lineage_dict}
                 rval.append(entry)
         return rval
 
@@ -89,14 +88,15 @@ class ConfigurationManager:
         # server. A dedicated endpoint should probably be added to do that instead.
         def tool_conf_to_dict(conf):
             return dict(
-                config_filename=conf['config_filename'],
-                tool_path=conf['tool_path'],
+                config_filename=conf["config_filename"],
+                tool_path=conf["tool_path"],
             )
+
         confs = self._app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
         return list(map(tool_conf_to_dict, confs))
 
     def reload_toolbox(self):
-        self._app.queue_worker.send_control_task('reload_toolbox')
+        self._app.queue_worker.send_control_task("reload_toolbox")
 
 
 # TODO: this is a bit of an odd duck. It uses the serializer structure from managers
@@ -108,14 +108,13 @@ class ConfigSerializer(base.ModelSerializer):
     def __init__(self, app):
         super().__init__(app)
 
-        self.default_view = 'all'
-        self.add_view('all', list(self.serializers.keys()))
+        self.default_view = "all"
+        self.add_view("all", list(self.serializers.keys()))
 
     def default_serializer(self, config, key):
         return getattr(config, key, None)
 
     def add_serializers(self):
-
         def _defaults_to(default) -> base.Serializer:
             return lambda item, key, **context: getattr(item, key, default)
 
@@ -129,87 +128,87 @@ class ConfigSerializer(base.ModelSerializer):
 
         self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
-            'is_admin_user': lambda *a, **c: False,
-            'brand': _use_config,
-            'display_galaxy_brand': _use_config,
-            'logo_url': _use_config,
-            'logo_src': _use_config,
-            'logo_src_secondary': _use_config,
-            'terms_url': _use_config,
-            'myexperiment_target_url': _use_config,
-            'wiki_url': _use_config,
-            'search_url': _use_config,
-            'mailing_lists': _defaults_to(self.app.config.mailing_lists_url),
-            'screencasts_url': _use_config,
-            'citation_url': _use_config,
-            'support_url': _use_config,
-            'quota_url': _use_config,
-            'helpsite_url': _use_config,
-            'lims_doc_url': _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
-            'default_locale': _use_config,
-            'enable_tool_recommendations': _use_config,
-            'enable_account_interface': _use_config,
-            'tool_recommendation_model_path': _use_config,
-            'admin_tool_recommendations_path': _use_config,
-            'overwrite_model_recommendations': _use_config,
-            'topk_recommendations': _use_config,
-            'allow_user_impersonation': _use_config,
-            'allow_user_creation': _defaults_to(False),  # schema default is True
-            'use_remote_user': _defaults_to(None),  # schema default is False; or config.single_user
-            'single_user': _config_is_truthy,
-            'enable_oidc': _use_config,
-            'oidc': _use_config,
-            'enable_quotas': _use_config,
-            'remote_user_logout_href': _use_config,
-            'datatypes_disable_auto': _use_config,
-            'allow_user_dataset_purge': _defaults_to(False),  # schema default is True
-            'ga_code': _use_config,
-            'plausible_server': _use_config,
-            'plausible_domain': _use_config,
-            'markdown_to_pdf_available': lambda item, key, **context: weasyprint_available(),
-            'matomo_server': _use_config,
-            'matomo_site_id': _use_config,
-            'enable_unique_workflow_defaults': _use_config,
-            'enable_beta_markdown_export': _use_config,
-            'simplified_workflow_run_ui': _use_config,
-            'simplified_workflow_run_ui_target_history': _use_config,
-            'simplified_workflow_run_ui_job_cache': _use_config,
-            'simplified_workflow_run_ui': _use_config,
-            'has_user_tool_filters': _defaults_to(False),
+            "is_admin_user": lambda *a, **c: False,
+            "brand": _use_config,
+            "display_galaxy_brand": _use_config,
+            "logo_url": _use_config,
+            "logo_src": _use_config,
+            "logo_src_secondary": _use_config,
+            "terms_url": _use_config,
+            "myexperiment_target_url": _use_config,
+            "wiki_url": _use_config,
+            "search_url": _use_config,
+            "mailing_lists": _defaults_to(self.app.config.mailing_lists_url),
+            "screencasts_url": _use_config,
+            "citation_url": _use_config,
+            "support_url": _use_config,
+            "quota_url": _use_config,
+            "helpsite_url": _use_config,
+            "lims_doc_url": _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
+            "default_locale": _use_config,
+            "enable_tool_recommendations": _use_config,
+            "enable_account_interface": _use_config,
+            "tool_recommendation_model_path": _use_config,
+            "admin_tool_recommendations_path": _use_config,
+            "overwrite_model_recommendations": _use_config,
+            "topk_recommendations": _use_config,
+            "allow_user_impersonation": _use_config,
+            "allow_user_creation": _defaults_to(False),  # schema default is True
+            "use_remote_user": _defaults_to(None),  # schema default is False; or config.single_user
+            "single_user": _config_is_truthy,
+            "enable_oidc": _use_config,
+            "oidc": _use_config,
+            "enable_quotas": _use_config,
+            "remote_user_logout_href": _use_config,
+            "datatypes_disable_auto": _use_config,
+            "allow_user_dataset_purge": _defaults_to(False),  # schema default is True
+            "ga_code": _use_config,
+            "plausible_server": _use_config,
+            "plausible_domain": _use_config,
+            "markdown_to_pdf_available": lambda item, key, **context: weasyprint_available(),
+            "matomo_server": _use_config,
+            "matomo_site_id": _use_config,
+            "enable_unique_workflow_defaults": _use_config,
+            "enable_beta_markdown_export": _use_config,
+            "simplified_workflow_run_ui": _use_config,
+            "simplified_workflow_run_ui_target_history": _use_config,
+            "simplified_workflow_run_ui_job_cache": _use_config,
+            "simplified_workflow_run_ui": _use_config,
+            "has_user_tool_filters": _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
-            'nginx_upload_path': lambda item, key, **context: getattr(item, key, False),
-            'chunk_upload_size': _use_config,
-            'ftp_upload_site': _use_config,
-            'version_major': _defaults_to(None),
-            'version_minor': _defaults_to(None),
-            'require_login': _use_config,
-            'inactivity_box_content': _use_config,
-            'visualizations_visible': _use_config,
-            'interactivetools_enable': _use_config,
-            'aws_estimate': _use_config,
-            'message_box_content': _use_config,
-            'message_box_visible': _use_config,
-            'message_box_class': _use_config,
-            'server_startttime': lambda item, key, **context: server_starttime,
-            'mailing_join_addr': _defaults_to('galaxy-announce-join@bx.psu.edu'),  # should this be the schema default?
-            'server_mail_configured': lambda item, key, **context: bool(item.smtp_server),
-            'registration_warning_message': _use_config,
-            'welcome_url': _use_config,
-            'show_welcome_with_login': _defaults_to(True),  # schema default is False
-            'cookie_domain': _use_config,
-            'python': _defaults_to((sys.version_info.major, sys.version_info.minor)),
-            'select_type_workflow_threshold': _use_config,
-            'file_sources_configured': lambda item, key, **context: self.app.file_sources.custom_sources_configured,
-            'panel_views': lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
-            'default_panel_view': _use_config,
-            'upload_from_form_button': _use_config,
-            'release_doc_base_url': _use_config,
-            'expose_user_email': _use_config,
-            'enable_tool_source_display': _use_config,
-            'user_library_import_dir_available': lambda item, key, **context: bool(item.get('user_library_import_dir')),
-            'welcome_directory': _use_config,
+            "nginx_upload_path": lambda item, key, **context: getattr(item, key, False),
+            "chunk_upload_size": _use_config,
+            "ftp_upload_site": _use_config,
+            "version_major": _defaults_to(None),
+            "version_minor": _defaults_to(None),
+            "require_login": _use_config,
+            "inactivity_box_content": _use_config,
+            "visualizations_visible": _use_config,
+            "interactivetools_enable": _use_config,
+            "aws_estimate": _use_config,
+            "message_box_content": _use_config,
+            "message_box_visible": _use_config,
+            "message_box_class": _use_config,
+            "server_startttime": lambda item, key, **context: server_starttime,
+            "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
+            "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
+            "registration_warning_message": _use_config,
+            "welcome_url": _use_config,
+            "show_welcome_with_login": _defaults_to(True),  # schema default is False
+            "cookie_domain": _use_config,
+            "python": _defaults_to((sys.version_info.major, sys.version_info.minor)),
+            "select_type_workflow_threshold": _use_config,
+            "file_sources_configured": lambda item, key, **context: self.app.file_sources.custom_sources_configured,
+            "panel_views": lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
+            "default_panel_view": _use_config,
+            "upload_from_form_button": _use_config,
+            "release_doc_base_url": _use_config,
+            "expose_user_email": _use_config,
+            "enable_tool_source_display": _use_config,
+            "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
+            "welcome_directory": _use_config,
         }
 
 
@@ -222,12 +221,13 @@ class AdminConfigSerializer(ConfigSerializer):
         def _defaults_to(default):
             return lambda config, key, **context: getattr(config, key, default)
 
-        self.serializers.update({
-            # TODO: this is available from user serialization: remove
-            'is_admin_user': lambda *a, **context: True,
-
-            'library_import_dir': _defaults_to(None),
-            'user_library_import_dir': _defaults_to(None),
-            'allow_library_path_paste': _defaults_to(False),
-            'allow_user_deletion': _defaults_to(False),
-        })
+        self.serializers.update(
+            {
+                # TODO: this is available from user serialization: remove
+                "is_admin_user": lambda *a, **context: True,
+                "library_import_dir": _defaults_to(None),
+                "user_library_import_dir": _defaults_to(None),
+                "allow_library_path_paste": _defaults_to(False),
+                "allow_user_deletion": _defaults_to(False),
+            }
+        )

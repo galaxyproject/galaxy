@@ -5,9 +5,12 @@ from platform import system
 from time import sleep
 
 try:
-    from psutil import NoSuchProcess, Process
+    from psutil import (
+        NoSuchProcess,
+        Process,
+    )
 except ImportError:
-    """ Don't make psutil a strict requirement, but use if available. """
+    """Don't make psutil a strict requirement, but use if available."""
     Process = None
 
 
@@ -32,7 +35,7 @@ def _psutil_kill_pid(pid):
 
 
 def _stock_kill_pid(pid):
-    is_windows = system() == 'Windows'
+    is_windows = system() == "Windows"
 
     if is_windows:
         __kill_windows(pid)
@@ -42,7 +45,7 @@ def _stock_kill_pid(pid):
 
 def __kill_windows(pid):
     try:
-        subprocess.check_call(['taskkill', '/F', '/T', '/PID', pid])
+        subprocess.check_call(["taskkill", "/F", "/T", "/PID", pid])
     except subprocess.CalledProcessError:
         pass
 

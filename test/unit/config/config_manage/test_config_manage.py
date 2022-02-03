@@ -91,7 +91,6 @@ def test_validate_embedded_config():
 
 
 class _TestConfigDirectory:
-
     def __init__(self, base_name):
         temp_directory = tempfile.mkdtemp()
         os.removedirs(temp_directory)

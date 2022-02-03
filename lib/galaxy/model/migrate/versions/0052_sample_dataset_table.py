@@ -7,27 +7,41 @@ import datetime
 import logging
 from json import loads
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+)
 from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrate.versions.util import localtimestamp, nextval
+from galaxy.model.migrate.versions.util import (
+    localtimestamp,
+    nextval,
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-SampleDataset_table = Table('sample_dataset', metadata,
-                            Column("id", Integer, primary_key=True),
-                            Column("create_time", DateTime, default=now),
-                            Column("update_time", DateTime, default=now, onupdate=now),
-                            Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
-                            Column("name", TrimmedString(255), nullable=False),
-                            Column("file_path", TrimmedString(255), nullable=False),
-                            Column("status", TrimmedString(255), nullable=False),
-                            Column("error_msg", TEXT),
-                            Column("size", TrimmedString(255)))
+SampleDataset_table = Table(
+    "sample_dataset",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("sample_id", Integer, ForeignKey("sample.id"), index=True),
+    Column("name", TrimmedString(255), nullable=False),
+    Column("file_path", TrimmedString(255), nullable=False),
+    Column("status", TrimmedString(255), nullable=False),
+    Column("error_msg", TEXT),
+    Column("size", TrimmedString(255)),
+)
 
 
 def upgrade(migrate_engine):
@@ -49,15 +63,21 @@ def upgrade(migrate_engine):
             for df in dataset_files:
                 if isinstance(df, dict):
                     cmd = "INSERT INTO sample_dataset VALUES (%s, %s, %s, %s, '%s', '%s', '%s', '%s', '%s')"
-                    cmd = cmd % (nextval(migrate_engine, 'sample_dataset'),
-                                 localtimestamp(migrate_engine),
-                                 localtimestamp(migrate_engine),
-                                 str(sample_id),
-                                 df.get('name', ''),
-                                 df.get('filepath', ''),
-                                 df.get('status', '').replace('"', '').replace("'", ""),
-                                 "",
-                                 df.get('size', '').replace('"', '').replace("'", "").replace(df.get('filepath', ''), '').strip())
+                    cmd = cmd % (
+                        nextval(migrate_engine, "sample_dataset"),
+                        localtimestamp(migrate_engine),
+                        localtimestamp(migrate_engine),
+                        str(sample_id),
+                        df.get("name", ""),
+                        df.get("filepath", ""),
+                        df.get("status", "").replace('"', "").replace("'", ""),
+                        "",
+                        df.get("size", "")
+                        .replace('"', "")
+                        .replace("'", "")
+                        .replace(df.get("filepath", ""), "")
+                        .strip(),
+                    )
                 migrate_engine.execute(cmd)
 
     # Delete the dataset_files column in the Sample table

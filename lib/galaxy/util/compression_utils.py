@@ -23,7 +23,7 @@ from typing_extensions import Literal
 from galaxy.util.path import safe_relpath
 from .checkers import (
     is_bz2,
-    is_gzip
+    is_gzip,
 )
 
 log = logging.getLogger(__name__)
@@ -34,16 +34,12 @@ FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
 
 
 @overload
-def get_fileobj(
-    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
-) -> FileObjTypeStr:
+def get_fileobj(filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeStr:
     ...
 
 
 @overload
-def get_fileobj(
-    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
-) -> FileObjTypeBytes:
+def get_fileobj(filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeBytes:
     ...
 
 
@@ -53,15 +49,11 @@ def get_fileobj(filename: str) -> FileObjTypeStr:
 
 
 @overload
-def get_fileobj(
-    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> FileObjType:
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
     ...
 
 
-def get_fileobj(
-    filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> FileObjType:
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
     """
     Returns a fileobj. If the file is compressed, return an appropriate file
     reader. In text mode, always use 'utf-8' encoding.
@@ -104,44 +96,40 @@ def get_fileobj_raw(
     filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
 ) -> Tuple[Optional[str], FileObjType]:
     if compressed_formats is None:
-        compressed_formats = ['bz2', 'gzip', 'zip']
+        compressed_formats = ["bz2", "gzip", "zip"]
     # Remove 't' from mode, which may cause an error for compressed files
-    mode = mode.replace('t', '')
+    mode = mode.replace("t", "")
     # 'U' mode is deprecated, we open in 'r'.
-    if mode == 'U':
-        mode = 'r'
+    if mode == "U":
+        mode = "r"
     compressed_format = None
-    if 'gzip' in compressed_formats and is_gzip(filename):
+    if "gzip" in compressed_formats and is_gzip(filename):
         fh: Union[gzip.GzipFile, bz2.BZ2File, IO[bytes]] = gzip.GzipFile(filename, mode)
-        compressed_format = 'gzip'
-    elif 'bz2' in compressed_formats and is_bz2(filename):
+        compressed_format = "gzip"
+    elif "bz2" in compressed_formats and is_bz2(filename):
         fh = bz2.BZ2File(filename, mode)
-        compressed_format = 'bz2'
-    elif 'zip' in compressed_formats and zipfile.is_zipfile(filename):
+        compressed_format = "bz2"
+    elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
         # 'b' is not allowed in the ZipFile mode argument
         # since it always opens files in binary mode.
         # For emulating text mode, we will be returning the binary fh in a
         # TextIOWrapper.
-        zf_mode = mode.replace('b', '')
+        zf_mode = mode.replace("b", "")
         with zipfile.ZipFile(filename, zf_mode) as zh:
             fh = zh.open(zh.namelist()[0], zf_mode)
-        compressed_format = 'zip'
-    elif 'b' in mode:
+        compressed_format = "zip"
+    elif "b" in mode:
         return compressed_format, open(filename, mode)
     else:
         return compressed_format, open(filename, mode, encoding="utf-8")
     if "b" not in mode:
-        return compressed_format, io.TextIOWrapper(
-            cast(IO[bytes], fh), encoding="utf-8"
-        )
+        return compressed_format, io.TextIOWrapper(cast(IO[bytes], fh), encoding="utf-8")
     else:
         return compressed_format, fh
 
 
-def file_iter(
-    fname: str, sep: Optional[Any] = None
-) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
+def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[bytes], Any, List[str]], None, None]:
     """
     This generator iterates over a file and yields its lines
     splitted via the C{sep} parameter. Skips empty lines and lines starting with
@@ -153,7 +141,7 @@ def file_iter(
     """
     with get_fileobj(fname) as fh:
         for line in fh:
-            if line and line[0] != '#':
+            if line and line[0] != "#":
                 yield line.split(sep)
 
 
@@ -170,18 +158,18 @@ class CompressedFile:
 
     def __init__(self, file_path: str, mode: str = "r") -> None:
         if tarfile.is_tarfile(file_path):
-            self.file_type = 'tar'
-        elif zipfile.is_zipfile(file_path) and not file_path.endswith('.jar'):
-            self.file_type = 'zip'
+            self.file_type = "tar"
+        elif zipfile.is_zipfile(file_path) and not file_path.endswith(".jar"):
+            self.file_type = "zip"
         self.file_name = os.path.splitext(os.path.basename(file_path))[0]
-        if self.file_name.endswith('.tar'):
+        if self.file_name.endswith(".tar"):
             self.file_name = os.path.splitext(self.file_name)[0]
         self.type = self.file_type
-        method = f'open_{self.file_type}'
+        method = f"open_{self.file_type}"
         if hasattr(self, method):
             self.archive = getattr(self, method)(file_path, mode)
         else:
-            raise NameError(f'File type {self.file_type} specified, no open method found.')
+            raise NameError(f"File type {self.file_type} specified, no open method found.")
 
     @property
     def common_prefix_dir(self) -> str:
@@ -192,7 +180,7 @@ class CompressedFile:
         the root of the archive.
         """
         contents = self.getmembers()
-        common_prefix = ''
+        common_prefix = ""
         if len(contents) > 1:
             common_prefix = os.path.commonprefix([self.getname(item) for item in contents])
             # If the common_prefix does not end with a slash, check that is a
@@ -203,19 +191,15 @@ class CompressedFile:
                 and not common_prefix.endswith(os.sep)
                 and common_prefix_member
                 and self.isdir(common_prefix_member)
-                and all(
-                    self.getname(item).startswith(common_prefix + os.sep)
-                    for item in contents
-                    if self.isfile(item)
-                )
+                and all(self.getname(item).startswith(common_prefix + os.sep) for item in contents if self.isfile(item))
             ):
                 common_prefix += os.sep
             if not common_prefix.endswith(os.sep):
-                common_prefix = ''
+                common_prefix = ""
         return common_prefix
 
     def extract(self, path: str) -> str:
-        '''Determine the path to which the archive should be extracted.'''
+        """Determine the path to which the archive should be extracted."""
         contents = self.getmembers()
         extraction_path = path
         common_prefix_dir = self.common_prefix_dir
@@ -244,7 +228,7 @@ class CompressedFile:
                 self.archive.extractall(extraction_path, members=members_z)
         # Since .zip files store unix permissions separately, we need to iterate through the zip file
         # and set permissions on extracted members.
-        if self.file_type == 'zip':
+        if self.file_type == "zip":
             assert isinstance(self.archive, zipfile.ZipFile)
             for zipped_file in contents:
                 filename = self.getname(zipped_file)
@@ -256,7 +240,9 @@ class CompressedFile:
                     if os.path.exists(absolute_filepath):
                         os.chmod(absolute_filepath, unix_permissions)
                     else:
-                        log.warning(f"Unable to change permission on extracted file '{absolute_filepath}' as it does not exist")
+                        log.warning(
+                            f"Unable to change permission on extracted file '{absolute_filepath}' as it does not exist"
+                        )
         return os.path.abspath(os.path.join(extraction_path, common_prefix_dir))
 
     def safemembers(self) -> Union[Iterable[tarfile.TarInfo], Iterable[str]]:

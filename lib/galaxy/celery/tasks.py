@@ -31,24 +31,27 @@ def purge_hda(hda_manager: HDAManager, hda_id):
 
 
 @galaxy_task
-def set_metadata(hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class='HistoryDatasetAssociation'):
-    if model_class == 'HistoryDatasetAssociation':
+def set_metadata(
+    hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id, model_class="HistoryDatasetAssociation"
+):
+    if model_class == "HistoryDatasetAssociation":
         dataset = hda_manager.by_id(dataset_id)
-    elif model_class == 'LibraryDatasetDatasetAssociation':
+    elif model_class == "LibraryDatasetDatasetAssociation":
         dataset = ldda_manager.by_id(dataset_id)
     dataset.datatype.set_meta(dataset)
 
 
 @galaxy_task(ignore_result=True)
 def export_history(
-        app: MinimalManagerApp,
-        sa_session: galaxy_scoped_session,
-        job_manager: JobManager,
-        store_directory: str,
-        history_id: int,
-        job_id: int,
-        include_hidden=False,
-        include_deleted=False):
+    app: MinimalManagerApp,
+    sa_session: galaxy_scoped_session,
+    job_manager: JobManager,
+    store_directory: str,
+    history_id: int,
+    job_id: int,
+    include_hidden=False,
+    include_deleted=False,
+):
     history = sa_session.query(model.History).get(history_id)
     with model.store.DirectoryModelExportStore(store_directory, app=app, export_files="symlink") as export_store:
         export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)

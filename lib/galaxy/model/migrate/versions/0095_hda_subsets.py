@@ -4,18 +4,29 @@ Migration script to create table for tracking history_dataset_association subset
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    Table,
+    Unicode,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 # Table to add.
 
-HistoryDatasetAssociationSubset_table = Table("history_dataset_association_subset", metadata,
-                                              Column("id", Integer, primary_key=True),
-                                              Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id")),
-                                              Column("history_dataset_association_subset_id", Integer, ForeignKey("history_dataset_association.id")),
-                                              Column("location", Unicode(255), index=True))
+HistoryDatasetAssociationSubset_table = Table(
+    "history_dataset_association_subset",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id")),
+    Column("history_dataset_association_subset_id", Integer, ForeignKey("history_dataset_association.id")),
+    Column("location", Unicode(255), index=True),
+)
 
 
 def upgrade(migrate_engine):

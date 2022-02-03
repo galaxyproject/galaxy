@@ -38,8 +38,12 @@ docs-develop: ## Fast doc generation and more warnings (for development)
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 
-diff-format:
+diff-format:  ## Format Python code changes
 	$(IN_VENV) darker -r $(TARGET_BRANCH)
+
+format:  ## Format Python code base
+	$(IN_VENV) isort .
+	$(IN_VENV) black .
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns

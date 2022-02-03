@@ -8,7 +8,7 @@ from . import BaseGalaxyAPIController
 
 
 class JobPortsAPIController(BaseGalaxyAPIController):
-    """ This job files controller allows remote job running mechanisms to
+    """This job files controller allows remote job running mechanisms to
     modify the current state of ports for queued and running jobs.
     It is certainly not meant to represent part of Galaxy's stable, user
     facing API.

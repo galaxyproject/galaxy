@@ -7,7 +7,7 @@ import logging
 from sqlalchemy import (
     Boolean,
     Column,
-    MetaData
+    MetaData,
 )
 
 from galaxy.model.migrate.versions.util import (
@@ -25,11 +25,11 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     c = Column("notify", Boolean, default=False)
-    add_column(c, 'request', metadata)
+    add_column(c, "request", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column('notify', 'request', metadata)
+    drop_column("notify", "request", metadata)

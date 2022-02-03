@@ -7,8 +7,11 @@ import uuid
 from datetime import datetime
 
 import irods.keywords as kw
-from irods.exception import (CollectionDoesNotExist, DataObjectDoesNotExist,
-                             NetworkException)
+from irods.exception import (
+    CollectionDoesNotExist,
+    DataObjectDoesNotExist,
+    NetworkException,
+)
 from irods.session import iRODSSession
 from psycopg2 import connect
 
@@ -48,7 +51,9 @@ last_accessed_sql_statement = """SELECT iq.dataset_id, MAX(iq.create_time) AS ma
                                  """
 
 
-def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file, irods_info_file, db_connection_info_file, copy_or_checksum):
+def copy_files_to_irods(
+    start_dataset_id, end_dataset_id, object_store_info_file, irods_info_file, db_connection_info_file, copy_or_checksum
+):
     conn = None
     session = None
     osi_keys = None
@@ -97,7 +102,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
             dbname=db_connection_info["dbname"],
             user=db_connection_info["user"],
             host=db_connection_info["host"],
-            password=db_connection_info["password"]
+            password=db_connection_info["password"],
         )
         conn.cursor()
 
@@ -105,7 +110,13 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         print(e)
         return
 
-    session = iRODSSession(host=irods_info["host"], port=irods_info["port"], user=irods_info["user"], password=irods_info["password"], zone=irods_info["zone"])
+    session = iRODSSession(
+        host=irods_info["host"],
+        port=irods_info["port"],
+        user=irods_info["user"],
+        password=irods_info["password"],
+        zone=irods_info["zone"],
+    )
     session.connection_timeout = int(irods_info["timeout"])
 
     osi_keys = tuple(object_store_info.keys())
@@ -124,7 +135,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
 
     try:
         read_cursor = conn.cursor()
-        args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
+        args = ("ok", start_dataset_id, end_dataset_id, osi_keys)
         read_cursor.execute(read_sql_statement, args)
         rows = read_cursor.fetchall()
         for row in rows:
@@ -144,16 +155,20 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
             irods_sub_folder = os.path.join(*directory_hash_id(uuid_with_dash))
             disk_file_path = os.path.join(object_store_path, disk_sub_folder, "dataset_" + str(objectid) + ".dat")
             disk_folder_path = os.path.join(object_store_path, disk_sub_folder, "dataset_" + str(objectid) + "_files")
-            irods_file_path = os.path.join(irods_info["home"], irods_sub_folder, "dataset_" + str(uuid_with_dash) + ".dat")
+            irods_file_path = os.path.join(
+                irods_info["home"], irods_sub_folder, "dataset_" + str(uuid_with_dash) + ".dat"
+            )
             irods_file_collection_path = os.path.join(irods_info["home"], irods_sub_folder)
-            irods_folder_collection_path = os.path.join(irods_file_collection_path, "dataset_" + str(uuid_with_dash) + "_files")
+            irods_folder_collection_path = os.path.join(
+                irods_file_collection_path, "dataset_" + str(uuid_with_dash) + "_files"
+            )
 
             if copy_or_checksum == "copy":
                 # Create the collection
                 session.collections.create(irods_file_collection_path)
 
                 # Add disk file to collection
-                options = {kw.REG_CHKSUM_KW: '', kw.RESC_NAME_KW: irods_resc}
+                options = {kw.REG_CHKSUM_KW: "", kw.RESC_NAME_KW: irods_resc}
                 session.data_objects.put(disk_file_path, irods_file_path, **options)
                 print(f"Copied disk file {disk_file_path} to irods {irods_file_path}")
 
@@ -163,7 +178,14 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                     # Create the collection
                     session.collections.create(irods_folder_collection_path)
 
-                    iput_command = "iput -R " + irods_resc + " -rk " + disk_folder_path_all_files + " " + irods_folder_collection_path
+                    iput_command = (
+                        "iput -R "
+                        + irods_resc
+                        + " -rk "
+                        + disk_folder_path_all_files
+                        + " "
+                        + irods_folder_collection_path
+                    )
                     subprocess.call(iput_command, shell=True)
                     print(f"Copied disk folder {disk_folder_path} to irods {irods_folder_collection_path}")
 
@@ -177,7 +199,9 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                     # obj.checksum is prepended with 'sha2:'. Remove that so we can compare it to disk file checksum
                     irods_file_checksum = obj.checksum[5:]
                     if irods_file_checksum != disk_file_checksum:
-                        print(f"Error: irods file checksum {irods_file_checksum} does not match disk file checksum {disk_file_checksum} for irods file {irods_file_path} and disk file {disk_file_path}")
+                        print(
+                            f"Error: irods file checksum {irods_file_checksum} does not match disk file checksum {disk_file_checksum} for irods file {irods_file_path} and disk file {disk_file_path}"
+                        )
                         continue
                 except (DataObjectDoesNotExist, CollectionDoesNotExist) as e:
                     print(e)
@@ -207,7 +231,9 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                                 # obj.checksum is prepended with 'sha2:'. Remove that so we can compare it to disk file checksum
                                 an_irods_file_checksum = obj.checksum[5:]
                                 if an_irods_file_checksum != a_disk_file_checksum:
-                                    print(f"Error: irods file checksum {an_irods_file_checksum} does not match disk file checksum {a_disk_file_checksum} for irods file {an_irods_file_path} and disk file {a_disk_file_path}")
+                                    print(
+                                        f"Error: irods file checksum {an_irods_file_checksum} does not match disk file checksum {a_disk_file_checksum} for irods file {an_irods_file_path} and disk file {a_disk_file_path}"
+                                    )
                                     continue
                             except (DataObjectDoesNotExist, CollectionDoesNotExist) as e:
                                 print(e)
@@ -225,9 +251,17 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 update_cursor.execute(update_sql_statement, (irods_info["object_store_id"], objectid))
                 updated_rows = update_cursor.rowcount
                 if updated_rows == 1:
-                    print("Updated object store ID to {} in dataset table for object ID {}".format(irods_info["object_store_id"], objectid))
+                    print(
+                        "Updated object store ID to {} in dataset table for object ID {}".format(
+                            irods_info["object_store_id"], objectid
+                        )
+                    )
                 else:
-                    print("Error: Failed to update object store ID to {} in dataset table for object ID {}".format(irods_info["object_store_id"], objectid))
+                    print(
+                        "Error: Failed to update object store ID to {} in dataset table for object ID {}".format(
+                            irods_info["object_store_id"], objectid
+                        )
+                    )
                 update_cursor.close()
 
                 # Delete file on disk
@@ -257,16 +291,20 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         irods_tape_resc_cuttoff_dt = datetime.strptime(irods_tape_resc_cuttoff, "%m/%d/%Y")
 
         read_cursor = conn.cursor()
-        args = ('ok', objectid, objectid, (object_store_id, ), 'ok', objectid, objectid, (object_store_id, ))
+        args = ("ok", objectid, objectid, (object_store_id,), "ok", objectid, objectid, (object_store_id,))
         read_cursor.execute(last_accessed_sql_statement, args)
         row = read_cursor.fetchone()
         if row is None:
-            print(f"Could not find the last access time for dataset with id {objectid}. Returning the default resc {irods_resc}.")
+            print(
+                f"Could not find the last access time for dataset with id {objectid}. Returning the default resc {irods_resc}."
+            )
             return irods_resc
 
         dataset_id = row[0]
         if int(dataset_id) != objectid:
-            print(f"The returned dataset id {dataset_id} does not match the passed in datsetid {objectid}. Returning the default resc {irods_resc}.")
+            print(
+                f"The returned dataset id {dataset_id} does not match the passed in datsetid {objectid}. Returning the default resc {irods_resc}."
+            )
             return irods_resc
 
         max_create_time = row[1]
@@ -274,10 +312,14 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         max_create_time_dt = max_create_time.replace(tzinfo=None)
         # If the last time a dataset was accessed was prior to a cuttoff date, use the tape resource. Otherwise, use the regular (non-tape) resource
         if max_create_time_dt < irods_tape_resc_cuttoff_dt:
-            print(f"The last time dataset with id {objectid} was accessed {max_create_time_dt} is prior to tape resource cuttoff {irods_tape_resc_cuttoff_dt}. Using tape resource in irods.")
+            print(
+                f"The last time dataset with id {objectid} was accessed {max_create_time_dt} is prior to tape resource cuttoff {irods_tape_resc_cuttoff_dt}. Using tape resource in irods."
+            )
             return irods_tape_resc
 
-        print(f"The last time dataset with id {objectid} was accessed {max_create_time_dt} is after the tape resource cuttoff {irods_tape_resc_cuttoff_dt}. Using regular (non-tape) resource in irods.")
+        print(
+            f"The last time dataset with id {objectid} was accessed {max_create_time_dt} is after the tape resource cuttoff {irods_tape_resc_cuttoff_dt}. Using regular (non-tape) resource in irods."
+        )
         return irods_resc
 
     except Exception as e:
@@ -291,7 +333,7 @@ def get_file_checksum(disk_file_path):
     disk_file_checksum = subprocess.check_output(checksum_cmd, shell=True)
     # remove '\n' from the end of disk_file_checksum
     disk_file_checksum_len = len(disk_file_checksum)
-    disk_file_checksum_trimmed = disk_file_checksum[0:(disk_file_checksum_len - 1)]
+    disk_file_checksum_trimmed = disk_file_checksum[0 : (disk_file_checksum_len - 1)]
     # Return Unicode string
     return disk_file_checksum_trimmed.decode("utf-8")
 
@@ -336,15 +378,15 @@ def print_help_msg():
     print(help_msg)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-s', '--start_dataset_id', type=int, required=True)
-    parser.add_argument('-e', '--end_dataset_id', type=int, required=True)
-    parser.add_argument('-o', '--object_store_info_file', type=str, required=True)
-    parser.add_argument('-i', '--irods_info_file', type=str, required=True)
-    parser.add_argument('-d', '--db_connection_info_file', type=str, required=True)
-    parser.add_argument('-c', '--copy_or_checksum', type=str, required=True, choices=['copy', 'checksum'])
+    parser.add_argument("-s", "--start_dataset_id", type=int, required=True)
+    parser.add_argument("-e", "--end_dataset_id", type=int, required=True)
+    parser.add_argument("-o", "--object_store_info_file", type=str, required=True)
+    parser.add_argument("-i", "--irods_info_file", type=str, required=True)
+    parser.add_argument("-d", "--db_connection_info_file", type=str, required=True)
+    parser.add_argument("-c", "--copy_or_checksum", type=str, required=True, choices=["copy", "checksum"])
 
     args = parser.parse_args()
     print(args)
@@ -356,4 +398,11 @@ if __name__ == '__main__':
     db_connection_info_file = args.db_connection_info_file
     copy_or_checksum = args.copy_or_checksum
 
-    copy_files_to_irods(start_dataset_id=start_dataset_id, end_dataset_id=end_dataset_id, object_store_info_file=object_store_info_file, irods_info_file=irods_info_file, db_connection_info_file=db_connection_info_file, copy_or_checksum=copy_or_checksum)
+    copy_files_to_irods(
+        start_dataset_id=start_dataset_id,
+        end_dataset_id=end_dataset_id,
+        object_store_info_file=object_store_info_file,
+        irods_info_file=irods_info_file,
+        db_connection_info_file=db_connection_info_file,
+        copy_or_checksum=copy_or_checksum,
+    )

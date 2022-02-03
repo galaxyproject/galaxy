@@ -6,9 +6,7 @@ from typing import (
 
 from galaxy import model
 from galaxy.app import MinimalManagerApp
-from galaxy.exceptions import (
-    ObjectNotFound,
-)
+from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -80,11 +78,14 @@ class GroupRolesManager:
             raise ObjectNotFound(f"Role with id {encoded_role_id} was not found.")
         return role
 
-    def _get_group_role(self, trans: ProvidesAppContext, group: model.Group, role: model.Role) -> Optional[model.GroupRoleAssociation]:
-        return trans.sa_session.query(model.GroupRoleAssociation).filter(
-            model.GroupRoleAssociation.group == group,
-            model.GroupRoleAssociation.role == role
-        ).one_or_none()
+    def _get_group_role(
+        self, trans: ProvidesAppContext, group: model.Group, role: model.Role
+    ) -> Optional[model.GroupRoleAssociation]:
+        return (
+            trans.sa_session.query(model.GroupRoleAssociation)
+            .filter(model.GroupRoleAssociation.group == group, model.GroupRoleAssociation.role == role)
+            .one_or_none()
+        )
 
     def _add_role_to_group(self, trans: ProvidesAppContext, group: model.Group, role: model.Role):
         gra = model.GroupRoleAssociation(group, role)

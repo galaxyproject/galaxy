@@ -4,10 +4,19 @@ Migration script to enhance workflow step usability by adding labels and UUIDs.
 
 import logging
 
-from sqlalchemy import Column, MetaData
+from sqlalchemy import (
+    Column,
+    MetaData,
+)
 
-from galaxy.model.custom_types import TrimmedString, UUIDType
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.custom_types import (
+    TrimmedString,
+    UUIDType,
+)
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

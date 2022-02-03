@@ -4,7 +4,12 @@ Add dataset_version column to job_to_input_dataset table
 
 import logging
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 dataset_version_column = Column("dataset_version", Integer)

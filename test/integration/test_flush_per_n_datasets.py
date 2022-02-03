@@ -13,7 +13,6 @@ class FlushPerNDatasetsTestCase(integration_util.IntegrationInstance):
 
 
 instance = integration_util.integration_module_instance(FlushPerNDatasetsTestCase)
-test_tools = integration_util.integration_tool_runner([
-    'collection_creates_dynamic_nested',
-    'collection_creates_dynamic_list_of_pairs'
-])
+test_tools = integration_util.integration_tool_runner(
+    ["collection_creates_dynamic_nested", "collection_creates_dynamic_list_of_pairs"]
+)

@@ -21,7 +21,9 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
     if n is not None:
         n_bytes = parse_bytesize(n)
         delta_bytes = parse_bytesize(delta)
-        assert (not negate) == (abs(count - n_bytes) <= delta_bytes), n_text.format(expected=expected, n=n, delta=delta, text="{text}", output="{output}") + f" found {count}"
+        assert (not negate) == (abs(count - n_bytes) <= delta_bytes), (
+            n_text.format(expected=expected, n=n, delta=delta, text="{text}", output="{output}") + f" found {count}"
+        )
     if min is not None or max is not None:
         if min is None:
             min = -inf  # also replacing min/max for output
@@ -33,10 +35,15 @@ def _assert_number(count, n, delta, min, max, negate, n_text, min_max_text):
             max_bytes = inf
         else:
             max_bytes = parse_bytesize(max)
-        assert (not negate) == (min_bytes <= count <= max_bytes), min_max_text.format(expected=expected, min=min, max=max, text="{text}", output="{output}") + f" found {count}"
+        assert (not negate) == (min_bytes <= count <= max_bytes), (
+            min_max_text.format(expected=expected, min=min, max=max, text="{text}", output="{output}")
+            + f" found {count}"
+        )
 
 
-def _assert_presence_number(output, text, n, delta, min, max, negate, check_presence_foo, count_foo, presence_text, n_text, min_max_text):
+def _assert_presence_number(
+    output, text, n, delta, min, max, negate, check_presence_foo, count_foo, presence_text, n_text, min_max_text
+):
     """
     helper function to assert that
     - text is present in output using check_presence_foo
@@ -51,7 +58,9 @@ def _assert_presence_number(output, text, n, delta, min, max, negate, check_pres
     negate = asbool(negate)
     expected = "Expected" if not negate else "Did not expect"
     if n is None and min is None and max is None:
-        assert (not negate) == check_presence_foo(output, text), presence_text.format(expected=expected, output=output, text=text)
+        assert (not negate) == check_presence_foo(output, text), presence_text.format(
+            expected=expected, output=output, text=text
+        )
     try:
         _assert_number(count_foo(output, text), n, delta, min, max, negate, n_text, min_max_text)
     except AssertionError as e:

@@ -36,7 +36,7 @@ class Metric(BaseModel):
         ...,  # Required
         title="Timestamp",
         description="The timestamp in ISO format.",
-        example=datetime_to_iso8601(datetime.utcnow())
+        example=datetime_to_iso8601(datetime.utcnow()),
     )
     level: int = Field(
         ...,  # Required
@@ -53,15 +53,12 @@ class Metric(BaseModel):
 class CreateMetricsPayload(BaseModel):
     metrics: List[Metric] = Field(
         default=[],
-        title='List of metrics to be recorded.',
+        title="List of metrics to be recorded.",
         example=[
             Metric(
-                namespace="test-source",
-                time=datetime_to_iso8601(datetime.utcnow()),
-                level=0,
-                args='{"test":"value"}'
+                namespace="test-source", time=datetime_to_iso8601(datetime.utcnow()), level=0, args='{"test":"value"}'
             )
-        ]
+        ],
     )
 
 
@@ -103,10 +100,7 @@ class MetricsManager:
         return response
 
     def _parse_metrics(
-        self,
-        metrics: Optional[List[Metric]] = None,
-        user_id=None,
-        session_id=None
+        self, metrics: Optional[List[Metric]] = None, user_id=None, session_id=None
     ) -> TimeSeriesTupleGenerator:
         """
         Return a generator yielding the each given metric as a tuple:
@@ -122,12 +116,7 @@ class MetricsManager:
         for metric in metrics:
             label = metric.namespace
             time = self._deserialize_isoformat_date(metric.time)
-            kwargs = {
-                'level': metric.level,
-                'args': metric.args,
-                'user': user_id,
-                'session': session_id
-            }
+            kwargs = {"level": metric.level, "args": metric.args, "user": user_id, "session": session_id}
             yield (label, time, kwargs)
 
     def _send_metrics(self, trans, metrics: TimeSeriesTupleGenerator) -> None:
@@ -142,7 +131,7 @@ class MetricsManager:
                 trans.app.trace_logger.log(label, event_time=int(time.timestamp()), **kwargs)
         elif self.debugging:
             for label, time, kwargs in metrics:
-                log.debug(f'{label} {time} {kwargs}')
+                log.debug(f"{label} {time} {kwargs}")
 
     def _get_server_pong(self, trans) -> Any:
         """

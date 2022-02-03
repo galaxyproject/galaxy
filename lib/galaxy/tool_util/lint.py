@@ -54,11 +54,14 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union
+    Union,
 )
 
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.util import etree, submodules
+from galaxy.util import (
+    etree,
+    submodules,
+)
 
 
 class LintLevel(IntEnum):
@@ -74,6 +77,7 @@ class LintMessage:
     """
     a message from the linter
     """
+
     def __init__(self, level: str, message: str, **kwargs):
         self.level = level
         self.message = message
@@ -131,7 +135,7 @@ class XMLLintMessageXPath(LintMessage):
         return rval
 
 
-LintTargetType = TypeVar('LintTargetType')
+LintTargetType = TypeVar("LintTargetType")
 
 
 # TODO: Nothing inherently tool-y about LintContext and in fact
@@ -144,11 +148,13 @@ class LintContext:
     object_name: Optional[str]
     message_list: List[LintMessage]
 
-    def __init__(self,
-                 level: Union[LintLevel, str],
-                 lint_message_class: Type[LintMessage] = LintMessage,
-                 skip_types: Optional[List[str]] = None,
-                 object_name: Optional[str] = None):
+    def __init__(
+        self,
+        level: Union[LintLevel, str],
+        lint_message_class: Type[LintMessage] = LintMessage,
+        skip_types: Optional[List[str]] = None,
+        object_name: Optional[str] = None,
+    ):
         self.skip_types = skip_types or []
         if isinstance(level, str):
             self.level = LintLevel[level.upper()]
@@ -166,11 +172,8 @@ class LintContext:
     def found_warns(self) -> bool:
         return len(self.warn_messages) > 0
 
-    def lint(self,
-             name: str,
-             lint_func: Callable[[LintTargetType, 'LintContext'], None],
-             lint_target: LintTargetType):
-        name = name.replace("tsts", "tests")[len("lint_"):]
+    def lint(self, name: str, lint_func: Callable[[LintTargetType, "LintContext"], None], lint_target: LintTargetType):
+        name = name.replace("tsts", "tests")[len("lint_") :]
         if name in self.skip_types:
             return
 
@@ -261,13 +264,15 @@ class LintContext:
         found_warns = self.found_warns
         found_errors = self.found_errors
         if fail_level >= LintLevel.WARN:
-            lint_fail = (found_warns or found_errors)
+            lint_fail = found_warns or found_errors
         elif fail_level >= LintLevel.ERROR:
             lint_fail = found_errors
         return lint_fail
 
 
-def lint_tool_source(tool_source, level=LintLevel.ALL, fail_level=LintLevel.WARN, extra_modules=None, skip_types=None, name=None) -> bool:
+def lint_tool_source(
+    tool_source, level=LintLevel.ALL, fail_level=LintLevel.WARN, extra_modules=None, skip_types=None, name=None
+) -> bool:
     """
     apply all (applicable) linters from the linters submodule
     and the ones in extramodules
@@ -294,13 +299,23 @@ def get_lint_context_for_tool_source(tool_source, extra_modules=None, skip_types
     return lint_context
 
 
-def lint_xml(tool_xml, level=LintLevel.ALL, fail_level=LintLevel.WARN, lint_message_class=LintMessage, extra_modules=None, skip_types=None, name=None) -> bool:
+def lint_xml(
+    tool_xml,
+    level=LintLevel.ALL,
+    fail_level=LintLevel.WARN,
+    lint_message_class=LintMessage,
+    extra_modules=None,
+    skip_types=None,
+    name=None,
+) -> bool:
     """
     lint an xml tool
     """
     extra_modules = extra_modules or []
     skip_types = skip_types or []
-    lint_context = LintContext(level=level, lint_message_class=lint_message_class, skip_types=skip_types, object_name=name)
+    lint_context = LintContext(
+        level=level, lint_message_class=lint_message_class, skip_types=skip_types, object_name=name
+    )
     lint_xml_with(lint_context, tool_xml, extra_modules)
 
     return not lint_context.failed(fail_level)
@@ -309,6 +324,7 @@ def lint_xml(tool_xml, level=LintLevel.ALL, fail_level=LintLevel.WARN, lint_mess
 def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
     import galaxy.tool_util.linters
+
     tool_xml = getattr(tool_source, "xml_tree", None)
     tool_type = tool_source.parse_tool_type() or "default"
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters)

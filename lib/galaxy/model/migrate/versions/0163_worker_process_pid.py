@@ -8,12 +8,12 @@ import logging
 from sqlalchemy import (
     Column,
     Integer,
-    MetaData
+    MetaData,
 )
 
 from galaxy.model.migrate.versions.util import (
     add_column,
-    drop_column
+    drop_column,
 )
 
 log = logging.getLogger(__name__)
@@ -25,8 +25,8 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    pid_column = Column('pid', Integer)
-    add_column(pid_column, 'worker_process', metadata)
+    pid_column = Column("pid", Integer)
+    add_column(pid_column, "worker_process", metadata)
 
 
 def downgrade(migrate_engine):
@@ -34,4 +34,4 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column('pid', 'worker_process', metadata)
+    drop_column("pid", "worker_process", metadata)

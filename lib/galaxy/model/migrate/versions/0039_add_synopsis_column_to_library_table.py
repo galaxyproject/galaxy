@@ -8,7 +8,7 @@ from sqlalchemy import (
     Column,
     MetaData,
     Table,
-    TEXT
+    TEXT,
 )
 
 log = logging.getLogger(__name__)

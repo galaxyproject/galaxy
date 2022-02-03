@@ -8,7 +8,6 @@ HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
 
 class DatatypesApiTestCase(ApiTestCase):
-
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:
@@ -72,15 +71,15 @@ class DatatypesApiTestCase(ApiTestCase):
         assert found_fasta_to_tabular
 
     def test_converter_present_after_toolbox_reload(self):
-        response = self._get("tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'})
+        response = self._get("tools", data={"tool_id": "CONVERTER_fasta_to_tabular"})
         self._assert_status_code_is(response, 200)
         converters = len(response.json())
         assert converters == 1
-        url = self._api_url('configuration/toolbox')
+        url = self._api_url("configuration/toolbox")
         put_response = put(url, params=dict(key=self.master_api_key))
         self._assert_status_code_is(put_response, 200)
         time.sleep(2)
-        response = self._get("tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'})
+        response = self._get("tools", data={"tool_id": "CONVERTER_fasta_to_tabular"})
         self._assert_status_code_is(response, 200)
         assert converters == len(response.json())
 

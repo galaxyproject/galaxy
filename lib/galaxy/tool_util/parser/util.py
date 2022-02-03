@@ -17,5 +17,5 @@ def _parse_name(name, argument):
     if name is None:
         if not argument:
             raise ValueError("parameter must specify a 'name' or 'argument'.")
-        name = argument.lstrip('-').replace("-", "_")
+        name = argument.lstrip("-").replace("-", "_")
     return name

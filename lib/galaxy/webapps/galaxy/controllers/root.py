@@ -4,19 +4,16 @@ Contains the main interface in the Universe class
 
 import logging
 
-from webob.exc import (
-    HTTPNotFound
-)
+from webob.exc import HTTPNotFound
 
-from galaxy import (
-    web
+from galaxy import web
+from galaxy.managers.histories import (
+    HistoryManager,
+    HistorySerializer,
 )
-from galaxy.managers.histories import HistoryManager, HistorySerializer
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    unicodify,
-)
+from galaxy.util import unicodify
 from galaxy.webapps.base import controller
 from ..api import depends
 
@@ -28,6 +25,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     """
     Controller class that maps to the url root of Galaxy (i.e. '/').
     """
+
     history_manager: HistoryManager = depends(HistoryManager)
     history_serializer: HistorySerializer = depends(HistorySerializer)
 
@@ -39,7 +37,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         Called on any url that does not match a controller method.
         """
-        raise HTTPNotFound('This link may not be followed from within Galaxy.')
+        raise HTTPNotFound("This link may not be followed from within Galaxy.")
 
     @web.expose
     def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
@@ -79,40 +77,44 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         # directly redirect to oidc provider if 1) enable_oidc is True, 2)
         # there is only one oidc provider, 3) auth_conf.xml has no authenticators
-        if (trans.app.config.enable_oidc
-                and len(trans.app.config.oidc) == 1
-                and len(trans.app.auth_manager.authenticators) == 0
-                and is_logout_redirect is False):
+        if (
+            trans.app.config.enable_oidc
+            and len(trans.app.config.oidc) == 1
+            and len(trans.app.auth_manager.authenticators) == 0
+            and is_logout_redirect is False
+        ):
             provider = next(iter(trans.app.config.oidc.keys()))
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
-        return self.template(trans, 'login',
-                             redirect=redirect,
-                             # an installation may have it's own welcome_url - show it here if they've set that
-                             welcome_url=web.url_for(controller='root', action='welcome'),
-                             show_welcome_with_login=trans.app.config.show_welcome_with_login)
+        return self.template(
+            trans,
+            "login",
+            redirect=redirect,
+            # an installation may have it's own welcome_url - show it here if they've set that
+            welcome_url=web.url_for(controller="root", action="welcome"),
+            show_welcome_with_login=trans.app.config.show_welcome_with_login,
+        )
 
     # ---- Tool related -----------------------------------------------------
 
     @web.expose
     def display_as(self, trans, id=None, display_app=None, **kwd):
-        """Returns a file in a format that can successfully be displayed in display_app.
-        """
+        """Returns a file in a format that can successfully be displayed in display_app."""
         # TODO: unencoded id
         data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        authz_method = 'rbac'
-        if 'authz_method' in kwd:
-            authz_method = kwd['authz_method']
+        authz_method = "rbac"
+        if "authz_method" in kwd:
+            authz_method = kwd["authz_method"]
         if data:
             current_user_roles = trans.get_current_user_roles()
-            if authz_method == 'rbac' and trans.app.security_agent.can_access_dataset(current_user_roles, data):
+            if authz_method == "rbac" and trans.app.security_agent.can_access_dataset(current_user_roles, data):
                 trans.response.set_content_type(data.get_mime())
                 trans.log_event(f"Formatted dataset id {str(id)} for display at {display_app}")
                 return data.as_display_type(display_app, **kwd)
-            elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action(trans.request.remote_addr,
-                                                                                             data.permitted_actions.DATASET_ACCESS,
-                                                                                             dataset=data):
+            elif authz_method == "display_at" and trans.app.host_security_agent.allow_action(
+                trans.request.remote_addr, data.permitted_actions.DATASET_ACCESS, dataset=data
+            ):
                 trans.response.set_content_type(data.get_mime())
                 return data.as_display_type(display_app, **kwd)
             else:
@@ -123,8 +125,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     # ---- History management -----------------------------------------------
     @web.expose
     def clear_history(self, trans):
-        """Clears the history for a user.
-        """
+        """Clears the history for a user."""
         # TODO: unused? (seems to only be used in TwillTestCase)
         history = trans.get_history()
         for dataset in history.datasets:
@@ -153,9 +154,11 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
-                                              .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
-                                              .first()
+                association = (
+                    trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation)
+                    .filter_by(session_id=galaxy_session.id, history_id=new_history.id)
+                    .first()
+                )
             except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
@@ -164,18 +167,24 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             if not user_history.datasets:
                 trans.set_history(new_history)
             trans.log_event(f"History imported, id: {str(new_history.id)}, name: '{new_history.name}': ")
-            return trans.show_ok_message("""
+            return trans.show_ok_message(
+                """
                 History "{}" has been imported. Click <a href="{}">here</a>
-                to begin.""".format(new_history.name, web.url_for('/')))
+                to begin.""".format(
+                    new_history.name, web.url_for("/")
+                )
+            )
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
             new_history.name = f"imported: {new_history.name}"
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
-                association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
-                                              .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
-                                              .first()
+                association = (
+                    trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation)
+                    .filter_by(session_id=galaxy_session.id, history_id=new_history.id)
+                    .first()
+                )
             except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
@@ -183,13 +192,20 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.sa_session.flush()
             trans.set_history(new_history)
             trans.log_event(f"History imported, id: {str(new_history.id)}, name: '{new_history.name}': ")
-            return trans.show_ok_message("""
+            return trans.show_ok_message(
+                """
                 History "{}" has been imported. Click <a href="{}">here</a>
-                to begin.""".format(new_history.name, web.url_for('/')))
-        return trans.show_warn_message("""
+                to begin.""".format(
+                    new_history.name, web.url_for("/")
+                )
+            )
+        return trans.show_warn_message(
+            """
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
-            """ % web.url_for(controller='root', action='history_import', id=id, confirm=True))
+            """
+            % web.url_for(controller="root", action="history_import", id=id, confirm=True)
+        )
 
     @web.expose
     def history_new(self, trans, name=None):
@@ -198,24 +214,32 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         trans.new_history(name=name)
         trans.log_event(f"Created new History, id: {str(trans.history.id)}.")
-        return trans.show_message("New history created", refresh_frames=['history'])
+        return trans.show_message("New history created", refresh_frames=["history"])
 
     @web.expose
-    def history_add_to(self, trans, history_id=None, file_data=None,
-                       name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd):
-        """Adds a POSTed file to a History.
-        """
+    def history_add_to(
+        self,
+        trans,
+        history_id=None,
+        file_data=None,
+        name="Data Added to History",
+        info=None,
+        ext="txt",
+        dbkey="?",
+        copy_access_from=None,
+        **kwd,
+    ):
+        """Adds a POSTed file to a History."""
         # TODO: unencoded id
         try:
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
-            data = trans.app.model.HistoryDatasetAssociation(name=name,
-                                                             info=info,
-                                                             extension=ext,
-                                                             dbkey=dbkey,
-                                                             create_dataset=True,
-                                                             sa_session=trans.sa_session)
+            data = trans.app.model.HistoryDatasetAssociation(
+                name=name, info=info, extension=ext, dbkey=dbkey, create_dataset=True, sa_session=trans.sa_session
+            )
             if copy_access_from:
-                copy_access_from = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(copy_access_from)
+                copy_access_from = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
+                    copy_access_from
+                )
                 trans.app.security_agent.copy_dataset_permissions(copy_access_from.dataset, data.dataset)
             else:
                 permissions = trans.app.security_agent.history_get_default_permissions(history)

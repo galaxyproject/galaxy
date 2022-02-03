@@ -2,7 +2,6 @@ import pytest
 
 from galaxy.util.inflection import Inflector
 
-
 SINGULAR_TO_PLURAL = {
     "search": "searches",
     "switch": "switches",
@@ -72,7 +71,7 @@ SINGULAR_TO_PLURAL = {
     "shoe": "shoes",
     "horse": "horses",
     "prize": "prizes",
-    "edge": "edges"
+    "edge": "edges",
 }
 
 
@@ -81,18 +80,18 @@ def inflector():
     return Inflector()
 
 
-@pytest.mark.parametrize('test_data', SINGULAR_TO_PLURAL.items())
+@pytest.mark.parametrize("test_data", SINGULAR_TO_PLURAL.items())
 def test_pluralize_rules(test_data, inflector):
     assert test_data[1] == inflector.pluralize(test_data[0])
 
 
-@pytest.mark.parametrize('test_data', SINGULAR_TO_PLURAL.items())
+@pytest.mark.parametrize("test_data", SINGULAR_TO_PLURAL.items())
 def test_singularize_rules(test_data, inflector):
     assert test_data[0] == inflector.singularize(test_data[1])
 
 
 def test_cond_plural(inflector):
-    assert 'edge' == inflector.cond_plural(1, 'edge')
-    assert 'edges' == inflector.cond_plural(-1, 'edge')
-    assert 'edges' == inflector.cond_plural(0, 'edge')
-    assert 'edges' == inflector.cond_plural(2, 'edge')
+    assert "edge" == inflector.cond_plural(1, "edge")
+    assert "edges" == inflector.cond_plural(-1, "edge")
+    assert "edges" == inflector.cond_plural(0, "edge")
+    assert "edges" == inflector.cond_plural(2, "edge")

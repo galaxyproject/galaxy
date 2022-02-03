@@ -112,7 +112,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run("""
+        self.open_in_workflow_run(
+            """
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -124,7 +125,8 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-""")
+"""
+        )
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")

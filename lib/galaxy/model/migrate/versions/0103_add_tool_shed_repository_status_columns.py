@@ -2,7 +2,12 @@
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT,
+)
 
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString

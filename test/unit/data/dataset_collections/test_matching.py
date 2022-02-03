@@ -87,10 +87,13 @@ def pair_element(element_identifier):
 
 
 def pair_instance():
-    paired_collection_instance = collection_instance(collection_type="paired", elements=[
-        hda_element("left"),
-        hda_element("right"),
-    ])
+    paired_collection_instance = collection_instance(
+        collection_type="paired",
+        elements=[
+            hda_element("left"),
+            hda_element("right"),
+        ],
+    )
     return paired_collection_instance
 
 
@@ -99,21 +102,16 @@ def list_instance(collection_type="list", elements=None, ids=None):
         if ids is None:
             ids = ["data1", "data2"]
         elements = [hda_element(_) for _ in ids]
-    list_collection_instance = collection_instance(
-        collection_type=collection_type,
-        elements=elements
-    )
+    list_collection_instance = collection_instance(collection_type=collection_type, elements=elements)
     return list_collection_instance
 
 
 class MockCollectionInstance:
-
     def __init__(self, collection_type, elements):
         self.collection = MockCollection(collection_type, elements)
 
 
 class MockCollection:
-
     def __init__(self, collection_type, elements):
         self.collection_type = collection_type
         self.elements = elements
@@ -121,7 +119,6 @@ class MockCollection:
 
 
 class MockCollectionElement:
-
     def __init__(self, element_identifier, collection):
         self.element_identifier = element_identifier
         self.child_collection = collection
@@ -129,7 +126,6 @@ class MockCollectionElement:
 
 
 class MockHDAElement:
-
     def __init__(self, element_identifier):
         self.element_identifier = element_identifier
         self.child_collection = False

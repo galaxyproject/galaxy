@@ -4,7 +4,11 @@ Migration script to change the 'value' column of 'user_preference' table from nu
 
 import logging
 
-from sqlalchemy import MetaData, Numeric, Table
+from sqlalchemy import (
+    MetaData,
+    Numeric,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

@@ -16,7 +16,10 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tool_util.unittest_utils import mock_trans
-from galaxy.tool_util.unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
+from galaxy.tool_util.unittest_utils.sample_data import (
+    SIMPLE_MACRO,
+    SIMPLE_TOOL_WITH_MACRO,
+)
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 
@@ -38,22 +41,21 @@ CONFIG_TEST_TOOL_VERSION_1 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(d
 CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(dict(version="2"))
 
 REPO_TYPE = collections.namedtuple(
-    'REPO_TYPE',
-    'tool_shed owner name changeset_revision installed_changeset_revision description status',
+    "REPO_TYPE",
+    "tool_shed owner name changeset_revision installed_changeset_revision description status",
 )
-DEFAULT_TEST_REPO = REPO_TYPE('github.com', 'galaxyproject', 'example', '1', '1', 'description', 'OK')
+DEFAULT_TEST_REPO = REPO_TYPE("github.com", "galaxyproject", "example", "1", "1", "description", "OK")
 
 
 class SimplifiedToolBox(ToolBox):
-
     def __init__(self, test_case):
         app = test_case.app
         app.watchers.tool_config_watcher.reload_callback = lambda: reload_callback(test_case)
         # Handle app/config stuff needed by toolbox but not by tools.
-        app.tool_cache = ToolCache() if not hasattr(app, 'tool_cache') else app.tool_cache
+        app.tool_cache = ToolCache() if not hasattr(app, "tool_cache") else app.tool_cache
         app.job_config.get_tool_resource_parameters = lambda tool_id: None
         app.config.update_integrated_tool_panel = True
-        app.config.schema.defaults = {'tool_dependency_dir': 'dependencies'}
+        app.config.schema.defaults = {"tool_dependency_dir": "dependencies"}
         config_files = test_case.config_files
         tool_root_dir = test_case.test_directory
         super().__init__(
@@ -103,14 +105,16 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
 
     def _repo_install(self, changeset, config_filename=None):
         metadata = {
-            'tools': [{
-                'add_to_tool_panel': False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
-                'guid': "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
-                'tool_config': 'tool.xml'
-            }],
+            "tools": [
+                {
+                    "add_to_tool_panel": False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
+                    "guid": "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                    "tool_config": "tool.xml",
+                }
+            ],
         }
         if config_filename:
-            metadata['shed_config_filename'] = config_filename
+            metadata["shed_config_filename"] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata_=metadata)
         repository.tool_shed = DEFAULT_TEST_REPO.tool_shed
         repository.owner = DEFAULT_TEST_REPO.owner
@@ -187,7 +191,6 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
 
 
 class ToolBoxTestCase(BaseToolBoxTestCase):
-
     def test_load_file(self):
         self._init_tool()
         self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
@@ -198,10 +201,12 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def test_record_macros(self):
         self._init_tool()
-        self._init_tool(filename="tool_with_macro.xml",
-                        tool_contents=SIMPLE_TOOL_WITH_MACRO,
-                        extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
-                        extra_file_path="external.xml")
+        self._init_tool(
+            filename="tool_with_macro.xml",
+            tool_contents=SIMPLE_TOOL_WITH_MACRO,
+            extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+            extra_file_path="external.xml",
+        )
         self._add_config("""<toolbox><tool file="tool_with_macro.xml"/><tool file="tool.xml" /></toolbox>""")
         toolbox = self.toolbox
         tool = toolbox.get_tool("test_tool")
@@ -213,17 +218,19 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     @pytest.mark.xfail(raises=AssertionError)
     def test_tool_reload_when_macro_is_altered(self):
-        self._init_tool(filename="tool_with_macro.xml",
-                        tool_contents=SIMPLE_TOOL_WITH_MACRO,
-                        extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
-                        extra_file_path="external.xml")
+        self._init_tool(
+            filename="tool_with_macro.xml",
+            tool_contents=SIMPLE_TOOL_WITH_MACRO,
+            extra_file_contents=SIMPLE_MACRO.substitute(tool_version="2.0"),
+            extra_file_path="external.xml",
+        )
         self._add_config("""<toolbox><tool file="tool_with_macro.xml"/></toolbox>""")
         toolbox = self.toolbox
         tool = toolbox.get_tool("tool_with_macro")
         assert tool is not None
         assert len(tool._macro_paths) == 1
         macro_path = tool._macro_paths[0]
-        with open(macro_path, 'w') as macro_out:
+        with open(macro_path, "w") as macro_out:
             macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
 
         def check_tool_macro():
@@ -237,20 +244,20 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self._init_tool(filename="simple_tool.xml", version="1.0")
         self._add_config("""<toolbox><tool file="simple_tool.xml"/></toolbox>""")
         toolbox = self.toolbox
-        tool = toolbox.get_tool('test_tool')
+        tool = toolbox.get_tool("test_tool")
         assert tool is not None
         assert tool.version == "1.0"
         assert tool.tool_errors is None
         # Tool is loaded, now let's break it
         tool_path = tool.config_file
-        with open(tool.config_file, 'w') as out:
-            out.write('certainly not a valid tool')
+        with open(tool.config_file, "w") as out:
+            out.write("certainly not a valid tool")
 
         def check_tool_errors():
             tool = self.toolbox.get_tool("test_tool")
             assert tool is not None
             assert tool.version == "1.0"
-            assert tool.tool_errors == 'Current on-disk tool is not valid'
+            assert tool.tool_errors == "Current on-disk tool is not valid"
 
         self._try_until_no_errors(check_tool_errors)
 
@@ -274,7 +281,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
                 return
             except AssertionError as error:
                 e = error
-                time.sleep(.25)
+                time.sleep(0.25)
 
         if e:
             raise e
@@ -359,14 +366,14 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self._setup_two_versions()
 
         test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
-        assert test_tool.version == '0.1'
+        assert test_tool.version == "0.1"
 
         test_tool = self.toolbox.get_tool("test_tool", tool_version="0.2")
-        assert test_tool.version == '0.2'
+        assert test_tool.version == "0.2"
 
         # there is no version 3, return newest version
         test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
-        assert test_tool.version == '0.2'
+        assert test_tool.version == "0.2"
 
     def test_load_file_in_section(self):
         self._init_tool_in_section()
@@ -410,12 +417,15 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def test_get_section_by_label(self):
         self._add_config(
-            """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""")
+            """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
+        )
         assert len(self.toolbox._tool_panel) == 1
-        section = self.toolbox._tool_panel['tid']
-        tool_panel_section_key, section_by_label = self.toolbox.get_section(section_id='nope', new_label='Completely unrelated', create_if_needed=True)
+        section = self.toolbox._tool_panel["tid"]
+        tool_panel_section_key, section_by_label = self.toolbox.get_section(
+            section_id="nope", new_label="Completely unrelated", create_if_needed=True
+        )
         assert section_by_label is section
-        assert tool_panel_section_key == 'tid'
+        assert tool_panel_section_key == "tid"
 
     def test_get_tool(self):
         self._init_tool()
@@ -423,11 +433,20 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self._setup_two_versions()
         assert self.toolbox.get_tool("test_tool").id in [
             "github.com/galaxyproject/example/test_tool/0.1",
-            "github.com/galaxyproject/example/test_tool/0.2"
+            "github.com/galaxyproject/example/test_tool/0.2",
         ]
-        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.1").id == "github.com/galaxyproject/example/test_tool/0.1"
-        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.2").id == "github.com/galaxyproject/example/test_tool/0.2"
-        assert self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.3").id != "github.com/galaxyproject/example/test_tool/0.3"
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.1").id
+            == "github.com/galaxyproject/example/test_tool/0.1"
+        )
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.2").id
+            == "github.com/galaxyproject/example/test_tool/0.2"
+        )
+        assert (
+            self.toolbox.get_tool("github.com/galaxyproject/example/test_tool/0.3").id
+            != "github.com/galaxyproject/example/test_tool/0.3"
+        )
 
     def test_tool_dir(self):
         self._init_tool()
@@ -455,9 +474,11 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
     def test_workflow_in_section(self):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id(stored_workflow.id)
-        self._add_config("""<toolbox><section id="tid" name="TID"><workflow id="%s" /></section></toolbox>""" % encoded_id)
+        self._add_config(
+            """<toolbox><section id="tid" name="TID"><workflow id="%s" /></section></toolbox>""" % encoded_id
+        )
         assert len(self.toolbox._tool_panel) == 1
-        section = self.toolbox._tool_panel['tid']
+        section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 1
         panel_workflow = next(iter(section.elems.values()))
         assert panel_workflow == stored_workflow.latest_workflow
@@ -468,9 +489,11 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self.__check_test_labels(self.toolbox._tool_panel)
 
     def test_label_in_section(self):
-        self._add_config("""<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""")
+        self._add_config(
+            """<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
+        )
         assert len(self.toolbox._tool_panel) == 1
-        section = self.toolbox._tool_panel['tid']
+        section = self.toolbox._tool_panel["tid"]
         self.__check_test_labels(section.elems)
 
     def _init_tool_in_section(self, json=False):
@@ -482,8 +505,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
                 "type": "section",
                 "id": "t",
                 "name": "test",
-                "items": [{"type": "tool",
-                           "file": "tool.xml"}],
+                "items": [{"type": "tool", "file": "tool.xml"}],
             }
             self._add_config({"items": [section]}, name="tool_conf.json")
 
@@ -524,8 +546,14 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
             assert lineage_ids[1] == "github.com/galaxyproject/example/test_tool/0.2"
 
         # Test tool_version attribute.
-        assert self.toolbox.get_tool("test_tool", tool_version="0.1").guid == "github.com/galaxyproject/example/test_tool/0.1"
-        assert self.toolbox.get_tool("test_tool", tool_version="0.2").guid == "github.com/galaxyproject/example/test_tool/0.2"
+        assert (
+            self.toolbox.get_tool("test_tool", tool_version="0.1").guid
+            == "github.com/galaxyproject/example/test_tool/0.1"
+        )
+        assert (
+            self.toolbox.get_tool("test_tool", tool_version="0.2").guid
+            == "github.com/galaxyproject/example/test_tool/0.2"
+        )
 
     def test_default_lineage(self):
         self.__init_versioned_tools()

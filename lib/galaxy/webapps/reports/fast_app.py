@@ -19,7 +19,7 @@ def initialize_fast_app(gx_webapp):
     )
     add_exception_handler(app)
     add_request_id_middleware(app)
-    include_all_package_routers(app, 'galaxy.webapps.reports.api')
+    include_all_package_routers(app, "galaxy.webapps.reports.api")
     wsgi_handler = WSGIMiddleware(gx_webapp)
-    app.mount('/', wsgi_handler)
+    app.mount("/", wsgi_handler)
     return app

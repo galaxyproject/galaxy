@@ -30,12 +30,9 @@ from .common import (
 def view():
     # A View class we would add to galaxy.model.view
     class TestView(View):
-        name = 'testview'
-        __view__ = text('SELECT id, foo FROM testfoo').columns(
-            column('id', Integer),
-            column('foo', Integer)
-        )
-        pkeys = {'id'}
+        name = "testview"
+        __view__ = text("SELECT id, foo FROM testfoo").columns(column("id", Integer), column("foo", Integer))
+        pkeys = {"id"}
         View._make_table(name, __view__, pkeys)
 
     return TestView
@@ -72,10 +69,8 @@ def test_mysql_create_view(database_name, mysql_url, view):
 
 
 def make_table(metadata):
-    users = Table('testfoo', metadata,
-        Column('id', Integer, primary_key=True),
-        Column('foo', Integer),
-        Column('bar', Integer)
+    users = Table(
+        "testfoo", metadata, Column("id", Integer, primary_key=True), Column("foo", Integer), Column("bar", Integer)
     )
     return users
 

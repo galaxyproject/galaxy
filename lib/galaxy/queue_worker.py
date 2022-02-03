@@ -18,15 +18,13 @@ from kombu import (
     uuid,
 )
 from kombu.mixins import ConsumerProducerMixin
-from kombu.pools import (
-    producers,
-)
+from kombu.pools import producers
 
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
 
-logging.getLogger('kombu').setLevel(logging.WARNING)
+logging.getLogger("kombu").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
@@ -38,14 +36,13 @@ def send_local_control_task(app, task, get_response=False, kwargs=None):
     if kwargs is None:
         kwargs = {}
     log.info(f"Queuing {'sync' if get_response else 'async'} task {task} for {app.config.server_name}.")
-    payload = {'task': task,
-               'kwargs': kwargs}
-    routing_key = f'control.{app.config.server_name}@{socket.gethostname()}'
+    payload = {"task": task, "kwargs": kwargs}
+    routing_key = f"control.{app.config.server_name}@{socket.gethostname()}"
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
 
-def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
+def send_control_task(app, task, noop_self=False, get_response=False, routing_key="control.*", kwargs=None):
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all
@@ -57,16 +54,14 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     if kwargs is None:
         kwargs = {}
     log.info(f"Sending {task} control task.")
-    payload = {'task': task,
-               'kwargs': kwargs}
+    payload = {"task": task, "kwargs": kwargs}
     if noop_self:
-        payload['noop'] = app.config.server_name
+        payload["noop"] = app.config.server_name
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
 
 
 class ControlTask:
-
     def __init__(self, queue_worker):
         self.queue_worker = queue_worker
         self.correlation_id = None
@@ -94,8 +89,8 @@ class ControlTask:
         return self.queue_worker.declare_queues
 
     def on_response(self, message):
-        if message.properties['correlation_id'] == self.correlation_id:
-            self.response = message.payload['result']
+        if message.properties["correlation_id"] == self.correlation_id:
+            self.response = message.payload["result"]
 
     def send_task(self, payload, routing_key, local=False, get_response=False, timeout=10):
         if local:
@@ -118,7 +113,7 @@ class ControlTask:
                     reply_to=reply_to,
                     correlation_id=self.correlation_id,
                     retry=True,
-                    headers={'epoch': time.time()},
+                    headers={"epoch": time.time()},
                 )
             if get_response:
                 with Consumer(self.connection, on_message=self.on_response, queues=callback_queue, no_ack=True):
@@ -136,6 +131,7 @@ class ControlTask:
 # where they're currently invoked, or elsewhere.  (potentially using a dispatch
 # decorator).
 
+
 def reconfigure_watcher(app, **kwargs):
     app.database_heartbeat.update_watcher_designation()
 
@@ -150,7 +146,7 @@ def create_panel_section(app, **kwargs):
 
 def reload_tool(app, **kwargs):
     params = util.Params(kwargs)
-    tool_id = params.get('tool_id', None)
+    tool_id = params.get("tool_id", None)
     log.debug(f"Executing reload tool task for {tool_id}")
     if tool_id:
         app.toolbox.reload_tool_by_id(tool_id)
@@ -162,11 +158,11 @@ def reload_toolbox(app, save_integrated_tool_panel=True, **kwargs):
     reload_timer = util.ExecutionTimer()
     log.debug("Executing toolbox reload on '%s'", app.config.server_name)
     reload_count = app.toolbox._reload_count
-    if hasattr(app, 'tool_cache'):
+    if hasattr(app, "tool_cache"):
         app.tool_cache.cleanup()
     _get_new_toolbox(app, save_integrated_tool_panel)
     app.toolbox._reload_count = reload_count + 1
-    send_local_control_task(app, 'rebuild_toolbox_search_index')
+    send_local_control_task(app, "rebuild_toolbox_search_index")
     log.debug("Toolbox reload %s", reload_timer)
 
 
@@ -177,9 +173,12 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     """
     from galaxy import tools
     from galaxy.tools.special_tools import load_lib_tools
+
     tool_configs = app.config.tool_configs
 
-    new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel)
+    new_toolbox = tools.ToolBox(
+        tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel
+    )
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
@@ -192,21 +191,22 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
 def reload_data_managers(app, **kwargs):
     reload_timer = util.ExecutionTimer()
     from galaxy.tools.data_manager.manager import DataManagers
+
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
     reload_count = app.data_managers._reload_count
     app.data_managers = DataManagers(app)
     app.data_managers._reload_count = reload_count + 1
-    if hasattr(app, 'tool_cache'):
+    if hasattr(app, "tool_cache"):
         app.tool_cache.reset_status()
-    if hasattr(app, 'watchers'):
+    if hasattr(app, "watchers"):
         app.watchers.update_watch_data_table_paths()
     log.debug("Data managers reloaded %s", reload_timer)
 
 
 def reload_display_application(app, **kwargs):
-    display_application_ids = kwargs.get('display_application_ids', None)
+    display_application_ids = kwargs.get("display_application_ids", None)
     log.debug(f"Executing display application reload task for {display_application_ids}")
     app.datatypes_registry.reload_display_applications(display_application_ids)
 
@@ -217,7 +217,7 @@ def reload_sanitize_allowlist(app):
 
 
 def recalculate_user_disk_usage(app, **kwargs):
-    user_id = kwargs.get('user_id', None)
+    user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
     if user_id:
         user = sa_session.query(app.model.User).get(app.security.decode_id(user_id))
@@ -230,9 +230,9 @@ def recalculate_user_disk_usage(app, **kwargs):
 
 
 def reload_tool_data_tables(app, **kwargs):
-    path = kwargs.get('path')
-    table_name = kwargs.get('table_name')
-    table_names = path or table_name or 'all tables'
+    path = kwargs.get("path")
+    table_name = kwargs.get("table_name")
+    table_names = path or table_name or "all tables"
     log.debug("Executing tool data table reload for %s", table_names)
     table_names = app.tool_data_tables.reload_tables(table_names=table_name, path=path)
     log.debug("Finished data table reload for %s", table_names)
@@ -251,8 +251,7 @@ def reload_job_rules(app, **kwargs):
     for module in job_rule_modules(app):
         rules_module_name = module.__name__
         for name, module in sys.modules.items():
-            if ((name == rules_module_name or name.startswith(f"{rules_module_name}."))
-                    and ismodule(module)):
+            if (name == rules_module_name or name.startswith(f"{rules_module_name}.")) and ismodule(module):
                 log.debug("Reloading job rules module: %s", name)
                 importlib.reload(module)
     log.debug("Job rules reloaded %s", reload_timer)
@@ -263,20 +262,20 @@ def reload_core_config(app, **kwargs):
 
 
 def reload_tour(app, **kwargs):
-    path = kwargs.get('path')
+    path = kwargs.get("path")
     app.tour_registry.reload_tour(path)
-    log.debug('Tour reloaded')
+    log.debug("Tour reloaded")
 
 
 def __job_rule_module_names(app):
-    rules_module_names = {'galaxy.jobs.rules'}
+    rules_module_names = {"galaxy.jobs.rules"}
     if app.job_config.dynamic_params is not None:
-        module_name = app.job_config.dynamic_params.get('rules_module')
+        module_name = app.job_config.dynamic_params.get("rules_module")
         if module_name:
             rules_module_names.add(module_name)
     # Also look for destination level rules_module overrides
     for dest_tuple in app.job_config.destinations.values():
-        module_name = dest_tuple[0].params.get('rules_module')
+        module_name = dest_tuple[0].params.get("rules_module")
         if module_name:
             rules_module_names.add(module_name)
     return rules_module_names
@@ -295,29 +294,30 @@ def job_rule_modules(app):
 
 
 def admin_job_lock(app, **kwargs):
-    job_lock = kwargs.get('job_lock', False)
+    job_lock = kwargs.get("job_lock", False)
     # job_queue is exposed in the root app, but this will be 'fixed' at some
     # point, so we're using the reference from the handler.
     app.job_manager.job_lock = job_lock
-    log.info("Administrative Job Lock is now set to %s. Jobs will %s dispatch."
-             % (job_lock, "not" if job_lock else "now"))
+    log.info(
+        "Administrative Job Lock is now set to %s. Jobs will %s dispatch." % (job_lock, "not" if job_lock else "now")
+    )
 
 
 control_message_to_task = {
-    'create_panel_section': create_panel_section,
-    'reload_tool': reload_tool,
-    'reload_toolbox': reload_toolbox,
-    'reload_data_managers': reload_data_managers,
-    'reload_display_application': reload_display_application,
-    'reload_tool_data_tables': reload_tool_data_tables,
-    'reload_job_rules': reload_job_rules,
-    'admin_job_lock': admin_job_lock,
-    'reload_sanitize_allowlist': reload_sanitize_allowlist,
-    'recalculate_user_disk_usage': recalculate_user_disk_usage,
-    'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
-    'reconfigure_watcher': reconfigure_watcher,
-    'reload_tour': reload_tour,
-    'reload_core_config': reload_core_config,
+    "create_panel_section": create_panel_section,
+    "reload_tool": reload_tool,
+    "reload_toolbox": reload_toolbox,
+    "reload_data_managers": reload_data_managers,
+    "reload_display_application": reload_display_application,
+    "reload_tool_data_tables": reload_tool_data_tables,
+    "reload_job_rules": reload_job_rules,
+    "admin_job_lock": admin_job_lock,
+    "reload_sanitize_allowlist": reload_sanitize_allowlist,
+    "recalculate_user_disk_usage": recalculate_user_disk_usage,
+    "rebuild_toolbox_search_index": rebuild_toolbox_search_index,
+    "reconfigure_watcher": reconfigure_watcher,
+    "reload_tour": reload_tour,
+    "reload_core_config": reload_core_config,
 }
 
 
@@ -330,7 +330,11 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     def __init__(self, app, task_mapping=None):
         super().__init__()
-        log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
+        log.info(
+            "Initializing %s Galaxy Queue Worker on %s",
+            app.config.server_name,
+            util.mask_password_from_url(app.config.amqp_internal_connection),
+        )
         self.daemon = True
         self.connection = app.amqp_internal_connection_obj
         # Force connection instead of lazy-connecting the first time it is required.
@@ -344,8 +348,15 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.control_queues = []
         self.epoch = 0
 
-    def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
-        return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
+    def send_control_task(self, task, noop_self=False, get_response=False, routing_key="control.*", kwargs=None):
+        return send_control_task(
+            app=self.app,
+            task=task,
+            noop_self=noop_self,
+            get_response=get_response,
+            routing_key=routing_key,
+            kwargs=kwargs,
+        )
 
     def send_local_control_task(self, task, get_response=False, kwargs=None):
         return send_local_control_task(app=self.app, get_response=get_response, task=task, kwargs=kwargs)
@@ -364,38 +375,47 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.start()
 
     def get_consumers(self, Consumer, channel):
-        return [Consumer(queues=[q],
-                         callbacks=[self.process_task],
-                         accept={'application/json'}) for q in self.control_queues]
+        return [
+            Consumer(queues=[q], callbacks=[self.process_task], accept={"application/json"})
+            for q in self.control_queues
+        ]
 
     def process_task(self, body, message):
-        result = 'NO_RESULT'
-        if body['task'] in self.task_mapping:
-            if body.get('noop', None) != self.app.config.server_name:
+        result = "NO_RESULT"
+        if body["task"] in self.task_mapping:
+            if body.get("noop", None) != self.app.config.server_name:
                 try:
-                    f = self.task_mapping[body['task']]
-                    if message.headers.get('epoch', math.inf) > self.epoch:
+                    f = self.task_mapping[body["task"]]
+                    if message.headers.get("epoch", math.inf) > self.epoch:
                         # Message was created after QueueWorker was started, execute
-                        log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
-                        result = f(self.app, **body['kwargs'])
+                        log.info(
+                            "Instance '%s' received '%s' task, executing now.",
+                            self.app.config.server_name,
+                            body["task"],
+                        )
+                        result = f(self.app, **body["kwargs"])
                     else:
                         # Message was created before QueueWorker was started, ack message but don't run task
-                        log.info("Instance '%s' received '%s' task from the past, discarding it", self.app.config.server_name, body['task'])
-                        result = 'NO_OP'
+                        log.info(
+                            "Instance '%s' received '%s' task from the past, discarding it",
+                            self.app.config.server_name,
+                            body["task"],
+                        )
+                        result = "NO_OP"
                 except Exception:
                     # this shouldn't ever throw an exception, but...
-                    log.exception("Error running control task type: %s", body['task'])
+                    log.exception("Error running control task type: %s", body["task"])
             else:
-                result = 'NO_OP'
+                result = "NO_OP"
         else:
             log.warning(f"Received a malformed task message:\n{body}")
-        if message.properties.get('reply_to'):
+        if message.properties.get("reply_to"):
             self.producer.publish(
-                {'result': result},
-                exchange='',
-                routing_key=message.properties['reply_to'],
-                correlation_id=message.properties['correlation_id'],
-                serializer='json',
+                {"result": result},
+                exchange="",
+                routing_key=message.properties["reply_to"],
+                correlation_id=message.properties["correlation_id"],
+                serializer="json",
                 retry=True,
             )
         message.ack()

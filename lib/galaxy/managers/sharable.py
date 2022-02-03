@@ -29,7 +29,7 @@ from galaxy.managers import (
     ratable,
     secured,
     taggable,
-    users
+    users,
 )
 from galaxy.model import (
     User,
@@ -46,8 +46,14 @@ from galaxy.util import ready_name_for_url
 log = logging.getLogger(__name__)
 
 
-class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secured.AccessibleManagerMixin,
-        taggable.TaggableManagerMixin, annotatable.AnnotatableManagerMixin, ratable.RatableManagerMixin):
+class SharableModelManager(
+    base.ModelManager,
+    secured.OwnableManagerMixin,
+    secured.AccessibleManagerMixin,
+    taggable.TaggableManagerMixin,
+    annotatable.AnnotatableManagerMixin,
+    ratable.RatableManagerMixin,
+):
     # e.g. histories, pages, stored workflows, visualizations
     # base.DeleteableModelMixin? (all four are deletable)
 
@@ -107,7 +113,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         importable, and slug attributes.
         """
         self.create_unique_slug(item, flush=False)
-        return self._session_setattr(item, 'importable', True, flush=flush)
+        return self._session_setattr(item, "importable", True, flush=flush)
 
     def make_non_importable(self, item, flush=True):
         """
@@ -118,7 +124,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # item must be unpublished if non-importable
         if item.published:
             self.unpublish(item, flush=False)
-        return self._session_setattr(item, 'importable', False, flush=flush)
+        return self._session_setattr(item, "importable", False, flush=flush)
 
     # .... published
     def publish(self, item, flush=True):
@@ -128,13 +134,13 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # item must be importable to be published
         if not item.importable:
             self.make_importable(item, flush=False)
-        return self._session_setattr(item, 'published', True, flush=flush)
+        return self._session_setattr(item, "published", True, flush=flush)
 
     def unpublish(self, item, flush=True):
         """
         Set the published flag on `item` to False.
         """
-        return self._session_setattr(item, 'published', False, flush=flush)
+        return self._session_setattr(item, "published", False, flush=flush)
 
     def _query_published(self, filters=None, **kwargs):
         """
@@ -209,7 +215,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Return a query for this model already filtered to models shared
         with a particular user.
         """
-        query = self.session().query(self.model_class).join('users_shared_with')
+        query = self.session().query(self.model_class).join("users_shared_with")
         if eagerloads is False:
             query = query.enable_eagerloads(False)
         # TODO: as filter in FilterParser also
@@ -224,13 +230,13 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            query = self._query_shared_with(user, filters=orm_filters,
-                order_by=order_by, limit=limit, offset=offset, **kwargs)
+            query = self._query_shared_with(
+                user, filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs
+            )
             return self._orm_list(query=query, **kwargs)
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
-        query = self._query_shared_with(user, filters=orm_filters,
-            order_by=order_by, limit=None, offset=None, **kwargs)
+        query = self._query_shared_with(user, filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs)
         # apply limit and offset afterwards
         items = self._apply_fn_filters_gen(query.all(), fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
@@ -245,7 +251,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         return None
 
     def make_members_public(self, trans, item):
-        """ Make potential elements of this item public.
+        """Make potential elements of this item public.
 
         This method must be overridden in managers that need to change permissions of internal elements
         contained associated with the given item.
@@ -301,9 +307,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         return VALID_SLUG_RE.match(slug)
 
     def _slug_exists(self, user, slug):
-        query = (self.session().query(self.model_class)
-                 .filter_by(user_id=user.id, slug=slug)
-                 .with_entities(func.count()))
+        query = self.session().query(self.model_class).filter_by(user_id=user.id, slug=slug).with_entities(func.count())
         return query.scalar() != 0
 
     def _slugify(self, start_with):
@@ -312,13 +316,13 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # Remove all non-alphanumeric characters.
         slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
         # Remove trailing '-'.
-        if slug_base.endswith('-'):
+        if slug_base.endswith("-"):
             slug_base = slug_base[:-1]
         return slug_base
 
     def _default_slug_base(self, item):
         # override in subclasses
-        if hasattr(item, 'title'):
+        if hasattr(item, "title"):
             return item.title.lower()
         return item.name.lower()
 
@@ -339,12 +343,12 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while (self.session().query(item.__class__)
-               .filter_by(user=item.user, slug=new_slug, importable=True)
-               .count() != 0):
+        while (
+            self.session().query(item.__class__).filter_by(user=item.user, slug=new_slug, importable=True).count() != 0
+        ):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
+            new_slug = "%s-%i" % (slug_base, count)
             count += 1
 
         return new_slug
@@ -362,37 +366,34 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
     # TODO: def by_slug( self, user, **kwargs ):
 
 
-class SharableModelSerializer(base.ModelSerializer,
-       taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin, ratable.RatableSerializerMixin):
+class SharableModelSerializer(
+    base.ModelSerializer,
+    taggable.TaggableSerializerMixin,
+    annotatable.AnnotatableSerializerMixin,
+    ratable.RatableSerializerMixin,
+):
     # TODO: stub
     SINGLE_CHAR_ABBR: Optional[str] = None
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
-        self.add_view('sharing', [
-            'id',
-            'title',
-            'importable',
-            'published',
-            'username_and_slug',
-            'users_shared_with'
-        ])
+        self.add_view("sharing", ["id", "title", "importable", "published", "username_and_slug", "users_shared_with"])
 
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
-        self.serializers.update({
-            'id': self.serialize_id,
-            'title': self.serialize_title,
-            'username_and_slug': self.serialize_username_and_slug,
-            'users_shared_with': self.serialize_users_shared_with
-        })
+        self.serializers.update(
+            {
+                "id": self.serialize_id,
+                "title": self.serialize_title,
+                "username_and_slug": self.serialize_username_and_slug,
+                "users_shared_with": self.serialize_users_shared_with,
+            }
+        )
         # these use the default serializer but must still be white-listed
-        self.serializable_keyset.update([
-            'importable', 'published', 'slug'
-        ])
+        self.serializable_keyset.update(["importable", "published", "slug"])
 
     def serialize_title(self, item, key, **context):
         if hasattr(item, "title"):
@@ -403,7 +404,7 @@ class SharableModelSerializer(base.ModelSerializer,
     def serialize_username_and_slug(self, item, key, **context):
         if not (item.user and item.user.username and item.slug and self.SINGLE_CHAR_ABBR):
             return None
-        return ('/').join(('u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug))
+        return ("/").join(("u", item.user.username, self.SINGLE_CHAR_ABBR, item.slug))
 
     # the only ones that needs any fns:
     #   user/user_id
@@ -421,12 +422,15 @@ class SharableModelSerializer(base.ModelSerializer,
             self.skip()
 
         share_assocs = self.manager.get_share_assocs(item)
-        return [self.serialize_id(share, 'user_id') for share in share_assocs]
+        return [self.serialize_id(share, "user_id") for share in share_assocs]
 
 
-class SharableModelDeserializer(base.ModelDeserializer,
-        taggable.TaggableDeserializerMixin, annotatable.AnnotatableDeserializerMixin, ratable.RatableDeserializerMixin):
-
+class SharableModelDeserializer(
+    base.ModelDeserializer,
+    taggable.TaggableDeserializerMixin,
+    annotatable.AnnotatableDeserializerMixin,
+    ratable.RatableDeserializerMixin,
+):
     def __init__(self, app: MinimalManagerApp, **kwargs):
         super().__init__(app, **kwargs)
         self.tag_handler = app.tag_handler
@@ -437,15 +441,16 @@ class SharableModelDeserializer(base.ModelDeserializer,
         annotatable.AnnotatableDeserializerMixin.add_deserializers(self)
         ratable.RatableDeserializerMixin.add_deserializers(self)
 
-        self.deserializers.update({
-            'published': self.deserialize_published,
-            'importable': self.deserialize_importable,
-            'users_shared_with': self.deserialize_users_shared_with,
-        })
+        self.deserializers.update(
+            {
+                "published": self.deserialize_published,
+                "importable": self.deserialize_importable,
+                "users_shared_with": self.deserialize_users_shared_with,
+            }
+        )
 
     def deserialize_published(self, item, key, val, **context):
-        """
-        """
+        """ """
         val = self.validate.bool(key, val)
         if item.published == val:
             return val
@@ -457,8 +462,7 @@ class SharableModelDeserializer(base.ModelDeserializer,
         return item.published
 
     def deserialize_importable(self, item, key, val, **context):
-        """
-        """
+        """ """
         val = self.validate.bool(key, val)
         if item.importable == val:
             return val
@@ -484,22 +488,24 @@ class SharableModelDeserializer(base.ModelDeserializer,
         return current_shares
 
 
-class SharableModelFilters(base.ModelFilterParser,
-        taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin, ratable.RatableFilterMixin):
-
+class SharableModelFilters(
+    base.ModelFilterParser, taggable.TaggableFilterMixin, annotatable.AnnotatableFilterMixin, ratable.RatableFilterMixin
+):
     def _add_parsers(self):
         super()._add_parsers()
         taggable.TaggableFilterMixin._add_parsers(self)
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         ratable.RatableFilterMixin._add_parsers(self)
 
-        self.orm_filter_parsers.update({
-            'importable': {'op': ('eq'), 'val': base.parse_bool},
-            'published': {'op': ('eq'), 'val': base.parse_bool},
-            'slug': {'op': ('eq', 'contains', 'like')},
-            # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
-            # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
-        })
+        self.orm_filter_parsers.update(
+            {
+                "importable": {"op": ("eq"), "val": base.parse_bool},
+                "published": {"op": ("eq"), "val": base.parse_bool},
+                "slug": {"op": ("eq", "contains", "like")},
+                # chose by user should prob. only be available for admin? (most often we'll only need trans.user)
+                # 'user'          : { 'op': ( 'eq' ), 'val': self.parse_id_list },
+            }
+        )
 
 
 class SlugBuilder:
@@ -519,12 +525,12 @@ class SlugBuilder:
         cur_slug = item.slug
 
         # Setup slug base.
-        if cur_slug is None or cur_slug == '':
+        if cur_slug is None or cur_slug == "":
             # Item can have either a name or a title.
-            item_name = ''
-            if hasattr(item, 'name'):
+            item_name = ""
+            if hasattr(item, "name"):
                 item_name = item.name
-            elif hasattr(item, 'title'):
+            elif hasattr(item, "title"):
                 item_name = item.title
             slug_base = ready_name_for_url(item_name.lower())
         else:
@@ -536,10 +542,15 @@ class SlugBuilder:
         count = 1
         # Ensure unique across model class and user and don't include this item
         # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
+        while (
+            sa_session.query(item.__class__)
+            .filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id)
+            .count()
+            != 0
+        ):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
-            new_slug = f'{slug_base}-{count}'
+            new_slug = f"{slug_base}-{count}"
             count += 1
 
         # Set slug and return.

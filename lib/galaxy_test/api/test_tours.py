@@ -2,7 +2,6 @@ from ._framework import ApiTestCase
 
 
 class TourApiTestCase(ApiTestCase):
-
     def test_index(self):
         response = self._get("tours")
         self._assert_status_code_is(response, 200)

@@ -12,7 +12,16 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
         "alignfile1": "display?id=%s" % primary_data.id,
         "buttonlabel": "Launch LAJ",
         "title": "LAJ in Galaxy",
-        "posturl": "history_add_to?%s" % urlencode({'history_id': primary_data.history_id, 'ext': 'lav', 'name': 'LAJ Output', 'info': 'Added by LAJ', 'dbkey': primary_data.dbkey})
+        "posturl": "history_add_to?%s"
+        % urlencode(
+            {
+                "history_id": primary_data.history_id,
+                "ext": "lav",
+                "name": "LAJ Output",
+                "info": "Added by LAJ",
+                "dbkey": primary_data.dbkey,
+            }
+        ),
     }
     for name, data in inp_data.items():
         if name == "maf_input":

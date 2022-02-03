@@ -31,28 +31,26 @@ def render_plots(call, plots):
         )
         for plot in plots
     ]
-    plot_calls = ',\ninitial=c(\n' + ',\n'.join(plot_calls_list) + ')'
+    plot_calls = ",\ninitial=c(\n" + ",\n".join(plot_calls_list) + ")"
     return call + plot_calls
 
 
 def get_render_func(plot):
     """Return the appropriate function to render plot."""
     # This is probably broken and unused
-    return OPTIONS['plots'][plot['plot_types']['plot_type'].value]  # type: ignore[index]
+    return OPTIONS["plots"][plot["plot_types"]["plot_type"].value]  # type: ignore[index]
 
 
 def reduced_dimension_plot(pw="6L"):
     """Render a ReducedDimensionPlot object call."""
-    return (
-        f'''ReducedDimensionPlot(
-        PanelWidth={pw})''')
+    return f"""ReducedDimensionPlot(
+        PanelWidth={pw})"""
 
 
 def feature_assay_plot(pw="6L"):
     """Render a FeatureAssayPlot object call."""
-    return (
-        f'''FeatureAssayPlot(
-        PanelWidth={pw})''')
+    return f"""FeatureAssayPlot(
+        PanelWidth={pw})"""
 
 
 def row_data_table(pw="12L"):
@@ -66,14 +64,14 @@ def column_data_plot(pw="6L"):
 
 
 OPTIONS = {
-    'plots': {
+    "plots": {
         "reduced_dimension_plot": reduced_dimension_plot,
         "feature_assay_plot": feature_assay_plot,
         "row_data_table": row_data_table,
         "column_data_plot": column_data_plot,
     },
-    'colormaps': {},
-    'extra': {},
+    "colormaps": {},
+    "extra": {},
 }
 
 

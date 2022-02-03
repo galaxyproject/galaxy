@@ -28,38 +28,34 @@ def get_timestamp_install_sql(variant):
 
     sql = get_timestamp_drop_sql(variant)
 
-    if 'postgres' in variant:
+    if "postgres" in variant:
         # PostgreSQL has a separate function definition and a trigger
         # assignment. The first two statements the functions, and
         # the later assign those functions to triggers on tables
 
-        fn_name = 'update_history_update_time'
-        sql.append(build_pg_timestamp_fn(fn_name, 'history', source_key='history_id'))
-        sql.append(build_pg_trigger('history_dataset_association', fn_name))
-        sql.append(build_pg_trigger('history_dataset_collection_association', fn_name))
+        fn_name = "update_history_update_time"
+        sql.append(build_pg_timestamp_fn(fn_name, "history", source_key="history_id"))
+        sql.append(build_pg_trigger("history_dataset_association", fn_name))
+        sql.append(build_pg_trigger("history_dataset_collection_association", fn_name))
 
     else:
         # Other database variants are more granular. Requiring separate
         # statements for INSERT/UPDATE/DELETE, and the body of the trigger
         # is not necessarily reusable with a function
 
-        for operation in ['INSERT', 'UPDATE', 'DELETE']:
+        for operation in ["INSERT", "UPDATE", "DELETE"]:
 
             # change hda -> update history
-            sql.append(build_timestamp_trigger(
-                operation,
-                'history_dataset_association',
-                'history',
-                source_key='history_id'
-            ))
+            sql.append(
+                build_timestamp_trigger(operation, "history_dataset_association", "history", source_key="history_id")
+            )
 
             # change hdca -> update history
-            sql.append(build_timestamp_trigger(
-                operation,
-                'history_dataset_collection_association',
-                'history',
-                source_key='history_id'
-            ))
+            sql.append(
+                build_timestamp_trigger(
+                    operation, "history_dataset_collection_association", "history", source_key="history_id"
+                )
+            )
 
     return sql
 
@@ -71,18 +67,18 @@ def get_timestamp_drop_sql(variant):
 
     sql = []
 
-    if 'postgres' in variant:
+    if "postgres" in variant:
         sql.append("DROP FUNCTION IF EXISTS update_history_update_time() CASCADE;")
     else:
-        for operation in ['INSERT', 'UPDATE', 'DELETE']:
-            for when in ['BEFORE', 'AFTER']:
-                sql.append(build_drop_trigger(operation, 'history_dataset_association', when))
-                sql.append(build_drop_trigger(operation, 'history_dataset_collection_association', when))
+        for operation in ["INSERT", "UPDATE", "DELETE"]:
+            for when in ["BEFORE", "AFTER"]:
+                sql.append(build_drop_trigger(operation, "history_dataset_association", when))
+                sql.append(build_drop_trigger(operation, "history_dataset_collection_association", when))
 
     return sql
 
 
-def build_pg_timestamp_fn(fn_name, target_table, source_key, target_key='id'):
+def build_pg_timestamp_fn(fn_name, target_table, source_key, target_key="id"):
     """Generates a PostgreSQL history update timestamp function"""
 
     return f"""
@@ -112,7 +108,7 @@ def build_pg_timestamp_fn(fn_name, target_table, source_key, target_key='id'):
     """
 
 
-def build_pg_trigger(source_table, fn_name, when='AFTER'):
+def build_pg_trigger(source_table, fn_name, when="AFTER"):
     """Assigns a PostgreSQL trigger to indicated table, calling user-defined function"""
     when_initial = when.lower()[0]
     trigger_name = f"trigger_{source_table}_{when_initial}iudr"
@@ -125,7 +121,7 @@ def build_pg_trigger(source_table, fn_name, when='AFTER'):
     """
 
 
-def build_timestamp_trigger(operation, source_table, target_table, source_key, target_key='id', when='AFTER'):
+def build_timestamp_trigger(operation, source_table, target_table, source_key, target_key="id", when="AFTER"):
     """Creates a non-PostgreSQL update_time trigger"""
 
     trigger_name = get_trigger_name(operation, source_table, when)
@@ -152,7 +148,7 @@ def build_timestamp_trigger(operation, source_table, target_table, source_key, t
     """
 
 
-def build_drop_trigger(operation, source_table, when='AFTER'):
+def build_drop_trigger(operation, source_table, when="AFTER"):
     """Drops a non-PostgreSQL trigger by name"""
     trigger_name = get_trigger_name(operation, source_table, when)
     return f"DROP TRIGGER IF EXISTS {trigger_name}"

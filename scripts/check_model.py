@@ -8,14 +8,17 @@ import os
 import sys
 from collections import namedtuple
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+)
 
 from galaxy.model import mapping
 from galaxy.model.orm.scripts import get_config
 
-IndexTuple = namedtuple('IndexTuple', 'table column_names')
+IndexTuple = namedtuple("IndexTuple", "table column_names")
 
 
 def tuple_from_index(index):
@@ -26,7 +29,6 @@ def tuple_from_index(index):
 
 
 def find_missing_indexes():
-
     def load_indexes(metadata):
         indexes = {}
         for t in metadata.tables.values():
@@ -40,7 +42,7 @@ def find_missing_indexes():
     mapping_indexes = load_indexes(metadata)
 
     # create EMPTY metadata, then load from database
-    db_url = get_config(sys.argv)['db_url']
+    db_url = get_config(sys.argv)["db_url"]
     metadata = MetaData(bind=create_engine(db_url))
     metadata.reflect()
     indexes_in_db = load_indexes(metadata)
@@ -50,7 +52,7 @@ def find_missing_indexes():
         return [(mapping_indexes[index], index.table, index.column_names) for index in missing_indexes]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     indexes = find_missing_indexes()
     if indexes:
         print(json.dumps(indexes, indent=4, sort_keys=True))

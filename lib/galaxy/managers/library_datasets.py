@@ -3,17 +3,15 @@ import logging
 
 from galaxy import (
     model,
-    util
+    util,
 )
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     InternalServerError,
     ObjectNotFound,
-    RequestParameterInvalidException
+    RequestParameterInvalidException,
 )
-from galaxy.managers import (
-    datasets,
-)
+from galaxy.managers import datasets
 from galaxy.model import tags
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
@@ -23,6 +21,7 @@ log = logging.getLogger(__name__)
 
 class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
+
     model_class = model.LibraryDatasetDatasetAssociation
 
     def __init__(self, app: MinimalManagerApp):
@@ -42,7 +41,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         :rtype:     galaxy.model.LibraryDataset
         """
         try:
-            ld = trans.sa_session.query(trans.app.model.LibraryDataset).filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id).one()
+            ld = (
+                trans.sa_session.query(trans.app.model.LibraryDataset)
+                .filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id)
+                .one()
+            )
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         ld = self.secure(trans, ld, check_accessible)
@@ -80,30 +83,30 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
 
     def _set_from_dict(self, trans, ldda, new_data):
         changed = False
-        new_name = new_data.get('name', None)
+        new_name = new_data.get("name", None)
         if new_name is not None and new_name != ldda.name:
             ldda.name = new_name
             changed = True
-        new_misc_info = new_data.get('misc_info', None)
+        new_misc_info = new_data.get("misc_info", None)
         if new_misc_info is not None and new_misc_info != ldda.info:
             ldda.info = new_misc_info
             changed = True
-        new_message = new_data.get('message', None)
+        new_message = new_data.get("message", None)
         if new_message is not None and new_message != ldda.message:
             ldda.message = new_message
             changed = True
-        new_file_ext = new_data.get('file_ext', None)
-        if new_file_ext == 'auto':
+        new_file_ext = new_data.get("file_ext", None)
+        if new_file_ext == "auto":
             self.detect_datatype(trans, ldda)
         elif new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
             self.set_metadata(trans, ldda)
             changed = True
-        new_genome_build = new_data.get('genome_build', None)
+        new_genome_build = new_data.get("genome_build", None)
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
             ldda.dbkey = new_genome_build
             changed = True
-        new_tags = new_data.get('tags', None)
+        new_tags = new_data.get("tags", None)
         if new_tags is not None and new_tags != ldda.tags:
             self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
             tag_list = self.tag_handler.parse_tags_list(new_tags)
@@ -122,25 +125,29 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         for key, val in payload.items():
             if val is None:
                 continue
-            if key in ('name'):
+            if key in ("name"):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException(f'{key} must have at least length of {MINIMUM_STRING_LENGTH}')
+                    raise RequestParameterInvalidException(
+                        f"{key} must have at least length of {MINIMUM_STRING_LENGTH}"
+                    )
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ('misc_info', 'message'):
+            if key in ("misc_info", "message"):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ('file_ext'):
+            if key in ("file_ext"):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None and val not in ("auto",):
-                    raise RequestParameterInvalidException(f'This Galaxy does not recognize the datatype of: {val}')
+                    raise RequestParameterInvalidException(f"This Galaxy does not recognize the datatype of: {val}")
                 validated_payload[key] = val
-            if key in ('genome_build'):
+            if key in ("genome_build"):
                 if len(val) < MINIMUM_STRING_LENGTH:
-                    raise RequestParameterInvalidException(f'{key} must have at least length of {MINIMUM_STRING_LENGTH}')
+                    raise RequestParameterInvalidException(
+                        f"{key} must have at least length of {MINIMUM_STRING_LENGTH}"
+                    )
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ('tags'):
+            if key in ("tags"):
                 val = validation.validate_and_sanitize_basestring_list(key, util.listify(val))
                 validated_payload[key] = val
         return validated_payload
@@ -177,9 +184,9 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         :raises:    ObjectNotFound
         """
         if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), ld, trans.user):
-            raise ObjectNotFound('Library dataset with the id provided was not found.')
+            raise ObjectNotFound("Library dataset with the id provided was not found.")
         elif ld.deleted:
-            raise ObjectNotFound('Library dataset with the id provided is deleted.')
+            raise ObjectNotFound("Library dataset with the id provided is deleted.")
         else:
             return ld
 
@@ -196,11 +203,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         :raises:    ObjectNotFound
         """
         if ld.deleted:
-            raise ObjectNotFound('Library dataset with the id provided is deleted.')
+            raise ObjectNotFound("Library dataset with the id provided is deleted.")
         elif trans.user_is_admin:
             return ld
         if not trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
-            raise InsufficientPermissionsException('You do not have proper permission to modify this library dataset.')
+            raise InsufficientPermissionsException("You do not have proper permission to modify this library dataset.")
         else:
             return ld
 
@@ -221,29 +228,33 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
 
         rval = trans.security.encode_all_ids(ld.to_dict())
         if len(expired_ldda_versions) > 0:
-            rval['has_versions'] = True
-            rval['expired_versions'] = expired_ldda_versions
+            rval["has_versions"] = True
+            rval["expired_versions"] = expired_ldda_versions
 
         ldda = ld.library_dataset_dataset_association
         if ldda.creating_job_associations:
             if ldda.creating_job_associations[0].job.stdout:
-                rval['job_stdout'] = ldda.creating_job_associations[0].job.stdout.strip()
+                rval["job_stdout"] = ldda.creating_job_associations[0].job.stdout.strip()
             if ldda.creating_job_associations[0].job.stderr:
-                rval['job_stderr'] = ldda.creating_job_associations[0].job.stderr.strip()
+                rval["job_stderr"] = ldda.creating_job_associations[0].job.stderr.strip()
         if ldda.dataset.uuid:
-            rval['uuid'] = str(ldda.dataset.uuid)
-        rval['deleted'] = ld.deleted
-        rval['folder_id'] = f"F{rval['folder_id']}"
-        rval['full_path'] = full_path
-        rval['file_size'] = util.nice_size(int(ldda.get_size()))
-        rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['update_time'] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
-        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
-        rval['tags'] = self.tag_handler.get_tags_str(ldda.tags)
+            rval["uuid"] = str(ldda.dataset.uuid)
+        rval["deleted"] = ld.deleted
+        rval["folder_id"] = f"F{rval['folder_id']}"
+        rval["full_path"] = full_path
+        rval["file_size"] = util.nice_size(int(ldda.get_size()))
+        rval["date_uploaded"] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval["update_time"] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        rval["can_user_modify"] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(
+            current_user_roles, ld
+        )
+        rval["is_unrestricted"] = trans.app.security_agent.dataset_is_public(ldda.dataset)
+        rval["tags"] = self.tag_handler.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
+        rval["can_user_manage"] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(
+            current_user_roles, ldda.dataset
+        )
         return rval
 
     def _build_path(self, trans, folder):

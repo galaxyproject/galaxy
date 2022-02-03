@@ -9,22 +9,25 @@ from sqlalchemy import (
     Integer,
     MetaData,
     Table,
-    TEXT
+    TEXT,
 )
 
 from galaxy.model.custom_types import TrimmedString
 from galaxy.model.migrate.versions.util import (
     create_table,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-MigrateTools_table = Table("migrate_tools", metadata,
-                           Column("repository_id", TrimmedString(255)),
-                           Column("repository_path", TEXT),
-                           Column("version", Integer))
+MigrateTools_table = Table(
+    "migrate_tools",
+    metadata,
+    Column("repository_id", TrimmedString(255)),
+    Column("repository_path", TEXT),
+    Column("version", Integer),
+)
 
 
 def upgrade(migrate_engine):

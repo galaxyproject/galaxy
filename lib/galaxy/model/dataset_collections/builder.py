@@ -34,7 +34,7 @@ def set_collection_elements(dataset_collection, type, dataset_instances, associa
 
 
 class CollectionBuilder:
-    """ Purely functional builder pattern for building a dataset collection. """
+    """Purely functional builder pattern for building a dataset collection."""
 
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
@@ -57,12 +57,13 @@ class CollectionBuilder:
                     collection_type_description=self._collection_type_description.child_collection_type_description()
                 )
                 collection_builder.replace_elements_in_collection(
-                    template_collection=element.child_collection,
-                    replacement_dict=replacement_dict
+                    template_collection=element.child_collection, replacement_dict=replacement_dict
                 )
                 elements[element.element_identifier] = collection_builder
             else:
-                elements[element.element_identifier] = replacement_dict.get(element.element_object, element.element_object)
+                elements[element.element_identifier] = replacement_dict.get(
+                    element.element_object, element.element_object
+                )
         return elements
 
     def get_level(self, identifier):
@@ -71,9 +72,7 @@ class CollectionBuilder:
             message = message_template % (self._collection_type_description)
             raise AssertionError(message)
         if identifier not in self._current_elements:
-            subcollection_builder = CollectionBuilder(
-                self._subcollection_type_description
-            )
+            subcollection_builder = CollectionBuilder(self._subcollection_type_description)
             self._current_elements[identifier] = subcollection_builder
 
         return self._current_elements[identifier]
@@ -94,7 +93,9 @@ class CollectionBuilder:
 
     def build(self):
         type_plugin = self._collection_type_description.rank_type_plugin()
-        self.collection = build_collection(type_plugin, self.build_elements(), self.collection, self.associated_identifiers)
+        self.collection = build_collection(
+            type_plugin, self.build_elements(), self.collection, self.associated_identifiers
+        )
         self.collection.collection_type = self._collection_type_description.collection_type
         return self.collection
 
@@ -108,7 +109,7 @@ class CollectionBuilder:
 
 
 class BoundCollectionBuilder(CollectionBuilder):
-    """ More stateful builder that is bound to a particular model object. """
+    """More stateful builder that is bound to a particular model object."""
 
     def __init__(self, dataset_collection):
         self.dataset_collection = dataset_collection

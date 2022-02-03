@@ -1,7 +1,9 @@
 from galaxy.util.pastescript.loadwsgi import fix_type_error
 
-argtype = ''
-EXP_STRING = "a_func() got multiple values for%s argument 'kwarg'; got (1, 2, kwarg=...), wanted (argone, kwarg=True)" % argtype
+argtype = ""
+EXP_STRING = (
+    "a_func() got multiple values for%s argument 'kwarg'; got (1, 2, kwarg=...), wanted (argone, kwarg=True)" % argtype
+)
 
 
 def a_func(argone, kwarg=True):
@@ -10,7 +12,7 @@ def a_func(argone, kwarg=True):
 
 def test_fix_type_error():
     args = [1, 2]
-    kwargs = {'kwarg': False}
+    kwargs = {"kwarg": False}
     try:
         a_func(*args, **kwargs)
     except TypeError:

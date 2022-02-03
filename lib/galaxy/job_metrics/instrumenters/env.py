@@ -13,9 +13,10 @@ class EnvFormatter(formatting.JobMetricFormatter):
 
 
 class EnvPlugin(InstrumentPlugin):
-    """ Instrumentation plugin capable of recording all or specific environment
+    """Instrumentation plugin capable of recording all or specific environment
     variables for a job at runtime.
     """
+
     plugin_type = "env"
     formatter = EnvFormatter()
 
@@ -28,29 +29,28 @@ class EnvPlugin(InstrumentPlugin):
         self.variables = variables
 
     def pre_execute_instrument(self, job_directory):
-        """ Use env to dump all environment variables to a file.
-        """
+        """Use env to dump all environment variables to a file."""
         return f"env > '{self.__env_file(job_directory)}'"
 
     def post_execute_instrument(self, job_directory):
         return None
 
     def job_properties(self, job_id, job_directory):
-        """ Recover environment variables dumped out on compute server and filter
+        """Recover environment variables dumped out on compute server and filter
         out specific variables if needed.
         """
         variables = self.variables
 
         properties = {}
-        env_string = ''.join(open(self.__env_file(job_directory)).readlines())
+        env_string = "".join(open(self.__env_file(job_directory)).readlines())
         while env_string:
             # Check if the next lines contain a shell function.
             # We use '\n\}\n' as regex termination because shell
             # functions can be nested.
             # We use the non-greedy '.+?' because of re.DOTALL .
-            m = re.match(r'([^=]+)=(\(\) \{.+?\n\})\n', env_string, re.DOTALL)
+            m = re.match(r"([^=]+)=(\(\) \{.+?\n\})\n", env_string, re.DOTALL)
             if m is None:
-                m = re.match('([^=]+)=(.*)\n', env_string)
+                m = re.match("([^=]+)=(.*)\n", env_string)
             if m is None:
                 # Some problem recording or reading back env output.
                 message_template = "Problem parsing env metric output for job %s - properties will be incomplete"
@@ -60,7 +60,7 @@ class EnvPlugin(InstrumentPlugin):
             (var, value) = m.groups()
             if not variables or var in variables:
                 properties[var] = value
-            env_string = env_string[m.end():]
+            env_string = env_string[m.end() :]
 
         return properties
 
@@ -68,4 +68,4 @@ class EnvPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "vars")
 
 
-__all__ = ('EnvPlugin', )
+__all__ = ("EnvPlugin",)

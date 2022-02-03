@@ -3,48 +3,48 @@
 from logging import getLogger
 from os import path
 
-from ..job import BaseJobExec, job_states
+from ..job import (
+    BaseJobExec,
+    job_states,
+)
 from ... import runner_states
 
 log = getLogger(__name__)
 
 argmap = {
-    'memory': '-M',  # There is code in job_script_kwargs relying on this name's setting
-    'cores': '-n',
-    'queue': '-q',
-    'working_dir': '-cwd',
-    'project': '-P'
+    "memory": "-M",  # There is code in job_script_kwargs relying on this name's setting
+    "cores": "-n",
+    "queue": "-q",
+    "working_dir": "-cwd",
+    "project": "-P",
 }
 
 
 class LSF(BaseJobExec):
-
     def job_script_kwargs(self, ofile, efile, job_name):
-        scriptargs = {'-o': ofile,
-                      '-e': efile,
-                      '-J': job_name}
+        scriptargs = {"-o": ofile, "-e": efile, "-J": job_name}
 
         # Map arguments using argmap.
         for k, v in self.params.items():
-            if k == 'plugin' or k == 'excluded_hosts':
+            if k == "plugin" or k == "excluded_hosts":
                 continue
             try:
-                if k == 'memory':
+                if k == "memory":
                     # Memory requires both -m and -R rusage[mem=v] request
-                    scriptargs['-R'] = f"\"rusage[mem={v}]\""
-                if not k.startswith('-'):
+                    scriptargs["-R"] = f'"rusage[mem={v}]"'
+                if not k.startswith("-"):
                     k = argmap[k]
                 scriptargs[k] = v
             except Exception:
-                log.warning(f'Unrecognized long argument passed to LSF CLI plugin: {k}')
+                log.warning(f"Unrecognized long argument passed to LSF CLI plugin: {k}")
 
         # Generated template.
-        template_scriptargs = ''
+        template_scriptargs = ""
         for k, v in scriptargs.items():
-            template_scriptargs += f'#BSUB {k} {v}\n'
+            template_scriptargs += f"#BSUB {k} {v}\n"
         # Excluded hosts use the same -R option already in use for mem, so easier adding here.
         for host in self._get_excluded_hosts():
-            template_scriptargs += f'#BSUB -R \"select[hname!=\'{host}\']\"\n'
+            template_scriptargs += f"#BSUB -R \"select[hname!='{host}']\"\n"
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):
@@ -55,10 +55,10 @@ class LSF(BaseJobExec):
         return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
 
     def delete(self, job_id):
-        return f'bkill {job_id}'
+        return f"bkill {job_id}"
 
     def get_status(self, job_ids=None):
-        return "bjobs -a -o \"id stat\" -noheader"  # check this
+        return 'bjobs -a -o "id stat" -noheader'  # check this
 
     def get_single_status(self, job_id):
         return f"bjobs -o stat -noheader {job_id}"
@@ -103,16 +103,16 @@ class LSF(BaseJobExec):
         # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bjobs.1.html
         try:
             return {
-                'EXIT': job_states.ERROR,
-                'RUN': job_states.RUNNING,
-                'PEND': job_states.QUEUED,
-                'DONE': job_states.OK,
-                'PSUSP': job_states.ERROR,
-                'USUSP': job_states.ERROR,
-                'SSUSP': job_states.ERROR,
-                'UNKWN': job_states.ERROR,
-                'WAIT': job_states.QUEUED,
-                'ZOMBI': job_states.ERROR
+                "EXIT": job_states.ERROR,
+                "RUN": job_states.RUNNING,
+                "PEND": job_states.QUEUED,
+                "DONE": job_states.OK,
+                "PSUSP": job_states.ERROR,
+                "USUSP": job_states.ERROR,
+                "SSUSP": job_states.ERROR,
+                "UNKWN": job_states.ERROR,
+                "WAIT": job_states.QUEUED,
+                "ZOMBI": job_states.ERROR,
             }.get(state)
         except KeyError:
             raise KeyError(f"Failed to map LSF status code [{state}] to job state.")
@@ -143,4 +143,4 @@ class LSF(BaseJobExec):
         return []
 
 
-__all__ = ('LSF',)
+__all__ = ("LSF",)

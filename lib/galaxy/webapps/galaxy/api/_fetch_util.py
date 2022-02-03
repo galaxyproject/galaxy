@@ -5,9 +5,7 @@ from galaxy.actions.library import (
     validate_path_upload,
     validate_server_directory_upload,
 )
-from galaxy.exceptions import (
-    RequestParameterInvalidException
-)
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
@@ -16,9 +14,7 @@ from galaxy.tools.actions.upload_common import (
     validate_datatype_extension,
     validate_url,
 )
-from galaxy.util import (
-    relpath,
-)
+from galaxy.util import relpath
 
 log = logging.getLogger(__name__)
 
@@ -55,9 +51,7 @@ def validate_and_normalize_targets(trans, payload):
             library_name = get_required_item(destination, "name", "Must specify a library name")
             description = destination.get("description", "")
             synopsis = destination.get("synopsis", "")
-            library = trans.app.library_manager.create(
-                trans, library_name, description=description, synopsis=synopsis
-            )
+            library = trans.app.library_manager.create(trans, library_name, description=description, synopsis=synopsis)
             destination["type"] = "library_folder"
             for key in ["name", "description", "synopsis"]:
                 if key in destination:
@@ -68,7 +62,7 @@ def validate_and_normalize_targets(trans, payload):
     # in_place and purge_source are set on the individual upload fetch sources as needed based
     # on this.
     run_as_real_user = trans.app.config.external_chown_script is not None  # See comment in upload.py
-    purge_ftp_source = getattr(trans.app.config, 'ftp_upload_purge', True) and not run_as_real_user
+    purge_ftp_source = getattr(trans.app.config, "ftp_upload_purge", True) and not run_as_real_user
 
     payload["check_content"] = trans.app.config.check_upload_content
 
@@ -76,7 +70,7 @@ def validate_and_normalize_targets(trans, payload):
         if "object_id" in item:
             raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
 
-        validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get('ext'))
+        validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
 
         # Normalize file:// URLs into paths.
         if item["src"] == "url":
@@ -86,7 +80,7 @@ def validate_and_normalize_targets(trans, payload):
             url = item["url"]
             if url.startswith("file://"):
                 item["src"] = "path"
-                item["path"] = url[len("file://"):]
+                item["path"] = url[len("file://") :]
                 del item["url"]
 
         if "in_place" in item:
@@ -154,7 +148,9 @@ def validate_and_normalize_targets(trans, payload):
                                 break
 
             if not full_path:
-                raise RequestParameterInvalidException("Failed to find referenced ftp_path or symbolic link was enountered")
+                raise RequestParameterInvalidException(
+                    "Failed to find referenced ftp_path or symbolic link was enountered"
+                )
 
             item["src"] = "path"
             item["path"] = full_path
@@ -197,7 +193,9 @@ def _handle_invalid_link_data_only_type(item):
 def _handle_invalid_link_data_only_elements_type(item):
     link_data_only = item.get("link_data_only", False)
     if link_data_only and item.get("elements_from", False) in ELEMENTS_FROM_TRANSIENT_TYPES:
-        raise RequestParameterInvalidException(f"link_data_only is invalid for derived elements from [{item.get('elements_from')}]")
+        raise RequestParameterInvalidException(
+            f"link_data_only is invalid for derived elements from [{item.get('elements_from')}]"
+        )
 
 
 def _for_each_src(f, obj):

@@ -4,7 +4,13 @@ Add link from history_dataset_association to the extended_metadata table
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

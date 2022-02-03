@@ -5,7 +5,6 @@ from ._framework import ApiTestCase
 
 
 class GroupRolesApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

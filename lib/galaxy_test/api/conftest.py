@@ -34,28 +34,27 @@ def pytest_configure(config):
 
 
 class JsonReportHooks:
-
     def pytest_json_runtest_metadata(self, item, call):
-        if call.when == 'setup':
+        if call.when == "setup":
             statsd.CURRENT_TEST = str(uuid.uuid4())
             statsd.CURRENT_TEST_METRICS = {"timing": {}, "counter": {}}
             return {}
-        if call.when == 'teardown':
+        if call.when == "teardown":
             statsd.CURRENT_TEST = None
             statsd.CURRENT_TEST_METRICS = None
             return {}
-        if call.when != 'call':
+        if call.when != "call":
             return {}
         return {
-            'start': call.start,
-            'stop': call.stop,
-            'uuid': statsd.CURRENT_TEST,
-            'local_metrics': statsd.CURRENT_TEST_METRICS,
+            "start": call.start,
+            "stop": call.stop,
+            "uuid": statsd.CURRENT_TEST,
+            "local_metrics": statsd.CURRENT_TEST_METRICS,
         }
 
     def pytest_json_modifyreport(self, json_report):
         if os.environ.get("GALAXY_TEST_COLLECT_STATSD", "0") != "0":
-            for test in json_report['tests']:
-                metadata = test['metadata']
-                test_uuid = metadata['uuid']
-                metadata['statsd_metrics'] = get_timings(test_uuid)
+            for test in json_report["tests"]:
+                metadata = test["metadata"]
+                test_uuid = metadata["uuid"]
+                metadata["statsd_metrics"] = get_timings(test_uuid)
