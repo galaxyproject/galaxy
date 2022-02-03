@@ -44,3 +44,4 @@ jobs:
       - name: Run mypy checks
         run: tox -e mypy
       - uses: psf/black@stable
+      - uses: jamescurtin/isort-action@master
