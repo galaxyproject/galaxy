@@ -11,7 +11,7 @@
                     @update:selected="setSelected(item, $event)"
                     @viewCollection="$emit('viewCollection', item)" />
             </div>
-            <div class="m-2">
+            <div v-if="loading" class="m-2">
                 <LoadingSpan message="Please wait" />
             </div>
         </div>
@@ -30,6 +30,7 @@ export default {
     props: {
         payload: { required: true },
         queryKey: { type: String, default: null },
+        pageSize: { type: Number, required: true },
         showSelection: { type: Boolean, required: true },
         isExpanded: { type: Function, required: true },
         isSelected: { type: Function, required: true },
@@ -56,6 +57,9 @@ export default {
         },
     },
     computed: {
+        loading() {
+            return this.payload.length == this.pageSize;
+        },
         getItems() {
             return reverse(this.items.filter((n) => n));
         },

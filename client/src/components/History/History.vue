@@ -57,6 +57,7 @@
                         <HistoryListing
                             v-else
                             :queryKey="queryKey"
+                            :pageSize="pageSize"
                             :payload="payload"
                             :show-selection="showSelection"
                             :is-expanded="isExpanded"
