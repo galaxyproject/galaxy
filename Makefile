@@ -41,6 +41,10 @@ setup-venv:
 diff-format:
 	$(IN_VENV) darker -r $(TARGET_BRANCH)
 
+format:
+	$(IN_VENV) black .
+	$(IN_VENV) isort .
+
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
 
