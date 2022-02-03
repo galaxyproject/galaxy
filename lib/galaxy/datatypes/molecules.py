@@ -706,7 +706,7 @@ class Cell(GenericMolFile):
         visible=True,
     )
     MetadataElement(
-        name="pbc",
+        name="is_periodic",
         desc="Periodic boundary conditions",
         readonly=True,
         visible=True,
@@ -771,7 +771,8 @@ class Cell(GenericMolFile):
                         ase_data.get_chemical_symbols(), ase_data.get_positions()
                     )
                 ]
-                dataset.metadata.number_of_atoms=len(dataset.metadata.atom_data)
+                log.warning(len(dataset.metadata.atom_data))
+                dataset.metadata.number_atoms=len(dataset.metadata.atom_data)
                 dataset.metadata.chemical_formula=ase_data.get_chemical_formula()
                 pbc = ase_data.get_pbc()
                 try:
@@ -792,7 +793,7 @@ class Cell(GenericMolFile):
             try:
                 block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS')[0].split('\n')[1:-1]
                 dataset.metadata.atom_data = [atom.strip() for atom in block]
-                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
+                dataset.metadata.number_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
                 log.error("Error finding atom_data: %s", unicodify(e))
                 raise
@@ -801,15 +802,17 @@ class Cell(GenericMolFile):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if ase_io:
-                # enhanced peek
-                dataset.blurb = f"Structure of {dataset.metadata.chemical_formula}.\nAtoms in file: {len(dataset.metadata.atom_data)}."
+                # enhanced blurb
+                dataset.blurb = f"Structure of {dataset.metadata.chemical_formula}."
                 if dataset.metadata.is_periodic:
                     dataset.blurb += f"\nPeriodic.\nLattice parameters in axis-angle format:\n{[round(x,2) for x in dataset.metadata.lattice_parameters]}."
                 else:
                     dataset.blurb += "Not periodic."
+                dataset.blurb += f"\nFile contains {len(dataset.metadata.atom_data)} atoms."
             else:
-                # simple peek
+                # simple blurb
                 dataset.blurb = f"CASTEP cell file containing {len(dataset.metadata.atom_data)} atoms"
+            dataset.info = dataset.blurb
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
