@@ -41,7 +41,6 @@ export default {
     data() {
         return {
             items: [],
-            maxNew: 10,
             throttlePeriod: 100,
             queryCurrent: this.queryKey,
         };

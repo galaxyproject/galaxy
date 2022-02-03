@@ -119,6 +119,7 @@ export default {
             params: {},
             pageSize: 40,
             maxHid: this.history.hid_counter,
+            maxNew: 10,
         };
     },
     computed: {
@@ -132,7 +133,9 @@ export default {
             return this.history.id;
         },
         dataUrl() {
-            return `api/histories/${this.historyId}/contents/before/${this.maxHid}/${this.pageSize}?${this.queryString}`;
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?${
+                this.queryString
+            }`;
         },
     },
     methods: {
