@@ -23,7 +23,9 @@ def main():
                 out_file.write("%s\n" % "\t".join(map(str, fields)))
         except UCSCLimitException:
             # Wiggle data was truncated, at the very least need to warn the user.
-            sys.stderr.write('Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.')
+            sys.stderr.write(
+                'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+            )
 
 
 if __name__ == "__main__":

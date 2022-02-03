@@ -23,14 +23,18 @@ def validate_input(trans, error_map, param_values, page_param_map):
                     if param.metadata.strandCol is not None:
                         int(param.metadata.strandCol)
                 except Exception:
-                    error_msg = ("The attributes of this dataset are not properly set. "
-                        "Click the pencil icon in the history item to set the chrom, start, end and strand columns.")
+                    error_msg = (
+                        "The attributes of this dataset are not properly set. "
+                        "Click the pencil icon in the history item to set the chrom, start, end and strand columns."
+                    )
                     error_map[name] = error_msg
             data_param_names.add(name)
     if len(dbkeys) > 1:
         for name in data_param_names:
-            error_map[name] = "All datasets must belong to same genomic build, " \
+            error_map[name] = (
+                "All datasets must belong to same genomic build, "
                 "this dataset is linked to build '%s'" % param_values[name].dbkey
+            )
     if data_params != len(data_param_names):
         for name in data_param_names:
             error_map[name] = "A dataset of the appropriate type is required"

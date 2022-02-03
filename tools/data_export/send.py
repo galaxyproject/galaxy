@@ -77,32 +77,53 @@ def send(provider, credentials, bucket, object_label, filename, overwrite_existi
 
     print("Finished successfully.")
     print("Job runtime:\t{}".format(time.time() - start_time))
-    print("Transfer ET:\t{}\tSpeed:\t{}MB/sec".format(
-        time.time() - transfer_start_time,
-        round((os.path.getsize(filename) >> 20) / (time.time() - transfer_start_time), 3)))
+    print(
+        "Transfer ET:\t{}\tSpeed:\t{}MB/sec".format(
+            time.time() - transfer_start_time,
+            round((os.path.getsize(filename) >> 20) / (time.time() - transfer_start_time), 3),
+        )
+    )
 
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--provider', type=str, required=True, help="Provider")
+    parser.add_argument("-p", "--provider", type=str, required=True, help="Provider")
 
-    parser.add_argument('-b', '--bucket', type=str, required=True,
-                        help="The cloud-based storage bucket in which data should be written.")
+    parser.add_argument(
+        "-b",
+        "--bucket",
+        type=str,
+        required=True,
+        help="The cloud-based storage bucket in which data should be written.",
+    )
 
-    parser.add_argument('-o', '--object_label', type=str, required=True,
-                        help="The label of the object created on the cloud-based storage for "
-                             "the data to be persisted.")
+    parser.add_argument(
+        "-o",
+        "--object_label",
+        type=str,
+        required=True,
+        help="The label of the object created on the cloud-based storage for " "the data to be persisted.",
+    )
 
-    parser.add_argument('-f', '--filename', type=str, required=True,
-                        help="The (absolute) filename of the data to be persisted on the "
-                             "cloud-based storage.")
+    parser.add_argument(
+        "-f",
+        "--filename",
+        type=str,
+        required=True,
+        help="The (absolute) filename of the data to be persisted on the " "cloud-based storage.",
+    )
 
-    parser.add_argument('-w', '--overwrite_existing', type=str, required=True,
-                        help="Sets if an object with the given `object_label` exists, this tool "
-                             "should overwrite it (true) or append a time stamp to avoid "
-                             "overwriting (false).")
+    parser.add_argument(
+        "-w",
+        "--overwrite_existing",
+        type=str,
+        required=True,
+        help="Sets if an object with the given `object_label` exists, this tool "
+        "should overwrite it (true) or append a time stamp to avoid "
+        "overwriting (false).",
+    )
 
-    parser.add_argument('--credentials_file', type=str, required=True, help="Credentials file")
+    parser.add_argument("--credentials_file", type=str, required=True, help="Credentials file")
 
     return parser.parse_args(args)
 

@@ -45,24 +45,32 @@ def __main__():
     else:
         dbkey = None
     if dbkey in [None, "?"]:
-        maf_utilities.tool_fail("You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file.")
+        maf_utilities.tool_fail(
+            "You must specify a proper build in order to extract alignments. You can specify your genome build by clicking on the pencil icon associated with your interval file."
+        )
 
     species = maf_utilities.parse_species_option(options.species)
 
     if options.chromCol:
         chromCol = int(options.chromCol) - 1
     else:
-        maf_utilities.tool_fail("Chromosome column not set, click the pencil icon in the history item to set the metadata attributes.")
+        maf_utilities.tool_fail(
+            "Chromosome column not set, click the pencil icon in the history item to set the metadata attributes."
+        )
 
     if options.startCol:
         startCol = int(options.startCol) - 1
     else:
-        maf_utilities.tool_fail("Start column not set, click the pencil icon in the history item to set the metadata attributes.")
+        maf_utilities.tool_fail(
+            "Start column not set, click the pencil icon in the history item to set the metadata attributes."
+        )
 
     if options.endCol:
         endCol = int(options.endCol) - 1
     else:
-        maf_utilities.tool_fail("End column not set, click the pencil icon in the history item to set the metadata attributes.")
+        maf_utilities.tool_fail(
+            "End column not set, click the pencil icon in the history item to set the metadata attributes."
+        )
 
     if options.strandCol:
         strandCol = int(options.strandCol) - 1
@@ -80,9 +88,9 @@ def __main__():
         maf_utilities.tool_fail("Output file has not been specified.")
 
     split_blocks_by_species = remove_all_gap_columns = False
-    if options.split_blocks_by_species and options.split_blocks_by_species == 'split_blocks_by_species':
+    if options.split_blocks_by_species and options.split_blocks_by_species == "split_blocks_by_species":
         split_blocks_by_species = True
-        if options.remove_all_gap_columns and options.remove_all_gap_columns == 'remove_all_gap_columns':
+        if options.remove_all_gap_columns and options.remove_all_gap_columns == "remove_all_gap_columns":
             remove_all_gap_columns = True
     else:
         remove_all_gap_columns = True
@@ -97,7 +105,9 @@ def __main__():
         if index is None:
             maf_utilities.tool_fail("The MAF source specified (%s) appears to be invalid." % (options.mafType))
     elif options.mafFile:
-        index, index_filename = maf_utilities.open_or_build_maf_index(options.mafFile, options.mafIndex, species=[dbkey])
+        index, index_filename = maf_utilities.open_or_build_maf_index(
+            options.mafFile, options.mafIndex, species=[dbkey]
+        )
         if index is None:
             maf_utilities.tool_fail("Your MAF file appears to be malformed.")
     else:
@@ -124,7 +134,11 @@ def __main__():
         src = maf_utilities.src_merge(dbkey, region.chrom)
         for block in index.get_as_iterator(src, region.start, region.end):
             if split_blocks_by_species:
-                blocks = [new_block for new_block in maf_utilities.iter_blocks_split_by_species(block) if maf_utilities.component_overlaps_region(new_block.get_component_by_src_start(dbkey), region)]
+                blocks = [
+                    new_block
+                    for new_block in maf_utilities.iter_blocks_split_by_species(block)
+                    if maf_utilities.component_overlaps_region(new_block.get_component_by_src_start(dbkey), region)
+                ]
             else:
                 blocks = [block]
             for block in blocks:

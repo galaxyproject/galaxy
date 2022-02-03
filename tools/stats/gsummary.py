@@ -30,13 +30,64 @@ def stop_err(msg):
 
 
 def S3_METHODS(all="key"):
-    Group_Math = ["abs", "sign", "sqrt", "floor", "ceiling", "trunc", "round", "signif",
-        "exp", "log", "cos", "sin", "tan", "acos", "asin", "atan", "cosh", "sinh", "tanh",
-        "acosh", "asinh", "atanh", "lgamma", "gamma", "gammaCody", "digamma", "trigamma",
-        "cumsum", "cumprod", "cummax", "cummin", "c"]
-    Group_Ops = ["+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", ","]
+    Group_Math = [
+        "abs",
+        "sign",
+        "sqrt",
+        "floor",
+        "ceiling",
+        "trunc",
+        "round",
+        "signif",
+        "exp",
+        "log",
+        "cos",
+        "sin",
+        "tan",
+        "acos",
+        "asin",
+        "atan",
+        "cosh",
+        "sinh",
+        "tanh",
+        "acosh",
+        "asinh",
+        "atanh",
+        "lgamma",
+        "gamma",
+        "gammaCody",
+        "digamma",
+        "trigamma",
+        "cumsum",
+        "cumprod",
+        "cummax",
+        "cummin",
+        "c",
+    ]
+    Group_Ops = [
+        "+",
+        "-",
+        "*",
+        "/",
+        "^",
+        "%%",
+        "%/%",
+        "&",
+        "|",
+        "!",
+        "==",
+        "!=",
+        "<",
+        "<=",
+        ">=",
+        ">",
+        "(",
+        ")",
+        "~",
+        ",",
+    ]
     if all == "key":
-        return {'Math': Group_Math, 'Ops': Group_Ops}
+        return {"Math": Group_Math, "Ops": Group_Ops}
 
 
 def main():
@@ -45,34 +96,34 @@ def main():
         outfile_name = sys.argv[2]
         expression = sys.argv[3]
     except Exception:
-        stop_err('Usage: python gsummary.py input_file ouput_file expression')
+        stop_err("Usage: python gsummary.py input_file ouput_file expression")
 
-    math_allowed = S3_METHODS()['Math']
-    ops_allowed = S3_METHODS()['Ops']
+    math_allowed = S3_METHODS()["Math"]
+    ops_allowed = S3_METHODS()["Ops"]
 
     # Check for invalid expressions
-    for word in re.compile('[a-zA-Z]+').findall(expression):
+    for word in re.compile("[a-zA-Z]+").findall(expression):
         if word and word not in math_allowed:
             stop_err("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
     symbols = set()
-    for symbol in re.compile(r'[^a-z0-9\s]+').findall(expression):
+    for symbol in re.compile(r"[^a-z0-9\s]+").findall(expression):
         if symbol and symbol not in ops_allowed:
             stop_err("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
         else:
             symbols.add(symbol)
-    if len(symbols) == 1 and ',' in symbols:
+    if len(symbols) == 1 and "," in symbols:
         # User may have entered a comma-separated list r_data_frame columns
         stop_err("Invalid columns '%s': this tool requires a single column or expression" % expression)
 
     # Find all column references in the expression
     cols = []
-    for col in re.compile('c[0-9]+').findall(expression):
+    for col in re.compile("c[0-9]+").findall(expression):
         try:
             cols.append(int(col[1:]) - 1)
         except Exception:
             pass
 
-    tmp_file = tempfile.NamedTemporaryFile('w+')
+    tmp_file = tempfile.NamedTemporaryFile("w+")
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
     tmp_file.write("%s\n" % hdr_str)
@@ -80,10 +131,10 @@ def main():
     first_invalid_line = 0
     i = 0
     for i, line in enumerate(open(datafile)):
-        line = line.rstrip('\r\n')
-        if line and not line.startswith('#'):
+        line = line.rstrip("\r\n")
+        if line and not line.startswith("#"):
             valid = True
-            fields = line.split('\t')
+            fields = line.split("\t")
             # Write the R data row to the temporary file
             for col in cols:
                 try:
@@ -100,19 +151,23 @@ def main():
     tmp_file.flush()
 
     if skipped_lines == i + 1:
-        stop_err("Invalid column or column data values invalid for computation.  See tool tips and syntax for data requirements.")
+        stop_err(
+            "Invalid column or column data values invalid for computation.  See tool tips and syntax for data requirements."
+        )
     else:
         # summary function and return labels
         set_default_mode(NO_CONVERSION)
-        summary_func = r("function( x ) { c( sum=sum( as.numeric( x ), na.rm=T ), mean=mean( as.numeric( x ), na.rm=T ), stdev=sd( as.numeric( x ), na.rm=T ), quantile( as.numeric( x ), na.rm=TRUE ) ) }")
-        headings = ['sum', 'mean', 'stdev', '0%', '25%', '50%', '75%', '100%']
+        summary_func = r(
+            "function( x ) { c( sum=sum( as.numeric( x ), na.rm=T ), mean=mean( as.numeric( x ), na.rm=T ), stdev=sd( as.numeric( x ), na.rm=T ), quantile( as.numeric( x ), na.rm=TRUE ) ) }"
+        )
+        headings = ["sum", "mean", "stdev", "0%", "25%", "50%", "75%", "100%"]
         headings_str = "\t".join(headings)
 
         r_data_frame = r.read_table(tmp_file.name, header=True, sep="\t")
 
-        outfile = open(outfile_name, 'w')
+        outfile = open(outfile_name, "w")
 
-        for col in re.compile('c[0-9]+').findall(expression):
+        for col in re.compile("c[0-9]+").findall(expression):
             r.assign(col, r["$"](r_data_frame, col))
         try:
             summary = summary_func(r(expression))
@@ -130,7 +185,10 @@ def main():
         outfile.close()
 
         if skipped_lines:
-            print("Skipped %d invalid lines beginning with line #%d.  See tool tips for data requirements." % (skipped_lines, first_invalid_line))
+            print(
+                "Skipped %d invalid lines beginning with line #%d.  See tool tips for data requirements."
+                % (skipped_lines, first_invalid_line)
+            )
 
 
 if __name__ == "__main__":

@@ -35,12 +35,12 @@ from galaxy.util.ucsc import (
 
 
 class PositionalScoresOnDisk(object):
-    fmt = 'f'
+    fmt = "f"
     fmt_size = struct.calcsize(fmt)
-    default_value = float('nan')
+    default_value = float("nan")
 
     def __init__(self):
-        self.file = tempfile.TemporaryFile('w+b')
+        self.file = tempfile.TemporaryFile("w+b")
         self.length = 0
 
     def __getitem__(self, i):
@@ -58,7 +58,7 @@ class PositionalScoresOnDisk(object):
         if i < 0:
             i = self.length + i
         if i < 0:
-            raise IndexError('Negative assignment index out of range')
+            raise IndexError("Negative assignment index out of range")
         if i >= self.length:
             self.file.seek(self.length * self.fmt_size)
             self.file.write(struct.pack(self.fmt, self.default_value) * (i - self.length))
@@ -82,6 +82,7 @@ class FileBinnedArrayDir(Mapping):
     Adapter that makes a directory of FileBinnedArray files look like
     a regular dict of BinnedArray objects.
     """
+
     def __init__(self, dir):
         self.dir = dir
         self.cache = dict()
@@ -128,7 +129,9 @@ def load_scores_wiggle(fname, chrom_buffer_size=3):
             scores_by_chrom[chrom][pos] = val
     except UCSCLimitException:
         # Wiggle data was truncated, at the very least need to warn the user.
-        print('Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.')
+        print(
+            'Encountered message from UCSC: "Reached output limit of 100000 data values", so be aware your data was truncated.'
+        )
     except IndexError:
         stop_err('Data error: one or more column data values is missing in "%s"' % fname)
     except ValueError:
@@ -156,7 +159,7 @@ def main():
         start_col = args[3]
         stop_col = args[4]
         if len(args) > 5:
-            out_file = open(args[5], 'w')
+            out_file = open(args[5], "w")
         else:
             out_file = sys.stdout
         binned = bool(options.binned)
@@ -164,18 +167,24 @@ def main():
     except Exception:
         doc_optparse.exit()
 
-    if score_fname == 'None':
-        stop_err('This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate.')
+    if score_fname == "None":
+        stop_err(
+            "This tool works with data from genome builds hg16, hg17 or hg18.  Click the pencil icon in your history item to set the genome build if appropriate."
+        )
 
     try:
         chrom_col = int(chrom_col) - 1
         start_col = int(start_col) - 1
         stop_col = int(stop_col) - 1
     except Exception:
-        stop_err('Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.')
+        stop_err(
+            "Chrom, start & end column not properly set, click the pencil icon in your history item to set these values."
+        )
 
     if chrom_col < 0 or start_col < 0 or stop_col < 0:
-        stop_err('Chrom, start & end column not properly set, click the pencil icon in your history item to set these values.')
+        stop_err(
+            "Chrom, start & end column not properly set, click the pencil icon in your history item to set these values."
+        )
 
     if binned:
         scores_by_chrom = load_scores_ba_dir(score_fname)
@@ -193,12 +202,12 @@ def main():
 
     skipped_lines = 0
     first_invalid_line = 0
-    invalid_line = ''
+    invalid_line = ""
 
     for i, line in enumerate(open(interval_fname)):
         valid = True
-        line = line.rstrip('\r\n')
-        if line and not line.startswith('#'):
+        line = line.rstrip("\r\n")
+        if line and not line.startswith("#"):
             fields = line.split()
 
             try:
@@ -251,16 +260,21 @@ def main():
                 if not invalid_line:
                     first_invalid_line = i + 1
                     invalid_line = line
-        elif line.startswith('#'):
+        elif line.startswith("#"):
             # We'll save the original comments
             print(line, file=out_file)
 
     out_file.close()
 
     if skipped_lines > 0:
-        print('Data issue: skipped %d invalid lines starting at line #%d which is "%s"' % (skipped_lines, first_invalid_line, invalid_line))
+        print(
+            'Data issue: skipped %d invalid lines starting at line #%d which is "%s"'
+            % (skipped_lines, first_invalid_line, invalid_line)
+        )
         if skipped_lines == i:
-            print('Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item.')
+            print(
+                "Consider changing the metadata for the input dataset by clicking on the pencil icon in the history item."
+            )
 
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ include = '\.pyi?$'
 extend-exclude = '''
 ^/(
   | packages
-  | tools
 )/
 '''
 force-exclude = 'lib/galaxy/util/jstree.py'

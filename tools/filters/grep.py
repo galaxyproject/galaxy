@@ -28,7 +28,7 @@ from tempfile import NamedTemporaryFile
 def getopts(argv):
     opts = {}
     while argv:
-        if argv[0][0] == '-':
+        if argv[0][0] == "-":
             opts[argv[0]] = argv[1]
             argv = argv[2:]
         else:
@@ -73,14 +73,16 @@ def main():
 
     # replace if input has been escaped, remove sq
     # characters that are allowed but need to be escaped
-    mapped_chars = {'>': '__gt__',
-                    '<': '__lt__',
-                    '\'': '__sq__',
-                    '"': '__dq__',
-                    '[': '__ob__',
-                    ']': '__cb__',
-                    '{': '__oc__',
-                    '}': '__cc__'}
+    mapped_chars = {
+        ">": "__gt__",
+        "<": "__lt__",
+        "'": "__sq__",
+        '"': "__dq__",
+        "[": "__ob__",
+        "]": "__cb__",
+        "{": "__oc__",
+        "}": "__cc__",
+    }
 
     # with new sanitizing we only need to replace for single quote,
     # but this needs to remain for backwards compatibility
@@ -121,7 +123,7 @@ def main():
     # create temp file holding pattern
     # by using a file to hold the pattern, we don't have worry about sanitizing grep commandline and can include single quotes in pattern
     pattern_file_name = NamedTemporaryFile().name
-    open(pattern_file_name, 'w').write(pattern)
+    open(pattern_file_name, "w").write(pattern)
 
     # generate grep command
     commandline = "grep %s %s -f %s %s > %s" % (versionflag, invertflag, pattern_file_name, inputfile, outputfile)

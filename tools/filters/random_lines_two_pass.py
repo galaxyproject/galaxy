@@ -41,10 +41,10 @@ def sample(population, k):
         # An n-length list is smaller than a k-length set, or this is a
         # mapping type so the other algorithm wouldn't work.
         pool = list(population)
-        for i in range(k):         # invariant:  non-selected at [0,n-i)
+        for i in range(k):  # invariant:  non-selected at [0,n-i)
             j = int(random.random() * (n - i))
             result[i] = pool[j]
-            pool[j] = pool[n - i - 1]   # move non-selected item into vacancy
+            pool[j] = pool[n - i - 1]  # move non-selected item into vacancy
     else:
         try:
             selected = set()
@@ -55,7 +55,7 @@ def sample(population, k):
                     j = int(random.random() * n)
                 selected_add(j)
                 result[i] = population[j]
-        except (TypeError, KeyError):   # handle (at least) sets
+        except (TypeError, KeyError):  # handle (at least) sets
             if isinstance(population, list):
                 raise
             return sample(tuple(population), k)
@@ -83,12 +83,14 @@ def get_random(line_offsets, num_lines):
 
 def __main__():
     parser = optparse.OptionParser()
-    parser.add_option('-s', '--seed', dest='seed', action='store', type="string", default=None, help='Set the random seed.')
+    parser.add_option(
+        "-s", "--seed", dest="seed", action="store", type="string", default=None, help="Set the random seed."
+    )
     (options, args) = parser.parse_args()
 
     assert len(args) == 3, "Invalid command line specified."
 
-    with open(args[0], 'rb') as input, open(args[1], 'wb') as output:
+    with open(args[0], "rb") as input, open(args[1], "wb") as output:
         num_lines = int(args[2])
         assert num_lines > 0, "You must select at least one line."
 
@@ -114,7 +116,10 @@ def __main__():
                 break
 
         total_lines = len(line_offsets)
-        assert num_lines <= total_lines, "Error: asked to select more lines (%i) than there were in the file (%i)." % (num_lines, total_lines)
+        assert num_lines <= total_lines, "Error: asked to select more lines (%i) than there were in the file (%i)." % (
+            num_lines,
+            total_lines,
+        )
 
         # get random line offsets
         line_offsets = get_random(line_offsets, num_lines)

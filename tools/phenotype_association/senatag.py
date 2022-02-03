@@ -239,8 +239,7 @@ def usage():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt(argv[1:], "hdr:e:",
-                            ["help", "debug", "required=", "excluded="])
+        opts, args = getopt(argv[1:], "hdr:e:", ["help", "debug", "required=", "excluded="])
     except GetoptError as err:
         print(str(err))
         usage()
