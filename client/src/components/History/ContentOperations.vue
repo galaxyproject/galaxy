@@ -122,8 +122,6 @@
             <content-filters v-if="showContentFilters" class="content-filters p-2" :params.sync="localParams" />
         </transition>
 
-        <!-- #region Menus and popovers -->
-
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
         </b-modal>
@@ -155,13 +153,10 @@
         <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>"Really delete all deleted datasets permanently? This cannot be undone.</p>
         </b-modal>
-
-        <!-- #endregion -->
     </section>
 </template>
 
 <script>
-import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,
@@ -188,7 +183,7 @@ export default {
     },
     props: {
         history: { type: History, required: true },
-        params: { type: SearchParams, required: true },
+        params: { type: Object, required: true },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
         totalMatches: { type: Number, required: true },
@@ -211,7 +206,7 @@ export default {
                 return this.params;
             },
             set(newVal) {
-                this.$emit("update:params", newVal.clone());
+                this.$emit("update:params", Object.assign({}, newVal));
                 if (this.showContentFilters) {
                     this.$emit("reload");
                 }
@@ -241,8 +236,7 @@ export default {
             }
         },
 
-        // #region history-wide bulk updates, does server query first to determine "selection"
-
+        // History-wide bulk updates, does server query first to determine "selection"
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
             this.$emit("reload");
@@ -256,10 +250,7 @@ export default {
             this.$emit("reload");
         },
 
-        // #endregion
-
-        // #region Selected content manipulation, hide/show/delete/purge
-
+        // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
             this.runOnSelection(hideSelectedContent);
         },
@@ -285,10 +276,7 @@ export default {
             this.$emit("resetSelection");
         },
 
-        // #endregion
-
-        // #region collection creation, fires up a modal
-
+        // collection creation, fires up a modal
         async buildDatasetList() {
             await this.buildNewCollection("list");
         },
@@ -316,8 +304,6 @@ export default {
                 this.$emit("resetSelection");
             }
         },
-
-        // #endregion
     },
     watch: {
         hasSelection(newVal) {

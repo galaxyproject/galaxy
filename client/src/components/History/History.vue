@@ -40,12 +40,12 @@
                             :loading="loading"
                             :params.sync="params"
                             :content-selection="selectedItems"
-                            @update:content-selection="selectItems"
                             :show-selection="showSelection"
+                            :expanded-count="expandedCount"
+                            @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
                             @resetSelection="resetSelection"
                             @selectAllContent="selectItems(payload.contents)"
-                            :expanded-count="expandedCount"
                             @collapseAllContent="collapseAll" />
                     </template>
 
@@ -56,13 +56,14 @@
                         </b-alert>
                         <HistoryListing
                             v-else
-                            @scroll="onScroll"
+                            :queryKey="queryKey"
                             :payload="payload"
                             :show-selection="showSelection"
                             :is-expanded="isExpanded"
                             :is-selected="isSelected"
                             :set-expanded="setExpanded"
-                            :set-selected="setSelected" />
+                            :set-selected="setSelected"
+                            @scroll="onScroll" />
                     </template>
 
                     <template v-slot:modals>
@@ -76,8 +77,8 @@
 
 <script>
 import { History } from "./model";
+import { SearchParams } from "./model/SearchParams";
 import LoadingSpan from "components/LoadingSpan";
-import { SearchParams } from "components/providers/History/SearchParams";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
 import SelectedItems from "./SelectedItems";
@@ -114,17 +115,23 @@ export default {
     },
     data() {
         return {
-            params: new SearchParams(),
-            useItemSelection: false,
+            params: {},
+            pageSize: 40,
             maxHid: this.history.hid_counter,
         };
     },
     computed: {
+        queryKey() {
+            return `${this.history.id}&${this.queryString}`;
+        },
+        queryString() {
+            return new SearchParams(this.params).historyContentQueryString;
+        },
         historyId() {
             return this.history.id;
         },
         dataUrl() {
-            return `api/histories/${this.historyId}/contents/before/${this.maxHid}/40`;
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid}/${this.pageSize}?${this.queryString}`;
         },
     },
     methods: {

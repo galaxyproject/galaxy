@@ -29,6 +29,7 @@ export default {
     },
     props: {
         payload: { required: true },
+        queryKey: { type: String, default: null },
         showSelection: { type: Boolean, required: true },
         isExpanded: { type: Function, required: true },
         isSelected: { type: Function, required: true },
@@ -40,6 +41,7 @@ export default {
             items: [],
             maxNew: 10,
             throttlePeriod: 100,
+            queryCurrent: this.queryKey,
         };
     },
     created() {
@@ -60,7 +62,10 @@ export default {
     },
     methods: {
         updateItems() {
-            if (this.payload) {
+            if (this.queryKey != this.queryCurrent) {
+                this.queryCurrent = this.queryKey;
+                this.items = [];
+            } else if (this.payload) {
                 for (const item of this.payload) {
                     this.items[item.hid] = item;
                 }
@@ -68,16 +73,19 @@ export default {
             }
         },
         onScroll(event) {
-            let topIndex = 0;
-            for (const index in event.target.childNodes) {
-                const child = event.target.childNodes[index];
-                if (child.offsetTop > event.target.scrollTop) {
-                    topIndex = index - 1;
-                    break;
+            const itemCount = this.getItems.length;
+            if (itemCount > 0) {
+                let topIndex = 0;
+                for (const index in event.target.childNodes) {
+                    const child = event.target.childNodes[index];
+                    if (child.offsetTop > event.target.scrollTop) {
+                        topIndex = index - 1;
+                        break;
+                    }
                 }
+                topIndex = Math.min(Math.max(topIndex, 0), itemCount - 1);
+                this.$emit("scroll", this.getItems[topIndex].hid);
             }
-            topIndex = Math.min(Math.max(topIndex, 0), this.getItems.length - 1);
-            this.$emit("scroll", this.getItems[topIndex].hid);
         },
     },
 };
