@@ -2535,6 +2535,7 @@ class RData(CompressedArchive):
     VERSION_2_PREFIX = b'RDX2\nX\n'
     VERSION_3_PREFIX = b'RDX3\nX\n'
     file_ext = 'rdata'
+    check_required_metadata = True
 
     MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False)
 
@@ -2591,6 +2592,7 @@ class RDS(CompressedArchive):
     '3.5.0'
     """
     file_ext = 'rds'
+    check_required_metadata = True
 
     MetadataElement(name="version", default=None, desc="serialisation version", param=MetadataParameter, readonly=True, visible=False, optional=False)
     MetadataElement(name="rversion", default=None, desc="R version", param=MetadataParameter, readonly=True, visible=False, optional=False)

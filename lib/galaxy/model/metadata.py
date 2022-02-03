@@ -373,6 +373,11 @@ class MetadataElementSpec:
         self.param = param(self)
         # add spec element to the spec
         datatype.metadata_spec.append(self)
+        # Should we validate that non-optional elements have been set ?
+        # (The answer is yes, but not all datatypes control optionality appropriately at this point.)
+        # This allows us to check that inherited MetadataElement instances from datatypes that set
+        # check_required_metadata have been reviewed and considered really required.
+        self.check_required_metadata = datatype.__dict__.get('check_required_metadata', False)
 
     def get(self, name, default=None):
         return self.__dict__.get(name, default)
