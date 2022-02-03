@@ -100,6 +100,7 @@ uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
+isort = "^5.10.1"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"
