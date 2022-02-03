@@ -6,7 +6,7 @@ selected datset collections -->
         v-if="history && !breadcrumbs.length"
         :history="history"
         v-on="$listeners"
-        @viewCollection="drillDown">
+        @viewCollection="onViewCollection">
         <template v-for="(_, name) in $scopedSlots" :slot="name" slot-scope="slotData">
             <slot :name="name" v-bind="slotData" :history="history" />
         </template>
@@ -15,7 +15,7 @@ selected datset collections -->
         v-else-if="breadcrumbs.length"
         :history="history"
         :selected-collections.sync="breadcrumbs"
-        @viewCollection="drillDown" />
+        @viewCollection="onViewCollection" />
     <div v-else>
         <span class="sr-only">Loading...</span>
     </div>
@@ -44,8 +44,8 @@ export default {
         STATES,
     },
     methods: {
-        drillDown(coll) {
-            this.breadcrumbs = [...this.breadcrumbs, coll];
+        onViewCollection(collection) {
+            this.breadcrumbs = [...this.breadcrumbs, collection];
         },
     },
 };

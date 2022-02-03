@@ -64,7 +64,8 @@
                             :is-selected="isSelected"
                             :set-expanded="setExpanded"
                             :set-selected="setSelected"
-                            @scroll="onScroll" />
+                            @scroll="onScroll"
+                            @viewCollection="onViewCollection" />
                     </template>
 
                     <template v-slot:modals>
@@ -141,6 +142,9 @@ export default {
     methods: {
         onScroll(newHid) {
             this.maxHid = newHid;
+        },
+        onViewCollection(collection) {
+            this.$emit("viewCollection", collection);
         },
     },
 };
