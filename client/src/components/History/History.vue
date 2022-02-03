@@ -44,9 +44,10 @@
                             :expanded-count="expandedCount"
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
-                            @resetSelection="resetSelection"
-                            @selectAllContent="selectItems(payload.contents)"
-                            @collapseAllContent="collapseAll" />
+                            @reset-selection="resetSelection"
+                            @hide-selection="onHiddenItems"
+                            @select-all-content="selectItems(payload)"
+                            @collapse-all-content="collapseAll" />
                     </template>
 
                     <template v-slot:listing>
@@ -56,9 +57,10 @@
                         </b-alert>
                         <HistoryListing
                             v-else
-                            :queryKey="queryKey"
-                            :pageSize="pageSize"
+                            :query-key="queryKey"
+                            :page-size="pageSize"
                             :payload="payload"
+                            :hidden-items="hiddenItems"
                             :show-selection="showSelection"
                             :is-expanded="isExpanded"
                             :is-selected="isSelected"
@@ -118,10 +120,16 @@ export default {
     data() {
         return {
             params: {},
+            hiddenItems: {},
             pageSize: 40,
             maxHid: this.history.hid_counter,
             maxNew: 10,
         };
+    },
+    watch: {
+        queryKey() {
+            this.hiddenItems = {};
+        },
     },
     computed: {
         queryKey() {
@@ -145,6 +153,11 @@ export default {
         },
         onViewCollection(collection) {
             this.$emit("viewCollection", collection);
+        },
+        onHiddenItems(selectedItems) {
+            selectedItems.forEach((item) => {
+                this.hiddenItems[item.hid] = true;
+            });
         },
     },
 };

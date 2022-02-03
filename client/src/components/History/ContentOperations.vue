@@ -270,10 +270,8 @@ export default {
             const items = Array.from(this.contentSelection.values());
             const type_ids = items.map((o) => o.type_id);
             const results = await fn(this.history, type_ids);
-            if (this.debug) {
-                console.log("operation results", results);
-            }
-            this.$emit("resetSelection");
+            this.$emit("hide-selection", items);
+            this.$emit("reset-selection");
         },
 
         // collection creation, fires up a modal
@@ -308,7 +306,7 @@ export default {
     watch: {
         hasSelection(newVal) {
             if (newVal) {
-                this.$emit("update:showSelection", true);
+                this.$emit("update:show-selection", true);
             }
         },
     },

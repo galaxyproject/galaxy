@@ -3,6 +3,7 @@
         <div @scroll="onScrollThrottle" class="listing">
             <div v-for="(item, index) in getItems" :key="index">
                 <HistoryContentItem
+                    v-if="!hiddenItems[item.hid]"
                     :item="item"
                     :expanded="isExpanded(item)"
                     :selected="isSelected(item)"
@@ -30,6 +31,7 @@ export default {
     },
     props: {
         payload: { required: true },
+        hiddenItems: { type: Object, required: true },
         queryKey: { type: String, default: null },
         pageSize: { type: Number, required: true },
         showSelection: { type: Boolean, required: true },
@@ -74,7 +76,8 @@ export default {
                 this.items = [];
             } else if (this.payload) {
                 for (const item of this.payload) {
-                    this.items[item.hid] = item;
+                    const isHidden = this.hiddenItems[item.hid];
+                    this.items[item.hid] = isHidden ? null : item;
                 }
                 this.items = this.items.slice();
             }
@@ -91,7 +94,10 @@ export default {
                     }
                 }
                 topIndex = Math.min(Math.max(topIndex, 0), itemCount - 1);
-                this.$emit("scroll", this.getItems[topIndex].hid);
+                const topItem = this.getItems[topIndex];
+                if (topItem) {
+                    this.$emit("scroll", topItem.hid);
+                }
             }
         },
     },
