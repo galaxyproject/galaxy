@@ -80,7 +80,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         if state in [self.drmaa.JobState.DONE, self.drmaa.JobState.FAILED]:
             # get configured job destination
             job_destination = ajs.job_wrapper.job_destination
-            native_spec = job_destination.params.get('nativeSpecification', None)
+            native_spec = job_destination.params.get('nativeSpecification', '')
             # determine time and memory that was granted for the job
             time_granted, mem_granted = _parse_native_specs(ajs.job_id, native_spec)
             time_wasted = extinfo["time_wasted"]
