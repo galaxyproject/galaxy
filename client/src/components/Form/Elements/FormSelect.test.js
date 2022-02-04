@@ -92,7 +92,9 @@ describe("FormSelect", () => {
 
         const multiselect = wrapper.findComponent(Multiselect);
         multiselect.vm.select(wrapper.vm.options[1]);
-        expect(multiselect.emitted().input).toEqual([[["test2", "2", false], null]]);
-        expect(multiselect.emitted().select).toEqual([[["test2", "2", false], null]]);
+        console.log(wrapper.vm.options);
+        console.log(wrapper.vm.options[1]);
+        expect(wrapper.emitted().input).toEqual([[["test2", "2", false], null]]);
+        expect(wrapper.emitted().select).toEqual([[["test2", "2", false], null]]);
     });
 });
