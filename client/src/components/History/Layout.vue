@@ -7,8 +7,8 @@ to learn how CSS is supposed to work. -->
     <section class="history beta d-flex flex-column">
         <header>
             <nav class="d-flex justify-content-between bg-secondary">
-                <slot name="globalNav">Global Nav Default</slot>
-                <slot name="localNav">Local nav Default</slot>
+                <slot name="globalnav">Global Navigation Default</slot>
+                <slot name="localnav">Local Navigation Default</slot>
             </nav>
 
             <!-- details about the thing you're looking at -->

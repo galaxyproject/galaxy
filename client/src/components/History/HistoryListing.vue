@@ -2,15 +2,7 @@
     <div class="history-listing">
         <div @scroll="onScrollThrottle" class="listing">
             <div v-for="(item, index) in getItems" :key="index">
-                <HistoryContentItem
-                    v-if="!hiddenItems[item.hid]"
-                    :item="item"
-                    :expanded="isExpanded(item)"
-                    :selected="isSelected(item)"
-                    :show-selection="showSelection"
-                    @update:expanded="setExpanded(item, $event)"
-                    @update:selected="setSelected(item, $event)"
-                    @viewCollection="$emit('viewCollection', item)" />
+                <slot name="history-item" :item="item" />
             </div>
             <div v-if="loading" class="m-2">
                 <LoadingSpan message="Please wait" />
@@ -21,23 +13,15 @@
 <script>
 import { reverse, throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
-import { HistoryContentItem } from "./ContentItem";
 
 export default {
     components: {
         LoadingSpan,
-        HistoryContentItem,
     },
     props: {
         payload: { required: true },
-        hiddenItems: { type: Object, required: true },
         queryKey: { type: String, default: null },
         pageSize: { type: Number, required: true },
-        showSelection: { type: Boolean, required: true },
-        isExpanded: { type: Function, required: true },
-        isSelected: { type: Function, required: true },
-        setExpanded: { type: Function, required: true },
-        setSelected: { type: Function, required: true },
     },
     data() {
         return {
@@ -61,9 +45,6 @@ export default {
         loading() {
             return this.payload.length == this.pageSize;
         },
-        hasItems() {
-            return this.items.length > 0;
-        },
         getItems() {
             return reverse(this.items.filter((n) => n));
         },
@@ -75,8 +56,7 @@ export default {
                 this.items = [];
             } else if (this.payload) {
                 for (const item of this.payload) {
-                    const isHidden = this.hiddenItems[item.hid];
-                    this.items[item.hid] = isHidden ? null : item;
+                    this.items[item.hid] = item;
                 }
                 this.items = this.items.slice();
             }

@@ -17,11 +17,11 @@
                     resetSelection,
                 }">
                 <Layout>
-                    <template v-slot:globalNav>
-                        <slot name="globalNav" :history="history"></slot>
+                    <template v-slot:globalnav>
+                        <slot name="globalnav" :history="history" />
                     </template>
 
-                    <template v-slot:localNav>
+                    <template v-slot:localnav>
                         <HistoryMenu :history="history" v-on="$listeners" />
                     </template>
 
@@ -59,14 +59,19 @@
                             :query-key="queryKey"
                             :page-size="pageSize"
                             :payload="payload"
-                            :hidden-items="hiddenItems"
-                            :show-selection="showSelection"
-                            :is-expanded="isExpanded"
-                            :is-selected="isSelected"
-                            :set-expanded="setExpanded"
-                            :set-selected="setSelected"
-                            @scroll="onScroll"
-                            @viewCollection="onViewCollection" />
+                            @scroll="onScroll">
+                            <template v-slot:history-item="{ item }">
+                                <HistoryContentItem
+                                    v-if="!hiddenItems[item.hid]"
+                                    :item="item"
+                                    :expanded="isExpanded(item)"
+                                    :selected="isSelected(item)"
+                                    :show-selection="showSelection"
+                                    @update:expanded="setExpanded(item, $event)"
+                                    @update:selected="setSelected(item, $event)"
+                                    @viewCollection="$emit('viewCollection', item)" />
+                            </template>
+                        </HistoryListing>
                     </template>
 
                     <template v-slot:modals>
@@ -94,6 +99,7 @@ import ToolHelpModal from "./ToolHelpModal";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
 import HistoryListing from "./HistoryListing";
+import { HistoryContentItem } from "./ContentItem";
 
 export default {
     filters: {
@@ -103,6 +109,7 @@ export default {
         LoadingSpan,
         UrlDataProvider,
         Layout,
+        HistoryContentItem,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
@@ -152,9 +159,6 @@ export default {
         },
         onScroll(newHid) {
             this.maxHid = newHid;
-        },
-        onViewCollection(collection) {
-            this.$emit("viewCollection", collection);
         },
         onHiddenItems(selectedItems) {
             selectedItems.forEach((item) => {
