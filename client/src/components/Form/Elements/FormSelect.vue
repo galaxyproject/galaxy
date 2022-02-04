@@ -93,12 +93,8 @@ export default {
 };
 </script>
 <style>
-    /* .multiselect__option {
-    background: #dee2e6;
-    } */
-/* 
-    .multiselect__option--selected
-    .multiselect__option--highlight {
-    background: #dee2e6;
-    } */
+.multiselect__option--selected.multiselect__option--highlight {
+    color: #2c3143 !important;
+    background: #dee2e6 !important;
+}
 </style>
