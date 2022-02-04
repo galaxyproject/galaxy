@@ -10,7 +10,7 @@
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <multiselect v-model="currentValue" :options="optArray" label="label" track-by="value" />
+                <multiselect v-model="currentValue" :options="optArray" :allow-empty="false" deselect-label="" select-label="" label="label" track-by="value" />
             </b-col>
         </b-row>
     </div>
@@ -77,9 +77,21 @@ export default {
                 }
             },
             set(val) {
+                console.log(val);
+                console.log(val.value);
                 this.$emit("input", val.value);
             },
         },
     },
 };
 </script>
+<style>
+    /* .multiselect__option {
+    background: #dee2e6;
+    } */
+/* 
+    .multiselect__option--selected
+    .multiselect__option--highlight {
+    background: #dee2e6;
+    } */
+</style>
