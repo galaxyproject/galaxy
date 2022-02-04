@@ -3,19 +3,19 @@
         <nav class="content-operations-menu d-flex justify-content-between bg-secondary">
             <b-button-group>
                 <IconButton
-                    :title="hasSelection ? 'Select All Contents' : 'Unselect All Contents'"
+                    title="Select Items"
                     icon="check-square"
                     :disabled="!hasMatches"
-                    :pressed="hasSelection"
-                    @click="toggleSelectAll" />
+                    :pressed="showSelection"
+                    @click="toggleSelection" />
                 <IconButton
-                    title="Filter History Content"
+                    title="Filter Items"
                     icon="filter"
                     :pressed="showFilter"
                     @click="toggleFilter"
                     data-description="content filter toggle" />
                 <IconButton
-                    title="Collapse Expanded Items"
+                    title="Collapse Items"
                     icon="compress"
                     :disabled="!expandedCount"
                     @click="$emit('collapseAllContent')" />
@@ -217,14 +217,8 @@ export default {
         },
     },
     methods: {
-        toggleSelectAll() {
-            if (this.hasSelection) {
-                this.$emit("resetSelection");
-                this.$emit("update:show-selection", false);
-            } else {
-                this.$emit("selectAllContent");
-                this.$emit("update:show-selection", true);
-            }
+        toggleSelection() {
+            this.$emit("update:show-selection", !this.showSelection);
         },
         toggleFilter() {
             if (!this.showFilter) {
