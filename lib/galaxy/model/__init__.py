@@ -6695,7 +6695,7 @@ class WorkflowStepConnection(Base, RepresentById):
         return self.input_step_input.name
 
     @property
-    def input_step(self):
+    def input_step(self) -> Union[WorkflowStep, None]:
         return self.input_step_input and self.input_step_input.workflow_step
 
     @property
