@@ -131,6 +131,9 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.fail_message = check_memory_limit_msg
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
+                        if ajs.job_wrapper.get_state() == model.Job.states.STOPPED:
+                            # User requested to stop job, this isn't an error, just finish as normal
+                            return super()._complete_terminal_job(ajs, drmaa_state=drmaa_state)
                         log.info('(%s/%s) Job was cancelled via SLURM (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                         ajs.fail_message = "This job failed because it was cancelled by an administrator."
                 elif slurm_state in ('PENDING', 'RUNNING'):
