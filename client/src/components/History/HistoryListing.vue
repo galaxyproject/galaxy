@@ -110,7 +110,6 @@ export default {
     .listing {
         overflow-y: scroll;
         overflow-x: hidden;
-        z-index: 0;
     }
 }
 </style>
