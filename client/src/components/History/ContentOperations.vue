@@ -18,7 +18,7 @@
                     title="Collapse Items"
                     icon="compress"
                     :disabled="!expandedCount"
-                    @click="$emit('collapseAllContent')" />
+                    @click="$emit('collapse-all')" />
             </b-button-group>
 
             <b-button-group>

@@ -45,8 +45,8 @@
                             @update:show-selection="setShowSelection"
                             @reset-selection="resetSelection"
                             @hide-selection="onHiddenItems"
-                            @select-all-content="selectItems(payload)"
-                            @collapse-all-content="collapseAll" />
+                            @select-all="selectItems(payload)"
+                            @collapse-all="collapseAll" />
                     </template>
 
                     <template v-slot:listing>
@@ -120,7 +120,7 @@ export default {
         return {
             params: {},
             hiddenItems: {},
-            pageSize: 40,
+            pageSize: 50,
             maxHid: this.history.hid_counter,
             maxNew: 10,
         };
