@@ -2,13 +2,14 @@
 
 <template>
     <DscProvider :is-root="isRoot" :debounce-period="500" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider v-if="dsc" :parent="dsc" :debug="false" v-slot="{ loading, payload, setScrollPos }">
+        <UrlDataProvider v-if="dsc" :url="dsc.url" :auto-refresh="false" v-slot="{ loading, result: payload }">
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
                 v-slot="{ isExpanded, setExpanded }">
                 <Layout class="dataset-collection-panel">
                     <template v-slot:globalnav>
+                        {{ payload }}
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
                     </template>
 
@@ -26,37 +27,31 @@
                     </template>
 
                     <template v-slot:listing>
-                        <Scroller
-                            key-field="element_index"
-                            :class="{ loadingBackground: loading }"
-                            v-bind="payload"
-                            @scroll="setScrollPos"
-                            :debug="false">
-                            <template v-slot="{ item, index, rowKey }">
+                        <HistoryListing
+                            :query-key="dsc.id"
+                            :page-size="pageSize"
+                            :payload="payload"
+                            @scroll="onScroll">
+                            <template v-slot:history-item="{ item }">
                                 <CollectionContentItem
                                     :item="item"
-                                    :index="index"
-                                    :row-key="rowKey"
                                     :expanded="isExpanded(item)"
                                     :writable="false"
                                     :selectable="false"
                                     @update:expanded="setExpanded(item, $event)"
-                                    @viewCollection="$emit('viewCollection', item)"
-                                    :data-index="index"
-                                    :data-row-key="rowKey" />
+                                    @viewCollection="$emit('viewCollection', item)" />
                             </template>
-                        </Scroller>
+                        </HistoryListing>
                     </template>
                 </Layout>
             </ExpandedItems>
-        </CollectionContentProvider>
+        </UrlDataProvider>
     </DscProvider>
 </template>
 
 <script>
 import { History } from "../model";
 import { updateContentFields } from "../model/queries";
-import { cacheContent } from "components/providers/History/caching";
 
 import { DscProvider, CollectionContentProvider } from "components/providers/History";
 import ExpandedItems from "../ExpandedItems";
@@ -66,14 +61,16 @@ import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
 import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
-
+import HistoryListing from "components/History/HistoryListing";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
 
 export default {
     filters: {
         reportPayload,
     },
     components: {
+        UrlDataProvider,
         DscProvider,
         CollectionContentProvider,
         Layout,
@@ -83,10 +80,16 @@ export default {
         CollectionContentItem,
         ExpandedItems,
         CollectionOperations,
+        HistoryListing,
     },
     props: {
         history: { type: History, required: true },
         selectedCollections: { type: Array, required: true },
+    },
+    data() {
+        return {
+            pageSize: 50,
+        }
     },
     computed: {
         selectedCollection() {
@@ -110,6 +113,11 @@ export default {
             }
             return url;
         },
+        dataUrl() {
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?${
+                this.queryString
+            }`;
+        },
     },
     methods: {
         // change the data of the root collection, anything past the root
@@ -118,8 +126,10 @@ export default {
         async updateDsc(collection, fields) {
             if (this.writable) {
                 const ajaxResult = await updateContentFields(collection, fields);
-                await cacheContent({ ...collection, ...ajaxResult });
             }
+        },
+        onScroll(newHid) {
+            this.maxHid = newHid;
         },
     },
 };
