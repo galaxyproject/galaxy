@@ -91,10 +91,8 @@ describe("FormSelect", () => {
         });
 
         const multiselect = wrapper.findComponent(Multiselect);
-        multiselect.vm.select(wrapper.vm.options[1]);
-        console.log(wrapper.vm.options);
-        console.log(wrapper.vm.options[1]);
-        expect(wrapper.emitted().input).toEqual([[["test2", "2", false], null]]);
-        expect(wrapper.emitted().select).toEqual([[["test2", "2", false], null]]);
+        // Manually trigger selection of the second item in optarray in the multiselect
+        multiselect.vm.select(wrapper.vm.optArray[1]);
+        expect(wrapper.emitted().input).toEqual([["2"]]);
     });
 });

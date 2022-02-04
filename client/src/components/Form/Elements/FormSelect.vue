@@ -10,7 +10,14 @@
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <multiselect v-model="currentValue" :options="optArray" :allow-empty="false" deselect-label="" select-label="" label="label" track-by="value" />
+                <multiselect
+                    v-model="currentValue"
+                    :options="optArray"
+                    :allow-empty="false"
+                    deselect-label=""
+                    select-label=""
+                    label="label"
+                    track-by="value" />
             </b-col>
         </b-row>
     </div>
