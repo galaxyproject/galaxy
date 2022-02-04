@@ -1,4 +1,10 @@
 .hg*
+
+# Celery/Gravity state files
+
+celerybeat-schedule.*
+database/gravity
+
 # Downloaded and locally built eggs
 eggs
 scripts/scramble/build
