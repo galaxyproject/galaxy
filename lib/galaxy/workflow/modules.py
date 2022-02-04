@@ -780,7 +780,12 @@ class InputDataModule(InputModule):
         parameter_def = self._parse_state_into_dict()
         tag = parameter_def["tag"]
         tag_source = dict(
-            name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs"
+            name="tag",
+            label="Tag filter",
+            type="text",
+            optional="true",
+            value=tag,
+            help="Tags to automatically filter inputs",
         )
         input_tag = TextToolParameter(None, tag_source)
         optional = parameter_def["optional"]
