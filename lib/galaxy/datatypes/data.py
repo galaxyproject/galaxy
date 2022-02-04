@@ -252,7 +252,12 @@ class Data(metaclass=DataMeta):
                 continue
             if not check and len(skip) == 0 and dataset.metadata.spec[key].get("optional"):
                 continue  # we skip check for optional and nonrequested values here
-            if not dataset.metadata.element_is_set(key):
+            if not dataset.metadata.element_is_set(key) and (
+                check or dataset.metadata.spec[key].check_required_metadata
+            ):
+                # FIXME: Optional metadata isn't always properly annotated,
+                # so skip check if check_required_metadata is false on the datatype that defined the metadata element.
+                # See https://github.com/galaxyproject/tools-iuc/issues/4367
                 return key
         return False
 

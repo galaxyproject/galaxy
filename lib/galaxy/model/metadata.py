@@ -180,13 +180,12 @@ class MetadataCollection(Mapping):
         :returns: True if the value differes from the no_value
                   False if its equal of if no metadata with the name is specified
         """
+        meta_val = self[name]
         try:
-            meta_val = self[name]
+            meta_spec = self.parent.metadata.spec[name]
         except KeyError:
-            log.debug(f"no metadata with name {name} found")
+            log.debug(f"No metadata element with name '{name}' found")
             return False
-
-        meta_spec = self.parent.metadata.spec[name]
         return meta_val != meta_spec.no_value
 
     def get_metadata_parameter(self, name, **kwd):
@@ -396,6 +395,11 @@ class MetadataElementSpec:
         self.param = param(self)
         # add spec element to the spec
         datatype.metadata_spec.append(self)
+        # Should we validate that non-optional elements have been set ?
+        # (The answer is yes, but not all datatypes control optionality appropriately at this point.)
+        # This allows us to check that inherited MetadataElement instances from datatypes that set
+        # check_required_metadata have been reviewed and considered really required.
+        self.check_required_metadata = datatype.__dict__.get("check_required_metadata", False)
 
     def get(self, name, default=None):
         return self.__dict__.get(name, default)

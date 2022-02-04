@@ -437,6 +437,7 @@ class Bed(Interval):
     file_ext = "bed"
     data_sources = {"data": "tabix", "index": "bigwig", "feature_search": "fli"}
     track_type = Interval.track_type
+    check_required_metadata = True
 
     column_names = [
         "Chrom",

@@ -1238,7 +1238,7 @@ class NavigatesGalaxy(HasDriver):
             self.send_enter(tag_area)
 
     def workflow_run_submit(self):
-        self.wait_for_and_click_selector("button.btn-primary")
+        self.wait_for_and_click_selector("#run-workflow")
 
     def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
