@@ -84,8 +84,6 @@ export default {
                 }
             },
             set(val) {
-                console.log(val);
-                console.log(val.value);
                 this.$emit("input", val.value);
             },
         },
