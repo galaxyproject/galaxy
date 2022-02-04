@@ -1028,7 +1028,7 @@ class InputParameterModule(WorkflowModule):
             options = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
-                options = [{"label": o[0], "value": o[1], "selected": default_value and o[1] == default_value} for o in static_options[0]]
+                options = [{"label": o[0], "value": o[1], "selected": bool(default_value and o[1] == default_value)} for o in static_options[0]]
             elif static_options:
                 # Intersection based on values of multiple option connections.
                 intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
@@ -1036,7 +1036,7 @@ class InputParameterModule(WorkflowModule):
                 d = defaultdict(set)  # Collapse labels with same values
                 for label, value, _ in intxn_opts:
                     d[value].add(label)
-                options = [{"label": ', '.join(label), "value": value, "selected": default_value and value == default_value} for value, label in d.items()]
+                options = [{"label": ', '.join(label), "value": value, "selected": bool(default_value and value == default_value)} for value, label in d.items()]
 
             return options
         except Exception:
