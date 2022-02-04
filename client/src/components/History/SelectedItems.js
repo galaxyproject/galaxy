@@ -1,5 +1,5 @@
 /**
- * This is simple list management for the monent, but if I remember right we have plans for a more
+ * This is simple list management for the moment, but if I remember right we have plans for a more
  * abstracted selection scheme in the future for purposes of handling large bulk operations on the
  * server, this is a good place to implement that logic.
  */
@@ -42,14 +42,6 @@ export default {
             });
             this.items = new Map(newEntries);
         },
-        // unselectItems(items = []) {
-        //     const doomedKeys = items.map((item) => this.getItemKey(item));
-        //     const existing = this.items.entries();
-        //     const newEntries = Array.from(existing).filter(([key]) => {
-        //         return !doomedKeys.includes(key);
-        //     });
-        //     this.items = new Map(newEntries);
-        // },
         reset() {
             this.items = new Map();
         },
@@ -77,7 +69,6 @@ export default {
             showSelection: this.showSelection,
             setShowSelection: this.setShowSelection,
             selectItems: this.selectItems,
-            // unselectItems: this.unselectItems,
             isSelected: this.isSelected,
             setSelected: this.setSelected,
             resetSelection: this.reset,

@@ -36,12 +36,11 @@
                     <template v-slot:listcontrols>
                         <ContentOperations
                             :history="history"
-                            :total-matches="100"
-                            :loading="loading"
                             :params.sync="params"
                             :content-selection="selectedItems"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
+                            :has-matches="hasMatches(payload)"
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
                             @reset-selection="resetSelection"
@@ -148,6 +147,9 @@ export default {
         },
     },
     methods: {
+        hasMatches(payload) {
+            return !!payload && payload.length > 0;
+        },
         onScroll(newHid) {
             this.maxHid = newHid;
         },

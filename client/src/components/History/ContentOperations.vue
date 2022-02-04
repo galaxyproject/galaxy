@@ -5,15 +5,14 @@
                 <IconButton
                     :title="hasSelection ? 'Select All Contents' : 'Unselect All Contents'"
                     icon="check-square"
-                    :disabled="!totalMatches"
+                    :disabled="!hasMatches"
                     :pressed="hasSelection"
                     @click="toggleSelectAll" />
                 <IconButton
                     title="Filter History Content"
                     icon="filter"
-                    :disabled="!totalMatches"
                     :pressed="showFilter"
-                    @click="showFilter = !showFilter"
+                    @click="toggleFilter"
                     data-description="content filter toggle" />
                 <IconButton
                     title="Collapse Expanded Items"
@@ -90,7 +89,7 @@
                     class="history-contents-list-action-menu-btn"
                     size="sm"
                     text="History"
-                    :disabled="!totalMatches"
+                    :disabled="!hasMatches"
                     data-description="history action menu">
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
@@ -119,7 +118,7 @@
         </nav>
 
         <transition name="shutterfade">
-            <content-filters v-if="showContentFilters" class="content-filters p-2" :params.sync="localParams" />
+            <content-filters v-if="showFilter" class="content-filters p-2" :params.sync="localParams" />
         </transition>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -186,9 +185,8 @@ export default {
         params: { type: Object, required: true },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
-        totalMatches: { type: Number, required: true },
+        hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
-        debug: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -196,31 +194,24 @@ export default {
         };
     },
     computed: {
-        showContentFilters() {
+        hasContentFilters() {
             const { showHidden, showDeleted, filterText } = this.params;
-            return this.showFilter || showHidden || showDeleted || filterText;
+            return showHidden || showDeleted || filterText;
         },
-
         localParams: {
             get() {
                 return this.params;
             },
             set(newVal) {
                 this.$emit("update:params", Object.assign({}, newVal));
-                if (this.showContentFilters) {
-                    this.$emit("reload");
-                }
             },
         },
-
         numSelected() {
             return this.contentSelection.size || 0;
         },
-
         hasSelection() {
             return this.numSelected > 0;
         },
-
         countHidden() {
             return this.history.contents_active.hidden;
         },
@@ -233,6 +224,13 @@ export default {
             } else {
                 this.$emit("selectAllContent");
                 this.$emit("update:show-selection", true);
+            }
+        },
+        toggleFilter() {
+            if (!this.showFilter) {
+                this.showFilter = true;
+            } else if (!this.hasContentFilters) {
+                this.showFilter = false;
             }
         },
 
