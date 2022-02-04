@@ -15,7 +15,6 @@
             <div v-if="loading" class="m-2">
                 <LoadingSpan message="Please wait" />
             </div>
-            <b-alert v-else-if="!hasItems" variant="info" class="m-2" show> No entries found. </b-alert>
         </div>
     </div>
 </template>
