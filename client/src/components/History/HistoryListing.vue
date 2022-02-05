@@ -2,7 +2,7 @@
     <div class="history-listing">
         <div @scroll="onScrollThrottle" class="listing">
             <div v-for="(item, index) in getItems" :key="index">
-                <slot name="history-item" :item="item" />
+                <slot name="history-item" :item="item" :index="index" />
             </div>
             <div v-if="loading" class="m-2">
                 <LoadingSpan message="Please wait" />
@@ -20,6 +20,7 @@ export default {
     },
     props: {
         payload: { required: true },
+        itemKey: { type: String, default: "hid" },
         queryKey: { type: String, default: null },
         pageSize: { type: Number, required: true },
     },
@@ -43,7 +44,7 @@ export default {
     },
     computed: {
         loading() {
-            return this.payload.length == this.pageSize;
+            return !!this.payload && this.payload.length == this.pageSize;
         },
         getItems() {
             return reverse(this.items.filter((n) => n));
@@ -56,7 +57,8 @@ export default {
                 this.items = [];
             } else if (this.payload) {
                 for (const item of this.payload) {
-                    this.items[item.hid] = item;
+                    const itemIndex = item[this.itemKey];
+                    this.items[itemIndex] = item;
                 }
                 this.items = this.items.slice();
             }
@@ -75,7 +77,7 @@ export default {
                 topIndex = Math.min(Math.max(topIndex, 0), itemCount - 1);
                 const topItem = this.getItems[topIndex];
                 if (topItem) {
-                    this.$emit("scroll", topItem.hid);
+                    this.$emit("scroll", topItem[this.itemKey]);
                 }
             }
         },

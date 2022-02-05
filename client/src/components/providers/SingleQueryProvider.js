@@ -13,7 +13,6 @@ const throttlePeriod = 100;
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
     const queue = new LastQueue(throttlePeriod);
-
     return {
         props: {
             useCache: {
