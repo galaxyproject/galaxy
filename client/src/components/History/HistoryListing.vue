@@ -89,6 +89,7 @@ export default {
 @import "scss/mixins.scss";
 .history-listing {
     .listing {
+        @include absfill();
         overflow-y: scroll;
         overflow-x: hidden;
     }
