@@ -60,7 +60,6 @@ import Layout from "../Layout";
 import TopNav from "./TopNav";
 import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
-import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 import HistoryListing from "components/History/HistoryListing";
 import { reportPayload } from "components/providers/History/ContentProvider/helpers";
@@ -75,7 +74,6 @@ export default {
         Layout,
         TopNav,
         Details,
-        Scroller,
         CollectionContentItem,
         ExpandedItems,
         CollectionOperations,

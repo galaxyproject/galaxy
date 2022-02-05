@@ -125,32 +125,33 @@ export default {
     },
     data() {
         return {
-            params: {},
             hiddenItems: {},
-            pageSize: 50,
             maxHid: this.history.hid_counter,
             maxNew: 10,
+            pageSize: 50,
+            params: {},
         };
     },
     watch: {
         queryKey() {
             this.hiddenItems = {};
+            this.maxHid = this.history.hid_counter;
         },
     },
     computed: {
+        dataUrl() {
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?${
+                this.queryString
+            }`;
+        },
+        historyId() {
+            return this.history.id;
+        },
         queryKey() {
             return `${this.history.id}&${this.queryString}`;
         },
         queryString() {
             return new SearchParams(this.params).historyContentQueryString;
-        },
-        historyId() {
-            return this.history.id;
-        },
-        dataUrl() {
-            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?${
-                this.queryString
-            }`;
         },
     },
     methods: {
