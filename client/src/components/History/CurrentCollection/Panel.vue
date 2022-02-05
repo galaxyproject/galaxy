@@ -8,7 +8,7 @@
         v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="selectedCollection.id"
-            :get-item-key="(item) => item.type_id"
+            :get-item-key="(item) => item.element_index"
             v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:globalnav>
@@ -31,7 +31,6 @@
                 <template v-slot:listing>
                     <HistoryListing
                         item-key="element_index"
-                        :query-key="dsc.id"
                         :page-size="pageSize"
                         :payload="payload"
                         @scroll="onScroll">
