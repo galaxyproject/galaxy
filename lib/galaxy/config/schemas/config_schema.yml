@@ -1709,6 +1709,14 @@ mapping:
           operations on the remote end.  See the Galaxy nginx documentation for the
           corresponding nginx configuration.
 
+      tus_upload_store:
+        type: str
+        required: False
+        desc: |
+          The upload store is a temporary directory in which files uploaded by the
+          tus middleware or server will be placed.
+          Defaults to new_file_path if not set.
+
       chunk_upload_size:
         type: int
         default: 10485760

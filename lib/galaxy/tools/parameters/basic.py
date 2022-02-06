@@ -600,7 +600,7 @@ class FileToolParameter(ToolParameter):
             if 'session_id' in value:
                 # handle api upload
                 session_id = value["session_id"]
-                upload_store = trans.app.config.new_file_path
+                upload_store = trans.app.config.tus_upload_store or trans.app.config.new_file_path
                 if re.match(r'^[\w-]+$', session_id) is None:
                     raise ValueError("Invalid session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
