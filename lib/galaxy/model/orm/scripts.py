@@ -8,7 +8,10 @@ import sys
 
 import alembic.config
 
-from galaxy.model.migrations import GXY, TSI
+from galaxy.model.migrations import (
+    GXY,
+    TSI,
+)
 from galaxy.model.migrations.scripts import get_configuration
 from galaxy.util.path import get_ext
 from galaxy.util.properties import (
@@ -26,25 +29,22 @@ DEFAULT_CONFIG_PREFIX = ""
 DEFAULT_DATABASE = "galaxy"
 
 DATABASE = {
-    "galaxy":
-        {
-            'default_sqlite_file': 'universe.sqlite',
-            'config_override': 'GALAXY_CONFIG_',
-        },
-    "tool_shed":
-        {
-            'repo': 'tool_shed/webapp/model/migrate',
-            'config_names': ['tool_shed', 'tool_shed_wsgi'],
-            'default_sqlite_file': 'community.sqlite',
-            'config_override': 'TOOL_SHED_CONFIG_',
-            'config_section': 'tool_shed',
-        },
-    "install":
-        {
-            'config_prefix': 'install_',
-            'default_sqlite_file': 'install.sqlite',
-            'config_override': 'GALAXY_INSTALL_CONFIG_',
-        },
+    "galaxy": {
+        "default_sqlite_file": "universe.sqlite",
+        "config_override": "GALAXY_CONFIG_",
+    },
+    "tool_shed": {
+        "repo": "tool_shed/webapp/model/migrate",
+        "config_names": ["tool_shed", "tool_shed_wsgi"],
+        "default_sqlite_file": "community.sqlite",
+        "config_override": "TOOL_SHED_CONFIG_",
+        "config_section": "tool_shed",
+    },
+    "install": {
+        "config_prefix": "install_",
+        "default_sqlite_file": "install.sqlite",
+        "config_override": "GALAXY_INSTALL_CONFIG_",
+    },
 }
 
 
@@ -119,13 +119,13 @@ def get_config(argv, use_argparse=True, cwd=None):
             cwd = [DEFAULT_CONFIG_DIR]
         config_file = find_config_file(config_names, dirs=cwd)
 
-    repo = database_defaults.get('repo')
+    repo = database_defaults.get("repo")
     if repo:
         repo = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, repo)
 
-    config_prefix = database_defaults.get('config_prefix', DEFAULT_CONFIG_PREFIX)
-    config_override = database_defaults.get('config_override', 'GALAXY_CONFIG_')
-    default_sqlite_file = database_defaults['default_sqlite_file']
+    config_prefix = database_defaults.get("config_prefix", DEFAULT_CONFIG_PREFIX)
+    config_override = database_defaults.get("config_override", "GALAXY_CONFIG_")
+    default_sqlite_file = database_defaults["default_sqlite_file"]
     if config_section is None:
         if not config_file or get_ext(config_file, ignore="sample") == "yaml":
             config_section = database_defaults.get("config_section", None)
@@ -155,18 +155,18 @@ def manage_db():
     # This is a duplicate implementation of scripts/migrate_db.py.
     # See run_alembic.sh for usage.
     def _insert_x_argument(key, value):
-        sys.argv.insert(1, f'{key}={value}')
-        sys.argv.insert(1, '-x')
+        sys.argv.insert(1, f"{key}={value}")
+        sys.argv.insert(1, "-x")
 
     gxy_config, tsi_config, _ = get_configuration(sys.argv, os.getcwd())
-    _insert_x_argument('tsi_url', tsi_config.url)
-    _insert_x_argument('gxy_url', gxy_config.url)
+    _insert_x_argument("tsi_url", tsi_config.url)
+    _insert_x_argument("gxy_url", gxy_config.url)
 
-    if 'heads' in sys.argv and 'upgrade' in sys.argv:
-        i = sys.argv.index('heads')
-        sys.argv[i] = f'{GXY}@head'
+    if "heads" in sys.argv and "upgrade" in sys.argv:
+        i = sys.argv.index("heads")
+        sys.argv[i] = f"{GXY}@head"
         alembic.config.main()
-        sys.argv[i] = f'{TSI}@head'
+        sys.argv[i] = f"{TSI}@head"
         alembic.config.main()
     else:
         alembic.config.main()

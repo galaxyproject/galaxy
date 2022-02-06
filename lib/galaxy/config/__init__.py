@@ -727,7 +727,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
         self.database_engine_options = get_database_engine_options(kwargs)
-        self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
+        self.database_encoding = kwargs.get("database_encoding")  # Create new databases with this encoding
         self.thread_local_log = None
         if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
@@ -1487,7 +1487,7 @@ class ConfiguresGalaxyMixin:
             trace_logger,
             self.config.slow_query_log_threshold,
             self.config.thread_local_log,
-            self.config.database_log_query_counts
+            self.config.database_log_query_counts,
         )
         install_engine = None
         if not combined_install_database:
@@ -1499,6 +1499,7 @@ class ConfiguresGalaxyMixin:
         # TODO this block doesn't seem to belong in this method
         if getattr(self.config, "max_metadata_value_size", None):
             from galaxy.model import custom_types
+
             custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         db_url = get_database_url(self.config)
@@ -1518,7 +1519,7 @@ class ConfiguresGalaxyMixin:
             self.config.use_pbkdf2,
             engine,
             combined_install_database,
-            self.config.thread_local_log
+            self.config.thread_local_log,
         )
 
         if combined_install_database:
@@ -1526,20 +1527,26 @@ class ConfiguresGalaxyMixin:
             self.install_model = self.model
         else:
             from galaxy.model.tool_shed_install import mapping as install_mapping
+
             self.install_model = install_mapping.configure_model_mapping(install_engine)
             log.info(f"Install database using its own connection {install_db_url}")
 
     def _verify_databases(self, engine, install_engine, combined_install_database):
         from galaxy.model.migrations import verify_databases
+
         install_template, install_encoding = None, None
         if not combined_install_database:  # Otherwise these options are not used.
-            install_template = getattr(self.config, 'install_database_template', None)
-            install_encoding = getattr(self.config, 'install_database_encoding', None)
+            install_template = getattr(self.config, "install_database_template", None)
+            install_encoding = getattr(self.config, "install_database_encoding", None)
 
         verify_databases(
-            engine, self.config.database_template, self.config.database_encoding,
-            install_engine, install_template, install_encoding,
-            self.config.database_auto_migrate
+            engine,
+            self.config.database_template,
+            self.config.database_encoding,
+            install_engine,
+            install_template,
+            install_encoding,
+            self.config.database_auto_migrate,
         )
 
     def _configure_signal_handlers(self, handlers):

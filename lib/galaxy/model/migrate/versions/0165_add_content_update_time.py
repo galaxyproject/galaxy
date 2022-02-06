@@ -5,11 +5,22 @@ to update history.update_time when contents are changed.
 
 import logging
 
-from sqlalchemy import Column, DateTime, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    MetaData,
+    Table,
+)
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+)
 from galaxy.model.orm.now import now
-from galaxy.model.triggers.history_update_time_field import drop_timestamp_triggers, install_timestamp_triggers
+from galaxy.model.triggers.history_update_time_field import (
+    drop_timestamp_triggers,
+    install_timestamp_triggers,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

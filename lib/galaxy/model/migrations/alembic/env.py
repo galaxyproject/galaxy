@@ -10,7 +10,10 @@ from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
 
-from galaxy.model.migrations import GXY, TSI
+from galaxy.model.migrations import (
+    GXY,
+    TSI,
+)
 
 config = context.config
 target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
@@ -46,9 +49,9 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
 
     revision_str = config.cmd_opts.revision  # type: ignore[union-attr]
 
-    if revision_str.startswith(f'{GXY}@'):
+    if revision_str.startswith(f"{GXY}@"):
         url = urls[GXY]
-    elif revision_str.startswith(f'{TSI}@'):
+    elif revision_str.startswith(f"{TSI}@"):
         url = urls[TSI]
     else:
         revision = _get_revision(revision_str)
@@ -61,7 +64,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
 
 
 def _process_cmd_current(urls: Dict[str, str]) -> bool:
-    if config.cmd_opts.cmd[0].__name__ == 'current':  # type: ignore[union-attr]
+    if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
         for url in urls.values():
             _configure_and_run_migrations_online(url)
         return True
@@ -79,7 +82,7 @@ def _get_revision(revision_str: str) -> Script:
 
 def _get_revision_id(revision_str: str) -> str:
     # Match a full or partial revision (GUID) or a relative migration identifier
-    p = re.compile(r'([0-9A-Fa-f]+)([+-]\d)?')
+    p = re.compile(r"([0-9A-Fa-f]+)([+-]\d)?")
     m = p.match(revision_str)
     if not m:
         raise Exception(f'Invalid revision or migration identifier: "{revision_str}"')
@@ -100,10 +103,7 @@ def _configure_and_run_migrations_offline(url: str) -> None:
 def _configure_and_run_migrations_online(url) -> None:
     engine = create_engine(url)
     with engine.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
     engine.dispose()
@@ -115,8 +115,8 @@ def _get_url_from_config() -> str:
 
 
 def _load_urls() -> Dict[str, str]:
-    gxy_url = context.get_x_argument(as_dictionary=True).get(f'{GXY}_url')
-    tsi_url = context.get_x_argument(as_dictionary=True).get(f'{TSI}_url')
+    gxy_url = context.get_x_argument(as_dictionary=True).get(f"{GXY}_url")
+    tsi_url = context.get_x_argument(as_dictionary=True).get(f"{TSI}_url")
     return {
         GXY: gxy_url,
         TSI: tsi_url,
