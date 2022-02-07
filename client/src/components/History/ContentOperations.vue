@@ -261,7 +261,7 @@ export default {
         async runOnSelection(fn) {
             const items = Array.from(this.contentSelection.values());
             const type_ids = items.map((o) => o.type_id);
-            const results = await fn(this.history, type_ids);
+            await fn(this.history, type_ids);
             this.$emit("hide-selection", items);
             this.$emit("reset-selection");
         },

@@ -5,7 +5,7 @@
         v-if="dsc"
         :url="getUrl(selectedCollection)"
         :auto-refresh="false"
-        v-slot="{ loading, result: payload }">
+        v-slot="{ result: payload }">
         <ExpandedItems
             :scope-key="selectedCollection.id"
             :get-item-key="(item) => item.element_index"
@@ -124,7 +124,7 @@ export default {
         // be immutable, so only edit name, tags, blah of top-level selected collection,
         async updateDsc(collection, fields) {
             if (this.writable) {
-                const ajaxResult = await updateContentFields(collection, fields);
+                await updateContentFields(collection, fields);
             }
         },
         onScroll(newHid) {
