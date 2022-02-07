@@ -105,7 +105,7 @@ class MockEvaluator:
         pass
 
     def build(self):
-        return TEST_COMMAND, [], []
+        return TEST_COMMAND, "", [], []
 
 
 class MockJobQueue:
