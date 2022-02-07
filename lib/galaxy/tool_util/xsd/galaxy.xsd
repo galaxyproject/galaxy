@@ -1986,10 +1986,9 @@ This value is the same as the value of the ``name`` attribute of the
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expected collection type (e.g. ``list``, ``paired``,
-or ``list:paired``).</xs:documentation>
+        <xs:documentation xml:lang="en">Expected collection type (``list`` or ``paired``), nested collections are specified as colon separated list (the most common types are ``list``, ``paired``, ``list:paired``, or ``list:list``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="count" type="xs:integer">
@@ -3405,13 +3404,15 @@ file (use the file extension). Used only when the ``type`` attribute value is
 ``data`` or ``data_collection``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="collection_type" type="xs:string">
+        <xs:attribute name="collection_type" type="CollectionTypeList">
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
-Restrict the kind of collection that can be consumed by this parameter (e.g.
-``paired``, ``list:paired``, ``list``). Multiple such collection types can be
-specified here as a comma-separated list. Used only when the ``type`` attribute
-value is ``data_collection``.
+Restrict the kind of collection that can be consumed by this parameter. Simple
+collections are either ``list`` or ``paired``), nested collections are specified
+as colon separated list of simple collection types (the most common types are
+``list``, ``paired``, ``list:paired``, or ``list:list``). Multiple such
+collection types can be specified here as a comma-separated list. Used only when
+the ``type`` attribute value is ``data_collection``.
               ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -5077,9 +5078,14 @@ Creating collections in tools is covered in-depth in
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
-    <xs:attribute name="type" type="xs:string">
+    <xs:attribute name="type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for output. Simple collection types are either ``list`` or
+``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
@@ -5113,9 +5119,14 @@ This tag describes an output to the tool.
         <xs:documentation xml:lang="en">In expression tools, use this to specify a dictionary value to populate this output from. The semantics may change for other expression types in the future.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="collection_type" type="xs:string">
+    <xs:attribute name="collection_type" type="CollectionType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for output. Simple collection types are either ``list`` or
+``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="collection_type_source" type="xs:string">
@@ -7001,5 +7012,20 @@ the only supported options.</xs:documentation>
       <xs:enumeration value="aggressive"/>
     </xs:restriction>
   </xs:simpleType>
-
+  <xs:simpleType name="CollectionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(list|paired)([:](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="CollectionTypeList">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
 </xs:schema>
