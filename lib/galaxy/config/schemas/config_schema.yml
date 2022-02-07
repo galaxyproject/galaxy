@@ -1470,7 +1470,7 @@ mapping:
 
       screencasts_url:
         type: str
-        default: https://vimeo.com/galaxyproject
+        default: https://www.youtube.com/c/galaxyproject
         required: false
         per_host: true
         desc: |

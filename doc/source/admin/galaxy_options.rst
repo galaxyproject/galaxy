@@ -2038,7 +2038,7 @@
 
 :Description:
     The URL linked by the "Videos" link in the "Help" menu.
-:Default: ``https://vimeo.com/galaxyproject``
+:Default: ``https://www.youtube.com/c/galaxyproject``
 :Type: str
 
 
