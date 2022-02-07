@@ -43,6 +43,7 @@ from galaxy import model
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.custom_types import (
     JSONType,
+    MetadataType,
     MutableJSONType,
     TrimmedString,
     UUIDType,
@@ -248,7 +249,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -271,7 +272,7 @@ model.HistoryDatasetAssociationHistory.table = Table(
     Column("version", Integer),
     Column("name", TrimmedString(255)),
     Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
 )
 
@@ -527,7 +528,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
