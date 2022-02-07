@@ -2018,7 +2018,7 @@
 :Description:
     The URL linked by the "How to Cite Galaxy" link in the "Help"
     menu.
-:Default: ``https://galaxyproject.org/citing-galaxy``
+:Default: ``https://academic.oup.com/nar/article/48/W1/W395/5849904``
 :Type: str
 
 

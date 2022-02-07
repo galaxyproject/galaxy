@@ -1039,7 +1039,7 @@ galaxy:
   #quota_url: https://galaxyproject.org/support/account-quotas/
 
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-  #citation_url: https://galaxyproject.org/citing-galaxy
+  #citation_url: https://academic.oup.com/nar/article/48/W1/W395/5849904
 
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_

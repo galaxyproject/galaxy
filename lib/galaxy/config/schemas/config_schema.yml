@@ -1455,7 +1455,7 @@ mapping:
 
       citation_url:
         type: str
-        default: https://galaxyproject.org/citing-galaxy
+        default: https://academic.oup.com/nar/article/48/W1/W395/5849904
         required: false
         per_host: true
         desc: |
