@@ -2032,16 +2032,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~
-``mailing_lists_url``
-~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Mailing Lists" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/mailing-lists/``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``screencasts_url``
 ~~~~~~~~~~~~~~~~~~~

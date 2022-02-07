@@ -184,12 +184,6 @@ export function fetchMenu(options = {}) {
                 hidden: !options.support_url,
             },
             {
-                title: _l("Mailing Lists"),
-                url: options.mailing_lists,
-                target: "_blank",
-                hidden: !options.mailing_lists,
-            },
-            {
                 title: _l("Videos"),
                 url: options.screencasts_url,
                 target: "_blank",

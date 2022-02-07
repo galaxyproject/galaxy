@@ -138,7 +138,6 @@ class ConfigSerializer(base.ModelSerializer):
             'terms_url': _use_config,
             'myexperiment_target_url': _use_config,
             'wiki_url': _use_config,
-            'mailing_lists': _defaults_to(self.app.config.mailing_lists_url),
             'screencasts_url': _use_config,
             'citation_url': _use_config,
             'quota_url': _use_config,
