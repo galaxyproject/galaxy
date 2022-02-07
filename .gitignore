@@ -1,4 +1,5 @@
 .hg*
+
 # Downloaded and locally built eggs
 eggs
 scripts/scramble/build
@@ -21,27 +22,7 @@ lib/galaxy/web/framework/static/scripts
 lib/galaxy/web/framework/static/style
 
 # Database stuff
-database/*.sqlite
-database/beaker_sessions
-database/cache
-database/citations
-database/community_files
-database/compiled_templates
-database/dependencies
-database/files
-database/job_working_directory
-database/jobs_directory
-database/mulled
-database/object_store_cache
-database/objects
-database/openid_consumer_cache
-database/pbs
-database/shed_tools
-database/test_errors
-database/tmp
-database/tool_cache
-database/tool_search_index
-database/tool_recommendation_model.hdf5
+/database/
 
 
 # Python bytecode
@@ -52,6 +33,9 @@ database/tool_recommendation_model.hdf5
 *.log
 *.pid
 celerybeat-schedule
+
+# Celery state files
+celerybeat-schedule.*
 
 # Tool Shed Runtime Files
 tool_shed_webapp.lock
