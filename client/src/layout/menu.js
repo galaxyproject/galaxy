@@ -190,7 +190,7 @@ export function fetchMenu(options = {}) {
                 hidden: !options.screencasts_url,
             },
             {
-                title: _l("Wiki"),
+                title: _l("Community Hub"),
                 url: options.wiki_url,
                 target: "_blank",
                 hidden: !options.wiki_url,

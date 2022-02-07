@@ -1032,7 +1032,7 @@ galaxy:
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
   #helpsite_url: https://help.galaxyproject.org/
 
-  # The URL linked by the "Wiki" link in the "Help" menu.
+  # The URL linked by the "Community Hub" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
   # The URL linked for quota information in the UI.

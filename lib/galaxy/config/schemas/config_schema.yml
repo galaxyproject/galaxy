@@ -1444,7 +1444,7 @@ mapping:
         required: false
         per_host: true
         desc: |
-          The URL linked by the "Wiki" link in the "Help" menu.
+          The URL linked by the "Community Hub" link in the "Help" menu.
 
       quota_url:
         type: str
