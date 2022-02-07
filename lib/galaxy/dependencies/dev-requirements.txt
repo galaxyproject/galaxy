@@ -148,7 +148,6 @@ pytest-json-report==1.4.1
 pytest-metadata==1.11.0; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.6.0" and python_version >= "3.6"
 pytest-mock==3.7.0; python_version >= "3.7"
 pytest-postgresql==4.1.0; python_version >= "3.7"
-pytest-pythonpath==0.7.3
 pytest-shard==0.1.2; python_version >= "3.6"
 pytest==7.0.0; python_version >= "3.6"
 python-dateutil==2.8.2; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.3.0"

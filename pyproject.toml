@@ -119,7 +119,6 @@ pytest-html = "*"
 python-irodsclient = "*"
 pytest-json-report = "*"
 pytest-mock = "*"
-pytest-pythonpath = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 recommonmark = "*"
