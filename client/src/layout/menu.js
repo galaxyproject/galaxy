@@ -178,10 +178,10 @@ export function fetchMenu(options = {}) {
                 hidden: !options.helpsite_url,
             },
             {
-                title: _l("Search"),
-                url: options.search_url,
+                title: _l("Support"),
+                url: options.support_url,
                 target: "_blank",
-                hidden: !options.search_url,
+                hidden: !options.support_url,
             },
             {
                 title: _l("Mailing Lists"),

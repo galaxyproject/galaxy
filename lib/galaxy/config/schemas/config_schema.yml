@@ -1468,14 +1468,6 @@ mapping:
         desc: |
           The URL linked by the "Galaxy Version" link in the "Help" menu.
 
-      search_url:
-        type: str
-        default: https://galaxyproject.org/search/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Search" link in the "Help" menu.
-
       mailing_lists_url:
         type: str
         default: https://galaxyproject.org/mailing-lists/

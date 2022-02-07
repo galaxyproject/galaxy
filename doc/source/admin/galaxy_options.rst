@@ -2001,6 +2001,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~
+``support_url``
+~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Support" link in the "Help" menu.
+:Default: ``https://galaxyproject.org/support/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~
 ``citation_url``
 ~~~~~~~~~~~~~~~~
@@ -2019,16 +2029,6 @@
 :Description:
     The URL linked by the "Galaxy Version" link in the "Help" menu.
 :Default: ``https://docs.galaxyproject.org/en/release_``
-:Type: str
-
-
-~~~~~~~~~~~~~~
-``search_url``
-~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Search" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/search/``
 :Type: str
 
 
