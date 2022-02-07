@@ -86,13 +86,15 @@ class FilesSourcePlugin(BaseModel):
 class FilesSourcePluginList(BaseModel):
     __root__: List[FilesSourcePlugin] = Field(
         default=[],
-        title='List of files source plugins',
-        example=[{
-            "id": "_import",
-            "type": "gximport",
-            "uri_root": "gximport://",
-            "label": "Library Import Directory",
-            "doc": "Galaxy's library import directory",
-            "writable": False
-        }]
+        title="List of files source plugins",
+        example=[
+            {
+                "id": "_import",
+                "type": "gximport",
+                "uri_root": "gximport://",
+                "label": "Library Import Directory",
+                "doc": "Galaxy's library import directory",
+                "writable": False,
+            }
+        ],
     )

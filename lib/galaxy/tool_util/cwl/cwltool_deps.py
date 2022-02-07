@@ -13,11 +13,11 @@ import requests
 
 try:
     from cwltool import (
-        main,
-        workflow,
         job,
-        process,
+        main,
         pathmapper,
+        process,
+        workflow,
     )
 except ImportError:
     main = None  # type: ignore[assignment]
@@ -106,22 +106,22 @@ def ensure_cwltool_available():
 
 
 __all__ = (
-    'default_loader',
-    'ensure_cwltool_available',
-    'getdefault',
-    'load_tool',
-    'LoadingContext',
-    'main',
-    'needs_shell_quoting',
-    'pathmapper',
-    'process',
-    'ref_resolver',
-    'relink_initialworkdir',
-    'resolve_and_validate_document',
-    'RuntimeContext',
-    'schema_salad',
-    'shellescape',
-    'sourceline',
-    'StdFsAccess',
-    'workflow',
+    "default_loader",
+    "ensure_cwltool_available",
+    "getdefault",
+    "load_tool",
+    "LoadingContext",
+    "main",
+    "needs_shell_quoting",
+    "pathmapper",
+    "process",
+    "ref_resolver",
+    "relink_initialworkdir",
+    "resolve_and_validate_document",
+    "RuntimeContext",
+    "schema_salad",
+    "shellescape",
+    "sourceline",
+    "StdFsAccess",
+    "workflow",
 )

@@ -24,7 +24,7 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['tags'])
+router = Router(tags=["tags"])
 
 
 @router.cbv
@@ -32,7 +32,7 @@ class FastAPITags:
     manager: TagsManager = depends(TagsManager)
 
     @router.put(
-        '/api/tags',
+        "/api/tags",
         summary="Apply a new set of tags to an item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )

@@ -19,20 +19,20 @@ class HgController(BaseUIController):
         hgweb_config = trans.app.hgweb_config_manager.hgweb_config
 
         def make_web_app():
-            hgwebapp = hgwebdir(hgweb_config.encode('utf-8'))
+            hgwebapp = hgwebdir(hgweb_config.encode("utf-8"))
             return hgwebapp
 
         wsgi_app = wsgiapplication(make_web_app)
         repository = None
-        path_info = kwd.get('path_info', None)
-        if path_info and len(path_info.split('/')) == 2:
-            owner, name = path_info.split('/')
+        path_info = kwd.get("path_info", None)
+        if path_info and len(path_info.split("/")) == 2:
+            owner, name = path_info.split("/")
             repository = get_repository_by_name_and_owner(trans.app, name, owner)
         if repository:
             if repository.deprecated:
                 raise ObjectNotFound("Requested repository not found or deprecated.")
-            cmd = kwd.get('cmd', None)
-            if cmd == 'getbundle':
+            cmd = kwd.get("cmd", None)
+            if cmd == "getbundle":
                 times_downloaded = repository.times_downloaded
                 times_downloaded += 1
                 repository.times_downloaded = times_downloaded

@@ -8,15 +8,14 @@ from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
-    on_text_for_names
+    on_text_for_names,
 )
 from galaxy.util import XML
-
 
 # I cannot think of a saner way to test if data is being wrapped than use a
 # data param in the output label - though you would probably never want to do
 # this.
-DATA_IN_LABEL_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+DATA_IN_LABEL_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" &lt; $out1</command>
     <inputs>
         <repeat name="repeat1" label="The Repeat">
@@ -27,11 +26,11 @@ DATA_IN_LABEL_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
         <data name="out1" format="data" label="Output (${repeat1[0].param1})" />
     </outputs>
 </tool>
-'''
+"""
 
 # Tool with two outputs - used to verify all datasets within same job get same
 # object store id.
-TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
+TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
@@ -41,7 +40,7 @@ TWO_OUTPUTS = '''<tool id="test_tool" name="Test Tool">
         <data name="out2" format="data" label="Output 2 ($param1)" />
     </outputs>
 </tool>
-'''
+"""
 
 
 def test_on_text_for_names():
@@ -58,15 +57,11 @@ def test_on_text_for_names():
 
 
 class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
-
     def setUp(self):
         self.setup_app()
         history = model.History()
         self.history = history
-        self.trans = MockTrans(
-            self.app,
-            self.history
-        )
+        self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(history)
         self.app.model.context.flush()
         self.action = DefaultToolAction()
@@ -89,7 +84,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             "param1": hda1,
             "repeat1": [
                 {"param2": hda2},
-            ]
+            ],
         }
         job, output = self._simple_execute(
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
@@ -119,10 +114,10 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             return
         raise AssertionError("Tool execution succeeded for inactive user!")
 
-    def __add_dataset(self, state='ok'):
+    def __add_dataset(self, state="ok"):
         hda = model.HistoryDatasetAssociation()
         hda.dataset = model.Dataset()
-        hda.dataset.state = 'ok'
+        hda.dataset.state = "ok"
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
         self.app.model.context.flush()
@@ -175,20 +170,24 @@ def test_determine_output_format():
 
     change_format_output = quick_output("fastq", change_format_xml=change_format_xml)
     # Test maching a change_format when.
-    __assert_output_format_is("fastqillumina", change_format_output, param_context={"options_type": {"output_type": "illumina"}})
+    __assert_output_format_is(
+        "fastqillumina", change_format_output, param_context={"options_type": {"output_type": "illumina"}}
+    )
     # Test change_format but no match
     __assert_output_format_is("fastq", change_format_output, param_context={"options_type": {"output_type": "sanger"}})
 
-    change_on_metadata_xml_template = string.Template("""<data><change_format>
+    change_on_metadata_xml_template = string.Template(
+        """<data><change_format>
         <when input_dataset="${input}" attribute="random_field" value="1" format="fastqsolexa" />
         <when input_dataset="${input}" attribute="random_field" value="2" format="fastqillumina" />
-    </change_format></data>""")
+    </change_format></data>"""
+    )
 
-    change_on_metadata_illumina = change_on_metadata_xml_template.safe_substitute({'input': "i2"})
+    change_on_metadata_illumina = change_on_metadata_xml_template.safe_substitute({"input": "i2"})
     change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_illumina)
     __assert_output_format_is("fastqillumina", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")])
 
-    change_on_metadata_solexa = change_on_metadata_xml_template.safe_substitute({'input': "i1"})
+    change_on_metadata_solexa = change_on_metadata_xml_template.safe_substitute({"input": "i1"})
     change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_solexa)
     __assert_output_format_is("fastqsolexa", change_on_metadata_output, [("i1", "txt"), ("i2", "txt")])
 
@@ -213,8 +212,12 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
         c1 = model.DatasetCollection(collection_type="pair")
         hc1 = model.HistoryDatasetCollectionAssociation(collection=c1, name="HistoryCollectionTest1")
 
-        dce1 = model.DatasetCollectionElement(collection=c1, element=hda_forward, element_identifier="forward", element_index=0)
-        dce2 = model.DatasetCollectionElement(collection=c1, element=hda_reverse, element_identifier="reverse", element_index=1)
+        dce1 = model.DatasetCollectionElement(
+            collection=c1, element=hda_forward, element_identifier="forward", element_index=0
+        )
+        dce2 = model.DatasetCollectionElement(
+            collection=c1, element=hda_reverse, element_identifier="reverse", element_index=1
+        )
         c1.elements = [dce1, dce2]
 
         input_collections["hdcai"] = [(hc1, False)]
@@ -235,7 +238,6 @@ def quick_output(format, format_source=None, change_format_xml=None):
 
 
 class MockTrans:
-
     def __init__(self, app, history, user=None):
         self.app = app
         self.history = history
@@ -271,7 +273,6 @@ class MockTrans:
 
 
 class MockObjectStore:
-
     def __init__(self):
         self.created_datasets = []
         self.first_create = True

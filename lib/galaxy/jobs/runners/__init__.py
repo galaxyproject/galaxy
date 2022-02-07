@@ -16,17 +16,20 @@ from queue import (
 
 import galaxy.jobs
 from galaxy import model
-from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
+from galaxy.job_execution.output_collect import (
+    default_exit_code_file,
+    read_exit_code_from,
+)
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
-    write_script
+    write_script,
 )
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
-    ToolInfo
+    ToolInfo,
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
@@ -47,7 +50,9 @@ STOP_SIGNAL = object()
 
 
 JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE = "Invalid job runner parameter for this plugin: %s"
-JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = "Job runner parameter '%s' value '%s' could not be converted to the correct type"
+JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE = (
+    "Job runner parameter '%s' value '%s' could not be converted to the correct type"
+)
 JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE = "Job runner parameter %s failed validation"
 
 GALAXY_LIB_ADJUST_TEMPLATE = """GALAXY_LIB="%s"; if [ "$GALAXY_LIB" != "None" ]; then if [ -n "$PYTHONPATH" ]; then PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"; else PYTHONPATH="$GALAXY_LIB"; fi; export PYTHONPATH; fi;"""
@@ -55,7 +60,6 @@ GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" !=
 
 
 class RunnerParams(ParamsWithSpecs):
-
     def _param_unknown_error(self, name):
         raise Exception(JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % name)
 
@@ -68,21 +72,20 @@ class RunnerParams(ParamsWithSpecs):
 
 class BaseJobRunner:
 
-    start_methods = ['_init_monitor_thread', '_init_worker_threads']
+    start_methods = ["_init_monitor_thread", "_init_worker_threads"]
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
-        """Start the job runner
-        """
+        """Start the job runner"""
         self.app = app
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
-        if 'runner_param_specs' in kwargs:
-            runner_param_specs.update(kwargs.pop('runner_param_specs'))
+        if "runner_param_specs" in kwargs:
+            runner_param_specs.update(kwargs.pop("runner_param_specs"))
         if kwargs:
-            log.debug('Loading %s with params: %s', self.runner_name, kwargs)
+            log.debug("Loading %s with params: %s", self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
         self._should_stop = False
@@ -92,11 +95,10 @@ class BaseJobRunner:
             getattr(self, start_method, lambda: None)()
 
     def _init_worker_threads(self):
-        """Start ``nworkers`` worker threads.
-        """
+        """Start ``nworkers`` worker threads."""
         self.work_queue = Queue()
         self.work_threads = []
-        log.debug(f'Starting {self.nworkers} {self.runner_name} workers')
+        log.debug(f"Starting {self.nworkers} {self.runner_name} workers")
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
@@ -115,8 +117,7 @@ class BaseJobRunner:
                     yield thread
 
     def run_next(self):
-        """Run the next item in the work queue (a job waiting to run)
-        """
+        """Run the next item in the work queue (a job waiting to run)"""
         while self._should_stop is False:
             try:
                 (method, arg) = self.work_queue.get(timeout=1)
@@ -132,16 +133,15 @@ class BaseJobRunner:
                     # arg should be a JobWrapper/TaskWrapper
                     job_id = arg.get_id_tag()
             except Exception:
-                job_id = 'unknown'
+                job_id = "unknown"
             try:
                 name = method.__name__
             except Exception:
-                name = 'unknown'
+                name = "unknown"
             try:
-                action_str = f'galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}'
+                action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                 action_timer = self.app.execution_timer_factory.get_timer(
-                    f'internals.{action_str}',
-                    'job runner action %s for job ${job_id} executed' % (action_str)
+                    f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
                 )
                 method(arg)
                 log.trace(action_timer.to_str(job_id=job_id))
@@ -157,8 +157,7 @@ class BaseJobRunner:
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):
-        """Add a job to the queue (by job identifier), indicate that the job is ready to run.
-        """
+        """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
         job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
@@ -168,8 +167,7 @@ class BaseJobRunner:
         self.work_queue.put((self.queue_job, job_wrapper))
 
     def shutdown(self):
-        """Attempts to gracefully shut down the worker threads
-        """
+        """Attempts to gracefully shut down the worker threads"""
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         self._should_stop = True
         for _ in range(len(self.work_threads)):
@@ -199,8 +197,12 @@ class BaseJobRunner:
                 except KeyError:
                     # thread is now stopped
                     continue
-                log.warning("Timed out waiting for job worker thread %s to terminate, shutdown will be unclean! Thread "
-                            "stack is:\n%s", thread.name, ''.join(traceback.format_stack(frame)))
+                log.warning(
+                    "Timed out waiting for job worker thread %s to terminate, shutdown will be unclean! Thread "
+                    "stack is:\n%s",
+                    thread.name,
+                    "".join(traceback.format_stack(frame)),
+                )
 
     # Most runners should override the legacy URL handler methods and destination param method
     def url_to_destination(self, url):
@@ -211,22 +213,22 @@ class BaseJobRunner:
         This base class method converts from a URL to a very basic
         JobDestination without destination params.
         """
-        return galaxy.jobs.JobDestination(runner=url.split(':')[0])
+        return galaxy.jobs.JobDestination(runner=url.split(":")[0])
 
     def parse_destination_params(self, params):
-        """Parse the JobDestination ``params`` dict and return the runner's native representation of those params.
-        """
+        """Parse the JobDestination ``params`` dict and return the runner's native representation of those params."""
         raise NotImplementedError()
 
-    def prepare_job(self,
-                    job_wrapper,
-                    include_metadata=False,
-                    include_work_dir_outputs=True,
-                    modify_command_for_container=True,
-                    stdout_file=None,
-                    stderr_file=None):
-        """Some sanity checks that all runners' queue_job() methods are likely to want to do
-        """
+    def prepare_job(
+        self,
+        job_wrapper,
+        include_metadata=False,
+        include_work_dir_outputs=True,
+        modify_command_for_container=True,
+        stdout_file=None,
+        stderr_file=None,
+    ):
+        """Some sanity checks that all runners' queue_job() methods are likely to want to do"""
         job_id = job_wrapper.get_id_tag()
         job_state = job_wrapper.get_state()
         job_wrapper.is_ready = False
@@ -260,7 +262,7 @@ class BaseJobRunner:
             return False
 
         if not job_wrapper.runner_command_line:
-            job_wrapper.finish('', '')
+            job_wrapper.finish("", "")
             return False
 
         return True
@@ -275,13 +277,15 @@ class BaseJobRunner:
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line(self,
-                           job_wrapper,
-                           include_metadata=False,
-                           include_work_dir_outputs=True,
-                           modify_command_for_container=True,
-                           stdout_file=None,
-                           stderr_file=None):
+    def build_command_line(
+        self,
+        job_wrapper,
+        include_metadata=False,
+        include_work_dir_outputs=True,
+        modify_command_for_container=True,
+        stdout_file=None,
+        stderr_file=None,
+    ):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
@@ -302,7 +306,9 @@ class BaseJobRunner:
         to work_dir output file and ultimate destination.
         """
         if tool_working_directory is not None and job_working_directory is not None:
-            raise Exception("get_work_dir_outputs called with both a job and tool working directory, only one may be specified")
+            raise Exception(
+                "get_work_dir_outputs called with both a job and tool working directory, only one may be specified"
+            )
 
         if tool_working_directory is None:
             if not job_working_directory:
@@ -334,14 +340,24 @@ class BaseJobRunner:
                         output_pairs.append((source_file, destination))
                     else:
                         # Security violation.
-                        log.exception("from_work_dir specified a location not in the working directory: %s, %s", source_file, job_wrapper.working_directory)
+                        log.exception(
+                            "from_work_dir specified a location not in the working directory: %s, %s",
+                            source_file,
+                            job_wrapper.working_directory,
+                        )
         return output_pairs
 
     def _walk_dataset_outputs(self, job):
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
-            for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
+            for dataset in (
+                dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
+            ):
                 if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    joda = self.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(job=job, dataset=dataset).first()
+                    joda = (
+                        self.sa_session.query(self.app.model.JobToOutputDatasetAssociation)
+                        .filter_by(job=job, dataset=dataset)
+                        .first()
+                    )
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
         # for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -356,37 +372,52 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.job_io.output_paths:
+        if (
+            job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]
+            and job_wrapper.job_io.output_paths
+        ):
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.job_io.get_output_fnames(),
-                                                                           set_extension=True,
-                                                                           tmp_dir=job_wrapper.working_directory,
-                                                                           # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                           kwds={'overwrite': False})
+            external_metadata_script = job_wrapper.setup_external_metadata(
+                output_fnames=job_wrapper.job_io.get_output_fnames(),
+                set_extension=True,
+                tmp_dir=job_wrapper.working_directory,
+                # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                kwds={"overwrite": False},
+            )
             external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
             if resolve_requirements:
-                dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
+                dependency_shell_commands = (
+                    self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
+                        job_directory=job_wrapper.working_directory
+                    )
+                )
                 if dependency_shell_commands:
                     if isinstance(dependency_shell_commands, list):
                         dependency_shell_commands = "&&".join(dependency_shell_commands)
                     external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
-            log.debug('executing external set_meta script for job %d: %s' % (job_wrapper.job_id, external_metadata_script))
-            external_metadata_proc = subprocess.Popen(args=external_metadata_script,
-                                                      shell=True,
-                                                      cwd=job_wrapper.working_directory,
-                                                      env=os.environ,
-                                                      preexec_fn=os.setpgrp)
-            job_wrapper.external_output_metadata.set_job_runner_external_pid(external_metadata_proc.pid, self.sa_session)
+            log.debug(
+                "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
+            )
+            external_metadata_proc = subprocess.Popen(
+                args=external_metadata_script,
+                shell=True,
+                cwd=job_wrapper.working_directory,
+                env=os.environ,
+                preexec_fn=os.setpgrp,
+            )
+            job_wrapper.external_output_metadata.set_job_runner_external_pid(
+                external_metadata_proc.pid, self.sa_session
+            )
             external_metadata_proc.wait()
-            log.debug('execution of external set_meta for job %d finished' % job_wrapper.job_id)
+            log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper, **kwds):
         job_metrics = job_wrapper.app.job_metrics
         job_instrumenter = job_metrics.job_instrumenters[job_wrapper.job_destination.id]
 
-        env_setup_commands = kwds.get('env_setup_commands', [])
-        env_setup_commands.append(job_wrapper.get_env_setup_clause() or '')
+        env_setup_commands = kwds.get("env_setup_commands", [])
+        env_setup_commands.append(job_wrapper.get_env_setup_clause() or "")
         destination = job_wrapper.job_destination or {}
         envs = destination.get("env", [])
         envs.extend(job_wrapper.environment_variables)
@@ -408,7 +439,7 @@ class BaseJobRunner:
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
-        log.debug(f'({job_id}) command is: {command_line}')
+        log.debug(f"({job_id}) command is: {command_line}")
         options.update(**kwds)
         return job_script(**options)
 
@@ -458,11 +489,7 @@ class BaseJobRunner:
         )
 
         destination_info = job_wrapper.job_destination.params
-        container = self.app.container_finder.find_container(
-            tool_info,
-            destination_info,
-            job_info
-        )
+        container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
         return container
@@ -474,17 +501,17 @@ class BaseJobRunner:
                 if job_state.runner_state_handled:
                     break
         except Exception:
-            log.exception('Caught exception in runner state handler')
+            log.exception("Caught exception in runner state handler")
 
     def fail_job(self, job_state, exception=False):
-        if getattr(job_state, 'stop_job', True):
+        if getattr(job_state, "stop_job", True):
             self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()
-        self._handle_runner_state('failure', job_state)
+        self._handle_runner_state("failure", job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary
         if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(getattr(job_state, 'fail_message', 'Job failed'), exception=exception)
+            job_state.job_wrapper.fail(getattr(job_state, "fail_message", "Job failed"), exception=exception)
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
@@ -495,7 +522,9 @@ class BaseJobRunner:
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
     def _job_io_for_db(self, stream):
-        return shrink_stream_by_size(stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+        return shrink_stream_by_size(
+            stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
+        )
 
     def _finish_or_resubmit_job(self, job_state, job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
@@ -527,7 +556,14 @@ class BaseJobRunner:
                 tool_stderr = job_stderr
                 job_stderr = None
 
-            check_output_detected_state = job_wrapper.check_tool_output(tool_stdout, tool_stderr, tool_exit_code=exit_code, job=job, job_stdout=job_stdout, job_stderr=job_stderr)
+            check_output_detected_state = job_wrapper.check_tool_output(
+                tool_stdout,
+                tool_stderr,
+                tool_exit_code=exit_code,
+                job=job,
+                job_stdout=job_stdout,
+                job_stderr=job_stderr,
+            )
             job_ok = check_output_detected_state == DETECTED_JOB_STATE.OK
 
             # clean up the job files
@@ -544,12 +580,19 @@ class BaseJobRunner:
                 if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
                     job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
                 job_state.runner_state = job_runner_state
-                self._handle_runner_state('failure', job_state)
+                self._handle_runner_state("failure", job_state)
                 # Was resubmitted or something - I think we are done with it.
                 if job_state.runner_state_handled:
                     return
 
-            job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
+            job_wrapper.finish(
+                tool_stdout,
+                tool_stderr,
+                exit_code,
+                check_output_detected_state=check_output_detected_state,
+                job_stdout=job_stdout,
+                job_stderr=job_stderr,
+            )
         except Exception:
             log.exception(f"({job_id or ''}/{external_job_id or ''}) Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
@@ -559,6 +602,7 @@ class JobState:
     """
     Encapsulate state of jobs.
     """
+
     runner_states = runner_states
 
     def __init__(self, job_wrapper, job_destination):
@@ -570,26 +614,26 @@ class JobState:
         if self.job_wrapper:
             self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
-        self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
+        self.cleanup_file_attributes = ["job_file", "output_file", "error_file", "exit_code_file"]
 
     def set_defaults(self, files_dir):
         if self.job_wrapper is not None:
             id_tag = self.job_wrapper.get_id_tag()
             if files_dir is not None:
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
-                self.output_file = os.path.join(files_dir, f'galaxy_{id_tag}.o')
-                self.error_file = os.path.join(files_dir, f'galaxy_{id_tag}.e')
+                self.output_file = os.path.join(files_dir, f"galaxy_{id_tag}.o")
+                self.error_file = os.path.join(files_dir, f"galaxy_{id_tag}.e")
                 self.exit_code_file = default_exit_code_file(files_dir, id_tag)
-            job_name = f'g{id_tag}'
+            job_name = f"g{id_tag}"
             if self.job_wrapper.tool.old_id:
-                job_name += f'_{self.job_wrapper.tool.old_id}'
+                job_name += f"_{self.job_wrapper.tool.old_id}"
             if not self.redact_email_in_job_name and self.job_wrapper.user:
-                job_name += f'_{self.job_wrapper.user}'
-            self.job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
+                job_name += f"_{self.job_wrapper.user}"
+            self.job_name = "".join(x if x in (f"{string.ascii_letters + string.digits}_") else "_" for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):
-        return os.path.join(files_dir, f'galaxy_{id_tag}.sh')
+        return os.path.join(files_dir, f"galaxy_{id_tag}.sh")
 
     def read_exit_code(self):
         return read_exit_code_from(self.exit_code_file, self.job_wrapper.get_id_tag())
@@ -615,7 +659,18 @@ class AsynchronousJobState(JobState):
     to communicate with distributed resource manager.
     """
 
-    def __init__(self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None):
+    def __init__(
+        self,
+        files_dir=None,
+        job_wrapper=None,
+        job_id=None,
+        job_file=None,
+        output_file=None,
+        error_file=None,
+        exit_code_file=None,
+        job_name=None,
+        job_destination=None,
+    ):
         super().__init__(job_wrapper, job_destination)
         self.old_state = None
         self._running = False
@@ -711,7 +766,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             try:
                 self.check_watched_items()
             except Exception:
-                log.exception('Unhandled exception checking active jobs')
+                log.exception("Unhandled exception checking active jobs")
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 
@@ -761,15 +816,15 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         collect_output_success = True
         while which_try < self.app.config.retry_job_output_collection + 1:
             try:
-                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, 'rb') as stderr_file:
+                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, "rb") as stderr_file:
                     stdout = self._job_io_for_db(stdout_file)
                     stderr = self._job_io_for_db(stderr_file)
                 break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
-                    stdout = ''
+                    stdout = ""
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error('(%s/%s) %s: %s', galaxy_id_tag, external_job_id, stderr, unicodify(e))
+                    log.error("(%s/%s) %s: %s", galaxy_id_tag, external_job_id, stderr, unicodify(e))
                     collect_output_success = False
                 else:
                     time.sleep(1)

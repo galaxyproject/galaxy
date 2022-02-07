@@ -112,7 +112,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run("""
+        self.open_in_workflow_run(
+            """
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -124,7 +125,8 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-""")
+"""
+        )
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")
@@ -228,6 +230,21 @@ steps:
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
+    @selenium_test
+    def test_simple_workflow_run_form_validation_required_text_param(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_input: text
+steps: []
+"""
+        )
+        self.simplified_workflow_run_by_id(workflow_id)
+        run_button = self.components.workflow_run.run_workflow.wait_for_visible()
+        assert run_button.get_attribute("disabled") == "true"
+        self.components.workflow_run.validation_error.wait_for_visible()
+
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_run_with_name(name)
@@ -254,6 +271,9 @@ steps:
         self.workflow_index_search_for(name)
         self.workflow_click_option(".workflow-run")
 
+    def simplified_workflow_run_by_id(self, workflow_id):
+        self.get(f"workflows/run?id={workflow_id}&simplified_workflow_run_ui=prefer")
+
     def _assert_has_3_lines_after_run(self, hid):
         if self.is_beta_history():
             self.content_item_by_attributes(hid=hid, state="ok").wait_for_present()
@@ -263,9 +283,9 @@ steps:
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
         assert len([x for x in content.split("\n") if x]) == 3, content
 
-    def _set_num_lines_to_3(self, tour_id):
+    def _set_num_lines_to_3(self, element_id):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         # runtime parameters not being set to tool default value:
         # https://github.com/galaxyproject/galaxy/pull/7157
@@ -274,9 +294,9 @@ steps:
         input_element.clear()
         input_element.send_keys("3")
 
-    def _set_replacement_parameter(self, tour_id, value):
+    def _set_replacement_parameter(self, element_id, value):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         initial_value = input_element.get_attribute("value")
         assert initial_value == "", initial_value

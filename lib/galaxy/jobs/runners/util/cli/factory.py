@@ -1,12 +1,12 @@
 try:
     from galaxy.jobs.runners.util.cli import (
         CliInterface,
-        split_params
+        split_params,
     )
 except ImportError:
     from pulsar.managers.util.cli import (  # type: ignore[no-redef]
         CliInterface,
-        split_params
+        split_params,
     )
 
 

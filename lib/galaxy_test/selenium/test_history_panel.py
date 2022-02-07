@@ -1,14 +1,11 @@
 import pytest
 
-from galaxy.selenium.navigates_galaxy import (
-    edit_details
-)
+from galaxy.selenium.navigates_galaxy import edit_details
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
-
 
 NEW_HISTORY_NAME = "New History Name"
 
@@ -41,7 +38,9 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @selenium_test
     def test_history_rename_confirm_with_click(self):
         if self.is_beta_history():
-            raise pytest.skip("Beta History Panel has explicit editing toggle mode, so can not click off to the side to save")
+            raise pytest.skip(
+                "Beta History Panel has explicit editing toggle mode, so can not click off to the side to save"
+            )
         editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.click_center()
@@ -100,18 +99,15 @@ class HistoryPanelTestCase(SeleniumTestCase):
         history_panel = self.components.history_panel
 
         @retry_assertion_during_transitions
-        def assert_current_annotation(expected, error_message="History annotation",
-                                      is_equal=True):
+        def assert_current_annotation(expected, error_message="History annotation", is_equal=True):
 
             text_component = history_panel.annotation_editable_text
             current_annotation = text_component.wait_for_visible()
             error_message += " given: [%s] expected [%s] "
             if is_equal:
-                assert current_annotation.text == expected, error_message % (
-                    current_annotation.text, expected)
+                assert current_annotation.text == expected, error_message % (current_annotation.text, expected)
             else:
-                assert current_annotation.text != expected, error_message % (
-                    current_annotation.text, expected)
+                assert current_annotation.text != expected, error_message % (current_annotation.text, expected)
 
         def set_random_annotation(clear_text=True):
             random_annotation = self._get_random_name(prefix="arbitrary_annotation_")
@@ -128,15 +124,17 @@ class HistoryPanelTestCase(SeleniumTestCase):
         # change annotation text
         changed_annotation = set_random_annotation()
 
-        assert_current_annotation(initial_annotation, error_message="History annotation was not changed!",
-                                  is_equal=False)
-        assert_current_annotation(changed_annotation,
-                                  error_message="History annotation was changed, but annotation text is wrong!",
-                                  is_equal=True)
+        assert_current_annotation(
+            initial_annotation, error_message="History annotation was not changed!", is_equal=False
+        )
+        assert_current_annotation(
+            changed_annotation,
+            error_message="History annotation was changed, but annotation text is wrong!",
+            is_equal=True,
+        )
 
     @selenium_test
     def test_history_panel_tags_change(self):
-
         def create_tags(size):
             history_panel_tags = list()
             for i in range(size):

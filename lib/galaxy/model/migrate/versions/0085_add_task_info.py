@@ -4,7 +4,11 @@ Migration script to add 'info' column to the task table.
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.custom_types import TrimmedString
 

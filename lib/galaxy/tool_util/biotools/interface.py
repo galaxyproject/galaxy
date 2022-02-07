@@ -1,11 +1,17 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 TERM_PATTERN = re.compile(r"https?://edamontology.org/(.*)")
 
 
 class ParsedBiotoolsEntry:
     """Provide XML wrapper relevant entities from a bio.tool entry - topics and operations."""
+
     biotoolsID: str
     edam_topics: List[str]
     edam_operations: List[str]
@@ -13,12 +19,13 @@ class ParsedBiotoolsEntry:
 
 class BiotoolsEntry:
     """Parse the RAW entries of interest for Galaxy from a bio.tools entry."""
+
     biotoolsID: str
     topic: List[dict]
     function: List[dict]
 
     @staticmethod
-    def from_json(from_json: Dict[str, Any]) -> 'BiotoolsEntry':
+    def from_json(from_json: Dict[str, Any]) -> "BiotoolsEntry":
         entry = BiotoolsEntry()
         entry.biotoolsID = from_json["biotoolsID"]
         entry.topic = from_json["topic"]

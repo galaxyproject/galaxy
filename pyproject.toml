@@ -1,3 +1,14 @@
+[tool.black]
+line-length = 120
+target-version = ['py37']
+include = '\.pyi?$'
+extend-exclude = '''
+^/(
+  | packages
+)/
+'''
+force-exclude = 'lib/galaxy/util/jstree.py'
+
 [tool.poetry]
 name = "galaxy"
 version = "22.01.dev0"
@@ -38,6 +49,8 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
+gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "main"}
+gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
 importlib_resources = "*"
@@ -82,16 +95,18 @@ tifffile = "*"
 tuswsgi = "*"
 typing-extensions = "*"
 uvicorn = "*"
+uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+black = "^22.1.0"
 cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
-gunicorn = "*"
 httpx = "*"
+isort = "^5.10.1"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 NoseHTML = "*"
@@ -104,7 +119,6 @@ pytest-html = "*"
 python-irodsclient = "*"
 pytest-json-report = "*"
 pytest-mock = "*"
-pytest-pythonpath = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 recommonmark = "*"

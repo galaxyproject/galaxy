@@ -3,7 +3,12 @@
 import logging
 import sys
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

@@ -15,16 +15,16 @@ from sqlalchemy import (
     MetaData,
     String,
     Table,
-    TEXT
+    TEXT,
 )
 
 from galaxy.model.custom_types import (
     _sniffnfix_pg9_hex,
-    TrimmedString
+    TrimmedString,
 )
 from galaxy.model.migrate.versions.util import (
     localtimestamp,
-    nextval
+    nextval,
 )
 
 log = logging.getLogger(__name__)
@@ -32,17 +32,23 @@ now = datetime.datetime.utcnow
 metadata = MetaData()
 
 
-ToolVersion_table = Table("tool_version", metadata,
+ToolVersion_table = Table(
+    "tool_version",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("tool_id", String(255)),
-    Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=True))
+    Column("tool_shed_repository_id", Integer, ForeignKey("tool_shed_repository.id"), index=True, nullable=True),
+)
 
-ToolVersionAssociation_table = Table("tool_version_association", metadata,
+ToolVersionAssociation_table = Table(
+    "tool_version_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("tool_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
-    Column("parent_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False))
+    Column("parent_id", Integer, ForeignKey("tool_version.id"), index=True, nullable=False),
+)
 
 
 def upgrade(migrate_engine):
@@ -69,10 +75,15 @@ def upgrade(migrate_engine):
             repository_metadata = loads(_sniffnfix_pg9_hex(str(row[1])))
             # Create a new row in the tool table for each tool included in repository.  We will NOT
             # handle tool_version_associaions because we do not have the information we need to do so.
-            tools = repository_metadata.get('tools', [])
+            tools = repository_metadata.get("tools", [])
             for tool_dict in tools:
-                cmd = "INSERT INTO tool_version VALUES (%s, %s, %s, '%s', %s)" % \
-                    (nextval(migrate_engine, 'tool_version'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), tool_dict['guid'], tool_shed_repository_id)
+                cmd = "INSERT INTO tool_version VALUES (%s, %s, %s, '%s', %s)" % (
+                    nextval(migrate_engine, "tool_version"),
+                    localtimestamp(migrate_engine),
+                    localtimestamp(migrate_engine),
+                    tool_dict["guid"],
+                    tool_shed_repository_id,
+                )
                 migrate_engine.execute(cmd)
                 count += 1
     print("Added %d rows to the new tool_version table." % count)
@@ -88,7 +99,8 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 
     ToolIdGuidMap_table = Table(
-        "tool_id_guid_map", metadata,
+        "tool_id_guid_map",
+        metadata,
         Column("id", Integer, primary_key=True),
         Column("create_time", DateTime, default=now),
         Column("update_time", DateTime, default=now, onupdate=now),
@@ -98,7 +110,7 @@ def downgrade(migrate_engine):
         Column("repository_owner", TrimmedString(255)),
         Column("repository_name", TrimmedString(255)),
         Column("guid", TEXT),
-        Index('ix_tool_id_guid_map_guid', 'guid', unique=True, mysql_length=200),
+        Index("ix_tool_id_guid_map_guid", "guid", unique=True, mysql_length=200),
     )
 
     metadata.reflect()

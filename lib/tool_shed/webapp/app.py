@@ -17,7 +17,10 @@ from galaxy.managers.citations import CitationsManager
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
-from galaxy.quota import NoQuotaAgent, QuotaAgent
+from galaxy.quota import (
+    NoQuotaAgent,
+    QuotaAgent,
+)
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util.dbkeys import GenomeBuilds
@@ -58,13 +61,13 @@ class UniverseApplication(BasicSharedApp, SentryClientMixin):
             db_url = f"sqlite:///{self.config.database}?isolation_level=IMMEDIATE"
         # Initialize the Tool Shed database and check for appropriate schema version.
         from tool_shed.webapp.model.migrate.check import create_or_verify_database
+
         create_or_verify_database(db_url, self.config.database_engine_options)
         # Set up the Tool Shed database engine and ORM.
         from tool_shed.webapp.model import mapping
+
         model: mapping.ToolShedModelMapping = mapping.init(
-            self.config.file_path,
-            db_url,
-            self.config.database_engine_options
+            self.config.file_path, db_url, self.config.database_engine_options
         )
         self.model = model
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)

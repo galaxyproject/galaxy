@@ -12,19 +12,19 @@ from sqlalchemy import (
     String,
     Table,
     TEXT,
-    Unicode
+    Unicode,
 )
 
 from galaxy.model.custom_types import (
     JSONType,
     TrimmedString,
-    UUIDType
+    UUIDType,
 )
 from galaxy.model.migrate.versions.util import (
     add_column,
     create_table,
     drop_column,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
@@ -32,9 +32,12 @@ metadata = MetaData()
 
 
 WorkflowRequestInputParameter_table = Table(
-    "workflow_request_input_parameters", metadata,
+    "workflow_request_input_parameters",
+    metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
+    Column(
+        "workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+    ),
     Column("name", Unicode(255)),
     Column("type", Unicode(255)),
     Column("value", TEXT),
@@ -42,16 +45,20 @@ WorkflowRequestInputParameter_table = Table(
 
 
 WorkflowRequestStepState_table = Table(
-    "workflow_request_step_states", metadata,
+    "workflow_request_step_states",
+    metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")),
+    Column(
+        "workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE")
+    ),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
     Column("value", JSONType),
 )
 
 
 WorkflowRequestToInputDatasetAssociation_table = Table(
-    "workflow_request_to_input_dataset", metadata,
+    "workflow_request_to_input_dataset",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(255)),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
@@ -61,7 +68,8 @@ WorkflowRequestToInputDatasetAssociation_table = Table(
 
 
 WorkflowRequestToInputDatasetCollectionAssociation_table = Table(
-    "workflow_request_to_input_collection_dataset", metadata,
+    "workflow_request_to_input_collection_dataset",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("name", String(255)),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),

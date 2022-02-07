@@ -59,7 +59,7 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.get("element_id") || this.model.get("id")}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function (ev) {
@@ -226,7 +226,9 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/error?dataset_id=${
+                    self.model.get("element_id") || self.model.get("id")
+                }`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function (ev) {
@@ -234,7 +236,7 @@ var DatasetListItemEdit = _super.extend(
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
-                            dataset_id: self.model.attributes.id,
+                            dataset_id: self.model.get("element_id") || self.model.get("id"),
                         });
                     }
                 },
@@ -283,7 +285,7 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
             if (visualizations.length >= 1) {
-                const dsid = this.model.get("id");
+                const dsid = this.model.get("element_id") || this.model.get("id");
                 const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),

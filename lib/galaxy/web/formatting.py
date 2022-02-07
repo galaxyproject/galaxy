@@ -1,7 +1,7 @@
 import locale
 from string import Template
 
-DEFAULT_LOCALE_FORMAT = '%a %b %e %H:%M:%S %Y'
+DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
 ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 

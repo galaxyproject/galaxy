@@ -8,20 +8,21 @@ from unittest.mock import Mock
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
-from galaxy.objectstore.unittest_utils import (
-    Config as TestConfig,
+from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.tools.imp_exp import (
+    JobExportHistoryArchiveWrapper,
+    JobImportHistoryArchiveWrapper,
+    unpack_tar_gz_archive,
 )
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
 from galaxy.util import galaxy_directory
 
-
 # good enough for the very specific tests we're writing as of now...
-DATASETS_ATTRS = '''[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n\\n\\n\\n\\n", "update_time": "2016-02-08 18:39:22.937474", "name": "Pasted Entry", "extension": "txt", "tags": {{}}, "__HistoryDatasetAssociation__": true, "file_name": "{file_name}", "deleted": false, "designation": null, "visible": true, "create_time": "2016-02-08 18:38:38.682087", "hid": 1, "parent_id": null, "extra_files_path": "", "uuid": "406d913e-925d-4ccd-800d-06c9b32df309", "metadata": {{"dbkey": "?", "data_lines": 1}}, "annotation": null, "blurb": "1 line", "exported": true}}]'''
-DATASETS_ATTRS_EXPORT = '''[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n\\n\\n\\n\\n", "update_time": "2016-02-08 18:39:22.937474", "name": "Pasted Entry", "extension": "txt", "tags": {{}}, "__HistoryDatasetAssociation__": true, "file_name": "{file_name}", "deleted": false, "designation": null, "visible": true, "create_time": "2016-02-08 18:38:38.682087", "hid": 1, "parent_id": null, "_extra_files_path": "", "uuid": "406d913e-925d-4ccd-800d-06c9b32df309", "metadata": {{"dbkey": "?", "data_lines": 1}}, "annotation": null, "blurb": "1 line"}}]'''
-DATASETS_ATTRS_PROVENANCE = '''[]'''
-HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058", "create_time": "2016-02-08 18:38:20.790057", "name": "paste", "tags": {}, "genome_build": "?", "annotation": null}'''
-JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
+DATASETS_ATTRS = """[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n\\n\\n\\n\\n", "update_time": "2016-02-08 18:39:22.937474", "name": "Pasted Entry", "extension": "txt", "tags": {{}}, "__HistoryDatasetAssociation__": true, "file_name": "{file_name}", "deleted": false, "designation": null, "visible": true, "create_time": "2016-02-08 18:38:38.682087", "hid": 1, "parent_id": null, "extra_files_path": "", "uuid": "406d913e-925d-4ccd-800d-06c9b32df309", "metadata": {{"dbkey": "?", "data_lines": 1}}, "annotation": null, "blurb": "1 line", "exported": true}}]"""
+DATASETS_ATTRS_EXPORT = """[{{"info": "\\nuploaded txt file", "peek": "foo\\n\\n\\n\\n\\n\\n", "update_time": "2016-02-08 18:39:22.937474", "name": "Pasted Entry", "extension": "txt", "tags": {{}}, "__HistoryDatasetAssociation__": true, "file_name": "{file_name}", "deleted": false, "designation": null, "visible": true, "create_time": "2016-02-08 18:38:38.682087", "hid": 1, "parent_id": null, "_extra_files_path": "", "uuid": "406d913e-925d-4ccd-800d-06c9b32df309", "metadata": {{"dbkey": "?", "data_lines": 1}}, "annotation": null, "blurb": "1 line"}}]"""
+DATASETS_ATTRS_PROVENANCE = """[]"""
+HISTORY_ATTRS = """{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058", "create_time": "2016-02-08 18:38:20.790057", "name": "paste", "tags": {}, "genome_build": "?", "annotation": null}"""
+JOBS_ATTRS = """[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]"""
 
 
 def t_data_path(name):
@@ -31,8 +32,8 @@ def t_data_path(name):
 def _run_jihaw_cleanup(archive_dir, app=None):
     app = app or _mock_app()
     job = model.Job()
-    job.user = model.User(email="test@test.org", password='test')
-    job.tool_stderr = ''
+    job.user = model.User(email="test@test.org", password="test")
+    job.tool_stderr = ""
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
     app.model.context.current.add_all([job, jiha])
     app.model.context.flush()
@@ -61,53 +62,51 @@ def test_create_archive():
     tempdir = tempfile.mkdtemp()
     with tempfile.NamedTemporaryFile() as temp:
         out_file = temp.name
-        dataset = os.path.join(tempdir, 'datasets/Pasted_Entry_1.txt')
-        history_attrs_file = os.path.join(tempdir, 'history_attrs.txt')
-        datasets_attrs_file = os.path.join(tempdir, 'datasets_attrs.txt')
-        jobs_attrs_file = os.path.join(tempdir, 'jobs_attrs.txt')
-        os.makedirs(os.path.join(tempdir, 'datasets'))
-        with open(dataset, 'w') as out:
-            out.write('Hello\n')
-        with open(history_attrs_file, 'w') as out:
+        dataset = os.path.join(tempdir, "datasets/Pasted_Entry_1.txt")
+        history_attrs_file = os.path.join(tempdir, "history_attrs.txt")
+        datasets_attrs_file = os.path.join(tempdir, "datasets_attrs.txt")
+        jobs_attrs_file = os.path.join(tempdir, "jobs_attrs.txt")
+        os.makedirs(os.path.join(tempdir, "datasets"))
+        with open(dataset, "w") as out:
+            out.write("Hello\n")
+        with open(history_attrs_file, "w") as out:
             out.write(HISTORY_ATTRS)
-        with open(datasets_attrs_file, 'w') as out:
+        with open(datasets_attrs_file, "w") as out:
             out.write(DATASETS_ATTRS_EXPORT.format(file_name=dataset))
-        with open(jobs_attrs_file, 'w') as out:
+        with open(jobs_attrs_file, "w") as out:
             out.write(JOBS_ATTRS)
         create_archive(tempdir, out_file, gzip=True)
         with tarfile.open(out_file) as t:
-            assert sorted(t.getnames()) == sorted(['datasets', 'datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']), t.getnames()
+            assert sorted(t.getnames()) == sorted(
+                ["datasets", "datasets/Pasted_Entry_1.txt", "history_attrs.txt", "datasets_attrs.txt", "jobs_attrs.txt"]
+            ), t.getnames()
 
 
 def test_history_import_symlink():
-    """ Ensure a history containing a dataset that is a symlink cannot be imported
-    """
+    """Ensure a history containing a dataset that is a symlink cannot be imported"""
     with HistoryArchive() as history_archive:
         history_archive.write_metafiles()
-        history_archive.write_link('datasets/Pasted_Entry_1.txt', '../target.txt')
-        history_archive.write_file('target.txt', 'insecure')
-        _run_jihaw_cleanup_check_secure(history_archive, 'Symlink dataset in import archive allowed')
+        history_archive.write_link("datasets/Pasted_Entry_1.txt", "../target.txt")
+        history_archive.write_file("target.txt", "insecure")
+        _run_jihaw_cleanup_check_secure(history_archive, "Symlink dataset in import archive allowed")
 
 
 def test_history_import_relpath_in_metadata():
-    """ Ensure that dataset_attrs.txt cannot contain a relative path outside the archive
-    """
+    """Ensure that dataset_attrs.txt cannot contain a relative path outside the archive"""
     with HistoryArchive() as history_archive:
-        history_archive.write_metafiles(dataset_file_name='../outside.txt')
-        history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
+        history_archive.write_metafiles(dataset_file_name="../outside.txt")
+        history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.write_outside()
-        _run_jihaw_cleanup_check_secure(history_archive, 'Relative parent path in datasets_attrs.txt allowed')
+        _run_jihaw_cleanup_check_secure(history_archive, "Relative parent path in datasets_attrs.txt allowed")
 
 
 def test_history_import_abspath_in_metadata():
-    """ Ensure that dataset_attrs.txt cannot contain a absolute path outside the archive
-    """
+    """Ensure that dataset_attrs.txt cannot contain a absolute path outside the archive"""
     with HistoryArchive() as history_archive:
-        history_archive.write_metafiles(
-            dataset_file_name=os.path.join(history_archive.temp_directory, 'outside.txt'))
-        history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
+        history_archive.write_metafiles(dataset_file_name=os.path.join(history_archive.temp_directory, "outside.txt"))
+        history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.write_outside()
-        _run_jihaw_cleanup_check_secure(history_archive, 'Absolute path in datasets_attrs.txt allowed')
+        _run_jihaw_cleanup_check_secure(history_archive, "Absolute path in datasets_attrs.txt allowed")
 
 
 def test_export_dataset():
@@ -123,12 +122,12 @@ def test_export_dataset():
     d1_source.source_uri = "http://google.com/mycooldata.txt"
     d1.dataset.sources.append(d1_source)
 
-    d1.state = d2.state = 'ok'
+    d1.state = d2.state = "ok"
 
     j = model.Job()
     j.user = h.user
     j.tool_id = "cat1"
-    j.state = 'ok'
+    j.state = "ok"
 
     j.add_input_dataset("input1", d1)
     j.add_output_dataset("out_file1", d2)
@@ -154,8 +153,8 @@ def test_export_dataset():
     assert imported_job.input_datasets
     assert imported_job.input_datasets[0].dataset == datasets[0]
 
-    assert datasets[0].state == 'ok'
-    assert datasets[1].state == 'ok'
+    assert datasets[0].state == "ok"
+    assert datasets[1].state == "ok"
     assert len(datasets[0].dataset.hashes) == 1
     dataset_hash = datasets[0].dataset.hashes[0]
     assert dataset_hash.hash_function == "MD5"
@@ -215,7 +214,7 @@ def test_export_dataset_with_deleted_and_purged():
     datasets = list(imported_history.contents_iter(types=["dataset"]))
     assert len(datasets) == 1
 
-    assert datasets[0].state == 'discarded'
+    assert datasets[0].state == "discarded"
     assert datasets[0].deleted
     assert datasets[0].dataset.deleted
     assert datasets[0].creating_job
@@ -288,8 +287,12 @@ def test_export_collection_history():
     hc2 = model.HistoryDatasetCollectionAssociation(history=h, hid=2, collection=c2, name="HistoryCollectionTest2")
 
     cleaf = model.DatasetCollection(collection_type="paired")
-    dce2leaf1 = model.DatasetCollectionElement(collection=cleaf, element=d3, element_identifier="forward", element_index=0)
-    dce2leaf2 = model.DatasetCollectionElement(collection=cleaf, element=d4, element_identifier="reverse", element_index=1)
+    dce2leaf1 = model.DatasetCollectionElement(
+        collection=cleaf, element=d3, element_identifier="forward", element_index=0
+    )
+    dce2leaf2 = model.DatasetCollectionElement(
+        collection=cleaf, element=d4, element_identifier="reverse", element_index=1
+    )
 
     dce21 = model.DatasetCollectionElement(collection=c2, element=cleaf, element_identifier="listel", element_index=0)
 
@@ -622,7 +625,12 @@ def _assert_distinct(list_):
 
 
 def _create_datasets(sa_session, history, n, extension="txt"):
-    return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
+    return [
+        model.HistoryDatasetAssociation(
+            extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1
+        )
+        for i in range(n)
+    ]
 
 
 def _setup_history_for_export(history_name):
@@ -651,6 +659,7 @@ def _import_export(app, h, dest_export=None):
     wrapper.setup_job(h, jeha.temp_directory)
 
     from galaxy.tools.imp_exp import export_history
+
     ret = export_history.main(["--gzip", jeha.temp_directory, dest_export])
     assert ret == 0, ret
 
@@ -660,7 +669,7 @@ def _import_export(app, h, dest_export=None):
 
 
 def test_import_1901_default():
-    app, new_history = import_archive(t_data_path('exports/1901_two_datasets.tgz'))
+    app, new_history = import_archive(t_data_path("exports/1901_two_datasets.tgz"))
     assert new_history
 
     datasets = new_history.datasets
@@ -672,11 +681,10 @@ def test_import_1901_default():
     # There was a deleted dataset so skip to 3
     assert dataset1.hid == 3, dataset1.hid
 
-    jobs = app.model.context.query(model.Job) \
-        .filter_by(history_id=new_history.id).order_by(model.Job.table.c.id).all()
+    jobs = app.model.context.query(model.Job).filter_by(history_id=new_history.id).order_by(model.Job.table.c.id).all()
     assert len(jobs) == 2
-    assert jobs[0].tool_id == 'upload1'
-    assert jobs[1].tool_id == 'cat'
+    assert jobs[0].tool_id == "upload1"
+    assert jobs[1].tool_id == "cat"
 
     cat_job = jobs[1]
     assert len(cat_job.input_datasets) == 2
@@ -690,18 +698,18 @@ def test_import_1901_default():
     # Not sure these shouldn't be {"values": [{"src": "hda", "id": dataset0.id}]}
     # but parameter processing for pre-19.05 exports/imports didn't work anyway so
     # perhaps not a problem?
-    input1_param = json.loads(param_dict['input1'])
+    input1_param = json.loads(param_dict["input1"])
     assert input1_param["src"] == "hda"
     assert input1_param["id"] == dataset0.id
 
-    input2_param = json.loads(param_dict['queries'])[0]['input2']
+    input2_param = json.loads(param_dict["queries"])[0]["input2"]
     assert input2_param["src"] == "hda"
     assert input2_param["id"] == dataset0.id
 
 
 def import_archive(archive_path, app=None):
     dest_parent = tempfile.mkdtemp()
-    dest_dir = os.path.join(dest_parent, 'dest')
+    dest_dir = os.path.join(dest_parent, "dest")
 
     options = Mock()
     options.is_url = False
@@ -715,8 +723,8 @@ def import_archive(archive_path, app=None):
 
 
 def _run_unpack(history_archive, dest_parent, msg):
-    dest_dir = os.path.join(dest_parent, 'dest')
-    insecure_dir = os.path.join(dest_parent, 'insecure')
+    dest_dir = os.path.join(dest_parent, "dest")
+    insecure_dir = os.path.join(dest_parent, "insecure")
     os.makedirs(dest_dir)
     options = Mock()
     options.is_url = False
@@ -731,39 +739,39 @@ def _run_unpack(history_archive, dest_parent, msg):
 
 
 def test_history_import_relpath_in_archive():
-    """ Ensure that a history import archive cannot reference a relative path
+    """Ensure that a history import archive cannot reference a relative path
     outside the archive
     """
     dest_parent = tempfile.mkdtemp()
-    with HistoryArchive(arcname_prefix='../insecure') as history_archive:
+    with HistoryArchive(arcname_prefix="../insecure") as history_archive:
 
         history_archive.write_metafiles()
-        history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
+        history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.finalize()
-        _run_unpack(history_archive, dest_parent, 'Relative parent path in import archive allowed')
+        _run_unpack(history_archive, dest_parent, "Relative parent path in import archive allowed")
 
 
 def test_history_import_abspath_in_archive():
-    """ Ensure that a history import archive cannot reference a absolute path
+    """Ensure that a history import archive cannot reference a absolute path
     outside the archive
     """
     dest_parent = tempfile.mkdtemp()
-    arcname_prefix = os.path.abspath(os.path.join(dest_parent, 'insecure'))
+    arcname_prefix = os.path.abspath(os.path.join(dest_parent, "insecure"))
 
     with HistoryArchive(arcname_prefix=arcname_prefix) as history_archive:
         history_archive.write_metafiles()
-        history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
+        history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.finalize()
-        _run_unpack(history_archive, dest_parent, 'Absolute path in import archive allowed')
+        _run_unpack(history_archive, dest_parent, "Absolute path in import archive allowed")
 
 
 class HistoryArchive:
     def __init__(self, arcname_prefix=None):
         self.temp_directory = tempfile.mkdtemp()
-        self.arc_directory = os.path.join(self.temp_directory, 'archive')
+        self.arc_directory = os.path.join(self.temp_directory, "archive")
         self.arcname_prefix = arcname_prefix
-        self.tar_file_path = os.path.join(self.temp_directory, 'archive.tar.gz')
-        self.tar_file = tarfile.open(self.tar_file_path, 'w:gz')
+        self.tar_file_path = os.path.join(self.temp_directory, "archive.tar.gz")
+        self.tar_file = tarfile.open(self.tar_file_path, "w:gz")
         os.makedirs(self.arc_directory)
 
     def __enter__(self):
@@ -782,27 +790,26 @@ class HistoryArchive:
             path = os.path.join(self.arcname_prefix, path)
         return path
 
-    def write_metafiles(self, dataset_file_name='datasets/Pasted_Entry_1.txt'):
-        self.write_file('datasets_attrs.txt',
-                        DATASETS_ATTRS.format(file_name=dataset_file_name))
-        self.write_file('datasets_attrs.txt.provenance', DATASETS_ATTRS_PROVENANCE)
-        self.write_file('history_attrs.txt', HISTORY_ATTRS)
-        self.write_file('jobs_attrs.txt', JOBS_ATTRS)
+    def write_metafiles(self, dataset_file_name="datasets/Pasted_Entry_1.txt"):
+        self.write_file("datasets_attrs.txt", DATASETS_ATTRS.format(file_name=dataset_file_name))
+        self.write_file("datasets_attrs.txt.provenance", DATASETS_ATTRS_PROVENANCE)
+        self.write_file("history_attrs.txt", HISTORY_ATTRS)
+        self.write_file("jobs_attrs.txt", JOBS_ATTRS)
 
-    def write_outside(self, fname='outside.txt', contents='invalid'):
-        with open(os.path.join(self.temp_directory, fname), 'w') as f:
+    def write_outside(self, fname="outside.txt", contents="invalid"):
+        with open(os.path.join(self.temp_directory, fname), "w") as f:
             f.write(contents)
 
     def write_file(self, fname, contents):
         self._create_parent(fname)
         path = os.path.join(self.arc_directory, fname)
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             f.write(contents)
         # TarFile.add() (via TarFile.gettarinfo()) strips leading '/' and is
         # unsuitable for our purposes
-        ti = self.tar_file.gettarinfo(fileobj=open(path, 'rb'))
+        ti = self.tar_file.gettarinfo(fileobj=open(path, "rb"))
         ti.name = self._arcname(fname)
-        self.tar_file.addfile(ti, fileobj=open(path, 'rb'))
+        self.tar_file.addfile(ti, fileobj=open(path, "rb"))
 
     def write_link(self, fname, target):
         self._create_parent(fname)

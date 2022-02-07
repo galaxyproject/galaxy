@@ -31,6 +31,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     ModelClassField,
 )
@@ -170,6 +171,7 @@ ContentsUrlField = Field(
 
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
+
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
@@ -177,22 +179,24 @@ class Model(BaseModel):
 
 class UserModel(Model):
     """User in a transaction context."""
-    id: EncodedDatabaseIdField = Field(title='ID', description='User ID')
-    username: str = Field(title='Username', description='User username')
-    email: str = Field(title='Email', description='User email')
-    active: bool = Field(title='Active', description='User is active')
-    deleted: bool = Field(title='Deleted', description='User is deleted')
-    last_password_change: datetime = Field(title='Last password change', description='')
+
+    id: EncodedDatabaseIdField = Field(title="ID", description="User ID")
+    username: str = Field(title="Username", description="User username")
+    email: str = Field(title="Email", description="User email")
+    active: bool = Field(title="Active", description="User is active")
+    deleted: bool = Field(title="Deleted", description="User is deleted")
+    last_password_change: datetime = Field(title="Last password change", description="")
     model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
 
 
 class GroupModel(BaseModel):
     """User group model"""
+
     model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = Field(
         ...,  # Required
-        title='ID',
-        description='Encoded group ID',
+        title="ID",
+        description="Encoded group ID",
     )
     name: str = Field(
         ...,  # Required
@@ -203,6 +207,7 @@ class GroupModel(BaseModel):
 
 class JobSourceType(str, Enum):
     """Available types of job sources (model classes) that produce dataset collections."""
+
     Job = "Job"
     ImplicitCollectionJobs = "ImplicitCollectionJobs"
     WorkflowInvocation = "WorkflowInvocation"
@@ -210,18 +215,21 @@ class JobSourceType(str, Enum):
 
 class HistoryContentType(str, Enum):
     """Available types of History contents."""
+
     dataset = "dataset"
     dataset_collection = "dataset_collection"
 
 
 class HistoryImportArchiveSourceType(str, Enum):
     """Available types of History archive sources."""
+
     url = "url"
     file = "file"
 
 
 class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
     """Available types of dataset collection elements."""
+
     hda = "hda"
     dataset_collection = "dataset_collection"
 
@@ -257,6 +265,7 @@ class TagItem(ConstrainedStr):
 
 class TagCollection(Model):
     """Represents the collection of tags associated with an item."""
+
     __root__: List[TagItem] = Field(
         default=...,
         title="Tags",
@@ -266,6 +275,7 @@ class TagCollection(Model):
 
 class MetadataFile(Model):
     """Metadata file associated with a dataset."""
+
     file_type: str = Field(
         ...,
         title="File Type",
@@ -276,6 +286,7 @@ class MetadataFile(Model):
 
 class DatasetPermissions(Model):
     """Role-based permissions for accessing and managing a dataset."""
+
     manage: List[EncodedDatabaseIdField] = Field(
         [],
         title="Management",
@@ -290,11 +301,9 @@ class DatasetPermissions(Model):
 
 class Hyperlink(Model):
     """Represents some text with an Hyperlink."""
+
     target: str = Field(
-        ...,
-        title="Target",
-        description="Specifies where to open the linked document.",
-        example="_blank"
+        ..., title="Target", description="Specifies where to open the linked document.", example="_blank"
     )
     href: AnyUrl = Field(
         ...,
@@ -310,6 +319,7 @@ class Hyperlink(Model):
 
 class DisplayApp(Model):
     """Basic linked information about an application that can display certain datatypes."""
+
     label: str = Field(
         ...,
         title="Label",
@@ -329,6 +339,7 @@ class Visualization(Model):  # TODO annotate this model
 
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
+
     id: EncodedDatabaseIdField = EncodedEntityIdField
     name: Optional[str] = Field(
         title="Name",
@@ -359,6 +370,7 @@ class HistoryItemBase(Model):
 
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
+
     class Config:
         extra = Extra.allow
 
@@ -381,6 +393,7 @@ class HistoryItemCommon(HistoryItemBase):
 
 class HDASummary(HistoryItemCommon):
     """History Dataset Association summary information."""
+
     dataset_id: EncodedDatabaseIdField = Field(
         ...,
         title="Dataset ID",
@@ -402,6 +415,7 @@ class HDASummary(HistoryItemCommon):
 
 class HDAInaccessible(HistoryItemBase):
     """History Dataset Association information when the user can not access it."""
+
     accessible: bool = AccessibleField
     state: Dataset.states = DatasetStateField
 
@@ -411,12 +425,13 @@ HdaLddaField = Field(
     const=True,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-    deprecated=False  # TODO Should this field be deprecated in favor of model_class?
+    deprecated=False,  # TODO Should this field be deprecated in favor of model_class?
 )
 
 
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
+
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
@@ -470,7 +485,7 @@ class HDADetailed(HDASummary):
         ...,
         title="Data Type",
         description="The fully qualified name of the class implementing the data type of this dataset.",
-        example="galaxy.datatypes.data.Text"
+        example="galaxy.datatypes.data.Text",
     )
     peek: Optional[str] = Field(
         default=None,
@@ -548,6 +563,7 @@ class HDADetailed(HDASummary):
 
 class HDAExtended(HDADetailed):
     """History Dataset Association extended information."""
+
     tool_version: str = Field(
         ...,
         title="Tool Version",
@@ -567,12 +583,14 @@ class HDAExtended(HDADetailed):
 
 class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
     """History Dataset Association information used in the new Beta History."""
+
     # Equivalent to `betawebclient` serialization view for HDAs
     pass
 
 
 class DCSummary(Model):
     """Dataset Collection summary information."""
+
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = EncodedEntityIdField
     create_time: datetime = CreateTimeField
@@ -585,6 +603,7 @@ class DCSummary(Model):
 
 class HDAObject(Model):
     """History Dataset Association Object"""
+
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
     state: Dataset.states = DatasetStateField
@@ -597,17 +616,19 @@ class HDAObject(Model):
 
 class DCObject(Model):
     """Dataset Collection Object"""
+
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
     contents_url: Optional[RelativeUrl] = ContentsUrlField
-    elements: List['DCESummary'] = ElementsField
+    elements: List["DCESummary"] = ElementsField
 
 
 class DCESummary(Model):
     """Dataset Collection Element summary information."""
+
     id: EncodedDatabaseIdField = EncodedEntityIdField
     model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
     element_index: int = Field(
@@ -637,13 +658,17 @@ DCObject.update_forward_refs()
 
 class DCDetailed(DCSummary):
     """Dataset Collection detailed information."""
+
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
 
 
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
-    model_class: str = ModelClassField(HDCA_MODEL_CLASS_NAME)  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
+
+    model_class: str = ModelClassField(
+        HDCA_MODEL_CLASS_NAME
+    )  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
     type: str = Field(
         "collection",
         const=True,
@@ -669,12 +694,14 @@ class HDCASummary(HistoryItemCommon):
 
 class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
+
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
 
 
 class HistoryBase(BaseModel):
     """Provides basic configuration for all the History models."""
+
     class Config:
         use_enum_values = True  # When using .dict()
         extra = Extra.allow  # Allow any other extra fields
@@ -682,6 +709,7 @@ class HistoryBase(BaseModel):
 
 class UpdateContentItem(HistoryBase):
     """Used for updating a particular HDA. All fields are optional."""
+
     history_content_type: HistoryContentType = Field(
         ...,
         title="Content Type",
@@ -702,12 +730,7 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
     class Config:
         schema_extra = {
             "example": {
-                "items": [
-                    {
-                        "history_content_type": "dataset",
-                        "id": "string"
-                    }
-                ],
+                "items": [{"history_content_type": "dataset", "id": "string"}],
                 "visible": False,
             }
         }
@@ -715,6 +738,7 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
 
 class UpdateHistoryContentsPayload(HistoryBase):
     """Contains arbitrary property values that will be updated for a particular history item."""
+
     class Config:
         schema_extra = {
             "example": {
@@ -726,6 +750,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
 
 class HistorySummary(HistoryBase):
     """History summary information."""
+
     model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = EncodedEntityIdField
     name: str = Field(
@@ -755,6 +780,7 @@ class HistorySummary(HistoryBase):
 
 class HistoryActiveContentCounts(Model):
     """Contains the number of active, deleted or hidden items in a History."""
+
     active: int = Field(
         ...,
         title="Active",
@@ -778,6 +804,7 @@ HistoryStateIds = Dict[Dataset.states, List[EncodedDatabaseIdField]]
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
+
     contents_url: RelativeUrl = ContentsUrlField
     size: int = Field(
         ...,
@@ -832,6 +859,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
 
 class HistoryBeta(HistoryDetailed):
     """History detailed information used in the new Beta History."""
+
     annotation: Optional[str] = AnnotationField
     empty: bool = Field(
         ...,
@@ -839,10 +867,7 @@ class HistoryBeta(HistoryDetailed):
         description="Whether this History has any content.",
     )
     nice_size: str = Field(
-        ...,
-        title="Nice Size",
-        description="Human-readable size of the contents of this history.",
-        example="95.4 MB"
+        ..., title="Nice Size", description="Human-readable size of the contents of this history.", example="95.4 MB"
     )
     purged: bool = Field(
         ...,
@@ -863,7 +888,9 @@ class HistoryBeta(HistoryDetailed):
 
 
 AnyHistoryView = Union[
-    HistoryBeta, HistoryDetailed, HistorySummary,
+    HistoryBeta,
+    HistoryDetailed,
+    HistorySummary,
     # Any will cover those cases in which only specific `keys` are requested
     # otherwise the validation will fail because the required fields are not returned
     Any,
@@ -907,6 +934,36 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
+class SortByEnum(str, Enum):
+    create_time = "create_time"
+    update_time = "update_time"
+    none = None
+
+
+class InvocationIndexPayload(Model):
+    workflow_id: Optional[DecodedDatabaseIdField] = Field(
+        title="Workflow ID", description="Return only invocations for this Workflow ID"
+    )
+    history_id: Optional[DecodedDatabaseIdField] = Field(
+        title="History ID", description="Return only invocations for this History ID"
+    )
+    job_id: Optional[DecodedDatabaseIdField] = Field(
+        title="Job ID", description="Return only invocations for this Job ID"
+    )
+    user_id: Optional[DecodedDatabaseIdField] = Field(
+        title="User ID", description="Return invocations for this User ID"
+    )
+    sort_by: Optional[SortByEnum] = Field(title="Sort By", description="Sort Workflow Invocations by this attribute")
+    sort_desc: bool = Field(default=False, descritpion="Sort in descending order?")
+    include_terminal: bool = Field(default=True, description="Set to false to only include terminal Invocations.")
+    limit: Optional[int] = Field(
+        default=100,
+        lt=1000,
+    )
+    offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
+    instance: bool = Field(default=False, description="Is provided workflow id for Workflow instead of StoredWorkflow?")
+
+
 class CreateHistoryPayload(Model):
     name: Optional[str] = Field(
         default=None,
@@ -917,24 +974,20 @@ class CreateHistoryPayload(Model):
         default=None,
         title="History ID",
         description=(
-            "The encoded ID of the history to copy. "
-            "Provide this value only if you want to copy an existing history."
+            "The encoded ID of the history to copy. " "Provide this value only if you want to copy an existing history."
         ),
     )
     all_datasets: Optional[bool] = Field(
         default=True,
         title="All Datasets",
         description=(
-            "Whether to copy also deleted HDAs/HDCAs. Only applies when "
-            "providing a `history_id` to copy from."
+            "Whether to copy also deleted HDAs/HDCAs. Only applies when " "providing a `history_id` to copy from."
         ),
     )
     archive_source: Optional[str] = Field(
         default=None,
         title="Archive Source",
-        description=(
-            "The URL that will generate the archive to import when `archive_type='url'`. "
-        ),
+        description=("The URL that will generate the archive to import when `archive_type='url'`. "),
     )
     archive_type: Optional[HistoryImportArchiveSourceType] = Field(
         default=HistoryImportArchiveSourceType.url,
@@ -965,7 +1018,7 @@ class CollectionElementIdentifier(Model):
         description="The encoded ID of the element.",
     )
     collection_type: Optional[CollectionType] = CollectionTypeField
-    element_identifiers: Optional[List['CollectionElementIdentifier']] = Field(
+    element_identifiers: Optional[List["CollectionElementIdentifier"]] = Field(
         default=None,
         title="Element Identifiers",
         description="List of elements that should be in the new sub-collection.",
@@ -1068,6 +1121,7 @@ class JobExportHistoryArchiveCollection(Model):
 
 class LabelValuePair(BaseModel):
     """Generic Label/Value pair model."""
+
     label: str = Field(
         ...,
         title="Label",
@@ -1099,6 +1153,7 @@ class CustomBuildsMetadataResponse(BaseModel):
 
 class JobIdResponse(BaseModel):
     """Contains the ID of the job associated with a particular request."""
+
     job_id: EncodedDatabaseIdField = Field(
         ...,
         title="Job ID",
@@ -1108,6 +1163,7 @@ class JobIdResponse(BaseModel):
 
 class HDCJobStateSummary(Model):
     """Overview of the job states working inside a dataset collection."""
+
     all_jobs: int = Field(
         0,
         title="All jobs",
@@ -1177,6 +1233,7 @@ class HDCJobStateSummary(Model):
 
 class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriate one.
     """History Dataset Collection Association information used in the new Beta History."""
+
     # Equivalent to `betawebclient` serialization view for HDCAs
     collection_id: EncodedDatabaseIdField = Field(
         # TODO: inconsistency? the equivalent counterpart for HDAs, `dataset_id`, is declared in `HDASummary` scope
@@ -1191,8 +1248,7 @@ class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriat
         description="Overview of the job states working inside the dataset collection.",
     )
     elements_datatypes: Set[str] = Field(
-        ...,
-        description="A set containing all the different element datatypes in the collection."
+        ..., description="A set containing all the different element datatypes in the collection."
     )
 
 
@@ -1225,7 +1281,7 @@ class JobBaseModel(Model):
         ...,
         title="Galaxy Version",
         description="The (major) version of Galaxy used to create this job.",
-        example="21.05"
+        example="21.05",
     )
 
 
@@ -1242,11 +1298,7 @@ class JobStateSummary(Model):
     model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     states: Dict[Job.states, int] = Field(
-        {},
-        title="States",
-        description=(
-            "A dictionary of job states and the number of jobs in that state."
-        )
+        {}, title="States", description=("A dictionary of job states and the number of jobs in that state.")
     )
 
 
@@ -1260,13 +1312,13 @@ class WorkflowInvocationStateSummary(JobStateSummary):
 
 class JobSummary(JobBaseModel):
     """Basic information about a job."""
+
     external_id: Optional[str] = Field(
         None,
         title="External ID",
         description=(
-            "The job id used by the external job runner (Condor, Pulsar, etc.)"
-            "Only administrator can see this value."
-        )
+            "The job id used by the external job runner (Condor, Pulsar, etc.)" "Only administrator can see this value."
+        ),
     )
     command_line: Optional[str] = Field(
         None,
@@ -1356,13 +1408,14 @@ class JobMetric(Model):
                 "value": "2021-02-25 14:55:40",
                 "plugin": "core",
                 "name": "start_epoch",
-                "raw_value": "1614261340.0000000"
+                "raw_value": "1614261340.0000000",
             }
         }
 
 
 class JobMetricCollection(Model):
     """Represents a collection of metrics associated with a Job."""
+
     __root__: List[JobMetric] = Field(
         [],
         title="Job Metrics",
@@ -1521,6 +1574,7 @@ class InputStep(BaseModel):
 
 class WorkflowModuleType(str, Enum):
     """Available types of modules that represent a step in a Workflow."""
+
     data_input = "data_input"
     data_collection_input = "data_collection_input"
     parameter_input = "parameter_input"
@@ -1533,104 +1587,69 @@ class WorkflowStepBase(BaseModel):
     id: int = Field(
         ...,
         title="ID",
-        description="The identifier of the step. It matches the index order of the step inside the workflow."
+        description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
-    type: WorkflowModuleType = Field(
-        ...,
-        title="Type",
-        description="The type of workflow module."
-    )
+    type: WorkflowModuleType = Field(..., title="Type", description="The type of workflow module.")
     annotation: Optional[str] = AnnotationField
     input_steps: Dict[str, InputStep] = Field(
         ...,
         title="Input Steps",
-        description="A dictionary containing information about the inputs connected to this workflow step."
+        description="A dictionary containing information about the inputs connected to this workflow step.",
     )
 
 
 class ToolBasedWorkflowStep(WorkflowStepBase):
     tool_id: Optional[str] = Field(
-        None,
-        title="Tool ID",
-        description="The unique name of the tool associated with this step."
+        None, title="Tool ID", description="The unique name of the tool associated with this step."
     )
     tool_version: Optional[str] = Field(
-        None,
-        title="Tool Version",
-        description="The version of the tool associated with this step."
+        None, title="Tool Version", description="The version of the tool associated with this step."
     )
-    tool_inputs: Any = Field(
-        ...,
-        title="Tool Inputs",
-        description="TODO"
-    )
+    tool_inputs: Any = Field(..., title="Tool Inputs", description="TODO")
 
 
 class InputDataStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_input, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.data_input, const=True, title="Type", description="The type of workflow module."
     )
 
 
 class InputDataCollectionStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_collection_input, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.data_collection_input, const=True, title="Type", description="The type of workflow module."
     )
 
 
 class InputParameterStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.parameter_input, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.parameter_input, const=True, title="Type", description="The type of workflow module."
     )
 
 
 class PauseStep(WorkflowStepBase):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.pause, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.pause, const=True, title="Type", description="The type of workflow module."
     )
 
 
 class ToolStep(ToolBasedWorkflowStep):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.tool, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.tool, const=True, title="Type", description="The type of workflow module."
     )
 
 
 class SubworkflowStep(WorkflowStepBase):
     type: WorkflowModuleType = Field(
-        WorkflowModuleType.subworkflow, const=True,
-        title="Type",
-        description="The type of workflow module."
+        WorkflowModuleType.subworkflow, const=True, title="Type", description="The type of workflow module."
     )
     workflow_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Workflow ID",
-        description="The encoded ID of the workflow that will be run on this step."
+        ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
     )
 
 
 class Creator(BaseModel):
-    class_: str = Field(
-        ...,
-        alias="class",
-        title="Class",
-        description="The class representing this creator."
-    )
-    name: str = Field(
-        ...,
-        title="Name",
-        description="The name of the creator."
-    )
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
+    name: str = Field(..., title="Name", description="The name of the creator.")
     address: Optional[str] = Field(
         None,
         title="Address",
@@ -1649,11 +1668,7 @@ class Creator(BaseModel):
         alias="faxNumber",
         title="Fax Number",
     )
-    identifier: Optional[str] = Field(
-        None,
-        title="Identifier",
-        description="Identifier (typically an orcid.org ID)"
-    )
+    identifier: Optional[str] = Field(None, title="Identifier", description="Identifier (typically an orcid.org ID)")
     image: Optional[AnyHttpUrl] = Field(
         None,
         title="Image URL",
@@ -1699,10 +1714,7 @@ class Person(Creator):
         description="Honorific Prefix (e.g. Dr/Mrs/Mr)",
     )
     honorific_suffix: Optional[str] = Field(
-        None,
-        alias="honorificSuffix",
-        title="Honorific Suffix",
-        description="Honorific Suffix (e.g. M.D.)"
+        None, alias="honorificSuffix", title="Honorific Suffix", description="Honorific Suffix (e.g. M.D.)"
     )
     job_title: Optional[str] = Field(
         None,
@@ -1714,28 +1726,21 @@ class Person(Creator):
 class StoredWorkflowDetailed(StoredWorkflowSummary):
     annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
     license: Optional[str] = Field(
-        None,
-        title="License",
-        description="SPDX Identifier of the license associated with this workflow."
+        None, title="License", description="SPDX Identifier of the license associated with this workflow."
     )
     version: int = Field(
-        ...,
-        title="Version",
-        description="The version of the workflow represented by an incremental number."
+        ..., title="Version", description="The version of the workflow represented by an incremental number."
     )
     inputs: Dict[int, WorkflowInput] = Field(
-        {},
-        title="Inputs",
-        description="A dictionary containing information about all the inputs of the workflow."
+        {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
     )
     creator: Optional[List[Union[Person, Organization]]] = Field(
         None,
         title="Creator",
-        description=(
-            "Additional information about the creator (or multiple creators) of this workflow."
-        )
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
     )
-    steps: Dict[int,
+    steps: Dict[
+        int,
         Union[
             InputDataStep,
             InputDataCollectionStep,
@@ -1743,48 +1748,22 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
             PauseStep,
             ToolStep,
             SubworkflowStep,
-        ]
-    ] = Field(
-        {},
-        title="Steps",
-        description="A dictionary with information about all the steps of the workflow."
-    )
+        ],
+    ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
 
 
 class Input(BaseModel):
-    name: str = Field(
-        ...,
-        title="Name",
-        description="The name of the input."
-    )
-    description: str = Field(
-        ...,
-        title="Description",
-        description="The annotation or description of the input."
-
-    )
+    name: str = Field(..., title="Name", description="The name of the input.")
+    description: str = Field(..., title="Description", description="The annotation or description of the input.")
 
 
 class Output(BaseModel):
-    name: str = Field(
-        ...,
-        title="Name",
-        description="The name of the output."
-    )
-    type: str = Field(
-        ...,
-        title="Type",
-        description="The extension or type of output."
-
-    )
+    name: str = Field(..., title="Name", description="The name of the output.")
+    type: str = Field(..., title="Type", description="The extension or type of output.")
 
 
 class InputConnection(BaseModel):
-    id: int = Field(
-        ...,
-        title="ID",
-        description="The identifier of the input."
-    )
+    id: int = Field(..., title="ID", description="The identifier of the input.")
     output_name: str = Field(
         ...,
         title="Output Name",
@@ -1799,69 +1778,28 @@ class InputConnection(BaseModel):
 
 class WorkflowStepLayoutPosition(BaseModel):
     """Position and dimensions of the workflow step represented by a box on the graph."""
-    bottom: int = Field(
-        ...,
-        title="Bottom",
-        description="Position in pixels of the bottom of the box."
-    )
-    top: int = Field(
-        ...,
-        title="Top",
-        description="Position in pixels of the top of the box."
-    )
-    left: int = Field(
-        ...,
-        title="Left",
-        description="Left margin or left-most position of the box."
-    )
-    right: int = Field(
-        ...,
-        title="Right",
-        description="Right margin or right-most position of the box."
-    )
-    x: int = Field(
-        ...,
-        title="X",
-        description="Horizontal pixel coordinate of the top right corner of the box."
-    )
-    y: int = Field(
-        ...,
-        title="Y",
-        description="Vertical pixel coordinate of the top right corner of the box."
-    )
-    height: int = Field(
-        ...,
-        title="Height",
-        description="Height of the box in pixels."
-    )
-    width: int = Field(
-        ...,
-        title="Width",
-        description="Width of the box in pixels."
-    )
+
+    bottom: int = Field(..., title="Bottom", description="Position in pixels of the bottom of the box.")
+    top: int = Field(..., title="Top", description="Position in pixels of the top of the box.")
+    left: int = Field(..., title="Left", description="Left margin or left-most position of the box.")
+    right: int = Field(..., title="Right", description="Right margin or right-most position of the box.")
+    x: int = Field(..., title="X", description="Horizontal pixel coordinate of the top right corner of the box.")
+    y: int = Field(..., title="Y", description="Vertical pixel coordinate of the top right corner of the box.")
+    height: int = Field(..., title="Height", description="Height of the box in pixels.")
+    width: int = Field(..., title="Width", description="Width of the box in pixels.")
 
 
 class WorkflowStepToExportBase(BaseModel):
     id: int = Field(
         ...,
         title="ID",
-        description="The identifier of the step. It matches the index order of the step inside the workflow."
+        description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
-    type: str = Field(
-        ...,
-        title="Type",
-        description="The type of workflow module."
-    )
-    name: str = Field(
-        ...,
-        title="Name",
-        description="The descriptive name of the module or step."
-    )
+    type: str = Field(..., title="Type", description="The type of workflow module.")
+    name: str = Field(..., title="Name", description="The descriptive name of the module or step.")
     annotation: Optional[str] = AnnotationField
     tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
-        None,
-        title="Tool ID",
-        description="The unique name of the tool associated with this step."
+        None, title="Tool ID", description="The unique name of the tool associated with this step."
     )
     uuid: UUID4 = Field(
         ...,
@@ -1893,22 +1831,16 @@ class WorkflowStepToExportBase(BaseModel):
         description="Layout position of this step in the graph",
     )
     workflow_outputs: List[WorkflowOutput] = Field(
-        [],
-        title="Workflow Outputs",
-        description="The version of the tool associated with this step."
+        [], title="Workflow Outputs", description="The version of the tool associated with this step."
     )
 
 
 class WorkflowStepToExport(WorkflowStepToExportBase):
     content_id: Optional[str] = Field(  # Duplicate of `tool_id` or viceversa?
-        None,
-        title="Content ID",
-        description="TODO"
+        None, title="Content ID", description="TODO"
     )
     tool_version: Optional[str] = Field(
-        None,
-        title="Tool Version",
-        description="The version of the tool associated with this step."
+        None, title="Tool Version", description="The version of the tool associated with this step."
     )
     tool_state: Json = Field(
         ...,
@@ -1965,42 +1897,30 @@ class PostJobAction(BaseModel):
 
 class WorkflowToolStepToExport(WorkflowStepToExportBase):
     tool_shed_repository: ToolShedRepositorySummary = Field(
-        ...,
-        title="Tool Shed Repository",
-        description="Information about the origin repository of this tool."
+        ..., title="Tool Shed Repository", description="Information about the origin repository of this tool."
     )
     post_job_actions: Dict[str, PostJobAction] = Field(
-        ...,
-        title="Post-job Actions",
-        description="Set of actions that will be run when the job finish."
+        ..., title="Post-job Actions", description="Set of actions that will be run when the job finish."
     )
 
 
 class SubworkflowStepToExport(WorkflowStepToExportBase):
-    subworkflow: 'WorkflowToExport' = Field(
-        ...,
-        title="Subworkflow",
-        description="Full information about the subworkflow associated with this step."
+    subworkflow: "WorkflowToExport" = Field(
+        ..., title="Subworkflow", description="Full information about the subworkflow associated with this step."
     )
 
 
 class WorkflowToExport(BaseModel):
     a_galaxy_workflow: str = Field(  # Is this meant to be a bool instead?
-        "true",
-        title="Galaxy Workflow",
-        description="Whether this workflow is a Galaxy Workflow."
+        "true", title="Galaxy Workflow", description="Whether this workflow is a Galaxy Workflow."
     )
     format_version: str = Field(
         "0.1",
         alias="format-version",  # why this field uses `-` instead of `_`?
         title="Galaxy Workflow",
-        description="Whether this workflow is a Galaxy Workflow."
+        description="Whether this workflow is a Galaxy Workflow.",
     )
-    name: str = Field(
-        ...,
-        title="Name",
-        description="The name of the workflow."
-    )
+    name: str = Field(..., title="Name", description="The name of the workflow.")
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
     uuid: Optional[UUID4] = Field(
@@ -2011,24 +1931,16 @@ class WorkflowToExport(BaseModel):
     creator: Optional[List[Union[Person, Organization]]] = Field(
         None,
         title="Creator",
-        description=(
-            "Additional information about the creator (or multiple creators) of this workflow."
-        )
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
     )
     license: Optional[str] = Field(
-        None,
-        title="License",
-        description="SPDX Identifier of the license associated with this workflow."
+        None, title="License", description="SPDX Identifier of the license associated with this workflow."
     )
     version: int = Field(
-        ...,
-        title="Version",
-        description="The version of the workflow represented by an incremental number."
+        ..., title="Version", description="The version of the workflow represented by an incremental number."
     )
     steps: Dict[int, Union[SubworkflowStepToExport, WorkflowToolStepToExport, WorkflowStepToExport]] = Field(
-        {},
-        title="Steps",
-        description="A dictionary with information about all the steps of the workflow."
+        {}, title="Steps", description="A dictionary with information about all the steps of the workflow."
     )
 
 
@@ -2078,6 +1990,7 @@ class GroupRoleModel(BaseModel):
 
 class GroupRoleListModel(BaseModel):
     __root__: List[GroupRoleModel]
+
 
 # Libraries -----------------------------------------------------------------
 
@@ -2158,7 +2071,7 @@ class LibrarySummary(LibraryLegacySummary):
 class LibrarySummaryList(BaseModel):
     __root__: List[LibrarySummary] = Field(
         default=[],
-        title='List with summary information of Libraries.',
+        title="List with summary information of Libraries.",
     )
 
 
@@ -2229,7 +2142,9 @@ class LibraryCurrentPermissions(BaseModel):
     )
 
 
-RoleIdList = Union[List[EncodedDatabaseIdField], EncodedDatabaseIdField]  # Should we support just List[EncodedDatabaseIdField] in the future?
+RoleIdList = Union[
+    List[EncodedDatabaseIdField], EncodedDatabaseIdField
+]  # Should we support just List[EncodedDatabaseIdField] in the future?
 
 
 class LegacyLibraryPermissionsPayload(BaseModel):
@@ -2302,6 +2217,7 @@ class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
 
 
 # Library Folders -----------------------------------------------------------------
+
 
 class LibraryFolderPermissionAction(str, Enum):
     set_permissions = "set_permissions"
@@ -2486,6 +2402,7 @@ class CustomHistoryItem(Model):
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
+
     class Config:
         extra = Extra.allow
 
@@ -2525,6 +2442,7 @@ class DeleteHistoryContentResult(CustomHistoryItem):
     """Contains minimum information about the deletion state of a history item.
 
     Can also contain any other properties of the item."""
+
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2551,12 +2469,14 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
 
     This is used for debugging purposes.
     """
+
     # TODO: Use Tuple again when https://github.com/tiangolo/fastapi/issues/3665 is fixed upstream
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
 class ContentsNearStats(BaseModel):
     """Stats used by the `contents_near` endpoint."""
+
     matches: int
     matches_up: int
     matches_down: int
@@ -2583,6 +2503,7 @@ class HistoryContentsResult(Model):
     """Collection of history content items.
     Can contain different views and kinds of items.
     """
+
     __root__: List[AnyHistoryContentItem]
 
 
@@ -2596,6 +2517,7 @@ class ContentsNearResult(BaseModel):
 
 class SharingOptions(str, Enum):
     """Options for sharing resources that may have restricted access to all or part of their contents."""
+
     make_public = "make_public"
     make_accessible_to_shared = "make_accessible_to_shared"
     no_changes = "no_changes"
@@ -2620,8 +2542,7 @@ class ShareWithPayload(BaseModel):
         ...,
         title="User Identifiers",
         description=(
-            "A collection of encoded IDs (or email addresses) of users "
-            "that this resource will be shared with."
+            "A collection of encoded IDs (or email addresses) of users " "that this resource will be shared with."
         ),
     )
     share_option: Optional[SharingOptions] = Field(
@@ -2732,10 +2653,9 @@ class ShareHistoryExtra(ShareWithExtra):
     accessible_count: int = Field(
         0,
         title="Accessible Count",
-        description=(
-            "The number of datasets in the history that are public or accessible by all the target users."
-        ),
+        description=("The number of datasets in the history that are public or accessible by all the target users."),
     )
+
 
 # Pages -------------------------------------------------------
 
@@ -2856,5 +2776,5 @@ class PageDetails(PageSummary):
 class PageSummaryList(BaseModel):
     __root__: List[PageSummary] = Field(
         default=[],
-        title='List with summary information of Pages.',
+        title="List with summary information of Pages.",
     )

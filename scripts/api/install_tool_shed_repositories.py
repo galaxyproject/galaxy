@@ -24,45 +24,68 @@ from common import submit
 def main(options):
     """Collect all user data and install the tools via the Galaxy API."""
     data = {}
-    data['tool_shed_url'] = options.tool_shed_url
-    data['name'] = options.name
-    data['owner'] = options.owner
+    data["tool_shed_url"] = options.tool_shed_url
+    data["name"] = options.name
+    data["owner"] = options.owner
     if options.changeset_revision:
-        data['changeset_revision'] = options.changeset_revision
+        data["changeset_revision"] = options.changeset_revision
     else:
         # If the changeset_revision is not specified, default to the latest installable revision.
         revision_data = {}
-        revision_data['tool_shed_url'] = options.tool_shed_url.rstrip('/')
-        revision_data['name'] = options.name
-        revision_data['owner'] = options.owner
-        revision_url = '{}{}'.format(options.local_url.rstrip('/'), '/api/tool_shed_repositories/get_latest_installable_revision')
-        latest_installable_revision = submit(options.api,
-                                             revision_url,
-                                             revision_data,
-                                             return_formatted=False)
-        data['changeset_revision'] = latest_installable_revision
+        revision_data["tool_shed_url"] = options.tool_shed_url.rstrip("/")
+        revision_data["name"] = options.name
+        revision_data["owner"] = options.owner
+        revision_url = "{}{}".format(
+            options.local_url.rstrip("/"), "/api/tool_shed_repositories/get_latest_installable_revision"
+        )
+        latest_installable_revision = submit(options.api, revision_url, revision_data, return_formatted=False)
+        data["changeset_revision"] = latest_installable_revision
     if options.tool_panel_section_id:
-        data['tool_panel_section_id'] = options.tool_panel_section_id
+        data["tool_panel_section_id"] = options.tool_panel_section_id
     elif options.new_tool_panel_section_label:
-        data['new_tool_panel_section_label'] = options.new_tool_panel_section_label
+        data["new_tool_panel_section_label"] = options.new_tool_panel_section_label
     if options.install_repository_dependencies:
-        data['install_repository_dependencies'] = options.install_repository_dependencies
+        data["install_repository_dependencies"] = options.install_repository_dependencies
     if options.install_tool_dependencies:
-        data['install_tool_dependencies'] = options.install_tool_dependencies
-    submit(options.api, '{}{}'.format(options.local_url.rstrip('/'), '/api/tool_shed_repositories/new/install_repository_revision'), data)
+        data["install_tool_dependencies"] = options.install_tool_dependencies
+    submit(
+        options.api,
+        "{}{}".format(options.local_url.rstrip("/"), "/api/tool_shed_repositories/new/install_repository_revision"),
+        data,
+    )
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Installation of tool shed repositories via the Galaxy API.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Installation of tool shed repositories via the Galaxy API.")
     parser.add_argument("-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL")
     parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
     parser.add_argument("-l", "--local", dest="local_url", required=True, help="URL of the galaxy instance.")
     parser.add_argument("-n", "--name", required=True, help="Repository name.")
     parser.add_argument("-o", "--owner", required=True, help="Repository owner.")
     parser.add_argument("-r", "--revision", dest="changeset_revision", help="Repository revision.")
-    parser.add_argument("--panel-section-id", dest="tool_panel_section_id", help="Tool panel section id if you want to add your repository to an existing tool section.")
-    parser.add_argument("--panel-section-name", dest="new_tool_panel_section_label", help="New tool panel section label. If specified a new tool section will be created.")
-    parser.add_argument("--repository-deps", dest="install_repository_dependencies", action="store_true", default=False, help="Install repository dependencies. [False]")
-    parser.add_argument("--tool-deps", dest="install_tool_dependencies", action="store_true", default=False, help="Install tool dependencies. [False]")
+    parser.add_argument(
+        "--panel-section-id",
+        dest="tool_panel_section_id",
+        help="Tool panel section id if you want to add your repository to an existing tool section.",
+    )
+    parser.add_argument(
+        "--panel-section-name",
+        dest="new_tool_panel_section_label",
+        help="New tool panel section label. If specified a new tool section will be created.",
+    )
+    parser.add_argument(
+        "--repository-deps",
+        dest="install_repository_dependencies",
+        action="store_true",
+        default=False,
+        help="Install repository dependencies. [False]",
+    )
+    parser.add_argument(
+        "--tool-deps",
+        dest="install_tool_dependencies",
+        action="store_true",
+        default=False,
+        help="Install tool dependencies. [False]",
+    )
     options = parser.parse_args()
     main(options)

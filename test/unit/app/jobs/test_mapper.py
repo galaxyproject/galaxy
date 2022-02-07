@@ -10,8 +10,10 @@ from galaxy.jobs.mapper import (
     JobRunnerMapper,
 )
 from galaxy.util import bunch
-from . import test_rules
-from . import test_rules_override
+from . import (
+    test_rules,
+    test_rules_override,
+)
 
 WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()
@@ -97,8 +99,9 @@ def test_dynamic_mapping_missing_function():
 
 
 def test_dynamic_mapping_rule_module_override():
-    mapper = __mapper(__dynamic_destination(dict(function="rule_module_override",
-                                                 rules_module=test_rules_override.__name__)))
+    mapper = __mapper(
+        __dynamic_destination(dict(function="rule_module_override", rules_module=test_rules_override.__name__))
+    )
     assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
     assert mapper.job_config.rule_response == "new_rules_package"
 
@@ -106,7 +109,7 @@ def test_dynamic_mapping_rule_module_override():
 def test_dynamic_mapping_externally_set_job_destination():
     mapper = __mapper(__dynamic_destination(dict(function="upload")))
     # Initially, the mapper should not have a cached destination
-    assert not hasattr(mapper, 'cached_job_destination')
+    assert not hasattr(mapper, "cached_job_destination")
     # Overwrite with an externally set job destination
     manually_set_destination = JobDestination(runner="dynamic")
     mapper.cached_job_destination = manually_set_destination
@@ -134,11 +137,7 @@ def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):
     job_wrapper = MockJobWrapper(tool_job_destination)
     job_config = MockJobConfig()
 
-    mapper = JobRunnerMapper(
-        job_wrapper,
-        {},
-        job_config
-    )
+    mapper = JobRunnerMapper(job_wrapper, {}, job_config)
     mapper.rules_module = test_rules
     return mapper
 
@@ -149,7 +148,6 @@ def __dynamic_destination(params=None):
 
 
 class MockJobConfig:
-
     def __init__(self):
         self.rule_response = None
         self.dynamic_params = None
@@ -162,7 +160,6 @@ class MockJobConfig:
 
 
 class MockJobWrapper(HasResourceParameters):
-
     def __init__(self, tool_job_destination):
         self.tool = MockTool(tool_job_destination)
         self.job_id = 12345
@@ -180,24 +177,17 @@ class MockJobWrapper(HasResourceParameters):
         def get_param_values(app, ignore_errors):
             assert app == self.app
             params = raw_params.copy()
-            params["__job_resource"] = {
-                "__job_resource__select": "True",
-                "memory": "8gb"
-            }
+            params["__job_resource"] = {"__job_resource__select": "True", "memory": "8gb"}
             return params
 
         return bunch.Bunch(
-            user=bunch.Bunch(
-                id=6789,
-                email="test@example.com"
-            ),
+            user=bunch.Bunch(id=6789, email="test@example.com"),
             raw_param_dict=lambda: raw_params,
-            get_param_values=get_param_values
+            get_param_values=get_param_values,
         )
 
 
 class MockTool:
-
     def __init__(self, tool_job_destination):
         self.id = "testtoolshed/devteam/tool1/23abcd13123"
         self.call_count = 0

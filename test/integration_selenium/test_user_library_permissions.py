@@ -26,7 +26,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         current_user_import_dir = os.path.join(self.user_import_dir(), email)
         os.makedirs(current_user_import_dir)
         random_filename = self._get_random_name()
-        file = open(f'{current_user_import_dir}/{random_filename}', "w")
+        file = open(f"{current_user_import_dir}/{random_filename}", "w")
         file.write(random_filename)
         file.close()
 

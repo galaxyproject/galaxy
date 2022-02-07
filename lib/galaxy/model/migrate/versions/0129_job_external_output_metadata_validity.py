@@ -4,9 +4,16 @@ Migration script to allow invalidation of job external output metadata temp file
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+)
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -25,5 +32,5 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
-    if migrate_engine.name != 'sqlite':
+    if migrate_engine.name != "sqlite":
         drop_column("is_valid", "job_external_output_metadata", metadata)

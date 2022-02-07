@@ -20,7 +20,10 @@ from fastapi import (
     Request,
 )
 from starlette import status
-from starlette.responses import Response, StreamingResponse
+from starlette.responses import (
+    Response,
+    StreamingResponse,
+)
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
@@ -77,24 +80,16 @@ from . import (
 log = logging.getLogger(__name__)
 
 
-router = Router(tags=['histories'])
+router = Router(tags=["histories"])
 
-HistoryIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title='History ID',
-    description='The ID of the History.'
-)
+HistoryIDPathParam: EncodedDatabaseIdField = Path(..., title="History ID", description="The ID of the History.")
 
 HistoryItemIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title='History Item ID',
-    description='The ID of the item (`HDA`/`HDCA`) contained in the history.'
+    ..., title="History Item ID", description="The ID of the item (`HDA`/`HDCA`) contained in the history."
 )
 
 HistoryHDCAIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title='History Dataset Collection ID',
-    description='The ID of the `HDCA` contained in the history.'
+    ..., title="History Dataset Collection ID", description="The ID of the `HDCA` contained in the history."
 )
 
 ContentTypeQueryParam = Query(
@@ -173,9 +168,7 @@ def get_legacy_index_query_params(
     details: Optional[str] = Query(
         default=None,
         title="Details",
-        description=(
-            "Legacy name for the `dataset_details` parameter."
-        ),
+        description=("Legacy name for the `dataset_details` parameter."),
         deprecated=True,
     ),
     deleted: Optional[bool] = Query(
@@ -224,7 +217,7 @@ def parse_legacy_index_query_params(
     if ids:
         id_list = util.listify(ids)
         # If explicit ids given, always used detailed result.
-        dataset_details = 'all'
+        dataset_details = "all"
     else:
         dataset_details = parse_dataset_details(details)
 
@@ -241,7 +234,7 @@ def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
     dataset_details: Optional[DatasetDetailsType] = None
-    if details and details != 'all':
+    if details and details != "all":
         dataset_details = set(util.listify(details))
     else:  # either None or 'all'
         dataset_details = details  # type: ignore
@@ -281,10 +274,7 @@ def parse_index_jobs_summary_params(
 ) -> HistoryContentsIndexJobsSummaryParams:
     """Parses query parameters for the history contents `index_jobs_summary` operation
     and returns a model containing the values in the correct type."""
-    return HistoryContentsIndexJobsSummaryParams(
-        ids=util.listify(ids),
-        types=util.listify(types)
-    )
+    return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
 
 
 def parse_content_filter_params(
@@ -299,8 +289,8 @@ def parse_content_filter_params(
     Currently used by the `contents_near` endpoint. The `exclude` set can contain
     names of parameters that will be ignored and not added to the filters.
     """
-    DEFAULT_OP = 'eq'
-    splitchar = '-'
+    DEFAULT_OP = "eq"
+    splitchar = "-"
 
     exclude = exclude or set()
     result = []
@@ -321,13 +311,13 @@ class FastAPIHistoryContents:
     service: HistoriesContentsService = depends(HistoriesContentsService)
 
     @router.get(
-        '/api/histories/{history_id}/contents/{type}s',
-        summary='Returns the contents of the given history filtered by type.',
+        "/api/histories/{history_id}/contents/{type}s",
+        summary="Returns the contents of the given history filtered by type.",
     )
     @router.get(
-        '/api/histories/{history_id}/contents',
-        name='history_contents',
-        summary='Returns the contents of the given history.',
+        "/api/histories/{history_id}/contents",
+        name="history_contents",
+        summary="Returns the contents of the given history.",
     )
     def index(
         self,
@@ -357,8 +347,8 @@ class FastAPIHistoryContents:
         return items
 
     @router.get(
-        '/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary',
-        summary='Return detailed information about an `HDA` or `HDCAs` jobs.',
+        "/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary",
+        summary="Return detailed information about an `HDA` or `HDCAs` jobs.",
     )
     def show_jobs_summary(
         self,
@@ -377,15 +367,15 @@ class FastAPIHistoryContents:
         return self.service.show_jobs_summary(trans, id, contents_type=type)
 
     @router.get(
-        '/api/histories/{history_id}/contents/{type}s/{id}',
-        name='history_content_typed',
-        summary='Return detailed information about a specific HDA or HDCA with the given `ID` within a history.',
+        "/api/histories/{history_id}/contents/{type}s/{id}",
+        name="history_content_typed",
+        summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
         response_model_exclude_unset=True,
     )
     @router.get(
-        '/api/histories/{history_id}/contents/{id}',
-        name='history_content',
-        summary='Return detailed information about an HDA within a history.',
+        "/api/histories/{history_id}/contents/{id}",
+        name="history_content",
+        summary="Return detailed information about an HDA within a history.",
         response_model_exclude_unset=True,
         deprecated=True,
     )
@@ -399,20 +389,20 @@ class FastAPIHistoryContents:
             default=None,
             title="Fuzzy Count",
             description=(
-                'This value can be used to broadly restrict the magnitude '
-                'of the number of elements returned via the API for large '
-                'collections. The number of actual elements returned may '
+                "This value can be used to broadly restrict the magnitude "
+                "of the number of elements returned via the API for large "
+                "collections. The number of actual elements returned may "
                 'be "a bit" more than this number or "a lot" less - varying '
-                'on the depth of nesting, balance of nesting at each level, '
-                'and size of target collection. The consumer of this API should '
-                'not expect a stable number or pre-calculable number of '
-                'elements to be produced given this parameter - the only '
-                'promise is that this API will not respond with an order '
-                'of magnitude more elements estimated with this value. '
+                "on the depth of nesting, balance of nesting at each level, "
+                "and size of target collection. The consumer of this API should "
+                "not expect a stable number or pre-calculable number of "
+                "elements to be produced given this parameter - the only "
+                "promise is that this API will not respond with an order "
+                "of magnitude more elements estimated with this value. "
                 'The UI uses this parameter to fetch a "balanced" concept of '
                 'the "start" of large collections at every depth of the '
-                'collection.'
-            )
+                "collection."
+            ),
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryContentItem:
@@ -430,8 +420,8 @@ class FastAPIHistoryContents:
         )
 
     @router.get(
-        '/api/histories/{history_id}/jobs_summary',
-        summary='Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.',
+        "/api/histories/{history_id}/jobs_summary",
+        summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
     )
     def index_jobs_summary(
         self,
@@ -449,13 +439,13 @@ class FastAPIHistoryContents:
         return self.service.index_jobs_summary(trans, params)
 
     @router.get(
-        '/api/histories/{history_id}/contents/dataset_collections/{id}/download',
-        summary='Download the content of a dataset collection as a `zip` archive.',
+        "/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+        summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
     )
     @router.get(
-        '/api/dataset_collection/{id}/download',
-        summary='Download the content of a dataset collection as a `zip` archive.',
+        "/api/dataset_collection/{id}/download",
+        summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
         tags=["dataset collections"],
     )
@@ -472,13 +462,13 @@ class FastAPIHistoryContents:
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
 
     @router.post(
-        '/api/histories/{history_id}/contents/{type}s',
-        summary='Create a new `HDA` or `HDCA` in the given History.',
+        "/api/histories/{history_id}/contents/{type}s",
+        summary="Create a new `HDA` or `HDCA` in the given History.",
         response_model_exclude_unset=True,
     )
     @router.post(
-        '/api/histories/{history_id}/contents',
-        summary='Create a new `HDA` or `HDCA` in the given History.',
+        "/api/histories/{history_id}/contents",
+        summary="Create a new `HDA` or `HDCA` in the given History.",
         response_model_exclude_unset=True,
         deprecated=True,
     )
@@ -500,8 +490,8 @@ class FastAPIHistoryContents:
         return self.service.create(trans, history_id, payload, serialization_params)
 
     @router.put(
-        '/api/histories/{history_id}/contents/{dataset_id}/permissions',
-        summary='Set permissions of the given history dataset to the given role ids.',
+        "/api/histories/{history_id}/contents/{dataset_id}/permissions",
+        summary="Set permissions of the given history dataset to the given role ids.",
     )
     def update_permissions(
         self,
@@ -519,8 +509,8 @@ class FastAPIHistoryContents:
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
     @router.put(
-        '/api/histories/{history_id}/contents',
-        summary='Batch update specific properties of a set items contained in the given History.',
+        "/api/histories/{history_id}/contents",
+        summary="Batch update specific properties of a set items contained in the given History.",
     )
     def update_batch(
         self,
@@ -538,8 +528,8 @@ class FastAPIHistoryContents:
         return HistoryContentsResult.parse_obj(result)
 
     @router.put(
-        '/api/histories/{history_id}/contents/{id}/validate',
-        summary='Validates the metadata associated with a dataset within a History.',
+        "/api/histories/{history_id}/contents/{id}/validate",
+        summary="Validates the metadata associated with a dataset within a History.",
     )
     def validate(
         self,
@@ -551,13 +541,13 @@ class FastAPIHistoryContents:
         return self.service.validate(trans, history_id, id)
 
     @router.put(
-        '/api/histories/{history_id}/contents/{type}s/{id}',
-        summary='Updates the values for the history content item with the given ``ID``.',
+        "/api/histories/{history_id}/contents/{type}s/{id}",
+        summary="Updates the values for the history content item with the given ``ID``.",
         response_model_exclude_unset=True,
     )
     @router.put(
-        '/api/histories/{history_id}/contents/{id}',
-        summary='Updates the values for the history content item with the given ``ID``.',
+        "/api/histories/{history_id}/contents/{id}",
+        summary="Updates the values for the history content item with the given ``ID``.",
         response_model_exclude_unset=True,
         deprecated=True,
     )
@@ -574,12 +564,12 @@ class FastAPIHistoryContents:
         return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
 
     @router.delete(
-        '/api/histories/{history_id}/contents/{type}s/{id}',
-        summary='Delete the history content with the given ``ID`` and specified type.',
+        "/api/histories/{history_id}/contents/{type}s/{id}",
+        summary="Delete the history content with the given ``ID`` and specified type.",
     )
     @router.delete(
-        '/api/histories/{history_id}/contents/{id}',
-        summary='Delete the history dataset with the given ``ID``.',
+        "/api/histories/{history_id}/contents/{id}",
+        summary="Delete the history dataset with the given ``ID``.",
     )
     def delete(
         self,
@@ -622,12 +612,12 @@ class FastAPIHistoryContents:
         return rval
 
     @router.get(
-        '/api/histories/{history_id}/contents/archive/{filename}.{format}',
-        summary='Build and return a compressed archive of the selected history contents.',
+        "/api/histories/{history_id}/contents/archive/{filename}.{format}",
+        summary="Build and return a compressed archive of the selected history contents.",
     )
     @router.get(
-        '/api/histories/{history_id}/contents/archive/{id}',
-        summary='Build and return a compressed archive of the selected history contents.',
+        "/api/histories/{history_id}/contents/archive/{id}",
+        summary="Build and return a compressed archive of the selected history contents.",
     )
     def archive(
         self,
@@ -659,8 +649,8 @@ class FastAPIHistoryContents:
         return StreamingResponse(archive.get_iterator(), headers=archive.get_headers(), media_type="application/zip")
 
     @router.get(
-        '/api/histories/{history_id}/contents/{direction}/{hid}/{limit}',
-        summary='Get content items around a particular `HID`.',
+        "/api/histories/{history_id}/contents/{direction}/{hid}/{limit}",
+        summary="Get content items around a particular `HID`.",
     )
     def contents_near(
         self,
@@ -731,7 +721,14 @@ class FastAPIHistoryContents:
         filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
 
         result = self.service.contents_near(
-            trans, history_id, serialization_params, filter_params, direction, hid, limit, since,
+            trans,
+            history_id,
+            serialization_params,
+            filter_params,
+            direction,
+            hid,
+            limit,
+            since,
         )
         if result is None:
             return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -776,10 +773,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         serialization_params = parse_serialization_params(**kwd)
         filter_parameters = FilterQueryParams(**kwd)
         return self.service.index(
-            trans, history_id,
-            index_params,
-            legacy_params,
-            serialization_params, filter_parameters
+            trans, history_id, index_params, legacy_params, serialization_params, filter_parameters
         )
 
     @expose_api_anonymous
@@ -880,7 +874,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         return self.service.show_jobs_summary(trans, id, contents_type)
 
     def __get_contents_type(self, kwd: dict) -> HistoryContentType:
-        contents_type = kwd.get('type', 'dataset')
+        contents_type = kwd.get("type", "dataset")
         return HistoryContentType(contents_type)
 
     @expose_api_raw_anonymous
@@ -1082,9 +1076,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         """
         serialization_params = parse_serialization_params(**kwd)
         contents_type = self.__get_contents_type(kwd)
-        return self.service.update(
-            trans, history_id, id, payload, serialization_params, contents_type
-        )
+        return self.service.update(trans, history_id, id, payload, serialization_params, contents_type)
 
     @expose_api_anonymous
     def validate(self, trans, history_id, history_content_id, payload=None, **kwd):
@@ -1139,15 +1131,15 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         contents_type = self.__get_contents_type(kwd)
         purge = util.string_as_bool(purge)
         recursive = util.string_as_bool(recursive)
-        if kwd.get('payload', None):
+        if kwd.get("payload", None):
             # payload takes priority
-            purge = util.string_as_bool(kwd['payload'].get('purge', purge))
-            recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
+            purge = util.string_as_bool(kwd["payload"].get("purge", purge))
+            recursive = util.string_as_bool(kwd["payload"].get("recursive", recursive))
         delete_payload = DeleteHistoryContentPayload(purge=purge, recursive=recursive)
         return self.service.delete(trans, id, serialization_params, contents_type, delete_payload)
 
     @expose_api
-    def archive(self, trans, history_id, filename='', format='zip', dry_run=True, **kwd):
+    def archive(self, trans, history_id, filename="", format="zip", dry_run=True, **kwd):
         """
         archive( self, trans, history_id, filename='', format='zip', dry_run=True, **kwd )
         * GET /api/histories/{history_id}/contents/archive/{id}
@@ -1194,9 +1186,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         GET /api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}
         """
-        serialization_params = parse_serialization_params(default_view='betawebclient', **kwd)
+        serialization_params = parse_serialization_params(default_view="betawebclient", **kwd)
 
-        since_str = kwd.pop('since', None)
+        since_str = kwd.pop("since", None)
         if since_str:
             since = dateutil.parser.isoparse(since_str)
         else:
@@ -1207,7 +1199,14 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         limit = int(limit)
 
         result = self.service.contents_near(
-            trans, history_id, serialization_params, filter_params, direction, hid, limit, since,
+            trans,
+            history_id,
+            serialization_params,
+            filter_params,
+            direction,
+            hid,
+            limit,
+            since,
         )
         if result is None:
             trans.response.status = 204

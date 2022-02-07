@@ -2,7 +2,7 @@ from selenium.webdriver.common.keys import Keys
 
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 

@@ -1,6 +1,6 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -17,7 +17,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build list")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_list
+            )
 
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
@@ -33,7 +35,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build list")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_list
+            )
 
         # this toggles the checkbox to not hide originals
         self.collection_builder_hide_originals()
@@ -52,7 +56,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build pair")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_pair)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_pair
+            )
 
         self.collection_builder_set_name("my awesome pair")
         self.screenshot("collection_builder_pair")
@@ -70,7 +76,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build list of pairs")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list_pairs)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_list_pairs
+            )
 
         self.collection_builder_clear_filters()
         self.collection_builder_click_paired_item("forward", 0)
@@ -101,7 +109,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build list of pairs")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list_pairs)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_list_pairs
+            )
 
         self.wait_for_and_click(self.navigation.collection_builders.selectors.clear_filters)
 
@@ -141,7 +151,9 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._collection_dropdown("build collection from rules")
         else:
-            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_from_rules)
+            self.history_panel_multi_operation_action_click(
+                self.navigation.history_panel.multi_operations.labels.build_from_rules
+            )
 
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_rules_list")
@@ -188,7 +200,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
                 self.history_panel_muli_operation_select_hid(hid)
 
     def _show_hidden_content(self):
-        """Switches the beta hidden filter toggle on """
+        """Switches the beta hidden filter toggle on"""
         self.sleep_for(self.wait_types.UX_RENDER)
         self.beta_history_element("content filter toggle").wait_for_and_click()
         self.beta_history_element("show hidden filter toggle").wait_for_and_click()

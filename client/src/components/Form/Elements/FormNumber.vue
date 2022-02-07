@@ -1,11 +1,6 @@
 <template>
     <div>
-        <b-alert
-            class="mt-2"
-            v-if="errorMessage"
-            :show="dismissCountDown"
-            variant="info"
-            @dismissed="dismissCountDown = 0">
+        <b-alert class="mt-2" v-if="errorMessage" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
@@ -56,16 +51,28 @@ export default {
             dismissCountDown: 0,
             errorMessage: "",
             fractionWarning: "This output doesn't allow fractions!",
-            currentValue: this.value,
             decimalPlaces: this.isInteger ? 0 : this.getNumberOfDecimals(this.value),
         };
     },
     computed: {
+        currentValue: {
+            get() {
+                return this.value;
+            },
+            set(newVal, oldVal) {
+                if (newVal !== oldVal) {
+                    this.$emit("input", newVal);
+                }
+            },
+        },
         isRangeValid() {
             return !isNaN(this.min) && !isNaN(this.max) && this.max > this.min;
         },
         isInteger() {
             return this.type.toLowerCase() === "integer";
+        },
+        isFloat() {
+            return !this.isInteger;
         },
         /**
          * Dynamically sets the step value depending on the
@@ -93,17 +100,14 @@ export default {
             }
         },
         onInputChange(value) {
-            // hide error message after value has changed
-            this.dismissCountDown = 0;
-            if (this.isRangeValid && (value > this.max || value < this.min)) {
-                const errorMessage = this.getOutOfRangeWarning(value);
+            this.resetAlert();
+            if (this.isOutOfRange(value)) {
+                this.showOutOfRangeWarning(value);
                 this.currentValue = value > this.max ? this.max : this.min;
-                this.showAlert(errorMessage);
             }
-            if (!this.isInteger) {
+            if (this.isFloat) {
                 this.decimalPlaces = this.getNumberOfDecimals(this.currentValue);
             }
-            this.$emit("input", this.currentValue);
         },
         showAlert(error) {
             if (error) {
@@ -111,8 +115,15 @@ export default {
                 this.dismissCountDown = this.dismissSecs;
             }
         },
-        getOutOfRangeWarning(value) {
-            return `${value} is out of ${this.min} - ${this.max} range!`;
+        isOutOfRange(value) {
+            return this.isRangeValid && (value > this.max || value < this.min);
+        },
+        showOutOfRangeWarning(value) {
+            const warningMessage = `${value} is out of ${this.min} - ${this.max} range!`;
+            this.showAlert(warningMessage);
+        },
+        resetAlert() {
+            this.dismissCountDown = 0;
         },
         /**
          * https://stackoverflow.com/questions/10454518/javascript-how-to-retrieve-the-number-of-decimals-of-a-string-number

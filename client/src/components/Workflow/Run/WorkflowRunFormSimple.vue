@@ -2,9 +2,18 @@
     <div>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
+            <ButtonSpinner
+                class="float-right"
+                title="Run Workflow"
+                id="run-workflow"
+                :disabled="runButtonDisabled"
+                :tooltip="errorMessage"
+                @onClick="onExecute" />
         </div>
-        <FormDisplay :inputs="formInputs" @onChange="onChange" />
+        <b-alert v-if="!!errorMessage" variant="info" class="validation-error" show>
+            {{ errorMessage }}
+        </b-alert>
+        <FormDisplay :inputs="formInputs" @onChange="onChange" @onValidation="onValidation" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
     </div>
@@ -38,6 +47,7 @@ export default {
     },
     data() {
         return {
+            errorMessage: null,
             formData: {},
             inputTypes: {},
         };
@@ -70,12 +80,23 @@ export default {
             });
             return inputs;
         },
+        runButtonDisabled() {
+            return this.errorMessage !== null;
+        },
     },
     methods: {
+        onValidation(validationError) {
+            this.errorMessage = validationError
+                ? "Please address the issues highlighted below before proceeding."
+                : null;
+        },
         onChange(data) {
             this.formData = data;
         },
         onExecute() {
+            if (this.errorMessage) {
+                return;
+            }
             const replacementParams = {};
             const inputs = {};
             for (const inputName in this.formData) {

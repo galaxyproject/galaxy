@@ -3,41 +3,42 @@
 For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
+
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
-    'description',
-    'macros',
-    'edam_topics',
-    'edam_operations',
-    'xrefs',
-    'parallelism',
-    'requirements',
-    'code',
-    'stdio',
-    'version_command',
-    'command',
-    'environment_variables',
-    'configfiles',
-    'inputs',
-    'outputs',
-    'tests',
-    'help',
-    'citations',
+    "description",
+    "macros",
+    "edam_topics",
+    "edam_operations",
+    "xrefs",
+    "parallelism",
+    "requirements",
+    "code",
+    "stdio",
+    "version_command",
+    "command",
+    "environment_variables",
+    "configfiles",
+    "inputs",
+    "outputs",
+    "tests",
+    "help",
+    "citations",
 ]
 
 DATASOURCE_TAG_ORDER = [
-    'description',
-    'macros',
-    'command',
-    'configfiles',
-    'inputs',
-    'request_param_translation',
-    'uihints',
-    'outputs',
-    'options',
-    'help',
-    'citations',
+    "description",
+    "macros",
+    "command",
+    "configfiles",
+    "inputs",
+    "request_param_translation",
+    "uihints",
+    "outputs",
+    "options",
+    "help",
+    "citations",
 ]
 
 
@@ -46,7 +47,7 @@ DATASOURCE_TAG_ORDER = [
 def lint_xml_order(tool_xml, lint_ctx):
     tool_root = tool_xml.getroot()
 
-    if tool_root.attrib.get('tool_type', '') == 'data_source':
+    if tool_root.attrib.get("tool_type", "") == "data_source":
         tag_ordering = DATASOURCE_TAG_ORDER
     else:
         tag_ordering = TAG_ORDER
@@ -59,8 +60,10 @@ def lint_xml_order(tool_xml, lint_ctx):
             key = tag_ordering.index(tag)
             if last_key:
                 if last_key > key:
-                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]", line=elem.sourceline, xpath=tool_xml.getpath(elem))
+                    lint_ctx.warn(
+                        f"Best practice violation [{tag}] elements should come before [{last_tag}]", node=elem
+                    )
             last_tag = tag
             last_key = key
         else:
-            lint_ctx.info(f"Unknown tag [{tag}] encountered, this may result in a warning in the future.", line=elem.sourceline, xpath=tool_xml.getpath(elem))
+            lint_ctx.info(f"Unknown tag [{tag}] encountered, this may result in a warning in the future.", node=elem)

@@ -142,7 +142,6 @@ export default {
             showSuccess: false,
             showError: false,
             showExecuting: false,
-            error: null,
             formConfig: {},
             formData: {},
             remapAllowed: false,
@@ -159,7 +158,6 @@ export default {
             jobResponse: {},
             validationInternal: null,
             validationScrollTo: null,
-            validationErrors: null,
             currentVersion: this.version,
         };
     },

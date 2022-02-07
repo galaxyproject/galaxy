@@ -3,7 +3,10 @@ import json
 import os
 import pathlib
 import shutil
-from tempfile import mkdtemp, NamedTemporaryFile
+from tempfile import (
+    mkdtemp,
+    NamedTemporaryFile,
+)
 
 import pytest
 
@@ -15,8 +18,8 @@ from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.util.compression_utils import CompressedFile
 
 TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
-TEST_PATH_1 = TESTCASE_DIRECTORY / '1.txt'
-TEST_PATH_2 = TESTCASE_DIRECTORY / '2.bed'
+TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
+TEST_PATH_2 = TESTCASE_DIRECTORY / "2.bed"
 
 
 def test_import_export_history():
@@ -34,11 +37,11 @@ def test_import_export_history_failed_job():
     """Test a simple job import/export, make sure state is maintained correctly."""
     app = _mock_app()
 
-    u, h, d1, d2, j = _setup_simple_cat_job(app, state='error')
+    u, h, d1, d2, j = _setup_simple_cat_job(app, state="error")
 
     imported_history = _import_export_history(app, h, export_files="copy")
 
-    _assert_simple_cat_job_imported(imported_history, state='error')
+    _assert_simple_cat_job_imported(imported_history, state="error")
 
 
 def test_import_export_bag_archive():
@@ -50,7 +53,9 @@ def test_import_export_bag_archive():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
 
-    with store.BagArchiveModelExportStore(dest_export, app=app, bag_archiver="tgz", export_files="copy") as export_store:
+    with store.BagArchiveModelExportStore(
+        dest_export, app=app, bag_archiver="tgz", export_files="copy"
+    ) as export_store:
         export_store.export_history(h)
 
     model_store = store.BagArchiveImportModelStore(dest_export, app=app, user=u)
@@ -86,7 +91,7 @@ def test_import_library_require_permissions():
     u = model.User(email="collection@example.com", password="password")
 
     library = model.Library(name="my library 1", description="my library description", synopsis="my synopsis")
-    root_folder = model.LibraryFolder(name="my library 1", description='folder description')
+    root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
     sa_session.flush()
@@ -114,7 +119,7 @@ def test_import_export_library():
     u = model.User(email="collection@example.com", password="password")
 
     library = model.Library(name="my library 1", description="my library description", synopsis="my synopsis")
-    root_folder = model.LibraryFolder(name="my library 1", description='folder description')
+    root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
     sa_session.flush()
@@ -124,9 +129,7 @@ def test_import_export_library():
     sa_session.add(subfolder)
 
     ld = model.LibraryDataset(folder=root_folder, name="my name", info="my library dataset")
-    ldda = model.LibraryDatasetDatasetAssociation(
-        create_dataset=True, flush=False
-    )
+    ldda = model.LibraryDatasetDatasetAssociation(create_dataset=True, flush=False)
     ld.library_dataset_dataset_association = ldda
     root_folder.add_library_dataset(ld)
 
@@ -141,7 +144,9 @@ def test_import_export_library():
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
         export_store.export_library(library)
 
-    import_model_store = store.get_import_model_store_for_directory(temp_directory, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True))
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, app=app, user=u, import_options=store.ImportOptions(allow_library_creation=True)
+    )
     import_model_store.perform_import()
 
     all_libraries = sa_session.query(model.Library).all()
@@ -273,8 +278,10 @@ def test_import_export_edit_collection():
     d2 = model.HistoryDatasetAssociation(extension="txt", create_dataset=True, flush=False)
     d2.hid = 2
     serialization_options = model.SerializationOptions(for_edit=True)
-    dataset_list = [d1.serialize(app.security, serialization_options),
-                    d2.serialize(app.security, serialization_options)]
+    dataset_list = [
+        d1.serialize(app.security, serialization_options),
+        d2.serialize(app.security, serialization_options),
+    ]
 
     dc = model.DatasetCollection(
         id=collection_metadata["id"],
@@ -322,12 +329,7 @@ def test_import_export_composite_datasets():
     primary = NamedTemporaryFile("w")
     primary.write("cool primary file")
     primary.flush()
-    app.object_store.update_from_file(
-        d1.dataset,
-        file_name=primary.name,
-        create=True,
-        preserve_symlinks=True
-    )
+    app.object_store.update_from_file(d1.dataset, file_name=primary.name, create=True, preserve_symlinks=True)
 
     composite1 = NamedTemporaryFile("w")
     composite1.write("cool composite file")
@@ -339,7 +341,7 @@ def test_import_export_composite_datasets():
         alt_name="child_file",
         file_name=composite1.name,
         create=True,
-        preserve_symlinks=True
+        preserve_symlinks=True,
     )
 
     temp_directory = mkdtemp()
@@ -381,7 +383,9 @@ def test_edit_metadata_files():
     assert isinstance(d1.metadata.bam_index, model.MetadataFile)
 
     temp_directory = mkdtemp()
-    with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True, strip_metadata_files=False) as export_store:
+    with store.DirectoryModelExportStore(
+        temp_directory, app=app, for_edit=True, strip_metadata_files=False
+    ) as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
@@ -393,7 +397,9 @@ def test_edit_metadata_files():
 def test_sessionless_import_edit_datasets():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     # Create a model store without a session and import it.
-    import_model_store = store.get_import_model_store_for_directory(temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True))
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+    )
     import_model_store.perform_import()
     # Not using app.sa_session but a session mock that has a query/find pattern emulating usage
     # of real sa_session.
@@ -435,7 +441,7 @@ def _setup_simple_export(export_kwds):
     return app, h, temp_directory, import_history
 
 
-def _assert_simple_cat_job_imported(imported_history, state='ok'):
+def _assert_simple_cat_job_imported(imported_history, state="ok"):
     assert imported_history.name == "imported from archive: Test History"
 
     datasets = imported_history.datasets
@@ -456,7 +462,7 @@ def _assert_simple_cat_job_imported(imported_history, state='ok'):
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
-def _setup_simple_cat_job(app, state='ok'):
+def _setup_simple_cat_job(app, state="ok"):
     sa_session = app.model.context
 
     u = model.User(email="collection@example.com", password="password")
@@ -496,13 +502,20 @@ def _import_export_history(app, h, dest_export=None, export_files=None):
 
 
 def _perform_import_from_directory(directory, app, user, import_history, import_options=None):
-    import_model_store = store.get_import_model_store_for_directory(directory, app=app, user=user, import_options=import_options)
+    import_model_store = store.get_import_model_store_for_directory(
+        directory, app=app, user=user, import_options=import_options
+    )
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)
 
 
 def _create_datasets(sa_session, history, n, extension="txt"):
-    return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
+    return [
+        model.HistoryDatasetAssociation(
+            extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1
+        )
+        for i in range(n)
+    ]
 
 
 def _mock_app(store_by="id"):

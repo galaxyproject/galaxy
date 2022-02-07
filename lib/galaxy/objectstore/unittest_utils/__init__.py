@@ -31,7 +31,6 @@ extra_dirs:
 
 
 class Config:
-
     def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
         self.temp_directory = mkdtemp()
         if config_str.startswith("<"):
@@ -65,7 +64,6 @@ class Config:
 
 
 class MockConfig:
-
     def __init__(self, temp_directory, config_file, store_by="id"):
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, config_file)
@@ -79,8 +77,8 @@ class MockConfig:
 
 
 __all__ = [
-    'Config',
-    'MockConfig',
-    'DISK_TEST_CONFIG',
-    'DISK_TEST_CONFIG_YAML',
+    "Config",
+    "MockConfig",
+    "DISK_TEST_CONFIG",
+    "DISK_TEST_CONFIG_YAML",
 ]

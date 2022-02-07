@@ -1,5 +1,5 @@
 <template>
-    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]" :tour_id="id">
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]">
         <div v-if="hasError" class="ui-form-error">
             <span class="fa fa-exclamation mr-1" />
             <span class="ui-form-error-text" v-html="error" />
@@ -49,7 +49,6 @@
 
 <script>
 import _ from "underscore";
-import { getElementId } from "./utilities";
 import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
@@ -149,6 +148,9 @@ export default {
         };
     },
     computed: {
+        elementId() {
+            return `form-element-${this.id}`;
+        },
         argument() {
             return this.attrs["argument"];
         },
@@ -180,9 +182,6 @@ export default {
         },
         defaultValue() {
             return this.attrs["default_value"];
-        },
-        elementId() {
-            return getElementId(this.id);
         },
         hasError() {
             return !!this.error;

@@ -3,6 +3,7 @@
 import ast
 import os
 import re
+
 try:
     from setuptools import setup
 except ImportError:
@@ -10,13 +11,13 @@ except ImportError:
 
 SOURCE_DIR = "galaxy"
 
-_version_re = re.compile(r'__version__\s+=\s+(.*)')
+_version_re = re.compile(r"__version__\s+=\s+(.*)")
 
-with open('%s/project_galaxy_job_execution.py' % SOURCE_DIR, 'rb') as f:
-    init_contents = f.read().decode('utf-8')
+with open("%s/project_galaxy_job_execution.py" % SOURCE_DIR, "rb") as f:
+    init_contents = f.read().decode("utf-8")
 
     def get_var(var_name):
-        pattern = re.compile(r'%s\s+=\s+(.*)' % var_name)
+        pattern = re.compile(r"%s\s+=\s+(.*)" % var_name)
         match = pattern.search(init_contents).group(1)
         return str(ast.literal_eval(match))
 
@@ -27,29 +28,28 @@ with open('%s/project_galaxy_job_execution.py' % SOURCE_DIR, 'rb') as f:
     PROJECT_EMAIL = get_var("PROJECT_EMAIL")
     PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
-TEST_DIR = 'tests'
+TEST_DIR = "tests"
 PACKAGES = [
-    'galaxy',
-    'galaxy.job_execution',
-    'galaxy.job_execution.actions',
-    'galaxy.job_execution.ports',
-    'galaxy.metadata',
+    "galaxy",
+    "galaxy.job_execution",
+    "galaxy.job_execution.actions",
+    "galaxy.job_execution.ports",
+    "galaxy.metadata",
 ]
-ENTRY_POINTS = '''
+ENTRY_POINTS = """
         [console_scripts]
         galaxy-set-metadata=galaxy.metadata.set_metadata:set_metadata
-'''
+"""
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    'galaxy': [
-    ],
+    "galaxy": [],
 }
 PACKAGE_DIR = {
     SOURCE_DIR: SOURCE_DIR,
 }
 
-readme = open('README.rst').read()
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+readme = open("README.rst").read()
+history = open("HISTORY.rst").read().replace(".. :changelog:", "")
 
 if os.path.exists("requirements.txt"):
     requirements = open("requirements.txt").read().split("\n")
@@ -65,8 +65,8 @@ setup(
     name=PROJECT_NAME,
     version=version,
     description=PROJECT_DESCRIPTION,
-    long_description=readme + '\n\n' + history,
-    long_description_content_type='text/x-rst',
+    long_description=readme + "\n\n" + history,
+    long_description_content_type="text/x-rst",
     author=PROJECT_AUTHOR,
     author_email=PROJECT_EMAIL,
     url=PROJECT_URL,
@@ -79,23 +79,23 @@ setup(
     extras_require={},
     license="AFL",
     zip_safe=False,
-    keywords='galaxy',
+    keywords="galaxy",
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Environment :: Console',
-        'License :: OSI Approved :: Academic Free License (AFL)',
-        'Operating System :: POSIX',
-        'Topic :: Software Development',
-        'Topic :: Software Development :: Code Generators',
-        'Topic :: Software Development :: Testing',
-        'Natural Language :: English',
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Environment :: Console",
+        "License :: OSI Approved :: Academic Free License (AFL)",
+        "Operating System :: POSIX",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Code Generators",
+        "Topic :: Software Development :: Testing",
+        "Natural Language :: English",
         "Programming Language :: Python :: 3",
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     test_suite=TEST_DIR,
-    tests_require=test_requirements
+    tests_require=test_requirements,
 )

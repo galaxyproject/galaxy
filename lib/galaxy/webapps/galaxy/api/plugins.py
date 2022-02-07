@@ -4,10 +4,16 @@ Plugins resource control over the API.
 import logging
 
 from galaxy import exceptions
-from galaxy.managers import hdas, histories
+from galaxy.managers import (
+    hdas,
+    histories,
+)
 from galaxy.util import asbool
 from galaxy.web import expose_api
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +22,7 @@ class PluginsController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with plugins.
     """
+
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
 
@@ -41,14 +48,13 @@ class PluginsController(BaseGalaxyAPIController):
         registry = self._get_registry(trans)
         history_id = kwargs.get("history_id")
         if history_id is not None:
-            history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(
+                trans.security.decode_id(history_id), trans.user, current_history=trans.history
+            )
             result = {"hdas": []}
             for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 if registry.get_visualization(trans, id, hda):
-                    result["hdas"].append({
-                        "id": trans.security.encode_id(hda.id),
-                        "name": hda.name
-                    })
+                    result["hdas"].append({"id": trans.security.encode_id(hda.id), "name": hda.name})
         else:
             result = registry.get_plugin(id).to_dict()
         return result

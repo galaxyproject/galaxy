@@ -13,7 +13,6 @@ from ._framework import ApiTestCase
 
 
 class FolderContentsApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -111,7 +110,7 @@ class FolderContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         contents = response.json()["folder_contents"]
         assert len(contents) == limit
-        expected_query_result = original_contents[offset:offset + limit]
+        expected_query_result = original_contents[offset : offset + limit]
         for index in range(limit):
             assert contents[index]["id"] == expected_query_result[index]["id"]
 
@@ -234,7 +233,9 @@ class FolderContentsApiTestCase(ApiTestCase):
         return hda_id
 
     def _create_hdca_with_contents(self, contents: List[str]) -> str:
-        hdca = self.dataset_collection_populator.create_list_in_history(self.history_id, contents=contents, direct_upload=True).json()["outputs"][0]
+        hdca = self.dataset_collection_populator.create_list_in_history(
+            self.history_id, contents=contents, direct_upload=True
+        ).json()["outputs"][0]
         hdca_id = hdca["id"]
         return hdca_id
 

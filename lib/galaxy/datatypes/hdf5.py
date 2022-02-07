@@ -28,20 +28,20 @@ class HDF5SummarizedExperiment(Data):
         set_in_upload=True,
     )
 
-    file_ext = 'rdata.se'
-    composite_type = 'auto_primary_file'
+    file_ext = "rdata.se"
+    composite_type = "auto_primary_file"
     allow_datatype_change = False
 
     def __init__(self, **kwd):
         """Construct object from input files."""
         Data.__init__(self, **kwd)
         self.add_composite_file(
-            'se.rds',
+            "se.rds",
             is_binary=True,
             description="Summarized experiment RDS object",
         )
         self.add_composite_file(
-            'assays.h5',
+            "assays.h5",
             is_binary=True,
             description="Summarized experiment data array",
         )
@@ -52,8 +52,7 @@ class HDF5SummarizedExperiment(Data):
 
     def generate_primary_file(self, dataset=None):
         """Generate primary file to represent dataset."""
-        return (
-            f'''
+        return f"""
               <html>
                 <head>
                   <title> Files for Composite Dataset ({self.file_ext})</title>
@@ -66,8 +65,7 @@ class HDF5SummarizedExperiment(Data):
                   <li><a href="array.h5">array.h5</a>
                 </ul>
               </html>
-              '''
-        )
+              """
 
     def sniff(self, filename):
         """Not sure whether this is necessary (or possible) with binaries."""
@@ -75,4 +73,4 @@ class HDF5SummarizedExperiment(Data):
 
     def get_mime(self):
         """Return the mime type of the datatype."""
-        return 'text/html'
+        return "text/html"

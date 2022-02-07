@@ -9,7 +9,6 @@ from pkg_resources import resource_string
 
 from galaxy.util import unicodify
 
-
 # Error codes are provided as a convience to Galaxy API clients, but at this
 # time they do represent part of the more stable interface. They can change
 # without warning between releases.
@@ -45,7 +44,7 @@ def _from_dict(entry):
     return (name, ErrorCode(code, message))
 
 
-error_codes_json = unicodify(resource_string(__name__, 'error_codes.json'))
+error_codes_json = unicodify(resource_string(__name__, "error_codes.json"))
 error_codes_by_name: Dict[str, ErrorCode] = {}
 
 for entry in loads(error_codes_json):

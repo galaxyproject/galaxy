@@ -4,9 +4,18 @@ Migration script to add imported column for jobs table.
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+)
 
-from galaxy.model.migrate.versions.util import add_column, drop_column, engine_false
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+    engine_false,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -31,4 +40,4 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column('imported', 'job', metadata)
+    drop_column("imported", "job", metadata)

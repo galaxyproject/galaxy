@@ -4,9 +4,18 @@ Migration script to add 'prepare_input_files_cmd' column to the task table and t
 
 import logging
 
-from sqlalchemy import Column, MetaData, String, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    String,
+    Table,
+    TEXT,
+)
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -25,7 +34,7 @@ def upgrade(migrate_engine):
     add_column(c, task_table, metadata)
 
     # remove the 'part_file' column - nobody used tasks before this, so no data needs to be migrated
-    drop_column('part_file', task_table)
+    drop_column("part_file", task_table)
 
 
 def downgrade(migrate_engine):
@@ -36,5 +45,5 @@ def downgrade(migrate_engine):
     c = Column("part_file", String(1024), nullable=True)
     add_column(c, task_table, metadata)
 
-    drop_column('working_directory', task_table)
-    drop_column('prepare_input_files_cmd', task_table)
+    drop_column("working_directory", task_table)
+    drop_column("prepare_input_files_cmd", task_table)

@@ -4,7 +4,12 @@ Add copied_from_job_id column to jobs table
 
 import logging
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 copied_from_job_id_column = Column("copied_from_job_id", Integer, nullable=True)

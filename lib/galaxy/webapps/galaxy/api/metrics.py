@@ -25,7 +25,7 @@ from . import (
 log = logging.getLogger(__name__)
 
 
-router = Router(tags=['metrics'])
+router = Router(tags=["metrics"])
 
 
 @router.cbv
@@ -33,7 +33,7 @@ class FastAPIMetrics:
     manager: MetricsManager = depends(MetricsManager)
 
     @router.post(
-        '/api/metrics',
+        "/api/metrics",
         summary="Records a collection of metrics.",
     )
     def create(

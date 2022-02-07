@@ -15,7 +15,6 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 
 
 class CorePluginFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         value = int(value)
         if key == GALAXY_SLOTS_KEY:
@@ -27,13 +26,14 @@ class CorePluginFormatter(formatting.JobMetricFormatter):
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
-            return (title, time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(value)))
+            return (title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(value)))
 
 
 class CorePlugin(InstrumentPlugin):
-    """ Simple plugin that collects data without external dependencies. In
+    """Simple plugin that collects data without external dependencies. In
     particular it currently collects value set for Galaxy slots.
     """
+
     plugin_type = "core"
     formatter = CorePluginFormatter()
 
@@ -69,15 +69,15 @@ class CorePlugin(InstrumentPlugin):
 
     def __record_galaxy_slots_command(self, job_directory):
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
-        return f'''echo "$GALAXY_SLOTS" > '{galaxy_slots_file}' '''
+        return f"""echo "$GALAXY_SLOTS" > '{galaxy_slots_file}' """
 
     def __record_galaxy_memory_mb_command(self, job_directory):
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
-        return f'''echo "$GALAXY_MEMORY_MB" > '{galaxy_memory_mb_file}' '''
+        return f"""echo "$GALAXY_MEMORY_MB" > '{galaxy_memory_mb_file}' """
 
     def __record_seconds_since_epoch_to_file(self, job_directory, name):
         path = self._instrument_file_path(job_directory, f"epoch_{name}")
-        return f"date +\"%s\" > {path}"
+        return f'date +"%s" > {path}'
 
     def __read_seconds_since_epoch(self, job_directory, name):
         path = self._instrument_file_path(job_directory, f"epoch_{name}")
@@ -98,4 +98,4 @@ class CorePlugin(InstrumentPlugin):
         return value
 
 
-__all__ = ('CorePlugin', )
+__all__ = ("CorePlugin",)

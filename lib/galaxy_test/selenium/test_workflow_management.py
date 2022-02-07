@@ -19,7 +19,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         assert len(table_elements) == 1
 
         new_workflow = table_elements[0].find_element_by_css_selector(".workflow-dropdown")
-        assert 'TestWorkflow1 (imported from uploaded file)' in new_workflow.text, new_workflow.text
+        assert "TestWorkflow1 (imported from uploaded file)" in new_workflow.text, new_workflow.text
 
     @selenium_test
     def test_view(self):
@@ -40,7 +40,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         @retry_assertion_during_transitions
         def check_name():
             name = self.workflow_index_name()
-            assert 'CoolNewName' == name, name
+            assert "CoolNewName" == name, name
 
         check_name()
 

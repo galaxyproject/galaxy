@@ -8,7 +8,7 @@ from galaxy import exceptions
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import (
     cloud,
-    datasets
+    datasets,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
@@ -22,7 +22,9 @@ class CloudController(BaseGalaxyAPIController):
     RESTfull controller for interaction with Amazon S3.
     """
 
-    def __init__(self, app: StructuredApp, cloud_manager: cloud.CloudManager, datasets_serializer: datasets.DatasetSerializer):
+    def __init__(
+        self, app: StructuredApp, cloud_manager: cloud.CloudManager, datasets_serializer: datasets.DatasetSerializer
+    ):
         super().__init__(app)
         self.cloud_manager = cloud_manager
         self.datasets_serializer = datasets_serializer
@@ -38,7 +40,7 @@ class CloudController(BaseGalaxyAPIController):
         """
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
         trans.response.status = 501
-        return 'Not Implemented'
+        return "Not Implemented"
 
     @expose_api
     def get(self, trans, payload, **kwargs):
@@ -91,8 +93,10 @@ class CloudController(BaseGalaxyAPIController):
 
         """
         if not isinstance(payload, dict):
-            raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, '
-                                   'but received data of type `{}`.'.format(str(type(payload))))
+            raise ActionInputError(
+                "Invalid payload data type. The payload is expected to be a dictionary, "
+                "but received data of type `{}`.".format(str(type(payload)))
+            )
 
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
@@ -117,26 +121,29 @@ class CloudController(BaseGalaxyAPIController):
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError(f'Invalid history ID. {e}')
+            raise ActionInputError(f"Invalid history ID. {e}")
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError(f'Invalid authz ID. {e}')
+            raise ActionInputError(f"Invalid authz ID. {e}")
 
         if not isinstance(objects, list):
-            raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
-                type(objects)))
+            raise ActionInputError(
+                "The `objects` should be a list, but received an object of type {} instead.".format(type(objects))
+            )
 
-        datasets = self.cloud_manager.get(trans=trans,
-                                          history_id=history_id,
-                                          bucket_name=bucket,
-                                          objects=objects,
-                                          authz_id=authz_id,
-                                          input_args=payload.get("input_args", None))
+        datasets = self.cloud_manager.get(
+            trans=trans,
+            history_id=history_id,
+            bucket_name=bucket,
+            objects=objects,
+            authz_id=authz_id,
+            input_args=payload.get("input_args", None),
+        )
         rtv = []
         for dataset in datasets:
-            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
+            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
         return rtv
 
     @expose_api
@@ -208,12 +215,12 @@ class CloudController(BaseGalaxyAPIController):
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError(f'Invalid history ID. {e}')
+            raise ActionInputError(f"Invalid history ID. {e}")
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError(f'Invalid authz ID. {e}')
+            raise ActionInputError(f"Invalid authz ID. {e}")
 
         encoded_dataset_ids = payload.get("dataset_ids", None)
         if encoded_dataset_ids is None:
@@ -227,20 +234,24 @@ class CloudController(BaseGalaxyAPIController):
                 except exceptions.MalformedId:
                     invalid_dataset_ids.append(encoded_id)
             if len(invalid_dataset_ids) > 0:
-                raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
-                                       "{}".format(invalid_dataset_ids))
+                raise ActionInputError(
+                    "The following provided dataset IDs are invalid, please correct them and retry. "
+                    "{}".format(invalid_dataset_ids)
+                )
 
-        log.info(msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
-                     "".format("all the dataset in the given history" if not dataset_ids else len(dataset_ids),
-                               authz_id,
-                               history_id))
+        log.info(
+            msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
+            "".format(
+                "all the dataset in the given history" if not dataset_ids else len(dataset_ids), authz_id, history_id
+            )
+        )
 
-        sent, failed = self.cloud_manager.send(trans=trans,
-                                               history_id=history_id,
-                                               bucket_name=bucket,
-                                               authz_id=authz_id,
-                                               dataset_ids=dataset_ids,
-                                               overwrite_existing=payload.get("overwrite_existing", False))
-        return {'sent_dataset_labels': sent,
-                'failed_dataset_labels': failed,
-                'bucket_name': bucket}
+        sent, failed = self.cloud_manager.send(
+            trans=trans,
+            history_id=history_id,
+            bucket_name=bucket,
+            authz_id=authz_id,
+            dataset_ids=dataset_ids,
+            overwrite_existing=payload.get("overwrite_existing", False),
+        )
+        return {"sent_dataset_labels": sent, "failed_dataset_labels": failed, "bucket_name": bucket}

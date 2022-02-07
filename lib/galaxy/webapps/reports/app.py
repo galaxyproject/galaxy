@@ -32,13 +32,11 @@ class UniverseApplication(BasicSharedApp):
         else:
             db_url = f"sqlite:///{self.config.database}?isolation_level=IMMEDIATE"
         # Setup the database engine and ORM
-        self.model = galaxy.model.mapping.init(self.config.file_path,
-                                               db_url,
-                                               self.config.database_engine_options)
+        self.model = galaxy.model.mapping.init(self.config.file_path, db_url, self.config.database_engine_options)
         if not self.config.database_connection:
             self.targets_mysql = False
         else:
-            self.targets_mysql = 'mysql' in self.config.database_connection
+            self.targets_mysql = "mysql" in self.config.database_connection
         # Security helper
         self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 

@@ -37,7 +37,7 @@ import { HistoryExport } from "components/HistoryExport/index";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/Workflow/InvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
-import RecentInvocations from "components/User/RecentInvocations.vue";
+import UserInvocations from "components/Workflow/UserInvocations";
 import ToolsView from "components/ToolsView/ToolsView.vue";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson.vue";
 import HistoryList from "mvc/history/history-list";
@@ -232,7 +232,7 @@ export const getAnalysisRouter = (Galaxy) => {
         },
 
         show_workflow_invocations: function () {
-            this._display_vue_helper(RecentInvocations, {});
+            this._display_vue_helper(UserInvocations, {});
         },
 
         show_history_structure: function () {

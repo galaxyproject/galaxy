@@ -26,11 +26,7 @@ class DefineCloudAuthzTestCase(integration_util.IntegrationTestCase):
             # The payload for the POST API.
             payload = {
                 "provider": provider,
-                "config": json.dumps({
-                    "tenant_id": tenant_id,
-                    "client_id": client_id,
-                    "client_secret": client_secret
-                })
+                "config": json.dumps({"tenant_id": tenant_id, "client_id": client_id, "client_secret": client_secret}),
             }
 
             response = self._post(path="cloud/authz", data=payload)

@@ -36,10 +36,10 @@ DeferredJob_table = Table(
     Column("state", String(64), index=True),
     Column("plugin", String(128), index=True),
     Column("params", JSONType),
-    Column("info", TEXT)
+    Column("info", TEXT),
 )
 
-deferred_job_id = Column('deferred_job_id', Integer, ForeignKey('deferred_job.id'), index=True)
+deferred_job_id = Column("deferred_job_id", Integer, ForeignKey("deferred_job.id"), index=True)
 
 
 def upgrade(migrate_engine):
@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        drop_column(deferred_job_id.name, 'genome_index_tool_data', metadata)
+        drop_column(deferred_job_id.name, "genome_index_tool_data", metadata)
         drop_table(DeferredJob_table)
     except Exception:
         log.exception("Dropping deferred_job table failed")
@@ -60,6 +60,8 @@ def downgrade(migrate_engine):
 
     try:
         create_table(DeferredJob_table)
-        add_column(deferred_job_id, 'genome_index_tool_data', metadata, index_name='ix_genome_index_tool_data_deferred_job_id')
+        add_column(
+            deferred_job_id, "genome_index_tool_data", metadata, index_name="ix_genome_index_tool_data_deferred_job_id"
+        )
     except Exception:
         log.exception("Creating deferred_job table failed")

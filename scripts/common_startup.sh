@@ -116,12 +116,13 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.0' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.3' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
+            setup_gravity_state_dir
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
             if [ -z "$GALAXY_PYTHON" ]; then
@@ -139,6 +140,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "existing environment before starting Galaxy."
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+                setup_gravity_state_dir
             else
                 vvers=16.7.9
                 vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -165,6 +167,7 @@ urlretrieve('$vurl', '$vsrc')"
                 tar zxf "$vsrc" -C "$vtmp"
                 "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
+                setup_gravity_state_dir
             fi
         fi
     fi
@@ -182,7 +185,7 @@ fi
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 : ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=19.0'
+    python -m pip install 'pip>=19.3'
 fi
 
 requirement_args="-r requirements.txt"

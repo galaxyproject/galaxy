@@ -8,7 +8,7 @@ from sqlalchemy import MetaData
 
 from galaxy.model.migrate.versions.util import (
     add_index,
-    drop_index
+    drop_index,
 )
 
 log = logging.getLogger(__name__)
@@ -18,27 +18,27 @@ indexes = [
     [
         "ix_workflow_invocation_output_dataset_association_workflow_output_id",
         "workflow_invocation_output_dataset_association",
-        "workflow_output_id"
+        "workflow_output_id",
     ],
     [
         "ix_workflow_invocation_output_dataset_association_workflow_step_id",
         "workflow_invocation_output_dataset_association",
-        "workflow_step_id"
+        "workflow_step_id",
     ],
     [
         "ix_workflow_invocation_output_dataset_collection_association_workflow_output_id",
         "workflow_invocation_output_dataset_collection_association",
-        "workflow_output_id"
+        "workflow_output_id",
     ],
     [
         "ix_workflow_invocation_output_dataset_collection_association_workflow_step_id",
         "workflow_invocation_output_dataset_collection_association",
-        "workflow_step_id"
+        "workflow_step_id",
     ],
     [
         "ix_workflow_invocation_step_output_dataset_collection_association_workflow_step_id",
         "workflow_invocation_step_output_dataset_collection_association",
-        "workflow_step_id"
+        "workflow_step_id",
     ],
 ]
 

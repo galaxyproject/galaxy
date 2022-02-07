@@ -14,7 +14,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    current_form_type = 'Sequencer Information Form'
+    current_form_type = "Sequencer Information Form"
     new_form_type = "External Service Information Form"
     cmd = f"update form_definition set type='{new_form_type}' where type='{current_form_type}'"
     migrate_engine.execute(cmd)
@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    new_form_type = 'Sequencer Information Form'
+    new_form_type = "Sequencer Information Form"
     current_form_type = "External Service Information Form"
     cmd = f"update form_definition set type='{new_form_type}' where type='{current_form_type}'"
     migrate_engine.execute(cmd)

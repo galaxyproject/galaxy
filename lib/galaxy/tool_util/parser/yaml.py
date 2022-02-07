@@ -5,7 +5,7 @@ import packaging.version
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC
+    DEFAULT_DELTA_FRAC,
 )
 from .interface import (
     InputSource,
@@ -25,7 +25,7 @@ from .util import is_dict
 
 class YamlToolSource(ToolSource):
 
-    language = 'yaml'
+    language = "yaml"
 
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
@@ -36,11 +36,14 @@ class YamlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
+    def parse_tool_type(self):
+        return self.root_dict.get("tool_type")
+
     def parse_id(self):
         return self.root_dict.get("id")
 
     def parse_version(self):
-        return self.root_dict.get("version")
+        return str(self.root_dict.get("version"))
 
     def parse_name(self):
         return self.root_dict.get("name")
@@ -62,10 +65,10 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("sanitize", True)
 
     def parse_display_interface(self, default):
-        return self.root_dict.get('display_interface', default)
+        return self.root_dict.get("display_interface", default)
 
     def parse_require_login(self, default):
-        return self.root_dict.get('require_login', default)
+        return self.root_dict.get("require_login", default)
 
     def parse_command(self):
         return self.root_dict.get("command")
@@ -167,9 +170,7 @@ class YamlToolSource(ToolSource):
 
     def parse_tests_to_dict(self):
         tests = []
-        rval = dict(
-            tests=tests
-        )
+        rval = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -215,11 +216,7 @@ def _parse_test(i, test_dict):
             else:
                 file = value
                 attributes = {}
-            new_outputs.append({
-                "name": key,
-                "value": file,
-                "attributes": attributes
-            })
+            new_outputs.append({"name": key, "value": file, "attributes": attributes})
     else:
         for output in outputs:
             name = output["name"]
@@ -230,11 +227,11 @@ def _parse_test(i, test_dict):
     for output in new_outputs:
         attributes = output["attributes"]
         defaults = {
-            'compare': 'diff',
-            'lines_diff': 0,
-            'delta': DEFAULT_DELTA,
-            'delta_frac': DEFAULT_DELTA_FRAC,
-            'sort': False,
+            "compare": "diff",
+            "lines_diff": 0,
+            "delta": DEFAULT_DELTA,
+            "delta_frac": DEFAULT_DELTA_FRAC,
+            "sort": False,
         }
         # TODO
         attributes["extra_files"] = []
@@ -287,7 +284,6 @@ def __to_test_assert_list(assertions):
 
 
 class YamlPageSource(PageSource):
-
     def __init__(self, inputs_list):
         self.inputs_list = inputs_list
 
@@ -296,7 +292,6 @@ class YamlPageSource(PageSource):
 
 
 class YamlInputSource(InputSource):
-
     def __init__(self, input_dict):
         self.input_dict = input_dict
 

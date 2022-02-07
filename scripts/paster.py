@@ -8,10 +8,11 @@ top level directly.
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
+
+from check_python import check_python  # noqa: I100, I201
 
 from galaxy.util.pastescript import serve
-from check_python import check_python  # noqa: I100, I201
 
 # ensure supported version
 try:

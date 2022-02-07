@@ -6,9 +6,17 @@ import logging
 import os
 import shlex
 from functools import partial
-from itertools import cycle, repeat
+from itertools import (
+    cycle,
+    repeat,
+)
 from time import sleep
-from typing import Any, Dict, Optional, Type
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Type,
+)
 
 try:
     import docker
@@ -16,24 +24,30 @@ except ImportError:
     docker = None  # type: ignore[assignment]
 
 try:
-    from requests.exceptions import ConnectionError, ReadTimeout
+    from requests.exceptions import (
+        ConnectionError,
+        ReadTimeout,
+    )
 except ImportError:
     ConnectionError = None  # type: ignore[assignment,misc]
     ReadTimeout = None  # type: ignore[assignment,misc]
 
-from galaxy.containers import Container, ContainerInterface
+from galaxy.containers import (
+    Container,
+    ContainerInterface,
+)
 from galaxy.containers.docker_decorators import (
     docker_columns,
-    docker_json
+    docker_json,
 )
 from galaxy.containers.docker_model import (
     DockerContainer,
-    DockerVolume
+    DockerVolume,
 )
 from galaxy.exceptions import (
     ContainerCLIError,
     ContainerImageNotFound,
-    ContainerNotFound
+    ContainerNotFound,
 )
 from galaxy.util.json import safe_dumps_formatted
 
@@ -45,18 +59,18 @@ class DockerInterface(ContainerInterface):
     container_class: Type[Container] = DockerContainer
     volume_class = DockerVolume
     conf_defaults: Dict[str, Optional[Any]] = {
-        'host': None,
-        'tls': False,
-        'force_tlsverify': False,
-        'auto_remove': True,
-        'image': None,
-        'cpus': None,
-        'memory': None,
+        "host": None,
+        "tls": False,
+        "force_tlsverify": False,
+        "auto_remove": True,
+        "image": None,
+        "cpus": None,
+        "memory": None,
     }
     # These values are inserted into kwopts for run commands
     conf_run_kwopts = (
-        'cpus',
-        'memory',
+        "cpus",
+        "memory",
     )
 
     def validate_config(self):
@@ -92,7 +106,7 @@ class DockerInterface(ContainerInterface):
         """
         try:
             inspect = self.image_inspect(image)
-            return inspect['RepoDigests'][0]
+            return inspect["RepoDigests"][0]
         except ContainerImageNotFound:
             return image
 
@@ -107,45 +121,45 @@ class DockerInterface(ContainerInterface):
 
 class DockerCLIInterface(DockerInterface):
 
-    container_type = 'docker_cli'
+    container_type = "docker_cli"
     conf_defaults: Dict[str, Optional[Any]] = {
-        'command_template': '{executable} {global_kwopts} {subcommand} {args}',
-        'executable': 'docker',
+        "command_template": "{executable} {global_kwopts} {subcommand} {args}",
+        "executable": "docker",
     }
     option_map = {
         # `run` options
-        'environment': {'flag': '--env', 'type': 'list_of_kvpairs'},
-        'volumes': {'flag': '--volume', 'type': 'docker_volumes'},
-        'name': {'flag': '--name', 'type': 'string'},
-        'detach': {'flag': '--detach', 'type': 'boolean'},
-        'publish_all_ports': {'flag': '--publish-all', 'type': 'boolean'},
-        'publish_port_random': {'flag': '--publish', 'type': 'string'},
-        'auto_remove': {'flag': '--rm', 'type': 'boolean'},
-        'cpus': {'flag': '--cpus', 'type': 'string'},
-        'memory': {'flag': '--memory', 'type': 'string'},
+        "environment": {"flag": "--env", "type": "list_of_kvpairs"},
+        "volumes": {"flag": "--volume", "type": "docker_volumes"},
+        "name": {"flag": "--name", "type": "string"},
+        "detach": {"flag": "--detach", "type": "boolean"},
+        "publish_all_ports": {"flag": "--publish-all", "type": "boolean"},
+        "publish_port_random": {"flag": "--publish", "type": "string"},
+        "auto_remove": {"flag": "--rm", "type": "boolean"},
+        "cpus": {"flag": "--cpus", "type": "string"},
+        "memory": {"flag": "--memory", "type": "string"},
     }
 
     def validate_config(self):
-        log.warning('The `docker_cli` interface is deprecated and will be removed in Galaxy 18.09, please use `docker`')
+        log.warning("The `docker_cli` interface is deprecated and will be removed in Galaxy 18.09, please use `docker`")
         super().validate_config()
         global_kwopts = []
         if self._conf.host:
-            global_kwopts.append('--host')
+            global_kwopts.append("--host")
             global_kwopts.append(shlex.quote(self._conf.host))
         if self._conf.force_tlsverify:
-            global_kwopts.append('--tlsverify')
-        self._docker_command = self._conf['command_template'].format(
-            executable=self._conf['executable'],
-            global_kwopts=' '.join(global_kwopts),
-            subcommand='{subcommand}',
-            args='{args}'
+            global_kwopts.append("--tlsverify")
+        self._docker_command = self._conf["command_template"].format(
+            executable=self._conf["executable"],
+            global_kwopts=" ".join(global_kwopts),
+            subcommand="{subcommand}",
+            args="{args}",
         )
 
     def _filter_by_id_or_name(self, id, name):
         if id:
-            return f'--filter id={id}'
+            return f"--filter id={id}"
         elif name:
-            return f'--filter name={name}'
+            return f"--filter name={name}"
         return None
 
     def _stringify_kwopt_docker_volumes(self, flag, val):
@@ -160,20 +174,20 @@ class DockerCLIInterface(DockerInterface):
             for hostvol, guestopts in val.items():
                 if isinstance(guestopts, str):
                     # {'/host/vol': '/container/vol'}
-                    kwopt_list.append(f'{hostvol}:{guestopts}')
+                    kwopt_list.append(f"{hostvol}:{guestopts}")
                 else:
                     # {'/host/vol': {'bind': '/container/vol'}}
                     # {'/host/vol': {'bind': '/container/vol', 'mode': 'rw'}}
-                    mode = guestopts.get('mode', '')
-                    kwopt_list.append('{vol}:{bind}{mode}'.format(
-                        vol=hostvol,
-                        bind=guestopts['bind'],
-                        mode=f":{mode}" if mode else ''
-                    ))
+                    mode = guestopts.get("mode", "")
+                    kwopt_list.append(
+                        "{vol}:{bind}{mode}".format(
+                            vol=hostvol, bind=guestopts["bind"], mode=f":{mode}" if mode else ""
+                        )
+                    )
         return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_docker(self, subcommand, args=None, verbose=False):
-        command = self._docker_command.format(subcommand=subcommand, args=args or '')
+        command = self._docker_command.format(subcommand=subcommand, args=args or "")
         return self._run_command(command, verbose=verbose)
 
     #
@@ -182,24 +196,24 @@ class DockerCLIInterface(DockerInterface):
 
     @docker_columns
     def ps(self, id=None, name=None):
-        return self._run_docker(subcommand='ps', args=self._filter_by_id_or_name(id, name))
+        return self._run_docker(subcommand="ps", args=self._filter_by_id_or_name(id, name))
 
     def run(self, command, image=None, **kwopts):
-        args = '{kwopts} {image} {command}'.format(
+        args = "{kwopts} {image} {command}".format(
             kwopts=self._stringify_kwopts(kwopts),
             image=image or self._default_image,
-            command=command if command else ''
+            command=command if command else "",
         ).strip()
-        container_id = self._run_docker(subcommand='run', args=args, verbose=True)
+        container_id = self._run_docker(subcommand="run", args=args, verbose=True)
         return DockerContainer.from_id(self, container_id)
 
     @docker_json
     def inspect(self, container_id):
         try:
-            return self._run_docker(subcommand='inspect', args=container_id)[0]
+            return self._run_docker(subcommand="inspect", args=container_id)[0]
         except (IndexError, ContainerCLIError) as exc:
             msg = f"Invalid container id: {container_id}"
-            if exc.stdout == '[]' and exc.stderr == f'Error: no such object: {container_id}':
+            if exc.stdout == "[]" and exc.stderr == f"Error: no such object: {container_id}":
                 log.warning(msg)
                 return []
             else:
@@ -208,10 +222,10 @@ class DockerCLIInterface(DockerInterface):
     @docker_json
     def image_inspect(self, image):
         try:
-            return self._run_docker(subcommand='image inspect', args=image)[0]
+            return self._run_docker(subcommand="image inspect", args=image)[0]
         except (IndexError, ContainerCLIError) as exc:
             msg = f"{image} not pulled, cannot get digest"
-            if exc.stdout == '[]' and exc.stderr == f'Error: no such image: {image}':
+            if exc.stdout == "[]" and exc.stderr == f"Error: no such image: {image}":
                 log.warning(msg, image)
                 return []
             else:
@@ -219,8 +233,7 @@ class DockerCLIInterface(DockerInterface):
 
 
 class DockerAPIClient:
-    """Wraps a ``docker.APIClient`` to catch exceptions.
-    """
+    """Wraps a ``docker.APIClient`` to catch exceptions."""
 
     _exception_retry_time = 5
     _default_max_tries = 10
@@ -234,7 +247,7 @@ class DockerAPIClient:
         if isinstance(f, partial):
             f = f.func
         try:
-            return getattr(f, '__qualname__', f"{f.im_class.__name__}.{f.__name__}")
+            return getattr(f, "__qualname__", f"{f.im_class.__name__}.{f.__name__}")
         except AttributeError:
             return f.__name__
 
@@ -253,15 +266,15 @@ class DockerAPIClient:
     @staticmethod
     def _init_client():
         kwargs = DockerAPIClient._client_kwargs.copy()
-        if DockerAPIClient._host_iter is not None and 'base_url' not in kwargs:
-            kwargs['base_url'] = next(DockerAPIClient._host_iter)
+        if DockerAPIClient._host_iter is not None and "base_url" not in kwargs:
+            kwargs["base_url"] = next(DockerAPIClient._host_iter)
         DockerAPIClient._client = docker.APIClient(*DockerAPIClient._client_args, **kwargs)
-        log.info('Initialized Docker API client for server: %s', kwargs.get('base_url', 'localhost'))
+        log.info("Initialized Docker API client for server: %s", kwargs.get("base_url", "localhost"))
 
     @staticmethod
     def _default_client_handler(fname, *args, **kwargs):
-        success_test = kwargs.pop('success_test', None)
-        max_tries = kwargs.pop('max_tries', DockerAPIClient._default_max_tries)
+        success_test = kwargs.pop("success_test", None)
+        max_tries = kwargs.pop("max_tries", DockerAPIClient._default_max_tries)
         for tries in range(1, max_tries + 1):
             retry_time = DockerAPIClient._exception_retry_time
             reinit = False
@@ -272,7 +285,7 @@ class DockerAPIClient:
             try:
                 r = f(*args, **kwargs)
                 if tries > 1:
-                    log.info('%s() succeeded on attempt %s', qualname, tries)
+                    log.info("%s() succeeded on attempt %s", qualname, tries)
                 return r
             except (ConnectionError, docker.errors.APIError, ReadTimeout) as exc:
                 if isinstance(exc, ConnectionError):
@@ -283,8 +296,9 @@ class DockerAPIClient:
                 else:  # ReadTimeout
                     reinit = True
                     retry_time = 0
-                log.warning("Caught exception on %s(): %s: %s",
-                            DockerAPIClient._qualname(f), exc.__class__.__name__, exc)
+                log.warning(
+                    "Caught exception on %s(): %s: %s", DockerAPIClient._qualname(f), exc.__class__.__name__, exc
+                )
                 if reinit:
                     log.warning("Reinitializing Docker API client due to connection-oriented failure")
                     DockerAPIClient._init_client()
@@ -299,7 +313,7 @@ class DockerAPIClient:
                     return r
                 elif tries >= max_tries:
                     log.error("Maximum number of attempts (%s) exceeded", max_tries)
-                    if 'response' in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
+                    if "response" in exc and DockerAPIClient._nonfatal_error(exc.response.status_code):
                         return None
                     else:
                         raise
@@ -309,15 +323,14 @@ class DockerAPIClient:
 
     def __init__(self, *args, **kwargs):
         # Only initialize the host iterator once
-        host_iter = kwargs.pop('host_iter', None)
+        host_iter = kwargs.pop("host_iter", None)
         DockerAPIClient._host_iter = DockerAPIClient._host_iter or host_iter
         DockerAPIClient._client_args = args
         DockerAPIClient._client_kwargs = kwargs
         DockerAPIClient._init_client()
 
     def __getattr__(self, attr):
-        """Allow the calling of methods on this class as if it were a docker.APIClient instance.
-        """
+        """Allow the calling of methods on this class as if it were a docker.APIClient instance."""
         cattr = DockerAPIClient._unwrapped_attr(attr)
         if callable(cattr):
             return partial(DockerAPIClient._default_client_handler, attr)
@@ -327,16 +340,16 @@ class DockerAPIClient:
 
 class DockerAPIInterface(DockerInterface):
 
-    container_type = 'docker'
+    container_type = "docker"
 
     # 'publish_port_random' and 'volumes' are special cases handled in _create_host_config()
     host_config_option_map = {
-        'auto_remove': {},
-        'publish_all_ports': {},
-        'cpus': {'param': 'nano_cpus', 'map': lambda x: int(x * 1000000000)},
-        'memory': {'param': 'mem_limit'},
-        'binds': {},
-        'port_bindings': {},
+        "auto_remove": {},
+        "publish_all_ports": {},
+        "cpus": {"param": "nano_cpus", "map": lambda x: int(x * 1000000000)},
+        "memory": {"param": "mem_limit"},
+        "binds": {},
+        "port_bindings": {},
     }
 
     def validate_config(self):
@@ -347,14 +360,13 @@ class DockerAPIInterface(DockerInterface):
     @property
     def _client(self):
         # TODO: add cert options to containers conf
-        cert_path = os.environ.get('DOCKER_CERT_PATH') or None
+        cert_path = os.environ.get("DOCKER_CERT_PATH") or None
         if not cert_path:
-            cert_path = os.path.join(os.path.expanduser('~'), '.docker')
+            cert_path = os.path.join(os.path.expanduser("~"), ".docker")
         if self._conf.force_tlsverify or self._conf.tls:
             tls_config = docker.tls.TLSConfig(
-                client_cert=(os.path.join(cert_path, 'cert.pem'),
-                             os.path.join(cert_path, 'key.pem')),
-                ca_cert=os.path.join(cert_path, 'ca.pem'),
+                client_cert=(os.path.join(cert_path, "cert.pem"), os.path.join(cert_path, "key.pem")),
+                ca_cert=os.path.join(cert_path, "ca.pem"),
                 verify=self._conf.force_tlsverify,
             )
         else:
@@ -376,9 +388,9 @@ class DockerAPIInterface(DockerInterface):
     @staticmethod
     def _filter_by_id_or_name(id, name):
         if id:
-            return {'id': id}
+            return {"id": id}
         elif name:
-            return {'name': name}
+            return {"name": name}
         return None
 
     @staticmethod
@@ -388,11 +400,11 @@ class DockerAPIInterface(DockerInterface):
         See :meth:`_create_docker_api_spec`.
         """
         params = []
-        if 'param' not in map_spec and 'params' not in map_spec:
+        if "param" not in map_spec and "params" not in map_spec:
             params.append(key)
-        elif 'param' in map_spec:
-            params.append(map_spec['param'])
-        params.extend(map_spec.get('params', ()))
+        elif "param" in map_spec:
+            params.append(map_spec["param"])
+        params.extend(map_spec.get("params", ()))
         return params
 
     @staticmethod
@@ -403,8 +415,8 @@ class DockerAPIInterface(DockerInterface):
         See :meth:`_create_docker_api_spec`.
         """
         params = {}
-        if 'map' in map_spec:
-            value = map_spec['map'](value)
+        if "map" in map_spec:
+            value = map_spec["map"](value)
         for param in DockerAPIInterface._kwopt_to_param_names(map_spec, key):
             params[param] = value
         return params
@@ -475,15 +487,17 @@ class DockerAPIInterface(DockerInterface):
         :returns:                   Instantiated ``spec_class`` object
         :rtype:                     ``type(spec_class)``
         """
+
         def _kwopt_to_arg(map_spec, key, value, param=None):
             # determines whether the given param is a positional or keyword argument in docker-py and adds it to the
             # list of arguments
-            if isinstance(map_spec.get('param'), int):
-                spec_opts.append((map_spec.get('param'), value))
+            if isinstance(map_spec.get("param"), int):
+                spec_opts.append((map_spec.get("param"), value))
             elif param is not None:
                 spec_kwopts[param] = value
             else:
                 spec_kwopts.update(DockerAPIInterface._kwopt_to_params(map_spec, key, value))
+
         # positional arguments
         spec_opts = []
         # keyword arguments
@@ -491,20 +505,20 @@ class DockerAPIInterface(DockerInterface):
         # retrieve the option map for the docker-py object we're creating
         option_map = getattr(self, f"{option_map_name}_option_map")
         # set defaults
-        for key in filter(lambda k: option_map[k].get('default'), option_map.keys()):
+        for key in filter(lambda k: option_map[k].get("default"), option_map.keys()):
             map_spec = option_map[key]
-            _kwopt_to_arg(map_spec, key, map_spec['default'])
+            _kwopt_to_arg(map_spec, key, map_spec["default"])
         # don't allow kwopts that start with _, those are reserved for "child" object params
-        for kwopt in filter(lambda k: not k.startswith('_') and k in option_map, list(kwopts.keys())):
+        for kwopt in filter(lambda k: not k.startswith("_") and k in option_map, list(kwopts.keys())):
             map_spec = option_map[kwopt]
             _v = kwopts.pop(kwopt)
             _kwopt_to_arg(map_spec, kwopt, _v)
         # find any child objects that need to be created and recurse to create them
-        for _sub_k in filter(lambda k: k.startswith('_') and 'spec_class' in option_map[k], option_map.keys()):
+        for _sub_k in filter(lambda k: k.startswith("_") and "spec_class" in option_map[k], option_map.keys()):
             map_spec = option_map[_sub_k]
-            param = _sub_k.lstrip('_')
-            _sub_v = self._create_docker_api_spec(param, map_spec['spec_class'], kwopts)
-            if _sub_v is not None or map_spec.get('required') or isinstance(map_spec.get('param'), int):
+            param = _sub_k.lstrip("_")
+            _sub_v = self._create_docker_api_spec(param, map_spec["spec_class"], kwopts)
+            if _sub_v is not None or map_spec.get("required") or isinstance(map_spec.get("param"), int):
                 _kwopt_to_arg(map_spec, None, _sub_v, param=param)
         # sort positional args and make into a flat tuple
         if spec_opts:
@@ -541,15 +555,15 @@ class DockerAPIInterface(DockerInterface):
         :returns:       The return value of `docker.APIClient.create_host_config()`
         :rtype:         dict
         """
-        if 'publish_port_random' in kwopts:
-            port = int(kwopts.pop('publish_port_random'))
-            kwopts['port_bindings'] = {port: None}
-            kwopts['ports'] = [port]
-        if 'volumes' in kwopts:
-            paths, binds = self._volumes_to_native(kwopts.pop('volumes'))
-            kwopts['binds'] = binds
-            kwopts['volumes'] = paths
-        return self._create_docker_api_spec('host_config', self._client.create_host_config, kwopts)
+        if "publish_port_random" in kwopts:
+            port = int(kwopts.pop("publish_port_random"))
+            kwopts["port_bindings"] = {port: None}
+            kwopts["ports"] = [port]
+        if "volumes" in kwopts:
+            paths, binds = self._volumes_to_native(kwopts.pop("volumes"))
+            kwopts["binds"] = binds
+            kwopts["volumes"] = paths
+        return self._create_docker_api_spec("host_config", self._client.create_host_config, kwopts)
 
     #
     # docker subcommands
@@ -565,7 +579,7 @@ class DockerAPIInterface(DockerInterface):
         host_config = self._create_host_config(kwopts)
         log.debug("Docker container host configuration:\n%s", safe_dumps_formatted(host_config))
         log.debug("Docker container creation parameters:\n%s", safe_dumps_formatted(kwopts))
-        success_test = partial(self._first, self.ps, name=kwopts['name'], running=False)
+        success_test = partial(self._first, self.ps, name=kwopts["name"], running=False)
         # this can raise exceptions, if necessary we could wrap them in a more generic "creation failed" exception class
         container = self._client.create_container(
             image,
@@ -573,10 +587,10 @@ class DockerAPIInterface(DockerInterface):
             host_config=host_config,
             success_test=success_test,
             max_tries=5,
-            **kwopts
+            **kwopts,
         )
-        container_id = container.get('Id')
-        log.debug("Starting container: %s (%s)", kwopts['name'], str(container_id))
+        container_id = container.get("Id")
+        log.debug("Starting container: %s (%s)", kwopts["name"], str(container_id))
         # start can safely be run more than once
         self._client.start(container=container_id)
         return DockerContainer.from_id(self, container_id)

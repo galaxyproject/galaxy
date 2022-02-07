@@ -1,26 +1,25 @@
 from galaxy.model.migrate.versions.util import execute_statements
 
-
 # function name prefix
 fn_prefix = "fn_audit_history_by"
 
 # map between source table and associated incoming id field
 trigger_config = {
-    'history_dataset_association': "history_id",
-    'history_dataset_collection_association': "history_id",
-    'history': "id",
+    "history_dataset_association": "history_id",
+    "history_dataset_collection_association": "history_id",
+    "history": "id",
 }
 
 
 def install(engine):
     """Install history audit table triggers"""
-    sql = _postgres_install(engine) if 'postgres' in engine.name else _sqlite_install()
+    sql = _postgres_install(engine) if "postgres" in engine.name else _sqlite_install()
     execute_statements(engine, sql)
 
 
 def remove(engine):
     """Uninstall history audit table triggers"""
-    sql = _postgres_remove() if 'postgres' in engine.name else _sqlite_remove()
+    sql = _postgres_remove() if "postgres" in engine.name else _sqlite_remove()
     execute_statements(engine, sql)
 
 

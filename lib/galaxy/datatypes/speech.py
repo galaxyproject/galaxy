@@ -1,4 +1,7 @@
-from galaxy.datatypes.metadata import ListParameter, MetadataElement
+from galaxy.datatypes.metadata import (
+    ListParameter,
+    MetadataElement,
+)
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.text import Text
 
@@ -21,7 +24,16 @@ class TextGrid(Text):
 
     blurb = "Praat TextGrid file"
 
-    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(
+        name="annotations",
+        default=[],
+        desc="Annotation types",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=[],
+    )
 
     def sniff(self, filename):
 
@@ -49,9 +61,41 @@ class BPF(Text):
 
     file_ext = "par"
 
-    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
-    mandatory_headers = ['LHD', 'REP', 'SNB', 'SAM', 'SBF', 'SSB', 'NCH', 'SPN', 'LBD']
-    optional_headers = ['FIL', 'TYP', 'DBN', 'VOL', 'DIR', 'SRC', 'BEG', 'END', 'RED', 'RET', 'RCC', 'CMT', 'SPI', 'PCF', 'PCN', 'EXP', 'SYS', 'DAT', 'SPA', 'MAO', 'GPO', 'SAO']
+    MetadataElement(
+        name="annotations",
+        default=[],
+        desc="Annotation types",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=[],
+    )
+    mandatory_headers = ["LHD", "REP", "SNB", "SAM", "SBF", "SSB", "NCH", "SPN", "LBD"]
+    optional_headers = [
+        "FIL",
+        "TYP",
+        "DBN",
+        "VOL",
+        "DIR",
+        "SRC",
+        "BEG",
+        "END",
+        "RED",
+        "RET",
+        "RCC",
+        "CMT",
+        "SPI",
+        "PCF",
+        "PCN",
+        "EXP",
+        "SYS",
+        "DAT",
+        "SPA",
+        "MAO",
+        "GPO",
+        "SAO",
+    ]
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents"""
@@ -59,7 +103,7 @@ class BPF(Text):
         with open(dataset.dataset.file_name) as fd:
             for line in fd:
                 # Split the line on a colon rather than regexing it
-                parts = line.split(':')
+                parts = line.split(":")
 
                 # And if the first part is a 3 character string, then it's
                 # interesting.
@@ -74,12 +118,12 @@ class BPF(Text):
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.
-        seen_headers = [line[0] for line in get_headers(filename, sep=':', count=40)]
+        seen_headers = [line[0] for line in get_headers(filename, sep=":", count=40)]
 
         # We cut everything after LBD, where the headers end and contents
         # start. We choose not to validate contents.
-        if 'LBD' in seen_headers:
-            seen_headers = seen_headers[0:seen_headers.index('LBD') + 1]
+        if "LBD" in seen_headers:
+            seen_headers = seen_headers[0 : seen_headers.index("LBD") + 1]
 
         # Check that every mandatory header is present in the seen headers
         for header in self.mandatory_headers:

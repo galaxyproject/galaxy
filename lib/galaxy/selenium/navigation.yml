@@ -472,10 +472,10 @@ tool_form:
   selectors:
     options: '.tool-dropdown'
     execute: 'button#execute'
-    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
-    parameter_checkbox: 'div.ui-form-element[tour_id="${parameter}"] .ui-switch div'
-    parameter_input: 'div.ui-form-element[tour_id="${parameter}"] .ui-input'
-    parameter_textarea: 'div.ui-form-element[tour_id="${parameter}"] textarea'
+    parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
+    parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch div'
+    parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
+    parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     reference: '.formatted-reference'
     about: '.tool-footer'
 
@@ -524,6 +524,8 @@ workflow_run:
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
+    run_workflow: "#run-workflow"
+    validation_error: ".validation-error"
 
 workflow_editor:
 
@@ -552,8 +554,8 @@ workflow_editor:
       type: xpath
       selector: '//a[contains(., "${workflow_title}")]'
 
-    connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
-    collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+    connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
+    collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
     node_title:
       type: xpath
       selector: '//span[@class="node-title" and text()="${title}"]'
@@ -561,11 +563,11 @@ workflow_editor:
     label_input:
       type: xpath
       selector: >
-        //div[@tour_id='__label' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@id='form-element-__label' and not(ancestor::div[contains(@style,'display: none')])]//input
     annotation_input:
       type: xpath
       selector: >
-        //div[@tour_id='__annotation' and not(ancestor::div[contains(@style,'display: none')])]//textarea
+        //div[@id='form-element-__annotation' and not(ancestor::div[contains(@style,'display: none')])]//textarea
     configure_output:
       type: xpath
       selector: >
@@ -573,7 +575,7 @@ workflow_editor:
     label_output:
       type: xpath
       selector: >
-        //div[@tour_id='__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@id='form-element-__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
     rename_output:
       type: xpath
       selector: >

@@ -4,7 +4,12 @@ Add version column to  history_dataset_association table
 
 import logging
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 version_column = Column("version", Integer, default=1)

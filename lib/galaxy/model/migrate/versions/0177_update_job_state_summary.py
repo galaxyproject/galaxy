@@ -5,7 +5,10 @@ Update job-state-summary view for hdca elements to include job directly tied wit
 import logging
 
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
-from galaxy.model.view.utils import CreateView, DropView
+from galaxy.model.view.utils import (
+    CreateView,
+    DropView,
+)
 
 log = logging.getLogger(__name__)
 

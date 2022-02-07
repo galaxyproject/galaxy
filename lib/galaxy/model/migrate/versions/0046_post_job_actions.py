@@ -10,24 +10,27 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
-    Table
+    Table,
 )
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrate.versions.util import (
     create_table,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-PostJobAction_table = Table("post_job_action", metadata,
-                            Column("id", Integer, primary_key=True),
-                            Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
-                            Column("action_type", String(255), nullable=False),
-                            Column("output_name", String(255), nullable=True),
-                            Column("action_arguments", JSONType, nullable=True))
+PostJobAction_table = Table(
+    "post_job_action",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
+    Column("action_type", String(255), nullable=False),
+    Column("output_name", String(255), nullable=True),
+    Column("action_arguments", JSONType, nullable=True),
+)
 
 
 def upgrade(migrate_engine):

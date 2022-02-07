@@ -17,19 +17,19 @@ class Facts(MutableMapping):
     def __set_defaults(self, config):
         # config here may be a Galaxy config object, or it may just be a dict
         defaults = {
-            'server_name': lambda: config.get('base_server_name', 'main'),
-            'server_id': None,
-            'instance_id': None,
-            'pool_name': None,
-            'fqdn': lambda: socket.getfqdn(),
-            'hostname': lambda: socket.gethostname().split('.', 1)[0],
+            "server_name": lambda: config.get("base_server_name", "main"),
+            "server_id": None,
+            "instance_id": None,
+            "pool_name": None,
+            "fqdn": lambda: socket.getfqdn(),
+            "hostname": lambda: socket.gethostname().split(".", 1)[0],
         }
         self.__dict__.update(defaults)
 
     def __set_config(self, config):
         if config is not None:
             for name in dir(config):
-                if not name.startswith('_') and isinstance(getattr(config, name), str):
+                if not name.startswith("_") and isinstance(getattr(config, name), str):
                     self.__dict__[f"config_{name}"] = lambda name=name: getattr(config, name)
 
     def __getitem__(self, key):

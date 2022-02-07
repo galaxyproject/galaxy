@@ -4,9 +4,7 @@ API operations on Role objects.
 import json
 import logging
 
-from fastapi import (
-    Body,
-)
+from fastapi import Body
 
 from galaxy import web
 from galaxy.managers.base import decode_id
@@ -35,9 +33,9 @@ router = Router(tags=["roles"])
 
 
 def role_to_model(trans, role):
-    item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
+    item = role.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
     role_id = trans.security.encode_id(role.id)
-    item['url'] = url_for('role', id=role_id)
+    item["url"] = url_for("role", id=role_id)
     return RoleModel(**item)
 
 
@@ -45,19 +43,21 @@ def role_to_model(trans, role):
 class FastAPIRoles:
     role_manager: RoleManager = depends(RoleManager)
 
-    @router.get('/api/roles')
+    @router.get("/api/roles")
     def index(self, trans: ProvidesUserContext = DependsOnTrans) -> RoleListModel:
         roles = self.role_manager.list_displayable_roles(trans)
         return RoleListModel(__root__=[role_to_model(trans, r) for r in roles])
 
-    @router.get('/api/roles/{id}')
+    @router.get("/api/roles/{id}")
     def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModel:
         role_id = trans.app.security.decode_id(id)
         role = self.role_manager.get(trans, role_id)
         return role_to_model(trans, role)
 
     @router.post("/api/roles", require_admin=True)
-    def create(self, trans: ProvidesUserContext = DependsOnTrans, role_definition_model: RoleDefinitionModel = Body(...)) -> RoleModel:
+    def create(
+        self, trans: ProvidesUserContext = DependsOnTrans, role_definition_model: RoleDefinitionModel = Body(...)
+    ) -> RoleModel:
         role = self.role_manager.create_role(trans, role_definition_model)
         return role_to_model(trans, role)
 

@@ -45,8 +45,8 @@ def diff_files(old, new):
     new_k = set(new_kv.keys())
 
     added = []
-    for item in (new_k - old_k):
-        parent = '.'.join(item.split('.')[0:-1])
+    for item in new_k - old_k:
+        parent = ".".join(item.split(".")[0:-1])
         if parent in new_k and parent not in old_k:
             added.append(item)
         else:
@@ -54,8 +54,8 @@ def diff_files(old, new):
     added = set(added)
 
     removed = []
-    for item in (old_k - new_k):
-        parent = '.'.join(item.split('.')[0:-1])
+    for item in old_k - new_k:
+        parent = ".".join(item.split(".")[0:-1])
         if parent in old_k and parent not in new_k:
             removed.append(item)
         else:
@@ -85,7 +85,7 @@ def _report_dict(title, subheading, data, mapper):
 
 
 def _indent(s, by=4):
-    whitespace = ' ' * by
+    whitespace = " " * by
     s = s if isinstance(s, list) else s.splitlines()
     return "\n".join((f"{whitespace}{line}" for line in s))
 
@@ -98,27 +98,19 @@ def report_diff(added, changed, removed, new_files):
         print()
 
     if added:
-        _report_dict(
-            "Added",
-            "The following configuration options are new",
-            added,
-            lambda x: f"-  {x}"
-        )
+        _report_dict("Added", "The following configuration options are new", added, lambda x: f"-  {x}")
 
     if changed:
         _report_dict(
             "Changed",
             "The following configuration options have been changed",
             changed,
-            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n"
+            lambda x: f"-  {x[0]} has changed from\n\n   ::\n\n{_indent(x[1])}\n\n   to\n\n   ::\n\n{_indent(x[2])}\n\n",
         )
 
     if removed:
         _report_dict(
-            "Removed",
-            "The following configuration options have been completely removed",
-            removed,
-            lambda x: f"-  {x}"
+            "Removed", "The following configuration options have been completely removed", removed, lambda x: f"-  {x}"
         )
 
     if new_files:
@@ -133,9 +125,7 @@ def report_diff(added, changed, removed, new_files):
 
 def load_at_time(path, revision=None):
     if revision is not None:
-        return subprocess.check_output(
-            ["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT
-        )
+        return subprocess.check_output(["git", "show", f"{revision}:{path}"], stderr=subprocess.STDOUT)
     else:
         with open(path) as handle:
             return handle.read()
@@ -156,19 +146,15 @@ def main(old_revision, new_revision=None):
 
     for file in files_to_diff:
         filename = file
-        if 'config_schema.yml' in file:
-            filename = 'config/galaxy.yml.sample:galaxy'
-        elif 'uwsgi_schema.yml' in file:
-            filename = 'config/galaxy.yml.sample:uwsgi'
+        if "config_schema.yml" in file:
+            filename = "config/galaxy.yml.sample:galaxy"
+        elif "uwsgi_schema.yml" in file:
+            filename = "config/galaxy.yml.sample:uwsgi"
 
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:
-            old_contents = yaml.load(
-                load_at_time(real_path, old_revision), Loader=MockOrderedLoader
-            )
-            new_contents = yaml.load(
-                load_at_time(real_path, new_revision), Loader=MockOrderedLoader
-            )
+            old_contents = yaml.load(load_at_time(real_path, old_revision), Loader=MockOrderedLoader)
+            new_contents = yaml.load(load_at_time(real_path, new_revision), Loader=MockOrderedLoader)
 
             (a, r, c) = diff_files(old_contents, new_contents)
             if a:
@@ -187,9 +173,7 @@ def main(old_revision, new_revision=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Diff yaml configuration files between two points in time."
-    )
+    parser = argparse.ArgumentParser(description="Diff yaml configuration files between two points in time.")
     parser.add_argument("old_revision", help="Old revision")
     parser.add_argument(
         "--new_revision",

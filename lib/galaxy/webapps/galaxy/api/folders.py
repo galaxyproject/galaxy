@@ -15,7 +15,7 @@ from fastapi import (
 
 from galaxy import (
     exceptions,
-    util
+    util,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -40,18 +40,14 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['folders'])
+router = Router(tags=["folders"])
 
 FolderIdPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    title="Folder ID",
-    description="The encoded identifier of the library folder."
+    ..., title="Folder ID", description="The encoded identifier of the library folder."
 )
 
 UndeleteQueryParam: Optional[bool] = Query(
-    default=None,
-    title="Undelete",
-    description="Whether to restore a deleted library folder."
+    default=None, title="Undelete", description="Whether to restore a deleted library folder."
 )
 
 
@@ -60,7 +56,7 @@ class FastAPILibraryFolders:
     service: LibraryFoldersService = depends(LibraryFoldersService)
 
     @router.get(
-        '/api/folders/{id}',
+        "/api/folders/{id}",
         summary="Displays information about a particular library folder.",
     )
     def show(
@@ -72,24 +68,23 @@ class FastAPILibraryFolders:
         return self.service.show(trans, id)
 
     @router.post(
-        '/api/folders/{id}',
+        "/api/folders/{id}",
         summary="Create a new library folder underneath the one specified by the ID.",
     )
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = FolderIdPathParam,
-        payload: CreateLibraryFolderPayload = Body(...)
-
+        payload: CreateLibraryFolderPayload = Body(...),
     ) -> LibraryFolderDetails:
         """Returns detailed information about the newly created library folder."""
         return self.service.create(trans, id, payload)
 
     @router.put(
-        '/api/folders/{id}',
+        "/api/folders/{id}",
         summary="Updates the information of an existing library folder.",
     )
-    @router.patch('/api/folders/{id}')
+    @router.patch("/api/folders/{id}")
     def update(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -100,7 +95,7 @@ class FastAPILibraryFolders:
         return self.service.update(trans, id, payload)
 
     @router.delete(
-        '/api/folders/{id}',
+        "/api/folders/{id}",
         summary="Marks the specified library folder as deleted (or undeleted).",
     )
     def delete(
@@ -113,7 +108,7 @@ class FastAPILibraryFolders:
         return self.service.delete(trans, id, undelete)
 
     @router.get(
-        '/api/folders/{id}/permissions',
+        "/api/folders/{id}/permissions",
         summary="Gets the current or available permissions of a particular library folder.",
     )
     def get_permissions(
@@ -121,22 +116,18 @@ class FastAPILibraryFolders:
         trans: ProvidesUserContext = DependsOnTrans,
         id: EncodedDatabaseIdField = FolderIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
-            None, title="Scope",
-            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`."
+            None,
+            title="Scope",
+            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
         ),
         page: Optional[int] = Query(
-            default=1,
-            title="Page",
-            description="The page number to retrieve when paginating the available roles."
+            default=1, title="Page", description="The page number to retrieve when paginating the available roles."
         ),
         page_limit: Optional[int] = Query(
-            default=10,
-            title="Page Limit",
-            description="The maximum number of permissions per page when paginating."
+            default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
         ),
         q: Optional[str] = Query(
-            None, title="Query",
-            description="Optional search text to retrieve only the roles matching this query."
+            None, title="Query", description="Optional search text to retrieve only the roles matching this query."
         ),
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """Gets the current or available permissions of a particular library.
@@ -151,7 +142,7 @@ class FastAPILibraryFolders:
         )
 
     @router.post(
-        '/api/folders/{id}/permissions',
+        "/api/folders/{id}/permissions",
         summary="Sets the permissions to manage a library folder.",
     )
     def set_permissions(
@@ -187,7 +178,7 @@ class FoldersController(BaseGalaxyAPIController):
         This would normally display a list of folders. However, that would
         be across multiple libraries, so it's not implemented.
         """
-        raise exceptions.NotImplemented('Listing all accessible library folders is not implemented.')
+        raise exceptions.NotImplemented("Listing all accessible library folders is not implemented.")
 
     @expose_api
     def show(self, trans, id, **kwd):
@@ -246,14 +237,14 @@ class FoldersController(BaseGalaxyAPIController):
 
         :raises: InsufficientPermissionsException
         """
-        scope = kwd.get('scope')
-        page = kwd.get('page')
+        scope = kwd.get("scope")
+        page = kwd.get("page")
         if isinstance(page, str):
             page = int(page)
-        page_limit = kwd.get('page_limit')
+        page_limit = kwd.get("page_limit")
         if isinstance(page_limit, str):
             page_limit = int(page_limit)
-        query = kwd.get('q')
+        query = kwd.get("q")
         return self.service.get_permissions(trans, encoded_folder_id, scope, page, page_limit, query)
 
     @expose_api
@@ -305,31 +296,31 @@ class FoldersController(BaseGalaxyAPIController):
         :rtype:     dictionary
 
         """
-        undelete = util.string_as_bool(kwd.get('undelete', False))
+        undelete = util.string_as_bool(kwd.get("undelete", False))
         return self.service.delete(trans, encoded_folder_id, undelete)
 
     @expose_api
     def update(self, trans, encoded_folder_id, payload, **kwd):
         """
-        PATCH /api/folders/{encoded_folder_id}
+         PATCH /api/folders/{encoded_folder_id}
 
-        Update the folder defined by an ``encoded_folder_id``
-        with the data in the payload.
+         Update the folder defined by an ``encoded_folder_id``
+         with the data in the payload.
 
-       .. note:: Currently, only admin users can update library folders. Also the folder must not be `deleted`.
+        .. note:: Currently, only admin users can update library folders. Also the folder must not be `deleted`.
 
-        :param  id:      the encoded id of the folder
-        :type   id:      an encoded id string
+         :param  id:      the encoded id of the folder
+         :type   id:      an encoded id string
 
-        :param  payload: (required) dictionary structure containing::
-            'name':         new folder's name, cannot be empty
-            'description':  new folder's description
-        :type   payload: dict
+         :param  payload: (required) dictionary structure containing::
+             'name':         new folder's name, cannot be empty
+             'description':  new folder's description
+         :type   payload: dict
 
-        :returns:   detailed folder information
-        :rtype:     dict
+         :returns:   detailed folder information
+         :rtype:     dict
 
-        :raises: RequestParameterMissingException
+         :raises: RequestParameterMissingException
         """
         update_payload = UpdateLibraryFolderPayload(**payload)
         return self.service.update(trans, encoded_folder_id, update_payload)

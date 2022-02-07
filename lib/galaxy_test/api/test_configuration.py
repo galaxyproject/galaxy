@@ -14,19 +14,18 @@ TEST_KEYS_FOR_ALL_USERS = [
     'allow_user_dataset_purge',
 ]
 TEST_KEYS_FOR_ADMIN_ONLY = [
-    'library_import_dir',
-    'user_library_import_dir',
-    'allow_library_path_paste',
-    'allow_user_deletion',
+    "library_import_dir",
+    "user_library_import_dir",
+    "allow_library_path_paste",
+    "allow_user_deletion",
 ]
 
 
 class ConfigurationApiTestCase(ApiTestCase):
-
     def test_whoami(self):
         response = self._get("whoami")
         self._assert_status_code_is(response, 200)
-        assert response.json()['email'] == TEST_USER
+        assert response.json()["email"] == TEST_USER
 
     def test_normal_user_configuration(self):
         config = self._get_configuration()
@@ -53,5 +52,5 @@ class ConfigurationApiTestCase(ApiTestCase):
         response = self._get("version")
         self._assert_status_code_is(response, 200)
         data = response.json()
-        assert 'version_major' in data
-        assert 'version_minor' in data
+        assert "version_major" in data
+        assert "version_minor" in data

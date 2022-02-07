@@ -1,7 +1,11 @@
 from logging import getLogger
 from typing import Optional
 
-from fastapi import Body, Path, Query
+from fastapi import (
+    Body,
+    Path,
+    Query,
+)
 
 from galaxy import exceptions
 from galaxy.managers.context import ProvidesHistoryContext
@@ -24,21 +28,20 @@ from . import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
-    Router
+    Router,
 )
 
 log = getLogger(__name__)
 
-router = Router(tags=['dataset collections'])
+router = Router(tags=["dataset collections"])
 
 DatasetCollectionIdPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    description="The encoded identifier of the dataset collection."
+    ..., description="The encoded identifier of the dataset collection."
 )
 
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
     default=DatasetCollectionInstanceType.history,
-    description="The type of collection instance. Either `history` (default) or `library`."
+    description="The type of collection instance. Either `history` (default) or `library`.",
 )
 
 
@@ -47,7 +50,7 @@ class FastAPIDatasetCollections:
     service: DatasetCollectionsService = depends(DatasetCollectionsService)
 
     @router.post(
-        '/api/dataset_collections',
+        "/api/dataset_collections",
         summary="Create a new dataset collection instance.",
     )
     def create(
@@ -58,7 +61,7 @@ class FastAPIDatasetCollections:
         return self.service.create(trans, payload)
 
     @router.post(
-        '/api/dataset_collections/{id}/copy',
+        "/api/dataset_collections/{id}/copy",
         summary="Copy the given collection datasets to a new collection using a new `dbkey` attribute.",
     )
     def copy(
@@ -70,7 +73,7 @@ class FastAPIDatasetCollections:
         self.service.copy(trans, id, payload)
 
     @router.get(
-        '/api/dataset_collections/{id}/attributes',
+        "/api/dataset_collections/{id}/attributes",
         summary="Returns `dbkey`/`extension` attributes for all the collection elements.",
     )
     def attributes(
@@ -82,7 +85,7 @@ class FastAPIDatasetCollections:
         return self.service.attributes(trans, id, instance_type)
 
     @router.get(
-        '/api/dataset_collections/{id}/suitable_converters',
+        "/api/dataset_collections/{id}/suitable_converters",
         summary="Returns a list of applicable converters for all datatypes in the given collection.",
     )
     def suitable_converters(
@@ -94,7 +97,7 @@ class FastAPIDatasetCollections:
         return self.service.suitable_converters(trans, id, instance_type)
 
     @router.get(
-        '/api/dataset_collections/{id}',
+        "/api/dataset_collections/{id}",
         summary="Returns detailed information about the given collection.",
     )
     def show(
@@ -106,7 +109,7 @@ class FastAPIDatasetCollections:
         return self.service.show(trans, id, instance_type)
 
     @router.get(
-        '/api/dataset_collections/{hdca_id}/contents/{parent_id}',
+        "/api/dataset_collections/{hdca_id}/contents/{parent_id}",
         name="contents_dataset_collection",
         summary="Returns direct child contents of indicated dataset collection parent ID.",
     )
@@ -169,7 +172,7 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         self.service.copy(trans, id, update_payload)
 
     @expose_api
-    def attributes(self, trans: ProvidesHistoryContext, id, instance_type='history'):
+    def attributes(self, trans: ProvidesHistoryContext, id, instance_type="history"):
         """
         GET /api/dataset_collections/{hdca_id}/attributes
 
@@ -178,7 +181,7 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         return self.service.attributes(trans, id, instance_type)
 
     @expose_api
-    def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
+    def suitable_converters(self, trans: ProvidesHistoryContext, id, instance_type="history", **kwds):
         """
         GET /api/dataset_collections/{hdca_id}/suitable_converters
 
@@ -187,7 +190,7 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         return self.service.suitable_converters(trans, id, instance_type)
 
     @expose_api
-    def show(self, trans: ProvidesHistoryContext, id, instance_type='history', **kwds):
+    def show(self, trans: ProvidesHistoryContext, id, instance_type="history", **kwds):
         """
         GET /api/dataset_collections/{hdca_id}
         GET /api/dataset_collections/{ldca_id}?instance_type=library
@@ -195,7 +198,16 @@ class DatasetCollectionsController(BaseGalaxyAPIController):
         return self.service.show(trans, id, instance_type)
 
     @expose_api
-    def contents(self, trans: ProvidesHistoryContext, hdca_id, parent_id, instance_type='history', limit=None, offset=None, **kwds):
+    def contents(
+        self,
+        trans: ProvidesHistoryContext,
+        hdca_id,
+        parent_id,
+        instance_type="history",
+        limit=None,
+        offset=None,
+        **kwds,
+    ):
         """
         GET /api/dataset_collection/{hdca_id}/contents/{parent_id}?limit=100&offset=0
 

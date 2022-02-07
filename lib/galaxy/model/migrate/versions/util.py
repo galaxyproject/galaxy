@@ -6,7 +6,7 @@ from sqlalchemy import (
     DDL,
     Index,
     Table,
-    Text
+    Text,
 )
 from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
@@ -14,46 +14,46 @@ log = logging.getLogger(__name__)
 
 
 def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
+    if migrate_engine.name in ["postgres", "postgresql"]:
         return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
+    elif migrate_engine.name in ["mysql", "sqlite"]:
         return 0
     else:
-        raise Exception(f'Unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unknown database type: {migrate_engine.name}")
 
 
 def engine_true(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
+    if migrate_engine.name in ["postgres", "postgresql"]:
         return "TRUE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
+    elif migrate_engine.name in ["mysql", "sqlite"]:
         return 1
     else:
-        raise Exception(f'Unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unknown database type: {migrate_engine.name}")
 
 
-def nextval(migrate_engine, table, col='id'):
-    if migrate_engine.name in ['postgres', 'postgresql']:
+def nextval(migrate_engine, table, col="id"):
+    if migrate_engine.name in ["postgres", "postgresql"]:
         return f"nextval('{table}_{col}_seq')"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
+    elif migrate_engine.name in ["mysql", "sqlite"]:
         return "null"
     else:
-        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unable to convert data for unknown database type: {migrate_engine.name}")
 
 
 def localtimestamp(migrate_engine):
-    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
+    if migrate_engine.name in ["mysql", "postgres", "postgresql"]:
         return "LOCALTIMESTAMP"
-    elif migrate_engine.name == 'sqlite':
+    elif migrate_engine.name == "sqlite":
         return "current_date || ' ' || current_time"
     else:
-        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
+        raise Exception(f"Unable to convert data for unknown database type: {migrate_engine.name}")
 
 
 def truncate_index_name(index_name, engine):
     # does what sqlalchemy does, see https://github.com/sqlalchemy/sqlalchemy/blob/8455a11bcc23e97afe666873cd872b0f204848d8/lib/sqlalchemy/sql/compiler.py#L4696
     max_index_name_length = engine.dialect.max_index_name_length or engine.dialect.max_identifier_length
     if len(index_name) > max_index_name_length:
-        suffix = hashlib.md5(index_name.encode('utf-8')).hexdigest()[-4:]
+        suffix = hashlib.md5(index_name.encode("utf-8")).hexdigest()[-4:]
         index_name = f"{index_name[0:max_index_name_length - 8]}_{suffix}"
     return index_name
 
@@ -91,13 +91,13 @@ def add_column(column, table, metadata, **kwds):
         migrate_engine = metadata.bind
         if not isinstance(table, Table):
             table = Table(table, metadata, autoload=True)
-        if migrate_engine.name == 'sqlite' and column.index and column.foreign_keys:
+        if migrate_engine.name == "sqlite" and column.index and column.foreign_keys:
             # SQLAlchemy Migrate has a bug when adding a column with both a
             # ForeignKey and an index in SQLite. Since SQLite creates an index
             # anyway, we can drop the explicit index creation.
             # TODO: this is hacky, but it solves this^ problem. Needs better solution.
-            index_to_create = (kwds['index_name'], table, column.name)
-            del kwds['index_name']
+            index_to_create = (kwds["index_name"], table, column.name)
+            del kwds["index_name"]
             column.index = False
         column.create(table, **kwds)
         assert column is table.c[column.name]
@@ -160,7 +160,7 @@ def add_index(index_name, table, column_name, metadata=None, **kwds):
             column = table.c[column_name]
             # MySQL cannot index a TEXT/BLOB column without specifying mysql_length
             if isinstance(column.type, (BLOB, MEDIUMBLOB, Text)):
-                kwds.setdefault('mysql_length', 200)
+                kwds.setdefault("mysql_length", 200)
             index = Index(index_name, column, **kwds)
             index.create()
         else:

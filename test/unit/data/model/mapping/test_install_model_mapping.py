@@ -2,7 +2,10 @@
 See documentation + annotated examples for these tests in test_model_mapping.py.
 """
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 import pytest
 
@@ -18,34 +21,32 @@ from .common import (
 
 
 class BaseTest(AbstractBaseTest):
-
     def get_model(self):
         return model
 
 
 class TestToolShedRepository(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'tool_shed_repository'
+        assert cls_.__tablename__ == "tool_shed_repository"
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        tool_shed = 'a'
-        name = 'b'
-        description = 'c'
-        owner = 'd'
-        installed_changeset_revision = 'e'
-        changeset_revision = 'f'
-        ctx_rev = 'g'
-        metadata_ = 'h'
+        tool_shed = "a"
+        name = "b"
+        description = "c"
+        owner = "d"
+        installed_changeset_revision = "e"
+        changeset_revision = "f"
+        ctx_rev = "g"
+        metadata_ = "h"
         includes_datatypes = True
-        tool_shed_status = 'i'
+        tool_shed_status = "i"
         deleted = True
         uninstalled = True
         dist_to_shed = True
-        status = 'j'
-        error_message = 'k'
+        status = "j"
+        error_message = "k"
 
         obj = cls_()
         obj.create_time = create_time
@@ -89,7 +90,8 @@ class TestToolShedRepository(BaseTest):
 
     def test_relationships(
         self,
-        session, cls_,
+        session,
+        cls_,
         repository,
         tool_version,
         tool_dependency,
@@ -105,13 +107,13 @@ class TestToolShedRepository(BaseTest):
             assert collection_consists_of_objects(stored_obj.tool_versions, tool_version)
             assert collection_consists_of_objects(stored_obj.tool_dependencies, tool_dependency)
             assert collection_consists_of_objects(
-                stored_obj.required_repositories, repository_repository_dependency_association)
+                stored_obj.required_repositories, repository_repository_dependency_association
+            )
 
 
 class TestRepositoryRepositoryDependencyAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_repository_dependency_association'
+        assert cls_.__tablename__ == "repository_repository_dependency_association"
 
     def test_columns(self, session, cls_, repository, repository_dependency):
         create_time = datetime.now()
@@ -142,9 +144,8 @@ class TestRepositoryRepositoryDependencyAssociation(BaseTest):
 
 
 class TestRepositoryDependency(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'repository_dependency'
+        assert cls_.__tablename__ == "repository_dependency"
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
@@ -171,14 +172,13 @@ class TestRepositoryDependency(BaseTest):
 
 
 class TestToolDependency(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'tool_dependency'
+        assert cls_.__tablename__ == "tool_dependency"
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        name, version, type, status, error_message = 'a', 'b', 'c', 'd', 'e'
+        name, version, type, status, error_message = "a", "b", "c", "d", "e"
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
@@ -204,7 +204,7 @@ class TestToolDependency(BaseTest):
     def test_relationships(self, session, cls_, repository):
         obj = cls_()
         obj.tool_shed_repository = repository
-        obj.status = 'a'
+        obj.status = "a"
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -212,14 +212,13 @@ class TestToolDependency(BaseTest):
 
 
 class TestToolVersion(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'tool_version'
+        assert cls_.__tablename__ == "tool_version"
 
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        tool_id = 'a'
+        tool_id = "a"
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
@@ -265,9 +264,8 @@ class TestToolVersion(BaseTest):
 
 
 class TestToolVersionAssociation(BaseTest):
-
     def test_table(self, cls_):
-        assert cls_.__tablename__ == 'tool_version_association'
+        assert cls_.__tablename__ == "tool_version_association"
 
     def test_columns(self, session, cls_, tool_version_factory):
         tool_version = tool_version_factory()
@@ -292,12 +290,14 @@ class TestToolVersionAssociation(BaseTest):
 
 # Misc. helper fixtures.
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def init_model(engine):
     model.mapper_registry.metadata.create_all(engine)
 
 
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
+
 
 @pytest.fixture
 def repository(session):
@@ -322,7 +322,7 @@ def repository_dependency(session, repository):
 def tool_dependency(session, repository):
     instance = model.ToolDependency()
     instance.tool_shed_repository = repository
-    instance.status = 'a'
+    instance.status = "a"
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -334,10 +334,12 @@ def tool_version(session):
 
 # Fixtures yielding factory functions.
 
+
 @pytest.fixture
 def tool_version_association_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersionAssociation(*args, **kwds)
+
     return make_instance
 
 
@@ -345,4 +347,5 @@ def tool_version_association_factory():
 def tool_version_factory():
     def make_instance(*args, **kwds):
         return model.ToolVersion(*args, **kwds)
+
     return make_instance

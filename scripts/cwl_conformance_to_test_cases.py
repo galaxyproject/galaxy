@@ -8,7 +8,8 @@ THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(THIS_DIRECTORY, os.pardir))
 CWL_API_TESTS_DIRECTORY = os.path.join(GALAXY_ROOT_DIR, "lib", "galaxy_test", "api", "cwl")
 
-TEST_FILE_TEMPLATE = string.Template('''"""Test CWL conformance for version ${version}."""
+TEST_FILE_TEMPLATE = string.Template(
+    '''"""Test CWL conformance for version ${version}."""
 
 import pytest
 
@@ -17,9 +18,11 @@ from ..test_workflows_cwl import BaseCwlWorkflowTestCase
 
 class CwlConformanceTestCase(BaseCwlWorkflowTestCase):
     """Test case mapping to CWL conformance tests for version ${version}."""
-$tests''')
+$tests'''
+)
 
-TEST_TEMPLATE = string.Template('''
+TEST_TEMPLATE = string.Template(
+    '''
 ${marks}    def test_conformance_${version_simple}_${label}(self):
         """${doc}
 
@@ -28,7 +31,8 @@ ${marks}    def test_conformance_${version_simple}_${label}(self):
 ${cwl_test_def}
         """  # noqa: W293
         self.cwl_populator.run_conformance_test("""${version}""", """${doc}""")
-''')
+'''
+)
 
 RED_TESTS = {
     "v1.0": [
@@ -356,7 +360,7 @@ def main():
 
     for i, conformance_test in enumerate(conformance_tests_gen(os.path.join(conformance_tests_dir, version))):
         test_with_doc = conformance_test.copy()
-        if 'doc' not in test_with_doc:
+        if "doc" not in test_with_doc:
             raise Exception(f"No doc in test [{test_with_doc}]")
         del test_with_doc["doc"]
         cwl_test_def = yaml.dump(test_with_doc, default_flow_style=False)
@@ -375,15 +379,18 @@ def main():
             marks += "    @pytest.mark.green\n"
 
         if not {"command_line_tool", "expression_tool", "workflow"}.intersection(tags):
-            print(f"PROBLEM - test [{label}] tagged with neither command_line_tool, expression_tool, nor workflow", file=sys.stderr)
+            print(
+                f"PROBLEM - test [{label}] tagged with neither command_line_tool, expression_tool, nor workflow",
+                file=sys.stderr,
+            )
 
         template_kwargs = {
-            'version_simple': version_simple,
-            'version': version,
-            'doc': conformance_test['doc'],
-            'cwl_test_def': cwl_test_def,
-            'label': label.replace("-", "_"),
-            'marks': marks,
+            "version_simple": version_simple,
+            "version": version,
+            "doc": conformance_test["doc"],
+            "cwl_test_def": cwl_test_def,
+            "label": label.replace("-", "_"),
+            "marks": marks,
         }
         test_body = TEST_TEMPLATE.safe_substitute(template_kwargs)
         tests += test_body
@@ -394,11 +401,13 @@ def main():
         if is_red:
             red_tests_found.add(label)
 
-    test_file_contents = TEST_FILE_TEMPLATE.safe_substitute({
-        'version': version,
-        'version_simple': version_simple,
-        'tests': tests,
-    })
+    test_file_contents = TEST_FILE_TEMPLATE.safe_substitute(
+        {
+            "version": version,
+            "version_simple": version_simple,
+            "tests": tests,
+        }
+    )
 
     test_file = os.path.join(CWL_API_TESTS_DIRECTORY, f"test_cwl_conformance_{version_simple}.py")
     with open(test_file, "w") as f:

@@ -10,8 +10,7 @@ import pytest
 from galaxy.tools.data_fetch import main
 
 github_fetch = pytest.mark.skipif(
-    not environ.get('GALAXY_TEST_INCLUDE_SLOW'),
-    reason="GALAXY_TEST_INCLUDE_SLOW not set"
+    not environ.get("GALAXY_TEST_INCLUDE_SLOW"), reason="GALAXY_TEST_INCLUDE_SLOW not set"
 )
 
 
@@ -27,12 +26,7 @@ def test_simple_path_get():
                     "destination": {
                         "type": "hdas",
                     },
-                    "elements": [
-                        {
-                            "src": "path",
-                            "path": example_path
-                        }
-                    ]
+                    "elements": [{"src": "path", "path": example_path}],
                 }
             ]
         }
@@ -54,12 +48,7 @@ def test_simple_list_path_get():
                         "type": "hdca",
                         "object_id": 76,
                     },
-                    "elements": [
-                        {
-                            "src": "path",
-                            "path": example_path
-                        }
-                    ]
+                    "elements": [{"src": "path", "path": example_path}],
                 }
             ]
         }
@@ -86,15 +75,12 @@ def test_hdas_single_url_error():
                         "type": "hdas",
                     },
                     "elements": [
-                        {
-                            "src": "path",
-                            "path": example_path
-                        },
+                        {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed"
-                        }
-                    ]
+                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                        },
+                    ],
                 }
             ]
         }
@@ -108,7 +94,9 @@ def test_hdas_single_url_error():
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        assert (
+            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        )
 
 
 @github_fetch
@@ -125,15 +113,12 @@ def test_hdca_collection_element_failed():
                         "type": "hdca",
                     },
                     "elements": [
-                        {
-                            "src": "path",
-                            "path": example_path
-                        },
+                        {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed"
-                        }
-                    ]
+                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                        },
+                    ],
                 }
             ]
         }
@@ -143,7 +128,9 @@ def test_hdca_collection_element_failed():
         output = galaxy_json.get("__unnamed_outputs")[0]
         assert "error_message" in output
         error = output["error_message"]
-        assert "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        assert (
+            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        )
 
 
 @github_fetch
@@ -161,17 +148,14 @@ def test_hdca_allow_failed_collections():
                         "type": "hdca",
                     },
                     "elements": [
-                        {
-                            "src": "path",
-                            "path": example_path
-                        },
+                        {"src": "path", "path": example_path},
                         {
                             "src": "url",
-                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed"
-                        }
-                    ]
+                            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                        },
+                    ],
                 }
-            ]
+            ],
         }
         execute_context.execute_request(request)
         galaxy_json = execute_context.galaxy_json
@@ -184,7 +168,9 @@ def test_hdca_allow_failed_collections():
         assert "error_message" not in elements[0]
         assert "error_message" in elements[1]
         error = elements[1]["error_message"]
-        assert "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        assert (
+            "Failed to fetch url https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed" in error
+        )
 
 
 def test_hdca_failed_expansion():
@@ -227,7 +213,6 @@ def _execute_context():
 
 
 class ExecuteContext:
-
     def __init__(self, directory):
         self.job_directory = directory
         self.galaxy_json_path = os.path.join(directory, "galaxy.json")

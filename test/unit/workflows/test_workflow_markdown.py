@@ -1,7 +1,13 @@
 from galaxy import model
-from galaxy.managers.markdown_util import resolve_invocation_markdown, validate_galaxy_markdown
+from galaxy.managers.markdown_util import (
+    resolve_invocation_markdown,
+    validate_galaxy_markdown,
+)
 from .test_workflow_progress import TEST_WORKFLOW_YAML
-from .workflow_support import MockTrans, yaml_to_model
+from .workflow_support import (
+    MockTrans,
+    yaml_to_model,
+)
 
 
 def test_workflow_section_expansion():

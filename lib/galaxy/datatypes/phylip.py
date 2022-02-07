@@ -8,7 +8,10 @@ Created on January. 05, 2018
 Phylip datatype sniffer
 """
 from galaxy import util
-from galaxy.datatypes.data import get_file_peek, Text
+from galaxy.datatypes.data import (
+    get_file_peek,
+    Text,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -20,12 +23,14 @@ from .metadata import MetadataElement
 @build_sniff_from_prefix
 class Phylip(Text):
     """Phylip format stores a multiple sequence alignment"""
+
     edam_data = "data_0863"
     edam_format = "format_1997"
     file_ext = "phylip"
 
-    MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True,
-                    visible=False, optional=True, no_value=0)
+    MetadataElement(
+        name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
+    )
 
     def set_meta(self, dataset, **kwd):
         """
@@ -45,8 +50,8 @@ class Phylip(Text):
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def sniff_strict_interleaved(self, nb_seq, seq_length, alignment_prefix):
         found_seq_length = None
@@ -70,7 +75,7 @@ class Phylip(Text):
                 # All sequence parts should have the same length
                 return False
             # Fail if sequence is not ascii
-            seq.encode('ascii')
+            seq.encode("ascii")
             if any(str.isdigit(c) for c in seq):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
@@ -100,7 +105,7 @@ class Phylip(Text):
                 # All sequence parts should have the same length
                 return False
             # Fail if sequence is not ascii
-            seq.encode('ascii')
+            seq.encode("ascii")
             if any(str.isdigit(c) for c in seq):
                 # Could tighten up further by requiring IUPAC strings chars
                 return False
