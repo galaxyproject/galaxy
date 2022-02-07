@@ -21,7 +21,6 @@ define({
     Videos: "Videos",
     "Community Hub": "Gemeindezentrum",
     "How to Cite Galaxy": "Wie man Galaxie zitiert",
-    "Interactive Tours": "Interactive Tours",
     User: "Benutzer",
     Login: "Anmeldung",
     Register: "Neu registrieren",
