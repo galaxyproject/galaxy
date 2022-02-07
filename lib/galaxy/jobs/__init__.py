@@ -2258,10 +2258,10 @@ class JobWrapper(HasResourceParameters):
         method should be removed ASAP and replaced with some properly generic
         and stateful way of determining link-only datasets. -nate
         """
-        if self.tool:
+        if self.tool and self.tool.id == 'upload1':
             job = self.get_job()
             param_dict = job.get_param_values(self.app)
-            return self.tool.id == 'upload1' and param_dict.get('link_data_only', None) == 'link_to_files'
+            return param_dict.get('link_data_only') == 'link_to_files'
         else:
             # The tool is unavailable, we try to move the outputs.
             return False
