@@ -19,7 +19,7 @@ define({
     Search: "Suche",
     "Mailing Lists": "Mailinglisten",
     Videos: "Videos",
-    "Community Hub": "Gemeindezentrum",
+    "Community Hub": "Community Hub",
     "How to Cite Galaxy": "Wie man Galaxie zitiert",
     User: "Benutzer",
     Login: "Anmeldung",
