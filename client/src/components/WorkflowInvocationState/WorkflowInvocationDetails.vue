@@ -54,7 +54,6 @@
 import ParameterStep from "./ParameterStep.vue";
 import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
-import { monitorHistoryUntilTrue } from "components/providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
@@ -76,7 +75,6 @@ export default {
     },
     created: function () {
         this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-        this.monitorHistory();
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
@@ -100,18 +98,6 @@ export default {
                 }
             }
             return label;
-        },
-        // prettier-ignore
-        monitorHistory() {
-            // rework this into history or invocation subscription in the future ...
-            if (!this.invocationAndJobTerminal) {
-                const stopFn = () => this.invocationAndJobTerminal == true;
-                const monitor$ = monitorHistoryUntilTrue(stopFn, this.invocation.history_id)
-                this.listenTo(monitor$, {
-                    error: (err) => console.error("An error occured while monitoring history for datasets", err),
-                    complete: () => console.log("Invocation finished, stopping history dataset monitor"),
-                });
-            }
         },
     },
 };
