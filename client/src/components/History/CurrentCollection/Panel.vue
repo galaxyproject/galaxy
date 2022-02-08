@@ -1,11 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider
-        v-if="dsc"
-        :url="getUrl(selectedCollection)"
-        :auto-refresh="false"
-        v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :url="getUrl(selectedCollection)" :auto-refresh="false" v-slot="{ result: payload }">
         <ExpandedItems
             :scope-key="selectedCollection.id"
             :get-item-key="(item) => item.element_index"
