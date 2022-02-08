@@ -125,6 +125,7 @@ config/galaxy.yml.sample:galaxy
 -  job_runner_monitor_sleep
 -  mailing_join_body
 -  mailing_join_subject
+-  mailing_lists_url
 -  panel_views
 -  panel_views_dir
 -  sentry_event_level

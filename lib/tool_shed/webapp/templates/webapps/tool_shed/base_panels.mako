@@ -142,7 +142,7 @@
                         [_('Tool Shed Wiki'), app.config.get( "wiki_url", "https://galaxyproject.org/toolshed" ), "_blank" ],
                         [_('Support'), app.config.get( "support_url", "https://galaxyproject.org/support" ), "_blank" ],
                         [_('Videos'), app.config.get( "screencasts_url", "https://www.youtube.com/c/galaxyproject" ), "_blank" ],
-                        [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
+                        [_('Community Hub'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
                         [_('How to Cite Galaxy'), app.config.get( "citation_url", "https://academic.oup.com/nar/article/48/W1/W395/5849904" ), "_blank" ]
                     ] )
                     tab( "help", _("Help"), None, menu_options=menu_options )
