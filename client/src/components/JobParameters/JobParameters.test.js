@@ -5,7 +5,7 @@ import { mount, createLocalVue } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import JobParameters from "./JobParameters";
 import paramResponse from "./parameters-response.json";
-import raw from "components/providers/History/test/json/Dataset.json";
+import raw from "components/providers/test/json/Dataset.json";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 

@@ -3,15 +3,15 @@ import { DatasetCollection } from "./DatasetCollection";
 import { STATES } from "./states";
 
 // test data
-import raw from "components/providers/History/test/json/DatasetCollection.json";
+import raw from "components/providers/test/json/DatasetCollection.json";
 
 // error on load
-import rawError from "components/providers/History/test/json/DatasetCollection.error.json";
+import rawError from "components/providers/test/json/DatasetCollection.error.json";
 
 // mixed bag
-import rawProcessing from "components/providers/History/test/json/DatasetCollection.processing.json";
-import rawHomogeneous from "components/providers/History/test/json/DatasetCollection.homogeneous.json";
-import rawHeterogeneous from "components/providers/History/test/json/DatasetCollection.heterogeneous.json";
+import rawProcessing from "components/providers/test/json/DatasetCollection.processing.json";
+import rawHomogeneous from "components/providers/test/json/DatasetCollection.homogeneous.json";
+import rawHeterogeneous from "components/providers/test/json/DatasetCollection.heterogeneous.json";
 
 describe("DatasetCollection", () => {
     const model = new DatasetCollection(raw);
