@@ -163,7 +163,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         self._assert_status_code_is(show_response, 200)
         self.__assert_matches_hda(hda1, show_response.json())
 
-    def test_hda_copy(self):
+    def _create_copy(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
         create_data = dict(
             source='hda',
@@ -173,7 +173,18 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert self.__count_contents(second_history_id) == 0
         create_response = self._post(f"histories/{second_history_id}/contents", create_data, json=True)
         self._assert_status_code_is(create_response, 200)
-        assert self.__count_contents(second_history_id) == 1
+        return create_response.json()
+
+    def test_hda_copy(self):
+        response = self._create_copy()
+        assert self.__count_contents(response['history_id']) == 1
+
+    def test_inheritance_chain(self):
+        response = self._create_copy()
+        inheritance_chain_response = self._get(f"datasets/{response['id']}/inheritance_chain")
+        self._assert_status_code_is_ok(inheritance_chain_response)
+        inheritance_chain = inheritance_chain_response.json()
+        assert len(inheritance_chain) == 1
 
     def test_library_copy(self):
         ld = self.library_populator.new_library_dataset("lda_test_library")

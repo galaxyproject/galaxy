@@ -47,7 +47,7 @@ from galaxy.webapps.galaxy.api.common import (
 )
 from galaxy.webapps.galaxy.services.datasets import (
     ConvertedDatasetsMap,
-    DatasetInheritanceChainEntry,
+    DatasetInheritanceChain,
     DatasetsService,
     DatasetStorageDetails,
     DatasetTextContentDetails,
@@ -122,7 +122,7 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-    ) -> List[DatasetInheritanceChainEntry]:
+    ) -> DatasetInheritanceChain:
         return self.service.show_inheritance_chain(trans, dataset_id, hda_ldda)
 
     @router.get(
