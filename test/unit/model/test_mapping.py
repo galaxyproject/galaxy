@@ -1523,7 +1523,7 @@ class TestHistoryDatasetAssociation(BaseTest):
         peek = 'e'
         tool_version = 'f'
         extension = 'g'
-        _metadata = 'h'
+        _metadata = {"key": "value"}
         designation = 'i'
         deleted = False
         visible = False
@@ -1725,7 +1725,11 @@ class TestHistoryDatasetAssociationHistory(BaseTest):
         assert cls_.__tablename__ == 'history_dataset_association_history'
 
     def test_columns(self, session, cls_, history_dataset_association, extended_metadata):
-        name, update_time, version, extension, metadata = 'a', datetime.now(), 2, 'b', 'c'
+        name = "a"
+        update_time = datetime.now()
+        version = 2
+        extension = "b"
+        metadata = {"key": "value"}
         obj = cls_(
             history_dataset_association.id,
             name,
@@ -3359,7 +3363,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         validated_state_message = 'k'
         visible = True
         message = 'm'
-        _metadata = 'n'
+        _metadata = {"key": "value"}
         copied_from_ldda = library_dataset_dataset_association_factory()
         parent = library_dataset_dataset_association_factory()
         persist(session, copied_from_ldda)
