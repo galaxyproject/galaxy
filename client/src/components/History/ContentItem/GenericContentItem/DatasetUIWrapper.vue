@@ -18,7 +18,6 @@
 import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
 import { Dataset } from "../../model";
 import { deleteContent, updateContentFields } from "../../model/queries";
-import { cacheContent } from "components/providers/History/caching";
 
 export default {
     components: {
@@ -44,8 +43,7 @@ export default {
             this.expanded = !this.expanded;
         },
         async onDelete(opts = {}) {
-            const ajaxResult = await deleteContent(this.dataset, opts);
-            await cacheContent(ajaxResult);
+            await deleteContent(this.dataset, opts);
         },
         async onUnhide() {
             await this.onUpdate({ visible: true });
@@ -54,8 +52,7 @@ export default {
             await this.onUpdate({ deleted: false });
         },
         async onUpdate(changes = {}) {
-            const newContent = await updateContentFields(this.dataset, changes);
-            await cacheContent(newContent);
+            await updateContentFields(this.dataset, changes);
         },
     },
 };

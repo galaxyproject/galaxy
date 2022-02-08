@@ -15,7 +15,6 @@
 import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model";
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
-import { cacheContent } from "components/providers/History/caching";
 
 export default {
     components: {
@@ -33,13 +32,7 @@ export default {
         async onDelete(flags = {}) {
             const { recursive = false, purge = false } = flags;
             const collection = this.item;
-            const result = await deleteDatasetCollection(collection, recursive, purge);
-            if (result.deleted) {
-                const newFields = Object.assign(collection, {
-                    isDeleted: result.deleted,
-                });
-                await cacheContent(newFields);
-            }
+            await deleteDatasetCollection(collection, recursive, purge);
         },
         async onUnhide() {
             await this.onUpdate({ visible: true });
@@ -48,8 +41,7 @@ export default {
             await this.onUpdate({ deleted: false });
         },
         async onUpdate(changes) {
-            const newContent = await updateContentFields(this.item, changes);
-            await cacheContent(newContent);
+            await updateContentFields(this.item, changes);
         },
     },
 };

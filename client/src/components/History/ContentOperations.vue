@@ -168,7 +168,6 @@ import {
     purgeAllDeletedContent,
 } from "./model";
 import { createDatasetCollection } from "./model/queries";
-import { cacheContent } from "components/providers/History/caching";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 import ContentFilters from "./ContentFilters";
@@ -283,14 +282,8 @@ export default {
             const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
             const newCollection = await createDatasetCollection(this.history, modalResult);
 
-            // cache the collection
-            await cacheContent(newCollection);
-
             // have to hide the source items if that was requested
             if (modalResult.hide_source_items) {
-                this.contentSelection.forEach(async (dataset) => {
-                    await cacheContent({ ...dataset, visible: false }, true);
-                });
                 this.$emit("resetSelection");
             }
         },
