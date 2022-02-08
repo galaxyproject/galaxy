@@ -913,6 +913,11 @@ class BaseDatasetPopulator(BasePopulator):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def make_public(self, history_id: str) -> dict:
+        sharing_response = self._put(f"histories/{history_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
     def validate_dataset(self, history_id: str, dataset_id: str) -> Dict[str, Any]:
         url = f"histories/{history_id}/contents/{dataset_id}/validate"
         update_response = self._put(url)
@@ -1035,13 +1040,12 @@ class BaseDatasetPopulator(BasePopulator):
         return len(contents)
 
     def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
+        # Make history public so we can import by url
+        self.make_public(history_id)
         # Export the history.
-        download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
+        download_url = self.export_url(history_id, export_kwds, api_key, check_download=True)
 
-        # Create download for history
-        full_download_url = urllib.parse.urljoin(download_path, f"?key={api_key}")
-
-        import_data = dict(archive_source=full_download_url, archive_type="url")
+        import_data = dict(archive_source=download_url, archive_type="url")
 
         imported_history_id = self.import_history_and_wait_for_name(import_data, history_name)
 
