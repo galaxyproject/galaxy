@@ -622,6 +622,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     involucro_path: str
     mulled_channels: List[str]
     nginx_upload_store: str
+    tus_upload_store: str
     pretty_datetime_format: str
     visualization_plugins_directory: str
     galaxy_infrastructure_url: str
@@ -866,6 +867,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         if self.nginx_upload_store:
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
 
+        if self.tus_upload_store:
+            self.tus_upload_store = os.path.abspath(self.tus_upload_store)
+
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = self._in_root_dir(kwargs.get("object_store_cache_path", self._in_data_dir("object_store_cache")))
@@ -1095,6 +1099,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.managed_config_dir,
             self.new_file_path,
             self.nginx_upload_store,
+            self.tus_upload_store,
             self.object_store_cache_path,
             self.template_cache_path,
             self.tool_data_path,

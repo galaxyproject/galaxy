@@ -2342,6 +2342,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server will be placed. Defaults to
+    new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``chunk_upload_size``
 ~~~~~~~~~~~~~~~~~~~~~
