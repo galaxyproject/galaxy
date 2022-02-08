@@ -14,6 +14,7 @@
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'lims_doc_url'              : app.config.get("lims_doc_url", "https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'            : app.config.default_locale,
+            'support_url'               : app.config.support_url,
             'screencasts_url'           : app.config.screencasts_url,
             'wiki_url'                  : app.config.wiki_url,
             'citation_url'              : app.config.citation_url,
