@@ -58,13 +58,9 @@ import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
 import { CollectionContentItem } from "../ContentItem";
 import HistoryListing from "components/History/HistoryListing";
-import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 
 export default {
-    filters: {
-        reportPayload,
-    },
     components: {
         UrlDataProvider,
         Layout,

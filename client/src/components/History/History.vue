@@ -96,15 +96,11 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
-import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
 import HistoryListing from "./HistoryListing";
 import { HistoryContentItem } from "./ContentItem";
 
 export default {
-    filters: {
-        reportPayload,
-    },
     components: {
         LoadingSpan,
         UrlDataProvider,

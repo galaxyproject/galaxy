@@ -29,7 +29,6 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user
                 result: { has_duplicate_inputs: has_duplicate_inputs, has_empty_inputs: has_empty_inputs },
             }),
             DatasetProvider: MockProvider({
-                resultLabel: "item",
                 result: { id: "dataset_id", creating_job: "creating_job" },
             }),
             FontAwesomeIcon: false,
