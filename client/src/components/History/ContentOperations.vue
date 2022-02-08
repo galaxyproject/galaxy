@@ -4,6 +4,7 @@
             <b-button-group>
                 <IconButton
                     title="Select Items"
+                    class="show-history-content-selectors-btn"
                     icon="check-square"
                     :disabled="!hasMatches"
                     :pressed="showSelection"
@@ -280,11 +281,12 @@ export default {
         },
         async buildNewCollection(collectionTypeCode) {
             const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
-            const newCollection = await createDatasetCollection(this.history, modalResult);
+            await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested
             if (modalResult.hide_source_items) {
-                this.$emit("resetSelection");
+                this.$emit("hide-selection", this.contentSelection);
+                this.$emit("reset-selection");
             }
         },
     },

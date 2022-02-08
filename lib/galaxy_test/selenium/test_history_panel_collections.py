@@ -36,11 +36,8 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
 
-        if not self.is_beta_history():
-            # sleep really shouldn't be needed :(
-            time.sleep(1)
-
-            self.home()
+        # sleep really shouldn't be needed :(
+        self.home()
 
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
@@ -222,12 +219,13 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
         if self.is_beta_history():
             self.sleep_for(WAIT_TYPES.HISTORY_POLL)
-            dataset_elements = self.content_item_by_attributes().all()
+            dataset_elements = collection_view.list_items_beta.all()
         else:
             dataset_elements = collection_view.list_items.all()
 
         assert len(dataset_elements) == 2, dataset_elements
         titles = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
+        titles.sort()
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 

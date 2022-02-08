@@ -10,6 +10,7 @@ either through the props, and make updates through the events -->
         class="dataset history-content"
         :id="typeId"
         :class="{ expanded, collapsed, selected }"
+        :data-hid="dataset.hid"
         :data-state="dataset.state"
         @keydown.arrow-left.self.stop="$emit('update:expanded', false)"
         @keydown.arrow-right.self.stop="$emit('update:expanded', true)"

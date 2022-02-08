@@ -9,10 +9,8 @@ import { LastQueue } from "utils/promise-queue";
  *                              whose properties are the attributes assigned to the provider component
  * @return  {VueComponentOptions} Vue component options definition
  */
-const throttlePeriod = 100;
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
-    const queue = new LastQueue(throttlePeriod);
     return {
         props: {
             useCache: {
@@ -25,7 +23,7 @@ export const SingleQueryProvider = (lookup) => {
             },
             autoTime: {
                 type: Number,
-                default: throttlePeriod,
+                default: 500,
             },
         },
         data() {
@@ -33,6 +31,9 @@ export const SingleQueryProvider = (lookup) => {
                 result: null,
                 error: null,
             };
+        },
+        created() {
+            this.queue = new LastQueue(this.autoTime);
         },
         computed: {
             loading() {
@@ -72,7 +73,7 @@ export const SingleQueryProvider = (lookup) => {
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {
-                    lookupPromise = queue.enqueue(lookup, this.$attrs);
+                    lookupPromise = this.queue.enqueue(lookup, this.$attrs);
                 }
                 lookupPromise.then(
                     (result) => {

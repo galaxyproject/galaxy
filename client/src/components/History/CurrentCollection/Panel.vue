@@ -1,7 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :url="getUrl(selectedCollection)" :auto-refresh="false" v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :url="getUrl(selectedCollection)" v-slot="{ result: payload }">
         <ExpandedItems
             :scope-key="selectedCollection.id"
             :get-item-key="(item) => item.element_index"
@@ -54,7 +54,7 @@ import { updateContentFields } from "../model/queries";
 import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
-import CollectionOperations from "./CollectionOperations.vue";
+import CollectionOperations from "./CollectionOperations";
 import Details from "./Details";
 import { CollectionContentItem } from "../ContentItem";
 import HistoryListing from "components/History/HistoryListing";

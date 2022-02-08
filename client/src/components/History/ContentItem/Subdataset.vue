@@ -44,7 +44,7 @@ export default {
             this.$emit("update:expand", val);
         },
         async loadDetails() {
-            await getContentDetails(this.item);
+            const loadedDataset = await getContentDetails(this.item);
             this.localItem = loadedDataset;
         },
     },
