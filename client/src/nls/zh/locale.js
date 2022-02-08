@@ -274,7 +274,7 @@ define({
     "Change datatype": "更改数据类型",
     "Convert datatype": "转换数据类型",
     "Convert to new format": "转换成新格式",
-    Save: "b保存",
+    Save: "保存",
     Permissions: "权限",
     Datatypes: "数据类型",
     Convert: "转换",
