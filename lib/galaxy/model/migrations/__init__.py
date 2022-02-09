@@ -45,7 +45,7 @@ TSI = ModelId("tsi")  # tool_shed_install model identifier
 
 ALEMBIC_TABLE = "alembic_version"
 SQLALCHEMYMIGRATE_TABLE = "migrate_version"
-SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 179
+SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 180
 SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
 log = logging.getLogger(__name__)
 
