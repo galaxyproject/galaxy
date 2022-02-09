@@ -44,7 +44,6 @@ const actions = {
     },
     fetchPanel: async ({ commit }, panelView) => {
         const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
-        // wait for 15 seconds before committing
         commit("savePanelView", { panelView, panel: data });
     },
 };

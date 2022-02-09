@@ -6,6 +6,7 @@ import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
+import localForage from "localforage";
 
 import config from "config";
 
@@ -35,9 +36,9 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
-// Create vuexpersistence
 const panelsPersistence = new VuexPersistence({
-    storage: window.localStorage,
+    storage: localForage,
+    asyncStorage: true,
     modules: ["panels"],
 });
 
@@ -49,7 +50,6 @@ export function createStore() {
             config: configStore,
             betaHistory: betaHistoryStore,
             panels: panelStore,
-
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,
             histories: historyStore,
