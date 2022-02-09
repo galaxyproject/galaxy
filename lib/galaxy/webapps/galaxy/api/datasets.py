@@ -256,12 +256,12 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
-        metadata_file: Optional[str] = Query(
-            default=None,
+        metadata_name: str = Query(
+            ...,
             description="The name of the metadata file to retrieve.",
         ),
     ):
-        metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_file)
+        metadata_file_path, headers = self.service.get_metadata_file(trans, history_content_id, metadata_name)
         return FileResponse(path=cast(str, metadata_file_path), headers=headers)
 
     @router.get(
@@ -446,13 +446,13 @@ class DatasetsController(BaseGalaxyAPIController):
         return self.service.get_content_as_text(trans, dataset_id)
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
+    def get_metadata_file(self, trans, history_content_id, history_id, metadata_name, **kwd):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
         """
         # TODO: remove open_file parameter when deleting this legacy endpoint
         metadata_file, headers = self.service.get_metadata_file(
-            trans, history_content_id, metadata_file, open_file=True
+            trans, history_content_id, metadata_name, open_file=True
         )
         trans.response.headers.update(headers)
         return metadata_file
