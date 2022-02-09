@@ -243,9 +243,9 @@ body {
         .panel-header-button-toolbox {
             color: $brand-dark;
             flex: 1;
-            padding: 6px;
+            @extend .p-1;
             text-align: center;
-            font-size: 17px;
+            font-size: $h4-font-size;
             align-items: center;
             &:hover {
                 color: $brand-info;
@@ -253,7 +253,6 @@ body {
                 text-decoration: none !important;
                 border-color: $brand-light;
             }
-            text-decoration: none !important;
         }
     }
 }
