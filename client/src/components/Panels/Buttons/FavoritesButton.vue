@@ -1,6 +1,6 @@
 <template>
     <a
-        class="panel-header-button"
+        class="panel-header-button-toolbox"
         @click="onFavorites"
         v-b-tooltip.hover
         :title="tooltipText"
