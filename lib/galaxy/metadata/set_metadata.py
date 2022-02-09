@@ -281,7 +281,13 @@ def set_metadata_portable():
             job.state = final_job_state
         if os.path.exists(tool_script_file):
             with open(tool_script_file) as command_fh:
-                job.command_line = command_fh.read().strip()
+                command_line_lines = []
+                for i, line in enumerate(command_fh):
+                    if i == 0 and line.endswith('COMMAND_VERSION 2>&1;'):
+                        # Don't record version command as part of command line
+                        continue
+                    command_line_lines.append(line)
+                job.command_line = "".join(command_line_lines).strip()
                 export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}

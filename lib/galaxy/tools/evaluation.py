@@ -91,6 +91,7 @@ class ToolEvaluator:
         self.param_dict: Dict[str, Any] = {}
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []
+        self.version_command_line: Optional[str] = None
         self.command_line: Optional[str] = None
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
@@ -445,8 +446,9 @@ class ToolEvaluator:
         global_tool_logs(self._build_config_files, config_file, "Building Config Files")
         global_tool_logs(self._build_param_file, config_file, 'Building Param File')
         global_tool_logs(self._build_command_line, config_file, "Building Command Line")
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
-        return self.command_line, self.extra_filenames, self.environment_variables
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
 
     def _build_command_line(self):
         """
@@ -455,7 +457,6 @@ class ToolEvaluator:
         command = self.tool.command or ''
         param_dict = self.param_dict
         interpreter = self.tool.interpreter
-        version_string_cmd_raw = self.tool.version_string_cmd
         command_line = None
         if not command:
             return
@@ -479,11 +480,14 @@ class ToolEvaluator:
             tool_dir = os.path.abspath(self.tool.tool_dir)
             abs_executable = os.path.join(tool_dir, executable)
             command_line = command_line.replace(executable, f"{interpreter} {shlex.quote(abs_executable)}", 1)
+        self.command_line = command_line
+
+    def _build_version_command(self):
+        version_string_cmd_raw = self.tool.version_string_cmd
         if version_string_cmd_raw:
             version_command_template = string.Template(version_string_cmd_raw)
-            version_string_cmd = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
-            command_line = f"{version_string_cmd} > {self.compute_environment.version_path()} 2>&1;\n{command_line}"
-        self.command_line = command_line
+            version_command = version_command_template.safe_substitute({"__tool_directory__": self.compute_environment.tool_directory()})
+            self.version_command_line = f"{version_command} > {self.compute_environment.version_path()} 2>&1;\n"
 
     def _build_config_files(self):
         """
@@ -641,7 +645,7 @@ class PartialToolEvaluator(ToolEvaluator):
     def build(self):
         config_file = self.tool.config_file
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
-        return self.command_line, self.extra_filenames, self.environment_variables
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
 
 
 class RemoteToolEvaluator(ToolEvaluator):
@@ -656,4 +660,5 @@ class RemoteToolEvaluator(ToolEvaluator):
         global_tool_logs(self._build_config_files, config_file, "Building Config Files")
         global_tool_logs(self._build_param_file, config_file, 'Building Param File')
         global_tool_logs(self._build_command_line, config_file, "Building Command Line")
-        return self.command_line, self.extra_filenames, self.environment_variables
+        global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
+        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
