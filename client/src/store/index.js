@@ -5,7 +5,7 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
-import createPersistedState from "vuex-persistedstate";
+import VuexPersistence from "vuex-persist";
 
 import config from "config";
 
@@ -35,13 +35,15 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
-const panelsState = createPersistedState({
-    paths: ["panels"],
+// Create vuexpersistence
+const panelsPersistence = new VuexPersistence({
+    storage: window.localStorage,
+    modules: ["panels"],
 });
 
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache(), panelsState],
+        plugins: [createCache(), panelsPersistence.plugin],
         modules: {
             user: userStore,
             config: configStore,
