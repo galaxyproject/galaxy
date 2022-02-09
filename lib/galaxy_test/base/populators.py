@@ -555,7 +555,7 @@ class BaseDatasetPopulator(BasePopulator):
             self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
 
     def wait_for_job(self, job_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT):
-        return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
+        return wait_on_state(lambda: self.get_job_details(job_id, full=True), desc="job state", assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
         return self._get(f"jobs/{job_id}?full={full}")
@@ -996,6 +996,7 @@ class BaseDatasetPopulator(BasePopulator):
             files["archive_file"] = archive_file
         import_response = self._post("histories", data=import_data, files=files)
         api_asserts.assert_status_code_is(import_response, 200)
+        return import_response.json()['id']
 
     def import_history_and_wait_for_name(self, import_data, history_name):
         def history_names():
@@ -1004,7 +1005,8 @@ class BaseDatasetPopulator(BasePopulator):
         import_name = f"imported from archive: {history_name}"
         assert import_name not in history_names()
 
-        self.import_history(import_data)
+        job_id = self.import_history(import_data)
+        self.wait_for_job(job_id, assert_ok=True)
 
         def has_history_with_name():
             histories = history_names()
@@ -2155,12 +2157,13 @@ def wait_on_state(state_func: Callable, desc="state", skip_states=None, ok_state
     def get_state():
         response = state_func()
         assert response.status_code == 200, f"Failed to fetch state update while waiting. [{response.content}]"
-        state = response.json()["state"]
+        state_response = response.json()
+        state = state_response["state"]
         if state in skip_states:
             return None
         else:
             if assert_ok:
-                assert state in ok_states, f"Final state - {state} - not okay."
+                assert state in ok_states, f"Final state - {state} - not okay. Full response: {state_response}"
             return state
 
     if skip_states is None:
