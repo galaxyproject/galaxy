@@ -51,7 +51,6 @@ const actions = {
 
 const mutations = {
     savePanelView: (state, { panelView, panel }) => {
-        console.debug("savePanelView data, size is", JSON.stringify(panel).length);
         Vue.set(state.panel, panelView, panel);
     },
     setCurrentPanelView: (state, { panelView }) => {
