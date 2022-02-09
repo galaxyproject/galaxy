@@ -594,7 +594,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     return self._tools_by_id[tool_id]
                 elif tool_version in self._tool_versions_by_id[tool_id]:
                     return self._tool_versions_by_id[tool_id][tool_version]
-            elif exact:
+            if exact:
                 # We're looking for an exact match, so we skip lineage and
                 # versionless mapping, though we may want to check duplicate
                 # toolsheds
