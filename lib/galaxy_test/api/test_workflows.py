@@ -31,6 +31,7 @@ from galaxy_test.base.populators import (
     wait_on,
     WorkflowPopulator,
 )
+from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
@@ -228,7 +229,7 @@ input1:
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
+class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase, UsesShed):
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         workflow_id = self.workflow_populator.simple_workflow("test_regular")
@@ -920,17 +921,35 @@ steps:
         assert invocation["state"] == "scheduled", invocation
 
     def test_run_workflow_with_missing_tool(self):
+        self.install_repository("iuc", "compose_text_param", "feb3acba1e0a")  # 0.1.0
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow(
                 """
 class: GalaxyWorkflow
 steps:
-  step1:
+  nonexistent:
     tool_id: nonexistent_tool
     tool_version: "0.1"
+    label: nonexistent
+  compose_text_param:
+    tool_id: compose_text_param
+    tool_version: 0.0.1
+    label: compose_text_param
 """
             )
-            invocation_response = self.__invoke_workflow(workflow_id, history_id=history_id, assert_ok=False)
+            # should fail and return both tool ids since version 0.0.1 of compose_text_param does not exist
+            invocation_response = self.__invoke_workflow(
+                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": True}
+            )
+            self._assert_status_code_is(invocation_response, 400)
+            self.assertEqual(
+                invocation_response.json().get("err_msg"),
+                "Workflow was not invoked; the following required tools are not installed: nonexistent_tool (version 0.1), compose_text_param (version 0.0.1)",
+            )
+            # should fail but return only the tool_id of non_existent tool as another version of compose_text_param is installed
+            invocation_response = self.__invoke_workflow(
+                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": False}
+            )
             self._assert_status_code_is(invocation_response, 400)
             self.assertEqual(
                 invocation_response.json().get("err_msg"),

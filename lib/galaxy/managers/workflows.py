@@ -1581,15 +1581,16 @@ class WorkflowContentsManager(UsesAnnotations):
             dry_run=refactor_request.dry_run,
         )
 
-    def get_all_tool_ids(self, workflow):
-        tool_ids = set()
+    def get_all_tools(self, workflow):
+        tools = []
         for step in workflow.steps:
             if step.type == "tool":
                 if step.tool_id:
-                    tool_ids.add(step.tool_id)
+                    if {"tool_id": step.tool_id, "tool_version": step.tool_version} not in tools:
+                        tools.append({"tool_id": step.tool_id, "tool_version": step.tool_version})
             elif step.type == "subworkflow":
-                tool_ids.update(self.get_all_tool_ids(step.subworkflow))
-        return tool_ids
+                tools.extend(self.get_all_tools(step.subworkflow))
+        return tools
 
 
 class RefactorRequest(RefactorActions):
