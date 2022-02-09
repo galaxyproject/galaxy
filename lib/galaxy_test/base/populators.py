@@ -972,20 +972,19 @@ class BaseDatasetPopulator(BasePopulator):
             assert "job_id" in job_desc
             return self.wait_for_job(job_desc["job_id"])
 
-    def export_url(self, history_id: str, data, api_key: str, check_download: bool = True) -> str:
+    def export_url(self, history_id: str, data, check_download: bool = True) -> str:
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = urllib.parse.urljoin(self.galaxy_interactor.api_url, response["download_url"].strip('/'))
 
         if check_download:
-            self.get_export_url(download_url, api_key)
+            self.get_export_url(download_url)
 
         return download_url
 
-    def get_export_url(self, export_url, api_key) -> Response:
-        full_download_url = f"{export_url}?key={api_key}"
-        download_response = self._get(full_download_url)
+    def get_export_url(self, export_url) -> Response:
+        download_response = self._get(export_url)
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
 
@@ -1041,11 +1040,11 @@ class BaseDatasetPopulator(BasePopulator):
         contents = contents_response.json()
         return len(contents)
 
-    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds):
         # Make history public so we can import by url
         self.make_public(history_id)
         # Export the history.
-        download_url = self.export_url(history_id, export_kwds, api_key, check_download=True)
+        download_url = self.export_url(history_id, export_kwds, check_download=True)
 
         import_data = dict(archive_source=download_url, archive_type="url")
 

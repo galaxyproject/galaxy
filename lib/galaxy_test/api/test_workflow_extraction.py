@@ -499,7 +499,7 @@ test_data:
                 history_length = self.dataset_populator.history_length(history_id)
 
             new_history_id = self.dataset_populator.reimport_history(
-                history_id, history_name, wait_on_history_length=history_length, export_kwds={}, api_key=self.galaxy_interactor.api_key
+                history_id, history_name, wait_on_history_length=history_length, export_kwds={},
             )
             # wait a little more for those jobs, todo fix to wait for history imported false or
             # for a specific number of jobs...
