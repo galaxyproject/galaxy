@@ -874,37 +874,6 @@ steps:
         invocation = self._invocation_details(workflow_id, invocation_id)
         assert invocation["state"] == "scheduled", invocation
 
-    def test_run_workflow_with_missing_tool(self):
-        with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  nonexistent:
-    tool_id: nonexistent_tool
-    tool_version: "0.1"
-    label: nonexistent
-  compose_text_param:
-    tool_id: multiple_versions
-    tool_version: 0.3
-    label: multiple_versions
-"""
-            )
-            # should fail and return both tool ids since version 0.3 of multiple_versions does not exist
-            invocation_response = self.__invoke_workflow(
-                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": True}
-            )
-            self._assert_status_code_is(invocation_response, 400)
-            self.assertEqual(
-                invocation_response.json().get("err_msg"),
-                "Workflow was not invoked; the following required tools are not installed: nonexistent_tool (version 0.1), multiple_versions (version 0.3)",
-            )
-            # should fail but return only the tool_id of non_existent tool as another version of multiple_versions is installed
-            invocation_response = self.__invoke_workflow(
-                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": False}
-            )
-            self._assert_status_code_is(invocation_response, 400)
-            self.assertEqual(invocation_response.json().get('err_msg'), "Workflow was not invoked; the following required tools are not installed: nonexistent_tool")
-
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self) -> None:
         with self.dataset_populator.test_history() as history_id:
