@@ -1087,6 +1087,16 @@ def legacy_manage_db(monkeypatch):
     monkeypatch.setattr(LegacyManageDb, "_get_alembic_cfg", get_alembic_cfg)
 
 
+@pytest.fixture(autouse=True)
+def set_db_urls(monkeypatch):
+    # Do not try to access galaxy config; values not needed.
+    def no_config_call(self):
+        self.gxy_db_url = "a string"
+        self.tsi_db_url = "a stirng"
+
+    monkeypatch.setattr(LegacyManageDb, "_set_db_urls", no_config_call)
+
+
 @pytest.fixture(autouse=True)  # always override AlembicManager
 def set_alembic_manager2(monkeypatch):
     monkeypatch.setattr(scripts, "get_alembic_manager", lambda engine: AlembicManagerForTests(engine))
