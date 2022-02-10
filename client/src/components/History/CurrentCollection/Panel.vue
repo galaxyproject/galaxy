@@ -87,7 +87,6 @@ export default {
         selectedCollection() {
             const arr = this.selectedCollections;
             const selected = arr[arr.length - 1];
-            console.log(selected);
             return selected;
         },
         isRoot() {
