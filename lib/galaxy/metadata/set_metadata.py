@@ -42,7 +42,6 @@ from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
     Job,
-    MetadataFile,
     store,
 )
 from galaxy.model.custom_types import total_size
@@ -421,9 +420,6 @@ def set_metadata_portable():
                     dataset.dataset.external_filename = None
                     dataset.dataset.extra_files_path = None
                 export_store.add_dataset(dataset)
-                for metadata in dataset.metadata.values():
-                    if isinstance(metadata, MetadataFile):
-                        metadata.update_from_file(metadata.file_name)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
@@ -436,6 +432,7 @@ def set_metadata_portable():
             )  # setting metadata has failed somehow
 
     if export_store:
+        export_store.push_metadata_files()
         export_store._finalize()
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 

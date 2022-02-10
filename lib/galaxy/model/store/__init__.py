@@ -1298,6 +1298,12 @@ class DirectoryModelExportStore(ModelExportStore):
     def __enter__(self):
         return self
 
+    def push_metadata_files(self):
+        for dataset in self.included_datasets:
+            for metadata_element in dataset.metadata.values():
+                if isinstance(metadata_element, model.MetadataFile):
+                    metadata_element.update_from_file(metadata_element.file_name)
+
     def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
         tool_source = getattr(tool, "tool_source", None)
