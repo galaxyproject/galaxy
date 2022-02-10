@@ -442,6 +442,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "state",
                 "state_details",
                 "state_ids",
+                "hid_counter",
                 # 'community_rating',
                 # 'user_rating',
             ],
