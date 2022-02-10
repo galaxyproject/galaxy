@@ -25,11 +25,13 @@ def run():
         arg = _get_command_argument()
         lmdb = LegacyManageDb()
         if arg == "version":
-            return lmdb.get_gxy_version()
+            result = lmdb.get_gxy_version()
         elif arg == "db_version":
-            return lmdb.get_gxy_db_version()
+            result = lmdb.get_gxy_db_version()
         else:
-            return lmdb.run_upgrade()
+            result = lmdb.run_upgrade()
+        if result:
+            print(result)
 
 
 def _get_command_argument():
