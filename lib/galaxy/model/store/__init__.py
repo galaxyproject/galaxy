@@ -87,10 +87,12 @@ class SessionlessContext:
         return Bunch(find=find, get=find, filter_by=filter_by)
 
 
-def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.DatasetInstance):
+def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.DatasetInstance, sa_session):
     def remap_objects(p, k, obj):
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
-            return (k, model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"]))
+            metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
+            sa_session.add(metadata_file)
+            return (k, metadata_file)
         return (k, obj)
 
     return remap(metadata, remap_objects)
@@ -293,7 +295,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     if attribute in dataset_attrs:
                         value = dataset_attrs.get(attribute)
                         if attribute == "metadata":
-                            value = replace_metadata_file(value, dataset_instance)
+                            value = replace_metadata_file(value, dataset_instance, self.sa_session)
                         setattr(dataset_instance, attribute, value)
 
                 handle_dataset_object_edit(dataset_instance)
@@ -345,7 +347,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     dataset_instance._metadata_collection = MetadataCollection(
                         dataset_instance, session=self.sa_session
                     )
-                    metadata = replace_metadata_file(metadata, dataset_instance)
+                    metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
                 dataset_instance._metadata = metadata
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 

@@ -604,6 +604,10 @@ class FileParameter(MetadataParameter):
         session = target_context._object_session(target_context.parent)
         value = self.wrap(value, session=session)
         target_dataset = target_context.parent.dataset
+        if value and not value.id:
+            # This is a new MetadataFile object, we're not copying to another dataset.
+            # Just use it.
+            return self.unwrap(value)
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,
