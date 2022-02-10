@@ -1066,21 +1066,15 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
 @pytest.fixture(autouse=True)
 def legacy_manage_db(monkeypatch):
     def get_alembic_cfg(self):
-        path1, path2 = _get_paths_to_version_locations()
-        path = os.path.join(
-            os.path.dirname(__file__),
-            os.pardir,
-            os.pardir,
-            os.pardir,
-            os.pardir,
-            os.pardir,
-            "lib",
-            "galaxy",
-            "model",
-            "migrations",
-            "alembic.ini",
-        )
+        path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
+        path = os.path.normpath(path)
+        # Adjust path when running from packages
+        if os.path.split(path)[1] == "packages":
+            path = os.path.join(path, os.pardir)
+        path = os.path.join(path, "lib", "galaxy", "model", "migrations", "alembic.ini")
+
         config = Config(path)
+        path1, path2 = _get_paths_to_version_locations()
         config.set_main_option("version_locations", f"{path1};{path2}")
         return config
 
