@@ -6,7 +6,6 @@ import copy
 import json
 import logging
 import os
-import shutil
 import sys
 import tempfile
 import weakref
@@ -615,10 +614,10 @@ class FileParameter(MetadataParameter):
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             session.add(new_value)
             try:
-                shutil.copy(value.file_name, new_value.file_name)
+                new_value.update_from_file(value.file_name)
             except AssertionError:
                 session(target_context.parent).flush()
-                shutil.copy(value.file_name, new_value.file_name)
+                new_value.update_from_file(value.file_name)
             return self.unwrap(new_value)
         return None
 
