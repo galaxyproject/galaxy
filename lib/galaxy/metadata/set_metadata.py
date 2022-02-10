@@ -423,13 +423,7 @@ def set_metadata_portable():
                 export_store.add_dataset(dataset)
                 for metadata in dataset.metadata.values():
                     if isinstance(metadata, MetadataFile):
-                        object_store.update_from_file(
-                            metadata,
-                            file_name=metadata.file_name,
-                            extra_dir="_metadata_files",
-                            extra_dir_at_root=True,
-                            alt_name=os.path.basename(metadata.file_name),
-                        )
+                        metadata.update_from_file(metadata.file_name)
             else:
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 

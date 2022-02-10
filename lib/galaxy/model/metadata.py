@@ -649,13 +649,7 @@ class FileParameter(MetadataParameter):
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
-            parent.dataset.object_store.update_from_file(
-                mf,
-                file_name=file_name,
-                extra_dir="_metadata_files",
-                extra_dir_at_root=True,
-                alt_name=os.path.basename(mf.file_name),
-            )
+            mf.update_from_file(file_name)
             os.unlink(file_name)
             value = mf.id
         return value
