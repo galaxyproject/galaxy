@@ -581,13 +581,6 @@ class HDAExtended(HDADetailed):
     )
 
 
-class HDABeta(HDADetailed):  # TODO: change HDABeta name to a more appropriate one.
-    """History Dataset Association information used in the new Beta History."""
-
-    # Equivalent to `betawebclient` serialization view for HDAs
-    pass
-
-
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
@@ -1228,27 +1221,6 @@ class HDCJobStateSummary(Model):
         0,
         title="Upload jobs",
         description="Number of jobs in the `upload` state.",
-    )
-
-
-class HDCABeta(HDCADetailed):  # TODO: change HDCABeta name to a more appropriate one.
-    """History Dataset Collection Association information used in the new Beta History."""
-
-    # Equivalent to `betawebclient` serialization view for HDCAs
-    collection_id: EncodedDatabaseIdField = Field(
-        # TODO: inconsistency? the equivalent counterpart for HDAs, `dataset_id`, is declared in `HDASummary` scope
-        # while in HDCAs it is only serialized in the new `betawebclient` view?
-        ...,
-        title="Collection ID",
-        description="The encoded ID of the dataset collection associated with this HDCA.",
-    )
-    job_state_summary: Optional[HDCJobStateSummary] = Field(
-        None,
-        title="Job State Summary",
-        description="Overview of the job states working inside the dataset collection.",
-    )
-    elements_datatypes: Set[str] = Field(
-        ..., description="A set containing all the different element datatypes in the collection."
     )
 
 
@@ -2407,8 +2379,8 @@ class CustomHistoryItem(Model):
         extra = Extra.allow
 
 
-AnyHDA = Union[HDABeta, HDADetailed, HDASummary]
-AnyHDCA = Union[HDCABeta, HDCADetailed, HDCASummary]
+AnyHDA = Union[HDADetailed, HDASummary]
+AnyHDCA = Union[HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Union[
     AnyHDA,
     AnyHDCA,

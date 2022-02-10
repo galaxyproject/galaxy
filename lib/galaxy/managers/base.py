@@ -760,7 +760,7 @@ class ModelSerializer(HasAModelManager[T]):
         else:
             if keys:
                 all_keys = keys
-            elif default_view:
+            else:
                 all_keys = self._view_to_keys(default_view)
 
         return self.serialize(item, all_keys, **context)

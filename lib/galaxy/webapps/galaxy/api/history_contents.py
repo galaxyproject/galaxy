@@ -710,7 +710,6 @@ class FastAPIHistoryContents:
                   Example:
                     ?update_time-gt=2015-01-29
         """
-        serialization_params.default_view = serialization_params.default_view or "betawebclient"
 
         # Needed to parse arbitrary query parameter names for the filters.
         # Since we are directly accessing the request's query_params we also need to exclude the
@@ -1186,7 +1185,7 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
 
         GET /api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}
         """
-        serialization_params = parse_serialization_params(default_view="betawebclient", **kwd)
+        serialization_params = parse_serialization_params(**kwd)
 
         since_str = kwd.pop("since", None)
         if since_str:

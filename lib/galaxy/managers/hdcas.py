@@ -279,39 +279,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         )
         self.add_view("detailed", ["populated", "elements"], include_keys_from="summary")
 
-        # fields for new beta web client, there is no summary/detailed split any more
-        self.add_view(
-            "betawebclient",
-            [
-                # common to hda
-                "create_time",
-                "deleted",
-                "hid",
-                "history_content_type",
-                "history_id",
-                "id",
-                "name",
-                "tags",
-                "type",
-                "type_id",
-                "update_time",
-                "url",
-                "visible",
-                # hdca only
-                "collection_id",
-                "collection_type",
-                "contents_url",
-                "element_count",
-                "job_source_id",
-                "job_source_type",
-                "job_state_summary",
-                "populated",
-                "populated_state",
-                "populated_state_message",
-                "elements_datatypes",
-            ],
-        )
-
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
