@@ -967,6 +967,7 @@ steps:
           cond_param_inner: true
           input1:
             $link: 0/out_file1
+    thedata: null
   cat:
     tool_id: cat1
     in:

@@ -675,12 +675,13 @@ class DefaultToolAction:
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters}
+        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters if p.value is not None}
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id
         input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
         for p in job_to_remap.parameters:
-            p.value = json.dumps(input_values[p.name])
+            if p.name in input_values:
+                p.value = json.dumps(input_values[p.name])
         jtid.dataset = out_data[jtod.name]
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f'Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}')
