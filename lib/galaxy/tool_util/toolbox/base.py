@@ -668,7 +668,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     return self._tools_by_id[tool_id]
                 elif tool_version in self._tool_versions_by_id[tool_id]:
                     return self._tool_versions_by_id[tool_id][tool_version]
-            if exact:
+            # should be if exact=True not elif? Otherwise we can end up doing non-exact searches even
+            # if exact=True. Anyway, changing it breaks a lot of tests involving built-in tools
+            elif exact:
                 # We're looking for an exact match, so we skip lineage and
                 # versionless mapping, though we may want to check duplicate
                 # toolsheds
