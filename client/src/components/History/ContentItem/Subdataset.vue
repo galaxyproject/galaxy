@@ -27,16 +27,26 @@ export default {
     },
     data() {
         return {
-            localItem: { ...this.item },
+            datasetObject: this.extractDataset(this.item),
             loading: false,
         };
     },
     computed: {
         dataset() {
-            return new Dataset(this.localItem);
+            return new Dataset({ ...this.datasetObject });
         },
     },
     methods: {
+        extractDataset() {
+            return {
+                id: this.item.object.id,
+                element_identifier: this.item.element_identifier,
+                state: this.item.object.state,
+                history_id: this.item.object.history_id,
+                history_content_type: "dataset",
+                visible: true,
+            };
+        },
         onExpand(val) {
             if (val) {
                 this.loadDetails();
@@ -44,8 +54,7 @@ export default {
             this.$emit("update:expand", val);
         },
         async loadDetails() {
-            const loadedDataset = await getContentDetails(this.item);
-            this.localItem = loadedDataset;
+            this.datasetObject = await getContentDetails(this.datasetObject);
         },
     },
 };
