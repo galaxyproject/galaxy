@@ -1,5 +1,5 @@
 <template>
-    <UrlDataProvider :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
+    <UrlDataProvider :key="history.id" :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -50,7 +50,7 @@
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="history.empty" class="m-2" />
+                        <HistoryEmpty v-if="payload && payload.length == 0" class="m-2" />
                         <b-alert v-else-if="loading" class="m-2" variant="info" show>
                             <LoadingSpan message="Loading History" />
                         </b-alert>
