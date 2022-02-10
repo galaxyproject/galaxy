@@ -8,12 +8,21 @@ from typing import (
 )
 
 import alembic.config
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
 from galaxy.model.database_utils import is_one_database
 from galaxy.model.migrations import (
+    AlembicManager,
     DatabaseConfig,
+    DatabaseStateCache,
     GXY,
+    SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
+    VersionTooOldError,
 )
 from galaxy.util.properties import (
     find_config_file,
@@ -129,7 +138,7 @@ class LegacyScripts:
         self.pop_database_argument()
         self.rename_config_argument()
         self.rename_alembic_config_argument()
-        self._get_db_urls()
+        self.load_db_urls()
         self.convert_version_argument()
 
     def pop_database_argument(self) -> None:
@@ -190,10 +199,109 @@ class LegacyScripts:
         pos = self.argv.index(old_name)
         self.argv[pos] = new_name
 
-    def _get_db_urls(self) -> None:
+    def load_db_urls(self) -> None:
         gxy_config, tsi_config, _ = get_configuration(self.argv, self.cwd)
         self.gxy_url = gxy_config.url
         self.tsi_url = tsi_config.url
 
     def _is_one_database(self):
         return is_one_database(self.gxy_url, self.tsi_url)
+
+
+class LegacyManageDb:
+    def __init__(self):
+        self._set_db_urls()
+
+    def get_gxy_version(self):
+        """
+        Get the head revision for the gxy branch from the Alembic script directory.
+        (previously referred to as "max/repository version")
+        """
+        script_directory = self._get_script_directory()
+        heads = script_directory.get_heads()
+        for head in heads:
+            revision = script_directory.get_revision(head)
+            if revision and GXY in revision.branch_labels:
+                return head
+        return None
+
+    def get_gxy_db_version(self, gxy_db_url=None):
+        """
+        Get the head revision for the gxy branch from the galaxy database. If there
+        is no alembic_version table, get the sqlalchemy migrate version. Raise error
+        if that version is not the latest.
+        (previously referred to as "database version")
+        """
+        db_url = gxy_db_url or self.gxy_db_url
+        try:
+            engine = create_engine(db_url)
+            version = self._get_gxy_alembic_db_version(engine)
+            if not version:
+                version = self._get_gxy_sam_db_version(engine)
+                if version != SQLALCHEMYMIGRATE_LAST_VERSION_GXY:
+                    raise VersionTooOldError(GXY)
+            return version
+        finally:
+            engine.dispose()
+
+    def run_upgrade(self, gxy_db_url=None, tsi_db_url=None):
+        """
+        Alembic will upgrade both branches, gxy and tsi, to their head revisions.
+        """
+        gxy_db_url = gxy_db_url or self.gxy_db_url
+        tsi_db_url = tsi_db_url or self.tsi_db_url
+        self._upgrade(gxy_db_url, GXY)
+        self._upgrade(tsi_db_url, TSI)
+
+    def _upgrade(self, db_url, model):
+        try:
+            engine = create_engine(db_url)
+            am = get_alembic_manager(engine)
+            am.upgrade(model)
+        finally:
+            engine.dispose()
+
+    def _set_db_urls(self):
+        ls = LegacyScripts(sys.argv, os.getcwd())
+        ls.rename_config_argument()
+        ls.load_db_urls()
+        self.gxy_db_url = ls.gxy_url
+        self.tsi_db_url = ls.tsi_url
+
+    def _get_gxy_sam_db_version(self, engine):
+        dbcache = DatabaseStateCache(engine)
+        return dbcache.sqlalchemymigrate_version
+
+    def _get_script_directory(self):
+        alembic_cfg = self._get_alembic_cfg()
+        return ScriptDirectory.from_config(alembic_cfg)
+
+    def _get_alembic_cfg(self):
+        config_file = os.path.join(os.path.dirname(__file__), "alembic.ini")
+        config_file = os.path.abspath(config_file)
+        return Config(config_file)
+
+    def _get_gxy_alembic_db_version(self, engine):
+        # We may get 2 values, one for each branch (gxy and tsi). So we need to
+        # determine which one is the gxy head.
+        with engine.connect() as conn:
+            context = MigrationContext.configure(conn)
+            db_heads = context.get_current_heads()
+            if db_heads:
+                gxy_revisions = self._get_all_gxy_revisions()
+                for db_head in db_heads:
+                    if db_head in gxy_revisions:
+                        return db_head
+        return None
+
+    def _get_all_gxy_revisions(self):
+        gxy_revisions = set()
+        script_directory = self._get_script_directory()
+        for rev in script_directory.walk_revisions():
+            if GXY in rev.branch_labels:
+                gxy_revisions.add(rev.revision)
+        return gxy_revisions
+
+
+def get_alembic_manager(engine: Engine) -> AlembicManager:
+    return AlembicManager(engine)

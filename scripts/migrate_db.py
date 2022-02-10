@@ -1,8 +1,7 @@
 """
 This script retrieves relevant configuration values and invokes
 the Alembic console runner.
-It is wrapped by run_alembic.sh (see that file for usage) and by
-manage_db.sh (for legacy usage).
+It is wrapped by run_alembic.sh (see that file for usage).
 """
 import logging
 import os.path

@@ -3,6 +3,7 @@ from typing import Union
 
 import alembic
 import pytest
+from alembic.config import Config
 from sqlalchemy import MetaData
 
 from galaxy.model import migrations
@@ -17,6 +18,7 @@ from galaxy.model.migrations import (
     load_metadata,
     NoVersionTableError,
     OutdatedDatabaseError,
+    scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
     SQLALCHEMYMIGRATE_TABLE,
@@ -24,6 +26,7 @@ from galaxy.model.migrations import (
     verify_databases,
     VersionTooOldError,
 )
+from galaxy.model.migrations.scripts import LegacyManageDb
 from .common import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
@@ -676,17 +679,18 @@ def set_tsi_metadata(monkeypatch, metadata_state6_tsi):
 
 class AlembicManagerForTests(AlembicManager):
     def __init__(self, engine):
-        path1, path2 = self._get_paths_to_version_locations()
+        path1, path2 = _get_paths_to_version_locations()
         config_dict = {"version_locations": f"{path1};{path2}"}
         super().__init__(engine, config_dict)
 
-    def _get_paths_to_version_locations(self):
-        # One does not simply use a relative path for both tests and package tests.
-        basepath = os.path.abspath(os.path.dirname(__file__))
-        basepath = os.path.join(basepath, "versions")
-        path1 = os.path.join(basepath, "db1")
-        path2 = os.path.join(basepath, "db2")
-        return path1, path2
+
+def _get_paths_to_version_locations():
+    # One does not simply use a relative path for both tests and package tests.
+    basepath = os.path.abspath(os.path.dirname(__file__))
+    basepath = os.path.join(basepath, "versions")
+    path1 = os.path.join(basepath, "db1")
+    path2 = os.path.join(basepath, "db2")
+    return path1, path2
 
 
 def load_sqlalchemymigrate_version(db_url, version):
@@ -1054,3 +1058,128 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
             am = AlembicManagerForTests(engine)
             am.stamp_revision(GXY_REVISION_2)
             yield db_url
+
+
+# Test LegacyManageDb (used by script/manage_db.py)
+
+
+@pytest.fixture(autouse=True)
+def legacy_manage_db(monkeypatch):
+    def get_alembic_cfg(self):
+        path1, path2 = _get_paths_to_version_locations()
+        path = os.path.join(
+            os.path.dirname(__file__),
+            os.pardir,
+            os.pardir,
+            os.pardir,
+            os.pardir,
+            os.pardir,
+            "lib",
+            "galaxy",
+            "model",
+            "migrations",
+            "alembic.ini",
+        )
+        config = Config(path)
+        config.set_main_option("version_locations", f"{path1};{path2}")
+        return config
+
+    monkeypatch.setattr(LegacyManageDb, "_get_alembic_cfg", get_alembic_cfg)
+
+
+@pytest.fixture(autouse=True)  # always override AlembicManager
+def set_alembic_manager2(monkeypatch):
+    monkeypatch.setattr(scripts, "get_alembic_manager", lambda engine: AlembicManagerForTests(engine))
+
+
+class TestLegacyManageDbScript:
+    def test_get_gxy_version(self):
+        mdb = LegacyManageDb()
+        version = mdb.get_gxy_version()
+        assert version == GXY_REVISION_2
+
+    class TestState2:
+        # Initial state: non-empty database, SQLAlchemy Migrate version table present; however,
+        # the stored version is not the latest after which we could transition to Alembic.
+        def test_get_gxy_db_version__state2__gxy_database(self, db_state2_gxy):
+            # Expect: fail
+            db_url = db_state2_gxy
+            with pytest.raises(VersionTooOldError):
+                mdb = LegacyManageDb()
+                mdb.get_gxy_db_version(db_url)
+
+        def test_get_gxy_db_version__state2__combined_database(self, db_state2_combined):
+            # Expect: fail
+            db_url = db_state2_combined
+            with pytest.raises(VersionTooOldError):
+                mdb = LegacyManageDb()
+                mdb.get_gxy_db_version(db_url)
+
+    class TestState3:
+        # Initial state: non-empty database, SQLAlchemy Migrate version table contains latest version
+        # under SQLAlchemy Migrate.
+        def test_get_gxy_db_version___state3__gxy_database(self, db_state3_gxy):
+            # Expect: return SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+            db_url = db_state3_gxy
+            mdb = LegacyManageDb()
+            version = mdb.get_gxy_db_version(db_url)
+            assert version == SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+
+        def test_get_gxy_db_version___state3__combined_database(self, db_state3_combined):
+            # Expect: return SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+            db_url = db_state3_combined
+            mdb = LegacyManageDb()
+            version = mdb.get_gxy_db_version(db_url)
+            assert version == SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+
+        def test_upgrade__state3__combined_database(self, db_state3_combined, metadata_state6_combined):
+            # Expect: upgrade to current version
+            db_url = db_state3_combined
+            mdb = LegacyManageDb()
+            mdb.run_upgrade(db_url, db_url)
+            assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
+            assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
+
+        def test_upgrade__state3__separate_databases(
+            self, db_state3_gxy, db_state3_tsi, metadata_state6_gxy, metadata_state6_tsi
+        ):
+            # Expect: upgrade to current version
+            db1_url, db2_url = db_state3_gxy, db_state3_tsi
+            mdb = LegacyManageDb()
+            mdb.run_upgrade(db1_url, db2_url)
+            assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
+            assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
+
+    class TestState4:
+        # Initial state: non-empty database, SQLAlchemy Migrate version table present, Alembic version table present.
+        # Oldest Alembic revision.
+        # Expect: return GXY_REVISION_0
+        def test_get_gxy_db_version___state4__gxy_database(self, db_state4_gxy):
+            db_url = db_state4_gxy
+            mdb = LegacyManageDb()
+            version = mdb.get_gxy_db_version(db_url)
+            assert version == GXY_REVISION_0
+
+        def test_get_gxy_db_version___state4__combined_database(self, db_state4_combined):
+            db_url = db_state4_combined
+            mdb = LegacyManageDb()
+            version = mdb.get_gxy_db_version(db_url)
+            assert version == GXY_REVISION_0
+
+        def test_upgrade__state4__combined_database(self, db_state4_combined, metadata_state6_combined):
+            # Expect: upgrade to current version
+            db_url = db_state4_combined
+            mdb = LegacyManageDb()
+            mdb.run_upgrade(db_url, db_url)
+            assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
+            assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
+
+        def test_upgrade__state4__separate_databases(
+            self, db_state4_gxy, db_state4_tsi, metadata_state6_gxy, metadata_state6_tsi
+        ):
+            # Expect: upgrade to current version
+            db1_url, db2_url = db_state4_gxy, db_state4_tsi
+            mdb = LegacyManageDb()
+            mdb.run_upgrade(db1_url, db2_url)
+            assert database_is_up_to_date(db1_url, metadata_state6_gxy, GXY)
+            assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
