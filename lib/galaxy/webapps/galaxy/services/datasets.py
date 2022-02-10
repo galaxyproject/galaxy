@@ -434,7 +434,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans: ProvidesHistoryContext,
         history_content_id: EncodedDatabaseIdField,
-        metadata_file: Optional[str] = None,
+        metadata_file: str,
         open_file: bool = False,
     ):
         """

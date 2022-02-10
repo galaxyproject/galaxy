@@ -6,7 +6,6 @@ import copy
 import json
 import logging
 import os
-import shutil
 import sys
 import tempfile
 import weakref
@@ -604,6 +603,10 @@ class FileParameter(MetadataParameter):
         session = target_context._object_session(target_context.parent)
         value = self.wrap(value, session=session)
         target_dataset = target_context.parent.dataset
+        if value and not value.id:
+            # This is a new MetadataFile object, we're not copying to another dataset.
+            # Just use it.
+            return self.unwrap(value)
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,
@@ -611,10 +614,10 @@ class FileParameter(MetadataParameter):
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             session.add(new_value)
             try:
-                shutil.copy(value.file_name, new_value.file_name)
+                new_value.update_from_file(value.file_name)
             except AssertionError:
                 session(target_context.parent).flush()
-                shutil.copy(value.file_name, new_value.file_name)
+                new_value.update_from_file(value.file_name)
             return self.unwrap(new_value)
         return None
 
@@ -645,13 +648,7 @@ class FileParameter(MetadataParameter):
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
-            parent.dataset.object_store.update_from_file(
-                mf,
-                file_name=file_name,
-                extra_dir="_metadata_files",
-                extra_dir_at_root=True,
-                alt_name=os.path.basename(mf.file_name),
-            )
+            mf.update_from_file(file_name)
             os.unlink(file_name)
             value = mf.id
         return value
