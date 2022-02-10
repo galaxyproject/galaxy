@@ -36,7 +36,7 @@ import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import linkify from "linkifyjs/html";
+import linkifyHtml from "linkify-html";
 Vue.use(BootstrapVue);
 
 export default {
@@ -67,7 +67,7 @@ export default {
             this.$emit("toggleDescriptionExpand");
         },
         linkify(raw_text) {
-            return linkify(raw_text);
+            return linkifyHtml(raw_text);
         },
     },
 };
