@@ -45,14 +45,14 @@ class CacheOperationTestCase(BaseSwiftObjectStoreIntegrationTestCase):
         hda = self.upload_bam_dataset()
         assert files_count(self.object_store_cache_path) == 2
         response = self._get(
-            f'histories/{hda["history_id"]}/contents/{hda["id"]}/metadata_file?metadata_name=bam_index'
+            f'histories/{hda["history_id"]}/contents/{hda["id"]}/metadata_file?metadata_file=bam_index'
         )
         assert len(response.content) > 0
         response.raise_for_status()
         shutil.rmtree(self.object_store_cache_path)
         assert files_count(self.object_store_cache_path) == 0
         response = self._get(
-            f'histories/{hda["history_id"]}/contents/{hda["id"]}/metadata_file?metadata_name=bam_index'
+            f'histories/{hda["history_id"]}/contents/{hda["id"]}/metadata_file?metadata_file=bam_index'
         )
         response.raise_for_status()
         assert files_count(self.object_store_cache_path) == 1
