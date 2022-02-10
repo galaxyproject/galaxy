@@ -36,7 +36,6 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
 
-        # sleep really shouldn't be needed :(
         self.home()
 
         self.history_panel_wait_for_hid_state(input_hid, "ok")
