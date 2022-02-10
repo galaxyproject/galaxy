@@ -136,9 +136,9 @@ export default {
     },
     computed: {
         dataUrl() {
-            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?view=detailed&${
-                this.queryString
-            }`;
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${
+                this.pageSize
+            }?view=detailed&${this.queryString}`;
         },
         historyId() {
             return this.history.id;

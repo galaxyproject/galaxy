@@ -417,8 +417,8 @@ class HDASerializerTestCase(HDATestCase):
         self.assertKeys(serialized, self.hda_serializer.views["summary"] + ["uuid"])
 
         self.log("should be able to use keys on their own")
-        serialized = self.hda_serializer.serialize_to_view(hda, keys=["file_path", "visualizations"])
-        self.assertKeys(serialized, ["file_path", "visualizations"])
+        serialized = self.hda_serializer.serialize_to_view(hda, keys=["file_path"])
+        self.assertKeys(serialized, ["file_path"])
 
     def test_serializers(self):
         hda = self._create_vanilla_hda()
@@ -459,7 +459,6 @@ class HDASerializerTestCase(HDATestCase):
         self.assertIsInstance(serialized["resubmitted"], bool)
         self.assertIsInstance(serialized["display_apps"], list)
         self.assertIsInstance(serialized["display_types"], list)
-        self.assertIsInstance(serialized["visualizations"], list)
 
         # remapped
         self.assertNullableBasestring(serialized["misc_info"])
@@ -523,9 +522,7 @@ class HDASerializerTestCase(HDATestCase):
         self.log("file_name should be included if app configured to do so")
         self.dataset_manager.permissions.set_private_to_one_user(dataset1, owner)
         # request random crap
-        serialized = self.hda_serializer.serialize_to_view(
-            item1, view="detailed", keys=["file_path", "visualizations"], user=non_owner
-        )
+        serialized = self.hda_serializer.serialize_to_view(item1, view="detailed", keys=["file_path"], user=non_owner)
         self.assertEqual(sorted(keys_in_inaccessible_view), sorted(serialized.keys()))
 
     # TODO: test extra_files_path as well

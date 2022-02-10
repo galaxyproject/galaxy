@@ -656,6 +656,76 @@ class DCDetailed(DCSummary):
     elements: List[DCESummary] = ElementsField
 
 
+class HDCJobStateSummary(Model):
+    """Overview of the job states working inside a dataset collection."""
+
+    all_jobs: int = Field(
+        0,
+        title="All jobs",
+        description="Total number of jobs associated with a dataset collection.",
+    )
+    new: int = Field(
+        0,
+        title="New jobs",
+        description="Number of jobs in the `new` state.",
+    )
+    waiting: int = Field(
+        0,
+        title="Waiting jobs",
+        description="Number of jobs in the `waiting` state.",
+    )
+    running: int = Field(
+        0,
+        title="Running jobs",
+        description="Number of jobs in the `running` state.",
+    )
+    error: int = Field(
+        0,
+        title="Jobs with errors",
+        description="Number of jobs in the `error` state.",
+    )
+    paused: int = Field(
+        0,
+        title="Paused jobs",
+        description="Number of jobs in the `paused` state.",
+    )
+    deleted_new: int = Field(
+        0,
+        title="Deleted new jobs",
+        description="Number of jobs in the `deleted_new` state.",
+    )
+    resubmitted: int = Field(
+        0,
+        title="Resubmitted jobs",
+        description="Number of jobs in the `resubmitted` state.",
+    )
+    queued: int = Field(
+        0,
+        title="Queued jobs",
+        description="Number of jobs in the `queued` state.",
+    )
+    ok: int = Field(
+        0,
+        title="OK jobs",
+        description="Number of jobs in the `ok` state.",
+    )
+    failed: int = Field(
+        0,
+        title="Failed jobs",
+        description="Number of jobs in the `failed` state.",
+    )
+    deleted: int = Field(
+        0,
+        title="Deleted jobs",
+        description="Number of jobs in the `deleted` state.",
+    )
+    upload: int = Field(
+        0,
+        title="Upload jobs",
+        description="Number of jobs in the `upload` state.",
+    )
+
+
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
@@ -682,7 +752,17 @@ class HDCASummary(HistoryItemCommon):
         title="Job Source Type",
         description="The type of job (model class) that produced this dataset collection. Used to track the state of the job.",
     )
+    job_state_summary: Optional[HDCJobStateSummary] = Field(
+        None,
+        title="Job State Summary",
+        description="Overview of the job states working inside the dataset collection.",
+    )
     contents_url: RelativeUrl = ContentsUrlField
+    collection_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Collection ID",
+        description="The encoded ID of the dataset collection associated with this HDCA.",
+    )
 
 
 class HDCADetailed(HDCASummary):
@@ -690,6 +770,9 @@ class HDCADetailed(HDCASummary):
 
     populated: bool = PopulatedField
     elements: List[DCESummary] = ElementsField
+    elements_datatypes: Set[str] = Field(
+        ..., description="A set containing all the different element datatypes in the collection."
+    )
 
 
 class HistoryBase(BaseModel):
@@ -1151,76 +1234,6 @@ class JobIdResponse(BaseModel):
         ...,
         title="Job ID",
         description="The encoded database ID of the job that is currently processing a particular request.",
-    )
-
-
-class HDCJobStateSummary(Model):
-    """Overview of the job states working inside a dataset collection."""
-
-    all_jobs: int = Field(
-        0,
-        title="All jobs",
-        description="Total number of jobs associated with a dataset collection.",
-    )
-    new: int = Field(
-        0,
-        title="New jobs",
-        description="Number of jobs in the `new` state.",
-    )
-    waiting: int = Field(
-        0,
-        title="Waiting jobs",
-        description="Number of jobs in the `waiting` state.",
-    )
-    running: int = Field(
-        0,
-        title="Running jobs",
-        description="Number of jobs in the `running` state.",
-    )
-    error: int = Field(
-        0,
-        title="Jobs with errors",
-        description="Number of jobs in the `error` state.",
-    )
-    paused: int = Field(
-        0,
-        title="Paused jobs",
-        description="Number of jobs in the `paused` state.",
-    )
-    deleted_new: int = Field(
-        0,
-        title="Deleted new jobs",
-        description="Number of jobs in the `deleted_new` state.",
-    )
-    resubmitted: int = Field(
-        0,
-        title="Resubmitted jobs",
-        description="Number of jobs in the `resubmitted` state.",
-    )
-    queued: int = Field(
-        0,
-        title="Queued jobs",
-        description="Number of jobs in the `queued` state.",
-    )
-    ok: int = Field(
-        0,
-        title="OK jobs",
-        description="Number of jobs in the `ok` state.",
-    )
-    failed: int = Field(
-        0,
-        title="Failed jobs",
-        description="Number of jobs in the `failed` state.",
-    )
-    deleted: int = Field(
-        0,
-        title="Deleted jobs",
-        description="Number of jobs in the `deleted` state.",
-    )
-    upload: int = Field(
-        0,
-        title="Upload jobs",
-        description="Number of jobs in the `upload` state.",
     )
 
 

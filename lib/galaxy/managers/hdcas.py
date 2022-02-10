@@ -256,6 +256,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "type_id",
                 "name",
                 "history_id",
+                "collection_id",
                 "hid",
                 "history_content_type",
                 "collection_type",
@@ -264,20 +265,28 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "element_count",
                 "job_source_id",
                 "job_source_type",
+                "job_state_summary",
                 "name",
                 "type_id",
                 "deleted",
-                # 'purged',
                 "visible",
                 "type",
                 "url",
                 "create_time",
                 "update_time",
-                "tags",  # TODO: detail view only (maybe),
+                "tags",
                 "contents_url",
             ],
         )
-        self.add_view("detailed", ["populated", "elements"], include_keys_from="summary")
+        self.add_view(
+            "detailed",
+            [
+                "populated",
+                "elements",
+                "elements_datatypes",
+            ],
+            include_keys_from="summary",
+        )
 
     def add_serializers(self):
         super().add_serializers()
