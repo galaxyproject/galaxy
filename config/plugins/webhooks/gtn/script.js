@@ -53,7 +53,8 @@ function addIframe() {
     fetch("/training-material/")
         .then((response) => {
             if (!response.ok) {
-                url = "https://training.galaxyproject.org/training-material/?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy";
+                url =
+                    "https://training.galaxyproject.org/training-material/?utm_source=webhook&utm_medium=noproxy&utm_campaign=gxy";
                 message = `
                         <span>
                             <a href="https://docs.galaxyproject.org/en/master/admin/special_topics/gtn.html">Click to run</a> unavailable.
@@ -131,7 +132,7 @@ function addIframe() {
                     if (tool_id === "upload1" || tool_id === "upload") {
                         document.getElementById("tool-panel-upload-button").click();
                     } else {
-                        Galaxy.router.push(`?tool_id=${tool_id}`);
+                        Galaxy.router.push(`?tool_id=${encodeURIComponent(tool_id)}`);
                     }
                     removeOverlay();
                 });
