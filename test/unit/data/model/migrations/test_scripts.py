@@ -13,7 +13,7 @@ def set_db_urls(monkeypatch):
         self.gxy_url = "a string"
         self.tsi_url = "a stirng"
 
-    monkeypatch.setattr(LegacyScripts, "_get_db_urls", no_config_call)
+    monkeypatch.setattr(LegacyScripts, "load_db_urls", no_config_call)
 
 
 @pytest.fixture(autouse=True)  # set combined db for all tests
