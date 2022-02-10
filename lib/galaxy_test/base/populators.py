@@ -555,7 +555,7 @@ class BaseDatasetPopulator(BasePopulator):
             self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
 
     def wait_for_job(self, job_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT):
-        return wait_on_state(lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout)
+        return wait_on_state(lambda: self.get_job_details(job_id, full=True), desc="job state", assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
         return self._get(f"jobs/{job_id}?full={full}")
@@ -913,6 +913,11 @@ class BaseDatasetPopulator(BasePopulator):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def make_public(self, history_id: str) -> dict:
+        sharing_response = self._put(f"histories/{history_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
     def validate_dataset(self, history_id: str, dataset_id: str) -> Dict[str, Any]:
         url = f"histories/{history_id}/contents/{dataset_id}/validate"
         update_response = self._put(url)
@@ -967,20 +972,19 @@ class BaseDatasetPopulator(BasePopulator):
             assert "job_id" in job_desc
             return self.wait_for_job(job_desc["job_id"])
 
-    def export_url(self, history_id: str, data, api_key: str, check_download: bool = True) -> str:
+    def export_url(self, history_id: str, data, check_download: bool = True) -> str:
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = urllib.parse.urljoin(self.galaxy_interactor.api_url, response["download_url"].strip('/'))
 
         if check_download:
-            self.get_export_url(download_url, api_key)
+            self.get_export_url(download_url)
 
         return download_url
 
-    def get_export_url(self, export_url, api_key) -> Response:
-        full_download_url = f"{export_url}?key={api_key}"
-        download_response = self._get(full_download_url)
+    def get_export_url(self, export_url) -> Response:
+        download_response = self._get(export_url)
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
 
@@ -991,6 +995,7 @@ class BaseDatasetPopulator(BasePopulator):
             files["archive_file"] = archive_file
         import_response = self._post("histories", data=import_data, files=files)
         api_asserts.assert_status_code_is(import_response, 200)
+        return import_response.json()['id']
 
     def import_history_and_wait_for_name(self, import_data, history_name):
         def history_names():
@@ -999,7 +1004,8 @@ class BaseDatasetPopulator(BasePopulator):
         import_name = f"imported from archive: {history_name}"
         assert import_name not in history_names()
 
-        self.import_history(import_data)
+        job_id = self.import_history(import_data)
+        self.wait_for_job(job_id, assert_ok=True)
 
         def has_history_with_name():
             histories = history_names()
@@ -1034,14 +1040,13 @@ class BaseDatasetPopulator(BasePopulator):
         contents = contents_response.json()
         return len(contents)
 
-    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds):
+        # Make history public so we can import by url
+        self.make_public(history_id)
         # Export the history.
-        download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
+        download_url = self.export_url(history_id, export_kwds, check_download=True)
 
-        # Create download for history
-        full_download_url = urllib.parse.urljoin(download_path, f"?key={api_key}")
-
-        import_data = dict(archive_source=full_download_url, archive_type="url")
+        import_data = dict(archive_source=download_url, archive_type="url")
 
         imported_history_id = self.import_history_and_wait_for_name(import_data, history_name)
 
@@ -2151,12 +2156,13 @@ def wait_on_state(state_func: Callable, desc="state", skip_states=None, ok_state
     def get_state():
         response = state_func()
         assert response.status_code == 200, f"Failed to fetch state update while waiting. [{response.content}]"
-        state = response.json()["state"]
+        state_response = response.json()
+        state = state_response["state"]
         if state in skip_states:
             return None
         else:
             if assert_ok:
-                assert state in ok_states, f"Final state - {state} - not okay."
+                assert state in ok_states, f"Final state - {state} - not okay. Full response: {state_response}"
             return state
 
     if skip_states is None:
