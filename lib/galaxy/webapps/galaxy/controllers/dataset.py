@@ -135,7 +135,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return "This link may not be followed from within Galaxy."
 
     @web.expose
-    def get_metadata_file(self, trans, hda_id, metadata_name):
+    def get_metadata_file(self, trans, hda_id, metadata_file):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
         data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
         if not data or not self._can_access_dataset(trans, data):
@@ -143,10 +143,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
 
         fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in data.name)[0:150]
 
-        file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
+        file_ext = data.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
-        return open(data.metadata.get(metadata_name).file_name, "rb")
+        return open(data.metadata.get(metadata_file).file_name, "rb")
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility

@@ -256,8 +256,8 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: EncodedDatabaseIdField = DatasetIDPathParam,
-        metadata_file: Optional[str] = Query(
-            default=None,
+        metadata_file: str = Query(
+            ...,
             description="The name of the metadata file to retrieve.",
         ),
     ):
@@ -446,7 +446,7 @@ class DatasetsController(BaseGalaxyAPIController):
         return self.service.get_content_as_text(trans, dataset_id)
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
+    def get_metadata_file(self, trans, history_content_id, history_id, metadata_file, **kwd):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
         """

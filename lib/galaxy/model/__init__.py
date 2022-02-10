@@ -7932,14 +7932,30 @@ class MetadataFile(Base, StorableObject, Serializable):
         self.name = name
 
     @property
+    def dataset(self) -> Optional[Dataset]:
+        da = self.history_dataset or self.library_dataset
+        return da and da.dataset
+
+    def update_from_file(self, file_name):
+        if not self.dataset:
+            raise Exception("Attempted to write MetadataFile, but no DatasetAssociation set")
+        self.dataset.object_store.update_from_file(
+            self,
+            file_name=file_name,
+            extra_dir="_metadata_files",
+            extra_dir_at_root=True,
+            alt_name=os.path.basename(self.file_name),
+        )
+
+    @property
     def file_name(self):
         # Ensure the directory structure and the metadata file object exist
         try:
-            da = self.history_dataset or self.library_dataset
-            if self.object_store_id is None and da is not None:
-                self.object_store_id = da.dataset.object_store_id
-            object_store = da.dataset.object_store
-            store_by = object_store.get_store_by(da.dataset)
+            dataset = self.dataset
+            if self.object_store_id is None and dataset is not None:
+                self.object_store_id = dataset.object_store_id
+            object_store = dataset.object_store
+            store_by = object_store.get_store_by(dataset)
             if store_by == "id" and self.id is None:
                 self.flush()
             identifier = getattr(self, store_by)
