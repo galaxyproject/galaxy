@@ -228,9 +228,8 @@ body {
         display: flex;
     }
     .panel-header-buttons {
-        @extend .float-right;
         order: 9999;
-        display: flex;
+        @extend .d-flex;
         .panel-header-button {
             text-align: center;
             &:not(:last-child) {
