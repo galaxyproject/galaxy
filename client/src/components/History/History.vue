@@ -85,7 +85,6 @@
 
 <script>
 import { History } from "./model";
-import { SearchParams } from "./model/SearchParams";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
@@ -122,8 +121,7 @@ export default {
     data() {
         return {
             hiddenItems: {},
-            maxHid: this.history.hid_counter,
-            maxNew: 10,
+            topIndex: 0,
             pageSize: 50,
             params: {},
         };
@@ -131,14 +129,12 @@ export default {
     watch: {
         queryKey() {
             this.hiddenItems = {};
-            this.maxHid = this.history.hid_counter;
+            this.topIndex = 0;
         },
     },
     computed: {
         dataUrl() {
-            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${
-                this.pageSize
-            }?view=detailed&${this.queryString}`;
+            return `api/histories/${this.historyId}/contents?v=dev&order=hid&limit=${this.pageSize}&offset=${this.topIndex}&${this.queryString}`;
         },
         historyId() {
             return this.history.id;
@@ -147,7 +143,9 @@ export default {
             return `${this.history.id}&${this.queryString}`;
         },
         queryString() {
-            return new SearchParams(this.params).historyContentQueryString;
+            const deleted = this.params.showDeleted ? "True" : "False";
+            const visible = this.params.showHidden ? "False" : "True";
+            return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
         },
     },
     methods: {
@@ -155,7 +153,7 @@ export default {
             return !!payload && payload.length > 0;
         },
         onScroll(newHid) {
-            this.maxHid = newHid;
+            this.topIndex = newHid;
         },
         onHiddenItems(selectedItems) {
             selectedItems.forEach((item) => {

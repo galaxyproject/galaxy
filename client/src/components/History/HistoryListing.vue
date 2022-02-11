@@ -77,7 +77,7 @@ export default {
                 topIndex = Math.min(Math.max(topIndex, 0), itemCount - 1);
                 const topItem = this.getItems[topIndex];
                 if (topItem) {
-                    this.$emit("scroll", topItem[this.itemKey]);
+                    this.$emit("scroll", topIndex);
                 }
             }
         },
