@@ -2,7 +2,7 @@
     <CurrentUser class="d-flex flex-column" v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistory, histories, handlers }">
             <HistoryPanel v-if="currentHistory" :history="currentHistory" v-on="handlers" id="current-history-panel">
-                <template v-slot:globalNav>
+                <template v-slot:globalnav>
                     <HistoriesMenu
                         v-on="handlers"
                         :histories="histories"
@@ -20,7 +20,7 @@
 
 <script>
 import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/History/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import HistoryPanel from "./HistoryPanel";
 import HistoriesMenu from "./HistoriesMenu";
 

@@ -50,7 +50,7 @@ export default {
     },
 
     data: () => ({
-        suppressFocus: false,
+        suppressFocus: true,
     }),
 
     methods: {

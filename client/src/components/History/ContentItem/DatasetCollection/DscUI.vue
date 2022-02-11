@@ -6,6 +6,7 @@
         class="dataset dataset-collection collapsed"
         :class="{ selected }"
         :id="typedId"
+        :data-hid="dsc.hid"
         :data-state="dsc.state"
         @keydown.arrow-right.self.stop="$emit('viewCollection')"
         @keydown.space.self.stop.prevent="$emit('update:selected', !selected)">

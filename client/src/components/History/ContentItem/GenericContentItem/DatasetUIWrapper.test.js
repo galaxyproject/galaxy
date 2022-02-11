@@ -1,7 +1,7 @@
 import DatasetUIWrapper from "./DatasetUIWrapper";
 import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
 import { shallowMount } from "@vue/test-utils";
-import raw from "components/providers/History/test/json/Dataset.json";
+import raw from "components/providers/test/json/Dataset.json";
 
 describe("DatasetUIWrapper.vue with Dataset", () => {
     let wrapper;

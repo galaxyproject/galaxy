@@ -1,4 +1,4 @@
-### Beta History Panel Component Tree
+### History Panel Component Tree
 This is not intended to be a complete listing, but a general idea of how the components are intended
 to interact with each other.
 
@@ -18,14 +18,14 @@ to interact with each other.
         <!-- if main history selected -->
         <History :history="history">
 
-            <!-- HCP does the heavy-lifting of mixing params, history, and 
+            <!-- Data providers do the heavy-lifting of mixing params, history, and 
             scroll position to deliver the content for the scroller -->
 
-            <HistoryContentProvider :parent="history">
+            <UrlDataProvider>
                 <HistoryDetails />
                 <HistoryMessages />
                 <ContentOperations />
-                <Scroller>
+                <HistoryListing>
 
                     <!-- HistoryContentItem is a dynamic component that becomes 
                     either Dataset or DatasetCollection depending
@@ -36,8 +36,8 @@ to interact with each other.
                         <!-- or -->
                         <DatasetCollection />
 
-                </Scroller>
-            </HistoryContentProvider>
+                </HistoryListing>
+            </UrlDataProvider>
 
         </History>
 
@@ -46,10 +46,10 @@ to interact with each other.
         breadcrumbs list of collections the user has selected -->
 
         <CurrentCollection :selected-collections="breadcrumbs">
-            <CollectionContentProvider :parent="selectedCollection">
+            <UrlDataProvider>
                 <CollectionNav />
                 <Details />
-                <Scroller>
+                <HistoryListing>
 
                     <!-- Subdataset and Subcollection are similar to the Dataset 
                     and DatasetCollection ContentItem components, but mostly 
@@ -60,8 +60,8 @@ to interact with each other.
                         <!-- or -->
                         <Subcollection />
 
-                </Scroller>
-            </CollectionContentProvider>
+                </HistoryListing>
+            </UrlDataProvider>
         </CurrentCollection>
 
     </HistoryPanel>

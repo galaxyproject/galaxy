@@ -1,11 +1,5 @@
 <template>
-    <HistoryContentProvider
-        :parent="history"
-        :params="params"
-        :disable-poll="false"
-        :debug="false"
-        :debounce-period="500"
-        v-slot="{ loading, payload, manualReload, setScrollPos }">
+    <UrlDataProvider :key="history.id" :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -23,11 +17,11 @@
                     resetSelection,
                 }">
                 <Layout>
-                    <template v-slot:globalNav>
-                        <slot name="globalNav" :history="history"></slot>
+                    <template v-slot:globalnav>
+                        <slot name="globalnav" :history="history" />
                     </template>
 
-                    <template v-slot:localNav>
+                    <template v-slot:localnav>
                         <HistoryMenu :history="history" v-on="$listeners" />
                     </template>
 
@@ -42,46 +36,42 @@
                     <template v-slot:listcontrols>
                         <ContentOperations
                             :history="history"
-                            :total-matches="payload.totalMatches"
-                            :loading="loading"
                             :params.sync="params"
                             :content-selection="selectedItems"
-                            @update:content-selection="selectItems"
                             :show-selection="showSelection"
-                            @update:show-selection="setShowSelection"
-                            @resetSelection="resetSelection"
-                            @selectAllContent="selectItems(payload.contents)"
-                            @manualReload="manualReload"
                             :expanded-count="expandedCount"
-                            @collapseAllContent="collapseAll" />
+                            :has-matches="hasMatches(payload)"
+                            @update:content-selection="selectItems"
+                            @update:show-selection="setShowSelection"
+                            @reset-selection="resetSelection"
+                            @hide-selection="onHiddenItems"
+                            @select-all="selectItems(payload)"
+                            @collapse-all="collapseAll" />
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="history.empty" class="m-2" />
-                        <HistoryEmpty v-else-if="payload && payload.noResults" message="No Results." class="m-2" />
-                        <Scroller
-                            v-else-if="payload"
-                            :class="{ loadingBackground: loading }"
-                            key-field="hid"
-                            v-bind="payload"
-                            :debug="false"
-                            @scroll="setScrollPos">
-                            <template v-slot="{ item, index, rowKey }">
+                        <HistoryEmpty v-if="payload && payload.length == 0" class="m-2" />
+                        <b-alert v-else-if="loading" class="m-2" variant="info" show>
+                            <LoadingSpan message="Loading History" />
+                        </b-alert>
+                        <HistoryListing
+                            v-else
+                            :query-key="queryKey"
+                            :page-size="pageSize"
+                            :payload="payload"
+                            @scroll="onScroll">
+                            <template v-slot:history-item="{ item }">
                                 <HistoryContentItem
+                                    v-if="!hiddenItems[item.hid]"
                                     :item="item"
-                                    :index="index"
-                                    :row-key="rowKey"
-                                    :show-selection="showSelection"
                                     :expanded="isExpanded(item)"
-                                    @update:expanded="setExpanded(item, $event)"
                                     :selected="isSelected(item)"
+                                    :show-selection="showSelection"
+                                    @update:expanded="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
-                                    @viewCollection="$emit('viewCollection', item)"
-                                    :data-hid="item.hid"
-                                    :data-index="index"
-                                    :data-row-key="rowKey" />
+                                    @viewCollection="$emit('viewCollection', item)" />
                             </template>
-                        </Scroller>
+                        </HistoryListing>
                     </template>
 
                     <template v-slot:modals>
@@ -90,13 +80,14 @@
                 </Layout>
             </SelectedItems>
         </ExpandedItems>
-    </HistoryContentProvider>
+    </UrlDataProvider>
 </template>
 
 <script>
 import { History } from "./model";
-import { SearchParams } from "components/providers/History/SearchParams";
-import { HistoryContentProvider } from "components/providers/History/";
+import { SearchParams } from "./model/SearchParams";
+import LoadingSpan from "components/LoadingSpan";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
 import SelectedItems from "./SelectedItems";
 import Layout from "./Layout";
@@ -105,41 +96,71 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
-import Scroller from "./Scroller";
-import { HistoryContentItem } from "./ContentItem";
-import { reportPayload } from "components/providers/History/ContentProvider/helpers";
 import HistoryMenu from "./HistoryMenu";
+import HistoryListing from "./HistoryListing";
+import { HistoryContentItem } from "./ContentItem";
 
 export default {
-    filters: {
-        reportPayload,
-    },
     components: {
-        HistoryContentProvider,
+        LoadingSpan,
+        UrlDataProvider,
         Layout,
+        HistoryContentItem,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryMenu,
+        HistoryListing,
         ContentOperations,
         ToolHelpModal,
-        Scroller,
-        HistoryContentItem,
         ExpandedItems,
         SelectedItems,
-        HistoryMenu,
     },
     props: {
         history: { type: History, required: true },
     },
     data() {
         return {
-            params: new SearchParams(),
-            useItemSelection: false,
+            hiddenItems: {},
+            maxHid: this.history.hid_counter,
+            maxNew: 10,
+            pageSize: 50,
+            params: {},
         };
     },
+    watch: {
+        queryKey() {
+            this.hiddenItems = {};
+            this.maxHid = this.history.hid_counter;
+        },
+    },
     computed: {
+        dataUrl() {
+            return `api/histories/${this.historyId}/contents/before/${this.maxHid + this.maxNew}/${this.pageSize}?${
+                this.queryString
+            }`;
+        },
         historyId() {
             return this.history.id;
+        },
+        queryKey() {
+            return `${this.history.id}&${this.queryString}`;
+        },
+        queryString() {
+            return new SearchParams(this.params).historyContentQueryString;
+        },
+    },
+    methods: {
+        hasMatches(payload) {
+            return !!payload && payload.length > 0;
+        },
+        onScroll(newHid) {
+            this.maxHid = newHid;
+        },
+        onHiddenItems(selectedItems) {
+            selectedItems.forEach((item) => {
+                this.hiddenItems[item.hid] = true;
+            });
         },
     },
 };

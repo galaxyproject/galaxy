@@ -1,38 +1,39 @@
-import { bulkCacheContent } from "components/providers/History/caching";
-import { bulkContentUpdate, getAllContentByFilter } from "./queries";
+import { contentUpdate, getAllContentByFilter } from "./queries";
 
 /**
- * Content crud operations, usually an ajax call + a cache function
+ * Content operations
  */
 
-export const updateSelectedContent = (updates) => async (history, type_ids) => {
-    // single ajax call with wierd syntax because.... reasons
-    const changes = await bulkContentUpdate(history, type_ids, updates);
-    const cacheResult = await bulkCacheContent(changes, true);
-    console.log("cacheResult", changes, cacheResult);
-    return cacheResult;
-};
+export async function hideSelectedContent(history, type_ids) {
+    return await contentUpdate(history, type_ids, {
+        visible: false,
+    });
+}
 
-export const hideSelectedContent = updateSelectedContent({
-    visible: false,
-});
+export async function unhideSelectedContent(history, type_ids) {
+    return await contentUpdate(history, type_ids, {
+        visible: true,
+    });
+}
 
-export const unhideSelectedContent = updateSelectedContent({
-    visible: true,
-});
+export async function deleteSelectedContent(history, type_ids) {
+    return await contentUpdate(history, type_ids, {
+        deleted: true,
+    });
+}
 
-export const deleteSelectedContent = updateSelectedContent({
-    deleted: true,
-});
+export async function undeleteSelectedContent(history, type_ids) {
+    return await contentUpdate(history, type_ids, {
+        deleted: false,
+    });
+}
 
-export const undeleteSelectedContent = updateSelectedContent({
-    deleted: false,
-});
-
-export const purgeSelectedContent = updateSelectedContent({
-    deleted: true,
-    purged: true,
-});
+export async function purgeSelectedContent(history, type_ids) {
+    return await contentUpdate(history, type_ids, {
+        deleted: true,
+        purged: true,
+    });
+}
 
 export async function unhideAllHiddenContent(history) {
     const filter = { visible: false };

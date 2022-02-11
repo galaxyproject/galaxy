@@ -4,7 +4,7 @@
         <b-alert v-if="messageText" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>
-        <DatasetAttributesProvider :id="datasetId" :use-cache="false" v-slot="{ result, loading }" @error="onError">
+        <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
             <div v-if="!loading" class="mt-3">
                 <b-tabs>
                     <b-tab v-if="!result['attribute_disable']">

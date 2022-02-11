@@ -15,7 +15,6 @@ cache first to see if we already have the data -->
 
 <script>
 import { Dataset } from "../model";
-import { getContentByTypeId, cacheContent } from "components/providers/History/caching";
 import { getContentDetails } from "../model/queries";
 import DatasetUI from "./Dataset/DatasetUI";
 
@@ -28,16 +27,26 @@ export default {
     },
     data() {
         return {
-            localItem: { ...this.item },
+            datasetObject: this.extractDataset(this.item),
             loading: false,
         };
     },
     computed: {
         dataset() {
-            return new Dataset(this.localItem);
+            return new Dataset({ ...this.datasetObject });
         },
     },
     methods: {
+        extractDataset() {
+            return {
+                id: this.item.object.id,
+                element_identifier: this.item.element_identifier,
+                state: this.item.object.state,
+                history_id: this.item.object.history_id,
+                history_content_type: "dataset",
+                visible: true,
+            };
+        },
         onExpand(val) {
             if (val) {
                 this.loadDetails();
@@ -45,15 +54,7 @@ export default {
             this.$emit("update:expand", val);
         },
         async loadDetails() {
-            const { type_id, history_id } = this.item;
-            const existingDataset = await getContentByTypeId(history_id, type_id);
-            if (existingDataset) {
-                this.localItem = existingDataset;
-            } else {
-                const loadedDataset = await getContentDetails(this.item);
-                await cacheContent(loadedDataset);
-                this.localItem = loadedDataset;
-            }
+            this.datasetObject = await getContentDetails(this.datasetObject);
         },
     },
 };

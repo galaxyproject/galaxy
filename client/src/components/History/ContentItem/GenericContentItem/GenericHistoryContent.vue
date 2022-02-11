@@ -1,5 +1,5 @@
 <template>
-    <component :is="providerComponent" :id="data_item.id" v-slot="{ item, loading }">
+    <component :is="providerComponent" :id="data_item.id" v-slot="{ result: item, loading }">
         <div>
             <loading-span v-if="loading" message="Loading dataset" />
             <component :is="renderComponent" v-if="item" :item="item"> </component>

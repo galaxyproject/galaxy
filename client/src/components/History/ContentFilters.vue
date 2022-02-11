@@ -31,7 +31,6 @@
 </template>
 
 <script>
-import { SearchParams } from "components/providers/History/SearchParams";
 import DebouncedInput from "components/DebouncedInput";
 
 export default {
@@ -39,25 +38,15 @@ export default {
         DebouncedInput,
     },
     props: {
-        params: { type: SearchParams, required: true },
+        params: { type: Object, required: true },
     },
     computed: {
-        skip: {
-            get() {
-                return this.params.skip;
-            },
-            set(newSkip) {
-                const newParams = this.params.clone();
-                newParams.skip = newSkip;
-                this.updateParams(newParams);
-            },
-        },
         filterText: {
             get() {
                 return this.params.filterText;
             },
             set(newVal) {
-                const newParams = this.params.clone();
+                const newParams = Object.assign({}, this.params);
                 newParams.filterText = newVal;
                 this.updateParams(newParams);
             },
@@ -67,7 +56,7 @@ export default {
                 return this.params.showDeleted;
             },
             set(newFlag) {
-                const newParams = this.params.clone();
+                const newParams = Object.assign({}, this.params);
                 newParams.showDeleted = newFlag;
                 this.updateParams(newParams);
             },
@@ -77,7 +66,7 @@ export default {
                 return this.params.showHidden;
             },
             set(newFlag) {
-                const newParams = this.params.clone();
+                const newParams = Object.assign({}, this.params);
                 newParams.showHidden = newFlag;
                 this.updateParams(newParams);
             },

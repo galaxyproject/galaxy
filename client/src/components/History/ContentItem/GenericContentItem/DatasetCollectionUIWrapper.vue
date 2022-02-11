@@ -19,7 +19,6 @@
 </template>
 <script>
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
-import { cacheContent } from "components/providers/History/caching";
 import { DatasetCollection } from "../../model/DatasetCollection";
 import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
 import { DatasetCollectionContentProvider } from "components/providers";
@@ -57,41 +56,17 @@ export default {
         },
         async onDelete(collection, flags = {}) {
             const { recursive = false, purge = false } = flags;
-            const result = await deleteDatasetCollection(collection, recursive, purge);
-            if (result.deleted) {
-                const newFields = Object.assign(collection, {
-                    isDeleted: result.deleted,
-                });
-                await cacheContent(newFields);
-            }
+            await deleteDatasetCollection(collection, recursive, purge);
         },
 
         async onUndelete(collection) {
-            const result = await updateContentFields(collection, { deleted: false });
-            if (result.deleted === false) {
-                const newFields = Object.assign(collection, {
-                    isDeleted: result.deleted,
-                });
-                await cacheContent(newFields);
-            }
+            await updateContentFields(collection, { deleted: false });
         },
         async onHide(collection) {
-            const result = await updateContentFields(collection, { visible: false });
-            if (result.visible === false) {
-                const newFields = Object.assign(collection, {
-                    isVisible: result.visible,
-                });
-                await cacheContent(newFields);
-            }
+            await updateContentFields(collection, { visible: false });
         },
         async onUnhide(collection) {
-            const result = await updateContentFields(collection, { visible: true });
-            if (result.visible) {
-                const newFields = Object.assign(collection, {
-                    isVisible: result.visible,
-                });
-                await cacheContent(newFields);
-            }
+            await updateContentFields(collection, { visible: true });
         },
     },
 };

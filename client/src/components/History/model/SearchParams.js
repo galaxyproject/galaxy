@@ -1,6 +1,3 @@
-import deepEqual from "deep-equal";
-import { isString } from "underscore";
-
 const pairSplitRE = /(\w+=\w+)|(\w+="(\w|\s)+")/g;
 const scrubFieldRE = /[^\w]/g;
 const scrubQuotesRE = /'|"/g;
@@ -22,17 +19,7 @@ const validTextFields = new Set([
     "tags",
 ]);
 
-// alias search field to internal field (requestd name: pouch field name)
-const pouchFieldAlias = {
-    format: "file_ext",
-    database: "genome_build",
-    description: "annotation",
-    tag: "tags",
-    deleted: "isDeleted",
-    type: "history_content_type",
-};
-
-// maps user-field -> server querystring field
+// Maps user-field -> server querystring field
 // if maps to null, that filter not available on server
 const serverFieldAlias = {
     tags: "tag",
@@ -40,8 +27,8 @@ const serverFieldAlias = {
     genome_build: null,
 };
 
-// Convert actualy boolean into objectively incorrect python value our server accepts
-const dumbBool = (val) => (val ? "True" : "False");
+// Convert boolean into python value as currently expected by the api
+const pythonBool = (val) => (val ? "True" : "False");
 
 export class SearchParams {
     constructor(props = {}) {
@@ -49,20 +36,6 @@ export class SearchParams {
         this.showDeleted = false;
         this.showHidden = false;
         Object.assign(this, props);
-    }
-
-    get pageSize() {
-        return SearchParams.pageSize;
-    }
-
-    clone() {
-        return new SearchParams(this);
-    }
-
-    // need this because of what Vue does to objects to make them reactive
-    export() {
-        const { filterText, showDeleted, showHidden } = this;
-        return { filterText, showDeleted, showHidden };
     }
 
     // Filtering, parses single text input into a map of field->value
@@ -107,28 +80,6 @@ export class SearchParams {
         return criteria;
     }
 
-    // Generates an array of pouchDB selector objects
-    // { field: { $operator: value }}
-    get pouchFilters() {
-        const filters = Array.from(this.criteria)
-            // generate multiple objects for duplicated field=val entries
-            // these will be AND-ed together in the final pouch selector
-            // map userfield to pouchfield, userfield = what the user typed in the box
-            // pouchfield = the actual field in the cache
-            .map(([userField, val]) => [this.getPouchFieldName(userField), val])
-            .map(([pouchField, val]) => {
-                const vals = Array.isArray(val) ? val : [val];
-                return vals.map((v) => [pouchField, v]);
-            })
-            .flat()
-            .map(([pouchField, val]) => {
-                const comparator = isString(val) ? { $regex: new RegExp(val) } : { $eq: val };
-                return { [pouchField]: comparator };
-            });
-
-        return filters;
-    }
-
     // Creates an object of query criteria for use with the api
     get historyContentQueryFields() {
         return Array.from(this.criteria)
@@ -152,7 +103,7 @@ export class SearchParams {
                     // deleted serverField was reserved by pouchDB, needed to rename it to "isDeleted"
                     case "deleted":
                     case "visible":
-                        serverVal = dumbBool(val);
+                        serverVal = pythonBool(val);
                         break;
 
                     // no text searching in some fields
@@ -178,14 +129,6 @@ export class SearchParams {
             }, {});
     }
 
-    // legacy q/qv syntax for content api
-    // TODO: Delete when we no longer use q/qv
-    get legacyContentQueryString() {
-        return Object.entries(this.historyContentQueryFields)
-            .map(([f, v]) => `q=${f}&qv=${v}`)
-            .join("&");
-    }
-
     // Standard query string (field=val&field=val...)
     get historyContentQueryString() {
         return Object.entries(this.historyContentQueryFields)
@@ -193,36 +136,8 @@ export class SearchParams {
             .join("&");
     }
 
-    // maps friendly user field name to internal data field if necessary
-    getPouchFieldName(field) {
-        const cleanName = field.replace(scrubFieldRE, "");
-        return cleanName in pouchFieldAlias ? pouchFieldAlias[cleanName] : cleanName;
-    }
-
     getServerFieldName(field) {
         const cleanName = field.replace(scrubFieldRE, "");
         return cleanName in serverFieldAlias ? serverFieldAlias[cleanName] : cleanName;
     }
-
-    // output current state to log
-    report(label = "params", collapsed = true) {
-        const { showDeleted, showHidden, filterText } = this;
-        const consoleOpen = collapsed ? console.groupCollapsed : console.group;
-        consoleOpen.call(console, label);
-        console.log("showDeleted", showDeleted);
-        console.log("showHidden", showHidden);
-        console.log("filterText", filterText);
-        console.groupEnd();
-    }
 }
-
-// Statics
-
-SearchParams.pageSize = 30;
-
-SearchParams.equals = function (a, b) {
-    if (a !== undefined && b !== undefined) {
-        return deepEqual(a.export(), b.export());
-    }
-    return false;
-};

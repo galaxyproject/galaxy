@@ -3,23 +3,23 @@
         <nav class="content-operations-menu d-flex justify-content-between bg-secondary">
             <b-button-group>
                 <IconButton
-                    :title="hasSelection ? 'Select All Contents' : 'Unselect All Contents'"
+                    title="Select Items"
+                    class="show-history-content-selectors-btn"
                     icon="check-square"
-                    :disabled="!totalMatches"
-                    :pressed="hasSelection"
-                    @click="toggleSelectAll" />
+                    :disabled="!hasMatches"
+                    :pressed="showSelection"
+                    @click="toggleSelection" />
                 <IconButton
-                    title="Filter History Content"
+                    title="Filter Items"
                     icon="filter"
-                    :disabled="!totalMatches"
                     :pressed="showFilter"
-                    @click="showFilter = !showFilter"
+                    @click="toggleFilter"
                     data-description="content filter toggle" />
                 <IconButton
-                    title="Collapse Expanded Items"
+                    title="Collapse Items"
                     icon="compress"
                     :disabled="!expandedCount"
-                    @click="$emit('collapseAllContent')" />
+                    @click="$emit('collapse-all')" />
             </b-button-group>
 
             <b-button-group>
@@ -90,7 +90,7 @@
                     class="history-contents-list-action-menu-btn"
                     size="sm"
                     text="History"
-                    :disabled="!totalMatches"
+                    :disabled="!hasMatches"
                     data-description="history action menu">
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
@@ -119,10 +119,8 @@
         </nav>
 
         <transition name="shutterfade">
-            <content-filters v-if="showContentFilters" class="content-filters p-2" :params.sync="localParams" />
+            <content-filters v-if="showFilter" class="content-filters p-2" :params.sync="localParams" />
         </transition>
-
-        <!-- #region Menus and popovers -->
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
@@ -155,13 +153,10 @@
         <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>"Really delete all deleted datasets permanently? This cannot be undone.</p>
         </b-modal>
-
-        <!-- #endregion -->
     </section>
 </template>
 
 <script>
-import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,
@@ -174,7 +169,6 @@ import {
     purgeAllDeletedContent,
 } from "./model";
 import { createDatasetCollection } from "./model/queries";
-import { cacheContent } from "components/providers/History/caching";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 import ContentFilters from "./ContentFilters";
@@ -188,12 +182,11 @@ export default {
     },
     props: {
         history: { type: History, required: true },
-        params: { type: SearchParams, required: true },
+        params: { type: Object, required: true },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
-        totalMatches: { type: Number, required: true },
+        hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
-        debug: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -201,62 +194,55 @@ export default {
         };
     },
     computed: {
-        showContentFilters() {
+        hasContentFilters() {
             const { showHidden, showDeleted, filterText } = this.params;
-            return this.showFilter || showHidden || showDeleted || filterText;
+            return showHidden || showDeleted || filterText;
         },
-
         localParams: {
             get() {
                 return this.params;
             },
             set(newVal) {
-                this.$emit("update:params", newVal.clone());
+                this.$emit("update:params", Object.assign({}, newVal));
             },
         },
-
         numSelected() {
             return this.contentSelection.size || 0;
         },
-
         hasSelection() {
             return this.numSelected > 0;
         },
-
         countHidden() {
             return this.history.contents_active.hidden;
         },
     },
     methods: {
-        toggleSelectAll() {
-            if (this.hasSelection) {
-                this.$emit("resetSelection");
-                this.$emit("update:show-selection", false);
-            } else {
-                this.$emit("selectAllContent");
-                this.$emit("update:show-selection", true);
+        toggleSelection() {
+            this.$emit("update:show-selection", !this.showSelection);
+        },
+        toggleFilter() {
+            if (!this.showFilter) {
+                this.showFilter = true;
+            } else if (!this.hasContentFilters) {
+                this.showFilter = false;
             }
         },
 
-        // #region history-wide bulk updates, does server query first to determine "selection"
-
+        // History-wide bulk updates, does server query first to determine "selection"
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
-            this.$emit("manualReload");
+            this.$emit("reload");
         },
         async deleteAllHidden(evt) {
             await deleteAllHiddenContent(this.history);
-            this.$emit("manualReload");
+            this.$emit("reload");
         },
         async purgeAllDeleted(evt) {
             await purgeAllDeletedContent(this.history);
-            this.$emit("manualReload");
+            this.$emit("reload");
         },
 
-        // #endregion
-
-        // #region Selected content manipulation, hide/show/delete/purge
-
+        // Selected content manipulation, hide/show/delete/purge
         hideSelected() {
             this.runOnSelection(hideSelectedContent);
         },
@@ -275,18 +261,12 @@ export default {
         async runOnSelection(fn) {
             const items = Array.from(this.contentSelection.values());
             const type_ids = items.map((o) => o.type_id);
-            const results = await fn(this.history, type_ids);
-            if (this.debug) {
-                console.log("operation results", results);
-            }
-            this.$emit("resetSelection");
-            this.$emit("manualReload");
+            await fn(this.history, type_ids);
+            this.$emit("hide-selection", items);
+            this.$emit("reset-selection");
         },
 
-        // #endregion
-
-        // #region collection creation, fires up a modal
-
+        // collection creation, fires up a modal
         async buildDatasetList() {
             await this.buildNewCollection("list");
         },
@@ -301,28 +281,19 @@ export default {
         },
         async buildNewCollection(collectionTypeCode) {
             const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
-            const newCollection = await createDatasetCollection(this.history, modalResult);
-
-            // cache the collection
-            await cacheContent(newCollection);
+            await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested
             if (modalResult.hide_source_items) {
-                this.contentSelection.forEach(async (dataset) => {
-                    await cacheContent({ ...dataset, visible: false }, true);
-                });
-                this.$emit("resetSelection");
+                this.$emit("hide-selection", this.contentSelection);
+                this.$emit("reset-selection");
             }
-
-            // this.$emit("manualReload");
         },
-
-        // #endregion
     },
     watch: {
         hasSelection(newVal) {
             if (newVal) {
-                this.$emit("update:showSelection", true);
+                this.$emit("update:show-selection", true);
             }
         },
     },

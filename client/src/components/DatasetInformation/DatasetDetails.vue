@@ -2,7 +2,7 @@
     <ConfigProvider v-slot="{ config }">
         <DatasetProvider
             :id="datasetId"
-            v-slot="{ item: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
+            v-slot="{ result: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
             <div>
                 <LoadingSpan v-if="isDatasetLoading" />
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
@@ -10,8 +10,7 @@
                     <JobDetailsProvider
                         v-if="!isDatasetLoading && dataset.creating_job !== null"
                         :jobid="dataset.creating_job"
-                        v-slot="{ result: job, loading: isJobLoading }"
-                        :use-cache="false">
+                        v-slot="{ result: job, loading: isJobLoading }">
                         <div v-if="!isJobLoading">
                             <dataset-information class="detail" :hda_id="datasetId" />
                             <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />

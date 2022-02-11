@@ -5,11 +5,11 @@ export default {
 
     computed: {
         contentItemComponent() {
-            const { history_content_type } = this.item;
-            switch (history_content_type) {
-                case "dataset":
+            const { element_type } = this.item;
+            switch (element_type) {
+                case "hda":
                     return "Subdataset";
-                case "dataset_collection":
+                case "hdca":
                     return "Subcollection";
                 default:
                     return "Placeholder";

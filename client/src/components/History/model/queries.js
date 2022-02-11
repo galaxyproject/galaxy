@@ -274,13 +274,13 @@ export async function updateContentFields(content, newFields = {}) {
 }
 
 /**
- * Bulk update endpoint (TODO: rewrite)
+ * Updates history item contents
  *
  * @param {*} history
  * @param {*} type_ids
  * @param {*} fields
  */
-export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
+export async function contentUpdate(history, type_ids = [], fields = {}) {
     const items = type_ids.map((type_id) => {
         const [history_content_type, id] = type_id.split("-");
         return { id, type_id, history_content_type };
@@ -290,7 +290,7 @@ export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
     const url = `/histories/${id}/contents?view=betawebclient`;
     const payload = Object.assign({}, fields, { items });
     const response = await api.put(url, payload);
-    console.log("bulkContentUpdate response", response);
+    console.debug("Submitted request to update selected content.", response);
     return doResponse(response);
 }
 

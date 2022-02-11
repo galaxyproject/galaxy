@@ -1,4 +1,5 @@
 import hash from "object-hash";
+import { LastQueue } from "utils/promise-queue";
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
@@ -10,49 +11,50 @@ import hash from "object-hash";
  */
 export const SingleQueryProvider = (lookup) => {
     const promiseCache = new Map();
-
     return {
         props: {
             useCache: {
                 type: Boolean,
-                default: true,
+                default: false,
+            },
+            autoRefresh: {
+                type: Boolean,
+                default: false,
+            },
+            autoTime: {
+                type: Number,
+                default: 500,
             },
         },
         data() {
             return {
-                result: undefined,
-                error: undefined,
+                result: null,
+                error: null,
             };
+        },
+        created() {
+            this.queue = new LastQueue(this.autoTime);
         },
         computed: {
             loading() {
-                return this.result === undefined;
+                return this.result === null;
             },
             cacheKey() {
                 return hash(this.$attrs || {});
             },
         },
         mounted() {
-            let lookupPromise;
-            if (this.useCache) {
-                lookupPromise = promiseCache.get(this.cacheKey);
-                if (!lookupPromise) {
-                    lookupPromise = lookup(this.$attrs);
-                    promiseCache.set(this.cacheKey, lookupPromise);
-                }
-            } else {
-                lookupPromise = lookup(this.$attrs);
+            this.doQuery();
+            if (this.autoRefresh) {
+                this.interval = setInterval(() => {
+                    this.doQuery();
+                }, this.autoTime);
             }
-            lookupPromise.then(
-                (result) => {
-                    this.result = result;
-                },
-                (err) => {
-                    this.result = {};
-                    this.error = err;
-                    this.$emit("error", err);
-                }
-            );
+        },
+        destroyed() {
+            if (this.interval) {
+                clearInterval(this.interval);
+            }
         },
         render() {
             return this.$scopedSlots.default({
@@ -60,6 +62,32 @@ export const SingleQueryProvider = (lookup) => {
                 result: this.result,
                 error: this.error,
             });
+        },
+        methods: {
+            doQuery() {
+                let lookupPromise;
+                if (this.useCache) {
+                    lookupPromise = promiseCache.get(this.cacheKey);
+                    if (!lookupPromise) {
+                        lookupPromise = lookup(this.$attrs);
+                        promiseCache.set(this.cacheKey, lookupPromise);
+                    }
+                } else {
+                    lookupPromise = this.queue.enqueue(lookup, this.$attrs);
+                }
+                lookupPromise.then(
+                    (result) => {
+                        this.result = result;
+                        this.error = null;
+                    },
+                    (err) => {
+                        this.result = {};
+                        this.error = err;
+                        this.$emit("error", err);
+                        console.debug("Failed to fulfill promise.", err);
+                    }
+                );
+            },
         },
     };
 };
