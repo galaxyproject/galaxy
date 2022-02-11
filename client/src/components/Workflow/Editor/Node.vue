@@ -151,19 +151,18 @@ export default {
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
-
         // Set initial scroll position
         const step = this.step;
         const el = this.$el;
         if (step.position) {
-            el.style.top = step.position.top + "px";
-            el.style.left = step.position.left + "px";
+            el.style.top = (step.position.top + this.offsetToPreventNodeOverlap(100)) + "px";
+            el.style.left = (step.position.left + this.offsetToPreventNodeOverlap(100)) + "px";
         } else {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetToPreventNodeOverlap(100);
+                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetToPreventNodeOverlap(100);
                 el.style.top = `${top}px`;
                 el.style.left = `${left}px`;
             }
@@ -343,6 +342,9 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
+        },
+        offsetToPreventNodeOverlap(maxPixelsOffset) {
+            return Math.floor(Math.random() * maxPixelsOffset);
         },
     },
 };
