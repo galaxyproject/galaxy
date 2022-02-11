@@ -122,7 +122,7 @@ export default {
         return {
             hiddenItems: {},
             topIndex: 0,
-            pageSize: 50,
+            pageSize: 2000,
             params: {},
         };
     },
