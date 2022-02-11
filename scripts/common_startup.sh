@@ -146,14 +146,11 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                 vurl="https://bootstrap.pypa.io/virtualenv/${min_python_version}/virtualenv.pyz"
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
-                # SSL certificates are not checked to prevent problems with messed
-                # up client cert environments. We verify the download using a known
-                # good sha256 sum instead.
                 echo "Fetching $vurl"
                 if command -v curl >/dev/null; then
-                    curl --insecure -L -o "$vsrc" "$vurl"
+                    curl -L -o "$vsrc" "$vurl"
                 elif command -v wget >/dev/null; then
-                    wget --no-check-certificate -O "$vsrc" "$vurl"
+                    wget -O "$vsrc" "$vurl"
                 else
                     "$GALAXY_PYTHON" -c "try:
     from urllib import urlretrieve
