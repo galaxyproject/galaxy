@@ -1,22 +1,22 @@
 <template>
     <div class="history-listing">
-        <div @scroll="onScrollThrottle" class="listing">
-            <div v-for="(item, index) in getItems" :key="index">
-                <slot name="history-item" :item="item" :index="index" />
-            </div>
-            <div v-if="loading" class="m-2">
-                <LoadingSpan message="Please wait" />
-            </div>
-        </div>
+        <virtual-list class="listing"
+            :data-key="'hid'"
+            :data-sources="getItems"
+            :data-component="itemComponent"
+        />
     </div>
 </template>
 <script>
+import VirtualList from 'vue-virtual-scroll-list'
+import Item from "./ContentItem/Item"
 import { reverse, throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         LoadingSpan,
+        VirtualList,
     },
     props: {
         payload: { required: true },
@@ -26,6 +26,7 @@ export default {
     },
     data() {
         return {
+            itemComponent: Item,
             items: [],
             throttlePeriod: 100,
             queryCurrent: this.queryKey,
@@ -60,7 +61,8 @@ export default {
                     const itemIndex = item[this.itemKey];
                     this.items[itemIndex] = item;
                 }
-                this.items = this.items.slice();
+                if (this.items.length == 0)
+                    this.items = this.items.slice();
             }
         },
         onScroll(event) {
@@ -90,6 +92,7 @@ export default {
 .history-listing {
     .listing {
         @include absfill();
+        scroll-behavior: smooth;
         overflow-y: scroll;
         overflow-x: hidden;
     }
