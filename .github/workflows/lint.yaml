@@ -43,3 +43,4 @@ jobs:
         run: tox -e lint_docstring_include_list
       - name: Run mypy checks
         run: tox -e mypy
+      - uses: psf/black@stable

@@ -62,17 +62,11 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=['datasets'])
+router = Router(tags=["datasets"])
 
-DatasetIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    description="The encoded database identifier of the dataset."
-)
+DatasetIDPathParam: EncodedDatabaseIdField = Path(..., description="The encoded database identifier of the dataset.")
 
-HistoryIDPathParam: EncodedDatabaseIdField = Path(
-    ...,
-    description="The encoded database identifier of the History."
-)
+HistoryIDPathParam: EncodedDatabaseIdField = Path(..., description="The encoded database identifier of the History.")
 
 DatasetSourceQueryParam: DatasetSourceType = Query(
     default=DatasetSourceType.hda,
@@ -85,15 +79,15 @@ class FastAPIDatasets:
     service: DatasetsService = depends(DatasetsService)
 
     @router.get(
-        '/api/datasets',
-        summary='Search datasets or collections using a query system.',
+        "/api/datasets",
+        summary="Search datasets or collections using a query system.",
     )
     def index(
         self,
         trans=DependsOnTrans,
         history_id: Optional[EncodedDatabaseIdField] = Query(
             default=None,
-            description="Optional identifier of a History. Use it to restrict the search whithin a particular History."
+            description="Optional identifier of a History. Use it to restrict the search whithin a particular History.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
@@ -101,8 +95,8 @@ class FastAPIDatasets:
         return self.service.index(trans, history_id, serialization_params, filter_query_params)
 
     @router.get(
-        '/api/datasets/{dataset_id}/storage',
-        summary='Display user-facing storage details related to the objectstore a dataset resides in.',
+        "/api/datasets/{dataset_id}/storage",
+        summary="Display user-facing storage details related to the objectstore a dataset resides in.",
     )
     def show_storage(
         self,
@@ -113,8 +107,8 @@ class FastAPIDatasets:
         return self.service.show_storage(trans, dataset_id, hda_ldda)
 
     @router.get(
-        '/api/datasets/{dataset_id}/inheritance_chain',
-        summary='For internal use, this endpoint may change without warning.',
+        "/api/datasets/{dataset_id}/inheritance_chain",
+        summary="For internal use, this endpoint may change without warning.",
         include_in_schema=True,  # Can be changed to False if we don't really want to expose this
     )
     def show_inheritance_chain(
@@ -126,8 +120,8 @@ class FastAPIDatasets:
         return self.service.show_inheritance_chain(trans, dataset_id, hda_ldda)
 
     @router.get(
-        '/api/datasets/{dataset_id}/get_content_as_text',
-        summary='Returns dataset content as Text.',
+        "/api/datasets/{dataset_id}/get_content_as_text",
+        summary="Returns dataset content as Text.",
     )
     def get_content_as_text(
         self,
@@ -137,8 +131,8 @@ class FastAPIDatasets:
         return self.service.get_content_as_text(trans, dataset_id)
 
     @router.get(
-        '/api/datasets/{dataset_id}/converted/{ext}',
-        summary='Return information about datasets made by converting this dataset to a new format.',
+        "/api/datasets/{dataset_id}/converted/{ext}",
+        summary="Return information about datasets made by converting this dataset to a new format.",
     )
     def converted_ext(
         self,
@@ -160,10 +154,8 @@ class FastAPIDatasets:
         return self.service.converted_ext(trans, dataset_id, ext, serialization_params)
 
     @router.get(
-        '/api/datasets/{dataset_id}/converted',
-        summary=(
-            "Return a a map with all the existing converted datasets associated with this instance."
-        ),
+        "/api/datasets/{dataset_id}/converted",
+        summary=("Return a a map with all the existing converted datasets associated with this instance."),
     )
     def converted(
         self,
@@ -176,8 +168,8 @@ class FastAPIDatasets:
         return self.service.converted(trans, dataset_id)
 
     @router.put(
-        '/api/datasets/{dataset_id}/permissions',
-        summary='Set permissions of the given history dataset to the given role ids.',
+        "/api/datasets/{dataset_id}/permissions",
+        summary="Set permissions of the given history dataset to the given role ids.",
     )
     def update_permissions(
         self,
@@ -194,8 +186,8 @@ class FastAPIDatasets:
         return self.service.update_permissions(trans, dataset_id, update_payload)
 
     @router.get(
-        '/api/histories/{history_id}/contents/{history_content_id}/extra_files',
-        summary='Generate list of extra files.',
+        "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
+        summary="Generate list of extra files.",
         tags=["histories"],
     )
     def extra_files(
@@ -207,9 +199,9 @@ class FastAPIDatasets:
         return self.service.extra_files(trans, history_content_id)
 
     @router.get(
-        '/api/histories/{history_id}/contents/{history_content_id}/display',
+        "/api/histories/{history_id}/contents/{history_content_id}/display",
         name="history_contents_display",
-        summary='Displays dataset (preview) content.',
+        summary="Displays dataset (preview) content.",
         tags=["histories"],
         response_class=StreamingResponse,
     )
@@ -235,7 +227,7 @@ class FastAPIDatasets:
             description=(
                 "The file extension when downloading the display data. Use the value `data` to "
                 "let the server infer it from the data type."
-            )
+            ),
         ),
         raw: bool = Query(
             default=False,
@@ -248,12 +240,14 @@ class FastAPIDatasets:
     ):
         """Streams the preview contents of a dataset to be displayed in a browser."""
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
-        display_data, headers = self.service.display(trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params)
+        display_data, headers = self.service.display(
+            trans, history_content_id, history_id, preview, filename, to_ext, raw, **extra_params
+        )
         return StreamingResponse(display_data, headers=headers)
 
     @router.get(
-        '/api/histories/{history_id}/contents/{history_content_id}/metadata_file',
-        summary='Returns the metadata file associated with this history item.',
+        "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
+        summary="Returns the metadata file associated with this history item.",
         tags=["histories"],
         response_class=FileResponse,
     )
@@ -271,7 +265,7 @@ class FastAPIDatasets:
         return FileResponse(path=cast(str, metadata_file_path), headers=headers)
 
     @router.get(
-        '/api/datasets/{dataset_id}',
+        "/api/datasets/{dataset_id}",
         summary="Displays information about and/or content of a dataset.",
     )
     def show(
@@ -281,9 +275,7 @@ class FastAPIDatasets:
         dataset_id: EncodedDatabaseIdField = DatasetIDPathParam,
         hda_ldda: DatasetSourceType = Query(
             default=DatasetSourceType.hda,
-            description=(
-                "The type of information about the dataset to be requested."
-            ),
+            description=("The type of information about the dataset to be requested."),
         ),
         data_type: Optional[RequestDataType] = Query(
             default=None,
@@ -368,25 +360,25 @@ class DatasetsController(BaseGalaxyAPIController):
         filter_parameters = FilterQueryParams(**kwd)
         filter_parameters.limit = filter_parameters.limit or limit
         filter_parameters.offset = filter_parameters.offset or offset
-        return self.service.index(
-            trans, history_id, serialization_params, filter_parameters
-        )
+        return self.service.index(trans, history_id, serialization_params, filter_parameters)
 
     @web.expose_api_anonymous_and_sessionless
-    def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
+    def show(self, trans, id, hda_ldda="hda", data_type=None, provider=None, **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
         serialization_params = parse_serialization_params(**kwd)
-        kwd.update({
-            "provider": provider,
-        })
+        kwd.update(
+            {
+                "provider": provider,
+            }
+        )
         rval = self.service.show(trans, id, hda_ldda, serialization_params, data_type, **kwd)
         return rval
 
     @web.expose_api_anonymous
-    def show_storage(self, trans, dataset_id, hda_ldda='hda', **kwd):
+    def show_storage(self, trans, dataset_id, hda_ldda="hda", **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}/storage
 
@@ -396,7 +388,7 @@ class DatasetsController(BaseGalaxyAPIController):
         return self.service.show_storage(trans, dataset_id, hda_ldda)
 
     @web.expose_api_anonymous
-    def show_inheritance_chain(self, trans, dataset_id, hda_ldda='hda', **kwd):
+    def show_inheritance_chain(self, trans, dataset_id, hda_ldda="hda", **kwd):
         """
         GET /api/datasets/{dataset_id}/inheritance_chain
 
@@ -415,7 +407,7 @@ class DatasetsController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   dictionary containing new permissions
         """
-        hda_ldda = kwd.pop('hda_ldda', DatasetSourceType.hda)
+        hda_ldda = kwd.pop("hda_ldda", DatasetSourceType.hda)
         if payload:
             kwd.update(payload)
         update_payload = get_update_permission_payload(kwd)
@@ -430,8 +422,9 @@ class DatasetsController(BaseGalaxyAPIController):
         return self.service.extra_files(trans, history_content_id)
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def display(self, trans, history_content_id, history_id,
-                preview=False, filename=None, to_ext=None, raw=False, **kwd):
+    def display(
+        self, trans, history_content_id, history_id, preview=False, filename=None, to_ext=None, raw=False, **kwd
+    ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
@@ -449,7 +442,7 @@ class DatasetsController(BaseGalaxyAPIController):
 
     @web.expose_api
     def get_content_as_text(self, trans, dataset_id):
-        """ Returns item content as Text. """
+        """Returns item content as Text."""
         return self.service.get_content_as_text(trans, dataset_id)
 
     @web.expose_api_raw_anonymous_and_sessionless

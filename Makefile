@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=22.01
+RELEASE_CURR:=22.05
 RELEASE_UPSTREAM:=upstream
 TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
@@ -40,6 +40,10 @@ setup-venv:
 
 diff-format:
 	$(IN_VENV) darker -r $(TARGET_BRANCH)
+
+format:
+	$(IN_VENV) isort .
+	$(IN_VENV) black .
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns

@@ -1,3 +1,15 @@
+[tool.black]
+line-length = 120
+target-version = ['py37']
+include = '\.pyi?$'
+extend-exclude = '''
+^/(
+  | packages
+  | tools
+)/
+'''
+force-exclude = 'lib/galaxy/util/jstree.py'
+
 [tool.poetry]
 name = "galaxy"
 version = "22.01.dev0"
@@ -90,10 +102,12 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+black = "^22.1.0"
 cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
 httpx = "*"
+isort = "^5.10.1"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 NoseHTML = "*"
