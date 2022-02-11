@@ -6696,7 +6696,7 @@ class WorkflowStepConnection(Base, RepresentById):
         return self.input_step_input.name
 
     @property
-    def input_step(self):
+    def input_step(self) -> Optional[WorkflowStep]:
         return self.input_step_input and self.input_step_input.workflow_step
 
     @property
