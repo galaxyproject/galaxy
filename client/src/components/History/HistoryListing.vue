@@ -8,7 +8,7 @@
     </div>
 </template>
 <script>
-import VirtualList from 'vue-virtual-scroll-list'
+import VirtualList from "vue-virtual-scroll-list";
 import Item from "./ContentItem/Item"
 import { reverse, throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
@@ -61,8 +61,7 @@ export default {
                     const itemIndex = item[this.itemKey];
                     this.items[itemIndex] = item;
                 }
-                if (this.items.length == 0)
-                    this.items = this.items.slice();
+                this.items = this.items.slice();
             }
         },
         onScroll(event) {
