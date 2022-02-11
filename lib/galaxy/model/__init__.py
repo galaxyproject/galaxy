@@ -110,6 +110,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.custom_types import (
     JSONType,
+    MetadataType,
     MutableJSONType,
     TrimmedString,
     UUIDType,
@@ -4607,7 +4608,7 @@ class HistoryDatasetAssociationHistory(Base, Serializable):
     version = Column(Integer)
     name = Column(TrimmedString(255))
     extension = Column(TrimmedString(64))
-    _metadata = Column("metadata", JSONType)
+    _metadata = Column("metadata", MetadataType)
     extended_metadata_id = Column(Integer, ForeignKey("extended_metadata.id"), index=True)
 
     def __init__(
@@ -7951,11 +7952,11 @@ class MetadataFile(Base, StorableObject, Serializable):
     def file_name(self):
         # Ensure the directory structure and the metadata file object exist
         try:
-            dataset = self.dataset
-            if self.object_store_id is None and dataset is not None:
-                self.object_store_id = dataset.object_store_id
-            object_store = dataset.object_store
-            store_by = object_store.get_store_by(dataset)
+            da = self.history_dataset or self.library_dataset
+            if self.object_store_id is None and da is not None:
+                self.object_store_id = da.dataset.object_store_id
+            object_store = da.dataset.object_store
+            store_by = object_store.get_store_by(da.dataset)
             if store_by == "id" and self.id is None:
                 self.flush()
             identifier = getattr(self, store_by)
@@ -9299,7 +9300,7 @@ HistoryDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
@@ -9346,7 +9347,7 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
-    Column("metadata", JSONType, key="_metadata"),
+    Column("metadata", MetadataType, key="_metadata"),
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),

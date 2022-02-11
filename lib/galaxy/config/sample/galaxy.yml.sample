@@ -1189,6 +1189,11 @@ galaxy:
   # documentation for the corresponding nginx configuration.
   #nginx_upload_job_files_path: null
 
+  # The upload store is a temporary directory in which files uploaded by
+  # the tus middleware or server will be placed. Defaults to
+  # new_file_path if not set.
+  #tus_upload_store: null
+
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
   # chunk size is specified in bytes (default: 10MB).
