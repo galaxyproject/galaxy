@@ -1,15 +1,14 @@
 <template>
     <div class="history-listing">
-        <virtual-list class="listing"
-            :data-key="'hid'"
-            :data-sources="getItems"
-            :data-component="itemComponent"
-        />
+        <virtual-list class="listing" data-key="hid" :data-sources="getItems" :data-component="{}">
+            <template v-slot:item="{ item }">
+                <slot name="history-item" :item="item" />
+            </template>
+        </virtual-list>
     </div>
 </template>
 <script>
 import VirtualList from "vue-virtual-scroll-list";
-import Item from "./ContentItem/Item"
 import { reverse, throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
 
@@ -26,7 +25,6 @@ export default {
     },
     data() {
         return {
-            itemComponent: Item,
             items: [],
             throttlePeriod: 100,
             queryCurrent: this.queryKey,
