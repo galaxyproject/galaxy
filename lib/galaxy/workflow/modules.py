@@ -772,7 +772,7 @@ class InputDataCollectionModule(InputModule):
             {"value": "list:paired", "label": "List of Dataset Pairs"},
         ]
         input_collection_type = TextToolParameter(None, collection_type_source)
-        tag_source = dict(name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs")
+        tag_source = dict(name="tag", label="Tag filter", type="text", optional="true", value=tag, help="Tags to automatically filter inputs")
         input_tag = TextToolParameter(None, tag_source)
         inputs = {}
         inputs["collection_type"] = input_collection_type
