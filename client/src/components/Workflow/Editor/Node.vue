@@ -151,6 +151,7 @@ export default {
         this.activeOutputs = new ActiveOutputs();
         this.element = this.$el;
         this.content_id = this.contentId;
+
         // Set initial scroll position
         const step = this.step;
         const el = this.$el;
