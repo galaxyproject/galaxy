@@ -215,10 +215,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             workflows = []
             workflows_by_toolshed = dict()
             for value in rval:
-                tool_ids = self.workflow_contents_manager.get_all_tool_ids(
+                tools = self.workflow_contents_manager.get_all_tools(
                     self.__get_stored_workflow(trans, value["id"]).latest_workflow
                 )
-                missing_tool_ids = [tool_id for tool_id in tool_ids if self.app.toolbox.is_missing_shed_tool(tool_id)]
+                missing_tool_ids = [
+                    tool["tool_id"] for tool in tools if self.app.toolbox.is_missing_shed_tool(tool["tool_id"])
+                ]
                 if len(missing_tool_ids) > 0:
                     value["missing_tools"] = missing_tool_ids
                     workflows_missing_tools.append(value)
@@ -808,12 +810,24 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         if not is_batch and len(run_configs) != 1:
             raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
-        tool_ids = self.workflow_contents_manager.get_all_tool_ids(workflow)
-        missing_tool_ids = [tool_id for tool_id in tool_ids if not self.app.toolbox.has_tool(tool_id)]
-        if missing_tool_ids:
-            raise exceptions.MessageException(
-                f"Workflow was not invoked; the following required tools are not installed: {', '.join(missing_tool_ids)}"
+        require_exact_tool_versions = util.string_as_bool(payload.get("require_exact_tool_versions", "true"))
+        tools = self.workflow_contents_manager.get_all_tools(workflow)
+        missing_tools = [
+            tool
+            for tool in tools
+            if not self.app.toolbox.has_tool(
+                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
             )
+        ]
+        if missing_tools:
+            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
+            if require_exact_tool_versions:
+                missing_tools_message += ", ".join(
+                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
+                )
+            else:
+                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
+            raise exceptions.MessageException(missing_tools_message)
 
         invocations = []
         for run_config in run_configs:
