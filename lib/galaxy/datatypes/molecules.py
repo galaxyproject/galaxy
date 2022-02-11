@@ -694,7 +694,7 @@ class Cell(GenericMolFile):
         visible=False,
     )
     MetadataElement(
-        name="number_atoms",
+        name="number_of_atoms",
         desc="Number of atoms",
         readonly=True,
         visible=True,
@@ -720,13 +720,16 @@ class Cell(GenericMolFile):
 
     def sniff(self, filename):
         """
-        Try to guess if the file is a CELL file.
+        Try to guess if the file is a CASTEP CELL file.
+
+        A fingerprint for CELL files is the use of %BLOCK and %ENDBLOCK to
+        denote data blocks (not case sensitive).
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('Si.cell')
+        >>> fname = get_test_fname('Si_uppercase.cell')
         >>> Cell().sniff(fname)
         True
-        >>> fname = get_test_fname('Si_cell.txt')
+        >>> fname = get_test_fname('Si_lowercase.cell')
         >>> Cell().sniff(fname)
         True
         >>> fname = get_test_fname('Si.cif')
@@ -735,16 +738,16 @@ class Cell(GenericMolFile):
         """
         with open(filename) as f:
             cell = f.read(1000)
-        if '\n%BLOCK ' in cell:
-            if '\n%ENDBLOCK ' in cell:
+        if re.search(r"\n%BLOCK", cell, flags=re.IGNORECASE) is not None:
+            if re.search(r"\n%ENDBLOCK", cell, flags=re.IGNORECASE) is not None:
                 return True
         else:
             return False
 
-        # if BLOCK was found but not ENDBLOCK, check the rest of the file
+        # if %BLOCK was found but not %ENDBLOCK, check the rest of the file
         with open(filename) as f:
             cell = f.read()
-        if '\n%ENDBLOCK ' in cell:
+        if re.search(r"\n%ENDBLOCK", cell, flags=re.IGNORECASE) is not None:
             return True
         else:
             return False
@@ -761,39 +764,55 @@ class Cell(GenericMolFile):
             try:
                 ase_data = ase_io.read(dataset.file_name, format="castep-cell")
             except ValueError:
-                log.error("Could not read cell structure data: %s", unicodify(e))
+                log.error("Could not read CELL structure data: %s", unicodify(e))
                 raise
 
             try:
-                dataset.metadata.atom_data = [
+                atom_data = [
                     str(sym) + str(pos)
                     for sym, pos in zip(
                         ase_data.get_chemical_symbols(), ase_data.get_positions()
                     )
                 ]
-                log.warning(len(dataset.metadata.atom_data))
-                dataset.metadata.number_atoms=len(dataset.metadata.atom_data)
-                dataset.metadata.chemical_formula=ase_data.get_chemical_formula()
+                chemical_formula = ase_data.get_chemical_formula()
                 pbc = ase_data.get_pbc()
-                try:
-                    dataset.metadata.is_periodic=1 if pbc else 0
-                except ValueError: # pbc is an array
-                    dataset.metadata.is_periodic=1 if pbc.any() else 0
-                cell_data = ase_data.get_cell()
-                dataset.metadata.lattice_parameters=list(cell_data.cellpar())
+                lattice_parameters = ase_data.get_cell().cellpar()
                 log.warning("metadata is: %s", dataset.metadata)
             except Exception as e:
                 log.error("Error finding metadata: %s", unicodify(e))
                 raise
+
+            dataset.metadata.atom_data = atom_data
+            dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
+            dataset.metadata.chemical_formula = chemical_formula
+            try:
+                dataset.metadata.is_periodic = 1 if pbc else 0
+            except ValueError:  # pbc is an array
+                dataset.metadata.is_periodic = 1 if pbc.any() else 0
+            dataset.metadata.lattice_parameters = list(lattice_parameters)
 
         else:
             # simple metadata
             with open(dataset.file_name) as f:
                 cell = f.read()
             try:
-                block = cell.split('%BLOCK POSITIONS')[1].split('%ENDBLOCK POSITIONS')[0].split('\n')[1:-1]
+                # atom position data follows this pattern:
+                # %BLOCK POSITIONS(_FRAC|_ABS)
+                # [position data, one line per atom]
+                # %ENDBLOCK POSITIONS(_FRAC|_ABS)
+                block = (
+                    re.search(
+                        r"\n%BLOCK POSITIONS([\s\S]*?)\n%ENDBLOCK POSITIONS",
+                        cell,
+                        flags=re.IGNORECASE,
+                    )
+                    .group(1)
+                    .split("\n")[1:]
+                )
+                log.warning(block)
+
                 dataset.metadata.atom_data = [atom.strip() for atom in block]
-                dataset.metadata.number_atoms = len(dataset.metadata.atom_data)
+                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
                 log.error("Error finding atom_data: %s", unicodify(e))
                 raise
@@ -801,21 +820,38 @@ class Cell(GenericMolFile):
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            if ase_io:
-                # enhanced blurb
-                dataset.blurb = f"Structure of {dataset.metadata.chemical_formula}."
-                if dataset.metadata.is_periodic:
-                    dataset.blurb += f"\nPeriodic.\nLattice parameters in axis-angle format:\n{[round(x,2) for x in dataset.metadata.lattice_parameters]}."
-                else:
-                    dataset.blurb += "Not periodic."
-                dataset.blurb += f"\nFile contains {len(dataset.metadata.atom_data)} atoms."
-            else:
-                # simple blurb
-                dataset.blurb = f"CASTEP cell file containing {len(dataset.metadata.atom_data)} atoms"
-            dataset.info = dataset.blurb
+            dataset.info = self.get_dataset_info(dataset.metadata)
+            structure_string = (
+                "structure"
+                if dataset.metadata.number_of_molecules == 1
+                else "structures"
+            )
+            dataset.blurb = f"CASTEP CELL file containing {dataset.metadata.number_of_molecules} {structure_string}"
+
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+    def get_dataset_info(self, metadata):
+        info = ""  # default to empty info
+
+        if ase_io:
+            # enhanced info
+            info_list = []
+            info_list.append(f"Chemical formula:\n{metadata.chemical_formula}")
+            if metadata.is_periodic:
+                info_list.append(f"Periodic:\nYes")
+                info_list.append(
+                    f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters])}"
+                )
+            else:
+                info_list.append("\Periodic:\nNo")
+            info_list.append(f"Atoms in file:\n{metadata.number_of_atoms}")
+            info += "\n--\n".join(info_list)
+        else:
+            info += f"Atoms in file:\n{metadata.number_of_atoms}"
+
+        return info
 
 
 class CIF(GenericMolFile):
@@ -825,10 +861,41 @@ class CIF(GenericMolFile):
 
     file_ext = "cif"
     MetadataElement(
+        name="data_block_names",
+        default=[],
+        desc="Names of the data blocks",
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
         name="atom_data",
         default=[],
-        desc="Atom Positions",
-        readonly=False,
+        desc="Atom symbols and positions",
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
+        name="number_of_atoms",
+        desc="Number of atoms",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="chemical_formula",
+        desc="Chemical formula",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="is_periodic",
+        desc="Periodic boundary conditions",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="lattice_parameters",
+        desc="Lattice parameters",
+        readonly=True,
         visible=True,
     )
 
@@ -850,37 +917,116 @@ class CIF(GenericMolFile):
         with open(filename) as f:
             cif = f.read(1000)
 
-        for line in cif.split('\n'):
+        # check for optional CIF version marker '#\#CIF_<version>' at start of file
+        if cif[0:7] == "#\\#CIF_":
+            return True
+
+        # no version marker, search for mandatory CIF keywords
+        # first non-comment line must begin with 'data_'
+        # and '_atom_site_fract_(x|y|z)' must be specified somewhere in the file
+        for line in cif.split("\n"):
             if not line:
                 continue
-            elif line[0] == '#':  # comment so skip
+            elif line[0] == "#":  # comment so skip
                 continue
-            if line.startswith('data_'):
-                if '_atom_site_fract_' in cif:
+            if line.startswith("data_"):
+                if "_atom_site_fract_" in cif:
                     return True
                 break
             else:
                 return False
 
-        # if '_atom_site_fract_' not found check the rest of the file
+        # if 'data_' found but '_atom_site_fract_' not found, check the rest of the file
         with open(filename) as f:
             cif = f.read()
-        if '_atom_site_fract_' in cif:
+        if "_atom_site_fract_" in cif:
             return True
         else:
             return False
 
-    # def set_meta(self, dataset, **kwd):
-    #     """
-    #     Find Atom IDs for metadata.
-    #     """
+    def set_meta(self, dataset, **kwd):
+        """
+        Find Atom IDs for metadata.
+        """
+
+        if ase_io:
+            # enhanced metadata
+            try:
+                ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
+                log.warning(str(ase_data))
+            except ValueError:
+                log.error("Could not read CIF structure data: %s", unicodify(e))
+                raise
+
+            atom_data = []
+            chemical_formula = []
+            is_periodic = []
+            lattice_parameters = []
+            try:
+                for block in ase_data:
+                    atom_data.append(
+                        [
+                            str(sym) + str(pos)
+                            for sym, pos in zip(
+                                block.get_chemical_symbols(), block.get_positions()
+                            )
+                        ]
+                    )
+                    chemical_formula.append(block.get_chemical_formula())
+                    pbc = block.get_pbc()
+                    try:
+                        p = 1 if pbc else 0
+                    except ValueError:  # pbc is an array
+                        p = 1 if pbc.any() else 0
+                    is_periodic.append(p)
+                    lattice_parameters.append(list(block.get_cell().cellpar()))
+                    log.warning("metadata is: %s", dataset.metadata)
+            except Exception as e:
+                log.error("Error finding metadata: %s", unicodify(e))
+                raise
+
+            dataset.metadata.number_of_molecules = len(ase_data)
+            dataset.metadata.atom_data = atom_data
+            dataset.metadata.number_of_atoms = [
+                len(atoms) for atoms in dataset.metadata.atom_data
+            ]
+            dataset.metadata.chemical_formula = chemical_formula
+            dataset.metadata.is_periodic = is_periodic
+            dataset.metadata.lattice_parameters = list(lattice_parameters)
+
+        else:
+            # simple metadata
+            with open(dataset.file_name) as f:
+                cell = f.read()
+            try:
+                # TODO: update for CIF
+                # block data follows this pattern:
+                # data_
+                # ...
+                # _atom_site_fract_(x|y|z)
+                # atom list
+                block = (
+                    re.search(
+                        r"\n%BLOCK POSITIONS([\s\S]*?)\n%ENDBLOCK POSITIONS",
+                        cell,
+                        flags=re.IGNORECASE,
+                    )
+                    .group(1)
+                    .split("\n")[1:]
+                )
+                log.warning(block)
+                dataset.metadata.number_of_molecules = 1  # TODO: check number of data_?
+                dataset.metadata.atom_data = [atom.strip() for atom in block]
+                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
+            except Exception as e:
+                log.error("Error finding atom_data: %s", unicodify(e))
+                raise
 
     def set_peek(self, dataset, is_multi_byte=False):
+        # TODO: copy dataset_info from CELL
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = (
-                "CIF file"
-            )
+            dataset.blurb = "CIF file"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
