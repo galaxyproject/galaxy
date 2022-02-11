@@ -54,8 +54,12 @@ jobs:
           path: .venv
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-framework
       - name: Run tests
-        run: ./run_tests.sh --framework
+        run: ./run_tests.sh --coverage --framework
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: framework
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

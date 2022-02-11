@@ -61,8 +61,12 @@ jobs:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
+        run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: selenium
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:
