@@ -1538,7 +1538,7 @@ class TestHistoryDatasetAssociation(BaseTest):
         peek = "e"
         tool_version = "f"
         extension = "g"
-        _metadata = "h"
+        _metadata = {"key": "value"}
         designation = "i"
         deleted = False
         visible = False
@@ -1801,7 +1801,7 @@ class TestHistoryDatasetAssociationHistory(BaseTest):
             datetime.now(),
             2,
             "b",
-            "c",
+            {"key": "value"},
         )
         obj = cls_(
             history_dataset_association.id,
@@ -3547,7 +3547,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         validated_state_message = "k"
         visible = True
         message = "m"
-        _metadata = "n"
+        _metadata = {"key": "value"}
         copied_from_ldda = library_dataset_dataset_association_factory()
         parent = library_dataset_dataset_association_factory()
         persist(session, copied_from_ldda)

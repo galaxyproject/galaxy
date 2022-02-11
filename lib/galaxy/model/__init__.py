@@ -98,6 +98,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.custom_types import (
     JSONType,
+    MetadataType,
     MutableJSONType,
     TrimmedString,
     UUIDType,
@@ -4402,7 +4403,7 @@ class HistoryDatasetAssociationHistory(Base, Serializable):
     version = Column(Integer)
     name = Column(TrimmedString(255))
     extension = Column(TrimmedString(64))
-    _metadata = Column('metadata', JSONType)
+    _metadata = Column("metadata", MetadataType)
     extended_metadata_id = Column(Integer, ForeignKey("extended_metadata.id"), index=True)
 
     def __init__(self,
@@ -8843,7 +8844,7 @@ HistoryDatasetAssociation.table = Table(
     Column('peek', TEXT, key='_peek'),
     Column('tool_version', TEXT),
     Column('extension', TrimmedString(64)),
-    Column('metadata', JSONType, key='_metadata'),
+    Column("metadata", MetadataType, key="_metadata"),
     Column('parent_id', Integer, ForeignKey('history_dataset_association.id'), nullable=True),
     Column('designation', TrimmedString(255)),
     Column('deleted', Boolean, index=True, default=False),
@@ -8879,7 +8880,7 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column('peek', TEXT, key='_peek'),
     Column('tool_version', TEXT),
     Column('extension', TrimmedString(64)),
-    Column('metadata', JSONType, key='_metadata'),
+    Column("metadata", MetadataType, key="_metadata"),
     Column('parent_id', Integer, ForeignKey('library_dataset_dataset_association.id'), nullable=True),
     Column('designation', TrimmedString(255)),
     Column('deleted', Boolean, index=True, default=False),
