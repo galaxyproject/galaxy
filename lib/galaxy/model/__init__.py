@@ -5803,11 +5803,13 @@ class DatasetCollectionInstance(HasName, UsesCreateAndUpdateTime):
         return dict(
             id=self.id,
             name=self.name,
+            collection_id=self.collection_id,
             collection_type=self.collection.collection_type,
             populated=self.populated,
             populated_state=self.collection.populated_state,
             populated_state_message=self.collection.populated_state_message,
             element_count=self.collection.element_count,
+            elements_datatypes=self.dataset_dbkeys_and_extensions_summary[1],
             type="collection",  # contents type (distinguished from file or folder (in case of library))
         )
 
