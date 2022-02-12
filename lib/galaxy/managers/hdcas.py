@@ -323,10 +323,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         return contents_url
 
     def serialize_job_state_summary(self, item, key, **context):
-        states = item.job_state_summary.__dict__.copy()
-        del states["_sa_instance_state"]
-        del states["hdca_id"]
-        return states
+        return item.job_state_summary_dict
 
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]

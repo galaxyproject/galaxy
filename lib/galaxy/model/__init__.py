@@ -5954,6 +5954,14 @@ class HistoryDatasetCollectionAssociation(
             return None
 
     @property
+    def job_state_summary_dict(self):
+        if self.job_state_summary:
+            states = self.job_state_summary.__dict__.copy()
+            del states["_sa_instance_state"]
+            del states["hdca_id"]
+            return states
+
+    @property
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             rows = self.collection._get_nested_collection_attributes(hda_attributes=("_metadata", "extension"))
@@ -6039,6 +6047,7 @@ class HistoryDatasetCollectionAssociation(
                 deleted=self.deleted,
                 job_source_id=self.job_source_id,
                 job_source_type=self.job_source_type,
+                job_state_summary=self.job_state_summary_dict,
                 create_time=self.create_time.isoformat(),
                 update_time=self.update_time.isoformat(),
                 **self._base_to_dict(view=view),
