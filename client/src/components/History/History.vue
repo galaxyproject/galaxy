@@ -97,7 +97,7 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import HistoryMenu from "./HistoryMenu";
 import HistoryListing from "./HistoryListing";
-import { ContentItem } from "./ContentItem";
+import ContentItem from "./ContentItem/ContentItem";
 
 export default {
     components: {
