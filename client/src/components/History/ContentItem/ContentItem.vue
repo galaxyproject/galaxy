@@ -1,3 +1,21 @@
+<template>
+    <component
+        class="content-item"
+        :is="contentItemComponent"
+        :data-ci-type="contentItemComponent"
+        :class="{ loading }"
+        :tabindex="index"
+        :item="item"
+        :index="index"
+        :row-key="rowKey"
+        :writable="writable"
+        v-on="$listeners"
+        v-bind="$attrs"
+        @mouseover.native.stop="setFocus(index)"
+        @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
+        @keydown.native.arrow-down.self.stop="setFocus(index + 1)" />
+</template>
+<script>
 /**
  * This is a single item in the list. The main job of the contentItem is to
  * pick a specific selector for the :is attribute of the generic component
@@ -15,25 +33,6 @@ import Subdataset from "./Subdataset";
 import Subcollection from "./Subcollection";
 
 export default {
-    template: `
-        <component :is="contentItemComponent"
-            :data-ci-type="contentItemComponent"
-            class="content-item"
-            :class="{ loading }"
-            :tabindex="index"
-            :writable="writable"
-            v-on="$listeners"
-            v-bind="$attrs"
-            :item="item"
-            :index="index"
-            :row-key="rowKey"
-            :writable="writable"
-            @mouseover.native.stop="setFocus(index)"
-            @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
-            @keydown.native.arrow-down.self.stop="setFocus(index + 1)"
-        />
-    `,
-
     components: {
         Placeholder,
         Dataset,
@@ -91,3 +90,4 @@ export default {
         this.$root.$on("bv::dropdown::hide", () => (this.suppressFocus = false));
     },
 };
+</script>
