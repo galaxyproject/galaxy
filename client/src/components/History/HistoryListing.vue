@@ -1,6 +1,11 @@
 <template>
-    <div class="history-listing">
-        <virtual-list class="listing" data-key="hid" :data-sources="getItems" :data-component="{}">
+    <div
+        class="history-listing"
+        @scroll.prevent="onScrollThrottle"
+        @wheel.prevent="onScrollThrottle"
+        @touchmove.prevent="onScrollThrottle"
+    >
+        <virtual-list ref="listing" class="listing" data-key="hid" :data-sources="getItems" :data-component="{}">
             <template v-slot:item="{ item }">
                 <slot name="history-item" :item="item" />
             </template>
@@ -26,7 +31,8 @@ export default {
     data() {
         return {
             items: [],
-            throttlePeriod: 100,
+            throttlePeriod: 10,
+            deltaMax: 20,
             queryCurrent: this.queryKey,
         };
     },
@@ -63,6 +69,13 @@ export default {
             }
         },
         onScroll(event) {
+            const listing = this.$refs["listing"];
+            const deltaMax = this.deltaMax;
+            const deltaY = Math.max(Math.min(event.deltaY, deltaMax), -deltaMax);
+            this.offset = Math.max(0, listing.getOffset() + deltaY);
+            listing.scrollToOffset(this.offset);
+        },
+        /*onScroll(event) {
             const itemCount = this.items.length;
             if (itemCount > 0) {
                 let topIndex = 0;
@@ -79,7 +92,7 @@ export default {
                     this.$emit("scroll", topIndex);
                 }
             }
-        },
+        },*/
     },
 };
 </script>

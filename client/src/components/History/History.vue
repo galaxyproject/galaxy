@@ -1,5 +1,5 @@
 <template>
-    <UrlDataProvider :key="history.id" :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
+    <UrlDataProvider :key="history.id" :url="dataUrl" v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
