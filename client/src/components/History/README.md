@@ -55,7 +55,7 @@ to interact with each other.
                     and DatasetCollection ContentItem components, but mostly 
                     read-only since they are part of the collection-->
 
-                    (<CollectionContentItem />)
+                    (<ContentItem />)
                         <Subdataset />
                         <!-- or -->
                         <Subcollection />
