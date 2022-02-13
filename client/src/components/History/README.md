@@ -27,11 +27,11 @@ to interact with each other.
                 <ContentOperations />
                 <HistoryListing>
 
-                    <!-- HistoryContentItem is a dynamic component that becomes 
+                    <!-- ContentItem is a dynamic component that becomes
                     either Dataset or DatasetCollection depending
                     on the props passed to it -->
 
-                    (<HistoryContentItem />)
+                    (<ContentItem />)
                         <Dataset />
                         <!-- or -->
                         <DatasetCollection />

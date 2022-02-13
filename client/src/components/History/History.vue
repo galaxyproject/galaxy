@@ -61,7 +61,7 @@
                             :payload="payload"
                             @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
-                                <HistoryContentItem
+                                <ContentItem
                                     v-if="!hiddenItems[item.hid]"
                                     :item="item"
                                     :expanded="isExpanded(item)"
@@ -97,14 +97,14 @@ import ContentOperations from "./ContentOperations";
 import ToolHelpModal from "./ToolHelpModal";
 import HistoryMenu from "./HistoryMenu";
 import HistoryListing from "./HistoryListing";
-import { HistoryContentItem } from "./ContentItem";
+import { ContentItem } from "./ContentItem";
 
 export default {
     components: {
         LoadingSpan,
         UrlDataProvider,
         Layout,
-        HistoryContentItem,
+        ContentItem,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
