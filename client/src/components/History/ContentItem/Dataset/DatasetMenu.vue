@@ -26,7 +26,6 @@
                 variant="link"
                 class="px-1 delete-btn"
                 @click.stop />
-
             <b-dropdown
                 right
                 size="sm"
@@ -40,7 +39,6 @@
                     <Icon icon="ellipsis-v" variant="link" />
                     <span class="sr-only">Dataset Operations</span>
                 </template>
-
                 <b-dropdown-item
                     v-if="isIn(STATES.ERROR)"
                     key="show-error"
@@ -53,7 +51,6 @@
                     <Icon icon="exclamation-triangle" class="mr-1" />
                     <span v-localize>Show Error</span>
                 </b-dropdown-item>
-
                 <b-dropdown-item
                     v-if="showDownloads && dataset.getUrl('download')"
                     title="Copy Link"
@@ -61,7 +58,6 @@
                     <Icon icon="link" class="mr-1" />
                     <span v-localize>Copy Link</span>
                 </b-dropdown-item>
-
                 <b-dropdown-group v-if="showDownloads && dataset.hasMetaData">
                     <b-dropdown-item
                         v-for="mf in dataset.meta_files"
@@ -74,7 +70,6 @@
                         <span v-localize>{{ "Download " + mf.file_type }}</span>
                     </b-dropdown-item>
                 </b-dropdown-group>
-
                 <b-dropdown-item
                     v-else-if="showDownloads"
                     title="Download"
@@ -85,7 +80,6 @@
                     <Icon icon="download" class="mr-1" />
                     <span v-localize>Download</span>
                 </b-dropdown-item>
-
                 <b-dropdown-item
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
                     title="Run job again"
@@ -98,7 +92,6 @@
                     <Icon icon="play" class="mr-1" />
                     <span v-localize>Run job again</span>
                 </b-dropdown-item>
-
                 <b-dropdown-item
                     v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
                     title="Visualize Data"
@@ -106,7 +99,6 @@
                     <Icon icon="chart-area" class="mr-1" />
                     <span v-localize>Visualize Data</span>
                 </b-dropdown-item>
-
                 <b-dropdown-item
                     v-if="currentUser && currentUser.id && dataset.creating_job"
                     title="Tool Help"
@@ -114,7 +106,6 @@
                     <Icon icon="question" class="mr-1" />
                     <span v-localize>Tool Help</span>
                 </b-dropdown-item>
-
                 <b-dropdown-item
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
@@ -136,52 +127,47 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { Dataset } from "../../model";
+import { Dataset, STATES } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
 
 export default {
     mixins: [legacyNavigationMixin],
-    inject: ["STATES"],
-
     components: {
         IconButton,
     },
-
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
         writable: { type: Boolean, default: true },
     },
-
     data() {
         return {
             toolHelp: null,
             testVal: false,
         };
     },
-
     computed: {
         ...mapGetters("user", ["currentUser"]),
         ...mapGetters("config", ["config"]),
-
+        STATES() {
+            return STATES;
+        },
         showViz() {
             return this.config.visualizations_visible;
         },
-
         displayButtonTitle() {
             if (this.dataset.purged) {
                 return "Cannot display datasets removed from disk";
             }
-            if (this.dataset.state == this.STATES.UPLOAD) {
+            if (this.dataset.state == STATES.UPLOAD) {
                 return "This dataset must finish uploading before it can be viewed";
             }
-            if (this.dataset.state == this.STATES.NEW) {
+            if (this.dataset.state == STATES.NEW) {
                 return "This dataset is not yet viewable";
             }
             return "View data";
         },
-
         editButtonTitle() {
             if (this.dataset.deleted) {
                 return "Undelete dataset to edit attributes";
@@ -189,13 +175,12 @@ export default {
             if (this.dataset.purged) {
                 return "Cannot edit attributes of datasets removed from disk";
             }
-            const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
+            const unreadyStates = new Set([STATES.UPLOAD, STATES.NEW]);
             if (unreadyStates.has(this.dataset.state)) {
                 return "This dataset is not yet editable";
             }
             return "Edit attributes";
         },
-
         deleteButtonTitle() {
             return this.dataset.purged
                 ? "Dataset has been permanently deleted"
@@ -203,7 +188,6 @@ export default {
                 ? "Undelete"
                 : "Delete";
         },
-
         showDownloads() {
             if (this.dataset.purged) {
                 return false;
@@ -211,27 +195,23 @@ export default {
             if (!this.dataset.hasData) {
                 return false;
             }
-            const okStates = new Set([this.STATES.OK, this.STATES.FAILED_METADATA, this.STATES.ERROR]);
+            const okStates = new Set([STATES.OK, STATES.FAILED_METADATA, STATES.ERROR]);
             return okStates.has(this.dataset.state);
         },
-
         hasViz() {
             const viz_count = this.dataset.viz_count || 0;
             return viz_count && this.dataset.hasData && !this.dataset.deleted;
         },
     },
-
     methods: {
         notIn(...states) {
             const badStates = new Set(states);
             return !badStates.has(this.dataset.state);
         },
-
         isIn(...states) {
             const goodStates = new Set(states);
             return goodStates.has(this.dataset.state);
         },
-
         viewData() {
             const id = this.dataset.id;
             if (!id) {
@@ -248,8 +228,7 @@ export default {
                 }
             });
         },
-
-        // wierd iframe navigation
+        // routing for visualizations
         visualize() {
             const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
@@ -263,7 +242,6 @@ export default {
                 });
             }
         },
-
         showDetails() {
             const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
@@ -275,17 +253,14 @@ export default {
                 this.backboneRoute(showDetailsUrl);
             }
         },
-
         showToolHelp(job_id) {
             this.eventHub.$emit("toggleToolHelp", job_id);
         },
-
         onDeleteClick() {
             const eventName = this.dataset.deleted ? "undelete" : "delete";
             this.$emit(eventName);
         },
-
-        // bootstrap demands ids instead of simply using a ref so I guess we're doing this
+        // bootstrap demands ids
         bsId(suffix) {
             return `dataset-${this.dataset.id}-${suffix}`;
         },

@@ -5,7 +5,6 @@
         :data-ci-type="contentItemComponent"
         :class="{ loading }"
         :tabindex="index"
-        :item="item"
         :index="index"
         :row-key="rowKey"
         :writable="writable"
@@ -13,7 +12,10 @@
         v-bind="$attrs"
         @mouseover.native.stop="setFocus(index)"
         @keydown.native.arrow-up.self.stop="setFocus(index - 1)"
-        @keydown.native.arrow-down.self.stop="setFocus(index + 1)" />
+        @keydown.native.arrow-down.self.stop="setFocus(index + 1)"
+        :item="item"
+        :name="item.name"
+        :title="item.title" />
 </template>
 <script>
 /**
@@ -28,18 +30,18 @@
 
 import "./styles.scss";
 import Placeholder from "./Placeholder";
-import Dataset from "./Dataset";
+import Dataset from "./Dataset/Dataset";
 import DatasetCollection from "./DatasetCollection";
-import Subdataset from "./Subdataset";
-import Subcollection from "./Subcollection";
+//import Subdataset from "./Subdataset";
+//import Subcollection from "./Subcollection";
 
 export default {
     components: {
         Placeholder,
         Dataset,
         DatasetCollection,
-        Subdataset,
-        Subcollection,
+        //Subdataset,
+        //Subcollection,
     },
     props: {
         item: { type: Object, required: true },
