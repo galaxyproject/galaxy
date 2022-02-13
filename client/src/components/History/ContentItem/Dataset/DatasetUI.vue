@@ -134,14 +134,14 @@ either through the props, and make updates through the events -->
 </template>
 
 <script>
-import { Dataset, STATES } from "../../model";
+import { Dataset, STATES } from "components/History/model";
 import { Nametag } from "components/Nametags";
-import StatusIcon from "../../StatusIcon";
+import StatusIcon from "components/History/StatusIcon";
 import DatasetMenu from "./DatasetMenu";
 import DatasetSummary from "./Summary";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
-import EditorMenu from "../../EditorMenu";
+import EditorMenu from "components/History/EditorMenu";
 import { StatelessTags } from "components/Tags";
 
 export default {

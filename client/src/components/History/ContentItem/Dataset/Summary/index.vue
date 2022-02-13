@@ -16,9 +16,9 @@ import Queued from "./Queued";
 import Running from "./Running";
 import SettingMetadata from "./SettingMetadata";
 import Upload from "./Upload";
+import { STATES } from "components/History/model";
 
 export default {
-    inject: ["STATES"],
     components: {
         Discarded,
         Empty,
@@ -38,8 +38,8 @@ export default {
     computed: {
         summaryComponent() {
             let state = this.dataset.state;
-            if (state == this.STATES.FAILED_METADATA) {
-                state = this.STATES.OK;
+            if (state == STATES.FAILED_METADATA) {
+                state = STATES.OK;
             }
             return capitalize(camelize(state));
         },
