@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import { DatasetCollection } from "../../model";
+import { DatasetCollection, STATES } from "../../model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -59,7 +59,6 @@ export default {
         IconButton,
     },
     mixins: [legacyNavigationMixin],
-    inject: ["STATES"],
     props: {
         dsc: { type: DatasetCollection, required: true },
     },
@@ -71,7 +70,7 @@ export default {
             if (this.dsc.purged) {
                 return "Cannot edit attributes of collections removed from disk";
             }
-            const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
+            const unreadyStates = new Set([STATES.UPLOAD, STATES.NEW]);
             if (unreadyStates.has(this.dsc.state)) {
                 return "This collection is not yet editable";
             }
