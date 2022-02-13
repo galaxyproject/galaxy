@@ -31,7 +31,7 @@
                         :payload="payload"
                         @scroll="onScroll">
                         <template v-slot:history-item="{ item, index }">
-                            <CollectionContentItem
+                            <ContentItem
                                 :item="item"
                                 :index="index"
                                 :expanded="isExpanded(item)"
@@ -56,7 +56,7 @@ import Layout from "../Layout";
 import TopNav from "./TopNav";
 import CollectionOperations from "./CollectionOperations";
 import Details from "./Details";
-import { CollectionContentItem } from "../ContentItem";
+import ContentItem from "../ContentItem/ContentItem";
 import HistoryListing from "components/History/HistoryListing";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 
@@ -66,7 +66,7 @@ export default {
         Layout,
         TopNav,
         Details,
-        CollectionContentItem,
+        ContentItem,
         ExpandedItems,
         CollectionOperations,
         HistoryListing,

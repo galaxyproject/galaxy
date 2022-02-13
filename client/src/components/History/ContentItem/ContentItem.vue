@@ -26,6 +26,7 @@
  * derived from the current component state rather than the data itself.
  */
 
+import "./styles.scss";
 import Placeholder from "./Placeholder";
 import Dataset from "./Dataset";
 import DatasetCollection from "./DatasetCollection";
@@ -40,18 +41,30 @@ export default {
         Subdataset,
         Subcollection,
     },
-
     props: {
         item: { type: Object, required: true },
         index: { type: Number, required: false, default: null },
         rowKey: { type: [Number, String], required: false, default: "" },
         writable: { type: Boolean, required: false, default: true },
     },
-
     data: () => ({
         suppressFocus: true,
     }),
-
+    computed: {
+        loading() {
+            return !this.item;
+        },
+        contentItemComponent() {
+            if (this.item.id === undefined) {
+                return "Placeholder";
+            }
+            return this.historyContentItem();
+        },
+    },
+    created() {
+        this.$root.$on("bv::dropdown::show", () => (this.suppressFocus = true));
+        this.$root.$on("bv::dropdown::hide", () => (this.suppressFocus = false));
+    },
     methods: {
         setFocus(index) {
             if (this.suppressFocus) {
@@ -63,16 +76,7 @@ export default {
                 el.focus();
             }
         },
-    },
-
-    computed: {
-        loading() {
-            return !this.item;
-        },
-        contentItemComponent() {
-            if (this.item.id === undefined) {
-                return "Placeholder";
-            }
+        historyContentItem() {
             const { history_content_type } = this.item;
             switch (history_content_type) {
                 case "dataset":
@@ -83,11 +87,17 @@ export default {
                     return "Placeholder";
             }
         },
-    },
-
-    created() {
-        this.$root.$on("bv::dropdown::show", () => (this.suppressFocus = true));
-        this.$root.$on("bv::dropdown::hide", () => (this.suppressFocus = false));
+        collectionContentItem() {
+            const { element_type } = this.item;
+            switch (element_type) {
+                case "hda":
+                    return "Subdataset";
+                case "hdca":
+                    return "Subcollection";
+                default:
+                    return "Placeholder";
+            }
+        },
     },
 };
 </script>
