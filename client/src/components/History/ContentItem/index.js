@@ -6,4 +6,3 @@ import "./styles.scss";
 
 export { default as ContentItem } from "./ContentItem";
 export { default as CollectionContentItem } from "./CollectionContentItem";
-export { default as HistoryContentItem } from "./HistoryContentItem";
