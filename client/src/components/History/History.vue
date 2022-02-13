@@ -134,7 +134,7 @@ export default {
     },
     computed: {
         dataUrl() {
-            return `api/histories/${this.historyId}/contents?v=dev&order=hid&limit=${this.pageSize}&offset=${this.topIndex}&${this.queryString}`;
+            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.topIndex}&${this.queryString}`;
         },
         historyId() {
             return this.history.id;
