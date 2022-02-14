@@ -87,14 +87,14 @@ function stagePlugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
-function buildPlugins(callback) {
+function buildPlugins(callback, forceRebuild) {
     /*
      * Walk plugin_build_modules glob and attempt to build modules.
      * */
     paths.plugin_build_modules.map((build_module) => {
         glob(build_module, {}, (er, files) => {
             files.map((file) => {
-                let skip_build = false;
+                let skipBuild = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
                 const plugin_name = path.dirname(file).split(path.sep).pop();
                 const hash_file_path = path.join(
@@ -103,17 +103,21 @@ function buildPlugins(callback) {
                     "plugin_build_hash.txt"
                 );
 
-                if (fs.existsSync(hash_file_path)) {
-                    skip_build =
-                        child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
-                            stdio: "inherit",
-                            shell: true,
-                        }).status === 0;
+                if (!!forceRebuild) {
+                    skipBuild = false;
                 } else {
-                    console.log(`No build hashfile detected for ${plugin_name}, generating now.`);
+                    if (fs.existsSync(hash_file_path)) {
+                        skipBuild =
+                            child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
+                                stdio: "inherit",
+                                shell: true,
+                            }).status === 0;
+                    } else {
+                        console.log(`No build hashfile detected for ${plugin_name}, generating now.`);
+                    }
                 }
 
-                if (skip_build) {
+                if (skipBuild) {
                     console.log(`No changes detected for ${plugin_name}`);
                 } else {
                     console.log(`Installing Dependencies for ${plugin_name}`);
@@ -136,12 +140,17 @@ function buildPlugins(callback) {
     return callback();
 }
 
+function forceBuildPlugins(callback) {
+    return buildPlugins(callback, true);
+}
+
 function cleanPlugins() {
     return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);
 const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
@@ -152,5 +161,6 @@ function watchPlugins() {
 
 module.exports.client = client;
 module.exports.plugins = plugins;
+module.exports.pluginsRebuild = pluginsRebuild;
 module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);
