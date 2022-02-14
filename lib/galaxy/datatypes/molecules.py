@@ -1087,9 +1087,6 @@ class XYZ(GenericMolFile):
         >>> fname = get_test_fname('Si.xyz')
         >>> XYZ().sniff(fname)
         True
-        >>> fname = get_test_fname('Si_xyz.txt')
-        >>> XYZ().sniff(fname)
-        True
         >>> fname = get_test_fname('Si.cell')
         >>> XYZ().sniff(fname)
         False
