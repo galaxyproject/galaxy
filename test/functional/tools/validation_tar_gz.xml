@@ -1,7 +1,7 @@
 <tool id="validation_tar_gz" name="Validation (tar.gz)" version="1.0">
-    <command>
-        cat '$input' > '$output'
-    </command>
+    <command><![CDATA[
+cat '$input' > '$output'
+    ]]></command>
     <inputs>
         <param name="input" type="data" />
     </inputs>

@@ -2,7 +2,7 @@
     <div>
         <SidePanel id="left" side="left">
             <template v-slot:panel>
-                <MarkdownToolBox :nodes="nodes" @onInsert="onInsert" />
+                <MarkdownToolBox :get-manager="getManager" @onInsert="onInsert" />
             </template>
         </SidePanel>
         <div id="center" class="workflow-markdown-editor">
@@ -16,8 +16,7 @@
                                 variant="link"
                                 role="button"
                                 v-b-tooltip.hover.bottom
-                                @click="onHelp"
-                            >
+                                @click="onHelp">
                                 <font-awesome-icon icon="question" />
                             </b-button>
                         </div>
@@ -32,8 +31,7 @@
                         id="workflow-report-editor"
                         v-model="content"
                         @input="onUpdate"
-                        ref="text-area"
-                    />
+                        ref="text-area" />
                 </div>
             </div>
         </div>
@@ -72,8 +70,8 @@ export default {
             type: Object,
             default: null,
         },
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             default: null,
         },
         title: {
@@ -92,13 +90,14 @@ export default {
             const textCursor = textArea.selectionEnd;
             this.content = this.markdownText;
             Vue.nextTick(() => {
-                textArea.focus();
                 textArea.selectionEnd = textCursor;
+                textArea.focus();
             });
         },
     },
     methods: {
         onInsert(markdown) {
+            markdown = markdown.replace(")(", ", ");
             markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
             textArea.focus();

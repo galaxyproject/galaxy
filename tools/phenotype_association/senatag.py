@@ -26,8 +26,15 @@ from __future__ import print_function
 import heapq
 import os
 from functools import total_ordering
-from getopt import getopt, GetoptError
-from sys import argv, exit, stderr
+from getopt import (
+    getopt,
+    GetoptError,
+)
+from sys import (
+    argv,
+    exit,
+    stderr,
+)
 
 __author__ = "Aakrosh Ratan"
 __email__ = "ratan@bx.psu.edu"
@@ -207,7 +214,7 @@ def main(ldfile, snpsfile, required, excluded):
 
 def read_list(filename):
     assert os.path.exists(filename)
-    file = open(filename, "r")
+    file = open(filename)
     list = {}
 
     for line in file:
@@ -232,8 +239,7 @@ def usage():
 
 if __name__ == "__main__":
     try:
-        opts, args = getopt(argv[1:], "hdr:e:",
-                            ["help", "debug", "required=", "excluded="])
+        opts, args = getopt(argv[1:], "hdr:e:", ["help", "debug", "required=", "excluded="])
     except GetoptError as err:
         print(str(err))
         usage()
@@ -253,7 +259,7 @@ if __name__ == "__main__":
         elif o in ("-e", "--excluded"):
             excluded = read_list(a)
         else:
-            assert False, "unhandled option"
+            raise AssertionError("unhandled option")
 
     if len(args) != 2:
         usage()

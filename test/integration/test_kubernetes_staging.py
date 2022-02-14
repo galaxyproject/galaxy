@@ -15,6 +15,9 @@ import os
 import random
 import string
 import tempfile
+import time
+
+import yaml
 
 from galaxy.jobs.runners.util.pykube_util import (
     Job,
@@ -22,13 +25,18 @@ from galaxy.jobs.runners.util.pykube_util import (
 )
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
-from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
+from .test_containerized_jobs import (
+    EXTENDED_TIMEOUT,
+    MulledJobTestCases,
+)
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 from .test_kubernetes_runner import KubernetesDatasetPopulator
 from .test_local_job_cancellation import CancelsJob
 
-TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
-GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get("GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal")
+TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "tools"))
+GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get(
+    "GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal"
+)
 AMQP_URL = integration_util.AMQP_URL
 GALAXY_TEST_KUBERNETES_NAMESPACE = os.environ.get("GALAXY_TEST_K8S_NAMESPACE", "default")
 
@@ -98,15 +106,16 @@ tools:
 def job_config(template_str, jobs_directory):
     job_conf_template = string.Template(template_str)
     container_amqp_url = to_infrastructure_uri(AMQP_URL)
-    instance_id = ''.join(random.choice(string.ascii_lowercase) for i in range(8))
-    job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
-                                                tool_directory=TOOL_DIR,
-                                                instance_id=instance_id,
-                                                k8s_config_path=integration_util.k8s_config_path(),
-                                                k8s_namespace=GALAXY_TEST_KUBERNETES_NAMESPACE,
-                                                amqp_url=AMQP_URL,
-                                                container_amqp_url=container_amqp_url,
-                                                )
+    instance_id = "".join(random.choice(string.ascii_lowercase) for i in range(8))
+    job_conf_str = job_conf_template.substitute(
+        jobs_directory=jobs_directory,
+        tool_directory=TOOL_DIR,
+        instance_id=instance_id,
+        k8s_config_path=integration_util.k8s_config_path(),
+        k8s_namespace=GALAXY_TEST_KUBERNETES_NAMESPACE,
+        amqp_url=AMQP_URL,
+        container_amqp_url=container_amqp_url,
+    )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.yml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
     return job_conf.name
@@ -116,11 +125,8 @@ def job_config(template_str, jobs_directory):
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
 class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-    # Test leverages $UWSGI_PORT in job code, need to set this up.
-    require_uwsgi = True
-
     def setUp(self):
-        super(BaseKubernetesStagingTest, self).setUp()
+        super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
@@ -128,26 +134,25 @@ class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJob
     def setUpClass(cls):
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
-        super(BaseKubernetesStagingTest, cls).setUpClass()
+        super().setUpClass()
 
 
 class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesStagingTest):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         cls.job_config_file = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
         config["job_config_file"] = cls.job_config_file
-        config["default_job_shell"] = '/bin/sh'
+        config["default_job_shell"] = "/bin/sh"
         # Disable local tool dependency resolution.
         config["tool_dependency_dir"] = "none"
         set_infrastucture_url(config)
 
     @property
     def instance_id(self):
-        import yaml
-        config = yaml.load(open(self.job_config_file, "r"))
+        with open(self.job_config_file) as fh:
+            config = yaml.safe_load(fh)
         return config["execution"]["environments"]["pulsar_k8s_environment"]["k8s_galaxy_instance_id"]
 
     @skip_without_tool("cat_data_and_sleep")
@@ -161,7 +166,6 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
             delete_response = self.dataset_populator.cancel_job(job_id)
             assert delete_response.json() is True
 
-            import time
             time.sleep(5)
 
             assert self._active_kubernetes_jobs == 0
@@ -169,7 +173,7 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
         job_env = self._run_and_get_environment_properties()
-        assert job_env.some_env == '42'
+        assert job_env.some_env == "42"
 
     @property
     def _active_kubernetes_jobs(self):
@@ -186,14 +190,13 @@ class KubernetesStagingContainerIntegrationTestCase(CancelsJob, BaseKubernetesSt
 
 
 class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTest):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = job_config(DEPENDENCY_RESOLUTION_TEMPLATE, cls.jobs_directory)
 
-        config["default_job_shell"] = '/bin/sh'
+        config["default_job_shell"] = "/bin/sh"
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
         set_infrastucture_url(config)
@@ -206,7 +209,7 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
 
 
 def set_infrastucture_url(config):
-    infrastructure_url = "http://%s:$UWSGI_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
+    infrastructure_url = "http://%s:$GALAXY_WEB_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
     config["galaxy_infrastructure_url"] = infrastructure_url
 
 

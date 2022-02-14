@@ -8,6 +8,7 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import { mountNametags } from "components/Nametags";
+import { Toast } from "ui/toast";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -134,6 +135,7 @@ export var DatasetListItemView = _super.extend(
             _super.prototype._swapNewRender.call(this, $newRender);
             if (this.model.has("state")) {
                 this.$el.addClass(`state-${this.model.get("state")}`);
+                this.$el.attr("data-state", this.model.get("state"));
             }
             return this.$el;
         },
@@ -184,7 +186,8 @@ export var DatasetListItemView = _super.extend(
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
-                        Galaxy.frame.addDataset(self.model.get("id"));
+                        const identifier = self.model.get("element_id") || self.model.get("id");
+                        Galaxy.frame.addDataset(identifier);
                         ev.preventDefault();
                     }
                 };
@@ -256,7 +259,11 @@ export var DatasetListItemView = _super.extend(
                 case STATES.OK:
                 case STATES.FAILED_METADATA:
                 case STATES.ERROR:
-                    return [this._renderDownloadButton(), this._renderShowParamsButton()];
+                    return [
+                        this._renderDownloadButton(),
+                        this._renderClipboardButton(),
+                        this._renderShowParamsButton(),
+                    ];
             }
             return [this._renderShowParamsButton()];
         },
@@ -265,33 +272,71 @@ export var DatasetListItemView = _super.extend(
          *  @returns {jQuery} rendered DOM
          */
         _renderShowParamsButton: function () {
-            // gen. safe to show in all cases
             return faIconButton({
                 title: _l("View details"),
                 classes: "params-btn",
                 href: this.model.urls.show_params,
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
-                onclick: function (ev) {
+                onclick: (ev) => {
                     const Galaxy = getGalaxyInstance();
+                    const showDetailsUrl = `/datasets/${this.model.get("element_id") || this.model.get("id")}/details`;
                     if (Galaxy.frame && Galaxy.frame.active) {
-                        Galaxy.frame.add({
-                            title: _l("Dataset details"),
-                            url: this.href,
-                        });
                         ev.preventDefault();
-                        ev.stopPropagation();
+                        Galaxy.frame.add({
+                            url: showDetailsUrl,
+                            title: `Dataset Details of ${this.model.get("name")}`,
+                        });
+                    } else if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push(showDetailsUrl);
+                        Galaxy.trigger("activate-hda", this.model.get("element_id") || this.model.get("id"));
                     }
                 },
             });
         },
+        isPurged: function () {
+            // don't show anything if the data's been purged
+            return !!(this.model.get("purged") || !this.model.hasData());
+        },
+        /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
+         *  @returns {jQuery} rendered DOM
+         */
+        _renderClipboardButton: function () {
+            const isUnsharable =
+                this.model.attributes.permissions &&
+                this.model.attributes.permissions.access.length === 1 &&
+                this.model.attributes.permissions.access.includes(getGalaxyInstance().user.id);
 
+            var urls = this.model.urls;
+            if (!this.isPurged() && urls.download) {
+                let title = _l("Copy link");
+                let style = "";
+                if (isUnsharable) {
+                    title = _l("Preferences restrict sharing");
+                    style = "opacity: 0.3";
+                }
+                return faIconButton({
+                    faIcon: "fa-chain",
+                    style: style,
+                    title: title,
+                    onclick: function () {
+                        if (!isUnsharable) {
+                            navigator.clipboard.writeText(`${window.location.origin}${urls.download}`).then(() => {
+                                Toast.info("Link is copied to your clipboard");
+                            });
+                        } else {
+                            Toast.warning("Dataset is not sharable");
+                        }
+                    },
+                });
+            }
+        },
         /** Render icon-button/popupmenu to download the data (and/or the associated meta files (bai, etc.)) for this.
          *  @returns {jQuery} rendered DOM
          */
         _renderDownloadButton: function () {
-            // don't show anything if the data's been purged
-            if (this.model.get("purged") || !this.model.hasData()) {
+            if (this.isPurged()) {
                 return null;
             }
 
@@ -534,7 +579,7 @@ DatasetListItemView.prototype.templates = (() => {
         resubmitted: BASE_MVC.wrapTemplate([
             // deleted not purged
             "<% if( model.resubmitted ){ %>",
-            '<div class="resubmitted-msg infomessagesmall">',
+            '<div class="resubmitted-msg alert alert-info">',
             _l("The job creating this dataset has been resubmitted"),
             "</div>",
             "<% } %>",

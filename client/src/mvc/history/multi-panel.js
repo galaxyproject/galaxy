@@ -158,7 +158,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** event map */
     events: {
         // will make this the current history
-        "click .switch-to.btn": function () {
+        "click .switch-to": function () {
             this.model.setAsCurrent();
         },
         //TODO: remove boiler plate from next 3
@@ -198,10 +198,6 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 <strong class="current-label">
                     ${_l("Current History")}
                 </strong>
-            <% } else { %>
-                <button class="switch-to btn btn-secondary">
-                    ${_l("Switch to")}
-                </button>
             <% } %>
         </div>`,
         { variable: "data" }
@@ -212,6 +208,11 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         `<div class="text-right col-4">
             <% if( !data.history.purged ){ %>
                 <div class="panel-menu btn-group">
+                    <% if( !data.history.isCurrentHistory ){ %>
+                        <button class="switch-to btn btn-secondary">
+                            ${_l("Switch to")}
+                        </button>
+                    <% } %>
                     <button 
                     history-dropdown-btn="<%= data.history.id %>" 
                     type="button"
@@ -865,7 +866,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.filters = [];
                 this.renderColumns(0);
             },
-            advsearchlink: true,
+            advsearchlink: false, // advanced search doesn't work for histories
         });
 
         // input to search datasets

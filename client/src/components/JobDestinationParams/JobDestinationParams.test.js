@@ -1,33 +1,50 @@
 import Vuex from "vuex";
-import { mount, createLocalVue } from "@vue/test-utils";
-import { createStore } from "../../store";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
+import createCache from "vuex-cache";
 import JobDestinationParams from "./JobDestinationParams";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
+import MockCurrentUser from "../providers/MockCurrentUser";
 
 const JOB_ID = "foo_job_id";
 
-describe("JobDestinationParams/JobDestinationParams.vue", () => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
+const localVue = createLocalVue();
+localVue.use(Vuex);
 
+const testStore = new Vuex.Store({
+    plugins: [createCache()],
+    modules: {
+        jobDestinationParametersStore: {
+            actions: {
+                fetchJobDestinationParams: jest.fn(),
+            },
+            getters: {
+                jobDestinationParams: (state) => (job_id) => {
+                    return jobDestinationResponse;
+                },
+            },
+        },
+    },
+});
+
+describe("JobDestinationParams/JobDestinationParams.vue", () => {
     const responseKeys = Object.keys(jobDestinationResponse);
 
-    let testStore;
     let wrapper;
 
     beforeEach(async () => {
-        testStore = createStore();
         const propsData = {
             jobId: JOB_ID,
         };
-        wrapper = mount(JobDestinationParams, {
+        wrapper = await shallowMount(JobDestinationParams, {
             store: testStore,
             propsData,
             localVue,
-            computed: {
-                jobDestinationParams() {
-                    return jobDestinationResponse;
-                },
+            attachTo: document.body,
+            stubs: {
+                // Need to stub all this horrible-ness because of the last 2 tests
+                // which need to dig into the first layer of the mount tree, will remove
+                // all of this shortly with a PR that completely replaces Upload
+                CurrentUser: MockCurrentUser({ is_admin: true }),
             },
         });
         expect(responseKeys.length > 0).toBeTruthy();

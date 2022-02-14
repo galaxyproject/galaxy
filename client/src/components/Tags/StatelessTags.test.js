@@ -1,7 +1,7 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import StatelessTags from "./StatelessTags";
 import _l from "utils/localization";
-import Vue from "vue";
+import flushPromises from "flush-promises";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();
@@ -17,7 +17,7 @@ describe("Tags/StatelessTags.vue", () => {
             value: testTags,
         });
         emitted = wrapper.emitted();
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
     });
 
     it("should render a div for each tag", () => {
@@ -48,6 +48,7 @@ describe("Tags/StatelessTags.vue", () => {
         expect(wrapper.vm.tagModels.length).toBe(3);
         const newTags = ["floob", "clown", "hoohah", "doodoo"];
         wrapper.setProps({ value: newTags });
+        await flushPromises();
         expect(wrapper.vm.tagModels.length).toBe(newTags.length);
     });
 });

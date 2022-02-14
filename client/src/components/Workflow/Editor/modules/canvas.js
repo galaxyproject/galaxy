@@ -2,7 +2,11 @@ import $ from "jquery";
 
 // Colors used to render nodes in the workflow overview
 const NODE_COLOR = "#25537b";
+const NODE_HIGHLIGHT_COLOR = "#400404";
 const NODE_ERROR_COLOR = "#e31a1e";
+
+const OVERLAY_HIGHLIGHT_INTERVAL = 20;
+const OVERLAY_HIGHLIGHT_STEPS = 40;
 
 // Zoom levels to use for zooming the workflow canvas
 export const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
@@ -114,28 +118,25 @@ class CanvasManager {
         this.drawOverview();
         return this.zoomLevel;
     }
-
+    move(x, y) {
+        x = Math.min(x, this.cv.width() / 2);
+        x = Math.max(x, -this.cc.width() + this.cv.width() / 2);
+        y = Math.min(y, this.cv.height() / 2);
+        y = Math.max(y, -this.cc.height() + this.cv.height() / 2);
+        this.cc.css({
+            left: x,
+            top: y,
+        });
+        this.cv.css({
+            "background-position-x": x,
+            "background-position-y": y,
+        });
+        this.updateViewportOverlay();
+    }
     init_drag() {
         var self = this;
-        var move = (x, y) => {
-            x = Math.min(x, self.cv.width() / 2);
-            x = Math.max(x, -self.cc.width() + self.cv.width() / 2);
-            y = Math.min(y, self.cv.height() / 2);
-            y = Math.max(y, -self.cc.height() + self.cv.height() / 2);
-            self.cc.css({
-                left: x,
-                top: y,
-            });
-            self.cv.css({
-                "background-position-x": x,
-                "background-position-y": y,
-            });
-            self.updateViewportOverlay();
-        };
         // Dragging within canvas background
-        this.cc.each(function () {
-            this.scroll_panel = new ScrollPanel(this);
-        });
+        this.scrollPanel = new ScrollPanel(this.cc);
         var x_adjust;
         var y_adjust;
         this.cv
@@ -149,7 +150,7 @@ class CanvasManager {
                 x_adjust = p.left - o.left;
             })
             .bind("drag", (e, d) => {
-                move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
+                this.move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
                 self.drawOverview();
@@ -164,8 +165,8 @@ class CanvasManager {
                 var o_h = self.oc.height();
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
-                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.drawOverview();
+                this.move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
+                this.drawOverview();
             }
         });
         // Dragging for overview pane
@@ -177,7 +178,7 @@ class CanvasManager {
                 var o_h = self.oc.height();
                 var new_x_offset = d.offsetX - self.overview.offset().left;
                 var new_y_offset = d.offsetY - self.overview.offset().top;
-                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
+                this.move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
@@ -217,12 +218,17 @@ class CanvasManager {
     }
     init_copy_paste() {
         /*
-            Both of these copy/paste event bindings check the active element
+            The copy/paste event bindings check the active element
             and, if it's one of the text inputs, skip the workflow copy/paste
             logic so we don't interfere with standard copy/paste functionality.
+            The copy binding also skips the node copy if text is currently highlighted.
         */
         document.addEventListener("copy", (e) => {
-            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
+            if (
+                document.activeElement &&
+                !inputElementTypes.includes(document.activeElement.type) &&
+                !document.getSelection().toString()
+            ) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -230,8 +236,8 @@ class CanvasManager {
                             nodeId: this.app.activeNode.id,
                         })
                     );
+                    e.preventDefault();
                 }
-                e.preventDefault();
             }
         });
         document.addEventListener("paste", (e) => {
@@ -308,19 +314,41 @@ class CanvasManager {
         });
         canvas_el.attr("width", o_w);
         canvas_el.attr("height", o_h);
+
+        const drawOverlayRectFor = (nodeElement, color) => {
+            const position = nodeElement.position();
+            const x = (position.left / in_w) * o_w;
+            const y = (position.top / in_h) * o_h;
+            const w = (nodeElement.width() / in_w) * o_w;
+            const h = (nodeElement.height() / in_h) * o_h;
+            c.fillStyle = color;
+            c.fillRect(x, y, w, h);
+        };
+
+        this.highlightInOverlay = (node) => {
+            const nodeElement = $(node.element);
+            let i = 0;
+            let colorTarget = NODE_COLOR;
+            if (node.errors) {
+                colorTarget = NODE_ERROR_COLOR;
+            }
+            const ramp = getRamp(NODE_HIGHLIGHT_COLOR, colorTarget, OVERLAY_HIGHLIGHT_STEPS);
+            const interval = setInterval(function () {
+                i++;
+                drawOverlayRectFor(nodeElement, ramp[i]);
+                if (i === OVERLAY_HIGHLIGHT_STEPS) {
+                    clearInterval(interval);
+                }
+            }, OVERLAY_HIGHLIGHT_INTERVAL);
+        };
         // Draw overview
         $.each(this.app.nodes, (id, node) => {
-            c.fillStyle = NODE_COLOR;
-            var node_element = $(node.element);
-            var position = node_element.position();
-            var x = (position.left / in_w) * o_w;
-            var y = (position.top / in_h) * o_h;
-            var w = (node_element.width() / in_w) * o_w;
-            var h = (node_element.height() / in_h) * o_h;
+            const nodeElement = $(node.element);
+            let color = NODE_COLOR;
             if (node.errors) {
-                c.fillStyle = NODE_ERROR_COLOR;
+                color = NODE_ERROR_COLOR;
             }
-            c.fillRect(x, y, w, h);
+            drawOverlayRectFor(nodeElement, color);
         });
         this.updateViewportOverlay();
     }
@@ -380,27 +408,76 @@ class CanvasManager {
             xmin = Math.min(xmin, p.left);
             xmax = Math.max(xmax, p.left + e.width());
             ymin = Math.min(ymin, p.top);
-            ymax = Math.max(ymax, p.top + e.width());
+            ymax = Math.max(ymax, p.top + e.height());
         });
         return { xmin: xmin, xmax: xmax, ymin: ymin, ymax: ymax };
+    }
+    scrollToNode(node) {
+        const e = $(node.element);
+        const p = e.position();
+        const cv = $("#canvas-viewport");
+
+        const midX = p.left + e.width() / 2;
+        const midY = p.top + e.height() / 2;
+        const left = midX - cv.width() / 2;
+        const top = midY - cv.height() / 2;
+        this.move(-left, -top);
+        this.highlightInOverlay(node);
     }
     scrollToNodes() {
         const cv = $("#canvas-viewport");
         const cc = $("#canvas-container");
-        let top;
-        let left;
+        let top = 0;
+        let left = 0;
         if (cc.width() != cv.width()) {
             left = (cv.width() - cc.width()) / 2;
-        } else {
-            left = 0;
         }
         if (cc.height() != cv.height()) {
             top = (cv.height() - cc.height()) / 2;
-        } else {
-            top = 0;
         }
         cc.css({ left: left, top: top });
     }
+}
+
+// https://stackoverflow.com/a/48129324
+function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result
+        ? {
+              r: parseInt(result[1], 16),
+              g: parseInt(result[2], 16),
+              b: parseInt(result[3], 16),
+          }
+        : null;
+}
+
+// returns an array of startColor, colors between according to steps, and endColor
+function getRamp(startColor, endColor, steps) {
+    var ramp = [];
+
+    ramp.push(startColor);
+
+    var startColorRgb = hexToRgb(startColor);
+    var endColorRgb = hexToRgb(endColor);
+
+    var rInc = Math.round((endColorRgb.r - startColorRgb.r) / (steps + 1));
+    var gInc = Math.round((endColorRgb.g - startColorRgb.g) / (steps + 1));
+    var bInc = Math.round((endColorRgb.b - startColorRgb.b) / (steps + 1));
+
+    for (var i = 0; i < steps; i++) {
+        startColorRgb.r += rInc;
+        startColorRgb.g += gInc;
+        startColorRgb.b += bInc;
+
+        ramp.push(rgbToHex(startColorRgb.r, startColorRgb.g, startColorRgb.b));
+    }
+    ramp.push(endColor);
+
+    return ramp;
 }
 
 export default CanvasManager;

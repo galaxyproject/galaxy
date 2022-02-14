@@ -1,339 +1,75 @@
+<!--
+Temporary modal wrapper until I replace the entire UploadModal which desperately needs a rewrite.
+Provides user and current history to modal because it currently has initialization sequence issues
+-->
+
 <template>
-    <b-modal
-        v-model="modalShow"
-        :static="modalStatic"
-        header-class="no-separator"
-        modal-class="ui-modal"
-        dialog-class="upload-dialog"
-        body-class="upload-dialog-body"
-        ref="modal"
-        no-enforce-focus
-        hide-footer
-        :id="id"
-    >
-        <template v-slot:modal-header>
-            <h4 class="title" tabindex="0">{{ title }}</h4>
-        </template>
-        <b-tabs v-if="ready">
-            <b-tab title="Regular" id="regular" button-id="tab-title-link-regular" v-if="showRegular">
-                <default :app="this" :lazy-load-max="50" :multiple="multiple" />
-            </b-tab>
-            <b-tab title="Composite" id="composite" button-id="tab-title-link-composite" v-if="showComposite">
-                <composite :app="this" />
-            </b-tab>
-            <b-tab title="Collection" id="collection" button-id="tab-title-link-collection" v-if="showCollection">
-                <collection :app="this" />
-            </b-tab>
-            <b-tab title="Rule-based" id="rule-based" button-id="tab-title-link-rule-based" v-if="showRules">
-                <rules-input :app="this" />
-            </b-tab>
-        </b-tabs>
-        <div v-else>
-            <loading-span message="Loading required information from Galaxy server." />
-        </div>
-    </b-modal>
+    <CurrentUser v-slot="{ user }">
+        <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
+            <b-modal
+                v-model="modalShow"
+                :static="modalStatic"
+                header-class="no-separator"
+                modal-class="ui-modal"
+                dialog-class="upload-dialog"
+                body-class="upload-dialog-body"
+                no-enforce-focus
+                hide-footer>
+                <template v-slot:modal-header>
+                    <h4 class="title" tabindex="0">{{ title | localize }}</h4>
+                </template>
+
+                <UploadModalContent
+                    v-if="currentHistoryId"
+                    :current-user-id="user.id"
+                    :current-history-id="currentHistoryId"
+                    v-bind="{ ...$props, ...$attrs }"
+                    @dismiss="dismiss" />
+            </b-modal>
+        </UserHistories>
+    </CurrentUser>
 </template>
 
 <script>
-import Backbone from "backbone";
-import $ from "jquery";
-import _l from "utils/localization";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-import UploadUtils from "mvc/upload/upload-utils";
-import { getDatatypesMapper } from "components/Datatypes";
-import Composite from "./Composite";
-import Collection from "./Collection";
-import Default from "./Default";
-import RulesInput from "./RulesInput";
-import LoadingSpan from "components/LoadingSpan";
-
-Vue.use(BootstrapVue);
+import CurrentUser from "../providers/CurrentUser";
+import UserHistories from "components/providers/UserHistories";
+import UploadModalContent from "./UploadModalContent";
+import { commonProps } from "./helpers";
 
 export default {
     components: {
-        Collection,
-        Composite,
-        Default,
-        RulesInput,
-        LoadingSpan,
+        CurrentUser,
+        UserHistories,
+        UploadModalContent,
     },
     props: {
-        modalStatic: {
-            type: Boolean,
-            default: true,
-        },
-        chunkUploadSize: {
-            type: Number,
-            required: true,
-        },
-        uploadPath: {
-            type: String,
-            required: true,
-        },
-        modalShow: {
-            type: Boolean,
-            default: false,
-        },
-        ftpUploadSite: {
-            type: String,
-            default: "n/a",
-        },
-        fileSourcesConfigured: {
-            type: Boolean,
-            default: false,
-        },
-        defaultGenome: {
-            type: String,
-            default: UploadUtils.DEFAULT_GENOME,
-        },
-        defaultExtension: {
-            type: String,
-            default: UploadUtils.DEFAULT_EXTENSION,
-        },
-        datatypesDisableAuto: {
-            type: Boolean,
-            default: false,
-        },
-        formats: {
-            type: Array,
-            default: null,
-        },
-        multiple: {
-            // Restrict the forms to a single dataset upload if false
-            type: Boolean,
-            default: true,
-        },
-        callback: {
-            // Return uploads when done if supplied.
-            type: Function,
-            default: null,
-        },
-        auto: {
-            type: Object,
-            default: function () {
-                return UploadUtils.AUTO_EXTENSION;
-            },
-        },
+        title: { type: String, default: "Download from web or upload from disk" },
+        modalStatic: { type: Boolean, default: true },
+        ...commonProps,
     },
-    data: function () {
+    data() {
         return {
-            id: "",
-            title: _l("Download from web or upload from disk"),
-            historyAvailable: false,
-            currentUser: null,
-            listGenomes: [],
-            listExtensions: [],
-            genomesSet: false,
-            extensionsSet: false,
-            datatypesMapper: null,
-            datatypesMapperReady: true,
+            modalShow: false,
         };
-    },
-    created: function () {
-        this.model = new Backbone.Model({
-            label: "Load Data",
-            percentage: 0,
-            status: "",
-            onunload: function () {},
-            onclick: function () {},
-        });
-        $(window).on("beforeunload", () => this.model.get("onunload")());
-
-        // load extensions
-        UploadUtils.getUploadDatatypes(
-            (listExtensions) => {
-                this.extensionsSet = true;
-                this.listExtensions = listExtensions;
-            },
-            this.datatypesDisableAuto,
-            this.auto
-        );
-
-        // load genomes
-        UploadUtils.getUploadGenomes((listGenomes) => {
-            this.genomesSet = true;
-            this.listGenomes = listGenomes;
-        }, this.defaultGenome);
-
-        this.initStateWhenHistoryReady();
-        if (this.formats !== null) {
-            this.datatypesMapperReady = false;
-            getDatatypesMapper().then((datatypesMapper) => {
-                this.datatypesMapper = datatypesMapper;
-                this.datatypesMapperReady = true;
-            });
-        } else {
-            this.datatypesMapperReady = true;
-        }
-    },
-    computed: {
-        ready() {
-            return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
-        },
-        unrestricted() {
-            return this.formats === null && this.multiple;
-        },
-        effectiveExtensions() {
-            if (this.formats === null || !this.datatypesMapperReady) {
-                return this.listExtensions;
-            }
-            const effectiveExtensions = [];
-            this.listExtensions.forEach((extension) => {
-                if (extension && extension.id == "auto") {
-                    effectiveExtensions.push(extension);
-                } else if (this.datatypesMapper.isSubTypeOfAny(extension.id, this.formats)) {
-                    effectiveExtensions.push(extension);
-                }
-            });
-            return effectiveExtensions;
-        },
-        formatRestricted() {
-            return this.formats !== null;
-        },
-        showComposite() {
-            if (!this.formatRestricted) {
-                return true;
-            }
-            return this.effectiveExtensions.some((extension) => !!extension.composite_files);
-        },
-        showRegular() {
-            if (!this.formatRestricted) {
-                return true;
-            }
-            return this.effectiveExtensions.some((extension) => !extension.composite_files);
-        },
-        showCollection() {
-            if (this.unrestricted) {
-                return true;
-            }
-            return false;
-        },
-        showRules() {
-            if (this.unrestricted) {
-                return true;
-            }
-            return this.multiple;
-        },
-    },
-    mounted() {
-        this.id = String(this._uid);
     },
     methods: {
         show() {
             this.modalShow = true;
-            this.$nextTick(this.tryMountingTabs);
         },
         hide() {
             this.modalShow = false;
         },
-        cancel() {
+        dismiss(result) {
+            if (undefined !== result) {
+                this.$root.$emit("uploadResult", result);
+            }
             this.hide();
-            this.$nextTick(() => {
-                this.$bvModal.hide(this.id, "cancel");
-                this.$destroy();
-            });
         },
-        dismiss() {
-            // hide or cancel based on whether this is a singleton
-            if (this.callback) {
-                this.cancel();
-            } else {
-                this.hide();
-            }
-        },
-        initStateWhenHistoryReady() {
-            const Galaxy = getGalaxyInstance();
-            if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
-                window.setTimeout(() => {
-                    this.initStateWhenHistoryReady();
-                }, 500);
-                return;
-            }
-            this.historyAvailable = true;
-            this.currentUser = Galaxy.user.id;
-        },
-        currentFtp: function () {
-            return this.currentUser && this.ftpUploadSite;
-        },
-        /** Refresh user and current history */
-        currentHistory: function () {
-            const Galaxy = getGalaxyInstance();
-            return this.currentUser && Galaxy.currHistoryPanel.model.get("id");
-        },
-        /**
-         * Package API data from array of models
-         * @param{Array} items - Upload items/rows filtered from a collection
-         */
-        toData: function (items, history_id) {
-            // create dictionary for data submission
-            var data = {
-                payload: {
-                    tool_id: "upload1",
-                    history_id: history_id || this.currentHistory(),
-                    inputs: {},
-                },
-                files: [],
-                error_message: null,
-            };
-            // add upload tools input data
-            if (items && items.length > 0) {
-                var inputs = {
-                    file_count: items.length,
-                    dbkey: items[0].get("genome", "?"),
-                    // sometimes extension set to "" in automated testing after first upload of
-                    // a session. https://github.com/galaxyproject/galaxy/issues/5169
-                    file_type: items[0].get("extension") || "auto",
-                };
-                for (var index in items) {
-                    var it = items[index];
-                    it.set("status", "running");
-                    if (it.get("file_size") > 0) {
-                        var prefix = `files_${index}|`;
-                        inputs[`${prefix}type`] = "upload_dataset";
-                        if (it.get("file_name") != "New File") {
-                            inputs[`${prefix}NAME`] = it.get("file_name");
-                        }
-                        inputs[`${prefix}space_to_tab`] = (it.get("space_to_tab") && "Yes") || null;
-                        inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;
-                        inputs[`${prefix}dbkey`] = it.get("genome", null);
-                        inputs[`${prefix}file_type`] = it.get("extension", null);
-                        let uri;
-                        let how;
-                        switch (it.get("file_mode")) {
-                            case "new":
-                                inputs[`${prefix}url_paste`] = it.get("url_paste");
-                                break;
-                            case "ftp":
-                                uri = it.get("file_path");
-                                how = "ftp_files";
-                                if (uri.indexOf("://") >= 0) {
-                                    how = "url_paste";
-                                }
-                                inputs[`${prefix}${how}`] = uri;
-                                break;
-                            case "local":
-                                data.files.push({
-                                    name: `${prefix}file_data`,
-                                    file: it.get("file_data"),
-                                });
-                        }
-                    } else if (it.get("optional")) {
-                        continue;
-                    } else {
-                        data.error_message = "Upload content incomplete.";
-                        it.set("status", "error");
-                        it.set("info", data.error_message);
-                        break;
-                    }
-                }
-                data.payload.inputs = JSON.stringify(inputs);
-            }
-            return data;
-        },
+    },
+    mounted() {
+        this.show();
+        // handles subsequent external requests to re-open a re-used modal
+        this.$root.$on("openUpload", this.show);
     },
 };
 </script>
-
-<style></style>

@@ -38,6 +38,13 @@ $ui-margin-horizontal: $margin-h;
 $ui-margin-horizontal-small: $margin-h * 0.5;
 $ui-margin-horizontal-large: $margin-v * 2;
 
+.ui-autocomplete {
+    max-height: 9.5rem;
+    position: fixed;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .ui-modal {
     display: none;
     overflow: auto;
@@ -125,13 +132,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
     .ui-form-title {
         word-wrap: break-word;
         font-weight: bold;
-        .ui-form-collapsible {
-            .icon {
-                cursor: pointer;
-                font-size: 1.2em;
-                position: relative;
-                top: 1px;
-            }
+        .icon {
+            cursor: pointer;
+            font-size: 1.2em;
         }
     }
     .ui-form-field {
@@ -203,6 +206,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
         .portlet-operations {
             button {
                 @extend .ml-1;
+                @extend .py-0;
             }
         }
     }
@@ -220,12 +224,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
         display: none;
         z-index: 10;
         position: absolute;
+        opacity: 0;
         top: 0px;
         width: 100%;
         height: 100%;
-        opacity: 0.2;
-        background: $white;
-        cursor: not-allowed;
+        cursor: wait;
     }
 }
 
@@ -236,14 +239,13 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border-left: solid 3px $portlet-bg-color;
     border-radius: $border-radius-large;
     .portlet-header:first-child {
-        background: $portlet-bg-color;
         @extend .rounded-0;
+        @extend .p-2;
+        background: $portlet-bg-color;
         border-top-right-radius: $border-radius-large !important;
-        padding: 5px;
     }
     > .portlet-content {
         @extend .pl-2;
-        @extend .pr-0;
     }
 }
 
@@ -280,6 +282,33 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-textarea {
     @extend .ui-input;
     height: 100px !important;
+}
+
+.ui-switch {
+    .custom-control {
+        @extend .custom-switch;
+        @extend .b-custom-control-lg;
+        @extend .float-left;
+        @extend .no-highlight;
+        .custom-control-label:before {
+            border-color: $border-color;
+        }
+    }
+    .label {
+        line-height: 1.7rem;
+    }
+}
+
+.ui-radiobutton {
+    @extend .btn-group;
+    label {
+        @extend .btn;
+        border-color: $border-color;
+    }
+    label.active {
+        @extend .font-weight-bold;
+        background: $btn-default-bg;
+    }
 }
 
 .ui-options {
@@ -320,65 +349,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         }
         input[type="radio"]:checked + label:before {
             content: fa-content($fa-var-check-circle);
-        }
-    }
-}
-
-.ui-color-picker {
-    .ui-color-picker-header {
-        cursor: pointer;
-    }
-    .ui-color-picker-value {
-        float: left;
-        border-radius: 3px;
-        border: solid 1px #000000;
-        width: 12px;
-        height: 12px;
-        margin-right: 5px;
-    }
-    .ui-color-picker-label {
-        line-height: 1.2em;
-        margin-bottom: 5px;
-    }
-    .ui-color-picker-view {
-        height: 100%;
-        overflow: auto;
-        display: none;
-        float: left;
-        margin-bottom: 5px;
-        .ui-color-picker-panel {
-            width: 210px;
-            .ui-color-picker-content {
-                margin-bottom: 15px;
-                .badge {
-                    padding-bottom: 2px;
-                }
-                .line {
-                    .ui-color-picker-box {
-                        cursor: pointer;
-                        float: left;
-                        margin-right: 5px;
-                        border: solid 1px #c0c0c0;
-                        width: 15px;
-                        height: 15px;
-                        border-radius: 2px;
-                        .ui-color-picker-check {
-                            color: black;
-                            font-size: 1.2em;
-                            position: relative;
-                            left: 1px;
-                        }
-                    }
-                }
-            }
-            .ui-color-picker-content:first-child {
-                padding-top: 5px;
-                padding-bottom: 10px;
-            }
-            .ui-color-picker-content:last-child {
-                padding-top: 85px;
-                padding-bottom: 5px;
-            }
         }
     }
 }
@@ -441,20 +411,28 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-dragover {
-    border-radius: 3px;
-    border: 2px solid $table-border-color;
-    background: lighten($table-border-color, 30%);
-    padding: 2px;
+    @extend .p-1;
+    border-radius: $border-radius-base;
+    border: 2px solid $state-warning-bg;
+    background: lighten($state-warning-bg, 10%);
 }
 
 .ui-dragover-danger {
     @extend .ui-dragover;
     border: 2px solid $state-danger-bg;
-    background: lighten($state-danger-bg, 10%) !important;
+    background: lighten($state-danger-bg, 10%);
 }
 
 .ui-dragover-success {
     @extend .ui-dragover;
     border: 2px solid $state-success-bg;
-    background: lighten($state-success-bg, 10%) !important;
+    background: lighten($state-success-bg, 10%);
+}
+// util class to make pointer cursor
+.cursor-pointer {
+    cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
 }

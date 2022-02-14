@@ -229,7 +229,9 @@ export default Backbone.View.extend({
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }
-            } else window.location = options.url;
+            } else {
+                window.location = options.url;
+            }
         } else {
             options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
             this.frames.add(options);

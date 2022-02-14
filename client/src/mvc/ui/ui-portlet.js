@@ -91,8 +91,10 @@ export var View = Backbone.View.extend({
         if (options.buttons) {
             this.$buttons.empty().show();
             $.each(this.model.get("buttons"), (name, item) => {
-                item.$el.prop("id", name);
-                self.$buttons.append(item.$el);
+                if (item) {
+                    item.$el.prop("id", name);
+                    self.$buttons.append(item.$el);
+                }
             });
         } else {
             this.$buttons.hide();

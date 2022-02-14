@@ -16,12 +16,11 @@ UNKNOWN_OPTION = {
     "type": "str",
     "required": False,
     "unknown_option": True,
-    "desc": "Unknown option, may want to remove or report to Galaxy team."
+    "desc": "Unknown option, may want to remove or report to Galaxy team.",
 }
 
 
 class Schema:
-
     def __init__(self, mapping):
         self.app_schema = mapping
 
@@ -36,11 +35,10 @@ class Schema:
 
 
 class AppSchema(Schema):
-
     def __init__(self, schema_path, app_name):
         self.raw_schema = self._read_schema(schema_path)
         self.description = self.raw_schema.get("desc", None)
-        app_schema = self.raw_schema['mapping'][app_name]['mapping']
+        app_schema = self.raw_schema["mapping"][app_name]["mapping"]
         self._preprocess(app_schema)
         super().__init__(app_schema)
 
@@ -53,12 +51,15 @@ class AppSchema(Schema):
         self._defaults = {}  # {config option: default value or null}
         self._reloadable_options = set()  # config options we can reload at runtime
         self._paths_to_resolve = {}  # {config option: referenced config option}
+        self._per_host_options = set()  # config options that can be set using a per_host config parameter
         for key, data in app_schema.items():
-            self._defaults[key] = data.get('default')
-            if data.get('reloadable'):
+            self._defaults[key] = data.get("default")
+            if data.get("reloadable"):
                 self._reloadable_options.add(key)
-            if data.get('path_resolves_to'):
-                self._paths_to_resolve[key] = data.get('path_resolves_to')
+            if data.get("per_host"):
+                self._per_host_options.add(key)
+            if data.get("path_resolves_to"):
+                self._paths_to_resolve[key] = data.get("path_resolves_to")
 
     @property
     def defaults(self):
@@ -72,19 +73,26 @@ class AppSchema(Schema):
     def reloadable_options(self):
         return self._reloadable_options
 
+    @property
+    def per_host_options(self):
+        return self._per_host_options
+
     def validate_path_resolution_graph(self):
         """This method is for tests only: we SHOULD validate the schema's path resolution graph
-           as part of automated testing; but we should NOT validate it at runtime.
+        as part of automated testing; but we should NOT validate it at runtime.
         """
+
         def check_exists(option, key):
             if not option:
-                message = "Invalid schema: property '{}' listed as path resolution target " \
+                message = (
+                    "Invalid schema: property '{}' listed as path resolution target "
                     "for '{}' does not exist".format(resolves_to, key)
+                )
                 raise_error(message)
 
         def check_type_is_str_or_any(option, key):
-            if option.get('type') not in ('str', 'any'):
-                message = "Invalid schema: property '{}' should have type 'str'".format(key)
+            if option.get("type") not in ("str", "any"):
+                message = f"Invalid schema: property '{key}' should have type 'str'"
                 raise_error(message)
 
         def check_is_dag():
@@ -93,9 +101,9 @@ class AppSchema(Schema):
                 visited.clear()
                 while key:
                     visited.add(key)
-                    key = self.app_schema[key].get('path_resolves_to')
+                    key = self.app_schema[key].get("path_resolves_to")
                     if key and key in visited:
-                        raise_error('Invalid schema: cycle detected')
+                        raise_error("Invalid schema: cycle detected")
 
         def raise_error(message):
             log.error(message)

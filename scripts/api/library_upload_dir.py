@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import argparse
 import os
@@ -8,10 +7,8 @@ import sys
 from bioblend import galaxy
 
 
-class Uploader(object):
-
-    def __init__(self, url, api, library_id, folder_id, should_link,
-                 non_local):
+class Uploader:
+    def __init__(self, url, api, library_id, folder_id, should_link, non_local):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         self.library_id = library_id
         self.folder_id = folder_id
@@ -36,22 +33,21 @@ class Uploader(object):
         """
         existing = self.gi.libraries.show_library(self.library_id, contents=True)
 
-        uploading_to = [x for x in existing if x['id'] == self.folder_id]
+        uploading_to = [x for x in existing if x["id"] == self.folder_id]
         if len(uploading_to) == 0:
-            raise Exception("Unknown folder [%s] in library [%s]" %
-                            (self.folder_id, self.library_id))
+            raise Exception("Unknown folder [%s] in library [%s]" % (self.folder_id, self.library_id))
         else:
             uploading_to = uploading_to[0]
 
         for x in existing:
             # We only care if it's a subdirectory of where we're uploading to
-            if not x['name'].startswith(uploading_to['name']):
+            if not x["name"].startswith(uploading_to["name"]):
                 continue
 
-            name_part = x['name'].split(uploading_to['name'], 1)[-1]
-            if name_part.startswith('/'):
+            name_part = x["name"].split(uploading_to["name"], 1)[-1]
+            if name_part.startswith("/"):
                 name_part = name_part[1:]
-            self.memo_path[name_part] = x['id']
+            self.memo_path[name_part] = x["id"]
 
     def memoized_path(self, path_parts, base_folder=None):
         """Get the folder ID for a given folder path specified by path_parts.
@@ -66,21 +62,21 @@ class Uploader(object):
             base_folder = self.folder_id
         dropped_prefix = []
 
-        fk = '/'.join(path_parts)
+        fk = "/".join(path_parts)
         if fk in self.memo_path:
             return self.memo_path[fk]
         else:
             for i in reversed(range(len(path_parts))):
-                fk = '/'.join(path_parts[0:i + 1])
+                fk = "/".join(path_parts[0 : i + 1])
                 if fk in self.memo_path:
-                    dropped_prefix = path_parts[0:i + 1]
-                    path_parts = path_parts[i + 1:]
+                    dropped_prefix = path_parts[0 : i + 1]
+                    path_parts = path_parts[i + 1 :]
                     base_folder = self.memo_path[fk]
                     break
 
         nfk = []
         for i in range(len(path_parts)):
-            nfk.append('/'.join(list(dropped_prefix) + list(path_parts[0:i + 1])))
+            nfk.append("/".join(list(dropped_prefix) + list(path_parts[0 : i + 1])))
 
         # Recursively create the path from our base_folder starting points,
         # getting the IDs of each folder per path component
@@ -100,19 +96,19 @@ class Uploader(object):
             return ids
         else:
             pf = self.gi.libraries.create_folder(self.library_id, path_parts[0], base_folder_id=parent_folder_id)
-            ids.append(pf[0]['id'])
-            return self.recursively_build_path(path_parts[1:], pf[0]['id'], ids=ids)
+            ids.append(pf[0]["id"])
+            return self.recursively_build_path(path_parts[1:], pf[0]["id"], ids=ids)
 
     # http://stackoverflow.com/questions/13505819/python-split-path-recursively/13505966#13505966
     def rec_split(self, s):
-        if s == '/':
+        if s == "/":
             return ()
 
         rest, tail = os.path.split(s)
-        if tail == '.':
+        if tail == ".":
             return ()
-        if rest == '':
-            return tail,
+        if rest == "":
+            return (tail,)
         return self.rec_split(rest) + (tail,)
 
     def upload(self):
@@ -132,7 +128,7 @@ class Uploader(object):
             # So that we can check if it really needs to be uploaded.
             already_uploaded = memo_key in self.memo_path.keys()
             fid = self.memoized_path(basepath, base_folder=self.folder_id)
-            print('[%s/%s] %s/%s uploaded=%s' % (idx + 1, len(all_files), fid, fname, already_uploaded))
+            print(f"[{idx + 1}/{len(all_files)}] {fid}/{fname} uploaded={already_uploaded}")
 
             if not already_uploaded:
                 if self.non_local:
@@ -146,22 +142,34 @@ class Uploader(object):
                         self.library_id,
                         os.path.join(dirName, fname),
                         folder_id=fid,
-                        link_data_only='link_to_files' if self.should_link else 'copy_files',
+                        link_data_only="link_to_files" if self.should_link else "copy_files",
                     )
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Upload a directory into a data library')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Upload a directory into a data library")
     parser.add_argument("-u", "--url", dest="url", required=True, help="Galaxy URL")
     parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
 
     parser.add_argument("-l", "--lib", dest="library_id", required=True, help="Library ID")
-    parser.add_argument("-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library.")
+    parser.add_argument(
+        "-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library."
+    )
 
-    parser.add_argument("--nonlocal", dest="non_local", action="store_true", default=False,
-                        help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem")
-    parser.add_argument("--link", dest="should_link", action="store_true", default=False,
-                        help="Link datasets only, do not upload to Galaxy. ONLY Avaialble if you run 'locally' relative to your Galaxy head node/filesystem ")
+    parser.add_argument(
+        "--nonlocal",
+        dest="non_local",
+        action="store_true",
+        default=False,
+        help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem",
+    )
+    parser.add_argument(
+        "--link",
+        dest="should_link",
+        action="store_true",
+        default=False,
+        help="Link datasets only, do not upload to Galaxy. ONLY Avaialble if you run 'locally' relative to your Galaxy head node/filesystem ",
+    )
     args = parser.parse_args()
 
     u = Uploader(**vars(args))

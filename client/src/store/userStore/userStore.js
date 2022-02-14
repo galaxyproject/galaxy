@@ -10,16 +10,9 @@ const getters = {
     // persist it easily in localStorage or something,
     // hydrate with model object using the getter
     currentUser(state) {
-        let userProps = state.currentUser;
-        if (!userProps) {
-            // TODO: remove when we no longer use the galaxy instance
-            try {
-                userProps = window.Galaxy.user;
-            } catch (err) {
-                console.warn(err);
-            }
-        }
-        return new User(userProps);
+        const userProps = state.currentUser || {};
+        const user = new User(userProps);
+        return Object.freeze(user);
     },
 };
 
@@ -29,13 +22,27 @@ const mutations = {
     },
 };
 
+// Holds promise for in-flight loads
+let loadPromise;
+
 const actions = {
-    async loadUser({ commit, dispatch }) {
-        const user = await getCurrentUser();
-        commit("setCurrentUser", user);
+    loadUser({ dispatch }) {
+        if (!loadPromise) {
+            loadPromise = getCurrentUser()
+                .then((user) => {
+                    dispatch("setCurrentUser", user);
+                })
+                .catch((err) => {
+                    console.warn("loadUser error", err);
+                })
+                .finally(() => {
+                    loadPromise = null;
+                });
+        }
     },
-    async $init({ dispatch }) {
-        await dispatch("loadUser");
+    async setCurrentUser({ commit, dispatch }, user) {
+        commit("setCurrentUser", user);
+        await dispatch("betaHistory/loadUserHistories", user, { root: true });
     },
 };
 

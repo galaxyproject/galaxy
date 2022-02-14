@@ -1,0 +1,18 @@
+{
+  "name": "nora",
+  "license": "MIT",
+  "description": "NORA Medical Image Viewer",
+  "version": "1.1.0",
+  "keywords": [
+    "galaxy",
+    "visualization"
+  ],
+  "main": "index.js",
+  "dependencies": {
+    "@galaxyproject/nora": "1.1.2",
+    "cpy-cli": "^3.1.1"
+  },
+  "scripts": {
+    "build": "cpy --cwd='node_modules/@galaxyproject/nora/static/dist' --parents './' '../../../../../static/dist'"
+  }
+}

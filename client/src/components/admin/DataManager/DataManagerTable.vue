@@ -7,8 +7,7 @@
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
-            variant="primary"
-        />
+            variant="primary" />
         <b-container v-else-if="dataTable">
             <b-row>
                 <b-col>
@@ -18,7 +17,7 @@
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
-                                            <span class="fa fa-refresh" />
+                                            <span class="fa fa-sync" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
@@ -32,8 +31,7 @@
                             :items="dataTable['data']"
                             small
                             hover
-                            striped
-                        />
+                            striped />
                     </b-card>
                 </b-col>
             </b-row>

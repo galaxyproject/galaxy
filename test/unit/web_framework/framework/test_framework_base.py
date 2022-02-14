@@ -2,7 +2,6 @@ from galaxy.web.framework.base import WebApplication
 
 
 class TestWebapp(WebApplication):
-
     def assert_maps(self, url, method="GET", **parts):
         map_result = self.mapper.match(url, environ={"REQUEST_METHOD": method})
         for key, expected_value in parts.items():
@@ -14,5 +13,5 @@ class TestWebapp(WebApplication):
 
 def test_add_route():
     test_webapp = TestWebapp()
-    test_webapp.add_route('/authnz/', controller='authnz', action='index', provider=None)
+    test_webapp.add_route("/authnz/", controller="authnz", action="index", provider=None)
     test_webapp.assert_maps("/authnz/", controller="authnz", action="index")

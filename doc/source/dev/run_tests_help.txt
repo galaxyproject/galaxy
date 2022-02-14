@@ -1,0 +1,246 @@
+'run_tests.sh -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
+'run_tests.sh -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
+'run_tests.sh -list'                    for listing all the tool ids
+'run_tests.sh -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
+                                    can be pytest selector
+'run_tests.sh -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
+                                    can be pytest selector
+'run_tests.sh -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
+'run_tests.sh -installed'               for running tests of Tool Shed installed tools
+'run_tests.sh -main'                    for running tests of tools shipped with Galaxy
+'run_tests.sh -framework'               for running through example tool tests testing framework features in test/functional/tools"
+'run_tests.sh -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
+'run_tests.sh -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
+'run_tests.sh -unit'                    for running all unit tests (doctests and tests in test/unit)
+'run_tests.sh -unit (test_selector)'    for running unit tests on specified test path (using pytest selector syntax)
+'run_tests.sh -selenium'                for running all selenium web tests (in lib/galaxy_test/selenium)
+'run_tests.sh -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
+
+This wrapper script largely serves as a point documentation and convenience for
+running Galaxy's Python tests. Most Python tests shipped with Galaxy can be run with
+pytest directly. Galaxy's client unit tests can be run with make client-test
+or yarn directly as documented in detail in client/README.md.
+
+The main test types are as follows:
+
+- API: These tests are located in lib/galaxy_test/api and test various aspects of the Galaxy
+   API and test general backend aspects of Galaxy using the API.
+- Integration: These tests are located in test/integration and test special
+   configurations of Galaxy. All API tests assume a particular Galaxy configuration
+   defined by test/base/driver_util.py and integration tests can be used to
+   launch and test Galaxy in other configurations.
+- Framework: These tests are all Galaxy tool tests and can be found in
+   test/functional/tools. These are for the most part meant to test and
+   demonstrate features of the tool evaluation environment and of Galaxy tool XML
+   files.
+- Unit: These are Python unit tests either defined as doctests or inside of
+   test/unit. These should generally not require a Galaxy instance and should
+   quickly test just a component or a few components of Galaxy's backend code.
+- Selenium: These are full stack tests meant to test the Galaxy UI with real
+   browsers and are located in lib/galaxy_test/selenium.
+- ToolShed: These are web tests that use the older Python web testing
+   framework twill to test ToolShed related functionality. These are
+   located in lib/tool_shed/test.
+
+Python testing is mostly done via pytest. Specific tests can be selected
+using the pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
+
+The spots these selectors can be used is described in the above usage documentation
+as test_path.  A few examples are shown below.
+
+Run all API tests:
+    ./run_tests.sh -api
+
+The same test as above can be run using nosetests directly as follows:
+    pytest lib/galaxy_test/api
+
+However when using pytest directly output options defined in this
+file aren't respected and a new Galaxy instance will be created for each
+TestCase class (this scripts optimizes it so all tests can share a Galaxy
+instance).
+
+Run a full class of API tests:
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase
+
+Run a specific API test:
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
+
+Run all selenium tests (Under Linux using Docker):
+    # Start selenium chrome Docker container
+    docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
+    GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
+
+Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
+    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::RegistrationTestCase::test_reregister_username_fails
+
+Run a selenium test against a running server while watching client (fastest iterating on client tests):
+    ./run.sh & # run Galaxy on 8080
+    make client-watch & # watch for client changes
+    export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
+    . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
+    pytest lib/galaxy_test/selenium/test_workflow_editor.py::WorkflowEditorTestCase::test_data_input
+
+Note About Selenium Tests:
+
+If using a local selenium driver such as a Chrome or Firefox based one
+either chromedriver or geckodriver needs to be installed an placed on
+the PATH.
+
+More information on geckodriver can be found at
+https://github.com/mozilla/geckodriver and more information on
+chromedriver can be found at
+https://sites.google.com/a/chromium.org/chromedriver/.
+
+By default Galaxy will check the PATH for these and pick
+whichever it finds. This can be overridden by setting
+GALAXY_TEST_SELENIUM_BROWSER to either FIREFOX, CHROME, or something
+more esoteric (including OPERA).
+
+If PyVirtualDisplay is installed Galaxy will attempt to run this
+browser in a headless mode. This can be disabled by setting
+GALAXY_TEST_SELENIUM_HEADLESS to 0 however.
+
+Selenium can also be setup a remote service - to target a service set
+GALAXY_TEST_SELENIUM_REMOTE to 1. The target service may be configured
+with GALAXY_TEST_SELENIUM_REMOTE_PORT and
+GALAXY_TEST_SELENIUM_REMOTE_HOST. By default Galaxy will assume the
+remote service being targetted is CHROME - but this can be overridden
+with GALAXY_TEST_SELENIUM_BROWSER.
+
+In this remote mode, please ensure that GALAXY_TEST_HOST is set to a
+host that is accessible from the Selenium host. By default under Linux
+if GALAXY_TEST_SELENIUM_REMOTE is set, Galaxy will set this to be the IP
+address Docker exposes localhost on to its child containers. This trick
+doesn't work on Mac OS X and so GALAXY_TEST_HOST will need to be crafted
+carefully ahead of time.
+
+For Selenium test cases a stack trace is usually insufficient to diagnose
+problems. For this reason, GALAXY_TEST_ERRORS_DIRECTORY is populated with
+a new directory of information for each failing test case. This information
+includes a screenshot, a stack trace, and the DOM of the currently rendered
+Galaxy instance. The new directories are created with names that include
+information about the failed test method name and the timestamp. By default,
+GALAXY_TEST_ERRORS_DIRECTORY will be set to database/errors.
+
+The Selenium tests seem to be subject to transient failures at a higher
+rate than the rest of the tests in Galaxy. Though this is unfortunate,
+they have more moving pieces so this is perhaps not surprising. One can
+set the GALAXY_TEST_SELENIUM_RETRIES to a number greater than 0 to
+automatically retry every failed test case the specified number of times.
+
+External Tests:
+
+A small subset of tests can be run against an existing Galaxy
+instance. The external Galaxy instance URL can be configured with
+--external_url. If this is set, either --external_master_key or
+--external_user_key must be set as well - more tests can be executed
+with --external_master_key than with a user key.
+
+Extra options:
+
+ --verbose_errors      Force some tests produce more verbose error reporting.
+ --no_cleanup          Do not delete temp files for Python functional tests
+                       (-toolshed, -framework, etc...)
+ --debug               On python test error or failure invoke a pdb shell for
+                       interactive debugging of the test
+ --report_file         Path of HTML report to produce (for Python Galaxy
+                       functional tests). If not given, a default filename will
+                       be used, and reported on stderr at the end of the run.
+ --xunit_report_file   Path of XUnit report to produce (for Python Galaxy
+                       functional tests).
+ --skip-venv           Do not create .venv (passes this flag to
+                       common_startup.sh)
+ --dockerize           Run tests in a pre-configured Docker container (must be
+                       first argument if present).
+ --db <type>           For use with --dockerize, run tests using partially
+                       migrated 'postgres', 'mysql', or 'sqlite' databases.
+ --external_url        External URL to use for Galaxy testing (only certain
+                       tests).
+ --external_master_key Master API key used to configure external tests.
+ --external_user_key   User API used for external tests - not required if
+                       external_master_key is specified.
+  --skip_flakey_fails  Skip flakey tests on error (sets
+                       GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR=1).
+
+Environment Variables:
+
+In addition to the above command-line options, many environment variables
+can be used to control the Galaxy functional testing processing. Command-line
+options above like (--external_url) will set environment variables - in such
+cases the command line argument takes precedent over environment variables set
+at the time of running this script.
+
+Functional Test Environment Variables
+
+GALAXY_TEST_DBURI               Database connection string used for functional
+                                test database for Galaxy.
+GALAXY_TEST_INSTALL_DBURI       Database connection string used for functional
+                                test database for Galaxy's install framework.
+GALAXY_TEST_INSTALL_DB_MERGED   Set to use same database for Galaxy and install
+                                framework, this defaults to True for Galaxy
+                                tests an False for shed tests.
+GALAXY_TEST_DB_TEMPLATE         If GALAXY_TEST_DBURI is unset, this URL can be
+                                retrieved and should be an sqlite database that
+                                will be upgraded and tested against.
+GALAXY_TEST_TMP_DIR             Temp directory used for files required by
+                                Galaxy server setup for Galaxy functional tests.
+GALAXY_TEST_SAVE                Location to save certain test files (such as
+                                tool outputs).
+GALAXY_TEST_EXTERNAL            Target an external Galaxy as part of testing.
+GALAXY_TEST_JOB_CONFIG_FILE     Job config file to use for the test.
+GALAXY_CONFIG_MASTER_API_KEY    Master or admin API key to use as part of
+                                testing with GALAXY_TEST_EXTERNAL.
+GALAXY_TEST_USER_API_KEY        User API key to use as part of testing with
+                                GALAXY_TEST_EXTERNAL.
+GALAXY_TEST_VERBOSE_ERRORS      Enable more verbose errors during API tests.
+GALAXY_TEST_UPLOAD_ASYNC        Upload tool test inputs asynchronously (may
+                                overwhelm sqlite database).
+GALAXY_TEST_RAW_DIFF            Don't slice up tool test diffs to keep output
+                                managable - print all output. (default off)
+GALAXY_TEST_DEFAULT_WAIT        Max time allowed for a tool test before Galaxy
+                                gives up (default 86400) - tools may define a
+                                maxseconds attribute to extend this.
+GALAXY_TEST_TOOL_DEPENDENCY_DIR tool dependency dir to use for Galaxy during
+                                functional tests.
+GALAXY_TEST_FILE_DIR            Test data sources (default to
+              test-data,https://github.com/galaxyproject/galaxy-test-data.git)
+GALAXY_TEST_DIRECTORY           /test
+GALAXY_TEST_TOOL_DATA_PATH      Set to override tool data path during tool
+                                shed tests.
+GALAXY_TEST_FETCH_DATA          Fetch remote test data to
+                                GALAXY_TEST_DATA_REPO_CACHE as part of tool
+                                tests if it is not available locally (default
+                                to True). Requires git to be available on the
+                                command-line.
+GALAXY_TEST_DATA_REPO_CACHE     Where to cache remote test data to (default to
+                                test-data-cache).
+GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
+                                Skip tests annotated with @flakey on test errors.
+HTTP_ACCEPT_LANGUAGE            Defaults to 'en'
+GALAXY_TEST_NO_CLEANUP          Do not cleanup main test directory after tests,
+                                the deprecated option TOOL_SHED_TEST_NO_CLEANUP
+                                does the same thing.
+GALAXY_TEST_HOST                Host to use for Galaxy server setup for
+                                testing.
+GALAXY_TEST_PORT                Port to use for Galaxy server setup for
+                                testing.
+GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
+GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
+                                config/shed_tool_conf.xml) used when testing
+                                installed to tools with -installed.
+GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
+                                is fairly limited and not compatible with parrallel testing
+                                so should be limited to debugging one off tests.
+TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
+TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
+TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
+TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
+                                tool shed test server files to be placed.
+TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
+                                testing.
+
+Unit Test Environment Variables
+
+GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
+                           aren't included by default with --unit/-u.
+

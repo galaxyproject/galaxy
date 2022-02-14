@@ -1,18 +1,21 @@
 <tool id="__SORTLIST__"
-      name="Sort Collection"
+      name="Sort collection"
       version="1.0.0"
       tool_type="sort_collection">
-    <description>of list of datasets</description>
+    <description></description>
     <type class="SortTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3802</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" collection_type="list,list:paired" name="input" label="Input Collection" />
         <conditional name="sort_type">
-            <param type="select" name="sort_type" label="Sort collection identifiers" help="All element identifiers must be present once.">
-                <option value="alpha">alphabetically</option>
-                <option value="numeric">numerically (strips all characters except numbers)</option>
-                <option value="file">Sort collection using order of identifiers in text file</option>
+            <param type="select" name="sort_type" label="Sort type" help="All element identifiers must be present once.">
+                <option value="alpha">alphabetical</option>
+                <option value="numeric">numeric (non numeric characters are ignored)</option>
+                <option value="file">from file</option>
             </param>
             <when value="alpha" />
             <when value="numeric" />
@@ -139,7 +142,53 @@
     </tests>
     <help><![CDATA[
 
-This tool takes list-type collections - and produces a sorted ist from the inputs. The collection identifiers are sorted either alphabetically or numerically (where the characters other than 0-9 are stripped before sorting).
+========
+Synopsis
+========
+
+Sorts dataset collection alphabetically, numerically, or using predetermined order from a supplied file.
+
+===========
+Description
+===========
+
+**Numeric sort**
+
+The tool sort in ascending order. When *numeric* sort is chosen, the tool ignores non-numeric characters. For example, if a collection contains the following elements::
+
+ Collection: [Horse123] 
+             [Donkey543] 
+             [Mule176]
+
+The tool will output::
+
+ Collection: [Horse123]
+             [Mule176] 
+             [Donkey543] 
+
+-------
+
+**Sorting from file**
+
+Alternative, one can supply a single column text file containing elements identifiers in the desired sort order. For example, suppose there a collection::
+
+ Collection: [Horse123] 
+             [Donkey543] 
+             [Mule176]
+
+and a file specifying sort order::
+
+ Donkey543
+ Horse123 
+ Mule176
+ 
+the output will predictably look like this::
+
+ Collection: [Donkey543] 
+             [Horse123] 
+             [Mule176]
+
+-------
 
 .. class:: infomark
 

@@ -1,25 +1,24 @@
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
-import FormWrapper from "mvc/form/form-wrapper";
+import FormGeneric from "components/Form/FormGeneric";
 import GridView from "mvc/grid/grid-view";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import SanitizeAllow from "components/admin/SanitizeAllow.vue";
 import Jobs from "components/admin/Jobs.vue";
 import ActiveInvocations from "components/admin/ActiveInvocations.vue";
 import Landing from "components/admin/Dependencies/Landing.vue";
 import AdminHome from "components/admin/Home.vue";
-import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
-import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import DataManager from "components/admin/DataManager";
 import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import ResetMetadata from "components/admin/ResetMetadata.vue";
 import Toolshed from "components/Toolshed/Index.vue";
-import Vue from "vue";
-import store from "store";
+import { mountVueComponent } from "utils/mountVueComponent";
 
 export const getAdminRouter = (Galaxy, options) => {
     const galaxyRoot = getAppRoot();
@@ -42,6 +41,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin/data_types": "show_data_types",
             "(/)admin/jobs": "show_jobs",
             "(/)admin/invocations": "show_invocations",
+            "(/)admin/sanitize_allow": "show_sanitize_allow",
             "(/)admin/toolbox_dependencies": "show_toolbox_dependencies",
             "(/)admin/data_manager*path": "show_data_manager",
             "(/)admin(/)reset_metadata": "show_reset_metadata",
@@ -108,10 +108,10 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _display_vue_helper: function (component, propsData = {}) {
-            const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            new instance({ store, propsData }).$mount(container);
+            const mountFn = mountVueComponent(component);
+            return mountFn(propsData, container);
         },
 
         show_data_tables: function () {
@@ -130,6 +130,10 @@ export const getAdminRouter = (Galaxy, options) => {
             this._display_vue_helper(ActiveInvocations);
         },
 
+        show_sanitize_allow: function () {
+            this._display_vue_helper(SanitizeAllow);
+        },
+
         show_toolbox_dependencies: function () {
             this._display_vue_helper(Landing);
         },
@@ -146,16 +150,13 @@ export const getAdminRouter = (Galaxy, options) => {
             this._display_vue_helper(ResetMetadata);
         },
 
-        show_data_manager: function (path) {
-            const Galaxy = getGalaxyInstance();
-            console.log("show_data_manager");
-            const vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            // always set the route back to the base, i.e.
-            // `${galaxyRoot}admin/data_manager`
-            Galaxy.debug("show_data_manager: path='" + path + "'");
-            DataManagerRouter.replace(path || "/");
-            new Vue({ router: DataManagerRouter, render: (h) => h(DataManagerView) }).$mount(vueMount);
+        // Because this has a router in it, we need to be careful about destroying it properly
+        dataManagerInstance: null,
+        show_data_manager: function () {
+            if (this.dataManagerInstance) {
+                this.dataManagerInstance.$destroy();
+            }
+            this.dataManagerInstance = this._display_vue_helper(DataManager);
         },
 
         show_forms: function () {
@@ -169,7 +170,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,
                     icon: "fa-user",
-                    submit_title: "Save new password",
+                    submitTitle: "Save new password",
                     redirect: "admin/users",
                 },
                 manage_roles_and_groups_for_user: {
@@ -230,7 +231,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     redirect: "admin/forms",
                 },
             };
-            this.page.display(new FormWrapper.View(form_defs[form_id]));
+            this._display_vue_helper(FormGeneric, form_defs[form_id]);
         },
     });
 };

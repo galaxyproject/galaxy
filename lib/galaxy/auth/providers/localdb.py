@@ -12,21 +12,22 @@ log = logging.getLogger(__name__)
 
 class LocalDB(AuthProvider):
     """Authenticate users against the local Galaxy database (as per usual)."""
-    plugin_type = 'localdb'
+
+    plugin_type = "localdb"
 
     def authenticate(self, email, username, password, options):
         """
         See abstract method documentation.
         """
-        return (False, '', '')  # it can never auto-create based of localdb (chicken-egg)
+        return (False, "", "")  # it can never auto-create based of localdb (chicken-egg)
 
     def authenticate_user(self, user, password, options):
         """
         See abstract method documentation.
         """
         user_ok = user.check_password(password)
-        log.debug("User: {}, LOCALDB: {}".format(user.id if options['redact_username_in_logs'] else user.email, user_ok))
+        log.debug(f"User: {user.id if options['redact_username_in_logs'] else user.email}, LOCALDB: {user_ok}")
         return user_ok
 
 
-__all__ = ('LocalDB', )
+__all__ = ("LocalDB",)

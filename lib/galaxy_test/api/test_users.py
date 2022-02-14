@@ -3,7 +3,7 @@ import json
 from requests import (
     delete,
     get,
-    put
+    put,
 )
 
 from galaxy_test.base.api_asserts import assert_object_id_error
@@ -17,7 +17,6 @@ TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
 class UsersApiTestCase(ApiTestCase):
-
     def test_index(self):
         self._setup_user(TEST_USER_EMAIL)
         all_users_response = self._get("users", admin=True)
@@ -44,19 +43,19 @@ class UsersApiTestCase(ApiTestCase):
             self.__assert_matches_user(user, show_response.json())
 
     def test_update(self):
-        new_name = 'linnaeus'
+        new_name = "linnaeus"
         user = self._setup_user(TEST_USER_EMAIL)
-        not_the_user = self._setup_user('email@example.com')
+        not_the_user = self._setup_user("email@example.com")
         with self._different_user(email=TEST_USER_EMAIL):
 
             # working
             update_response = self.__update(user, username=new_name)
             self._assert_status_code_is(update_response, 200)
             update_json = update_response.json()
-            self.assertEqual(update_json['username'], new_name)
+            self.assertEqual(update_json["username"], new_name)
 
             # too short
-            update_response = self.__update(user, username='mu')
+            update_response = self.__update(user, username="mu")
             self._assert_status_code_is(update_response, 400)
 
             # not them
@@ -64,49 +63,49 @@ class UsersApiTestCase(ApiTestCase):
             self._assert_status_code_is(update_response, 403)
 
             # non-existent
-            no_user_id = '5d7db0757a2eb7ef'
-            update_url = self._api_url("users/%s" % (no_user_id), use_key=True)
+            no_user_id = "5d7db0757a2eb7ef"
+            update_url = self._api_url(f"users/{no_user_id}", use_key=True)
             update_response = put(update_url, data=json.dumps(dict(username=new_name)))
             assert_object_id_error(update_response)
 
     def test_admin_update(self):
-        new_name = 'flexo'
+        new_name = "flexo"
         user = self._setup_user(TEST_USER_EMAIL)
-        update_url = self._api_url("users/%s" % (user["id"]), params=dict(key=self.master_api_key))
+        update_url = self._api_url(f"users/{user['id']}", params=dict(key=self.master_api_key))
         update_response = put(update_url, data=json.dumps(dict(username=new_name)))
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
-        self.assertEqual(update_json['username'], new_name)
+        self.assertEqual(update_json["username"], new_name)
 
     def test_delete_user(self):
         user = self._setup_user(TEST_USER_EMAIL_DELETE)
-        self._delete("users/%s" % user["id"], admin=True)
-        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
-        assert updated_user['deleted'] is True, updated_user
+        self._delete(f"users/{user['id']}", admin=True)
+        updated_user = self._get(f"users/deleted/{user['id']}", admin=True).json()
+        assert updated_user["deleted"] is True, updated_user
 
     def test_purge_user(self):
         """Delete user and then purge them."""
         user = self._setup_user(TEST_USER_EMAIL_PURGE)
-        response = self._delete("users/%s" % user["id"], admin=True)
+        response = self._delete(f"users/{user['id']}", admin=True)
         self._assert_status_code_is_ok(response)
         data = dict(purge="True")
-        response = self._delete("users/%s" % user["id"], data=data, admin=True)
+        response = self._delete(f"users/{user['id']}", data=data, admin=True)
         self._assert_status_code_is_ok(response)
-        payload = {'deleted': "True"}
-        purged_user = self._get("users/%s" % user['id'], payload, admin=True).json()
-        assert purged_user['deleted'] is True, purged_user
-        assert purged_user['purged'] is True, purged_user
+        payload = {"deleted": "True"}
+        purged_user = self._get(f"users/{user['id']}", payload, admin=True).json()
+        assert purged_user["deleted"] is True, purged_user
+        assert purged_user["purged"] is True, purged_user
 
     def test_undelete_user(self):
         """Delete user and then undelete them."""
         user = self._setup_user(TEST_USER_EMAIL_UNDELETE)
-        self._delete("users/%s" % user["id"], admin=True)
-        payload = {'deleted': "True"}
-        deleted_user = self._get("users/%s" % user['id'], payload, admin=True).json()
-        assert deleted_user['deleted'] is True, deleted_user
-        self._post("users/deleted/%s/undelete" % user["id"], admin=True)
-        undeleted_user = self._get("users/%s" % user['id'], admin=True).json()
-        assert undeleted_user['deleted'] is False, undeleted_user
+        self._delete(f"users/{user['id']}", admin=True)
+        payload = {"deleted": "True"}
+        deleted_user = self._get(f"users/{user['id']}", payload, admin=True).json()
+        assert deleted_user["deleted"] is True, deleted_user
+        self._post(f"users/deleted/{user['id']}/undelete", admin=True)
+        undeleted_user = self._get(f"users/{user['id']}", admin=True).json()
+        assert undeleted_user["deleted"] is False, undeleted_user
 
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
@@ -122,66 +121,68 @@ class UsersApiTestCase(ApiTestCase):
         response = get(url).json()
         self.assertEqual(response["username"], user["username"])
         self.assertEqual(response["email"], TEST_USER_EMAIL)
-        put(url, data=json.dumps({"address_0|desc" : "_desc"}))
+        put(url, data=json.dumps({"address_0|desc": "_desc"}))
         response = get(url).json()
         self.assertEqual(len(response["addresses"]), 1)
         self.assertEqual(response["addresses"][0]["desc"], "_desc")
+
+    def test_create_api_key(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        user_id = user["id"]
+        response = self._put(f"users/{user_id}/api_key/inputs", admin=True)
+        self._assert_status_code_is_ok(response)
+        self.assertEqual(response.json()["inputs"][0]["name"], "api-key")
 
     @skip_without_tool("cat1")
     def test_favorites(self):
         user = self._setup_user(TEST_USER_EMAIL)
         # adding a tool to favorites
-        url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=self.master_api_key))
-        put_response = put(url, data=json.dumps({"object_id" : "cat1"}))
+        url = self._api_url(f"users/{user['id']}/favorites/tools", params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id": "cat1"}))
         self._assert_status_code_is_ok(put_response)
         self.assertEqual(put_response.json()["tools"][0], "cat1")
         # not implemented for workflows yet
-        url = self._api_url("users/%s/favorites/workflows" % user["id"], params=dict(key=self.master_api_key))
-        put_response = put(url, data=json.dumps({"object_id" : "14ds68f4sda68gf46dsag4"}))
+        url = self._api_url(f"users/{user['id']}/favorites/workflows", params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id": "14ds68f4sda68gf46dsag4"}))
         self._assert_status_code_is(put_response, 400)
         # delete existing tool favorite
-        url = self._api_url("users/%s/favorites/tools/cat1" % user["id"], params=dict(key=self.master_api_key))
+        url = self._api_url(f"users/{user['id']}/favorites/tools/cat1", params=dict(key=self.master_api_key))
         delete_response = delete(url)
         self._assert_status_code_is_ok(delete_response)
         self.assertEqual(delete_response.json()["tools"], [])
         # delete non-existing tool favorite
-        url = self._api_url("users/%s/favorites/tools/madeuptoolthatdoes/not/exist/in/favs" % user["id"], params=dict(key=self.master_api_key))
+        url = self._api_url(
+            f"users/{user['id']}/favorites/tools/madeuptoolthatdoes/not/exist/in/favs",
+            params=dict(key=self.master_api_key),
+        )
         delete_response = delete(url)
         self._assert_status_code_is(delete_response, 404)
         # delete non existing workflow favorite
-        url = self._api_url("users/%s/favorites/workflows/1as5das5das56d465" % user["id"], params=dict(key=self.master_api_key))
+        url = self._api_url(
+            f"users/{user['id']}/favorites/workflows/1as5das5das56d465", params=dict(key=self.master_api_key)
+        )
         delete_response = delete(url)
         self._assert_status_code_is(delete_response, 400)
 
     @skip_without_tool("cat1")
     def test_search_favorites(self):
         user, user_key = self._setup_user_get_key(TEST_USER_EMAIL)
-        url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=user_key))
-        fav_response = put(url, data=json.dumps({"object_id" : "cat1"}))
+        url = self._api_url(f"users/{user['id']}/favorites/tools", params=dict(key=user_key))
+        fav_response = put(url, data=json.dumps({"object_id": "cat1"}))
         self._assert_status_code_is_ok(fav_response)
         assert "cat1" in fav_response.json()["tools"]
         url = self._api_url("tools", params=dict(q="#favs", key=user_key))
         search_response = get(url).json()
         assert "cat1" in search_response
 
-    def test_communication(self):
-        user = self._setup_user(TEST_USER_EMAIL)
-        url = self.__url("communication/inputs", user)
-        self.assertEqual(self.__filter(get(url).json(), "enable", "value"), "false")
-        put(url, data=json.dumps(dict(enable="true")))
-        self.assertEqual(self.__filter(get(url).json(), "enable", "value"), "true")
-
-    def __filter(self, response, name, attr):
-        return [r[attr] for r in response["inputs"] if r["name"] == name][0]
-
     def __url(self, action, user):
-        return self._api_url("users/{}/{}".format(user["id"], action), params=dict(key=self.master_api_key))
+        return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
 
     def __show(self, user):
-        return self._get("users/%s" % (user['id']))
+        return self._get(f"users/{user['id']}")
 
     def __update(self, user, **new_data):
-        update_url = self._api_url("users/%s" % (user["id"]), use_key=True)
+        update_url = self._api_url(f"users/{user['id']}", use_key=True)
         return put(update_url, data=new_data)
 
     def __assert_matches_user(self, userA, userB):

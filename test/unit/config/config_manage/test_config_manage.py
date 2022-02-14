@@ -1,4 +1,3 @@
-
 import os
 import shutil
 import tempfile
@@ -91,8 +90,7 @@ def test_validate_embedded_config():
         config_dir.manage_cli(["validate", "galaxy"])
 
 
-class _TestConfigDirectory(object):
-
+class _TestConfigDirectory:
     def __init__(self, base_name):
         temp_directory = tempfile.mkdtemp()
         os.removedirs(temp_directory)
@@ -122,7 +120,7 @@ class _TestConfigDirectory(object):
         return open(os.path.join(self.temp_directory, path), *args)
 
     def assert_moved(self, from_path, to_path):
-        with open(os.path.join(self.source_dir, from_path), "r") as f:
+        with open(os.path.join(self.source_dir, from_path)) as f:
             source_contents = f.read()
 
         with self.open(to_path, "r") as f:

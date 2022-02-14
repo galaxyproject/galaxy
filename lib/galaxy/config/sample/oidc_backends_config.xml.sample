@@ -75,6 +75,8 @@ Please mind `http` and `https`.
          login to Galaxy using their Google account.
         -->
         <icon>https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
     <!-- Documentation: http://globus-integration-examples.readthedocs.io -->
@@ -96,7 +98,7 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
         <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
         <!-- (Optional) Restrict the list of options available for login using CILogon or Custos by including the EntityID for each institution
-             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/ 
+             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/
              Note: the <allowed_idp>'s for Custos should match those for CILogon if both are enabled.-->
         <!-- <allowed_idp>https://github.com/login/oauth/authorize</allowed_idp> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
@@ -114,7 +116,7 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
         <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
         <!-- (Optional) Restrict the list of options available for login using CILogon or Custos by including the EntityID for each institution
-             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/ 
+             in a separate <allowed_idp> tag. Find the EntityID(s) for your desired institution(s) at https://cilogon.org/idplist/
              Note: the <allowed_idp>'s for CILogon should match those for Custos if both are enabled.-->
         <!-- <allowed_idp>https://github.com/login/oauth/authorize</allowed_idp> -->
         <!-- (Optional) Enable logging out of the IDP when user logs out of Galaxy -->
@@ -146,6 +148,8 @@ Please mind `http` and `https`.
         <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
         <prompt>consent</prompt>
         <icon>https://elixir-europe.org/sites/default/files/images/login-button-orange.png</icon>
+        <!-- (Optional) Extra scopes you need to request for your implementation -->
+        <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
 
     <provider name="Okta">
@@ -166,6 +170,18 @@ Please mind `http` and `https`.
           - Grant type allowed: Authorization code
 
         You should subsequently be able to get the client ID and the client secret from the Okta website.
+         -->
+        <api_url> ... </api_url>
+    </provider>
+
+    <provider name="azure">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/azure/callback</redirect_uri>
+        <!-- Azure client_id, client_secret, and api_url can be obtained by folowing the instructions at
+        https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app
+
+        The api_url will typiclly be https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize
          -->
         <api_url> ... </api_url>
     </provider>

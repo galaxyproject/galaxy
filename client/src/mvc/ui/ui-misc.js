@@ -5,11 +5,11 @@ import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import Select from "mvc/ui/ui-select-default";
-import Slider from "mvc/ui/ui-slider";
 import Options from "mvc/ui/ui-options";
 import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
+import Switch from "mvc/ui/ui-switch";
 
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({
@@ -86,7 +86,8 @@ export var Input = Backbone.View.extend({
         input: "_onchange",
     },
     value: function (new_val) {
-        new_val !== undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
+        new_val !== undefined &&
+            this.model.set("value", new_val === null || typeof new_val === "string" ? new_val : "");
         return this.model.get("value");
     },
     render: function () {
@@ -102,11 +103,9 @@ export var Input = Backbone.View.extend({
             .css("color", this.model.get("color") || "")
             .css("border-color", this.model.get("color") || "");
         var datalist = this.model.get("datalist");
-        if ($.isArray(datalist) && datalist.length > 0) {
+        if (Array.isArray(datalist) && datalist.length > 0) {
             this.$el.autocomplete({
-                source: function (request, response) {
-                    response(self.model.get("datalist"));
-                },
+                source: self.model.get("datalist"),
                 change: function () {
                     self._onchange();
                 },
@@ -127,27 +126,51 @@ export var Input = Backbone.View.extend({
     },
 });
 
-/** Creates a hidden element input field used e.g. in the tool form */
-export var Hidden = Backbone.View.extend({
+export var NullableText = Backbone.View.extend({
     initialize: function (options) {
-        this.model = (options && options.model) || new Backbone.Model(options);
-        this.setElement(
-            $("<div/>")
-                .append((this.$info = $("<div/>")))
-                .append((this.$hidden = $("<div/>")))
-        );
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
+        this.model = (options && options.model) || new Backbone.Model().set(options);
+
+        // Add text field
+        this.text_input = new Input(options);
+
+        // Add button that determines whether an optional value should be defined
+        this.optional_button = new Switch({
+            id: `optional-switch-${this.model.id}`,
+        });
+
+        // Create element
+        this.setElement("<div/>");
+        this.$el.append("<div>Set value for this optional select field?</div>");
+        this.$el.append(this.optional_button.$el);
+        this.$el.append(this.text_input.$el);
+
+        // Determine true/false value of button based on initial value
+        this.optional_button.model.set("value", this.text_input.model.get("value") === null ? "false" : "true");
+        this.toggleButton();
+        this.listenTo(this.optional_button.model, "change", this.toggleButton, this);
+    },
+    toggleButton: function () {
+        const setOptional = this.optional_button.model.get("value");
+        if (setOptional == "true") {
+            // Enable text field, set value to `""` if the value is falsy and trigger change
+            this.text_input.model.set("disabled", false);
+            if (!this.text_input.model.get("value")) {
+                this.text_input.model.set("value", "");
+                this.model.get("onchange") && this.model.get("onchange")("");
+            }
+        } else {
+            // Set text field to disabled, set model value to null and trigger change
+            this.text_input.model.set("disabled", true);
+            this.text_input.model.set("value", null);
+            this.model.get("onchange") && this.model.get("onchange")(null);
+        }
     },
     value: function (new_val) {
-        new_val !== undefined && this.model.set("value", new_val);
-        return this.model.get("value");
-    },
-    render: function () {
-        this.$el.attr("id", this.model.id);
-        this.$hidden.val(this.model.get("value"));
-        this.model.get("info") ? this.$info.show().text(this.model.get("info")) : this.$info.hide();
-        return this;
+        const setOptional = this.optional_button.model.get("value");
+        if (setOptional == "true") {
+            new_val !== undefined && this.model.set("value", typeof new_val == "string" ? new_val : "");
+        }
+        return this.text_input.model.get("value");
     },
 });
 
@@ -156,7 +179,8 @@ export var TextSelect = Backbone.View.extend({
     initialize: function (options) {
         this.select = new options.SelectClass.View(options);
         this.model = this.select.model;
-        this.text = new Input({
+        const textInputClass = options.optional ? NullableText : Input;
+        this.text = new textInputClass({
             onchange: this.model.get("onchange"),
         });
         this.on("change", () => {
@@ -186,7 +210,7 @@ export var TextSelect = Backbone.View.extend({
             });
         }
         var v = this.value();
-        this.textmode = input_def.textable && (!$.isArray(data) || data.length === 0);
+        this.textmode = input_def.textable && (!Array.isArray(data) || data.length === 0);
         this.text.$el[this.textmode ? "show" : "hide"]();
         this.select.$el[this.textmode ? "hide" : "show"]();
         this.select.update({ data: data });
@@ -249,7 +273,7 @@ export const ButtonLink = Buttons.ButtonLink;
 export const Checkbox = Options.Checkbox;
 export const RadioButton = Options.RadioButton;
 export const Radio = Options.Radio;
-export { Select, Slider, Drilldown };
+export { Select, Drilldown };
 
 export default {
     Button: Buttons.Button,
@@ -264,9 +288,9 @@ export default {
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
+    Switch: Switch,
     Select: Select,
+    NullableText: NullableText,
     TextSelect: TextSelect,
-    Hidden: Hidden,
-    Slider: Slider,
     Drilldown: Drilldown,
 };

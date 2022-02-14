@@ -74,8 +74,11 @@ uwsgi:
   # SIGTERM (its default is to brutally kill workers)
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
+  # Feature necessary for proper mule signal handling on Python versions
+  # below 3.7.2. The default is set to false to prevent a runtime error
+  # under Python 3.7.2 and newer (see
+  # https://github.com/unbit/uwsgi/issues/1978).
+  py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
@@ -175,6 +178,23 @@ tool_shed:
   # You can enter tracking code here to track visitor's behavior through
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
   #ga_code: null
+
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
 
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
@@ -395,6 +415,10 @@ tool_shed:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
@@ -408,6 +432,8 @@ tool_shed:
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
   #auth_config_file: auth_conf.xml
 
   # XML config file that contains additional data table entries for the
@@ -417,6 +443,8 @@ tool_shed:
   # these entries are automatically added to the following file, which
   # is parsed and applied to the ToolDataTableManager at server start
   # up.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
   #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
   # Datatypes config file(s), defines what data (file) types are
@@ -424,5 +452,7 @@ tool_shed:
   # a datatype appears in multiple files, the last definition is used
   # (though the first sniffer is used so limit sniffer definitions to
   # one file).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
   #datatypes_config_file: datatypes_conf.xml
 

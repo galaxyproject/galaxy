@@ -231,7 +231,7 @@ const View = Backbone.View.extend({
         if (this.config[current]) {
             let id_list = this.fields[current].value();
             if (id_list !== null) {
-                id_list = $.isArray(id_list) ? id_list : [id_list];
+                id_list = Array.isArray(id_list) ? id_list : [id_list];
                 if (id_list.length > 0) {
                     const result = this._batch({ values: [] });
                     for (const i in id_list) {
@@ -360,6 +360,7 @@ const View = Backbone.View.extend({
                         multiple: cnf.multiple,
                         library: !!cnf.library,
                         format: null,
+                        allowUpload: true,
                     }
                 );
             },
@@ -425,14 +426,17 @@ const View = Backbone.View.extend({
             _.each(items, (item) => {
                 self._patchValue(item);
                 const current_src = item.src || src;
-                select_options[current_src].push({
-                    hid: item.hid,
-                    keep: item.keep,
-                    label: `${item.hid || "Selected"}: ${item.name}`,
-                    value: item.id,
-                    origin: item.origin,
-                    tags: item.tags,
-                });
+                const addOption = !this.model.attributes.tag || item.tags.includes(this.model.attributes.tag);
+                if (addOption) {
+                    select_options[current_src].push({
+                        hid: item.hid,
+                        keep: item.keep,
+                        label: `${item.hid || "Selected"}: ${item.name}`,
+                        value: item.id,
+                        origin: item.origin,
+                        tags: item.tags,
+                    });
+                }
                 self.cache[`${item.id}_${current_src}`] = item;
             });
         });
@@ -508,10 +512,13 @@ const View = Backbone.View.extend({
         const config = this.config[current];
         const field = this.fields[current];
         if (data) {
-            const values = $.isArray(drop_data) ? drop_data : [drop_data];
+            const values = Array.isArray(drop_data) ? drop_data : [drop_data];
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, (v) => {
+                    // element_id deals with override in old backbone code,
+                    // can remove when old history is deprecated
+                    v.id = v.element_id || v.id;
                     self._patchValue(v);
                     const new_id = v.id;
                     const new_src = (v.src = this._getSource(v));

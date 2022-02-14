@@ -13,39 +13,37 @@ Output: tabular
 import os
 import sys
 
-seq_hash = {}
-
 
 def __main__():
     infile = sys.argv[1]
     outfile = sys.argv[2]
 
     if not os.path.isfile(infile):
-        sys.stderr.write("Input file %r not found\n" % infile)
+        sys.stderr.write(f"Input file {infile!r} not found\n")
         sys.exit(1)
 
     with open(infile) as inp:
-        with open(outfile, 'w') as out:
-            sequence = ''
+        with open(outfile, "w") as out:
+            sequence = ""
             for line in inp:
-                line = line.rstrip('\r\n')
-                if line.startswith('>'):
+                line = line.rstrip("\r\n")
+                if line.startswith(">"):
                     if sequence:
                         # Flush sequence from previous FASTA record,
                         # removing any white space
-                        out.write("".join(sequence.split()) + '\n')
-                        sequence = ''
+                        out.write("".join(sequence.split()) + "\n")
+                        sequence = ""
                     # Strip off the leading '>' and remove any pre-existing
                     # tabs which would trigger extra columns; write with
                     # tab to separate this from the sequence column:
-                    out.write(line[1:].replace('\t', ' ') + '\t')
+                    out.write(line[1:].replace("\t", " ") + "\t")
                 else:
                     # Continuing sequence,
                     sequence += line
             # End of FASTA file, flush last sequence
             if sequence:
-                out.write("".join(sequence.split()) + '\n')
+                out.write("".join(sequence.split()) + "\n")
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     __main__()

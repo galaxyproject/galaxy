@@ -1,5 +1,7 @@
 <template>
-    <JobMetrics class="job-metrics" :job-id="args.job_id" />
+    <b-card nobody>
+        <JobMetrics class="job-metrics" :job-id="args.job_id" />
+    </b-card>
 </template>
 
 <script>

@@ -4,7 +4,7 @@ import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */
 var UPDATE_DELAY = 2000;
-var NON_TERMINAL_STATES = ["new", "queued", "running"];
+var NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
 var ERROR_STATES = ["error", "deleted"];
 var TERMINAL_STATES = ["ok"].concat(ERROR_STATES);
 /** Fetch state on add or just wait for polling to start. */
@@ -208,4 +208,10 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     },
 });
 
-export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD, NON_TERMINAL_STATES, ERROR_STATES };
+export default {
+    JobStatesSummary,
+    JobStatesSummaryCollection,
+    FETCH_STATE_ON_ADD,
+    NON_TERMINAL_STATES,
+    ERROR_STATES,
+};

@@ -1,6 +1,6 @@
 <template>
-    <div class="my-1">
-        <small class="position-absolute text-center w-100" v-if="note">
+    <div class="my-1 progressContainer">
+        <small v-if="note" class="progressNote">
             {{ note }}<span v-if="loading">.<span class="blinking">..</span></span>
         </small>
         <b-progress :max="total">
@@ -46,3 +46,13 @@ export default {
     },
 };
 </script>
+<style lang="css" scoped>
+.progressNote {
+    position: absolute;
+    text-align: center;
+    width: 100%;
+}
+.progressContainer {
+    position: relative;
+}
+</style>

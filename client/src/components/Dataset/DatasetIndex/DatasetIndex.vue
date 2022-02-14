@@ -6,8 +6,7 @@
             striped
             hover
             :fields="fields"
-            :items="directoryContent"
-        >
+            :items="directoryContent">
         </b-table>
         <div v-if="errorMessage">
             <b v-if="path">{{ path }}</b> {{ errorMessage }}
@@ -46,10 +45,7 @@ export default {
                     pathDestination.filepath
                 );
             } else if (this.path === undefined || this.path === "undefined") {
-                this.directoryContent = this.removeParentDirectory(
-                    pathDestination.datasetContent,
-                    pathDestination.datasetRootDir
-                );
+                this.directoryContent = pathDestination.datasetContent;
             } else {
                 this.errorMessage = `is not found!`;
             }

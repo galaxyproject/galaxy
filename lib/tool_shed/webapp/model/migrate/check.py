@@ -2,10 +2,18 @@ import logging
 import os.path
 import sys
 
-from migrate.versioning import repository, schema
-from sqlalchemy import create_engine, MetaData, Table
+from migrate.versioning import (
+    repository,
+    schema,
+)
+from sqlalchemy import (
+    create_engine,
+    MetaData,
+    Table,
+)
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy_utils import (
+
+from galaxy.model.database_utils import (
     create_database,
     database_exists,
 )
@@ -13,11 +21,11 @@ from sqlalchemy_utils import (
 log = logging.getLogger(__name__)
 
 # path relative to galaxy
-migrate_repository_directory = os.path.dirname(__file__).replace(os.getcwd() + os.path.sep, '', 1)
+migrate_repository_directory = os.path.dirname(__file__).replace(os.getcwd() + os.path.sep, "", 1)
 migrate_repository = repository.Repository(migrate_repository_directory)
 
 
-def create_or_verify_database(url, engine_options={}):
+def create_or_verify_database(url, engine_options=None):
     """
     Check that the database is use-able, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
@@ -29,9 +37,10 @@ def create_or_verify_database(url, engine_options={}):
     4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
 
     """
+    engine_options = engine_options or {}
     # Create engine and metadata
     if not database_exists(url):
-        message = "Creating database for URI [%s]" % url
+        message = f"Creating database for URI [{url}]"
         log.info(message)
         create_database(url)
 
@@ -67,7 +76,10 @@ def create_or_verify_database(url, engine_options={}):
     # Verify that the code and the DB are in sync
     db_schema = schema.ControlledSchema(engine, migrate_repository)
     if migrate_repository.versions.latest != db_schema.version:
-        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (db_schema.version, migrate_repository.versions.latest)
+        exception_msg = "Your database has version '%d' but this code expects version '%d'.  " % (
+            db_schema.version,
+            migrate_repository.versions.latest,
+        )
         exception_msg += "Back up your database and then migrate the schema by running the following from your Galaxy installation directory:"
         exception_msg += "\n\nsh manage_db.sh upgrade tool_shed\n"
         raise Exception(exception_msg)
@@ -80,7 +92,7 @@ def migrate_to_current_version(engine, schema):
     changeset = schema.changeset(None)
     for ver, change in changeset:
         nextver = ver + changeset.step
-        log.info('Migrating {} -> {}... '.format(ver, nextver))
+        log.info(f"Migrating {ver} -> {nextver}... ")
         old_stdout = sys.stdout
 
         class FakeStdout:
@@ -92,6 +104,7 @@ def migrate_to_current_version(engine, schema):
 
             def flush(self):
                 pass
+
         sys.stdout = FakeStdout()
         try:
             schema.runchange(ver, change, changeset.step)

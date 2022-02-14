@@ -54,12 +54,8 @@ class _SpalnDb(Data):
 
     def generate_primary_file(self, dataset=None):
         rval = ["<html><head><title>Spaln Database</title></head><p/>"]
-        rval.append(
-            "<div>This composite dataset is composed of the following files:<p/><ul>"
-        )
-        for composite_name, composite_file in self.get_composite_files(
-            dataset=dataset
-        ).items():
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ""
             if composite_file.get("description"):
@@ -68,10 +64,7 @@ class _SpalnDb(Data):
                     % (fn, fn, composite_file.get("description"), opt_text)
                 )
             else:
-                rval.append(
-                    '<li><a href="%s" type="application/binary">%s</a>%s</li>'
-                    % (fn, fn, opt_text)
-                )
+                rval.append('<li><a href="%s" type="application/binary">%s</a>%s</li>' % (fn, fn, opt_text))
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
@@ -85,16 +78,16 @@ class _SpalnDb(Data):
             "<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>"
             % (dataset.name, dataset.name)
         ]
-        for i, fname in enumerate(flist):
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="{}">{}</a></li>'.format(sfname, sfname))
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
         with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"
@@ -110,21 +103,12 @@ class _SpalnDb(Data):
         except Exception:
             return "spaln database (multiple files)"
 
-    def display_data(
-        self,
-        trans,
-        data,
-        preview=False,
-        filename=None,
-        to_ext=None,
-        size=None,
-        offset=None,
-        **kwd
-    ):
+    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
+        headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(
                 trans,
@@ -134,7 +118,8 @@ class _SpalnDb(Data):
                 to_ext=to_ext,
                 size=size,
                 offset=offset,
-                **kwd
+                headers=headers,
+                **kwd,
             )
         if self.file_ext == "spalndbn":
             title = "This is a nucleotide-query spaln database"
@@ -155,9 +140,9 @@ class _SpalnDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str(
-            "<html><head><title>%s</title></head><body><pre>%s</pre></body></html>"
-            % (title, msg)
+        return (
+            smart_str("<html><head><title>%s</title></head><body><pre>%s</pre></body></html>" % (title, msg)),
+            headers,
         )
 
     def merge(split_files, output_file):

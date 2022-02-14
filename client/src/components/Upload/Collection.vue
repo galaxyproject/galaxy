@@ -4,7 +4,6 @@
         <table class="upload-table ui-table-striped" v-show="!showHelper" ref="uploadTable">
             <thead>
                 <tr>
-                    <th>Name</th>
                     <th>Size</th>
                     <th>Status</th>
                     <th />
@@ -18,8 +17,7 @@
                 container-class="upload-footer-collection-type"
                 ref="footerCollectionType"
                 v-model="collectionType"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option value="list">List</option>
                 <option value="paired">Pair</option>
                 <option value="list:paired">List of Pairs</option>
@@ -29,29 +27,27 @@
                 container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
             <span class="upload-footer-title">Genome (set all):</span>
             <select2 container-class="upload-footer-genome" ref="footerGenome" v-model="genome" :enabled="!running">
-                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">{{
-                    listGenome.text
-                }}</option>
+                <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
+                    {{ listGenome.text }}
+                </option>
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="app.dismiss()">
-                {{ btnCloseTitle }}
+            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+                {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
                 ref="btnReset"
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset"
-            >
+                :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
             <b-button
@@ -59,8 +55,7 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
-                :disabled="counterRunning == 0"
-            >
+                :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
             <b-button
@@ -69,8 +64,7 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!enableBuild"
-                :variant="enableBuild ? 'primary' : ''"
-            >
+                :variant="enableBuild ? 'primary' : ''">
                 {{ btnBuildTitle }}
             </b-button>
             <b-button
@@ -79,17 +73,15 @@
                 id="btn-start"
                 @click="_eventStart"
                 :disabled="!enableStart"
-                :variant="enableStart ? 'primary' : ''"
-            >
+                :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
             <b-button
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate"
-                :disabled="!enableSources"
-            >
+                @click="_eventCreate(false)"
+                :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
             <b-button
@@ -98,8 +90,7 @@
                 id="btn-ftp"
                 @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="remoteFiles"
-            >
+                v-if="remoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
@@ -108,8 +99,7 @@
                 id="btn-local"
                 :title="btnLocalTitle"
                 @click="uploadSelect"
-                :disabled="!enableSources"
-            >
+                :disabled="!enableSources">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </b-button>
         </template>
@@ -122,15 +112,15 @@ import _ from "underscore";
 import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadBoxMixin from "./UploadBoxMixin";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
+import { uploadModelsToPayload } from "./helpers";
+import { BButton } from "bootstrap-vue";
 
 export default {
     mixins: [UploadBoxMixin],
+    components: { BButton },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
@@ -159,7 +149,6 @@ export default {
             btnBuildTitle: _l("Build"),
             btnStopTitle: _l("Pause"),
             btnResetTitle: _l("Reset"),
-            btnCloseTitle: this.app.callback ? _l("Cancel") : _l("Close"),
         };
     },
     created() {
@@ -171,12 +160,17 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);
@@ -199,6 +193,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
+            chunkSize: this.app.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);
@@ -231,6 +226,7 @@ export default {
                 file_mode: file.mode || "local",
                 file_path: file.path,
                 file_data: file,
+                file_uri: file.uri,
                 extension: this.extension,
                 genome: this.genome,
             };
@@ -256,29 +252,7 @@ export default {
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
-            this.app.hide();
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            if (this.counterAnnounce == 0 || this.counterRunning > 0) {
-                return;
-            }
-            this.uploadSize = 0;
-            this.uploadCompleted = 0;
-            this.collection.each((model) => {
-                if (model.get("status") == "init") {
-                    model.set("status", "queued");
-                    this.uploadSize += model.get("file_size");
-                }
-            });
-            this.appModel.set({ percentage: 0, status: "success" });
-            this.counterRunning = this.counterAnnounce;
-            this.history_id = this.app.currentHistory();
-            // package ftp files separately, and remove them from queue
-            this._uploadFtp();
-            this.uploadbox.start();
-            this._updateStateForCounters();
+            this.$emit("dismiss");
         },
 
         /** Remove all */

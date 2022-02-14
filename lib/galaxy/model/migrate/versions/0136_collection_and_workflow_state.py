@@ -11,7 +11,7 @@ from sqlalchemy import (
     Integer,
     MetaData,
     String,
-    Table
+    Table,
 )
 
 from galaxy.model.custom_types import TrimmedString
@@ -19,7 +19,7 @@ from galaxy.model.migrate.versions.util import (
     add_column,
     create_table,
     drop_column,
-    drop_table
+    drop_table,
 )
 
 log = logging.getLogger(__name__)
@@ -27,7 +27,8 @@ now = datetime.datetime.utcnow
 metadata = MetaData()
 
 workflow_invocation_output_dataset_association_table = Table(
-    "workflow_invocation_output_dataset_association", metadata,
+    "workflow_invocation_output_dataset_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
@@ -36,16 +37,23 @@ workflow_invocation_output_dataset_association_table = Table(
 )
 
 workflow_invocation_output_dataset_collection_association_table = Table(
-    "workflow_invocation_output_dataset_collection_association", metadata,
+    "workflow_invocation_output_dataset_collection_association",
+    metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name="fk_wiodca_wii"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name="fk_wiodca_wsi")),
+    Column(
+        "dataset_collection_id",
+        Integer,
+        ForeignKey("history_dataset_collection_association.id", name="fk_wiodca_dci"),
+        index=True,
+    ),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name="fk_wiodca_woi")),
 )
 
 workflow_invocation_step_output_dataset_association_table = Table(
-    "workflow_invocation_step_output_dataset_association", metadata,
+    "workflow_invocation_step_output_dataset_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
@@ -53,22 +61,35 @@ workflow_invocation_step_output_dataset_association_table = Table(
 )
 
 workflow_invocation_step_output_dataset_collection_association_table = Table(
-    "workflow_invocation_step_output_dataset_collection_association", metadata,
+    "workflow_invocation_step_output_dataset_collection_association",
+    metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
+    Column(
+        "workflow_invocation_step_id",
+        Integer,
+        ForeignKey("workflow_invocation_step.id", name="fk_wisodca_wisi"),
+        index=True,
+    ),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name="fk_wisodca_wsi")),
+    Column(
+        "dataset_collection_id",
+        Integer,
+        ForeignKey("history_dataset_collection_association.id", name="fk_wisodca_dci"),
+        index=True,
+    ),
     Column("output_name", String(255), nullable=True),
 )
 
 implicit_collection_jobs_table = Table(
-    "implicit_collection_jobs", metadata,
+    "implicit_collection_jobs",
+    metadata,
     Column("id", Integer, primary_key=True),
-    Column("populated_state", TrimmedString(64), default='new', nullable=False),
+    Column("populated_state", TrimmedString(64), default="new", nullable=False),
 )
 
 implicit_collection_jobs_job_association_table = Table(
-    "implicit_collection_jobs_job_association", metadata,
+    "implicit_collection_jobs_job_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
@@ -86,7 +107,7 @@ def get_new_tables():
         workflow_invocation_step_output_dataset_association_table,
         workflow_invocation_step_output_dataset_collection_association_table,
         implicit_collection_jobs_table,
-        implicit_collection_jobs_job_association_table
+        implicit_collection_jobs_job_association_table,
     ]
 
 
@@ -100,8 +121,10 @@ def upgrade(migrate_engine):
 
     # Set default for creation to scheduled, actual mapping has new as default.
     workflow_invocation_step_state_column = Column("state", TrimmedString(64), default="scheduled")
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True)
+    if migrate_engine.name in ["postgres", "postgresql"]:
+        implicit_collection_jobs_id_column = Column(
+            "implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True
+        )
         job_id_column = Column("job_id", Integer, ForeignKey("job.id"), nullable=True)
     else:
         implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, nullable=True)
@@ -112,14 +135,17 @@ def upgrade(migrate_engine):
     add_column(job_id_column, "history_dataset_collection_association", metadata)
     add_column(dataset_collection_element_count_column, "dataset_collection", metadata)
 
-    implicit_collection_jobs_id_column = Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True)
+    implicit_collection_jobs_id_column = Column(
+        "implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), nullable=True
+    )
     add_column(implicit_collection_jobs_id_column, "workflow_invocation_step", metadata)
     add_column(workflow_invocation_step_state_column, "workflow_invocation_step", metadata)
 
-    cmd = \
-        "UPDATE dataset_collection SET element_count = " + \
-        "(SELECT (CASE WHEN count(*) > 0 THEN count(*) ELSE 0 END) FROM dataset_collection_element WHERE " + \
-        "dataset_collection_element.dataset_collection_id = dataset_collection.id)"
+    cmd = (
+        "UPDATE dataset_collection SET element_count = "
+        + "(SELECT (CASE WHEN count(*) > 0 THEN count(*) ELSE 0 END) FROM dataset_collection_element WHERE "
+        + "dataset_collection_element.dataset_collection_id = dataset_collection.id)"
+    )
     migrate_engine.execute(cmd)
 
 

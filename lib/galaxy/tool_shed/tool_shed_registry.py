@@ -1,8 +1,5 @@
 import logging
-from collections import (
-    namedtuple,
-    OrderedDict,
-)
+from typing import NamedTuple
 
 from galaxy.util import parse_xml_string
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
@@ -16,39 +13,41 @@ DEFAULT_TOOL_SHEDS_CONF_XML = """<?xml version="1.0"?>
 </tool_sheds>
 """
 
-AUTH_TUPLE = namedtuple('AuthSetting', 'username password')
+
+class AUTH_TUPLE(NamedTuple):
+    username: str
+    password: str
 
 
 class Registry:
-
     def __init__(self, config=None):
-        self.tool_sheds = OrderedDict()
-        self.tool_sheds_auth = OrderedDict()
+        self.tool_sheds = {}
+        self.tool_sheds_auth = {}
         if config:
             # Parse tool_sheds_conf.xml
             tree, error_message = parse_xml(config)
             if tree is None:
-                log.warning("Unable to load references to tool sheds defined in file %s" % str(config))
+                log.warning(f"Unable to load references to tool sheds defined in file {str(config)}")
                 return
             root = tree.getroot()
         else:
             root = parse_xml_string(DEFAULT_TOOL_SHEDS_CONF_XML)
             config = "internal default config"
-        log.debug('Loading references to tool sheds from %s' % config)
-        for elem in root.findall('tool_shed'):
+        log.debug(f"Loading references to tool sheds from {config}")
+        for elem in root.findall("tool_shed"):
             try:
-                name = elem.get('name', None)
-                url = elem.get('url', None)
-                username = elem.get('user', None)
-                password = elem.get('pass', None)
+                name = elem.get("name", None)
+                url = elem.get("url", None)
+                username = elem.get("user", None)
+                password = elem.get("pass", None)
                 if name and url:
                     self.tool_sheds[name] = url
                     self.tool_sheds_auth[name] = None
-                    log.debug('Loaded reference to tool shed: %s' % name)
+                    log.debug(f"Loaded reference to tool shed: {name}")
                 if name and url and username and password:
                     self.tool_sheds_auth[name] = AUTH_TUPLE(username, password)
             except Exception as e:
-                log.warning('Error loading reference to tool shed "{}", problem: {}'.format(name, str(e)))
+                log.warning(f'Error loading reference to tool shed "{name}", problem: {str(e)}')
 
     def url_auth(self, url):
         """
@@ -64,5 +63,5 @@ class Registry:
             shed_url_sans_protocol = remove_protocol_from_tool_shed_url(shed_url)
             if url_sans_protocol.startswith(shed_url_sans_protocol):
                 return self.tool_sheds_auth[shed_name]
-        log.debug("Invalid url '%s' received by tool shed registry's url_auth method." % str(url))
+        log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
         return None

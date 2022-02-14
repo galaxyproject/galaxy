@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
-    >
+        :hide-modal="onCancel">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -15,15 +14,14 @@
                 :multiple="multiple"
                 :filter="filter"
                 @clicked="onClick"
-                @load="load"
-            />
+                @load="load" />
         </template>
         <template v-slot:buttons>
             <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-left mr-1" @click="onUpload">
+            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
             </b-btn>
@@ -33,8 +31,7 @@
                 class="float-right ml-1"
                 variant="primary"
                 @click="onOk"
-                :disabled="!hasValue"
-            >
+                :disabled="!hasValue">
                 Ok
             </b-btn>
         </template>
@@ -75,6 +72,10 @@ export default {
         modalStatic: {
             type: Boolean,
             default: false,
+        },
+        allowUpload: {
+            type: Boolean,
+            default: true,
         },
     },
     data() {
@@ -130,6 +131,7 @@ export default {
                 format: this.format,
                 callback: this.callback,
                 modalShow: true,
+                selectable: true,
             };
             mountUploadModal(propsData);
             this.modalShow = false;

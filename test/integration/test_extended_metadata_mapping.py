@@ -19,7 +19,7 @@ class ExtendedMetadataMappingIntegrationTestCase(integration_util.IntegrationTes
         config["retry_metadata_internally"] = False
 
     def setUp(self):
-        super(ExtendedMetadataMappingIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
@@ -27,6 +27,6 @@ class ExtendedMetadataMappingIntegrationTestCase(integration_util.IntegrationTes
     def test_map_over_collection(self, history_id):
         hdca_id = self._build_pair(history_id, ["123", "456"])
         inputs = {
-            "input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
         }
         self._run_and_check_simple_collection_mapping(history_id, inputs)

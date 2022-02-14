@@ -2,9 +2,11 @@
 Mixins for Ratable model managers and serializers.
 """
 import logging
+from typing import Type
 
 from sqlalchemy.sql.expression import func
 
+from galaxy.model import ItemRatingAssociation
 from . import base
 
 log = logging.getLogger(__name__)
@@ -12,8 +14,7 @@ log = logging.getLogger(__name__)
 
 class RatableManagerMixin:
 
-    #: class of RatingAssociation (e.g. HistoryRatingAssociation)
-    rating_assoc = None
+    rating_assoc: Type[ItemRatingAssociation]
 
     def rating(self, item, user, as_int=True):
         """Returns the integer rating given to this item by the user.
@@ -48,7 +49,7 @@ class RatableManagerMixin:
         # TODO?: update and create to RatingsManager (if not overkill)
         rating = self.rating(item, user, as_int=False)
         if not rating:
-            rating = self.rating_assoc(user=user)
+            rating = self.rating_assoc(user, item)
             self.associate(rating, item)
         rating.rating = value
 
@@ -61,16 +62,16 @@ class RatableManagerMixin:
 
 
 class RatableSerializerMixin:
-
     def add_serializers(self):
-        self.serializers['user_rating'] = self.serialize_user_rating
-        self.serializers['community_rating'] = self.serialize_community_rating
+        self.serializers["user_rating"] = self.serialize_user_rating
+        self.serializers["community_rating"] = self.serialize_community_rating
 
     def serialize_user_rating(self, item, key, user=None, **context):
         """Returns the integer rating given to this item by the user."""
         if not user:
-            raise base.ModelSerializingError('user_rating requires a user',
-                model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
+            raise base.ModelSerializingError(
+                "user_rating requires a user", model_class=self.manager.model_class, id=self.serialize_id(item, "id")
+            )
         return self.manager.rating(item, user)
 
     def serialize_community_rating(self, item, key, **context):
@@ -83,26 +84,25 @@ class RatableSerializerMixin:
         # than getting the rows and calc'ing both here with one query
         manager = self.manager
         return {
-            'average' : manager.ratings_avg(item),
-            'count'   : manager.ratings_count(item),
+            "average": manager.ratings_avg(item),
+            "count": manager.ratings_count(item),
         }
 
 
 class RatableDeserializerMixin:
-
     def add_deserializers(self):
-        self.deserializers['user_rating'] = self.deserialize_rating
+        self.deserializers["user_rating"] = self.deserialize_rating
 
     def deserialize_rating(self, item, key, val, user=None, **context):
         if not user:
-            raise base.ModelDeserializingError('user_rating requires a user',
-                model_class=self.manager.model_class, id=self.serialize_id(item, 'id'))
+            raise base.ModelDeserializingError(
+                "user_rating requires a user", model_class=self.manager.model_class, id=self.serialize_id(item, "id")
+            )
         val = self.validate.int_range(key, val, 0, 5)
         return self.manager.rate(item, user, val, flush=False)
 
 
 class RatableFilterMixin:
-
     def _ratings_avg_accessor(self, item):
         return self.manager.ratings_avg(item)
 
@@ -111,14 +111,16 @@ class RatableFilterMixin:
         Adds the following filters:
             `community_rating`: filter
         """
-        self.fn_filter_parsers.update({
-            'community_rating': {
-                'op': {
-                    'eq' : lambda i, v: self._ratings_avg_accessor(i) == v,
-                    # TODO: default to greater than (currently 'eq' due to base/controller.py)
-                    'ge' : lambda i, v: self._ratings_avg_accessor(i) >= v,
-                    'le' : lambda i, v: self._ratings_avg_accessor(i) <= v,
-                },
-                'val' : float
+        self.fn_filter_parsers.update(
+            {
+                "community_rating": {
+                    "op": {
+                        "eq": lambda i, v: self._ratings_avg_accessor(i) == v,
+                        # TODO: default to greater than (currently 'eq' due to base/controller.py)
+                        "ge": lambda i, v: self._ratings_avg_accessor(i) >= v,
+                        "le": lambda i, v: self._ratings_avg_accessor(i) <= v,
+                    },
+                    "val": float,
+                }
             }
-        })
+        )

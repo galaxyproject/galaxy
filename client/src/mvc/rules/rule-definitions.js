@@ -270,13 +270,19 @@ const RULES = {
                 rule.replacement = component.addColumnRegexReplacement;
             }
             if (component.addColumnRegexGroupCount) {
-                rule.group_count = component.addColumnRegexGroupCount;
+                rule.group_count = parseInt(component.addColumnRegexGroupCount);
             }
         },
         apply: (rule, data, sources, columns) => {
             const target = rule.target_column;
             const rval = applyRegex(rule.expression, target, data, rule.replacement, rule.group_count);
-            columns.push(NEW_COLUMN);
+            if (rule.group_count) {
+                for (let i = 0; i < rule.group_count; i++) {
+                    columns.push(NEW_COLUMN);
+                }
+            } else {
+                columns.push(NEW_COLUMN);
+            }
             rval.columns = columns;
             return rval;
         },
@@ -788,7 +794,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
         ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"],
+        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     group_tags: {
         multiple: true,
@@ -796,7 +802,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
         ),
-        modes: ["raw", "ftp", "datasets", "library_datasets"],
+        modes: ["raw", "ftp", "datasets", "library_datasets", "collection_contents"],
     },
     name: {
         label: _l("Name"),

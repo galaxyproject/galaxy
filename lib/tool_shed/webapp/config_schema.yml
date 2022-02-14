@@ -172,6 +172,34 @@ mapping:
           You can enter tracking code here to track visitor's behavior
           through your Google Analytics account. Example: UA-XXXXXXXX-Y
 
+      plausible_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Plausible server (including https) so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      plausible_domain:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Galaxy server so this can be used for tracking
+          with Plausible (https://plausible.io/).
+
+      matomo_server:
+        type: str
+        required: false
+        desc: |
+          Please enter the URL for the Matomo server (including https) so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
+      matomo_site_id:
+        type: str
+        required: false
+        desc: |
+          Please enter the site ID for the Matomo server so this can be used for tracking
+          with Matomo (https://matomo.org/).
+
       id_secret:
         type: str
         default: changethisinproductiontoo
@@ -549,6 +577,14 @@ mapping:
           sentry_dsn will enable the Sentry middleware and errors will be sent to the
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
+
+      sentry_event_level:
+        type: str
+        default: ERROR
+        required: false
+        desc: |
+          Determines the minimum log level that will be sent as an event to Sentry.
+          Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 
       session_duration:
         type: int

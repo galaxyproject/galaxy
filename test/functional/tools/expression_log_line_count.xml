@@ -10,5 +10,8 @@
     <outputs>
         <output type="integer" name="out1" from="output" />
     </outputs>
-    <help></help>
+    <tests>
+    </tests>
+    <help>
+    </help>
 </tool>

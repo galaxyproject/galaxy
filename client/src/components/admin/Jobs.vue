@@ -1,176 +1,149 @@
 <template>
     <div>
-        <b-container class="mb-3">
-            <b-row>
-                <b-col md="6">
-                    <h2>
-                        <span id="jobs-title">Jobs</span>
-                    </h2>
-                </b-col>
-                <b-col>
-                    <job-lock />
-                </b-col>
-            </b-row>
-        </b-container>
-        <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
+        <h2 id="jobs-title">Jobs</h2>
+        <b-alert v-if="this.message" :variant="galaxyKwdToBootstrap(status)" show>
             {{ message }}
         </b-alert>
-        <b-alert variant="info" show>
-            <p>
-                Unfinished and recently finished jobs are displayed on this page. The 'cutoff' input box will do two
-                things -- it will limit the display of unfinished jobs to only those jobs that have not had their job
-                state updated recently, and it will limit the recently finished jobs list to only displaying jobs that
-                have finished since the cutoff.
-            </p>
+        <p>
+            Unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently terminal jobs (in the
+            state 'error' or 'ok') are displayed on this page. The 'cutoff' input box will limit the display of jobs to
+            only those jobs that have had their state updated in the specified timeframe.
+        </p>
+        <p>
             If any jobs are displayed, you may choose to stop them. Your stop message will be displayed to the user as:
             "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong> For more information or
             help, report this error".
-        </b-alert>
-        <b-alert v-if="loading" variant="info" show>
-            Waiting for data
-        </b-alert>
+        </p>
+        <h3>Job Control</h3>
+        <job-lock />
+        <b-alert v-if="loading" variant="info" show> Waiting for data </b-alert>
         <div v-else>
-            <b-container class="mb-3">
-                <b-row>
-                    <b-col md="6">
-                        <b-form name="jobs" @submit.prevent="onRefresh">
-                            <b-form-group
-                                id="cutoff"
-                                label="Update Jobs"
-                                label-for="cutoff-seconds"
-                                description="Cutoff in seconds"
-                            >
-                                <b-input-group>
-                                    <b-form-input id="cutoff" type="number" placeholder="180" v-model="cutoff">
-                                    </b-form-input>
-                                    <b-input-group-append>
-                                        <b-btn type="submit">Refresh</b-btn>
-                                    </b-input-group-append>
-                                </b-input-group>
-                            </b-form-group>
-                        </b-form>
-                    </b-col>
-                </b-row>
-                <b-row>
-                    <b-col md="6">
+            <h3>Job Details</h3>
+            <b-row>
+                <b-col class="col-sm-4">
+                    <b-form-group
+                        label="Filters"
+                        label-for="show-all-running"
+                        description="Select whether or not to use the cutoff, or show all jobs.">
+                        <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch @change="update">
+                            {{ showAllRunning ? "Showing all currently running jobs" : "Time cutoff applied to query" }}
+                        </b-form-checkbox>
+                    </b-form-group>
+                    <b-form name="jobs" @submit.prevent="onRefresh">
                         <b-form-group
-                            label="Filter Jobs"
-                            label-for="filter-regex"
-                            description="Search for strings or regular expressions"
-                        >
-                            <b-input-group id="filter-regex">
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''"
-                                />
+                            id="cutoff"
+                            label="Cutoff time period"
+                            :disabled="showAllRunning"
+                            description="in minutes">
+                            <b-input-group>
+                                <b-form-input id="cutoff" type="number" v-model="cutoffMin"> </b-form-input>
                                 <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                    <b-btn type="submit">Refresh</b-btn>
                                 </b-input-group-append>
                             </b-input-group>
                         </b-form-group>
-                    </b-col>
-                    <b-col>
-                        <b-card v-if="jobsItemsComputed.length" header="Stop Selected Jobs">
-                            <b-form @submit.prevent="onStopJobs">
-                                <b-form-group label-for="stop-message" description="will be displayed to the user">
-                                    <b-input-group>
-                                        <b-form-input
-                                            id="stop-message"
-                                            v-model="stopMessage"
-                                            placeholder="Stop message"
-                                            required
-                                        >
-                                        </b-form-input>
-                                        <b-input-group-append>
-                                            <b-btn type="submit">Submit</b-btn>
-                                        </b-input-group-append>
-                                    </b-input-group>
-                                </b-form-group>
-                            </b-form>
-                        </b-card>
-                    </b-col>
-                </b-row>
-            </b-container>
-            <b-alert v-if="!jobsItemsComputed.length" variant="secondary" show>
-                There are no unfinished jobs to show with current cutoff time.
+                    </b-form>
+                    <b-form-group
+                        label="Filter Jobs"
+                        label-for="filter-regex"
+                        description="by strings or regular expressions">
+                        <b-input-group id="filter-regex">
+                            <b-form-input
+                                v-model="filter"
+                                placeholder="Type to Search"
+                                @keyup.esc.native="filter = ''" />
+                            <b-input-group-append>
+                                <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-col>
+            </b-row>
+            <transition name="fade">
+                <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                    <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                        <b-input-group>
+                            <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
+                            </b-form-input>
+                            <b-input-group-append>
+                                <b-btn type="submit">Submit</b-btn>
+                            </b-input-group-append>
+                        </b-input-group>
+                    </b-form-group>
+                </b-form>
+            </transition>
+            <h4>Unfinished Jobs</h4>
+            <b-alert v-if="!unfinishedJobs.length" variant="secondary" show>
+                There are no unfinished jobs<template v-if="!showAllRunning">
+                    to show with current cutoff time of {{ cutoffMin }} minutes</template
+                >.
             </b-alert>
             <b-table
                 v-else
-                :fields="jobsFieldsComputed"
-                :items="jobsItemsComputed"
                 v-model="jobsItemsModel"
+                :fields="unfinishedJobFields"
+                :items="unfinishedJobs"
                 :filter="filter"
                 hover
                 responsive
                 striped
                 caption-top
-                @row-clicked="showRowDetails"
-                :busy="busy"
-            >
+                @row-clicked="toggleDetails"
+                :busy="busy">
                 <template v-slot:table-caption>
-                    Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
-                    {{ cutoffDisplay }} seconds.
+                    These jobs are unfinished and have had their state updated in the previous
+                    {{ cutoffMin }} minutes. For currently running jobs, the "Last Update" column should indicate the
+                    runtime so far.
                 </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
-                        @change="toggleAll"
-                    ></b-form-checkbox>
+                        @change="toggleAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(selected)="data">
                     <b-form-checkbox
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
                         :key="data.index"
-                        :value="data.item['id']"
-                    ></b-form-checkbox>
-                </template>
-                <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
-                        {{ data.value.id }}
-                    </b-link>
-                </template>
-                <template v-slot:row-details="row">
-                    <job-details :command-line="row.item.command_line" :job-id="row.item.jobId" />
-                </template>
-            </b-table>
-            <b-alert v-if="!recentJobsItemsComputed.length" variant="secondary" show>
-                There are no recently finished jobs to show with current cutoff time.
-            </b-alert>
-            <b-table
-                v-else
-                :fields="recentJobsFieldsComputed"
-                :items="recentJobsItemsComputed"
-                :filter="filter"
-                hover
-                responsive
-                striped
-                caption-top
-                @row-clicked="showRowDetails"
-                :busy="busy"
-            >
-                <template v-slot:table-caption>
-                    Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
-                </template>
-                <template v-slot:cell(job_info)="data">
-                    <b-link :href="data.value.info_url" @click.prevent="clickJobInfo(data.value.id)">
-                        {{ data.value.id }}
-                    </b-link>
+                        :value="data.item['id']"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <utc-date :date="data.value" mode="elapsed" />
                 </template>
                 <template v-slot:row-details="row">
-                    <job-details :command-line="row.item.command_line" :job-id="row.item.id" />
+                    <job-details :job="row.item" />
                 </template>
             </b-table>
-            <b-modal ref="job-info-modal" scrollable hide-header ok-only @hidden="resetModalContents">
-                <div class="info-frame-container">
-                    <iframe :src="selectedJobUrl"></iframe>
-                </div>
-            </b-modal>
+
+            <template v-if="!showAllRunning">
+                <h4>Finished Jobs</h4>
+                <b-alert v-if="!finishedJobs.length" variant="secondary" show>
+                    There are no recently finished jobs to show with current cutoff time of {{ cutoffMin }} minutes.
+                </b-alert>
+
+                <b-table
+                    v-else
+                    :fields="finishedJobFields"
+                    :items="finishedJobs"
+                    :filter="filter"
+                    hover
+                    responsive
+                    striped
+                    caption-top
+                    @row-clicked="toggleDetails"
+                    :busy="busy">
+                    <template v-slot:table-caption>
+                        These jobs have completed in the previous {{ cutoffMin }} minutes.
+                    </template>
+                    <template v-slot:cell(update_time)="data">
+                        <utc-date :date="data.value" mode="elapsed" />
+                    </template>
+                    <template v-slot:row-details="row">
+                        <job-details :job="row.item" />
+                    </template>
+                </b-table>
+            </template>
         </div>
     </div>
 </template>
@@ -179,8 +152,10 @@
 import { getAppRoot } from "onload/loadConfig";
 import UtcDate from "components/UtcDate";
 import axios from "axios";
-import JobDetails from "./JobDetails";
+import JobDetails from "components/JobInformation/JobDetails";
 import JobLock from "./JobLock";
+import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import { commonJobFields } from "./JobFields";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -191,19 +166,16 @@ export default {
     components: { UtcDate, JobDetails, JobLock },
     data() {
         return {
-            jobsItems: [],
+            jobs: [],
+            finishedJobs: [],
+            unfinishedJobs: [],
             jobsItemsModel: [],
-            recentJobsItems: [],
-            jobsFields: [
-                { key: "job_info", label: "Job ID", sortable: true },
-                { key: "user" },
-                { key: "tool_id", label: "Tool", tdClass: ["break-word"] },
-                { key: "state" },
-                { key: "job_runner_name", label: "Job Runner" },
-                { key: "job_runner_external_id", label: "PID/Cluster ID", sortable: true },
+            finishedJobFields: [...commonJobFields, { key: "update_time", label: "Finished", sortable: true }],
+            unfinishedJobFields: [
+                { key: "selected", label: "" },
+                ...commonJobFields,
+                { key: "update_time", label: "Last Update", sortable: true },
             ],
-            cutoff: 180,
-            cutoffDisplay: 180,
             selectedStopJobIds: [],
             selectedJobId: null,
             allSelected: false,
@@ -214,6 +186,8 @@ export default {
             status: "",
             loading: true,
             busy: true,
+            cutoffMin: 5,
+            showAllRunning: false,
         };
     },
     watch: {
@@ -229,19 +203,38 @@ export default {
                 this.allSelected = false;
             }
         },
+        jobs(newVal) {
+            const unfinishedJobs = [];
+            const finishedJobs = [];
+            newVal.forEach((item) => {
+                item._cellVariants = { state: this.translateState(item.state) };
+                if (JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(item.state)) {
+                    unfinishedJobs.push(item);
+                } else {
+                    finishedJobs.push(item);
+                }
+            });
+            this.unfinishedJobs = unfinishedJobs;
+            this.finishedJobs = finishedJobs;
+        },
     },
     methods: {
         update() {
             this.busy = true;
             let params = [];
-            params.push(`cutoff=${this.cutoff}`);
+            params.push("view=admin_job_list");
+            if (this.showAllRunning) {
+                params.push("state=running");
+            } else {
+                const cutoff = Math.floor(this.cutoffMin);
+                const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
+                params.push(`date_range_min=${dateRangeMin}`);
+            }
             params = params.join("&");
             axios
-                .get(`${getAppRoot()}admin/jobs_list?${params}`)
+                .get(`${getAppRoot()}api/jobs?${params}`)
                 .then((response) => {
-                    this.jobsItems = response.data.jobs;
-                    this.recentJobsItems = response.data.recent_jobs;
-                    this.cutoffDisplay = response.data.cutoff;
+                    this.jobs = response.data;
                     this.message = response.data.message;
                     this.status = response.data.status;
                     this.loading = false;
@@ -263,17 +256,9 @@ export default {
                 this.stopMessage = "";
             });
         },
-        clickJobInfo(id) {
-            this.selectedJobId = id;
-            this.$refs["job-info-modal"].show();
-        },
-        resetModalContents() {
-            this.selectedJobId = null;
-        },
-        showRowDetails(row, index, e) {
-            if (e.target.nodeName != "A") {
-                row._showDetails = !row._showDetails;
-            }
+
+        toggleDetails(item) {
+            this.$set(item, "_showDetails", !item._showDetails);
         },
         translateState(state) {
             const translateDict = {
@@ -295,10 +280,6 @@ export default {
                 };
             });
         },
-        computeFields(fields) {
-            const f = Array.from(fields).slice(0);
-            return f;
-        },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];
         },
@@ -318,28 +299,6 @@ export default {
             } else {
                 return variant;
             }
-        },
-    },
-    computed: {
-        jobsItemsComputed() {
-            return this.computeItems(this.jobsItems);
-        },
-        recentJobsItemsComputed() {
-            return this.computeItems(this.recentJobsItems);
-        },
-        jobsFieldsComputed() {
-            const f = this.jobsFields.slice(0);
-            f.splice(0, 0, { key: "selected", label: "" });
-            f.splice(2, 0, { key: "update_time", label: "Last Update", sortable: true });
-            return this.computeFields(f);
-        },
-        recentJobsFieldsComputed() {
-            const f = this.jobsFields.slice(0);
-            f.splice(2, 0, { key: "update_time", label: "Finished", sortable: true });
-            return this.computeFields(f);
-        },
-        selectedJobUrl() {
-            return `${getAppRoot()}admin/job_info?jobid=${this.selectedJobId}`;
         },
     },
     created() {

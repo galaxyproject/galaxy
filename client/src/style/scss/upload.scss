@@ -1,40 +1,32 @@
 .upload-button {
-    @extend .ml-2;
-    float: right;
-    width: 32px;
-    height: 24px;
-    font-size: inherit;
+    @extend .w-100;
+    @extend .mb-3;
+    @extend .position-relative;
+    border-radius: $border-radius;
     cursor: pointer;
-    -moz-border-radius: $border-radius-base;
-    border-radius: $border-radius-base;
-    .upload-button-link {
-        @extend .panel-header-button;
-        position: absolute;
-        width: inherit;
-    }
     .progress {
-        position: absolute;
-        height: inherit;
-        width: inherit;
-        font-size: inherit;
-        line-height: inherit;
-        background-color: $panel-bg-color;
-    }
-    .progress-bar-danger {
-        background: $state-danger-bg;
-    }
-    .progress-bar-success {
-        background: $state-success-bg;
-    }
-    .progress-bar-info {
-        background: $state-running-bg;
-    }
-    .progress-bar-notransition {
-        -webkit-transition: none;
-        -moz-transition: none;
-        -ms-transition: none;
-        -o-transition: none;
-        transition: none;
+        @extend .position-absolute;
+        @extend .w-100;
+        @extend .h-100;
+        top: 0;
+        left: 0;
+        background-color: transparent;
+        .progress-bar-danger {
+            background: $state-danger-bg;
+        }
+        .progress-bar-success {
+            background: $state-success-bg;
+        }
+        .progress-bar-info {
+            background: $state-running-bg;
+        }
+        .progress-bar-notransition {
+            -webkit-transition: none;
+            -moz-transition: none;
+            -ms-transition: none;
+            -o-transition: none;
+            transition: none;
+        }
     }
 }
 

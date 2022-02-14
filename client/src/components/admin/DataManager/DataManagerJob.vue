@@ -13,14 +13,13 @@
                         header-text-variant="white"
                         border-variant="primary"
                         class="mb-3"
-                        id="data-manager-card"
-                    >
+                        id="data-manager-card">
                         <template v-slot:header>
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
-                                            <span class="fa fa-refresh" />
+                                            <span class="fa fa-redo" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
@@ -40,8 +39,7 @@
                                                         v-b-tooltip.hover
                                                         title="View complete info"
                                                         :href="hdaInfo[i]['infoUrl']"
-                                                        target="galaxy_main"
-                                                    >
+                                                        target="galaxy_main">
                                                         <span class="fa fa-info-circle" />
                                                     </b-button>
                                                 </b-col>
@@ -61,8 +59,7 @@
                                 small
                                 stacked
                                 hover
-                                striped
-                            >
+                                striped>
                                 <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>

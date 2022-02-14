@@ -4,10 +4,27 @@ Migration script to add the dynamic_tool table.
 import datetime
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, Unicode
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    Unicode,
+)
 
-from galaxy.model.custom_types import JSONType, UUIDType
-from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
+from galaxy.model.custom_types import (
+    JSONType,
+    UUIDType,
+)
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table,
+)
 
 log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
@@ -15,7 +32,8 @@ metadata = MetaData()
 
 
 DynamicTool_table = Table(
-    "dynamic_tool", metadata,
+    "dynamic_tool",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("uuid", UUIDType()),
     Column("create_time", DateTime, default=now),
@@ -27,7 +45,7 @@ DynamicTool_table = Table(
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean),
     Column("active", Boolean),
-    Column("value", JSONType()),
+    Column("value", JSONType),
 )
 
 
@@ -40,7 +58,9 @@ def upgrade(migrate_engine):
 
     workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
     add_column(workflow_dynamic_tool_id_column, "workflow_step", metadata)
-    job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
+    job_workflow_dynamic_tool_id_column = Column(
+        "dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True
+    )
     add_column(job_workflow_dynamic_tool_id_column, "job", metadata)
 
 

@@ -1,6 +1,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import TrsServerSelection from "./TrsServerSelection";
 import TrsTool from "./TrsTool";
+import { redirectOnImport } from "./utils";
 
 export default {
     components: {
@@ -8,12 +9,11 @@ export default {
         TrsTool,
     },
     methods: {
-        importVersion(toolId, version) {
+        importVersion(toolId, version, isRunFormRedirect = false) {
             this.services
-                .importTrsTool(this.trsSelection.id, toolId, version.name)
+                .importTrsTool(this.trsSelection.id, toolId, version)
                 .then((response_data) => {
-                    // copied from the WorkflowImport, de-duplicate somehow
-                    window.location = `${getAppRoot()}workflows/list?message=${response_data.message}&status=success`;
+                    redirectOnImport(getAppRoot(), response_data, isRunFormRedirect);
                 })
                 .catch((errorMessage) => {
                     this.errorMessage = errorMessage || "Import failed for an unknown reason.";

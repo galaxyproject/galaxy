@@ -6,15 +6,13 @@
                 :rule="rule"
                 :index="index"
                 :key="index"
-                :col-headers="columnData.colHeadersPerRule[index]"
-            />
+                :col-headers="columnData.colHeadersPerRule[index]" />
             <identifier-display-preview
                 v-for="(map, index) in mapping"
                 v-bind="map"
                 :index="index"
                 :key="map.type"
-                :col-headers="colHeaders"
-            />
+                :col-headers="colHeaders" />
         </ol>
     </div>
 </template>
@@ -98,8 +96,8 @@ export default {
             return this.inputRules ? this.inputRules.rules : [];
         },
         columnData: function () {
-            const colHeadersPerRule = [];
-            const hotData = RuleDefs.applyRules([], [], [], this.rules, colHeadersPerRule);
+            const hotData = RuleDefs.applyRules([], [], [], this.rules);
+            const colHeadersPerRule = hotData.colHeadersPerRule;
             return { colHeadersPerRule: colHeadersPerRule, columns: hotData.columns };
         },
         colHeaders: function () {

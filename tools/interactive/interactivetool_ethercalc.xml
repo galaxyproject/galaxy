@@ -8,7 +8,9 @@
         </entry_point>
     </entry_points>
     <command><![CDATA[
-    
+
+        export HOME=/root &&
+
         forever start `which ethercalc` --cors &
         bash $wait_script
         &&

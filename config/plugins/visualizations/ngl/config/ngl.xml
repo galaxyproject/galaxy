@@ -12,7 +12,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="ngl.js"/>
+    <entry_point entry_point_type="chart" src="dist/ngl.js"/>
     <settings>
         <input>
             <label>Quality</label>
@@ -134,15 +134,6 @@
             <min>0.001</min>
             <max>10.0</max>
             <value>0.05</value>
-        </input>
-        <input>
-            <name>scale</name>
-            <label>Scale</label>
-            <help>Select a number that scales the value defined by the *radius* parameter.</help>
-            <type>float</type>
-            <min>0.001</min>
-            <max>10.0</max>
-            <value>0.7</value>
         </input>
         <input>
             <name>colorscheme</name>

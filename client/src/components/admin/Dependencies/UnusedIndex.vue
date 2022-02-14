@@ -2,8 +2,7 @@
     <dependency-index-wrapper
         :loading="loading"
         :error="error"
-        loading-message="Loading tool dependency resolver information"
-    >
+        loading-message="Loading tool dependency resolver information">
         <template v-slot:body>
             <b-table id="unused-paths-table" striped :fields="fields" :items="items">
                 <template v-slot:cell(selected)="data">
@@ -13,9 +12,7 @@
         </template>
         <template v-slot:actions>
             <div>
-                <b-button @click="deleteSelected">
-                    Delete Selected Environments
-                </b-button>
+                <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
             </div>
         </template>
     </dependency-index-wrapper>

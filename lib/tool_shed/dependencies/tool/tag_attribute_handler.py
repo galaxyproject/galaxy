@@ -5,7 +5,6 @@ log = logging.getLogger(__name__)
 
 
 class TagAttributeHandler:
-
     def __init__(self, app, rdd, unpopulate):
         self.app = app
         self.altered = False
@@ -23,13 +22,11 @@ class TagAttributeHandler:
         new_elem = copy.deepcopy(elem)
         for sub_index, sub_elem in enumerate(elem):
             altered = False
-            error_message = ''
-            if sub_elem.tag == 'repository':
-                altered, new_sub_elem, error_message = \
-                    self.process_repository_tag_set(parent_elem=elem,
-                                                    elem_index=sub_index,
-                                                    elem=sub_elem,
-                                                    message=message)
+            error_message = ""
+            if sub_elem.tag == "repository":
+                altered, new_sub_elem, error_message = self.process_repository_tag_set(
+                    parent_elem=elem, elem_index=sub_index, elem=sub_elem, message=message
+                )
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -49,25 +46,24 @@ class TagAttributeHandler:
         new_elem = copy.deepcopy(elem)
         for sub_index, sub_elem in enumerate(elem):
             altered = False
-            error_message = ''
-            if sub_elem.tag == 'package':
-                altered, new_sub_elem, error_message = self.process_package_tag_set(elem=sub_elem,
-                                                                                    message=message,
-                                                                                    skip_actions_tags=skip_actions_tags)
-            elif sub_elem.tag == 'action':
+            error_message = ""
+            if sub_elem.tag == "package":
+                altered, new_sub_elem, error_message = self.process_package_tag_set(
+                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags
+                )
+            elif sub_elem.tag == "action":
                 # <action type="set_environment_for_install">
                 #    <repository name="package_readline_6_2" owner="devteam"">
                 #        <package name="readline" version="6.2" />
                 #    </repository>
                 # </action>
-                altered, new_sub_elem, error_message = self.process_action_tag_set(elem=sub_elem,
-                                                                                   message=message)
+                altered, new_sub_elem, error_message = self.process_action_tag_set(elem=sub_elem, message=message)
             else:
                 # Inspect the sub elements of elem to locate all <repository> tags and
                 # populate them with toolshed and changeset_revision attributes if necessary.
-                altered, new_sub_elem, error_message = self.rdd.handle_sub_elem(parent_elem=elem,
-                                                                                elem_index=sub_index,
-                                                                                elem=sub_elem)
+                altered, new_sub_elem, error_message = self.rdd.handle_sub_elem(
+                    parent_elem=elem, elem_index=sub_index, elem=sub_elem
+                )
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -87,18 +83,17 @@ class TagAttributeHandler:
         new_elem = copy.deepcopy(elem)
         for sub_index, sub_elem in enumerate(elem):
             altered = False
-            error_message = ''
-            if sub_elem.tag == 'actions':
+            error_message = ""
+            if sub_elem.tag == "actions":
                 if skip_actions_tags:
                     # Skip all actions tags that include os or architecture attributes.
-                    system = sub_elem.get('os')
-                    architecture = sub_elem.get('architecture')
+                    system = sub_elem.get("os")
+                    architecture = sub_elem.get("architecture")
                     if system or architecture:
                         continue
-                altered, new_sub_elem, error_message = \
-                    self.process_actions_tag_set(elem=sub_elem,
-                                                 message=message,
-                                                 skip_actions_tags=skip_actions_tags)
+                altered, new_sub_elem, error_message = self.process_actions_tag_set(
+                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags
+                )
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -110,17 +105,16 @@ class TagAttributeHandler:
         return elem_altered, new_elem, message
 
     def process_config(self, root, skip_actions_tags=True):
-        error_message = ''
+        error_message = ""
         new_root = copy.deepcopy(root)
-        if root.tag == 'tool_dependency':
+        if root.tag == "tool_dependency":
             for elem_index, elem in enumerate(root):
                 altered = False
-                if elem.tag == 'package':
+                if elem.tag == "package":
                     # <package name="eigen" version="2.0.17">
-                    altered, new_elem, error_message = \
-                        self.process_package_tag_set(elem=elem,
-                                                     message=error_message,
-                                                     skip_actions_tags=skip_actions_tags)
+                    altered, new_elem, error_message = self.process_package_tag_set(
+                        elem=elem, message=error_message, skip_actions_tags=skip_actions_tags
+                    )
                 if altered:
                     if not self.altered:
                         self.altered = True
@@ -135,24 +129,24 @@ class TagAttributeHandler:
         new_elem = copy.deepcopy(elem)
         for sub_index, sub_elem in enumerate(elem):
             altered = False
-            error_message = ''
-            if sub_elem.tag == 'actions_group':
-                altered, new_sub_elem, error_message = \
-                    self.process_actions_group_tag_set(elem=sub_elem,
-                                                       message=message,
-                                                       skip_actions_tags=skip_actions_tags)
-            elif sub_elem.tag == 'actions':
-                altered, new_sub_elem, error_message = \
-                    self.process_actions_tag_set(elem=sub_elem,
-                                                 message=message,
-                                                 skip_actions_tags=skip_actions_tags)
+            error_message = ""
+            if sub_elem.tag == "actions_group":
+                altered, new_sub_elem, error_message = self.process_actions_group_tag_set(
+                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags
+                )
+            elif sub_elem.tag == "actions":
+                altered, new_sub_elem, error_message = self.process_actions_tag_set(
+                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags
+                )
             else:
-                package_name = elem.get('name', '')
-                package_version = elem.get('version', '')
-                error_message += 'Version %s of the %s package cannot be installed because ' % \
-                    (str(package_version), str(package_name))
-                error_message += 'the recipe for installing the package is missing either an '
-                error_message += '&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set.'
+                package_name = elem.get("name", "")
+                package_version = elem.get("version", "")
+                error_message += "Version %s of the %s package cannot be installed because " % (
+                    str(package_version),
+                    str(package_name),
+                )
+                error_message += "the recipe for installing the package is missing either an "
+                error_message += "&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set."
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -168,18 +162,15 @@ class TagAttributeHandler:
         new_elem = copy.deepcopy(elem)
         for sub_index, sub_elem in enumerate(elem):
             altered = False
-            error_message = ''
-            if sub_elem.tag == 'install':
-                altered, new_sub_elem, error_message = \
-                    self.process_install_tag_set(elem=sub_elem,
-                                                 message=message,
-                                                 skip_actions_tags=skip_actions_tags)
-            elif sub_elem.tag == 'repository':
-                altered, new_sub_elem, error_message = \
-                    self.process_repository_tag_set(parent_elem=elem,
-                                                    elem_index=sub_index,
-                                                    elem=sub_elem,
-                                                    message=message)
+            error_message = ""
+            if sub_elem.tag == "install":
+                altered, new_sub_elem, error_message = self.process_install_tag_set(
+                    elem=sub_elem, message=message, skip_actions_tags=skip_actions_tags
+                )
+            elif sub_elem.tag == "repository":
+                altered, new_sub_elem, error_message = self.process_repository_tag_set(
+                    parent_elem=elem, elem_index=sub_index, elem=sub_elem, message=message
+                )
             if error_message and error_message not in message:
                 message += error_message
             if altered:
@@ -192,9 +183,9 @@ class TagAttributeHandler:
 
     def process_repository_tag_set(self, parent_elem, elem_index, elem, message):
         # We have a complex repository dependency.
-        altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem(parent_elem=parent_elem,
-                                                                                   elem_index=elem_index,
-                                                                                   elem=elem)
+        altered, new_elem, error_message = self.rdd.handle_complex_dependency_elem(
+            parent_elem=parent_elem, elem_index=elem_index, elem=elem
+        )
         if error_message and error_message not in message:
             message += error_message
         if altered:

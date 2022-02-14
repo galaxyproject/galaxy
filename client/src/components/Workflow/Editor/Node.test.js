@@ -1,13 +1,15 @@
-import { mount } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Node from "./Node";
-import { getNewAttachNode } from "jest/helpers";
 import flushPromises from "flush-promises";
 
 jest.mock("app");
 
+const localVue = getLocalVue();
+
 describe("Node", () => {
     it("test attributes", async () => {
-        const wrapper = mount(Node, {
+        const wrapper = shallowMount(Node, {
             propsData: {
                 id: "node-id",
                 name: "node-name",
@@ -15,8 +17,9 @@ describe("Node", () => {
                 step: {},
                 getManager: () => {},
                 getCanvasManager: () => {},
+                datatypesMapper: {},
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
         await flushPromises();
         const icon = wrapper.findAll("i");

@@ -5,11 +5,15 @@ import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadModel from "mvc/upload/upload-model";
 import UploadWrapper from "./UploadWrapper";
+import { defaultNewFileName, uploadModelsToPayload } from "./helpers";
 import { getGalaxyInstance } from "app";
 import UploadFtp from "mvc/upload/upload-ftp";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import { findExtension } from "./utils";
 import { filesDialog } from "utils/data";
+import { getAppRoot } from "onload";
+import { UploadQueue } from "utils/uploadbox";
+import axios from "axios";
 
 const localize = _l;
 
@@ -27,6 +31,14 @@ export default {
             type: Number,
             default: null,
         },
+        selectable: {
+            type: Boolean,
+            default: false,
+        },
+        hasCallback: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         btnFilesTitle() {
@@ -37,7 +49,19 @@ export default {
             }
         },
         remoteFiles() {
-            return this.fileSourcesConfigured || this.ftpUploadSite;
+            // this needs to be true for the tests to pass
+            return !!this.fileSourcesConfigured || !!this.ftpUploadSite;
+        },
+        btnCloseTitle() {
+            return this.hasCallback ? "Cancel" : "Close";
+        },
+        history_id() {
+            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            if (storeId) {
+                return storeId;
+            }
+            const legacyId = this.app.currentHistory();
+            return legacyId;
         },
     },
     methods: {
@@ -46,7 +70,8 @@ export default {
         },
         initUploadbox(options) {
             const $uploadBox = this.$uploadBox();
-            this.uploadbox = $uploadBox.uploadbox(options);
+            options.$uploadBox = $uploadBox;
+            this.uploadbox = new UploadQueue(options);
             if (this.lazyLoadMax !== null) {
                 const $uploadBox = this.$uploadBox();
                 this.loader = new LazyLimited({
@@ -62,6 +87,29 @@ export default {
         uploadSelect: function () {
             this.uploadbox.select();
         },
+
+        /** Start upload process */
+        _eventStart: function () {
+            if (this.counterAnnounce == 0 || this.counterRunning > 0) {
+                return;
+            }
+            this.uploadSize = 0;
+            this.uploadCompleted = 0;
+            this.collection.each((model) => {
+                if (model.get("status") == "init") {
+                    model.set("status", "queued");
+                    this.uploadSize += model.get("file_size");
+                }
+            });
+            this.appModel.set({ percentage: 0, status: "success" });
+            this.counterRunning = this.counterAnnounce;
+
+            // package ftp files separately, and remove them from queue
+            this._uploadFtp();
+            this.uploadbox.start();
+            this._updateStateForCounters();
+        },
+
         /** Package and upload ftp files in a single request */
         _uploadFtp: function () {
             const list = [];
@@ -72,20 +120,19 @@ export default {
                 }
             });
             if (list.length > 0) {
-                $.uploadpost({
-                    data: this.app.toData(list),
-                    url: this.app.uploadPath,
-                    success: (message) => {
+                const data = uploadModelsToPayload(list, this.history_id);
+                axios
+                    .post(`${getAppRoot()}api/tools/fetch`, data)
+                    .then((message) => {
                         list.forEach((model) => {
                             this._eventSuccess(model.id, message);
                         });
-                    },
-                    error: (message) => {
+                    })
+                    .catch((message) => {
                         list.forEach((model) => {
-                            self._eventError(model.id, message);
+                            this._eventError(model.id, message);
                         });
-                    },
-                });
+                    });
             }
         },
         renderNewModel: function (model) {
@@ -229,6 +276,7 @@ export default {
                                     name: ftp_file.path,
                                     size: ftp_file.size,
                                     path: ftp_file.path,
+                                    uri: ftp_file.uri,
                                 },
                             ]);
                         },
@@ -240,8 +288,12 @@ export default {
             }
         },
         /** Create a new file */
-        _eventCreate: function () {
-            this.uploadbox.add([{ name: "New File", size: 0, mode: "new" }]);
+        _eventCreate: function (withNewFile) {
+            if (withNewFile == true) {
+                this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
+            } else if (withNewFile == false) {
+                this.uploadbox.add([{ size: 0, mode: "new" }]);
+            }
         },
         /** Pause upload process */
         _eventStop: function () {
@@ -259,7 +311,7 @@ export default {
             return $(this.$refs.uploadTable);
         },
         extensionDetails(extension) {
-            return findExtension(this.effectiveExtensions, extension);
+            return findExtension(this.app.effectiveExtensions, extension);
         },
         initExtensionInfo() {
             $(this.$refs.footerExtensionInfo)
@@ -326,6 +378,9 @@ export default {
             });
             const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
             return models;
+        },
+        getRequestUrl: function (items, history_id) {
+            return `${getAppRoot()}api/tools/fetch`;
         },
     },
 };

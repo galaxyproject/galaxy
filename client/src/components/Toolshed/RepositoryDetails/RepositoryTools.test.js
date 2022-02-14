@@ -1,6 +1,8 @@
-import Vue from "vue";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import RepositoryTools from "./RepositoryTools";
+
+const localVue = getLocalVue();
 
 describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {
@@ -14,6 +16,7 @@ describe("RepositoryTools", () => {
                     },
                 ],
             },
+            localVue,
         });
         const $el = wrapper.findAll("td");
         const $first = $el.at(0);
@@ -57,7 +60,7 @@ describe("RepositoryTools", () => {
         expect($third.find("td:last-child").text()).toBe("");
         const $link = wrapper.find("a");
         $link.trigger("click");
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
 
         const $elExpanded = wrapper.findAll("tr");
         expect($elExpanded.length).toBe(4);
@@ -69,7 +72,7 @@ describe("RepositoryTools", () => {
         expect($forthExpanded.find("td:last-child").text()).toBe("");
         const $linkExpanded = wrapper.find("a");
         $linkExpanded.trigger("click");
-        await Vue.nextTick();
+        await wrapper.vm.$nextTick();
 
         const $elCollapsed = wrapper.findAll("tr");
         expect($elCollapsed.length).toBe(3);

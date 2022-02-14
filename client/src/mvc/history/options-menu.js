@@ -6,6 +6,7 @@ import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import Webhooks from "mvc/webhooks";
+import { switchToBetaHistoryPanel } from "../../components/History/adapters/betaToggle";
 
 // ============================================================================
 var menu = [
@@ -31,6 +32,7 @@ var menu = [
                 Galaxy.router.push(`/histories/sharing?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         },
+        singleUserDisable: true,
     },
     {
         html: _l("Show Structure"),
@@ -54,6 +56,7 @@ var menu = [
                 Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         },
+        singleUserDisable: true,
     },
     {
         html: _l("Make Private"),
@@ -148,8 +151,25 @@ var menu = [
     },
     {
         html: _l("Export History to File"),
-        href: "history/export_archive?preview=True",
         anon: true,
+        func: function () {
+            const Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/${Galaxy.currHistoryPanel.model.id}/export`);
+            }
+        },
+    },
+    {
+        html: _l("Beta Features"),
+        anon: false,
+        header: true,
+    },
+    {
+        html: _l("Use Beta History Panel"),
+        anon: false,
+        func: function () {
+            switchToBetaHistoryPanel();
+        },
     },
 ];
 
@@ -165,7 +185,7 @@ Webhooks.load({
             if (webhook.activate) {
                 webhooks_menu.push({
                     html: _l(webhook.config.title),
-                    // func: function() {},
+                    func: webhook.config.function && new Function(webhook.config.function),
                     anon: true,
                 });
             }
@@ -182,7 +202,11 @@ Webhooks.load({
 });
 
 function buildMenu(isAnon, purgeAllowed, urlRoot) {
+    const Galaxy = getGalaxyInstance();
     return _.clone(menu).filter((menuOption) => {
+        if (Galaxy.config.single_user && menuOption.singleUserDisable) {
+            return false;
+        }
         if (isAnon && !menuOption.anon) {
             return false;
         }
@@ -195,6 +219,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
             menuOption.href = urlRoot + menuOption.href;
             menuOption.target = menuOption.target || "galaxy_main";
         }
+        menuOption.title = menuOption.html;
 
         if (menuOption.confirm) {
             menuOption.func = () => {

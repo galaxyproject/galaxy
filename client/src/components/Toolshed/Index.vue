@@ -9,9 +9,8 @@
                     v-model="queryInput"
                     @input="delayQuery"
                     @change="setQuery"
-                    @keydown.esc="setQuery()"
-                />
-                <b-input-group-append v-b-tooltip.hover title="clear search (esc)">
+                    @keydown.esc="setQuery()" />
+                <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
                     <b-btn @click="setQuery()">
                         <i class="fa fa-times" />
                     </b-btn>
@@ -28,6 +27,7 @@
     </div>
 </template>
 <script>
+import _l from "utils/localization";
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
 
@@ -52,6 +52,7 @@ export default {
                 { text: "Search All", value: true },
                 { text: "Installed Only", value: false },
             ],
+            titleClearSearch: _l("clear search (esc)"),
         };
     },
     watch: {

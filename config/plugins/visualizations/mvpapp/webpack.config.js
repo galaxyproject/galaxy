@@ -7,7 +7,7 @@ module.exports = {
     entry: "./src/index.js",
     output: {
         filename: "script.js",
-        path: path.resolve(__dirname, "static/js"),
+        path: path.join(__dirname, "static/dist"),
     },
     target: "web",
     plugins: [
@@ -22,25 +22,15 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.(png|svg|jpg|gif)$/,
-                use: ["file-loader"],
-            },
-            {
                 test: /\.css$/i,
                 use: ["style-loader", "css-loader"],
             },
             {
-                test: /\.(woff|woff2)(\?v=\d+\.\d+\.\d+)?$/,
-                loader: "file-loader",
-                options: {
-                    outputPath: "static/js",
+                test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
+                use: {
+                    loader: "file-loader",
                 },
             },
-            {
-                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-                use: ["file-loader"],
-            },
-            { test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loaders: "file-loader" },
         ],
     },
     performance: {

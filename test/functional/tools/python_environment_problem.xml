@@ -3,9 +3,9 @@
         This script imports galaxy.eggs which is no longer available to tools
         by default. Only declared legacy tools have this available.
     -->
-    <command>
-        python $__tool_directory__/python_environment_problem.py '$out_file1'
-    </command>
+    <command><![CDATA[
+python '$__tool_directory__/python_environment_problem.py' '$out_file1'
+    ]]></command>
     <inputs>
     </inputs>
     <outputs>

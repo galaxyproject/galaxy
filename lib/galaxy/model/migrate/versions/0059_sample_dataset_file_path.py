@@ -5,7 +5,12 @@ to 'TEXT' so that it can support large file paths exceeding 255 characters
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT,
+)
 from sqlalchemy.exc import NoSuchTableError
 
 log = logging.getLogger(__name__)

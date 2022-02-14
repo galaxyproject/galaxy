@@ -74,8 +74,11 @@ uwsgi:
   # SIGTERM (its default is to brutally kill workers)
   hook-master-start: unix_signal:15 gracefully_kill_them_all
 
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
+  # Feature necessary for proper mule signal handling on Python versions
+  # below 3.7.2. The default is set to false to prevent a runtime error
+  # under Python 3.7.2 and newer (see
+  # https://github.com/unbit/uwsgi/issues/1978).
+  py-call-osafterfork: false
 
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
@@ -100,7 +103,7 @@ reports:
   #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Where dataset files are stored.
-  #file_path: database/files
+  #file_path: database/objects
 
   # Where temporary files are stored.
   #new_file_path: database/tmp

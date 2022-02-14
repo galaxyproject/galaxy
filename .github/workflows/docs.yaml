@@ -1,0 +1,77 @@
+name: Build docs
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.7']
+    steps:
+      - name: Get target branch name (push)
+        if: github.event_name == 'push'
+        run: echo "TARGET_BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Get target branch name (pull request)
+        if: github.event_name == 'pull_request'
+        run: echo "TARGET_BRANCH=$GITHUB_BASE_REF" >> $GITHUB_ENV
+      - name: Show target branch name
+        run: echo $TARGET_BRANCH
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt sphinxcontrib-simpleversioning
+      - name: Add Google Analytics to doc/source/conf.py
+        run: |
+          sed -i -e "/html_theme_options = {/a\
+          \    'analytics_id': 'UA-45719423-17'," -e "s#https://docs.galaxyproject.org/en/[^/]*/#https://docs.galaxyproject.org/en/$TARGET_BRANCH/#" doc/source/conf.py
+      - name: Checkout the latest doc/source/conf.versioning.py
+        if: github.event_name != 'push' || github.ref != 'refs/heads/dev'
+        run: |
+          # We cannot just download the latest version from dev, because it may be newer in this branch/PR
+          git fetch origin dev:dev
+          if [ ! -f doc/source/conf.versioning.py ] || [ "$(git log -1 --pretty="format:%ct" dev -- doc/source/conf.versioning.py)" -gt "$(git log -1 --pretty="format:%ct" -- doc/source/conf.versioning.py)" ]; then
+              git checkout dev -- doc/source/conf.versioning.py
+          fi
+      - name: Append doc/source/conf.versioning.py
+        run: cat doc/source/conf.versioning.py >> doc/source/conf.py
+      - name: Build docs
+        run: make docs
+      - name: Deploy docs
+        if: github.event_name == 'push' && github.repository_owner == 'galaxyproject'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          case "$TARGET_BRANCH" in
+              release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)
+                  UPLOAD_DIR=$TARGET_BRANCH
+                  ;;
+              dev)
+                  UPLOAD_DIR=latest
+                  ;;
+              *)
+                  echo "Not deploying documentation for branch $TARGET_BRANCH"
+                  exit 0
+                  ;;
+          esac
+          pip install awscli
+          aws s3 sync doc/build/html/ "s3://galaxy-docs/en/$UPLOAD_DIR" --region us-east-2 --size-only --delete

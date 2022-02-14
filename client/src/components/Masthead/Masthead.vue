@@ -1,30 +1,19 @@
 <template>
-    <b-navbar
-        id="masthead"
-        toggleable="lg"
-        type="dark"
-        role="navigation"
-        aria-label="Main"
-        class="justify-content-center"
-    >
+    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
         <b-navbar-brand :href="brandLink" aria-label="homepage">
             <img alt="logo" class="navbar-brand-image" :src="brandImage" />
+            <img alt="logo" class="navbar-brand-image" :src="brandImageSecondary" v-if="brandImageSecondary" />
             <span class="navbar-brand-title">{{ brandTitle }}</span>
         </b-navbar-brand>
-
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in tabs"
                 :tab="tab"
                 :active-tab="activeTab"
                 :key="`tab-${idx}`"
-                :app-root="appRoot"
-                :galaxy="galaxy"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
-            >
+                v-show="!(tab.hidden === undefined ? false : tab.hidden)">
             </masthead-item>
         </b-navbar-nav>
-
         <div ref="quota-meter-container" class="quota-meter-container" />
     </b-navbar>
 </template>
@@ -44,27 +33,31 @@ export default {
         },
         brand: {
             type: String,
+            default: null,
         },
         brandLink: {
             type: String,
+            default: null,
         },
         brandImage: {
             type: String,
+            default: null,
         },
-        activeTab: {
+        brandImageSecondary: {
             type: String,
+            default: null,
+        },
+        initialActiveTab: {
+            type: String,
+            default: null,
         },
         mastheadState: {
             type: Object,
-        },
-        appRoot: {
-            type: String,
-        },
-        galaxy: {
-            type: Object,
+            default: null,
         },
         menuOptions: {
             type: Object,
+            default: null,
         },
     },
     components: {
@@ -102,6 +95,7 @@ export default {
     },
     data() {
         return {
+            activeTab: null,
             baseTabs: [],
             extensionTabs: [],
         };
@@ -116,11 +110,12 @@ export default {
         },
         tabs() {
             const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
-            const tabs = [].concat(this.baseTabs, scratchbookTabs, this.extensionTabs);
+            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
             return tabs.map(this._tabToJson);
         },
     },
     created() {
+        this.activeTab = this.initialActiveTab;
         this.baseTabs = fetchMenu(this.menuOptions);
         loadWebhookMenuItems(this.extensionTabs);
     },
@@ -141,5 +136,3 @@ export default {
     },
 };
 </script>
-
-<style scoped></style>

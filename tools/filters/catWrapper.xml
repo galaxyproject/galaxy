@@ -1,13 +1,16 @@
 <tool id="cat1" name="Concatenate datasets" version="1.0.0">
     <description>tail-to-head</description>
-    <command interpreter="python">
-        catWrapper.py
-        $out_file1
-        $input1
-        #for $q in $queries
-            ${q.input2}
-        #end for
-    </command>
+    <edam_operations>
+        <edam_operation>operation_3436</edam_operation>
+    </edam_operations>
+    <command interpreter="python"><![CDATA[
+catWrapper.py
+'$out_file1'
+'$input1'
+#for $q in $queries
+    '${q.input2}'
+#end for
+    ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>
         <repeat name="queries" title="Dataset">
@@ -33,8 +36,7 @@
         </test>
         -->
     </tests>
-    <help>
-
+    <help><![CDATA[
 .. class:: warningmark
 
 **WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format.
@@ -74,6 +76,5 @@ will result in the following::
     chr1  151278832  151279227  Z  0  -
     chr2  100000030  200000955  P  0  +
     chr2  100000015  200000999  Q  0  +
-
-    </help>
+    ]]></help>
 </tool>

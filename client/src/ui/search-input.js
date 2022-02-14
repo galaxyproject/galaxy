@@ -30,14 +30,14 @@ function searchInput(parentNode, options) {
         onsearch: function (inputVal) {},
         minSearchLen: 0,
         escWillClear: true,
-        advsearchlink: null,
+        advsearchlink: false,
         oninit: function () {},
     };
 
     // .................................................................... input rendering and events
     // visually clear the search, trigger an event, and call the callback
     function clearSearchInput(event) {
-        var $input = $(this).parent().children("input");
+        var $input = $(this).closest(".search-control").children("input");
         $input.val("").trigger("searchInput.clear").blur();
         options.onclear();
     }
@@ -121,7 +121,8 @@ function searchInput(parentNode, options) {
     function $advancedSearchPopover() {
         return $(
             [
-                '<span class="search-advanced fa fa-question-circle" ',
+                '<a tabindex="0" ',
+                'class="search-advanced fa fa-question-circle" ',
                 'data-toggle="advSearchPopover" ',
                 'data-placement="bottom" ',
                 'data-content="',
@@ -130,20 +131,25 @@ function searchInput(parentNode, options) {
                 ),
                 "<br/>",
                 _l(
-                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, and state</em>."
+                    "Supported keywords are <em>name, format, database, annotation, description, info, tag, hid, state, and history_content_type</em>."
                 ),
                 "<br/>",
                 _l("To learn more visit "),
-                "<a href='https://galaxyproject.org/tutorials/histories/#advanced-searching' target='_blank'>",
-                _l("the Hub"),
+                "<a href='https://training.galaxyproject.org/training-material/topics/galaxy-interface/tutorials/history/tutorial.html#basic-searching' target='_blank'>",
+                _l("the Training Material"),
                 '.</a></p>" title="',
-                _l("search tips"),
-                '"></span>',
+                _l("Search tips"),
+                '"></a>',
             ].join("")
         )
-            .tooltip({ placement: "bottom" })
+            .tooltip({ placement: "top", trigger: "hover" })
             .click(function () {
-                $('[data-toggle="advSearchPopover"]').popover({ html: true, container: ".history-right-panel" });
+                $(this)
+                    .popover({
+                        html: true,
+                        container: "body",
+                    })
+                    .popover("show");
             });
     }
 

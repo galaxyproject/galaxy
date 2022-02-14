@@ -22,8 +22,7 @@
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"
-            :invocation-id="invocation.id"
-        />
+            :invocation-id="invocation.id" />
         <div id="webhook-view"></div>
     </div>
 </template>

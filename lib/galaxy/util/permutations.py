@@ -6,7 +6,6 @@ first.
 Maybe this doesn't make sense and maybe much of this stuff could be replaced
 with itertools product and permutations. These are open questions.
 """
-from collections import OrderedDict
 
 from galaxy.exceptions import MessageException
 from galaxy.util.bunch import Bunch
@@ -19,18 +18,14 @@ input_classification = Bunch(
 
 
 class InputMatchedException(MessageException):
-    """ Indicates problem matching inputs while building up inputs
-    permutations. """
+    """Indicates problem matching inputs while building up inputs
+    permutations."""
 
 
 def expand_multi_inputs(inputs, classifier, key_filter=None):
     key_filter = key_filter or (lambda x: True)
 
-    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(
-        inputs,
-        classifier,
-        key_filter
-    )
+    single_inputs, matched_multi_inputs, multiplied_multi_inputs = __split_inputs(inputs, classifier, key_filter)
 
     # Build up every combination of inputs to be run together.
     input_combos = __extend_with_matched_combos(single_inputs, matched_multi_inputs)
@@ -42,9 +37,9 @@ def expand_multi_inputs(inputs, classifier, key_filter=None):
 def __split_inputs(inputs, classifier, key_filter):
     key_filter = key_filter or (lambda x: True)
 
-    single_inputs = OrderedDict()
-    matched_multi_inputs = OrderedDict()
-    multiplied_multi_inputs = OrderedDict()
+    single_inputs = {}
+    matched_multi_inputs = {}
+    multiplied_multi_inputs = {}
 
     for input_key in filter(key_filter, inputs):
         input_type, expanded_val = classifier(input_key)
@@ -85,8 +80,10 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
         if multi_input_key == first_multi_input_key:
             continue
         if len(multi_input_values) != len(first_multi_value):
-            raise InputMatchedException("Received %d inputs for '%s' and %d inputs for '%s', these should be of equal length" %
-                                        (len(multi_input_values), multi_input_key, len(first_multi_value), first_multi_input_key))
+            raise InputMatchedException(
+                "Received %d inputs for '%s' and %d inputs for '%s', these should be of equal length"
+                % (len(multi_input_values), multi_input_key, len(first_multi_value), first_multi_input_key)
+            )
 
         for index, value in enumerate(multi_input_values):
             matched_multi_inputs[index][multi_input_key] = value

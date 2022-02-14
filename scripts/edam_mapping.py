@@ -11,8 +11,6 @@ run from the Galaxy root.
 
  % python script/edam_mapping.py > edam_mapping.tsv
 """
-from __future__ import absolute_import
-from __future__ import print_function
 
 import os
 import sys
@@ -20,7 +18,7 @@ from xml import etree
 
 import requests
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -32,7 +30,9 @@ CONFIG_FILE = os.path.join(PROJECT_DIR, "config", "datatypes_conf.xml.sample")
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes(root_dir=PROJECT_DIR, config=CONFIG_FILE)
 
-EDAM_OWL_URL = "http://data.bioontology.org/ontologies/EDAM/submissions/25/download?apikey=8b5b7825-538d-40e0-9e9e-5ab9274a9aeb"
+EDAM_OWL_URL = (
+    "http://data.bioontology.org/ontologies/EDAM/submissions/25/download?apikey=8b5b7825-538d-40e0-9e9e-5ab9274a9aeb"
+)
 
 
 if not os.path.exists("/tmp/edam.owl"):
@@ -41,13 +41,13 @@ if not os.path.exists("/tmp/edam.owl"):
 
 owl_xml_tree = etree.ElementTree.parse("/tmp/edam.owl")
 format_info = {}
-for child in owl_xml_tree.getroot().findall('{http://www.w3.org/2002/07/owl#}Class'):
+for child in owl_xml_tree.getroot().findall("{http://www.w3.org/2002/07/owl#}Class"):
     about = child.attrib.get("{http://www.w3.org/1999/02/22-rdf-syntax-ns#}about")
     if not about:
         continue
     if not about.startswith("http://edamontology.org/format_"):
         continue
-    the_format = about[len("http://edamontology.org/"):]
+    the_format = about[len("http://edamontology.org/") :]
     label = child.find("{http://www.w3.org/2000/01/rdf-schema#}label").text
     definition = ""
     def_el = child.find("{http://www.geneontology.org/formats/oboInOwl#}hasDefinition")
@@ -59,4 +59,4 @@ for ext, edam_format in sorted(datatypes_registry.edam_formats.items()):
     edam_info = format_info[edam_format]
     edam_label = edam_info["label"]
     edam_definition = edam_info["definition"]
-    print("%s\t%s\t%s\t%s" % (ext, edam_format, edam_label, edam_definition))
+    print(f"{ext}\t{edam_format}\t{edam_label}\t{edam_definition}")

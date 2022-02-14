@@ -11,14 +11,13 @@ from tool_shed.util import (
     hg_util,
     repository_util,
     tool_util,
-    xml_util
+    xml_util,
 )
 
 log = logging.getLogger(__name__)
 
 
 class ToolValidator(GalaxyToolValidator):
-
     def can_use_tool_config_disk_file(self, repository, repo, file_path, changeset_revision):
         """
         Determine if repository's tool config file on disk can be used.  This method
@@ -33,8 +32,9 @@ class ToolValidator(GalaxyToolValidator):
         if changeset_revision == repository.tip():
             return True
         file_name = basic_util.strip_path(file_path)
-        latest_version_of_file = \
-            self.get_latest_tool_config_revision_from_repository_manifest(repo, file_name, changeset_revision)
+        latest_version_of_file = self.get_latest_tool_config_revision_from_repository_manifest(
+            repo, file_name, changeset_revision
+        )
         can_use_disk_file = filecmp.cmp(file_path, latest_version_of_file)
         try:
             os.unlink(latest_version_of_file)
@@ -45,13 +45,13 @@ class ToolValidator(GalaxyToolValidator):
     def concat_messages(self, msg1, msg2):
         if msg1:
             if msg2:
-                message = '{}  {}'.format(msg1, msg2)
+                message = f"{msg1}  {msg2}"
             else:
                 message = msg1
         elif msg2:
             message = msg2
         else:
-            message = ''
+            message = ""
         return message
 
     def copy_disk_sample_files_to_dir(self, repo_files_dir, dest_path):
@@ -60,10 +60,10 @@ class ToolValidator(GalaxyToolValidator):
         directory to which dest_path refers.
         """
         sample_files = []
-        for root, dirs, files in os.walk(repo_files_dir):
-            if root.find('.hg') < 0:
+        for root, _dirs, files in os.walk(repo_files_dir):
+            if root.find(".hg") < 0:
                 for name in files:
-                    if name.endswith('.sample'):
+                    if name.endswith(".sample"):
                         relative_path = os.path.join(root, name)
                         tool_util.copy_sample_file(self.app, relative_path, dest_path=dest_path)
                         sample_files.append(name)
@@ -89,10 +89,10 @@ class ToolValidator(GalaxyToolValidator):
                         # 'ncbi_blastp_wrapper.xml' was moved to 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml',
                         # so keep looking for the file until we find the new location.
                         continue
-                    fh = tempfile.NamedTemporaryFile('wb', prefix="tmp-toolshed-gltcrfrm")
+                    fh = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gltcrfrm")
                     tmp_filename = fh.name
                     fh.close()
-                    fh = open(tmp_filename, 'wb')
+                    fh = open(tmp_filename, "wb")
                     fh.write(fctx.data())
                     fh.close()
                     return tmp_filename
@@ -117,9 +117,9 @@ class ToolValidator(GalaxyToolValidator):
                 # If we decide in the future that files deleted later in the changelog should
                 # not be used, we can use the following if statement. if ctx_file_name.endswith( '.sample' )
                 # and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
-                if ctx_file_name.endswith('.sample') and ctx_file_name not in sample_files:
+                if ctx_file_name.endswith(".sample") and ctx_file_name not in sample_files:
                     fctx = hg_util.get_file_context_from_ctx(changeset_ctx, ctx_file)
-                    if fctx in ['DELETED']:
+                    if fctx in ["DELETED"]:
                         # Since the possibly future used if statement above is commented out, the
                         # same file that was initially added will be discovered in an earlier changeset
                         # in the change log and fall through to the else block below.  In other words,
@@ -132,45 +132,54 @@ class ToolValidator(GalaxyToolValidator):
                             deleted_sample_files.append(ctx_file_name)
                     else:
                         sample_files.append(ctx_file_name)
-                        tmp_ctx_file_name = os.path.join(dir, ctx_file_name.replace('.sample', ''))
-                        with open(tmp_ctx_file_name, 'wb') as fh:
+                        tmp_ctx_file_name = os.path.join(dir, ctx_file_name.replace(".sample", ""))
+                        with open(tmp_ctx_file_name, "wb") as fh:
                             fh.write(fctx.data())
         return sample_files, deleted_sample_files
 
-    def handle_sample_files_and_load_tool_from_disk(self, repo_files_dir, repository_id, tool_config_filepath, work_dir):
+    def handle_sample_files_and_load_tool_from_disk(
+        self, repo_files_dir, repository_id, tool_config_filepath, work_dir
+    ):
         """
         Copy all sample files from disk to a temporary directory since the sample files may
         be in multiple directories.
         """
-        message = ''
+        message = ""
         sample_files = self.copy_disk_sample_files_to_dir(repo_files_dir, work_dir)
         if sample_files:
-            if 'tool_data_table_conf.xml.sample' in sample_files:
+            if "tool_data_table_conf.xml.sample" in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
-                tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
-                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                   persist=False)
+                tool_data_table_config = os.path.join(work_dir, "tool_data_table_conf.xml")
+                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(
+                    tool_data_table_config, persist=False
+                )
         tool, valid, message2 = self.load_tool_from_config(repository_id, tool_config_filepath)
         message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
-    def handle_sample_files_and_load_tool_from_tmp_config(self, repo, repository_id, changeset_revision,
-                                                          tool_config_filename, work_dir):
+    def handle_sample_files_and_load_tool_from_tmp_config(
+        self, repo, repository_id, changeset_revision, tool_config_filename, work_dir
+    ):
         tool = None
         valid = False
-        message = ''
+        message = ""
         # We're not currently doing anything with the returned list of deleted_sample_files here.  It is
         # intended to help handle sample files that are in the manifest, but have been deleted from disk.
-        sample_files, deleted_sample_files = self.get_list_of_copied_sample_files(repo, changeset_revision, dir=work_dir)
+        sample_files, deleted_sample_files = self.get_list_of_copied_sample_files(
+            repo, changeset_revision, dir=work_dir
+        )
         if sample_files:
-            if 'tool_data_table_conf.xml.sample' in sample_files:
+            if "tool_data_table_conf.xml.sample" in sample_files:
                 # Load entries into the tool_data_tables if the tool requires them.
-                tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
-                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                    persist=False)
+                tool_data_table_config = os.path.join(work_dir, "tool_data_table_conf.xml")
+                error, message = self.stdtm.handle_sample_tool_data_table_conf_file(
+                    tool_data_table_config, persist=False
+                )
         manifest_ctx, ctx_file = hg_util.get_ctx_file_path_from_manifest(tool_config_filename, repo, changeset_revision)
         if manifest_ctx and ctx_file:
-            tool, valid, message2 = self.load_tool_from_tmp_config(repo, repository_id, manifest_ctx, ctx_file, work_dir)
+            tool, valid, message2 = self.load_tool_from_tmp_config(
+                repo, repository_id, manifest_ctx, ctx_file, work_dir
+            )
             message = self.concat_messages(message, message2)
         return tool, valid, message, sample_files
 
@@ -185,39 +194,35 @@ class ToolValidator(GalaxyToolValidator):
         repository = repository_util.get_repository_in_tool_shed(self.app, repository_id)
         repo_files_dir = repository.repo_path(self.app)
         repo = repository.hg_repo
-        tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(repo_files_dir, tool_config_filename)
+        tool_config_filepath = repository_util.get_absolute_path_to_file_in_repository(
+            repo_files_dir, tool_config_filename
+        )
         work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-ltfcr")
-        can_use_disk_file = self.can_use_tool_config_disk_file(repository,
-                                                               repo,
-                                                               tool_config_filepath,
-                                                               changeset_revision)
+        can_use_disk_file = self.can_use_tool_config_disk_file(
+            repository, repo, tool_config_filepath, changeset_revision
+        )
         if can_use_disk_file:
-            tool, valid, message, sample_files = \
-                self.handle_sample_files_and_load_tool_from_disk(repo_files_dir,
-                                                                 repository_id,
-                                                                 tool_config_filepath,
-                                                                 work_dir)
+            tool, valid, message, sample_files = self.handle_sample_files_and_load_tool_from_disk(
+                repo_files_dir, repository_id, tool_config_filepath, work_dir
+            )
             if tool is not None:
-                invalid_files_and_errors_tups = \
-                    self.check_tool_input_params(repo_files_dir,
-                                                 tool_config_filename,
-                                                 tool,
-                                                 sample_files)
+                invalid_files_and_errors_tups = self.check_tool_input_params(
+                    repo_files_dir, tool_config_filename, tool, sample_files
+                )
                 if invalid_files_and_errors_tups:
-                    message2 = tool_util.generate_message_for_invalid_tools(self.app,
-                                                                            invalid_files_and_errors_tups,
-                                                                            repository,
-                                                                            metadata_dict=None,
-                                                                            as_html=True,
-                                                                            displaying_invalid_tool=True)
+                    message2 = tool_util.generate_message_for_invalid_tools(
+                        self.app,
+                        invalid_files_and_errors_tups,
+                        repository,
+                        metadata_dict=None,
+                        as_html=True,
+                        displaying_invalid_tool=True,
+                    )
                     message = self.concat_messages(message, message2)
         else:
-            tool, valid, message, sample_files = \
-                self.handle_sample_files_and_load_tool_from_tmp_config(repo,
-                                                                       repository_id,
-                                                                       changeset_revision,
-                                                                       tool_config_filename,
-                                                                       work_dir)
+            tool, valid, message, sample_files = self.handle_sample_files_and_load_tool_from_tmp_config(
+                repo, repository_id, changeset_revision, tool_config_filename, work_dir
+            )
         basic_util.remove_dir(work_dir)
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         self.stdtm.reset_tool_data_tables()
@@ -226,7 +231,7 @@ class ToolValidator(GalaxyToolValidator):
     def load_tool_from_tmp_config(self, repo, repository_id, ctx, ctx_file, work_dir):
         tool = None
         valid = False
-        message = ''
+        message = ""
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx(ctx, ctx_file, work_dir)
         if tmp_tool_config:
             tool_element, error_message = xml_util.parse_xml(tmp_tool_config)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import ast
 import os
 import re
+
 try:
     from setuptools import setup
 except ImportError:
@@ -11,13 +11,13 @@ except ImportError:
 
 SOURCE_DIR = "galaxy"
 
-_version_re = re.compile(r'__version__\s+=\s+(.*)')
+_version_re = re.compile(r"__version__\s+=\s+(.*)")
 
-with open('%s/project_galaxy_tool_util.py' % SOURCE_DIR, 'rb') as f:
-    init_contents = f.read().decode('utf-8')
+with open("%s/project_galaxy_tool_util.py" % SOURCE_DIR, "rb") as f:
+    init_contents = f.read().decode("utf-8")
 
     def get_var(var_name):
-        pattern = re.compile(r'%s\s+=\s+(.*)' % var_name)
+        pattern = re.compile(r"%s\s+=\s+(.*)" % var_name)
         match = pattern.search(init_contents).group(1)
         return str(ast.literal_eval(match))
 
@@ -28,23 +28,27 @@ with open('%s/project_galaxy_tool_util.py' % SOURCE_DIR, 'rb') as f:
     PROJECT_EMAIL = get_var("PROJECT_EMAIL")
     PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
-TEST_DIR = 'tests'
+TEST_DIR = "tests"
 PACKAGES = [
-    'galaxy',
-    'galaxy.tool_util',
-    'galaxy.tool_util.client',
-    'galaxy.tool_util.cwl',
-    'galaxy.tool_util.deps',
-    'galaxy.tool_util.deps.container_resolvers',
-    'galaxy.tool_util.deps.mulled',
-    'galaxy.tool_util.deps.resolvers',
-    'galaxy.tool_util.linters',
-    'galaxy.tool_util.locations',
-    'galaxy.tool_util.parser',
-    'galaxy.tool_util.verify',
-    'galaxy.tool_util.verify.asserts',
+    "galaxy",
+    "galaxy.tool_util",
+    "galaxy.tool_util.client",
+    "galaxy.tool_util.cwl",
+    "galaxy.tool_util.deps",
+    "galaxy.tool_util.deps.container_resolvers",
+    "galaxy.tool_util.deps.mulled",
+    "galaxy.tool_util.deps.resolvers",
+    "galaxy.tool_util.linters",
+    "galaxy.tool_util.locations",
+    "galaxy.tool_util.parser",
+    "galaxy.tool_util.toolbox",
+    "galaxy.tool_util.toolbox.filters",
+    "galaxy.tool_util.toolbox.lineages",
+    "galaxy.tool_util.toolbox.views",
+    "galaxy.tool_util.verify",
+    "galaxy.tool_util.verify.asserts",
 ]
-ENTRY_POINTS = '''
+ENTRY_POINTS = """
         [console_scripts]
         galaxy-tool-test=galaxy.tool_util.verify.script:main
         mulled-build=galaxy.tool_util.deps.mulled.mulled_build:main
@@ -54,21 +58,22 @@ ENTRY_POINTS = '''
         mulled-build-files=galaxy.tool_util.deps.mulled.mulled_build_files:main
         mulled-list=galaxy.tool_util.deps.mulled.mulled_list:main
         mulled-update-singularity-containers=galaxy.tool_util.deps.mulled.mulled_update_singularity_containers:main
-'''
+        mulled-hash=galaxy.tool_util.deps.mulled.mulled_hash:main
+"""
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    'galaxy': [
-        'tool_util/deps/mulled/invfile.lua',
-        'tool_util/deps/resolvers/default_conda_mapping.yml',
-        'tool_util/xsd/galaxy.xsd',
+    "galaxy": [
+        "tool_util/deps/mulled/invfile.lua",
+        "tool_util/deps/resolvers/default_conda_mapping.yml",
+        "tool_util/xsd/galaxy.xsd",
     ],
 }
 PACKAGE_DIR = {
     SOURCE_DIR: SOURCE_DIR,
 }
 
-readme = open('README.rst').read()
-history = open('HISTORY.rst').read().replace('.. :changelog:', '')
+readme = open("README.rst").read()
+history = open("HISTORY.rst").read().replace(".. :changelog:", "")
 
 if os.path.exists("requirements.txt"):
     requirements = open("requirements.txt").read().split("\n")
@@ -84,8 +89,8 @@ setup(
     name=PROJECT_NAME,
     version=version,
     description=PROJECT_DESCRIPTION,
-    long_description=readme + '\n\n' + history,
-    long_description_content_type='text/x-rst',
+    long_description=readme + "\n\n" + history,
+    long_description_content_type="text/x-rst",
     author=PROJECT_AUTHOR,
     author_email=PROJECT_EMAIL,
     url=PROJECT_URL,
@@ -96,32 +101,38 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require={
-        'mulled': [
-            'conda',
-            'cytoolz',  # cytoolz is an undeclared dependency of the conda package on PyPI
-            'jinja2',
-            'Whoosh',
+        "cwl": [
+            "cwltool==3.1.20211107152837",
+        ],
+        "mulled": [
+            "conda",
+            "cytoolz",  # cytoolz is an undeclared dependency of the conda package on PyPI
+            "jinja2",
+            "Whoosh",
+        ],
+        "edam": [
+            "edam-ontology",
         ],
     },
     license="AFL",
     zip_safe=False,
-    keywords='galaxy',
+    keywords="galaxy",
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
-        'Environment :: Console',
-        'License :: OSI Approved :: Academic Free License (AFL)',
-        'Operating System :: POSIX',
-        'Topic :: Software Development',
-        'Topic :: Software Development :: Code Generators',
-        'Topic :: Software Development :: Testing',
-        'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Environment :: Console",
+        "License :: OSI Approved :: Academic Free License (AFL)",
+        "Operating System :: POSIX",
+        "Topic :: Software Development",
+        "Topic :: Software Development :: Code Generators",
+        "Topic :: Software Development :: Testing",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     test_suite=TEST_DIR,
-    tests_require=test_requirements
+    tests_require=test_requirements,
 )

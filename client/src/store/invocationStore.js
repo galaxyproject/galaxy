@@ -1,6 +1,7 @@
 export const state = {
     invocationDetailsById: {},
     invocationJobsSummaryById: {},
+    invocationStepById: {},
 };
 
 import Vue from "vue";
@@ -14,6 +15,9 @@ const getters = {
     getInvocationJobsSummaryById: (state) => (invocationId) => {
         return state.invocationJobsSummaryById[invocationId];
     },
+    getInvocationStepById: (state) => (invocationStepId) => {
+        return state.invocationStepById[invocationStepId];
+    },
 };
 
 const actions = {
@@ -25,6 +29,10 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/invocations/${invocationId}/jobs_summary`);
         commit("saveInvocationJobsSummaryForId", { invocationId, jobsSummary: data });
     },
+    fetchInvocationStepById: async ({ commit }, invocationStepId) => {
+        const { data } = await axios.get(`${getAppRoot()}api/invocations/any/steps/${invocationStepId}`);
+        commit("saveInvocationStepById", { invocationStepId, invocationStepData: data });
+    },
 };
 
 const mutations = {
@@ -33,6 +41,9 @@ const mutations = {
     },
     saveInvocationJobsSummaryForId: (state, { invocationId, jobsSummary }) => {
         Vue.set(state.invocationJobsSummaryById, invocationId, jobsSummary);
+    },
+    saveInvocationStepById: (state, { invocationStepId, invocationStepData }) => {
+        Vue.set(state.invocationStepById, invocationStepId, invocationStepData);
     },
 };
 

@@ -49,7 +49,9 @@ export function make_spin_state(
 /* Log/display an error when spinning fails. */
 export function spin_error(console_msg, user_msg, clear) {
     console.log(console_msg);
-    if (clear) clear_main_area();
+    if (clear) {
+        clear_main_area();
+    }
     if (typeof user_msg == "string") {
         Toast.clear();
         Toast.error(user_msg, "Error", {
@@ -102,14 +104,20 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
                         spin_state.ajax_timeout += spin_state.ajax_timeout_step;
                     }
                     spin_state.count++;
-                    if (!timeout_callback(jqxhr, status, error)) spin_again(spin_state);
+                    if (!timeout_callback(jqxhr, status, error)) {
+                        spin_again(spin_state);
+                    }
                 } else {
                     spin_state.count++;
-                    if (!error_callback(jqxhr, status, error)) spin_again(spin_state);
+                    if (!error_callback(jqxhr, status, error)) {
+                        spin_again(spin_state);
+                    }
                 }
             },
         };
-        if (bool_response) ajax_params.dataType = "json";
+        if (bool_response) {
+            ajax_params.dataType = "json";
+        }
         $.ajax(ajax_params);
     };
     console.log(`Setting up new spinner for ${spin_state.type} on ${url}`);
@@ -178,8 +186,7 @@ export function test_ie_availability(url, success_callback) {
         waiting: "Interactive environment container is running, attempting to connect to the IE. Please wait...",
         wait_warn:
             "It is taking an usually long time to connect to the interactive environment. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
-        error:
-            "An error was encountered while attempting to connect to the interactive environment, contact your administrator.",
+        error: "An error was encountered while attempting to connect to the interactive environment, contact your administrator.",
     };
     var spin_state = make_spin_state("IE availability");
     spin_until(url, false, messages, success_callback, spin_state);
@@ -201,8 +208,7 @@ export function load_when_ready(url, success_callback) {
         waiting: "Galaxy is launching a container in which to run this interactive environment. Please wait...",
         wait_warn:
             "It is taking an usually long time to start a container. Attempts will continue but you may want to report this condition to a Galaxy administrator if it does not succeed soon.",
-        error:
-            "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator.",
+        error: "Galaxy encountered an error while attempting to determine the readiness of this interactive environment's container, contact a Galaxy administrator.",
     };
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);

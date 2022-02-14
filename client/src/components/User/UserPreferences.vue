@@ -1,11 +1,11 @@
 <template>
     <b-container fluid class="p-0">
-        <h2>User preferences</h2>
+        <h2 v-localize>User preferences</h2>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
+            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
@@ -25,56 +25,58 @@
         <b-row class="ml-3 mb-1">
             <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
             <div class="pref-content pr-1">
-                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
-                <div class="form-text text-muted">
+                <a @click="toggleNotifications" href="javascript:void(0)"><b v-localize>Enable notifications</b></a>
+                <div class="form-text text-muted" v-localize>
                     Allow push and tab notifcations on job completion. To disable, revoke the site notification
                     privilege in your browser.
                 </div>
             </div>
         </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
-                <div class="form-text text-muted">
-                    Delete your account on this Galaxy server.
+        <ConfigProvider v-slot="{ config }">
+            <b-row v-if="config && !config.single_user && config.enable_account_interface" class="ml-3 mb-1">
+                <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
+                <div class="pref-content pr-1">
+                    <a id="delete-account" href="javascript:void(0)"
+                        ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
+                    >
+                    <div class="form-text text-muted" v-localize>Delete your account on this Galaxy server.</div>
+                    <b-modal
+                        id="modal-prevent-closing"
+                        centered
+                        ref="modal"
+                        title="Account Deletion"
+                        title-tag="h2"
+                        @show="resetModal"
+                        @hidden="resetModal"
+                        @ok="handleOk">
+                        <p>
+                            <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                            <b>
+                                This action cannot be undone. Your account will be permanently deleted, along with the
+                                data contained in it.
+                            </b>
+                        </p>
+                        <b-form ref="form" @submit.prevent="handleSubmit">
+                            <b-form-group
+                                :state="nameState"
+                                label="Enter your user email for this account as confirmation."
+                                label-for="Email"
+                                invalid-feedback="Incorrect email">
+                                <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
+                            </b-form-group>
+                        </b-form>
+                    </b-modal>
                 </div>
-                <b-modal
-                    id="modal-prevent-closing"
-                    centered
-                    ref="modal"
-                    title="Account Deletion"
-                    title-tag="h2"
-                    @show="resetModal"
-                    @hidden="resetModal"
-                    @ok="handleOk"
-                >
-                    <p>
-                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                        <b>
-                            This action cannot be undone. Your account will be permanently deleted, along with the data
-                            contained in it.
-                        </b>
-                    </p>
-                    <b-form ref="form" @submit.prevent="handleSubmit">
-                        <b-form-group
-                            :state="nameState"
-                            label="Enter your user email for this account as confirmation."
-                            label-for="Email"
-                            invalid-feedback="Incorrect email"
-                        >
-                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                        </b-form-group>
-                    </b-form>
-                </b-modal>
-            </div>
-        </b-row>
+            </b-row>
+        </ConfigProvider>
         <p class="mt-2">
-            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
+            {{ titleYouAreUsing }} <strong>{{ diskUsage }}</strong> {{ titleOfDiskSpace }}
             <span v-html="quotaUsageString"></span>
-            Is your usage more than expected? See the
-            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for
-            tips on how to find all of the data in your account.
+            {{ titleIsYourUsage }}
+            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"
+                ><b v-localize>documentation</b></a
+            >
+            {{ titleForTipsOnHow }}
         </p>
     </b-container>
 </template>
@@ -88,6 +90,8 @@ import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { userLogoutAll, userLogoutClient } from "layout/menu";
 import "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
@@ -103,6 +107,9 @@ export default {
             required: true,
         },
     },
+    components: {
+        ConfigProvider,
+    },
     data() {
         return {
             email: "",
@@ -115,6 +122,11 @@ export default {
             nameState: null,
             deleteError: "",
             submittedNames: [],
+            titleYouAreUsing: _l("You are using"),
+            titleOfDiskSpace: _l("of disk space in this Galaxy instance."),
+            titleIsYourUsage: _l("Is your usage more than expected? See the"),
+            titleForTipsOnHow: _l("for tips on how to find all of the data in your account."),
+            titleLoggedInAs: _l("You are logged in as"),
         };
     },
     created() {
@@ -217,11 +229,7 @@ export default {
                     Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": function () {
-                        window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
-                            Galaxy.session_csrf_token
-                        }`;
-                    },
+                    "Sign out": userLogoutAll,
                 },
             });
         },
@@ -241,15 +249,13 @@ export default {
             this.handleSubmit();
         },
         async handleSubmit() {
-            const Galaxy = getGalaxyInstance();
-            const userId = Galaxy.user.id;
             if (!this.checkFormValidity()) {
                 return false;
             }
             if (this.email === this.name) {
                 this.nameState = true;
                 try {
-                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
+                    await axios.delete(`${getAppRoot()}api/users/${this.userId}`);
                 } catch (e) {
                     if (e.response.status === 403) {
                         this.deleteError =
@@ -257,7 +263,7 @@ export default {
                         return false;
                     }
                 }
-                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
+                userLogoutClient();
             } else {
                 this.nameState = false;
                 return false;

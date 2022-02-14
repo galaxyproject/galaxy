@@ -1,3 +1,6 @@
-include *.rst LICENSE
+include *.rst *.txt LICENSE
+include galaxy/datatypes/set_metadata_tool.xml
+include galaxy/datatypes/converters/*.xml
 include galaxy/datatypes/test/*
-
+include galaxy/model/migrate/migrate.cfg
+include galaxy/model/tool_shed_install/migrate/migrate.cfg

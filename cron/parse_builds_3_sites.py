@@ -2,16 +2,17 @@
 """
 Connects to sites and determines which builds are available at each.
 """
-from __future__ import print_function
 
 import xml.etree.ElementTree as ElementTree
 
 import requests
 
-sites = ['http://genome.ucsc.edu/cgi-bin/',
-         'http://archaea.ucsc.edu/cgi-bin/',
-         'http://genome-test.gi.ucsc.edu/cgi-bin/']
-names = ['main', 'archaea', 'test']
+sites = [
+    "http://genome.ucsc.edu/cgi-bin/",
+    "http://archaea.ucsc.edu/cgi-bin/",
+    "http://genome-test.gi.ucsc.edu/cgi-bin/",
+]
+names = ["main", "archaea", "test"]
 
 
 def main():
@@ -33,7 +34,7 @@ def main():
         print("#Harvested from", site)
 
         for dsn in tree:
-            build = dsn.find("SOURCE").attrib['id']
+            build = dsn.find("SOURCE").attrib["id"]
             builds.append(build)
             build_dict = {}
         for build in builds:

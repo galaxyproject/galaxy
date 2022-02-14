@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Sweepster" disabled="true">
+<visualization name="Sweepster" embeddable="false" disabled="true">
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>

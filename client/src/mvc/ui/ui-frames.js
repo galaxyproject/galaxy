@@ -211,6 +211,9 @@ var View = Backbone.View.extend({
             self.frame_counter--;
             self._panelRefresh(true);
             self._panelAnimationComplete();
+            if (this.frame_counter == 0) {
+                this._eventHide();
+            }
             self.trigger("remove");
         });
     },

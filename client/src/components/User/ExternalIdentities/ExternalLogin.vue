@@ -13,8 +13,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
                     </b-form-group>
 
@@ -49,8 +48,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
 
                         <b-button
@@ -169,10 +167,13 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            if (this.login_page) this.setIdpPreference();
+            if (this.login_page) {
+                this.setIdpPreference();
+            }
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {
+                    localStorage.setItem("galaxy-provider", idp);
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     }
@@ -226,7 +227,10 @@ export default {
     },
     created() {
         this.rememberIdp = this.getIdpPreference() !== null;
-        this.getCILogonIdps();
+        /* Only fetch CILogonIDPs if custos/cilogon configured */
+        if (this.cilogonListShow) {
+            this.getCILogonIdps();
+        }
     },
 };
 </script>

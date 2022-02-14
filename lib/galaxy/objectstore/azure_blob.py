@@ -19,11 +19,12 @@ except ImportError:
 
 from galaxy.exceptions import (
     ObjectInvalid,
-    ObjectNotFound
+    ObjectNotFound,
 )
 from galaxy.util import (
     directory_hash_id,
-    umask_fix_perms
+    umask_fix_perms,
+    unlink,
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
@@ -32,48 +33,50 @@ from ..objectstore import (
     convert_bytes,
 )
 
-NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
-                                "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
+NO_BLOBSERVICE_ERROR_MESSAGE = (
+    "ObjectStore configured, but no azure.storage.blob dependency available."
+    "Please install and properly configure azure.storage.blob or modify Object Store configuration."
+)
 
 log = logging.getLogger(__name__)
 
 
 def parse_config_xml(config_xml):
     try:
-        auth_xml = config_xml.findall('auth')[0]
+        auth_xml = config_xml.findall("auth")[0]
 
-        account_name = auth_xml.get('account_name')
-        account_key = auth_xml.get('account_key')
+        account_name = auth_xml.get("account_name")
+        account_key = auth_xml.get("account_key")
 
-        container_xml = config_xml.find('container')
-        container_name = container_xml.get('name')
-        max_chunk_size = int(container_xml.get('max_chunk_size', 250))  # currently unused
+        container_xml = config_xml.find("container")
+        container_name = container_xml.get("name")
+        max_chunk_size = int(container_xml.get("max_chunk_size", 250))  # currently unused
 
-        c_xml = config_xml.findall('cache')[0]
-        cache_size = float(c_xml.get('size', -1))
-        staging_path = c_xml.get('path', None)
+        c_xml = config_xml.findall("cache")[0]
+        cache_size = float(c_xml.get("size", -1))
+        staging_path = c_xml.get("path", None)
 
-        tag, attrs = 'extra_dir', ('type', 'path')
+        tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
         if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            msg = f"No {tag} element in XML tree"
             log.error(msg)
             raise Exception(msg)
         extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
         return {
-            'auth': {
-                'account_name': account_name,
-                'account_key': account_key,
+            "auth": {
+                "account_name": account_name,
+                "account_key": account_key,
             },
-            'container': {
-                'name': container_name,
-                'max_chunk_size': max_chunk_size,
+            "container": {
+                "name": container_name,
+                "max_chunk_size": max_chunk_size,
             },
-            'cache': {
-                'size': cache_size,
-                'path': staging_path,
+            "cache": {
+                "size": cache_size,
+                "path": staging_path,
             },
-            'extra_dirs': extra_dirs,
+            "extra_dirs": extra_dirs,
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -87,7 +90,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
-    store_type = 'azure_blob'
+
+    store_type = "azure_blob"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
@@ -98,14 +102,14 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         container_dict = config_dict["container"]
         cache_dict = config_dict["cache"]
 
-        self.account_name = auth_dict.get('account_name')
-        self.account_key = auth_dict.get('account_key')
+        self.account_name = auth_dict.get("account_name")
+        self.account_key = auth_dict.get("account_key")
 
-        self.container_name = container_dict.get('name')
-        self.max_chunk_size = container_dict.get('max_chunk_size', 250)  # currently unused
+        self.container_name = container_dict.get("name")
+        self.max_chunk_size = container_dict.get("max_chunk_size", 250)  # currently unused
 
-        self.cache_size = cache_dict.get('size', -1)
-        self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
+        self.cache_size = cache_dict.get("size", -1)
+        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         self._initialize()
 
@@ -127,20 +131,22 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
     def to_dict(self):
         as_dict = super().to_dict()
-        as_dict.update({
-            'auth': {
-                'account_name': self.account_name,
-                'account_key': self.account_key,
-            },
-            'container': {
-                'name': self.container_name,
-                'max_chunk_size': self.max_chunk_size,
-            },
-            'cache': {
-                'size': self.cache_size,
-                'path': self.staging_path,
+        as_dict.update(
+            {
+                "auth": {
+                    "account_name": self.account_name,
+                    "account_key": self.account_key,
+                },
+                "container": {
+                    "name": self.container_name,
+                    "max_chunk_size": self.max_chunk_size,
+                },
+                "cache": {
+                    "size": self.cache_size,
+                    "path": self.staging_path,
+                },
             }
-        })
+        )
         return as_dict
 
     ###################
@@ -157,17 +163,27 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         self.account = CloudStorageAccount(self.account_name, self.account_key)
         self.service = self.account.create_block_blob_service()
 
-    def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+    def _construct_path(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir=False,
+        **kwargs,
+    ):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
-            log.warning('extra_dir is not normalized: %s', extra_dir)
+            log.warning("extra_dir is not normalized: %s", extra_dir)
             raise ObjectInvalid("The requested object is invalid")
         # ensure that any parent directory references in alt_name would not
         # result in a path not contained in the directory path constructed here
         if alt_name:
             if not safe_relpath(alt_name):
-                log.warning('alt_name would locate path outside dir: %s', alt_name)
+                log.warning("alt_name would locate path outside dir: %s", alt_name)
                 raise ObjectInvalid("The requested object is invalid")
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
@@ -192,12 +208,12 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         # rel_path = '%s/' % rel_path # assume for now we don't need this in Azure blob storage.
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
 
         return rel_path
 
     def _fix_permissions(self, rel_path):
-        """ Set permissions on rel_path"""
+        """Set permissions on rel_path"""
         for basedir, _, files in os.walk(rel_path):
             umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
             for filename in files:
@@ -237,7 +253,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         return exists
 
     def _in_cache(self, rel_path):
-        """ Check if the given dataset is in the local cache. """
+        """Check if the given dataset is in the local cache."""
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
 
@@ -259,12 +275,18 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
             if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
-                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                             rel_path, self._get_size_in_azure(rel_path), self.cache_size)
+                log.critical(
+                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    rel_path,
+                    self._get_size_in_azure(rel_path),
+                    self.cache_size,
+                )
                 return False
             else:
                 self.transfer_progress = 0  # Reset transfer progress counter
-                self.service.get_blob_to_path(self.container_name, rel_path, local_destination, progress_callback=self._transfer_cb)
+                self.service.get_blob_to_path(
+                    self.container_name, rel_path, local_destination, progress_callback=self._transfer_cb
+                )
                 return True
         except AzureHttpError:
             log.exception("Problem downloading '%s' from Azure", rel_path)
@@ -282,24 +304,44 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             source_file = source_file or self._get_cache_path(rel_path)
 
             if not os.path.exists(source_file):
-                log.error("Tried updating blob '%s' from source file '%s', but source file does not exist.", rel_path, source_file)
+                log.error(
+                    "Tried updating blob '%s' from source file '%s', but source file does not exist.",
+                    rel_path,
+                    source_file,
+                )
                 return False
 
             if os.path.getsize(source_file) == 0:
-                log.debug("Wanted to push file '%s' to azure blob '%s' but its size is 0; skipping.", source_file, rel_path)
+                log.debug(
+                    "Wanted to push file '%s' to azure blob '%s' but its size is 0; skipping.", source_file, rel_path
+                )
                 return True
 
             if from_string:
-                self.service.create_blob_from_text(self.container_name, rel_path, from_string, progress_callback=self._transfer_cb)
+                self.service.create_blob_from_text(
+                    self.container_name, rel_path, from_string, progress_callback=self._transfer_cb
+                )
                 log.debug("Pushed data from string '%s' to blob '%s'", from_string, rel_path)
             else:
                 start_time = datetime.now()
-                log.debug("Pushing cache file '%s' of size %s bytes to '%s'", source_file, os.path.getsize(source_file), rel_path)
+                log.debug(
+                    "Pushing cache file '%s' of size %s bytes to '%s'",
+                    source_file,
+                    os.path.getsize(source_file),
+                    rel_path,
+                )
                 self.transfer_progress = 0  # Reset transfer progress counter
-                self.service.create_blob_from_path(self.container_name, rel_path, source_file, progress_callback=self._transfer_cb)
+                self.service.create_blob_from_path(
+                    self.container_name, rel_path, source_file, progress_callback=self._transfer_cb
+                )
                 end_time = datetime.now()
-                log.debug("Pushed cache file '%s' to blob '%s' (%s bytes transfered in %s sec)",
-                          source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                log.debug(
+                    "Pushed cache file '%s' to blob '%s' (%s bytes transfered in %s sec)",
+                    source_file,
+                    rel_path,
+                    os.path.getsize(source_file),
+                    end_time - start_time,
+                )
             return True
 
         except AzureHttpError:
@@ -318,8 +360,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         in_azure = self._in_azure(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in azure: %s" % (rel_path, in_cache, in_azure))
         # dir_only does not get synced so shortcut the decision
-        dir_only = kwargs.get('dir_only', False)
-        base_dir = kwargs.get('base_dir', None)
+        dir_only = kwargs.get("dir_only", False)
+        base_dir = kwargs.get("base_dir", None)
         if dir_only:
             if in_cache or in_azure:
                 return True
@@ -362,10 +404,10 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if not self._exists(obj, **kwargs):
 
             # Pull out locally used fields
-            extra_dir = kwargs.get('extra_dir', None)
-            extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
-            dir_only = kwargs.get('dir_only', False)
-            alt_name = kwargs.get('alt_name', None)
+            extra_dir = kwargs.get("extra_dir", None)
+            extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
+            dir_only = kwargs.get("dir_only", False)
+            alt_name = kwargs.get("alt_name", None)
 
             # Construct hashed path
             rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
@@ -389,15 +431,15 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
-                open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_os(rel_path, from_string='')
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+                open(os.path.join(self.staging_path, rel_path), "w").close()
+                self._push_to_os(rel_path, from_string="")
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound('objectstore.empty, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+            raise ObjectNotFound(f"objectstore.empty, object does not exist: {str(obj)}, kwargs: {str(kwargs)}")
 
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -413,10 +455,10 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
     def _delete(self, obj, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
-        extra_dir = kwargs.get('extra_dir', None)
-        base_dir = kwargs.get('base_dir', None)
-        dir_only = kwargs.get('dir_only', False)
-        obj_dir = kwargs.get('obj_dir', False)
+        extra_dir = kwargs.get("extra_dir", None)
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
         try:
             if base_dir and dir_only and obj_dir:
                 # Remove temporary data in JOB_WORK directory
@@ -428,7 +470,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual blob in Azure and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 blobs = self.service.list_blobs(self.container_name, prefix=rel_path)
                 for blob in blobs:
                     log.debug("Deleting from Azure: %s", blob)
@@ -436,7 +478,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._in_azure(rel_path):
                     log.debug("Deleting from Azure: %s", rel_path)
@@ -445,7 +487,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         except AzureHttpError:
             log.exception("Could not delete blob '%s' from Azure", rel_path)
         except OSError:
-            log.exception('%s delete error', self._get_filename(obj, **kwargs))
+            log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -462,9 +504,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
     def _get_filename(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
-        base_dir = kwargs.get('base_dir', None)
-        dir_only = kwargs.get('dir_only', False)
-        obj_dir = kwargs.get('obj_dir', False)
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
@@ -493,7 +535,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound('objectstore.get_filename, no cache_path: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {str(obj)}, kwargs: {str(kwargs)}")
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
@@ -518,7 +560,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             self._push_to_os(rel_path, source_file)
 
         else:
-            raise ObjectNotFound('objectstore.update_from_file, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+            raise ObjectNotFound(
+                f"objectstore.update_from_file, object does not exist: {str(obj)}, kwargs: {str(kwargs)}"
+            )
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -558,8 +602,11 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # Initiate cleaning once within 10% of the defined cache size?
             cache_limit = self.cache_size * 0.9
             if total_size > cache_limit:
-                log.info("Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                         convert_bytes(total_size), convert_bytes(cache_limit))
+                log.info(
+                    "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
+                    convert_bytes(total_size),
+                    convert_bytes(cache_limit),
+                )
                 # How much to delete? If simply deleting up to the cache-10% limit,
                 # is likely to be deleting frequently and may run the risk of hitting
                 # the limit - maybe delete additional #%?

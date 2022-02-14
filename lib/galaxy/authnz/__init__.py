@@ -26,12 +26,14 @@ class IdentityProvider:
 
         :type config: lxml.etree.ElementTree._Element
         :param config: Is the configuration element of the provider
-            from the configuration file (e.g., oidc_config.xml).
-            This element contains the all the provider-specific
-            configuration elements.
+                       from the configuration file (e.g., oidc_config.xml).
+                       This element contains the all the provider-specific
+                       configuration elements.
 
         :type backend_config: lxml.etree.ElementTree._Element
-        :param backend_config: Is the configuration element of the backend of
+        :param backend_config:
+
+            Is the configuration element of the backend of
             the provider from the configuration file (e.g.,
             oidc_backends_config.xml). This element contains all the
             backend-specific configuration elements.
@@ -47,24 +49,23 @@ class IdentityProvider:
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
 
-        :return: a redirect URI to the provider's authentication
-            endpoint.
+        :returns: a redirect URI to the provider's authentication endpoint
         """
         raise NotImplementedError()
 
-    def callback(self, state_token, authz_code, trans, login_redirect_url):
-        """
-        Handles authentication call-backs from identity providers.
-        This process maps `state-token` to a user
-        :type state_token: string
+    def callback(self, state_token: str, authz_code: str, trans, login_redirect_url):
+        """Handles authentication call-backs from identity providers.
+
+        This process maps `state-token` to a user.
+
         :param state_token: is an anti-forgery token which identifies
-            a Galaxy user to whom the given authorization code belongs to.
-        :type authz_code: string
+                            a Galaxy user to whom the given authorization code belongs to.
         :param authz_code: a very short-lived, single-use token to
-            request a refresh token.
+                           request a refresh token.
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
-        :return tuple: a tuple of redirect_url and user.
+        :rtype: tuple
+        :returns: a tuple of redirect_url and user.
         """
         raise NotImplementedError()
 
@@ -79,7 +80,7 @@ class IdentityProvider:
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
 
-        :type trans: string
-        :param trans: Optional URL to redirect to after logging out of IDP.
+        :type post_logout_redirect_url: string
+        :param post_logout_redirect_url: Optional URL to redirect to after logging out of IDP.
         """
         raise NotImplementedError()

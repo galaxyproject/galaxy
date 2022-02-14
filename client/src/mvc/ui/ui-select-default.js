@@ -259,7 +259,7 @@ var View = Backbone.View.extend({
         if (this.model.get("multiple")) {
             if (this.all_button) {
                 var value = this._getValue();
-                this.all_button.value($.isArray(value) ? value.length : 0, this.length());
+                this.all_button.value(Array.isArray(value) ? value.length : 0, this.length());
             }
         } else if (this._getValue() === null && !this.model.get("optional")) {
             this._setValue(this.first());
@@ -287,7 +287,7 @@ var View = Backbone.View.extend({
     /** Return the label/text of the current selection */
     text: function () {
         var v = this._getValue();
-        var d = this.exists($.isArray(v) ? v[0] : v);
+        var d = this.exists(Array.isArray(v) ? v[0] : v);
         return d ? d.label : "";
     },
 
@@ -351,7 +351,7 @@ var View = Backbone.View.extend({
 
     /** Number of available options */
     length: function () {
-        return $.isArray(this.model.get("data")) ? this.model.get("data").length : 0;
+        return Array.isArray(this.model.get("data")) ? this.model.get("data").length : 0;
     },
 
     /** Set value to dom */
@@ -360,8 +360,8 @@ var View = Backbone.View.extend({
             new_value = "__null__";
         }
         if (this.model.get("multiple")) {
-            new_value = $.isArray(new_value) ? new_value : [new_value];
-        } else if ($.isArray(new_value)) {
+            new_value = Array.isArray(new_value) ? new_value : [new_value];
+        } else if (Array.isArray(new_value)) {
             if (new_value.length > 0) {
                 new_value = new_value[0];
             } else {
@@ -369,7 +369,7 @@ var View = Backbone.View.extend({
             }
         }
         if (this.model.get("searchable")) {
-            if ($.isArray(new_value)) {
+            if (Array.isArray(new_value)) {
                 var val = [];
                 _.each(new_value, (v) => {
                     var d = this.data2index[v];
@@ -393,7 +393,7 @@ var View = Backbone.View.extend({
         if (this.model.get("searchable")) {
             var selected = this.$select.select2("data");
             if (selected) {
-                if ($.isArray(selected)) {
+                if (Array.isArray(selected)) {
                     val = [];
                     selected.sort((a, b) => a.order - b.order);
                     _.each(selected, (v) => {

@@ -4,7 +4,12 @@ Migration script to add a 'tool_version' column to the hda/ldda tables.
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

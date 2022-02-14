@@ -4,7 +4,16 @@ Migration script to add new tables for InteractiveTools.
 
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+)
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.orm.now import now
@@ -13,7 +22,8 @@ log = logging.getLogger(__name__)
 metadata = MetaData()
 
 interactivetool_entry_point = Table(
-    "interactivetool_entry_point", metadata,
+    "interactivetool_entry_point",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("name", TEXT),
@@ -27,17 +37,20 @@ interactivetool_entry_point = Table(
     Column("configured", Boolean, default=False),
     Column("deleted", Boolean, default=False),
     Column("created_time", DateTime, default=now),
-    Column("modified_time", DateTime, default=now, onupdate=now))
+    Column("modified_time", DateTime, default=now, onupdate=now),
+)
 
 job_container_association = Table(
-    "job_container_association", metadata,
+    "job_container_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("container_type", TEXT),
     Column("container_name", TEXT),
     Column("container_info", JSONType, nullable=True),
     Column("created_time", DateTime, default=now),
-    Column("modified_time", DateTime, default=now, onupdate=now))
+    Column("modified_time", DateTime, default=now, onupdate=now),
+)
 
 
 def upgrade(migrate_engine):

@@ -28,8 +28,7 @@
                             </b-form-group>
                             <b-form-group
                                 v-if="mailing_join_addr && server_mail_configured"
-                                label="Subscribe to mailing list"
-                            >
+                                label="Subscribe to mailing list">
                                 <input name="subscribe" type="checkbox" v-model="subscribe" />
                             </b-form-group>
                             <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
@@ -119,7 +118,7 @@ export default {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || rootUrl;
+                    window.location = this.redirect || `${rootUrl}welcome/new`;
                 })
                 .catch((error) => {
                     this.disableCreate = false;

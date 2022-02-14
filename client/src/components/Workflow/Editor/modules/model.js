@@ -1,64 +1,74 @@
 import Connector from "./connector";
 import Vue from "vue";
 
-export function fromSimple(workflow, data, appendData = false) {
+export async function fromSimple(workflow, data, appendData = false) {
     let offset = 0;
     if (appendData) {
         offset = workflow.nodeIndex;
     } else {
+        workflow.nodeIndex = 0;
         workflow.name = data.name;
+        workflow.annotation = data.annotation;
+        workflow.license = data.license;
+        workflow.creator = data.creator;
         Object.values(workflow.nodes).forEach((node) => {
             node.onRemove();
         });
     }
-    Vue.nextTick(() => {
-        workflow.version = data.version;
-        workflow.report = data.report || {};
-        Object.values(data.steps).forEach((step) => {
-            // If workflow being copied into another, wipe UUID and let
-            // Galaxy assign new ones.
-            if (appendData) {
-                step.uuid = null;
+    await Vue.nextTick();
+    workflow.version = data.version;
+    workflow.report = data.report || {};
+    Object.values(data.steps).forEach((step) => {
+        // If workflow being copied into another, wipe UUID and let
+        // Galaxy assign new ones.
+        if (appendData) {
+            step.uuid = null;
+        }
+        Vue.set(workflow.steps, workflow.nodeIndex++, {
+            ...step,
+        });
+    });
+    await Vue.nextTick();
+    // Second pass, connections
+    let using_workflow_outputs = false;
+    Object.entries(data.steps).forEach(([id, step]) => {
+        if (step.workflow_outputs && step.workflow_outputs.length > 0) {
+            using_workflow_outputs = true;
+        }
+    });
+
+    Object.entries(data.steps).forEach(([id, step]) => {
+        const nodeIndex = parseInt(id) + offset;
+        const node = workflow.nodes[nodeIndex];
+        Object.entries(step.input_connections).forEach(([k, v]) => {
+            if (v) {
+                if (!Array.isArray(v)) {
+                    v = [v];
+                }
+                v.forEach((x) => {
+                    const otherNodeIndex = parseInt(x.id) + offset;
+                    const otherNode = workflow.nodes[otherNodeIndex];
+                    const c = new Connector(workflow.canvasManager);
+                    c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
+                    c.redraw();
+                });
             }
-            Vue.set(workflow.steps, workflow.nodeIndex++, {
-                ...step,
-                _complete: true,
-            });
         });
-        Vue.nextTick(() => {
-            // Second pass, connections
-            Object.entries(data.steps).forEach(([id, step]) => {
-                const nodeIndex = parseInt(id) + offset;
-                const node = workflow.nodes[nodeIndex];
 
-                Object.entries(step.input_connections).forEach(([k, v]) => {
-                    if (v) {
-                        if (!Array.isArray(v)) {
-                            v = [v];
-                        }
-                        v.forEach((x) => {
-                            const otherNodeIndex = parseInt(x.id) + offset;
-                            const otherNode = workflow.nodes[otherNodeIndex];
-                            const c = new Connector(workflow.canvasManager);
-                            c.connect(otherNode.outputTerminals[x.output_name], node.inputTerminals[k]);
-                            c.redraw();
-                        });
-                    }
-                });
-
-                // Older workflows contain HideDatasetActions only, but no active outputs yet.
-                Object.values(node.outputs).forEach((ot) => {
-                    if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
-                        node.activeOutputs.add(ot.name);
-                    }
-                });
+        if (!using_workflow_outputs) {
+            // Older workflows contain HideDatasetActions only, but no active outputs yet.
+            Object.values(node.outputs).forEach((ot) => {
+                if (!node.postJobActions[`HideDatasetAction${ot.name}`]) {
+                    node.activeOutputs.add(ot.name);
+                }
             });
-        });
+        }
     });
 }
 
 export function toSimple(workflow) {
     const nodes = {};
+    const canvasZoom = workflow.canvasManager.canvasZoom;
     _rectifyOutputs(workflow);
     Object.values(workflow.nodes).forEach((node) => {
         const input_connections = {};
@@ -102,7 +112,7 @@ export function toSimple(workflow) {
             tool_state: node.tool_state,
             errors: node.errors,
             input_connections: input_connections,
-            position: node.element.getBoundingClientRect(),
+            position: _scaledBoundingClientRect(node.element, canvasZoom),
             annotation: node.annotation,
             post_job_actions: node.postJobActions,
             uuid: node.uuid,
@@ -112,7 +122,18 @@ export function toSimple(workflow) {
         nodes[node.id] = node_data;
     });
     const report = workflow.report;
-    return { steps: nodes, report: report };
+    const license = workflow.license;
+    const creator = workflow.creator;
+    const annotation = workflow.annotation;
+    const name = workflow.name;
+    return { steps: nodes, report, license, creator, annotation, name };
+}
+
+function _scaledBoundingClientRect(element, canvasZoom) {
+    const rect = element.getBoundingClientRect();
+    rect.x /= canvasZoom;
+    rect.y /= canvasZoom;
+    return rect;
 }
 
 function _rectifyOutputs(workflow) {

@@ -1,0 +1,134 @@
+[tool.black]
+line-length = 120
+target-version = ['py37']
+include = '\.pyi?$'
+extend-exclude = '''
+^/(
+  | packages
+)/
+'''
+force-exclude = 'lib/galaxy/util/jstree.py'
+
+[tool.poetry]
+name = "galaxy"
+version = "22.01.dev0"
+description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
+authors = ["Galaxy Contributors"]
+license = "AFL-3.0"
+readme = "README.rst"
+homepage = "https://galaxyproject.org/"
+repository = "https://github.com/galaxyproject/galaxy/"
+documentation = "https://docs.galaxyproject.org/"
+
+[[tool.poetry.source]]
+name = "galaxyproject"
+url = "https://wheels.galaxyproject.org/simple"
+
+[tool.poetry.dependencies]
+aiofiles = "*"
+Babel = "*"
+bdbag = "*"
+Beaker = "1.11.0"
+bioblend = "*"
+bleach = "*"
+boltons = "*"
+boto = "*"
+bx-python = "*"
+celery = "*"
+Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/poetry/issues/2453
+cloudauthz = "==0.6.0"
+cloudbridge = "*"
+circus = "*"
+cwltool = "==3.1.20211107152837"
+dictobj = "*"
+docutils = "!=0.17, !=0.17.1"
+edam-ontology = "*"
+Fabric3 = "*"
+fastapi = ">=0.68.2, !=0.69.0, !=0.70.0, !=0.70.1"  # https://github.com/tiangolo/fastapi/issues/4041
+fastapi-utils = "*"
+fs = "*"
+future = "*"
+galaxy_sequence_utils = "*"
+gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "main"}
+gunicorn = "*"
+gxformat2 = "*"
+h5py = "*"
+importlib_resources = "*"
+isa-rwval = "*"
+kombu = "*"
+lagom = "*"
+Mako = "*"
+Markdown = "*"
+MarkupSafe = "*"
+Mercurial = "*"
+mrcfile = "*"
+nodeenv = "*"
+nose = "*"
+numpy = "*"
+paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
+Parsley = "*"
+Paste = "*"
+psutil = "*"
+pulsar-galaxy-lib = ">=0.14.13"
+pycryptodome = "*"
+pydantic = "*"
+pykwalify = "*"
+pyparsing = "*"
+pysam = "*"
+python = ">=3.7,<4"
+python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
+pyuwsgi = "*"
+PyYAML = "*"
+refgenconf = ">=0.12.0"
+requests = "*"
+Routes = "*"
+social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
+sortedcontainers = "*"
+SQLAlchemy = ">=1.4.25,<2"
+sqlalchemy-migrate = "*"
+sqlitedict = "*"
+sqlparse = "*"
+starlette = "*"
+starlette-context = "*"
+svgwrite = "*"
+tifffile = "*"
+tuswsgi = "*"
+typing-extensions = "*"
+uvicorn = "*"
+uvloop = "*"
+WebOb = "*"
+Whoosh = "*"
+zipstream-new = "*"
+
+[tool.poetry.dev-dependencies]
+black = "^22.1.0"
+cwltest = "2.2.20210901154959"
+darker = "*"
+fluent-logger = "*"
+httpx = "*"
+isort = "^5.10.1"
+lxml = "!=4.2.2"
+markdown-it-reporter = "*"
+NoseHTML = "*"
+PyGithub = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-celery = "*"
+pytest-cov = "*"
+pytest-html = "*"
+python-irodsclient = "*"
+pytest-json-report = "*"
+pytest-mock = "*"
+pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
+pytest-shard = "*"
+recommonmark = "*"
+responses = "*"
+selenium = "*"
+Sphinx = ">=4.0"  # support docutils 0.17
+sphinx_markdown_tables = "*"
+sphinx_rtd_theme = "*"
+statsd = "*"
+testfixtures = "*"
+tuspy = "*"
+twill = "*"
+watchdog = "*"

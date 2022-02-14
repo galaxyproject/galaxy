@@ -1,0 +1,18 @@
+---
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+
+execution:
+  default: local_singularity
+  environments:
+    local_singularity:
+      runner: local
+      singularity_enabled: true
+    local_upload:
+      runner: local
+
+tools:
+  - id: upload1
+    environment: local_upload

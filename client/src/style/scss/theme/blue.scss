@@ -72,7 +72,7 @@ $state-danger-bg: theme-color-level("danger", $alert-bg-level);
 $state-danger-border: theme-color-level("danger", $alert-border-level);
 
 $state-info-text: theme-color-level("info", $alert-color-level);
-$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-bg: lighten($brand-info, 50%);
 $state-info-border: theme-color-level("info", $alert-border-level);
 
 $state-success-text: theme-color-level("success", $alert-color-level);
@@ -138,14 +138,13 @@ $form-heading-bg: $panel-bg-color;
 $form-border: darken($form-heading-bg, 20%);
 
 // Table
-$table-heading-bg: $panel-bg-color;
-$table-bg-accent: darken($panel-bg-color, 5%);
+$table-heading-bg: darken($panel-bg-color, 5%);
+$table-bg-accent: $panel-bg-color;
 $table-border-color: transparent;
 
 // Additional state colors
 $state-default-bg: $gray-200;
 $state-default-border: $border-color;
-$state-paused-bg: lighten($brand-info, 50%);
 $state-running-bg: lighten($brand-warning, 40%);
 $state-running-border: $border-color;
 
@@ -154,7 +153,7 @@ $workflow-editor-bg: $white;
 $workflow-editor-grid-size: 0.7rem;
 $workflow-editor-grid-color: lighten($brand-primary, 65%);
 $workflow-overview-bg: $panel-bg-color;
-$worfklow-node-width: 12.5rem;
+$workflow-node-width: 12.5rem;
 
 // Margins
 $spacer: 1rem;

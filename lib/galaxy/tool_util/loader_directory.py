@@ -23,7 +23,7 @@ DATA_MANAGER_REGEX = re.compile(r"\stool_type=\"manage_data\"")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
-EXCLUDE_WALK_DIRS = ['.hg', '.git', '.venv']
+EXCLUDE_WALK_DIRS = [".hg", ".git", ".venv"]
 
 
 def load_exception_handler(path, exc_info):
@@ -38,15 +38,9 @@ def find_possible_tools_from_path(
 ):
     """Walk a directory and find potential tool files."""
     possible_tool_files = []
-    for possible_tool_file in _find_tool_files(
-        path, recursive=recursive,
-        enable_beta_formats=enable_beta_formats
-    ):
+    for possible_tool_file in _find_tool_files(path, recursive=recursive, enable_beta_formats=enable_beta_formats):
         try:
-            does_look_like_a_tool = looks_like_a_tool(
-                possible_tool_file,
-                enable_beta_formats=enable_beta_formats
-            )
+            does_look_like_a_tool = looks_like_a_tool(possible_tool_file, enable_beta_formats=enable_beta_formats)
         except OSError:
             # Some problem reading the tool file, skip.
             continue
@@ -121,7 +115,7 @@ def is_tool_load_error(obj):
     return obj is TOOL_LOAD_ERROR
 
 
-def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=False):
+def looks_like_a_tool(path_or_uri_like, invalid_names=None, enable_beta_formats=False):
     """Quick check to see if a file looks like it may be a tool file.
 
     Whether true in a strict sense or not, lets say the intention and
@@ -132,6 +126,7 @@ def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=Fa
     invalid_names may be supplied in the context of the tool shed to quickly
     rule common tool shed XML files.
     """
+    invalid_names = invalid_names or []
     path = resolved_path(path_or_uri_like)
     if path is UNRESOLVED_URI:
         # Assume the path maps to a real tool.
@@ -163,14 +158,16 @@ def looks_like_xml(path, regex=TOOL_REGEX):
     if not os.path.getsize(full_path):
         return False
 
-    if(checkers.check_binary(full_path) or
-       checkers.check_image(full_path) or
-       checkers.is_gzip(full_path) or
-       checkers.is_bz2(full_path) or
-       checkers.is_zip(full_path)):
+    if (
+        checkers.check_binary(full_path)
+        or checkers.check_image(full_path)
+        or checkers.is_gzip(full_path)
+        or checkers.is_bz2(full_path)
+        or checkers.is_zip(full_path)
+    ):
         return False
 
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding="utf-8") as f:
         try:
             start_contents = f.read(5 * 1024)
         except UnicodeDecodeError:
@@ -249,7 +246,7 @@ def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
 
     is_file = not os.path.isdir(path)
     if not os.path.exists(path):
-        raise Exception(PATH_DOES_NOT_EXIST_ERROR)
+        raise Exception(PATH_DOES_NOT_EXIST_ERROR % path)
     elif is_file and recursive:
         raise Exception(PATH_AND_RECURSIVE_ERROR)
     elif is_file:
@@ -257,12 +254,12 @@ def _find_tool_files(path_or_uri_like, recursive, enable_beta_formats):
     else:
         if enable_beta_formats:
             if not recursive:
-                files = glob.glob(path + "/*")
+                files = glob.glob(f"{path}/*")
             else:
                 files = _find_files(path, "*")
         else:
             if not recursive:
-                files = glob.glob(path + "/*.xml")
+                files = glob.glob(f"{path}/*.xml")
             else:
                 files = _find_files(path, "*.xml")
         return [os.path.abspath(_) for _ in files]
@@ -272,9 +269,9 @@ def _has_extension(path, extensions):
     return any(path.endswith(e) for e in extensions)
 
 
-def _find_files(directory, pattern='*'):
+def _find_files(directory, pattern="*"):
     if not os.path.exists(directory):
-        raise ValueError("Directory not found {}".format(directory))
+        raise ValueError(f"Directory not found {directory}")
 
     matches = []
     for root, dirnames, filenames in os.walk(directory):
@@ -295,14 +292,14 @@ def resolved_path(path_or_uri_like):
     if "://" not in path_or_uri_like:
         return path_or_uri_like
     elif path_or_uri_like.startswith("file://"):
-        return path_or_uri_like[len("file://"):]
+        return path_or_uri_like[len("file://") :]
     else:
         return UNRESOLVED_URI
 
 
 BETA_TOOL_CHECKERS = {
-    'yaml': looks_like_a_tool_yaml,
-    'cwl': looks_like_a_tool_cwl,
+    "yaml": looks_like_a_tool_yaml,
+    "cwl": looks_like_a_tool_cwl,
 }
 
 __all__ = (

@@ -14,11 +14,17 @@ export default {
         DelayedInput,
     },
     props: {
+        currentPanelView: {
+            type: String,
+            required: true,
+        },
         query: {
             type: String,
+            default: "",
         },
         placeholder: {
             type: String,
+            default: "search tools",
         },
     },
     data() {
@@ -44,7 +50,7 @@ export default {
                     this.loading = true;
                     axios
                         .get(`${getAppRoot()}api/tools`, {
-                            params: { q },
+                            params: { q, view: this.currentPanelView },
                         })
                         .then((response) => {
                             this.loading = false;

@@ -18,8 +18,8 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
-CLIENT_DEV_SERVER=${GALAXY_CLIENT_DEV_SERVER:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
+YARN_INSTALL_OPTS=${YARN_INSTALL_OPTS:-"--network-timeout 300000 --check-files"}
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -32,11 +32,6 @@ for arg in "$@"; do
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
 done
-
-# If a client dev server is being configured, skip the client build.
-if [ $CLIENT_DEV_SERVER -ne 0 ]; then
-    SKIP_CLIENT_BUILD=1
-fi
 
 SAMPLES="
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
@@ -121,12 +116,13 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.6' 'pip>=9' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.3' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
+            setup_gravity_state_dir
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
             if [ -z "$GALAXY_PYTHON" ]; then
@@ -144,6 +140,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "existing environment before starting Galaxy."
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
+                setup_gravity_state_dir
             else
                 vvers=16.7.9
                 vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
@@ -170,6 +167,7 @@ urlretrieve('$vurl', '$vsrc')"
                 tar zxf "$vsrc" -C "$vtmp"
                 "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
+                setup_gravity_state_dir
             fi
         fi
     fi
@@ -187,12 +185,12 @@ fi
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 : ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=8.1'
+    python -m pip install 'pip>=19.3'
 fi
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
-    requirement_args="$requirement_args -r ${GALAXY_DEV_REQUIREMENTS}"
+    requirement_args="-r ${GALAXY_DEV_REQUIREMENTS}"
 fi
 
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
@@ -264,7 +262,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
     # Build client
     cd client
-    if yarn install --network-timeout 300000 --check-files; then
+    if yarn install $YARN_INSTALL_OPTS; then
         if ! yarn run build-production-maps; then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1

@@ -21,8 +21,7 @@
                 <span
                     class="fa fa-arrow-down rule-column-selector-down"
                     v-if="index < target.length - 1"
-                    @click="moveUp(index + 1)"
-                ></span>
+                    @click="moveUp(index + 1)"></span>
             </li>
             <li v-if="this.target.length < this.colHeaders.length">
                 <span class="rule-column-selector-target-add" v-if="!orderedEdit">
@@ -30,7 +29,8 @@
                 </span>
                 <span class="rule-column-selector-target-select" v-else>
                     <select2 @input="handleAdd" placeholder="Select a column">
-                        <option /><!-- empty option selection for placeholder -->
+                        <option />
+                        <!-- empty option selection for placeholder -->
                         <option v-for="(col, index) in remainingHeaders" :value="index" :key="col">{{ col }}</option>
                     </select2>
                 </span>
@@ -46,11 +46,6 @@ import Select2 from "components/Select2";
 export default {
     components: {
         Select2,
-    },
-    data: function () {
-        return {
-            l: _l,
-        };
     },
     props: {
         target: {
@@ -122,10 +117,14 @@ export default {
             }
         },
         handleAdd(value) {
+            // TODO: Rework add/remove here to not mutate props.
+            // eslint-disable-next-line vue/no-mutating-props
             this.target.push(parseInt(value));
             this.$emit("update:orderedEdit", false);
         },
         handleRemove(index) {
+            // TODO: See above.
+            // eslint-disable-next-line vue/no-mutating-props
             this.target.splice(index, 1);
         },
         moveUp(value) {

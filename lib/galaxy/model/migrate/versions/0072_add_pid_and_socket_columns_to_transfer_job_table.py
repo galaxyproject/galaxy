@@ -4,7 +4,12 @@ Migration script to add 'pid' and 'socket' columns to the transfer_job table.
 
 import logging
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

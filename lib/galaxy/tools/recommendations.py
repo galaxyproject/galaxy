@@ -11,13 +11,13 @@ import yaml
 
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)
 
 
-class ToolRecommendations():
-
+class ToolRecommendations:
     def __init__(self):
         self.tool_recommendation_model_path = None
         self.admin_tool_recommendations_path = None
@@ -57,6 +57,7 @@ class ToolRecommendations():
             # keras is not downloaded because of conditional requirement and Galaxy does not build
             try:
                 import tensorflow as tf
+
                 tf.compat.v1.disable_v2_behavior()
             except Exception:
                 trans.response.status = 400
@@ -69,8 +70,8 @@ class ToolRecommendations():
             counter_layer_weights = 0
             self.tool_recommendation_model_path = self.__download_model(remote_model_url)
             # read the hdf5 attributes
-            trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
-            model_config = json.loads(trained_model['model_config'][()])
+            trained_model = h5py.File(self.tool_recommendation_model_path, "r")
+            model_config = json.loads(trained_model["model_config"][()])
             # set tensorflow's graph and session to maintain
             # consistency between model load and predict methods
             with self.graph.as_default():
@@ -79,7 +80,7 @@ class ToolRecommendations():
                         # iterate through all the attributes of the model to find weights of neural network layers
                         for item in trained_model.keys():
                             if "weight_" in item:
-                                weight = trained_model["weight_" + str(counter_layer_weights)][()]
+                                weight = trained_model[f"weight_{str(counter_layer_weights)}"][()]
                                 model_weights.append(weight)
                                 counter_layer_weights += 1
                         self.loaded_model = tf.keras.models.model_from_json(model_config)
@@ -89,12 +90,12 @@ class ToolRecommendations():
                         trans.response.status = 400
                         return False
             # set the dictionary of tools
-            self.model_data_dictionary = json.loads(trained_model['data_dictionary'][()])
+            self.model_data_dictionary = json.loads(trained_model["data_dictionary"][()])
             self.reverse_dictionary = {v: k for k, v in self.model_data_dictionary.items()}
             # set the list of compatible tools
-            self.compatible_tools = json.loads(trained_model['compatible_tools'][()])
-            tool_weights = json.loads(trained_model['class_weights'][()])
-            self.standard_connections = json.loads(trained_model['standard_connections'][()])
+            self.compatible_tools = json.loads(trained_model["compatible_tools"][()])
+            tool_weights = json.loads(trained_model["class_weights"][()])
+            self.standard_connections = json.loads(trained_model["standard_connections"][()])
             # sort the tools' usage dictionary
             tool_pos_sorted = [int(key) for key in tool_weights.keys()]
             for k in tool_pos_sorted:
@@ -121,21 +122,21 @@ class ToolRecommendations():
                     if admin_recommendation_preferences:
                         for tool_id in admin_recommendation_preferences:
                             tool_info = admin_recommendation_preferences[tool_id]
-                            if 'is_deprecated' in tool_info[0]:
+                            if "is_deprecated" in tool_info[0]:
                                 self.deprecated_tools[tool_id] = tool_info[0]["text_message"]
                             else:
                                 if tool_id not in self.admin_recommendations:
                                     self.admin_recommendations[tool_id] = tool_info
 
-    def __download_model(self, model_url, download_local='database/'):
+    def __download_model(self, model_url, download_local="database/"):
         """
         Download the model from remote server
         """
-        local_dir = os.path.join(os.getcwd(), download_local, 'tool_recommendation_model.hdf5')
+        local_dir = os.path.join(os.getcwd(), download_local, "tool_recommendation_model.hdf5")
         # read model from remote
-        model_binary = requests.get(model_url)
+        model_binary = requests.get(model_url, timeout=DEFAULT_SOCKET_TIMEOUT)
         # save model to a local directory
-        with open(local_dir, 'wb') as model_file:
+        with open(local_dir, "wb") as model_file:
             model_file.write(model_binary.content)
             return local_dir
 
@@ -143,11 +144,11 @@ class ToolRecommendations():
         """
         Get the input and output extensions of a tool
         """
-        payload = {'type': 'tool', 'tool_id': tool_id, '_': 'true'}
-        inputs = payload.get('inputs', {})
+        payload = {"type": "tool", "tool_id": tool_id, "_": "true"}
+        inputs = payload.get("inputs", {})
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload)
-        if 'tool_state' not in payload:
+        if "tool_state" not in payload:
             module_state = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state)
@@ -156,9 +157,9 @@ class ToolRecommendations():
         input_extensions = list()
         output_extensions = list()
         for i_ext in inputs:
-            input_extensions.extend(i_ext['extensions'])
+            input_extensions.extend(i_ext["extensions"])
         for o_ext in outputs:
-            output_extensions.extend(o_ext['extensions'])
+            output_extensions.extend(o_ext["extensions"])
         return input_extensions, output_extensions
 
     def __filter_tool_predictions(self, trans, prediction_data, tool_ids, tool_scores, last_tool_name):
@@ -179,7 +180,12 @@ class ToolRecommendations():
             c_dict = dict()
             for t_id in self.all_tools:
                 # select the name and tool id if it is installed in Galaxy
-                if t_id == child and score > 0.0 and child in last_compatible_tools and child not in self.deprecated_tools:
+                if (
+                    t_id == child
+                    and score > 0.0
+                    and child in last_compatible_tools
+                    and child not in self.deprecated_tools
+                ):
                     full_tool_id = self.all_tools[t_id][0]
                     pred_input_extensions, _ = self.__get_tool_extensions(trans, full_tool_id)
                     c_dict["name"] = self.all_tools[t_id][1]
@@ -190,7 +196,9 @@ class ToolRecommendations():
         # incorporate preferences set by admins
         if self.admin_tool_recommendations_path:
             # filter out deprecated tools
-            t_ids_scores = [(tid, score) for tid, score in zip(tool_ids, tool_scores) if tid not in self.deprecated_tools]
+            t_ids_scores = [
+                (tid, score) for tid, score in zip(tool_ids, tool_scores) if tid not in self.deprecated_tools
+            ]
             # set the property if the last tool of the sequence is deprecated
             if last_tool_name in self.deprecated_tools:
                 prediction_data["is_deprecated"] = True
@@ -271,7 +279,7 @@ class ToolRecommendations():
                 try:
                     sample[idx] = int(self.model_data_dictionary[tool_name])
                 except Exception:
-                    log.exception("Failed to find tool %s in model" % (tool_name))
+                    log.exception(f"Failed to find tool {tool_name} in model")
                     return prediction_data
             sample = np.reshape(sample, (1, self.max_seq_len))
             # boost the predicted scores using tools' usage
@@ -290,9 +298,13 @@ class ToolRecommendations():
             prediction = np.reshape(prediction, (nw_dimension,))
             half_len = int(nw_dimension / 2)
             # get recommended tools from published workflows
-            pub_t, pub_v = self.__separate_predictions(self.standard_connections, prediction[:half_len], last_tool_name, weight_values, topk)
+            pub_t, pub_v = self.__separate_predictions(
+                self.standard_connections, prediction[:half_len], last_tool_name, weight_values, topk
+            )
             # get recommended tools from normal workflows
-            c_t, c_v = self.__separate_predictions(self.compatible_tools, prediction[half_len:], last_tool_name, weight_values, topk)
+            c_t, c_v = self.__separate_predictions(
+                self.compatible_tools, prediction[half_len:], last_tool_name, weight_values, topk
+            )
             # combine predictions coming from different workflows
             # promote recommended tools coming from published workflows
             # to the top and then show other recommendations

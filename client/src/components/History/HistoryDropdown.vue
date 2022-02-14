@@ -5,8 +5,7 @@
             class="history-dropdown font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
-            aria-expanded="false"
-        >
+            aria-expanded="false">
             {{ history.name }}
         </b-link>
         <div class="dropdown-menu" aria-labelledby="history-dropdown">

@@ -35,6 +35,10 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
+        .fa {
+            @extend .fa-fw;
+            @extend .mr-2;
+        }
     }
 }
 
@@ -126,7 +130,25 @@ pre.code {
     white-space: pre-wrap;
     background: #1d1f21;
     color: white;
-    padding: 1em;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+pre.code.preview {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+table.info_data_table {
+    table-layout: fixed;
+    word-break: break-word;
+}
+table.info_data_table td:nth-child(1) {
+    width: 25%;
+}
+table.info_data_table th:nth-child(1) {
+    width: 25%;
 }
 
 // increase visibility of links within alert boxes
@@ -138,6 +160,10 @@ pre.code {
         font-weight: bold;
     }
     border-color: transparent;
+}
+
+.alert-info {
+    background: $state-info-bg !important;
 }
 
 // increase visibility of dropdown menu section headers

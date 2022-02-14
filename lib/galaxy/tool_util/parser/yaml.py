@@ -1,11 +1,11 @@
-from collections import OrderedDict
+import json
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC
+    DEFAULT_DELTA_FRAC,
 )
 from .interface import (
     InputSource,
@@ -25,6 +25,8 @@ from .util import is_dict
 
 class YamlToolSource(ToolSource):
 
+    language = "yaml"
+
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
@@ -34,11 +36,14 @@ class YamlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
+    def parse_tool_type(self):
+        return self.root_dict.get("tool_type")
+
     def parse_id(self):
         return self.root_dict.get("id")
 
     def parse_version(self):
-        return self.root_dict.get("version")
+        return str(self.root_dict.get("version"))
 
     def parse_name(self):
         return self.root_dict.get("name")
@@ -56,17 +61,14 @@ class YamlToolSource(ToolSource):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
-
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
 
     def parse_display_interface(self, default):
-        return self.root_dict.get('display_interface', default)
+        return self.root_dict.get("display_interface", default)
 
     def parse_require_login(self, default):
-        return self.root_dict.get('require_login', default)
+        return self.root_dict.get("require_login", default)
 
     def parse_command(self):
         return self.root_dict.get("command")
@@ -115,12 +117,12 @@ class YamlToolSource(ToolSource):
             elif output_type == "collection":
                 output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
-                message = "Unknown output_type [%s] encountered." % output_type
+                message = f"Unknown output_type [{output_type}] encountered."
                 raise Exception(message)
-        outputs = OrderedDict()
+        outputs = {}
         for output in output_defs:
             outputs[output.name] = output
-        output_collections = OrderedDict()
+        output_collections = {}
         for output in output_collection_defs:
             output_collections[output.name] = output
 
@@ -168,9 +170,7 @@ class YamlToolSource(ToolSource):
 
     def parse_tests_to_dict(self):
         tests = []
-        rval = dict(
-            tests=tests
-        )
+        rval = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -180,6 +180,9 @@ class YamlToolSource(ToolSource):
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
 
+    def parse_license(self):
+        return self.root_dict.get("license")
+
     def parse_interactivetool(self):
         return self.root_dict.get("entry_points", [])
 
@@ -188,6 +191,10 @@ class YamlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
+
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
 
 
 def _parse_test(i, test_dict):
@@ -209,11 +216,7 @@ def _parse_test(i, test_dict):
             else:
                 file = value
                 attributes = {}
-            new_outputs.append({
-                "name": key,
-                "value": file,
-                "attributes": attributes
-            })
+            new_outputs.append({"name": key, "value": file, "attributes": attributes})
     else:
         for output in outputs:
             name = output["name"]
@@ -224,11 +227,11 @@ def _parse_test(i, test_dict):
     for output in new_outputs:
         attributes = output["attributes"]
         defaults = {
-            'compare': 'diff',
-            'lines_diff': 0,
-            'delta': DEFAULT_DELTA,
-            'delta_frac': DEFAULT_DELTA_FRAC,
-            'sort': False,
+            "compare": "diff",
+            "lines_diff": 0,
+            "delta": DEFAULT_DELTA,
+            "delta_frac": DEFAULT_DELTA_FRAC,
+            "sort": False,
         }
         # TODO
         attributes["extra_files"] = []
@@ -247,7 +250,8 @@ def _parse_test(i, test_dict):
     test_dict["stdout"] = __to_test_assert_list(test_dict.get("stdout", []))
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
-    test_dict["expect_failure"] = test_dict.get("expect_exit_code", False)
+    test_dict["expect_failure"] = test_dict.get("expect_failure", False)
+    test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     return test_dict
 
 
@@ -280,16 +284,14 @@ def __to_test_assert_list(assertions):
 
 
 class YamlPageSource(PageSource):
-
     def __init__(self, inputs_list):
         self.inputs_list = inputs_list
 
     def parse_input_sources(self):
-        return map(YamlInputSource, self.inputs_list)
+        return list(map(YamlInputSource, self.inputs_list))
 
 
 class YamlInputSource(InputSource):
-
     def __init__(self, input_dict):
         self.input_dict = input_dict
 
@@ -339,7 +341,7 @@ class YamlInputSource(InputSource):
     def parse_static_options(self):
         static_options = list()
         input_dict = self.input_dict
-        for index, option in enumerate(input_dict.get("options", {})):
+        for option in input_dict.get("options", {}):
             value = option.get("value")
             label = option.get("label", value)
             selected = option.get("selected", False)

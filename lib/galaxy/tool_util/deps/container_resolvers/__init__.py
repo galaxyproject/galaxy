@@ -5,7 +5,6 @@ from abc import (
     abstractproperty,
 )
 
-
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 
@@ -22,9 +21,10 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type', 'can_uninstall_dependencies', 'builds_on_resolution']
+    dict_collection_visible_keys = ["resolver_type", "can_uninstall_dependencies", "builds_on_resolution"]
     can_uninstall_dependencies = False
     builds_on_resolution = False
+    read_only = True  # not used for containers, but set for when they are used like dependency resolvers
 
     def __init__(self, app_info=None, **kwds):
         """Default initializer for ``ContainerResolver`` subclasses."""
@@ -57,4 +57,4 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
         return container_description.type in enabled_container_types
 
     def __str__(self):
-        return "%s[]" % self.__class__.__name__
+        return f"{self.__class__.__name__}[]"

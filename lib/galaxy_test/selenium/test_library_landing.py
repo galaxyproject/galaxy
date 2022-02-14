@@ -17,11 +17,10 @@ class LibraryLandingTestCase(SeleniumTestCase):
     @selenium_test
     def test_create_new_close(self):
         num_displayed_libraries = self._num_displayed_libraries()
-        self.libraries_index_click_create_new()
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
-        close_button = self.wait_for_selector_clickable(".cancel_library_btn")
-        close_button.click()
+        self.components.libraries.create_new_library_btn.wait_for_and_click()
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
 
@@ -62,11 +61,11 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self.wait_for_overlays_cleared()
 
         namebase = self._get_random_name(prefix="testsort")
-        self.libraries_index_create(namebase + " b")
+        self.libraries_index_create(f"{namebase} b")
         self.wait_for_overlays_cleared()
-        self.libraries_index_create(namebase + " a")
+        self.libraries_index_create(f"{namebase} a")
         self.wait_for_overlays_cleared()
-        self.libraries_index_create(namebase + " c")
+        self.libraries_index_create(f"{namebase} c")
 
         self.screenshot("libraries_index")
 
@@ -74,15 +73,12 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
         self._assert_num_displayed_libraries_is(3)
         self.screenshot("libraries_index_search")
-
-        self._assert_names_are([namebase + " a", namebase + " b", namebase + " c"])
+        # sort ascending
         self.libraries_index_sort_click()
-
-        # TODO: Usability bug in libraries - should need to resort - it should
-        # sort the entities on the screen.
-        self.libraries_index_search_for(namebase)
-
-        self._assert_names_are([namebase + " c", namebase + " b", namebase + " a"])
+        self._assert_names_are([f"{namebase} a", f"{namebase} b", f"{namebase} c"])
+        # sort descending
+        self.libraries_index_sort_click()
+        self._assert_names_are([f"{namebase} c", f"{namebase} b", f"{namebase} a"])
 
     def _search_for_only_with_name(self, name):
         self.libraries_index_search_for(name)

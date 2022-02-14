@@ -9,7 +9,6 @@ import threading
 import markupsafe
 from paste import response
 
-
 template = """
 <script>
 function show_profile_output()
@@ -63,19 +62,20 @@ class ProfileMiddleware:
 
         def run_app():
             body.extend(self.app(environ, replace_start_response))
+
         # Run in profiler
         prof = cProfile.Profile()
         prof.runctx("run_app()", globals(), locals())
         # Build up body with stats
-        body = ''.join(body)
+        body = "".join(body)
         headers = catch_response[1]
-        content_type = response.header_value(headers, 'content-type')
-        if not content_type.startswith('text/html'):
+        content_type = response.header_value(headers, "content-type")
+        if not content_type.startswith("text/html"):
             # We can't add info to non-HTML output
             return [body]
         stats = pstats.Stats(prof)
         stats.strip_dirs()
-        stats.sort_stats('time', 'calls')
+        stats.sort_stats("time", "calls")
         output = pstats_as_html(stats, self.limit)
         body += template % output
         return [body]
@@ -87,25 +87,29 @@ def pstats_as_html(stats, *sel_list):
     """
     rval = []
     # Number of function calls, primitive calls, total time
-    rval.append("<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-                % (stats.total_calls, stats.prim_calls, stats.total_tt))
+    rval.append(
+        "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
+        % (stats.total_calls, stats.prim_calls, stats.total_tt)
+    )
     # Extract functions that match 'sel_list'
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
     if order_message:
-        rval.append("<div>%s</div>" % markupsafe.escape(order_message))
+        rval.append(f"<div>{markupsafe.escape(order_message)}</div>")
     if select_message:
-        rval.append("<div>%s</div>" % markupsafe.escape(select_message))
+        rval.append(f"<div>{markupsafe.escape(select_message)}</div>")
     # Build a table for the functions
     if list:
         rval.append("<table>")
         # Header
-        rval.append("<tr><th>ncalls</th>"
-                    "<th>tottime</th>"
-                    "<th>percall</th>"
-                    "<th>cumtime</th>"
-                    "<th>percall</th>"
-                    "<th>filename:lineno(function)</th></tr>")
+        rval.append(
+            "<tr><th>ncalls</th>"
+            "<th>tottime</th>"
+            "<th>percall</th>"
+            "<th>cumtime</th>"
+            "<th>percall</th>"
+            "<th>filename:lineno(function)</th></tr>"
+        )
         for func in funcs:
             rval.append("<tr>")
             # Calculate each field
@@ -113,26 +117,26 @@ def pstats_as_html(stats, *sel_list):
             # ncalls
             ncalls = str(nc)
             if nc != cc:
-                ncalls = ncalls + '/' + str(cc)
-            rval.append("<td>%s</td>" % markupsafe.escape(ncalls))
+                ncalls = f"{ncalls}/{str(cc)}"
+            rval.append(f"<td>{markupsafe.escape(ncalls)}</td>")
             # tottime
-            rval.append("<td>%0.8f</td>" % tt)
+            rval.append(f"<td>{tt:0.8f}</td>")
             # percall
             if nc == 0:
                 percall = ""
             else:
-                percall = "%0.8f" % (tt / nc)
-            rval.append("<td>%s</td>" % markupsafe.escape(percall))
+                percall = f"{tt / nc:0.8f}"
+            rval.append(f"<td>{markupsafe.escape(percall)}</td>")
             # cumtime
-            rval.append("<td>%0.8f</td>" % ct)
+            rval.append(f"<td>{ct:0.8f}</td>")
             # ctpercall
             if cc == 0:
                 ctpercall = ""
             else:
-                ctpercall = "%0.8f" % (ct / cc)
-            rval.append("<td>%s</td>" % markupsafe.escape(ctpercall))
+                ctpercall = f"{ct / cc:0.8f}"
+            rval.append(f"<td>{markupsafe.escape(ctpercall)}</td>")
             # location
-            rval.append("<td>%s</td>" % markupsafe.escape(func_std_string(func)))
+            rval.append(f"<td>{markupsafe.escape(func_std_string(func))}</td>")
             # row complete
             rval.append("</tr>")
         rval.append("</table>")
@@ -147,7 +151,7 @@ def get_func_list(stats, sel_list):
     # Determine if an ordering was applied
     if stats.fcn_list:
         list = stats.fcn_list[:]
-        order_message = "Ordered by: " + stats.sort_type
+        order_message = f"Ordered by: {stats.sort_type}"
     else:
         list = list(stats.stats.keys())
         order_message = "Random listing order was used"
@@ -163,11 +167,11 @@ def func_std_string(func_name):
     """
     Match what old profile produced
     """
-    if func_name[:2] == ('~', 0):
+    if func_name[:2] == ("~", 0):
         # special case for built-in functions
         name = func_name[2]
-        if name.startswith('<') and name.endswith('>'):
-            return '{%s}' % name[1:-1]
+        if name.startswith("<") and name.endswith(">"):
+            return "{%s}" % name[1:-1]
         else:
             return name
     else:

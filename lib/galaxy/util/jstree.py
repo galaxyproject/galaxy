@@ -62,7 +62,7 @@ class Node(dictobj.DictionaryObject):
     children = kwargs.get('children', {})
     if len([key for key in children if not isinstance(children[key], Node)]):
       raise TypeError(
-        "One or more children were not instances of '%s'" % Node.__name__)
+        f"One or more children were not instances of '{Node.__name__}'")
     if 'children' in kwargs:
       del kwargs['children']
     self._items['children'] = dictobj.MutableDictionaryObject(children)
@@ -108,7 +108,7 @@ class JSTree(dictobj.DictionaryObject):
     """
     if len([p for p in paths if not isinstance(p, Path)]):
       raise TypeError(
-        "All paths must be instances of '%s'" % Path.__name__)
+        f"All paths must be instances of '{Path.__name__}'")
 
     super().__init__()
 
@@ -141,7 +141,7 @@ class JSTree(dictobj.DictionaryObject):
     s = fmt % (" " * depth * spacing, root.text)
     for child in root.children:
       child = root.children[child]
-      s += "\n%s" % self.pretty(child, depth + 1, spacing)
+      s += f"\n{self.pretty(child, depth + 1, spacing)}"
     return s
 
   def jsonData(self):

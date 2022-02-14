@@ -12,12 +12,12 @@
 //@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/regular";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/v4-shims";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/_variables";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/regular";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/v4-shims";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
 @import "jquery.rating.scss";
@@ -38,6 +38,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "markdown.scss";
 @import "toolshed.scss";
 @import "workflow.scss";
+@import "multiselect.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -126,6 +127,7 @@ body {
 #columns {
     @extend .position-relative;
     flex: 1;
+    overflow: hidden;
 }
 
 #background {
@@ -220,12 +222,14 @@ body {
     }
     .unified-panel-header-inner {
         @extend .w-100;
+        min-width: max-content;
         align-items: center;
         justify-content: space-between;
+        display: flex;
     }
     .panel-header-buttons {
-        @extend .float-right;
         order: 9999;
+        @extend .d-flex;
         .panel-header-button {
             text-align: center;
             &:not(:last-child) {
@@ -233,6 +237,20 @@ body {
             }
             &:hover {
                 color: $brand-info;
+            }
+        }
+        .panel-header-button-toolbox {
+            color: $brand-dark;
+            flex: 1;
+            @extend .p-1;
+            text-align: center;
+            font-size: $h4-font-size;
+            align-items: center;
+            &:hover {
+                color: $brand-info;
+                background-color: $brand-light;
+                text-decoration: none !important;
+                border-color: $brand-light;
             }
         }
     }
@@ -348,11 +366,9 @@ body {
             align-items: center;
             &.active {
                 background: darken($brand-masthead, 10%);
-                .nav-link {
-                    color: $brand-masthead-text-active;
-                }
             }
             .nav-link {
+                position: relative;
                 cursor: pointer;
                 text-decoration: none;
                 color: $brand-masthead-text;
@@ -360,20 +376,18 @@ body {
                     color: $brand-masthead-text-hover;
                 }
                 &.nav-icon {
-                    font-size: 1.7em;
+                    font-size: 1.3em;
+                    .nav-note {
+                        @extend .font-weight-bold;
+                        @extend .position-absolute;
+                        left: 1.9rem;
+                        top: 1.9rem;
+                        font-size: 0.6rem;
+                    }
                 }
                 &.toggle {
                     color: $brand-masthead-text-hover;
                 }
-            }
-            .nav-note {
-                @extend .font-weight-bold;
-                @extend .position-relative;
-                right: 0.4rem;
-                top: 0.7rem;
-                font-size: 0.7rem;
-                color: $brand-masthead-text-hover;
-                width: 0;
             }
         }
     }
@@ -390,6 +404,7 @@ body {
             display: inline;
             margin-right: 0.3rem;
             border: none;
+            max-height: 2rem;
         }
         .navbar-brand-title {
             color: $brand-masthead-text;
@@ -586,11 +601,6 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
-}
-
-#run-workflow {
-    @extend .float-right;
-    @extend .mt-3;
 }
 
 .form-row {
@@ -940,51 +950,57 @@ ul.manage-table-actions li {
 }
 
 // State colors
-.state-color-new {
-    border-color: $state-default-border;
-    background: $state-default-bg;
+
+$galaxy-state-border: (
+    "new": $state-default-border,
+    "upload": $state-info-border,
+    "waiting": $state-default-border,
+    "queued": $state-default-border,
+    "running": $state-running-border,
+    "ok": $state-success-border,
+    "error": $state-danger-border,
+    "deleted": darken($state-default-border, 30%),
+    "hidden": $state-default-border,
+);
+
+$galaxy-state-bg: (
+    "new": $state-default-bg,
+    "upload": $state-info-bg,
+    "waiting": $state-default-bg,
+    "queued": $state-default-bg,
+    "running": $state-running-bg,
+    "ok": $state-success-bg,
+    "error": $state-danger-bg,
+    "deleted": darken($state-default-bg, 30%),
+    "hidden": $state-default-bg,
+);
+
+@each $state in map-keys($galaxy-state-border) {
+    .state-color-#{$state},
+    [data-state="#{$state}"] {
+        border-color: map-get($galaxy-state-border, $state);
+        background-color: map-get($galaxy-state-bg, $state);
+
+        &:focus,
+        &:focus-within {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &.selected {
+            background-color: $state-info-bg;
+            &:focus,
+            &:focus-within {
+                background-color: scale-color($state-info-bg, $lightness: -10%);
+            }
+        }
+    }
 }
 
-.state-color-upload {
-    border-color: $state-info-border;
-    background: $state-info-bg;
-}
-
-.state-color-waiting {
-    border-color: $state-default-border;
-    background: $state-default-bg;
-}
-
-.state-color-queued {
-    border-color: $state-default-border;
-    background: $state-default-bg;
-}
-
-.state-color-running {
-    border-color: $state-running-border;
-    background: $state-running-bg;
-}
-
-.state-color-ok {
-    border-color: $state-success-border;
-    background: $state-success-bg;
-}
-
-.state-color-error {
-    border-color: $state-danger-border;
-    background: $state-danger-bg;
-}
-
-.state-color-deleted {
-    border-color: darken($state-default-border, 30%);
+.state-color-deleted,
+.state-color-hidden,
+[data-state="deleted"],
+[data-state="hidden"] {
     border-style: dotted;
-    background: darken($state-default-bg, 30%);
-}
-
-.state-color-hidden {
-    border-color: $state-default-border;
-    border-style: dotted;
-    background: $state-default-bg;
 }
 
 // Button styles
@@ -1244,8 +1260,6 @@ div.permissionContainer {
 @import "collection.scss";
 @import "job.scss";
 
-@import "ui/paired-collection-creator.scss";
-
 @import "ui/search-input.scss";
 @import "ui/dataset-choice.scss";
 @import "ui/peek-column-selector.scss";
@@ -1273,7 +1287,7 @@ div.toolSectionTitle {
     .labels {
         float: right;
     }
-    a {
+    .title-link {
         @extend .px-3;
         @extend .py-1;
         text-decoration: none;
@@ -1463,26 +1477,6 @@ div.toolSectionTitle {
 // honeypot for registration form
 #for_bears {
     display: none;
-}
-
-// communication channel bootstrap modal
-.chat-modal {
-    overflow: hidden;
-}
-
-.modal-header-body {
-    padding: 2px;
-}
-
-.close-modal {
-    float: right;
-    cursor: pointer;
-}
-
-.expand-compress-modal {
-    cursor: pointer;
-    font-size: 12px;
-    margin-left: 93.2%;
 }
 
 // password complexity monitor

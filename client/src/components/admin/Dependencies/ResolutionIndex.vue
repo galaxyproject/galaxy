@@ -2,8 +2,7 @@
     <dependency-index-wrapper
         :error="error"
         :loading="loading"
-        loading-message="Loading tool requirement resolution information"
-    >
+        loading-message="Loading tool requirement resolution information">
         <template v-slot:header>
             <b-row class="m-1">
                 <b-form inline>
@@ -13,8 +12,7 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-resolver-type"
                         v-model="resolverType"
-                        :options="resolverTypeOptions"
-                    ></b-form-select>
+                        :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>
             <b-row class="m-1">
@@ -24,8 +22,7 @@
                     <b-form-select
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolution"
-                        v-model="filterResolution"
-                    >
+                        v-model="filterResolution">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
@@ -36,7 +33,12 @@
         <template v-slot:body>
             <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <b-form-checkbox
+                        v-model="data.item.selected"
+                        @change="changeToggleCheckboxState($event)"></b-form-checkbox>
+                </template>
+                <template v-slot:head(selected)="">
+                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -107,6 +109,7 @@ export default {
     components: { ResolutionDetails },
     data() {
         return {
+            toggleState: false,
             expandToolIds: false,
             error: null,
             loading: true,
@@ -184,6 +187,19 @@ export default {
         },
     },
     methods: {
+        unchecked: function () {
+            return this.items.filter((item) => item.selected === false);
+        },
+        changeToggleCheckboxState(event) {
+            if (event && this.unchecked().length === 1) {
+                this.toggleState = true;
+            } else {
+                this.toggleState = false;
+            }
+        },
+        toggleSelectAll: function (event) {
+            this.items.forEach((item) => (item.selected = event));
+        },
         load() {
             this.loading = true;
             getToolboxDependencies(this.apiParams())

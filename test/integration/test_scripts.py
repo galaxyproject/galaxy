@@ -11,7 +11,7 @@ import yaml
 
 from galaxy.util import (
     galaxy_directory,
-    unicodify
+    unicodify,
 )
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -30,9 +30,8 @@ def skip_unless_module(module):
 
 
 class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
-
     def setUp(self):
-        super(ScriptsIntegrationTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.config_dir = tempfile.mkdtemp()
 
@@ -77,7 +76,9 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
-        output = self._scripts_check_output(script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"])
+        output = self._scripts_check_output(
+            script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"]
+        )
         print(output)
         history_response = self.dataset_populator._get("histories/%s" % history_id)
         assert history_response.status_code == 200
@@ -131,16 +132,12 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         json_files = [j for j in report_files if j.endswith(".json")]
         assert len(json_files) == 1, "Expected one json report file in [%s]" % json_files
         json_file = os.path.join(self.config_dir, json_files[0])
-        with open(json_file, "r") as f:
+        with open(json_file) as f:
             export = json.load(f)
         assert export["version"] == 3
 
     def test_admin_cleanup_datasets(self):
         self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
-
-    @skip_unless_module("flask_socketio")
-    def test_communication_server(self):
-        self._scripts_check_argparse_help("communication/communication_server.py")
 
     def test_secret_decoder_ring(self):
         script = "secret_decoder_ring.py"
@@ -182,7 +179,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
         except Exception as e:
             if isinstance(e, subprocess.CalledProcessError):
-                raise Exception("%s\nOutput was:\n%s" % (unicodify(e), unicodify(e.output)))
+                raise Exception(f"{unicodify(e)}\nOutput was:\n{unicodify(e.output)}")
             raise
 
     def write_config_file(self):
@@ -191,7 +188,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._test_driver.temp_directories.extend([config_dir])
         config = self._raw_config
         # Update config dict with database_connection, which might be set through env variables
-        config['database_connection'] = self._app.config.database_connection
+        config["database_connection"] = self._app.config.database_connection
         with open(path, "w") as f:
             yaml.dump({"galaxy": config}, f)
 

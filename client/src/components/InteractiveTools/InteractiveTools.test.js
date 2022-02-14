@@ -1,21 +1,23 @@
 import InteractiveTools from "./InteractiveTools";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
 import _l from "utils/localization";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
 
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import { getNewAttachNode } from "jest/helpers";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
-    const localVue = createLocalVue();
+    const localVue = getLocalVue();
     localVue.filter("localize", (value) => _l(value));
     let wrapper;
     let axiosMock;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         wrapper = mount(InteractiveTools, {
             computed: {
                 currentHistory() {
@@ -24,10 +26,9 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
                     };
                 },
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
-        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
-        axiosMock.onPost("/interactivetool/list").reply(200, { status: "ok", message: "ok" });
+
         await flushPromises();
     });
 
@@ -36,7 +37,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
     });
 
     it("Interactive Tool Table renders", async () => {
-        const table = wrapper.find("#workflow-table");
+        const table = wrapper.find("#interactive-tool-table");
         expect(table.exists() === true).toBeTruthy();
     });
 

@@ -1,5 +1,5 @@
 <template>
-    <span class="badge badge-tags" :style="tagStyles" @click.prevent="$emit('tag-click', tag)"> {{ tagLabel }} </span>
+    <span class="badge badge-tags" :style="tagStyles" @click.prevent="$emit('tag-click', tag)">{{ tagLabel }}</span>
 </template>
 
 <script>

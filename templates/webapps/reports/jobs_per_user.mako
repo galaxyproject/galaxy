@@ -20,7 +20,6 @@ ${get_css()}
 %>
 
 <!--jobs_per_user.mako-->
-${q1time}, ${q2time}, ${ttime}
 <div class="report">
     <div class="reportBody">
         <table id="formHeader">
@@ -95,3 +94,4 @@ ${q1time}, ${q2time}, ${ttime}
     </div>
 </div>
 <!--End jobs_per_user.mako-->
+

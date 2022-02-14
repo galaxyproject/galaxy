@@ -2,7 +2,6 @@
 """
 usage: %prog width height bg_color hatch_color [color alpha stop_pos] +
 """
-from __future__ import division
 
 import sys
 from math import pi

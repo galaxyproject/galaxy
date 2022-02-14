@@ -1,6 +1,5 @@
 import pickle
-
-from six.moves import cStringIO as StringIO
+from io import StringIO
 
 
 class AliasUnpickler(pickle.Unpickler):

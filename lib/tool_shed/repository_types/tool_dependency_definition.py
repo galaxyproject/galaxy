@@ -9,11 +9,10 @@ log = logging.getLogger(__name__)
 
 
 class ToolDependencyDefinition(TipOnly):
-
     def __init__(self):
         self.type = rt_util.TOOL_DEPENDENCY_DEFINITION
-        self.label = 'Tool dependency definition'
-        self.valid_file_names = ['tool_dependencies.xml']
+        self.label = "Tool dependency definition"
+        self.valid_file_names = ["tool_dependencies.xml"]
 
     def is_valid_for_type(self, repository, revisions_to_check=None):
         """

@@ -4,33 +4,53 @@ Migration script to support subworkflows and workflow request input parameters
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, ForeignKeyConstraint, Index, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    MetaData,
+    Table,
+)
 
-from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
-from galaxy.model.migrate.versions.util import add_column, alter_column, create_table, drop_column, drop_table
+from galaxy.model.custom_types import (
+    JSONType,
+    TrimmedString,
+    UUIDType,
+)
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    alter_column,
+    create_table,
+    drop_column,
+    drop_table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 WorkflowInvocationToSubworkflowInvocationAssociation_table = Table(
-    "workflow_invocation_to_subworkflow_invocation_association", metadata,
+    "workflow_invocation_to_subworkflow_invocation_association",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer),
     Column("subworkflow_invocation_id", Integer),
     Column("workflow_step_id", Integer),
-    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_wfi'),
-    ForeignKeyConstraint(['subworkflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfi_swi_swi'),
-    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfi_swi_ws')
+    ForeignKeyConstraint(["workflow_invocation_id"], ["workflow_invocation.id"], name="fk_wfi_swi_wfi"),
+    ForeignKeyConstraint(["subworkflow_invocation_id"], ["workflow_invocation.id"], name="fk_wfi_swi_swi"),
+    ForeignKeyConstraint(["workflow_step_id"], ["workflow_step.id"], name="fk_wfi_swi_ws"),
 )
 
 WorkflowRequestInputStepParameter_table = Table(
-    "workflow_request_input_step_parameter", metadata,
+    "workflow_request_input_step_parameter",
+    metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer),
     Column("workflow_step_id", Integer),
     Column("parameter_value", JSONType),
-    ForeignKeyConstraint(['workflow_invocation_id'], ['workflow_invocation.id'], name='fk_wfreq_isp_wfi'),
-    ForeignKeyConstraint(['workflow_step_id'], ['workflow_step.id'], name='fk_wfreq_isp_ws')
+    ForeignKeyConstraint(["workflow_invocation_id"], ["workflow_invocation.id"], name="fk_wfreq_isp_wfi"),
+    ForeignKeyConstraint(["workflow_step_id"], ["workflow_step.id"], name="fk_wfreq_isp_ws"),
 )
 
 TABLES = [
@@ -40,8 +60,10 @@ TABLES = [
 
 INDEXES = [
     Index("ix_wfinv_swfinv_wfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.workflow_invocation_id),
-    Index("ix_wfinv_swfinv_swfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.subworkflow_invocation_id),
-    Index("ix_wfreq_inputstep_wfi", WorkflowRequestInputStepParameter_table.c.workflow_invocation_id)
+    Index(
+        "ix_wfinv_swfinv_swfi", WorkflowInvocationToSubworkflowInvocationAssociation_table.c.subworkflow_invocation_id
+    ),
+    Index("ix_wfreq_inputstep_wfi", WorkflowRequestInputStepParameter_table.c.workflow_invocation_id),
 ]
 
 
@@ -50,9 +72,11 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    if migrate_engine.name in ['postgres', 'postgresql']:
+    if migrate_engine.name in ["postgres", "postgresql"]:
         subworkflow_id_column = Column("subworkflow_id", Integer, ForeignKey("workflow.id"), nullable=True)
-        input_subworkflow_step_id_column = Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True)
+        input_subworkflow_step_id_column = Column(
+            "input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), nullable=True
+        )
         parent_workflow_id_column = Column("parent_workflow_id", Integer, ForeignKey("workflow.id"), nullable=True)
     else:
         subworkflow_id_column = Column("subworkflow_id", Integer, nullable=True)

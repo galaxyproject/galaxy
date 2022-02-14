@@ -1,3 +1,5 @@
+// Modified in https://github.com/galaxyproject/galaxy/pull/13217
+
 /*! 
  * jquery.event.drag - v 2.2
  * Copyright (c) 2010 Three Dub Media - http://threedubmedia.com
@@ -322,6 +324,7 @@ drag = $special.drag = {
 		// assign the drop targets information
 		obj.drop = drag.flatten( ( ia.drop || [] ).slice() );
 		obj.available = drag.flatten( ( ia.droppable || [] ).slice() );
+		obj.update();
 		return obj;	
 	},
 	

@@ -1,16 +1,16 @@
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" class="name text-muted">
+        <a v-if="tool.disabled" class="title-link name text-muted">
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
         <a :class="targetClass" @click="onClick" :href="tool.link" :target="tool.target" v-else>
+            <img v-if="tool.logo" class="logo" :src="tool.logo" />
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"
                     :class="['badge', 'badge-primary', `badge-${label}`]"
-                    :key="index"
-                >
+                    :key="index">
                     {{ label }}
                 </span>
             </span>
@@ -20,8 +20,7 @@
                 v-b-tooltip.hover
                 :class="['operation', 'float-right', operationIcon]"
                 :title="operationTitle"
-                @click.stop.prevent="onOperation"
-            />
+                @click.stop.prevent="onOperation" />
         </a>
     </div>
 </template>
@@ -42,23 +41,27 @@ export default {
         },
         operationTitle: {
             type: String,
+            default: "",
         },
         operationIcon: {
             type: String,
+            default: "",
         },
         hideName: {
             type: Boolean,
+            default: false,
         },
         toolKey: {
             type: String,
+            default: "",
         },
     },
     computed: {
         targetClass() {
             if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]}`;
+                return `tool-menu-item-${this.tool[this.toolKey]} title-link`;
             } else {
-                return null;
+                return `title-link`;
             }
         },
     },
@@ -74,3 +77,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.logo {
+    width: 2.5rem;
+}
+</style>

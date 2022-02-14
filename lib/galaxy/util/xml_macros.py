@@ -1,5 +1,8 @@
 import os
-from copy import deepcopy
+from copy import (
+    copy,
+    deepcopy,
+)
 
 from galaxy.util import parse_xml
 
@@ -17,14 +20,35 @@ def load_with_references(path):
 
     macro_paths = _import_macros(root, path)
 
+    # temporarily remove the children of the macros node
+    # and create a copy. this is done because this allows
+    # to iterate over all expand nodes of the tree
+    # that are not included in the macros node
+    macros_el = _macros_el(root)
+    if macros_el is not None:
+        macros_copy = copy(macros_el)
+        macros_el.clear()
+    else:
+        macros_copy = None
+
     # Collect tokens
-    tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
+    tokens = _macros_of_type(macros_copy, "token", lambda el: el.text or "")
     tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
-    macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
+    macro_dict = _macros_of_type(macros_copy, "xml", lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
 
+    # readd the stashed children of the macros node
+    # TODO is this this really necesary? Since macro nodes are removed anyway just below.
+    if macros_copy is not None:
+        _xml_set_children(macros_el, list(macros_copy))
+
+    for el in root.xpath("//macro"):
+        if el.get("type") != "template":
+            # Only keep template macros
+            el.getparent().remove(el)
+    _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
 
@@ -39,14 +63,15 @@ def template_macro_params(root):
     with these.
     """
     param_dict = {}
-    macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
+    macros_el = _macros_el(root)
+    macro_dict = _macros_of_type(macros_el, "template", lambda el: el.text)
     for key, value in macro_dict.items():
         param_dict[key] = value
     return param_dict
 
 
 def raw_xml_tree(path):
-    """ Load raw (no macro expansion) tree representation of XML represented
+    """Load raw (no macro expansion) tree representation of XML represented
     at the specified path.
     """
     tree = parse_xml(path, strip_whitespace=False, remove_comments=True)
@@ -59,6 +84,10 @@ def imported_macro_paths(root):
 
 
 def _import_macros(root, path):
+    """
+    root the parsed XML tree
+    path the path to the main xml document
+    """
     xml_base_dir = os.path.dirname(path)
     macros_el = _macros_el(root)
     if macros_el is not None:
@@ -68,19 +97,15 @@ def _import_macros(root, path):
 
 
 def _macros_el(root):
-    return root.find('macros')
+    return root.find("macros")
 
 
-def _macros_of_type(root, type, el_func):
-    macros_el = root.find('macros')
-    macro_dict = {}
-    if macros_el is not None:
-        macro_els = macros_el.findall('macro')
-        filtered_els = [(macro_el.get("name"), el_func(macro_el))
-                        for macro_el in macro_els
-                        if macro_el.get('type') == type]
-        macro_dict = dict(filtered_els)
-    return macro_dict
+def _macros_of_type(macros_el, type, el_func):
+    if macros_el is None:
+        return {}
+    macro_els = macros_el.findall("macro")
+    filtered_els = [(macro_el.get("name"), el_func(macro_el)) for macro_el in macro_els if macro_el.get("type") == type]
+    return dict(filtered_els)
 
 
 def expand_nested_tokens(tokens):
@@ -88,7 +113,7 @@ def expand_nested_tokens(tokens):
         for current_token_name, current_token_value in tokens.items():
             if token_name in current_token_value:
                 if token_name == current_token_name:
-                    raise Exception("Token '%s' cannot contain itself" % token_name)
+                    raise Exception(f"Token '{token_name}' cannot contain itself")
                 tokens[current_token_name] = current_token_value.replace(token_name, tokens[token_name])
     return tokens
 
@@ -102,6 +127,11 @@ def _expand_tokens(elements, tokens):
 
 
 def _expand_tokens_for_el(element, tokens):
+    """
+    expand tokens in element and (recursively) in its children
+    replacements of text attributes and attribute values are
+    possible
+    """
     value = element.text
     if value:
         new_value = _expand_tokens_str(element.text, tokens)
@@ -111,6 +141,11 @@ def _expand_tokens_for_el(element, tokens):
         new_value = _expand_tokens_str(value, tokens)
         if not (new_value is value):
             element.attrib[key] = new_value
+        new_key = _expand_tokens_str(key, tokens)
+        if not (new_key is key):
+            element.attrib[new_key] = element.attrib[key]
+            del element.attrib[key]
+    # recursively expand in childrens
     _expand_tokens(list(element), tokens)
 
 
@@ -121,63 +156,70 @@ def _expand_tokens_str(s, tokens):
     return s
 
 
-def _expand_macros(elements, macros, tokens):
+def _expand_macros(elements, macros, tokens, visited=None):
     if not macros and not tokens:
         return
 
     for element in elements:
         while True:
-            expand_el = element.find('.//expand')
+            expand_el = element.find(".//expand")
             if expand_el is None:
                 break
-            _expand_macro(element, expand_el, macros, tokens)
+            if visited is None:
+                v = []
+            else:
+                v = visited
+            _expand_macro(expand_el, macros, tokens, v)
 
-        _expand_tokens_for_el(element, tokens)
 
+def _expand_macro(expand_el, macros, tokens, visited):
+    macro_name = expand_el.get("macro")
+    assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
 
-def _expand_macro(element, expand_el, macros, tokens):
-    macro_name = expand_el.get('macro')
+    # check for cycles in the nested macro expansion
+    assert (
+        macro_name not in visited
+    ), f"Cycle in nested macros: already expanded {visited} can't expand '{macro_name}' again"
+    visited.append(macro_name)
+
+    assert macro_name in macros, f"No macro named {macro_name} found, known macros are {', '.join(macros.keys())}."
     macro_def = macros[macro_name]
-    expanded_elements = deepcopy(macro_def.elements)
-
+    expanded_elements = deepcopy(macro_def.element)
     _expand_yield_statements(expanded_elements, expand_el)
 
-    # Recursively expand contained macros.
-    _expand_macros(expanded_elements, macros, tokens)
     macro_tokens = macro_def.macro_tokens(expand_el)
     if macro_tokens:
         _expand_tokens(expanded_elements, macro_tokens)
 
-    # HACK for elementtree, newer implementations (etree/lxml) won't
-    # require this parent_map data structure but elementtree does not
-    # track parents or recognize .find('..').
-    # TODO fix this now that we're not using elementtree
-    parent_map = {c: p for p in element.iter() for c in p}
-    _xml_replace(expand_el, expanded_elements, parent_map)
+    # Recursively expand contained macros.
+    _expand_macros(expanded_elements, macros, tokens, visited)
+    _xml_replace(expand_el, expanded_elements)
+    del visited[-1]
 
 
 def _expand_yield_statements(macro_def, expand_el):
-    yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
+    """
+    Modifies the macro_def element by replacing
+    1. all named yield tags by the content of the corresponding token tags
+       - token tags need to be direct children of the expand
+       - processed in order of definition of the token tags
+    2. all unnamed yield tags by the non-token children of the expand tag
+    """
+    # replace named yields
+    for token_el in expand_el.findall("./token"):
+        name = token_el.attrib.get("name", None)
+        assert name is not None, "Found unnamed token" + str(token_el.attrib)
+        yield_els = [yield_el for yield_el in macro_def.findall(f".//yield[@name='{name}']")]
+        assert len(yield_els) > 0, f"No named yield found for named token {name}"
+        token_el_children = list(token_el)
+        for yield_el in yield_els:
+            _xml_replace(yield_el, token_el_children)
 
-    expand_el_children = list(expand_el)
-    macro_def_parent_map = \
-        {c: p for macro_def_el in macro_def for p in macro_def_el.iter() for c in p}
-
+    # replace unnamed yields
+    yield_els = [yield_el for yield_el in macro_def.findall(".//yield")]
+    expand_el_children = [c for c in expand_el if c.tag != "token"]
     for yield_el in yield_els:
-        _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
-
-    # Replace yields at the top level of a macro, seems hacky approach
-    replace_yield = True
-    while replace_yield:
-        for i, macro_def_el in enumerate(macro_def):
-            if macro_def_el.tag == "yield":
-                for target in expand_el_children:
-                    i += 1
-                    macro_def.insert(i, target)
-                macro_def.remove(macro_def_el)
-                continue
-
-        replace_yield = False
+        _xml_replace(yield_el, expand_el_children)
 
 
 def _load_macros(macros_el, xml_base_dir):
@@ -198,20 +240,20 @@ def _load_embedded_macros(macros_el, xml_base_dir):
     if macros_el is not None:
         macro_els = macros_el.findall("macro")
     for macro in macro_els:
-        if 'type' not in macro.attrib:
-            macro.attrib['type'] = 'xml'
+        if "type" not in macro.attrib:
+            macro.attrib["type"] = "xml"
         macros.append(macro)
 
     # type shortcuts (<xml> is a shortcut for <macro type="xml",
     # likewise for <template>.
-    typed_tag = ['template', 'xml', 'token']
+    typed_tag = ["template", "xml", "token"]
     for tag in typed_tag:
         macro_els = []
         if macros_el is not None:
             macro_els = macros_el.findall(tag)
         for macro_el in macro_els:
-            macro_el.attrib['type'] = tag
-            macro_el.tag = 'macro'
+            macro_el.attrib["type"] = tag
+            macro_el.tag = "macro"
             macros.append(macro_el)
 
     return macros
@@ -222,13 +264,11 @@ def _load_imported_macros(macros_el, xml_base_dir):
     macro_paths = []
 
     for tool_relative_import_path in _imported_macro_paths_from_el(macros_el):
-        import_path = \
-            os.path.join(xml_base_dir, tool_relative_import_path)
+        import_path = os.path.join(xml_base_dir, tool_relative_import_path)
         macro_paths.append(import_path)
         file_macros, current_macro_paths = _load_macro_file(import_path, xml_base_dir)
         macros.extend(file_macros)
         macro_paths.extend(current_macro_paths)
-
     return macros, macro_paths
 
 
@@ -245,6 +285,15 @@ def _imported_macro_paths_from_el(macros_el):
 
 def _load_macro_file(path, xml_base_dir):
     tree = parse_xml(path, strip_whitespace=False)
+    for node in tree.iter():
+        # little hack: node.base contains that path to the file which is used in
+        # the linter. it is a property that apparently is determined from the
+        # xmltree, so if the macro is inserted into the main xml node.base will
+        # give the path of the main xml file.
+        # luckily lxml allows to set the property by adding xml:base to the node
+        # which will be returned if the property is read
+        # https://github.com/lxml/lxml/blob/5a5c7fb01d15af58def4bab2ba7b15c937042835/src/lxml/etree.pyx#L1106
+        node.base = node.base
     root = tree.getroot()
     return _load_macros(root, xml_base_dir)
 
@@ -256,9 +305,8 @@ def _xml_set_children(element, new_children):
         element.insert(i, new_child)
 
 
-def _xml_replace(query, targets, parent_map):
-    # parent_el = query.find('..') ## Something like this would be better with newer xml library
-    parent_el = parent_map[query]
+def _xml_replace(query, targets):
+    parent_el = query.find("..")
     matching_index = -1
     # for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
     for index, el in enumerate(list(parent_el)):
@@ -274,9 +322,26 @@ def _xml_replace(query, targets, parent_map):
 
 
 class XmlMacroDef:
+    """
+    representation of a (Galaxy) XML macro
+
+    stores the root element of the macro and the parameters.
+    each parameter is represented as pair containing
+    - the quote character, default '@'
+    - parameter name
+
+    parameter names can be given as comma separated list using the
+    `token` attribute or as attributes `token_XXX` (where `XXX` is the name).
+    The former option should be used to specify required attributes of the
+    macro and the latter for optional attributes if the macro (the value of
+    `token_XXX is used as default value).
+
+    TODO: `token_quote` forbids `"quote"` as character name of optional
+    parameters
+    """
 
     def __init__(self, el):
-        self.elements = list(el)
+        self.element = el
         parameters = {}
         tokens = []
         token_quote = "@"
@@ -287,20 +352,25 @@ class XmlMacroDef:
                 for token in value.split(","):
                     tokens.append((token, REQUIRED_PARAMETER))
             elif key.startswith("token_"):
-                token = key[len("token_"):]
+                token = key[len("token_") :]
                 tokens.append((token, value))
         for name, default in tokens:
             parameters[name] = (token_quote, default)
         self.parameters = parameters
 
     def macro_tokens(self, expand_el):
+        """
+        get a dictionary mapping token names to values. The names are the
+        parameter names surrounded by the quote character. Values are taken
+        from the expand_el if absent default values of optional parameters are
+        used.
+        """
         tokens = {}
         for key, (wrap_char, default_val) in self.parameters.items():
             token_value = expand_el.attrib.get(key, default_val)
             if token_value is REQUIRED_PARAMETER:
-                message = "Failed to expand macro - missing required parameter [%s]."
-                raise ValueError(message % key)
-            token_name = "{}{}{}".format(wrap_char, key.upper(), wrap_char)
+                raise ValueError(f"Failed to expand macro - missing required parameter [{key}].")
+            token_name = f"{wrap_char}{key.upper()}{wrap_char}"
             tokens[token_name] = token_value
         return tokens
 

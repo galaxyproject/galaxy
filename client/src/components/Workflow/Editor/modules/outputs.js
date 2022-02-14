@@ -1,6 +1,6 @@
 import Vue from "vue";
 
-const allLabels = {};
+export const allLabels = {};
 
 export class ActiveOutputs {
     constructor() {
@@ -13,6 +13,9 @@ export class ActiveOutputs {
         this._refreshIndex();
         incoming &&
             incoming.forEach((entry) => {
+                if (entry.label && allLabels[entry.label]) {
+                    entry.label = null;
+                }
                 this.add(entry.output_name, entry.label);
                 if (entry.label) {
                     allLabels[entry.label] = true;
@@ -31,11 +34,6 @@ export class ActiveOutputs {
 
     /** Toggle an entry */
     toggle(name) {
-        const activeOutput = this.get(name);
-        const activeLabel = activeOutput && activeOutput.label;
-        if (activeLabel && allLabels[activeLabel]) {
-            delete allLabels[activeLabel];
-        }
         if (this.exists(name)) {
             this.remove(name);
         } else {
@@ -44,20 +42,23 @@ export class ActiveOutputs {
     }
 
     /** Change label for an output */
-    labelOutput(output, newLabel) {
-        if (!allLabels[newLabel]) {
-            const oldLabel = this.update(output.name, newLabel);
+    labelOutput(outputName, newLabel) {
+        const activeOutput = this.get(outputName);
+        const oldLabel = activeOutput && activeOutput.label;
+        if (newLabel == oldLabel) {
+            return true;
+        }
+        if (this.outputsIndex[outputName] && !allLabels[newLabel]) {
+            const oldLabel = this.update(outputName, newLabel);
             if (oldLabel && allLabels[oldLabel]) {
                 delete allLabels[oldLabel];
             }
             if (newLabel) {
                 allLabels[newLabel] = true;
             }
-            return null;
-        } else {
-            const activeOutput = this.get(output.name);
-            return activeOutput && activeOutput.label;
+            return true;
         }
+        return false;
     }
 
     /** Returns the number of added records **/
@@ -77,6 +78,11 @@ export class ActiveOutputs {
 
     /** Remove an entry given its name */
     remove(name) {
+        const activeOutput = this.get(name);
+        const activeLabel = activeOutput && activeOutput.label;
+        if (activeLabel && allLabels[activeLabel]) {
+            delete allLabels[activeLabel];
+        }
         delete this.entries[name];
         this._updateOutput(name);
     }
@@ -88,7 +94,7 @@ export class ActiveOutputs {
 
     /** Update an active outputs label */
     update(name, label) {
-        const activeOutput = this.entries[name];
+        const activeOutput = this.get(name);
         const oldLabel = activeOutput && activeOutput.label;
         this.entries[name] = {
             output_name: name,
@@ -99,9 +105,9 @@ export class ActiveOutputs {
     }
 
     /** Removes all entries which are not in the parsed dictionary of names */
-    updateOutputs(names) {
+    filterOutputs(names) {
         this.getAll().forEach((wf_output) => {
-            if (!names[wf_output.output_name]) {
+            if (!names.includes(wf_output.output_name)) {
                 this.remove(wf_output.output_name);
             }
         });
@@ -121,8 +127,10 @@ export class ActiveOutputs {
     /** Refreshes dictionary of outputs */
     _refreshIndex() {
         this.outputsIndex = {};
-        this.outputs.forEach((o) => {
-            this.outputsIndex[o.name] = o;
-        });
+        this.outputs &&
+            this.outputs.forEach((o) => {
+                this.outputsIndex[o.name] = o;
+                this._updateOutput(o.name);
+            });
     }
 }

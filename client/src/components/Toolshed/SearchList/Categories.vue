@@ -7,8 +7,7 @@
                     href="javascript:void(0)"
                     role="button"
                     class="font-weight-bold"
-                    @click="onCategory(data.value)"
-                >
+                    @click="onCategory(data.value)">
                     {{ data.value }}
                 </b-link>
             </template>
@@ -24,7 +23,16 @@ import LoadingSpan from "components/LoadingSpan";
 Vue.use(BootstrapVue);
 
 export default {
-    props: ["toolshedUrl", "loading"],
+    props: {
+        toolshedUrl: {
+            type: String,
+            required: true,
+        },
+        loading: {
+            type: Boolean,
+            required: true,
+        },
+    },
     components: { LoadingSpan },
     data() {
         return {

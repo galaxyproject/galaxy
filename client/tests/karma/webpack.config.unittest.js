@@ -29,20 +29,14 @@ module.exports = (env, argv) => {
         ],
     };
 
-    wpConfig.module = merge.smart(wpConfig.module, ignoreAssetLoaders);
+    wpConfig.module = merge.merge(wpConfig.module, ignoreAssetLoaders);
 
-    // Using babel-plugin-rewire to handle dependency mocking since webpack 4
-    // exports immutable bindings for ES modules but we still need a way to
-    // overwrite dependencies during unit-testing.
-    //
-    // Additionally, set exclude for babel-loader to completely ignore *all*
-    // node-modules, without our exceptions to support IE as in parent webpack
-    // config.
+    // Set exclude for babel-loader to completely ignore *all* node-modules,
+    // without our exceptions to support IE as in parent webpack config.
 
     wpConfig.module.rules = wpConfig.module.rules.map((rule) => {
         if (rule.loader == "babel-loader") {
             rule.exclude = [/(node_modules\/)/];
-            rule.options.plugins.push("rewire");
         }
         return rule;
     });

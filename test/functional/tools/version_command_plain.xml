@@ -1,10 +1,10 @@
 <tool id="version_command_plain" name="version_command_plain" version="1.0.0">
-    <version_command>
-        echo "4.0.0"
-    </version_command>
-    <command>
-        cp $input $output
-    </command>
+    <version_command><![CDATA[
+VERSION="4.0.0"; echo "$VERSION"
+    ]]></version_command>
+    <command><![CDATA[
+cp '$input' '$output'
+    ]]></command>
     <inputs>
         <param name="input" type="data" format="txt" />
     </inputs>

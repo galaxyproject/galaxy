@@ -1,17 +1,18 @@
 import re
+from enum import Enum
 from logging import getLogger
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.util import unicodify
-from galaxy.util.bunch import Bunch
 
 log = getLogger(__name__)
 
-DETECTED_JOB_STATE = Bunch(
-    OK='ok',
-    OUT_OF_MEMORY_ERROR='oom_error',
-    GENERIC_ERROR='generic_error',
-)
+
+class DETECTED_JOB_STATE(str, Enum):
+    OK = "ok"
+    OUT_OF_MEMORY_ERROR = "oom_error"
+    GENERIC_ERROR = "generic_error"
+
 
 ERROR_PEEK_SIZE = 2000
 
@@ -77,8 +78,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in stdio_exit_codes:
-                    if (tool_exit_code >= stdio_exit_code.range_start and
-                            tool_exit_code <= stdio_exit_code.range_end):
+                    if tool_exit_code >= stdio_exit_code.range_start and tool_exit_code <= stdio_exit_code.range_end:
                         # Tack on a generic description of the code
                         # plus a specific code description. For example,
                         # this might prepend "Job 42: Warning (Out of Memory)\n".
@@ -88,17 +88,17 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                         desc = "%s: Exit code %d (%s)" % (
                             StdioErrorLevel.desc(stdio_exit_code.error_level),
                             tool_exit_code,
-                            code_desc)
+                            code_desc,
+                        )
                         reason = {
-                            'type': 'exit_code',
-                            'desc': desc,
-                            'exit_code': tool_exit_code,
-                            'code_desc': code_desc,
-                            'error_level': stdio_exit_code.error_level,
+                            "type": "exit_code",
+                            "desc": desc,
+                            "exit_code": tool_exit_code,
+                            "code_desc": code_desc,
+                            "error_level": stdio_exit_code.error_level,
                         }
                         job_messages.append(reason)
-                        max_error_level = max(max_error_level,
-                                              stdio_exit_code.error_level)
+                        max_error_level = max(max_error_level, stdio_exit_code.error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
@@ -118,12 +118,16 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                     #   - If it matched, then determine the error level.
                     #       o If it was fatal, then we're done - break.
                     if regex.stderr_match:
-                        max_error_level = check_output_regex(job_id_tag, regex, stderr, 'stderr', job_messages, max_error_level)
+                        max_error_level = check_output_regex(
+                            job_id_tag, regex, stderr, "stderr", job_messages, max_error_level
+                        )
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
                     if regex.stdout_match:
-                        max_error_level = check_output_regex(job_id_tag, regex, stdout, 'stdout', job_messages, max_error_level)
+                        max_error_level = check_output_regex(
+                            job_id_tag, regex, stdout, "stdout", job_messages, max_error_level
+                        )
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
@@ -132,10 +136,10 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if max_error_level == StdioErrorLevel.FATAL_OOM:
                 state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
             elif max_error_level >= StdioErrorLevel.FATAL:
-                reason = ''
+                reason = ""
                 if job_messages:
-                    reason = " Reasons are {}".format(job_messages)
-                log.info("Job error detected, failing job.{}".format(reason))
+                    reason = f" Reasons are {job_messages}"
+                log.info(f"Job error detected, failing job.{reason}")
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
         # When there are no regular expressions and no exit codes to check,
@@ -148,7 +152,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
                 peek = stderr[0:ERROR_PEEK_SIZE] if stderr else ""
-                log.info("Job failed because of contents in the standard error stream: [{}]".format(peek))
+                log.info(f"Job failed because of contents in the standard error stream: [{peek}]")
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
@@ -162,20 +166,20 @@ def __regex_err_msg(match, stream, regex):
     that will contain the string matched on.
     """
     # Get the description for the error level:
-    desc = StdioErrorLevel.desc(regex.error_level) + ": "
+    desc = f"{StdioErrorLevel.desc(regex.error_level)}: "
     mstart = match.start()
     mend = match.end()
     if mend - mstart > 256:
-        match_str = match.string[mstart : mstart + 256] + "..."
+        match_str = f"{match.string[mstart:mstart + 256]}..."
     else:
-        match_str = match.string[mstart: mend]
+        match_str = match.string[mstart:mend]
 
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.
     if regex.desc is not None:
         desc += regex.desc
     else:
-        desc += "Matched on %s" % match_str
+        desc += f"Matched on {match_str}"
     return {
         "type": "regex",
         "stream": stream,

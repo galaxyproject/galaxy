@@ -5,6 +5,6 @@ try:
 except ImportError:
     # when installed as a library, galaxy-web-apps may not be available - this
     # is fine - we shouldn't be using this entry point anyway.
-    app_factory = None
+    app_factory = None  # type: ignore[misc, assignment]
 
-__all__ = ('app_factory', )
+__all__ = ("app_factory",)

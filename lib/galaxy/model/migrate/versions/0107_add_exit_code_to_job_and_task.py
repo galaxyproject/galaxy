@@ -4,7 +4,12 @@ Add the exit_code column to the Job and Task tables.
 
 import logging
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()

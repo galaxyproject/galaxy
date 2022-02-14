@@ -22,25 +22,19 @@
         </div>
         <span v-else-if="!separateDetails">
             <div class="row">
-                <div class="col">
-                    Requirements
-                </div>
+                <div class="col">Requirements</div>
                 <div class="col-8">
                     <requirements :requirements="resolution.requirements" />
                 </div>
             </div>
             <div class="row">
-                <div class="col">
-                    Status
-                </div>
+                <div class="col">Status</div>
                 <div class="col-8">
                     <status-display :status="resolution.status[0]" :compact="false" :all-statuses="resolution.status" />
                 </div>
             </div>
             <div class="row">
-                <div class="col">
-                    Dependency Resolver
-                </div>
+                <div class="col">Dependency Resolver</div>
                 <div class="col-8">
                     <dependency-resolver :dependency-resolver="resolution.status[0].dependency_resolver" />
                 </div>
@@ -54,21 +48,16 @@
                     </div>
                     <div class="col">
                         <div class="row">
-                            <div class="col">
-                                Status
-                            </div>
+                            <div class="col">Status</div>
                             <div class="col">
                                 <status-display :status="resolution.status[index]" :compact="false" />
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col">
-                                Dependency Resolver
-                            </div>
+                            <div class="col">Dependency Resolver</div>
                             <div class="col">
                                 <dependency-resolver
-                                    :dependency-resolver="resolution.status[index].dependency_resolver"
-                                />
+                                    :dependency-resolver="resolution.status[index].dependency_resolver" />
                             </div>
                         </div>
                     </div>

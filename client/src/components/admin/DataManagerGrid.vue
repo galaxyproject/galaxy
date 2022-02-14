@@ -2,14 +2,14 @@
     <table class="tabletip">
         <thead>
             <tr>
-                <th :colspan="dataManagerColumns.length" style="font-size: 120%;">
+                <th :colspan="dataManagerColumns.length" style="font-size: 120%">
                     Data Manager: {{ dataManagerTableName }}
                     <a
                         class="icon-btn"
                         href="javascript:void(0)"
                         @click="handleReloadButtonClick"
                         :title="`Reload ${dataManagerTableName} tool data table`"
-                        ><span class="fa fa-refresh"></span
+                        ><span class="fa fa-sync"></span
                     ></a>
                 </th>
             </tr>

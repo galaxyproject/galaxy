@@ -26,9 +26,7 @@
             <b-alert v-if="searching" variant="info" show>
                 Searching for {{ searchingFor }}, this may take a while - please be patient.
             </b-alert>
-            <b-alert v-else-if="newSearch" variant="info" show>
-                Enter search query to begin search.
-            </b-alert>
+            <b-alert v-else-if="newSearch" variant="info" show> Enter search query to begin search. </b-alert>
             <b-alert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
             </b-alert>
@@ -40,8 +38,7 @@
                 striped
                 caption-top
                 @row-clicked="showRowDetails"
-                :busy="searching"
-            >
+                :busy="searching">
                 <template v-slot:row-details="row">
                     <b-card>
                         <trs-tool :trs-tool="row.item.data" @onImport="importVersion(row.item.data.id, $event)" />

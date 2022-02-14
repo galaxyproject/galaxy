@@ -1,14 +1,14 @@
 import Default from "./Default.vue";
 import { mountWithApp } from "./testHelpers";
-import { __RewireAPI__ as rewire } from "./Default";
 import Backbone from "backbone";
 
-describe("Default.vue", () => {
-    beforeEach(() => {
-        // Use of select2 in default-row requires this mock.
-        rewire.__Rewire__("UploadRow", Backbone.View);
-    });
+jest.mock("app");
 
+import UploadRow from "mvc/upload/default/default-row";
+jest.mock("mvc/upload/default/default-row");
+UploadRow.mockImplementation(Backbone.View);
+
+describe("Default.vue", () => {
     it("loads with correct initial state", async () => {
         const { wrapper } = mountWithApp(Default);
         expect(wrapper.vm.counterAnnounce).toBe(0);

@@ -36,8 +36,7 @@
                 title="Disconnect External Identity"
                 v-for="item in items"
                 :key="item.email"
-                class="d-block mt-3"
-            >
+                class="d-block mt-3">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </b-button>
 
@@ -48,8 +47,7 @@
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"
-            ></b-modal>
+                @cancel="doomedItem = null"></b-modal>
 
             <b-modal
                 centered
@@ -57,8 +55,7 @@
                 ref="deleteAndResetModal"
                 title="Deleting last external identity"
                 @ok="disconnectAndReset"
-                @cancel="doomedItem = null"
-            >
+                @cancel="doomedItem = null">
                 <p>
                     This is your only defined external identity. If you delete this identity, you will be logged out. To
                     log back in you will need to use a password associated with your account, or reconnect to this third
@@ -89,7 +86,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { logoutClick } from "layout/menu";
+import { userLogout } from "layout/menu";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
@@ -180,7 +177,7 @@ export default {
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
             this.disconnectID();
-            logoutClick();
+            userLogout();
         },
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);

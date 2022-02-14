@@ -2,8 +2,7 @@
     <dependency-index-wrapper
         :error="error"
         :loading="loading"
-        loading-message="Loading container resolution information"
-    >
+        loading-message="Loading container resolution information">
         <template v-slot:header>
             <b-row class="m-1">
                 <b-form inline>
@@ -13,15 +12,13 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-container-type"
                         v-model="containerType"
-                        :options="containerTypeOptions"
-                    ></b-form-select>
+                        :options="containerTypeOptions"></b-form-select>
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
                     <b-form-select
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-resolver-type"
                         v-model="resolverType"
-                        :options="resolverTypeOptions"
-                    ></b-form-select>
+                        :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>
             <b-row class="m-1">
@@ -31,8 +28,7 @@
                     <b-form-select
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolution"
-                        v-model="filterResolution"
-                    >
+                        v-model="filterResolution">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
@@ -45,8 +41,7 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
-                        :options="containerTypeOptions"
-                    ></b-form-select>
+                        :options="containerTypeOptions"></b-form-select>
                     <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
                         >Resolvers of type</label
                     >
@@ -55,8 +50,7 @@
                         class="mb-2 mr-sm-2 mb-sm-0"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
-                        :options="resolverTypeOptions"
-                    ></b-form-select>
+                        :options="resolverTypeOptions"></b-form-select>
                 </b-form>
             </b-row>
         </template>
@@ -170,16 +164,7 @@ export default {
             return params;
         },
         selectedToolIds() {
-            const toolIds = [];
-            for (const item of this.items) {
-                if (item["selected"]) {
-                    const toolId = item["tool"];
-                    if (toolId) {
-                        toolIds.push(toolId[0]);
-                    }
-                }
-            }
-            return toolIds;
+            return this.items.filter((item) => item.selected).map((item) => item.tool_id);
         },
     },
     watch: {

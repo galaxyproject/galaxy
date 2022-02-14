@@ -9,33 +9,35 @@ python load_data_with_metadata.py <api_key> <api_url> /data/folder "API Imports"
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
-from __future__ import print_function
 
 import argparse
 import json
 import os
 import sys
 
-from common import display, submit
+from common import (
+    display,
+    submit,
+)
 
 
 def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field=None):
     data = {}
-    data['folder_id'] = library_folder_id
-    data['file_type'] = 'auto'
-    data['dbkey'] = ''
-    data['upload_option'] = 'upload_paths'
-    data['filesystem_paths'] = fullpath
-    data['create_type'] = 'file'
-    data['link_data_only'] = 'link_to_files'
+    data["folder_id"] = library_folder_id
+    data["file_type"] = "auto"
+    data["dbkey"] = ""
+    data["upload_option"] = "upload_paths"
+    data["filesystem_paths"] = fullpath
+    data["create_type"] = "file"
+    data["link_data_only"] = "link_to_files"
 
     handle = open(fullpath + ".json")
     smeta = handle.read()
     handle.close()
     ext_meta = json.loads(smeta)
-    data['extended_metadata'] = ext_meta
+    data["extended_metadata"] = ext_meta
     if uuid_field is not None and uuid_field in ext_meta:
-        data['uuid'] = ext_meta[uuid_field]
+        data["uuid"] = ext_meta[uuid_field]
 
     libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=True)
     print(libset)
@@ -43,19 +45,19 @@ def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_fi
 
 def main(api_key, api_url, in_folder, data_library, uuid_field=None):
     # Find/Create data library with the above name.  Assume we're putting datasets in the root folder '/'
-    libs = display(api_key, api_url + 'libraries', return_formatted=False)
+    libs = display(api_key, api_url + "libraries", return_formatted=False)
     library_id = None
     for library in libs:
-        if library['name'] == data_library:
-            library_id = library['id']
+        if library["name"] == data_library:
+            library_id = library["id"]
     if not library_id:
-        lib_create_data = {'name': data_library}
-        library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
-        library_id = library['id']
+        lib_create_data = {"name": data_library}
+        library = submit(api_key, api_url + "libraries", lib_create_data, return_formatted=False)
+        library_id = library["id"]
     folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
     for f in folders:
-        if f['name'] == "/":
-            library_folder_id = f['id']
+        if f["name"] == "/":
+            library_folder_id = f["id"]
     if not library_id or not library_folder_id:
         print("Failure to configure library destination.")
         sys.exit(1)
@@ -73,10 +75,10 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
                 load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("api_key", help="API KEY")
-    parser.add_argument('api_url', help='API URL')
+    parser.add_argument("api_url", help="API URL")
     parser.add_argument("in_folder", help="Input Folder")
     parser.add_argument("data_library", help="Data Library")
     parser.add_argument("--uuid_field", help="UUID Field", default=None)

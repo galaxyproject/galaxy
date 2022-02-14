@@ -4,7 +4,12 @@ Add support for job destinations to the job table
 
 import logging
 
-from sqlalchemy import Column, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    String,
+    Table,
+)
 
 from galaxy.model.custom_types import JSONType
 

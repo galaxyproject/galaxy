@@ -3,7 +3,9 @@ boltons
 docutils
 markupsafe
 packaging
+pycryptodome
 pyyaml
 requests
 routes
-six>=1.9.0
+typing-extensions
+zipstream-new

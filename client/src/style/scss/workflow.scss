@@ -14,8 +14,19 @@
             @extend .card;
             @extend .position-absolute;
             z-index: 100;
-            width: $worfklow-node-width;
+            width: $workflow-node-width;
             border: solid $brand-primary 1px;
+            &.node-highlight {
+                z-index: 1001;
+                border: solid $white 1px;
+                box-shadow: 0 0 0 2px $brand-primary;
+            }
+            &.node-on-scroll-to {
+                z-index: 1001;
+                border: solid $white 1px;
+                box-shadow: 0 0 0 4px $brand-primary;
+                transition: box-shadow 0.5s ease-in-out;
+            }
             &.node-active {
                 z-index: 1001;
                 border: solid $white 1px;
@@ -102,12 +113,12 @@
             .input-terminal.multiple {
                 font-size: 1.2rem;
                 left: -0.8rem;
-                top: 2px;
+                top: 3px;
             }
             .output-terminal.multiple {
                 font-size: 1.2rem;
                 right: -0.8rem;
-                top: 2px;
+                bottom: 6px;
             }
             .input-terminal-active.can-accept > .icon {
                 color: $brand-success;

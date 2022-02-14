@@ -8,8 +8,18 @@ from tool_shed.util import (
 )
 
 
-def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar,
-               commit_message, new_repo_alert):
+def upload_tar(
+    trans,
+    rdah,
+    tdah,
+    repository,
+    tar,
+    uploaded_file,
+    upload_point,
+    remove_repo_files_not_in_tar,
+    commit_message,
+    new_repo_alert,
+):
     # Upload a tar archive of files.
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0
@@ -17,9 +27,8 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
     if check_results.invalid:
         tar.close()
         uploaded_file.close()
-        message = '{} Invalid paths were: {}'.format(
-            ' '.join(check_results.errors), ', '.join(check_results.invalid))
-        return False, message, [], '', undesirable_dirs_removed, undesirable_files_removed
+        message = "{} Invalid paths were: {}".format(" ".join(check_results.errors), ", ".join(check_results.invalid))
+        return False, message, [], "", undesirable_dirs_removed, undesirable_files_removed
     else:
         repository.hg_repo
         repo_dir = repository.repo_path(trans.app)
@@ -41,7 +50,7 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
                 # are missing and if so, set them appropriately.
                 altered, root_elem, error_message = rdah.handle_tag_attributes(uploaded_file_name)
                 if error_message:
-                    return False, error_message, [], '', [], []
+                    return False, error_message, [], "", [], []
                 elif altered:
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
@@ -50,18 +59,20 @@ def upload_tar(trans, rdah, tdah, repository, tar, uploaded_file, upload_point, 
                 # attributes are missing and if so, set them appropriately.
                 altered, root_elem, error_message = tdah.handle_tag_attributes(uploaded_file_name)
                 if error_message:
-                    return False, error_message, [], '', [], []
+                    return False, error_message, [], "", [], []
                 if altered:
                     tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                     shutil.move(tmp_filename, uploaded_file_name)
-        return commit_util.handle_directory_changes(trans.app,
-                                                    trans.request.host,
-                                                    trans.user.username,
-                                                    repository,
-                                                    full_path,
-                                                    filenames_in_archive,
-                                                    remove_repo_files_not_in_tar,
-                                                    new_repo_alert,
-                                                    commit_message,
-                                                    undesirable_dirs_removed,
-                                                    undesirable_files_removed)
+        return commit_util.handle_directory_changes(
+            trans.app,
+            trans.request.host,
+            trans.user.username,
+            repository,
+            full_path,
+            filenames_in_archive,
+            remove_repo_files_not_in_tar,
+            new_repo_alert,
+            commit_message,
+            undesirable_dirs_removed,
+            undesirable_files_removed,
+        )

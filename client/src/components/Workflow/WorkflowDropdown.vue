@@ -5,8 +5,7 @@
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
-            aria-expanded="false"
-        >
+            aria-expanded="false">
             <font-awesome-icon icon="caret-down" />
             <span>{{ workflow.name }}</span>
         </b-link>

@@ -1,21 +1,19 @@
 import Vuex from "vuex";
-import { mount, createLocalVue } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import Tags from "./Tags";
-import _l from "utils/localization";
 import { TagService } from "./tagService";
 import { tagStore } from "store/tagStore";
+import { getLocalVue } from "jest/helpers";
 
 jest.mock("./tagService");
 
-const localVue = createLocalVue();
-localVue.use(Vuex);
+const localVue = getLocalVue();
+
 const testStore = new Vuex.Store({
     modules: {
         tagStore,
     },
 });
-
-localVue.filter("localize", (value) => _l(value));
 
 describe("Tags/Tags.vue", () => {
     const id = "testId";
@@ -56,7 +54,6 @@ describe("Tags/Tags.vue", () => {
         emitted = wrapper.emitted();
 
         // Waits for lifecycle handlers to execute
-
         await wrapper.vm.$nextTick();
     });
 

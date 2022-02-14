@@ -18,7 +18,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     MetaData,
-    Table
+    Table,
 )
 
 from galaxy.model.custom_types import TrimmedString
@@ -27,13 +27,16 @@ log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
 metadata = MetaData()
 
-HistoryDatasetAssociationDisplayAtAuthorization_table = Table("history_dataset_association_display_at_authorization", metadata,
-                                                              Column("id", Integer, primary_key=True),
-                                                              Column("create_time", DateTime, default=now),
-                                                              Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                                              Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-                                                              Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                                              Column("site", TrimmedString(255)))
+HistoryDatasetAssociationDisplayAtAuthorization_table = Table(
+    "history_dataset_association_display_at_authorization",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("site", TrimmedString(255)),
+)
 
 
 def upgrade(migrate_engine):

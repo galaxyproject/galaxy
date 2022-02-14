@@ -19,7 +19,7 @@ import logging
 import os.path
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 from galaxy.model.migrate.check import create_or_verify_database as create_db
 from galaxy.model.orm.scripts import get_config
@@ -32,12 +32,12 @@ log = logging.getLogger(__name__)
 
 def invoke_create():
     config = get_config(sys.argv)
-    if config['database'] == 'galaxy':
-        create_db(config['db_url'], config['config_file'])
-    elif config['database'] == 'tool_shed':
-        create_tool_shed_db(config['db_url'])
-    elif config['database'] == 'install':
-        create_install_db(config['db_url'])
+    if config["database"] == "galaxy":
+        create_db(config["db_url"], config["config_file"], map_install_models=not config["install_database_connection"])
+    elif config["database"] == "tool_shed":
+        create_tool_shed_db(config["db_url"])
+    elif config["database"] == "install":
+        create_install_db(config["db_url"])
 
 
 if __name__ == "__main__":

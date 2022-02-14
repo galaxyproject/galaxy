@@ -10,14 +10,13 @@ import os
 import os.path
 import re
 import shutil
-import sys
 import tempfile
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
 from isatools import (
     isajson,
-    isatab_meta
+    isatab_meta,
 )
 from markupsafe import escape
 
@@ -48,20 +47,14 @@ logger = logging.getLogger(__name__)
 ################################################################
 
 
-def utf8_text_file_open(path):
-    if sys.version_info[0] < 3:
-        fp = open(path, 'rb')
-    else:
-        fp = open(path, newline='', encoding='utf8')
-    return fp
-
-
 # ISA class {{{1
 ################################################################
 
+
 class _Isa(data.Data):
-    """ Base class for implementing ISA datatypes """
-    composite_type = 'auto_primary_file'
+    """Base class for implementing ISA datatypes"""
+
+    composite_type = "auto_primary_file"
     is_binary = True
     _main_file_regex = None
 
@@ -87,7 +80,7 @@ class _Isa(data.Data):
     def _get_isa_folder_path(self, dataset):
         isa_folder = dataset.extra_files_path
         if not isa_folder:
-            raise Exception('Unvalid dataset object, or no extra files path found for this dataset.')
+            raise Exception("Unvalid dataset object, or no extra files path found for this dataset.")
         return isa_folder
 
     # Get main file {{{2
@@ -108,7 +101,7 @@ class _Isa(data.Data):
             main_file = self._find_main_file_in_archive(isa_files)
 
             if main_file is None:
-                raise Exception('Invalid ISA archive. No main file found.')
+                raise Exception("Invalid ISA archive. No main file found.")
 
             # Make full path
             main_file = os.path.join(isa_folder, main_file)
@@ -120,7 +113,7 @@ class _Isa(data.Data):
 
     def _get_investigation(self, dataset):
         """Create a contained instance specific to the exact ISA type (Tab or Json).
-           We will use it to parse and access information from the archive."""
+        We will use it to parse and access information from the archive."""
 
         investigation = None
         main_file = self._get_main_file(dataset)
@@ -143,14 +136,18 @@ class _Isa(data.Data):
                 if found_file is None:
                     found_file = match.group()
                 else:
-                    raise Exception('More than one file match the pattern "', str(self._main_file_regex), '" to identify the investigation file')
+                    raise Exception(
+                        'More than one file match the pattern "',
+                        str(self._main_file_regex),
+                        '" to identify the investigation file',
+                    )
 
         return found_file
 
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -159,7 +156,7 @@ class _Isa(data.Data):
             raise RuntimeError("Unable to find the main file within the 'files_path' folder")
 
         # Read first lines of main file
-        with open(main_file, encoding='utf-8') as f:
+        with open(main_file, encoding="utf-8") as f:
             data = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
@@ -168,10 +165,10 @@ class _Isa(data.Data):
                     break
             if not dataset.dataset.purged and data:
                 dataset.peek = json.dumps({"data": data})
-                dataset.blurb = 'data'
+                dataset.blurb = "data"
             else:
-                dataset.peek = 'file does not exist'
-                dataset.blurb = 'file purged from disk'
+                dataset.peek = "file does not exist"
+                dataset.blurb = "file purged from disk"
 
     # Display peek {{{2
     ################################################################
@@ -188,11 +185,11 @@ class _Isa(data.Data):
                 line = line.strip()
                 if not line:
                     continue
-                out.append('<tr><td>%s</td></tr>' % escape(util.unicodify(line, 'utf-8')))
-            out.append('</table>')
+                out.append(f"<tr><td>{escape(util.unicodify(line, 'utf-8'))}</td></tr>")
+            out.append("</table>")
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek: %s" % util.unicodify(exc)
+            out = f"Can't create peek: {util.unicodify(exc)}"
         return out
 
     # Generate primary file {{{2
@@ -200,17 +197,17 @@ class _Isa(data.Data):
 
     def generate_primary_file(self, dataset=None):
         """Generate the primary file. It is an HTML file containing description of the composite dataset
-           as well as a list of the composite files that it contains."""
+        as well as a list of the composite files that it contains."""
 
         if dataset:
-            rval = ['<html><head><title>ISA Dataset </title></head><p/>']
+            rval = ["<html><head><title>ISA Dataset </title></head><p/>"]
             if hasattr(dataset, "extra_files_path"):
-                rval.append('<div>ISA Dataset composed of the following files:<p/><ul>')
+                rval.append("<div>ISA Dataset composed of the following files:<p/><ul>")
                 for cmp_file in os.listdir(dataset.extra_files_path):
-                    rval.append('<li><a href="{}" type="text/plain">{}</a></li>'.format(cmp_file, escape(cmp_file)))
-                rval.append('</ul></div></html>')
+                    rval.append(f'<li><a href="{cmp_file}" type="text/plain">{escape(cmp_file)}</a></li>')
+                rval.append("</ul></div></html>")
             else:
-                rval.append('<div>ISA Dataset is empty!<p/><ul>')
+                rval.append("<div>ISA Dataset is empty!<p/><ul>")
             return "\n".join(rval)
         return "<div>No dataset available</div>"
 
@@ -241,7 +238,7 @@ class _Isa(data.Data):
             CompressedFile(file_name).extract(temp_folder)
             shutil.rmtree(output_path)
             extracted_files = os.listdir(temp_folder)
-            logger.debug(' '.join(extracted_files))
+            logger.debug(" ".join(extracted_files))
             if len(extracted_files) == 0:
                 os.makedirs(output_path)
                 shutil.rmtree(temp_folder)
@@ -256,9 +253,10 @@ class _Isa(data.Data):
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         """Downloads the ISA dataset if `preview` is `False`;
-           if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
-           The preview is triggered when user clicks on the eye icon of the composite dataset."""
+        if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
+        The preview is triggered when user clicks on the eye icon of the composite dataset."""
 
+        headers = kwd.get("headers", {})
         # if it is not required a preview use the default behaviour of `display_data`
         if not preview:
             return super().display_data(trans, dataset, preview, filename, to_ext, **kwd)
@@ -273,44 +271,45 @@ class _Isa(data.Data):
                         <p>You may also try to look into your zip file in order to find out if this is a proper ISA archive. If you see a file i_Investigation.txt inside, then it is an ISA-Tab archive. If you see a file with extension .json inside, then it is an ISA-JSON archive. If you see nothing like that, then either your ISA archive is corrupted, or it is not an ISA archive.</p>
                    </body></html>"""
         else:
-            html = '<html><body>'
-            html += '<h1>{} {}</h1>'.format(investigation.title, investigation.identifier)
+            html = "<html><body>"
+            html += f"<h1>{investigation.title} {investigation.identifier}</h1>"
 
             # Loop on all studies
             for study in investigation.studies:
-                html += '<h2>Study %s</h2>' % study.identifier
-                html += '<h3>%s</h3>' % study.title
-                html += '<p>%s</p>' % study.description
-                html += '<p>Submitted the %s</p>' % study.submission_date
-                html += '<p>Released on %s</p>' % study.public_release_date
+                html += f"<h2>Study {study.identifier}</h2>"
+                html += f"<h3>{study.title}</h3>"
+                html += f"<p>{study.description}</p>"
+                html += f"<p>Submitted the {study.submission_date}</p>"
+                html += f"<p>Released on {study.public_release_date}</p>"
 
-                html += '<p>Experimental factors used: %s</p>' % ', '.join(x.name for x in study.factors)
+                html += f"<p>Experimental factors used: {', '.join(x.name for x in study.factors)}</p>"
 
                 # Loop on all assays of this study
                 for assay in study.assays:
-                    html += '<h3>Assay %s</h3>' % assay.filename
-                    html += '<p>Measurement type: %s</p>' % assay.measurement_type.term  # OntologyAnnotation
-                    html += '<p>Technology type: %s</p>' % assay.technology_type.term    # OntologyAnnotation
-                    html += '<p>Technology platform: %s</p>' % assay.technology_platform
+                    html += f"<h3>Assay {assay.filename}</h3>"
+                    html += f"<p>Measurement type: {assay.measurement_type.term}</p>"  # OntologyAnnotation
+                    html += f"<p>Technology type: {assay.technology_type.term}</p>"  # OntologyAnnotation
+                    html += f"<p>Technology platform: {assay.technology_platform}</p>"
                     if assay.data_files is not None:
-                        html += '<p>Data files:</p>'
-                        html += '<ul>'
+                        html += "<p>Data files:</p>"
+                        html += "<ul>"
                         for data_file in assay.data_files:
-                            if data_file.filename != '':
-                                html += '<li>' + escape(util.unicodify(str(data_file.filename), 'utf-8')) + ' - ' + escape(util.unicodify(str(data_file.label), 'utf-8')) + '</li>'
-                        html += '</ul>'
+                            if data_file.filename != "":
+                                html += f"<li>{escape(util.unicodify(str(data_file.filename), 'utf-8'))} - {escape(util.unicodify(str(data_file.label), 'utf-8'))}</li>"
+                        html += "</ul>"
 
-            html += '</body></html>'
+            html += "</body></html>"
 
         # Set mime type
-        mime = 'text/html'
-        self._clean_and_set_mime_type(trans, mime)
+        mime = "text/html"
+        self._clean_and_set_mime_type(trans, mime, headers)
 
-        return sanitize_html(html).encode('utf-8')
+        return sanitize_html(html).encode("utf-8"), headers
 
 
 # ISA-Tab class {{{1
 ################################################################
+
 
 class IsaTab(_Isa):
     file_ext = "isa-tab"
@@ -329,8 +328,8 @@ class IsaTab(_Isa):
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
-        fp = utf8_text_file_open(filename)
-        parser.parse(fp)
+        with open(filename, newline="", encoding="utf8") as fp:
+            parser.parse(fp)
         for study in parser.isa.studies:
             s_parser = isatab_meta.LazyStudySampleTableParser(parser.isa)
             s_parser.parse(os.path.join(isa_dir, study.filename))
@@ -344,6 +343,7 @@ class IsaTab(_Isa):
 
 # ISA-JSON class {{{1
 ################################################################
+
 
 class IsaJson(_Isa):
     file_ext = "isa-json"
@@ -360,7 +360,7 @@ class IsaJson(_Isa):
     def _make_investigation_instance(self, filename):
 
         # Parse JSON file
-        fp = utf8_text_file_open(filename)
-        isa = isajson.load(fp)
+        with open(filename, newline="", encoding="utf8") as fp:
+            isa = isajson.load(fp)
 
         return isa

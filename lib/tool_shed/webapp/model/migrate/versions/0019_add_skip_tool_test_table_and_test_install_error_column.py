@@ -6,7 +6,16 @@ import datetime
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+)
 from sqlalchemy.exc import NoSuchTableError
 
 # Need our custom types, but don't import anything else from model
@@ -24,13 +33,16 @@ now = datetime.datetime.utcnow
 
 metadata = MetaData()
 
-SkipToolTest_table = Table("skip_tool_test", metadata,
-                           Column("id", Integer, primary_key=True),
-                           Column("create_time", DateTime, default=now),
-                           Column("update_time", DateTime, default=now, onupdate=now),
-                           Column("repository_metadata_id", Integer, ForeignKey("repository_metadata.id"), index=True),
-                           Column("initial_changeset_revision", TrimmedString(255), index=True),
-                           Column("comment", TEXT))
+SkipToolTest_table = Table(
+    "skip_tool_test",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("repository_metadata_id", Integer, ForeignKey("repository_metadata.id"), index=True),
+    Column("initial_changeset_revision", TrimmedString(255), index=True),
+    Column("comment", TEXT),
+)
 
 
 def upgrade(migrate_engine):
@@ -38,9 +50,9 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+    if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
         default_false = "0"
-    elif migrate_engine.name in ['postgresql', 'postgres']:
+    elif migrate_engine.name in ["postgresql", "postgres"]:
         default_false = "false"
 
     try:
@@ -55,7 +67,7 @@ def upgrade(migrate_engine):
         try:
             c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_ttie")
             assert c is RepositoryMetadata_table.c.test_install_error
-            migrate_engine.execute("UPDATE repository_metadata SET test_install_error=%s" % default_false)
+            migrate_engine.execute(f"UPDATE repository_metadata SET test_install_error={default_false}")
         except Exception:
             log.exception("Adding test_install_error column to the repository_metadata table failed.")
 

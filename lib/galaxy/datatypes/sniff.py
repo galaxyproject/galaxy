@@ -3,38 +3,50 @@ File format detector
 """
 
 import bz2
-import codecs
 import gzip
 import io
 import logging
 import os
 import re
 import shutil
+import struct
 import sys
 import tempfile
 import urllib.request
 import zipfile
+from typing import (
+    Dict,
+    IO,
+    NamedTuple,
+    Optional,
+    Union,
+)
+
+from typing_extensions import Protocol
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.files import ConfiguredFileSources
+from galaxy.util import (
+    compression_utils,
+    file_reader,
+    stream_to_open_named_file,
+)
 from galaxy.util.checkers import (
     check_binary,
-    check_bz2,
-    check_gzip,
     check_html,
-    check_zip,
+    COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
 
 log = logging.getLogger(__name__)
 
-SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2 ** 20)
+SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2**20)
 
 
 def get_test_fname(fname):
     """Returns test data filename"""
     path, name = os.path.split(__file__)
-    full_path = os.path.join(path, 'test', fname)
+    full_path = os.path.join(path, "test", fname)
     return full_path
 
 
@@ -46,52 +58,25 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path, file_sources=None):
+def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
     prefix = "url_paste"
     if file_sources and file_sources.looks_like_uri(path):
         file_source_path = file_sources.get_file_source_path(path)
-        _, temp_name = tempfile.mkstemp(prefix=prefix)
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+            temp_name = temp.name
         file_source_path.file_source.realize_to(file_source_path.path, temp_name)
         return temp_name
     else:
-        page = urllib.request.urlopen(path)  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers))
+        page = urllib.request.urlopen(
+            path, timeout=util.DEFAULT_SOCKET_TIMEOUT
+        )  # page will be .close()ed in stream_to_file
+        temp_name = stream_to_file(
+            page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers)
+        )
         return temp_name
 
 
-def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
-    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
-    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
-    CHUNK_SIZE = 1048576
-    try:
-        codecs.lookup(target_encoding)
-    except Exception:
-        target_encoding = util.DEFAULT_ENCODING  # utf-8
-    use_source_encoding = source_encoding is not None
-    while True:
-        chunk = stream.read(CHUNK_SIZE)
-        if not chunk:
-            break
-        if use_source_encoding:
-            # If a source encoding is given we use it to convert to the target encoding
-            try:
-                if not isinstance(chunk, str):
-                    chunk = chunk.decode(source_encoding, source_error)
-                os.write(fd, chunk.encode(target_encoding, target_error))
-            except UnicodeDecodeError:
-                use_source_encoding = False
-                os.write(fd, chunk)
-        else:
-            # Compressed files must be encoded after they are uncompressed in the upload utility,
-            # while binary files should not be encoded at all.
-            if isinstance(chunk, str):
-                chunk = chunk.encode(target_encoding, target_error)
-            os.write(fd, chunk)
-    os.close(fd)
-    return filename
-
-
-def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
+def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
@@ -99,7 +84,7 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
     if not is_binary:
-        if upload_opts.get('space_to_tab'):
+        if upload_opts.get("space_to_tab"):
             convert_newlines_sep2tabs(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
         else:
             convert_newlines(src_path, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
@@ -112,16 +97,40 @@ def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_
         datatype.groom_dataset_content(file_output_path)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
+class ConvertResult(NamedTuple):
+    line_count: int
+    converted_path: Optional[str]
+    converted_newlines: bool
+    converted_regex: bool
+
+
+class ConvertFunction(Protocol):
+    def __call__(
+        self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+    ) -> ConvertResult:
+        ...
+
+
+def convert_newlines(
+    fname: str,
+    in_place: bool = True,
+    tmp_dir: Optional[str] = None,
+    tmp_prefix: Optional[str] = "gxupload",
+    block_size: int = 128 * 1024,
+    regexp=None,
+) -> ConvertResult:
     """
     Converts in place a file from universal line endings
     to Posix line endings.
     """
-    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
+    converted_newlines = False
+    converted_regex = False
     NEWLINE_BYTE = 10
     CR_BYTE = 13
-    with open(fd, mode="wb") as fp, open(fname, mode="rb") as fi:
+    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
+        fname, mode="rb"
+    ) as fi:
         last_char = None
         block = fi.read(block_size)
         last_block = b""
@@ -132,36 +141,73 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
                 block = block[1:]
             if block:
                 last_char = block[-1]
-                block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                if b"\r" in block:
+                    block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    converted_newlines = True
                 if regexp:
-                    block = b"\t".join(regexp.split(block))
+                    split_block = regexp.split(block)
+                    if len(split_block) > 1:
+                        converted_regex = True
+                    block = b"\t".join(split_block)
                 fp.write(block)
                 i += block.count(b"\n")
                 last_block = block
                 block = fi.read(block_size)
         if last_block and last_block[-1] != NEWLINE_BYTE:
+            converted_newlines = True
             i += 1
             fp.write(b"\n")
     if in_place:
-        shutil.move(temp_name, fname)
+        shutil.move(fp.name, fname)
         # Return number of lines in file.
-        return (i, None)
+        return ConvertResult(i, None, converted_newlines, converted_regex)
     else:
-        return (i, temp_name)
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_sep2tabs(
+    fname: str,
+    in_place: bool = True,
+    tmp_dir: Optional[str] = None,
+    tmp_prefix: Optional[str] = "gxupload",
+    block_size: int = 128 * 1024,
+):
+    """
+    Transforms in place a 'sep' separated file to a tab separated one
+    """
+    patt: bytes = rb"[^\S\r\n]+"
+    regexp = re.compile(patt)
+    i = 0
+    converted_newlines = False
+    converted_regex = False
+    with tempfile.NamedTemporaryFile(mode="wb", prefix=tmp_prefix, dir=tmp_dir, delete=False) as fp, open(
+        fname, mode="rb"
+    ) as fi:
+        block = fi.read(block_size)
+        while block:
+            if block:
+                split_block = regexp.split(block)
+                if len(split_block) > 1:
+                    converted_regex = True
+                block = b"\t".join(split_block)
+                fp.write(block)
+                i += block.count(b"\n") or block.count(b"\r")
+                block = fi.read(block_size)
+    if in_place:
+        shutil.move(fp.name, fname)
+        # Return number of lines in file.
+        return ConvertResult(i, None, converted_newlines, converted_regex)
+    else:
+        return ConvertResult(i, fp.name, converted_newlines, converted_regex)
+
+
+def convert_newlines_sep2tabs(
+    fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
+) -> ConvertResult:
     """
     Converts newlines in a file to posix newlines and replaces spaces with tabs.
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\r3 4")
-    >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
+    patt: bytes = rb"[^\S\n]+"
     regexp = re.compile(patt)
     return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
@@ -173,8 +219,8 @@ def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
     else:
         file_iterator = compression_utils.get_fileobj(fname_or_file_prefix)
     for line in file_iterator:
-        line = line.rstrip('\n\r')
-        if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
+        line = line.rstrip("\n\r")
+        if comment_designator is not None and comment_designator != "" and line.startswith(comment_designator):
             continue
         yield line.split(sep)
         idx += 1
@@ -199,10 +245,14 @@ def get_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
     >>> get_headers(fname, '\\t', count=5, comment_designator='#') == [[''], ['chr7', 'bed2gff', 'AR', '26731313', '26731437', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731491', '26731536', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731541', '26731649', '.', '+', '.', 'score'], ['chr7', 'bed2gff', 'AR', '26731659', '26731841', '.', '+', '.', 'score']]
     True
     """
-    return list(iter_headers(fname_or_file_prefix=fname_or_file_prefix, sep=sep, count=count, comment_designator=comment_designator))
+    return list(
+        iter_headers(
+            fname_or_file_prefix=fname_or_file_prefix, sep=sep, count=count, comment_designator=comment_designator
+        )
+    )
 
 
-def is_column_based(fname_or_file_prefix, sep='\t', skip=0):
+def is_column_based(fname_or_file_prefix, sep="\t", skip=0):
     """
     Checks whether the file is column based with respect to a separator
     (defaults to tab separator).
@@ -234,24 +284,22 @@ def is_column_based(fname_or_file_prefix, sep='\t', skip=0):
         return False
 
     try:
-        headers = get_headers(fname_or_file_prefix, sep)
+        headers = get_headers(fname_or_file_prefix, sep, comment_designator="#")[skip:]
     except UnicodeDecodeError:
         return False
     count = 0
     if not headers:
         return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) > 1:
+    for hdr in headers:
+        if hdr and hdr != [""]:
+            if count:
+                if len(hdr) != count:
+                    return False
+            else:
                 count = len(hdr)
-            break
-    if count < 2:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) != count:
-                return False
-    return True
+                if count < 2:
+                    return False
+    return count >= 2
 
 
 def guess_ext(fname, sniff_order, is_binary=False):
@@ -302,13 +350,13 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('2.txt')
-    >>> guess_ext(fname, sniff_order)  # 2.txt
+    >>> guess_ext(fname, sniff_order)
     'txt'
-    >>> fname = get_test_fname('2.tabular')
+    >>> fname = get_test_fname('test_tab2.tabular')
     >>> guess_ext(fname, sniff_order)
     'tabular'
     >>> fname = get_test_fname('3.txt')
-    >>> guess_ext(fname, sniff_order)  # 3.txt
+    >>> guess_ext(fname, sniff_order)
     'txt'
     >>> fname = get_test_fname('test_tab1.tabular')
     >>> guess_ext(fname, sniff_order)
@@ -423,7 +471,10 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.blib')
     >>> guess_ext(fname, sniff_order)
     'blib'
-    >>> fname = get_test_fname('test.phylip')
+    >>> fname = get_test_fname('test_strict_interleaved.phylip')
+    >>> guess_ext(fname, sniff_order)
+    'phylip'
+    >>> fname = get_test_fname('test_relaxed_interleaved.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'
     >>> fname = get_test_fname('1.smat')
@@ -438,6 +489,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
     'phyloxml'
+    >>> fname = get_test_fname('1.dzi')
+    >>> guess_ext(fname, sniff_order)
+    'dzi'
     >>> fname = get_test_fname('1.tiff')
     >>> guess_ext(fname, sniff_order)
     'tiff'
@@ -447,9 +501,18 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.mtx')
     >>> guess_ext(fname, sniff_order)
     'mtx'
+    >>> fname = get_test_fname('mc_preprocess_summ.metacyto_summary.txt')
+    >>> guess_ext(fname, sniff_order)
+    'metacyto_summary.txt'
+    >>> fname = get_test_fname('Accuri_C6_A01_H2O.fcs')
+    >>> guess_ext(fname, sniff_order)
+    'fcs'
     >>> fname = get_test_fname('1imzml')
     >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
     'data'
+    >>> fname = get_test_fname('too_many_comments_gff3.tabular')
+    >>> guess_ext(fname, sniff_order)  # It's a VCF but is sniffed as tabular because of the limit on the number of header lines we read
+    'tabular'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
@@ -457,34 +520,116 @@ def guess_ext(fname, sniff_order, is_binary=False):
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
     # to tsv but it doesn't have a sniffer - is TSV was sniffed just check
     # if it is an okay tabular and use that instead.
-    if file_ext == 'tsv':
-        if is_column_based(file_prefix, '\t', 1):
-            file_ext = 'tabular'
+    if file_ext == "tsv":
+        if is_column_based(file_prefix, "\t", 1):
+            file_ext = "tabular"
     if file_ext is not None:
         return file_ext
 
     # skip header check if data is already known to be binary
     if is_binary:
-        return file_ext or 'binary'
+        return file_ext or "binary"
     try:
         get_headers(file_prefix, None)
     except UnicodeDecodeError:
-        return 'data'  # default data type file extension
-    if is_column_based(file_prefix, '\t', 1):
-        return 'tabular'  # default tabular data type file extension
-    return 'txt'  # default text data type file extension
+        return "data"  # default data type file extension
+    if is_column_based(file_prefix, "\t", 1):
+        return "tabular"  # default tabular data type file extension
+    return "txt"  # default text data type file extension
 
 
-def run_sniffers_raw(filename_or_file_prefix, sniff_order, is_binary=False):
-    """Run through sniffers specified by sniff_order, return None of None match.
-    """
-    if isinstance(filename_or_file_prefix, FilePrefix):
-        fname = filename_or_file_prefix.filename
-        file_prefix = filename_or_file_prefix
-    else:
-        fname = filename_or_file_prefix
-        file_prefix = FilePrefix(filename_or_file_prefix)
+class FilePrefix:
+    def __init__(self, filename):
+        non_utf8_error = None
+        compressed_format = None
+        contents_header_bytes = None
+        contents_header = None  # First MAX_BYTES of the file.
+        truncated = False
+        # A future direction to optimize sniffing even more for sniffers at the top of the list
+        # is to lazy load contents_header based on what interface is requested. For instance instead
+        # of returning a StringIO directly in string_io() return an object that reads the contents and
+        # populates contents_header while providing a StringIO-like interface until the file is read
+        # but then would fallback to native string_io()
+        try:
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
+            try:
+                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
+                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
+                contents_header = contents_header_bytes.decode("utf-8")
+            finally:
+                f.close()
+        except UnicodeDecodeError as e:
+            non_utf8_error = e
 
+        self.truncated = truncated
+        self.filename = filename
+        self.non_utf8_error = non_utf8_error
+        self.binary = non_utf8_error is not None  # obviously wrong
+        self.compressed_format = compressed_format
+        self.contents_header = contents_header
+        self.contents_header_bytes = contents_header_bytes
+        self._file_size = None
+
+    @property
+    def file_size(self):
+        if self._file_size is None:
+            self._file_size = os.path.getsize(self.filename)
+        return self._file_size
+
+    def string_io(self) -> io.StringIO:
+        if self.non_utf8_error is not None:
+            raise self.non_utf8_error
+        rval = io.StringIO(self.contents_header)
+        return rval
+
+    def text_io(self, *args, **kwargs) -> io.TextIOWrapper:
+        return io.TextIOWrapper(io.BytesIO(self.contents_header_bytes), *args, **kwargs)
+
+    def startswith(self, prefix):
+        return self.string_io().read(len(prefix)) == prefix
+
+    def line_iterator(self):
+        s = self.string_io()
+        s_len = len(s.getvalue())
+        for line in iter(s.readline, ""):
+            if line.endswith("\n") or line.endswith("\r"):
+                yield line
+            elif s.tell() == s_len and not self.truncated:
+                # At the end, return the last line if it wasn't truncated when reading it in.
+                yield line
+
+    # Convenience wrappers around contents_header, shielding contents_header means we can
+    # potentially do a better job lazy loading this data later on.
+    def search(self, pattern):
+        return pattern.search(self.contents_header)
+
+    def search_str(self, query_str):
+        return query_str in self.contents_header
+
+    def magic_header(self, pattern):
+        """
+        Unpack header and get first element
+        """
+        size = struct.calcsize(pattern)
+        header_bytes = self.contents_header_bytes[:size]
+        if len(header_bytes) < size:
+            return None
+        return struct.unpack(pattern, header_bytes)[0]
+
+    def startswith_bytes(self, test_bytes):
+        return self.contents_header_bytes.startswith(test_bytes)
+
+
+def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix]) -> FilePrefix:
+    if not isinstance(filename_or_file_prefix, FilePrefix):
+        return FilePrefix(filename_or_file_prefix)
+    return filename_or_file_prefix
+
+
+def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order, is_binary=False):
+    """Run through sniffers specified by sniff_order, return None of None match."""
+    file_prefix = _get_file_prefix(filename_or_file_prefix)
+    fname = file_prefix.filename
     file_ext = None
     for datatype in sniff_order:
         """
@@ -524,75 +669,8 @@ def run_sniffers_raw(filename_or_file_prefix, sniff_order, is_binary=False):
 def zip_single_fileobj(path):
     z = zipfile.ZipFile(path)
     for name in z.namelist():
-        if not name.endswith('/'):
+        if not name.endswith("/"):
             return z.open(name)
-
-
-class FilePrefix:
-
-    def __init__(self, filename):
-        non_utf8_error = None
-        compressed_format = None
-        contents_header_bytes = None
-        contents_header = None  # First MAX_BYTES of the file.
-        truncated = False
-        # A future direction to optimize sniffing even more for sniffers at the top of the list
-        # is to lazy load contents_header based on what interface is requested. For instance instead
-        # of returning a StringIO directly in string_io() return an object that reads the contents and
-        # populates contents_header while providing a StringIO-like interface until the file is read
-        # but then would fallback to native string_io()
-        try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
-            try:
-                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
-                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
-                contents_header = contents_header_bytes.decode("utf-8")
-            finally:
-                f.close()
-        except UnicodeDecodeError as e:
-            non_utf8_error = e
-
-        self.truncated = truncated
-        self.filename = filename
-        self.non_utf8_error = non_utf8_error
-        self.binary = non_utf8_error is not None  # obviously wrong
-        self.compressed_format = compressed_format
-        self.contents_header = contents_header
-        self.contents_header_bytes = contents_header_bytes
-        self._file_size = None
-
-    @property
-    def file_size(self):
-        if self._file_size is None:
-            self._file_size = os.path.getsize(self.filename)
-        return self._file_size
-
-    def string_io(self):
-        if self.non_utf8_error is not None:
-            raise self.non_utf8_error
-        rval = io.StringIO(self.contents_header)
-        return rval
-
-    def startswith(self, prefix):
-        return self.string_io().read(len(prefix)) == prefix
-
-    def line_iterator(self):
-        s = self.string_io()
-        s_len = len(s.getvalue())
-        for line in s:
-            if line.endswith("\n") or line.endswith("\r"):
-                yield line
-            elif s.tell() == s_len and not self.truncated:
-                # At the end, return the last line if it wasn't truncated when reading it in.
-                yield line
-
-    # Convenience wrappers around contents_header, shielding contents_header means we can
-    # potentially do a better job lazy loading this data later on.
-    def search(self, pattern):
-        return pattern.search(self.contents_header)
-
-    def search_str(self, query_str):
-        return query_str in self.contents_header
 
 
 def build_sniff_from_prefix(klass):
@@ -624,16 +702,23 @@ def disable_parent_class_sniffing(klass):
     return klass
 
 
+class HandleCompressedFileResponse(NamedTuple):
+    is_valid: bool
+    ext: str
+    uncompressed_path: str
+    compressed_type: Optional[str]
+
+
 def handle_compressed_file(
-        filename,
-        datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_uncompress_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        auto_decompress=True,
-):
+    filename: str,
+    datatypes_registry,
+    ext: str = "auto",
+    tmp_prefix: Optional[str] = "sniff_uncompress_",
+    tmp_dir: Optional[str] = None,
+    in_place: bool = False,
+    check_content: bool = True,
+    auto_decompress: bool = True,
+) -> HandleCompressedFileResponse:
     """
     Check uploaded files for compression, check compressed file contents, and uncompress if necessary.
 
@@ -649,12 +734,12 @@ def handle_compressed_file(
     in the case of a zip file), this is so lengthy decompression can be bypassed if there is invalid content in the
     first 32KB. Otherwise the caller should be checking content.
     """
-    CHUNK_SIZE = 2 ** 20  # 1Mb
+    CHUNK_SIZE = 2**20  # 1Mb
     is_compressed = False
     compressed_type = None
     keep_compressed = False
     is_valid = False
-    uncompressed = filename
+    uncompressed_path = filename
     tmp_dir = tmp_dir or os.path.dirname(filename)
     for key, check_compressed_function in COMPRESSION_CHECK_FUNCTIONS:
         is_compressed, is_valid = check_compressed_function(filename, check_content=check_content)
@@ -664,60 +749,80 @@ def handle_compressed_file(
     if is_compressed and is_valid:
         if ext in AUTO_DETECT_EXTENSIONS:
             # attempt to sniff for a keep-compressed datatype (observing the sniff order)
-            sniff_datatypes = filter(lambda d: getattr(d, 'compressed', False), datatypes_registry.sniff_order)
+            sniff_datatypes = filter(lambda d: getattr(d, "compressed", False), datatypes_registry.sniff_order)
             sniffed_ext = run_sniffers_raw(filename, sniff_datatypes)
             if sniffed_ext:
                 ext = sniffed_ext
                 keep_compressed = True
         else:
             datatype = datatypes_registry.get_datatype_by_extension(ext)
-            keep_compressed = getattr(datatype, 'compressed', False)
+            keep_compressed = getattr(datatype, "compressed", False)
     # don't waste time decompressing if we sniff invalid contents
     if is_compressed and is_valid and auto_decompress and not keep_compressed:
-        fd, uncompressed = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-        compressed_file = DECOMPRESSION_FUNCTIONS[compressed_type](filename)
-        # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
-        while True:
-            try:
-                chunk = compressed_file.read(CHUNK_SIZE)
-            except OSError as e:
-                os.close(fd)
-                os.remove(uncompressed)
-                compressed_file.close()
-                raise OSError('Problem uncompressing {} data, please try retrieving the data uncompressed: {}'.format(compressed_type, util.unicodify(e)))
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-        compressed_file.close()
+        assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
+        with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
+            with DECOMPRESSION_FUNCTIONS[compressed_type](filename) as compressed_file:
+                # TODO: it'd be ideal to convert to posix newlines and space-to-tab here as well
+                try:
+                    for chunk in file_reader(compressed_file, CHUNK_SIZE):
+                        if not chunk:
+                            break
+                        uncompressed.write(chunk)
+                except OSError as e:
+                    os.remove(uncompressed.name)
+                    raise OSError(
+                        "Problem uncompressing {} data, please try retrieving the data uncompressed: {}".format(
+                            compressed_type, util.unicodify(e)
+                        )
+                    )
+        uncompressed_path = uncompressed.name
         if in_place:
             # Replace the compressed file with the uncompressed file
-            shutil.move(uncompressed, filename)
-            uncompressed = filename
+            shutil.move(uncompressed_path, filename)
+            uncompressed_path = filename
     elif not is_compressed or not check_content:
         is_valid = True
-    return is_valid, ext, uncompressed, compressed_type
+    return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type)
 
 
-def handle_uploaded_dataset_file(*args, **kwds):
+def handle_uploaded_dataset_file(*args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
     return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
 
 
+class HandleUploadedDatasetFileInternalResponse(NamedTuple):
+    ext: str
+    converted_path: str
+    compressed_type: Optional[str]
+    converted_newlines: bool
+    converted_spaces: bool
+
+
+def convert_function(convert_to_posix_lines, convert_spaces_to_tabs) -> ConvertFunction:
+    assert convert_to_posix_lines or convert_spaces_to_tabs
+    if convert_spaces_to_tabs and convert_to_posix_lines:
+        convert_fxn = convert_newlines_sep2tabs
+    elif convert_to_posix_lines:
+        convert_fxn = convert_newlines
+    else:
+        convert_fxn = convert_sep2tabs
+    return convert_fxn
+
+
 def handle_uploaded_dataset_file_internal(
-        filename,
-        datatypes_registry,
-        ext='auto',
-        tmp_prefix='sniff_upload_',
-        tmp_dir=None,
-        in_place=False,
-        check_content=True,
-        is_binary=None,
-        auto_decompress=True,
-        uploaded_file_ext=None,
-        convert_to_posix_lines=None,
-        convert_spaces_to_tabs=None,
-):
+    filename: str,
+    datatypes_registry,
+    ext: str = "auto",
+    tmp_prefix: Optional[str] = "sniff_upload_",
+    tmp_dir: Optional[str] = None,
+    in_place: bool = False,
+    check_content: bool = True,
+    is_binary: Optional[bool] = None,
+    auto_decompress: bool = True,
+    uploaded_file_ext: Optional[str] = None,
+    convert_to_posix_lines: Optional[bool] = None,
+    convert_spaces_to_tabs: Optional[bool] = None,
+) -> HandleUploadedDatasetFileInternalResponse:
     is_valid, ext, converted_path, compressed_type = handle_compressed_file(
         filename,
         datatypes_registry,
@@ -728,11 +833,13 @@ def handle_uploaded_dataset_file_internal(
         check_content=check_content,
         auto_decompress=auto_decompress,
     )
+    converted_newlines = False
+    converted_spaces = False
     try:
         if not is_valid:
             if is_tar(converted_path):
-                raise InappropriateDatasetContentError('TAR file uploads are not supported')
-            raise InappropriateDatasetContentError('The uploaded compressed file contains invalid content')
+                raise InappropriateDatasetContentError("TAR file uploads are not supported")
+            raise InappropriateDatasetContentError("The uploaded compressed file contains invalid content")
 
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
@@ -747,14 +854,14 @@ def handle_uploaded_dataset_file_internal(
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
-            if convert_spaces_to_tabs:
-                convert_fxn = convert_newlines_sep2tabs
-            else:
-                convert_fxn = convert_newlines
-            line_count, _converted_path = convert_fxn(converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix)
+            convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
+            line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(
+                converted_path, in_place=in_place, tmp_dir=tmp_dir, tmp_prefix=tmp_prefix
+            )
             if not in_place:
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
+                assert _converted_path
                 converted_path = _converted_path
             if ext in AUTO_DETECT_EXTENSIONS:
                 ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
@@ -762,23 +869,32 @@ def handle_uploaded_dataset_file_internal(
             ext = guessed_ext
 
         if not is_binary and check_content and check_html(converted_path):
-            raise InappropriateDatasetContentError('The uploaded file contains invalid HTML content')
+            raise InappropriateDatasetContentError("The uploaded file contains invalid HTML content")
     except Exception:
         if filename != converted_path:
             os.unlink(converted_path)
         raise
-    return ext, converted_path, compressed_type
+    return HandleUploadedDatasetFileInternalResponse(
+        ext, converted_path, compressed_type, converted_newlines, converted_spaces
+    )
 
 
-AUTO_DETECT_EXTENSIONS = ['auto']  # should 'data' also cause auto detect?
-DECOMPRESSION_FUNCTIONS = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
-COMPRESSION_CHECK_FUNCTIONS = [('gz', check_gzip), ('bz2', check_bz2), ('zip', check_zip)]
+AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
+
+
+class Decompress(Protocol):
+    def __call__(self, path: str) -> IO[bytes]:
+        ...
+
+
+DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod(sys.modules[__name__])

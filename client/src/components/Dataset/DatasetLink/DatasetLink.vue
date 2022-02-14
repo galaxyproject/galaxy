@@ -45,9 +45,13 @@ export default {
     computed: {
         linkLabel() {
             // if sub-directory, we could potentially implement subdir compression
-            if (this.pathDestination.isDirectory) return `Path: ${this.path} is a directory!`;
+            if (this.pathDestination.isDirectory) {
+                return `Path: ${this.path} is a directory!`;
+            }
 
-            if (!this.pathDestination.fileLink) return `Path: ${this.path} was not found!`;
+            if (!this.pathDestination.fileLink) {
+                return `Path: ${this.path} was not found!`;
+            }
 
             if (this.label !== undefined && this.label !== "undefined") {
                 return this.label;

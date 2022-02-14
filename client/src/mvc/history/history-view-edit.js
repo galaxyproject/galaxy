@@ -7,9 +7,10 @@ import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
-import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
-import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
+import ListCollectionCreatorModal from "components/Collections/ListCollectionCreatorModal";
+import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
+import PairCollectionCreatorModal from "components/Collections/PairCollectionCreatorModal";
+import PairedListCollectionCreatorModal from "components/Collections/PairedListCollectionCreatorModal";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
@@ -226,9 +227,10 @@ var HistoryViewEdit = _super.extend(
             var nameSelector = "> .controls .name";
             $where
                 .find(nameSelector)
-                .attr("title", _l("Click to rename history"))
+                .attr("title", _l("Rename history..."))
                 .tooltip({ placement: "bottom" })
                 .make_text_editable({
+                    data_description: "name input",
                     on_finish: function (newName) {
                         var previousName = panel.model.get("name");
                         if (newName && newName !== previousName) {
@@ -369,22 +371,24 @@ var HistoryViewEdit = _super.extend(
         buildCollection: function (collectionType, selection, hideSourceItems) {
             var panel = this;
             selection = selection || panel.getSelectedModels();
-            hideSourceItems = hideSourceItems || false;
-            var createFunc;
+            const defaultHideSourceItems = hideSourceItems || true;
+            var createModalFunc;
             if (collectionType == "list") {
-                createFunc = LIST_COLLECTION_CREATOR.createListCollection;
+                createModalFunc = ListCollectionCreatorModal.createListCollection;
             } else if (collectionType == "paired") {
-                createFunc = PAIR_COLLECTION_CREATOR.createPairCollection;
+                createModalFunc = PairCollectionCreatorModal.createPairCollection;
             } else if (collectionType == "list:paired") {
-                createFunc = LIST_OF_PAIRS_COLLECTION_CREATOR.createListOfPairsCollection;
+                createModalFunc = PairedListCollectionCreatorModal.createPairedListCollection;
             } else if (collectionType.startsWith("rules")) {
-                createFunc = LIST_COLLECTION_CREATOR.createCollectionViaRules;
+                createModalFunc = RuleBasedCollectionCreatorModal.createCollectionViaRules;
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
-            createFunc(selection, hideSourceItems).then(() => {
-                panel.model.refresh();
-            });
+            createModalFunc(selection, defaultHideSourceItems)
+                .then(() => {
+                    panel.model.refresh();
+                })
+                .catch(() => {});
         },
 
         // ------------------------------------------------------------------------ sub-views
@@ -482,7 +486,7 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ panel events
         /** event map */
         events: _.extend(_.clone(_super.prototype.events), {
-            "click .show-selectors-btn": "toggleSelectors",
+            "click .show-history-content-selectors-btn": "toggleSelectors",
             "click .toggle-deleted-link": function (ev) {
                 this.toggleShowDeleted();
             },
@@ -676,21 +680,23 @@ HistoryViewEdit.prototype.templates = (() => {
     var foundTemplate = BASE_MVC.wrapTemplate(
         [
             _l("Found"),
-            " <%- view.views.length %>, ",
+            " <%- view.views.length %>",
 
             "<% if( history.contents_active.deleted ){ %>",
+            ", ",
             "<% if( view.model.contents.includeDeleted ){ %>",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
             _l("hide deleted"),
-            "</a>, ",
+            "</a>",
             "<% } else { %>",
             '<a class="toggle-deleted-link" href="javascript:void(0);">',
             _l("show deleted"),
-            "</a>, ",
+            "</a>",
             "<% } %>",
             "<% } %>",
 
             "<% if( history.contents_active.hidden ){ %>",
+            ", ",
             "<% if( view.model.contents.includeHidden ){ %>",
             '<a class="toggle-hidden-link" href="javascript:void(0);">',
             _l("hide hidden"),

@@ -55,8 +55,7 @@ def _run_validation(extension, file_name):
     return validation
 
 
-class MockDataset(object):
-
+class MockDataset:
     def __init__(self, file_name, datatype):
         self.file_name = file_name
         self.datatype = datatype

@@ -7,17 +7,15 @@ from string import Template
 from galaxy.util import (
     asbool,
     in_directory,
-    smart_str
+    smart_str,
 )
 
 UPDATE_TEMPLATE = Template(
-    "git --work-tree $dir --git-dir $dir/.git fetch && "
-    "git --work-tree $dir --git-dir $dir/.git merge origin/master"
+    "git --work-tree $dir --git-dir $dir/.git fetch && " "git --work-tree $dir --git-dir $dir/.git merge origin/master"
 )
 
 UPDATE_FAILED_TEMPLATE = Template(
-    "Warning failed to update test repository $dir - "
-    "update stdout was [$stdout] and stderr was [$stderr]."
+    "Warning failed to update test repository $dir - " "update stdout was [$stdout] and stderr was [$stderr]."
 )
 
 
@@ -25,8 +23,9 @@ LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
-    def __init__(self, file_dirs=None, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
+    def __init__(self, file_dirs=None, env_var="GALAXY_TEST_FILE_DIR", environ=os.environ):
         if file_dirs is None:
             file_dirs = environ.get(env_var, None)
         if file_dirs is None:
@@ -46,7 +45,7 @@ class TestDataResolver:
 
     def get_filecontent(self, name):
         filename = self.get_filename(name=name)
-        with open(filename, mode='rb') as f:
+        with open(filename, mode="rb") as f:
             return f.read()
 
     def get_directory(self, name):
@@ -61,7 +60,6 @@ def build_resolver(uri, environ):
 
 
 class FileDataResolver:
-
     def __init__(self, file_dir):
         self.file_dir = file_dir
 
@@ -74,7 +72,6 @@ class FileDataResolver:
 
 
 class GitDataResolver(FileDataResolver):
-
     def __init__(self, repository, environ):
         self.repository = repository
         self.updated = False
@@ -100,7 +97,7 @@ class GitDataResolver(FileDataResolver):
             parent_dir = os.path.dirname(self.file_dir)
             if not os.path.exists(parent_dir):
                 os.makedirs(parent_dir)
-            self.execute("git clone '{}' '{}'".format(self.repository, self.file_dir))
+            self.execute(f"git clone '{self.repository}' '{self.file_dir}'")
         update_command = UPDATE_TEMPLATE.safe_substitute(dir=self.file_dir)
         self.execute(update_command)
 
@@ -110,13 +107,13 @@ class GitDataResolver(FileDataResolver):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
-        print("Executing %s" % cmd)
+        print(f"Executing {cmd}")
         p = subprocess.Popen(cmd, **subprocess_kwds)
         stdout, stderr = p.communicate()
         if p.returncode != 0:
             kwds = {
-                'dir': self.file_dir,
-                'stdout': stdout,
-                'stderr': stderr,
+                "dir": self.file_dir,
+                "stdout": stdout,
+                "stderr": stderr,
             }
             print(UPDATE_FAILED_TEMPLATE.substitute(**kwds))

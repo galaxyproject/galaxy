@@ -17,8 +17,8 @@ variables:
         - ~/.cache/yarn
   install_tox: &install_tox
     run: sudo pip install tox
-  install_ffprobe: &install_ffprobe
-    run: sudo apt-get update && sudo apt-get install ffmpeg -y
+  install_deb_reqs: &install_deb_reqs
+    run: sudo apt-get update && sudo apt-get install ffmpeg nodejs -y
   set_workdir: &set_workdir
     working_directory: ~/repo
   requires_get_code: &requires_get_code
@@ -27,7 +27,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -83,45 +83,9 @@ jobs:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
             - ~/repo
-  py35_docstring:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - run: tox -e py35-lint_docstring_include_list
-  py35_lint:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - run: tox -e py35-lint
-  py35_unit:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - *install_ffprobe
-      - run: tox -e py35-unit
-  py35_first_startup:
-    docker:
-      - image: circleci/python:3.5
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      # Use this job to test the latest migrations
-      - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0141.sqlite
-      - run: mv db_gx_rev_0141.sqlite database/universe.sqlite
-      - *install_tox
-      - run: tox -e py35-first_startup
   validate_test_tools:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -131,30 +95,16 @@ jobs:
       - run: tox -e validate_test_tools
   test_galaxy_packages:
     docker:
-      - image: circleci/python:3.5
+      - image: circleci/python:3.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
       - *install_tox
-      - *install_ffprobe
+      - *install_deb_reqs
       - run: tox -e test_galaxy_packages
-  js_unit:
-    docker:
-      - image: circleci/node:12-browsers
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run:
-          name: Build client
-          command: cd client && yarn run build
-          environment:
-              NODE_OPTIONS: --max_old_space_size=4096
-      - run: cd client && yarn run qunit
   js_lint:
     docker:
-      - image: circleci/node:12-browsers
+      - image: cimg/node:16.13.2
     <<: *set_workdir
     steps:
       - *restore_yarn_cache
@@ -167,19 +117,9 @@ workflows:
   get_code_and_test:
     jobs:
       - get_code
-      - py35_docstring:
-          <<: *requires_get_code
-      - py35_lint:
-          <<: *requires_get_code
-      - py35_unit:
-          <<: *requires_get_code
-      - py35_first_startup:
-          <<: *requires_get_code
       - test_galaxy_packages:
           <<: *requires_get_code
       - validate_test_tools:
-          <<: *requires_get_code
-      - js_unit:
           <<: *requires_get_code
       - js_lint:
           <<: *requires_get_code

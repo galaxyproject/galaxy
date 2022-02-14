@@ -8,11 +8,10 @@ HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
 
 class DatatypesApiTestCase(ApiTestCase):
-
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
+            assert common_type in datatypes, f"{common_type} not in {datatypes}"
 
     def test_index_upload_only(self):
         # fli is not displayed in upload - so only show it if upload_only
@@ -48,7 +47,7 @@ class DatatypesApiTestCase(ApiTestCase):
 
         datatypes = response_dict["datatypes"]
         for common_type in ["tabular", "fasta"]:
-            assert common_type in datatypes, "{} not in {}".format(common_type, datatypes)
+            assert common_type in datatypes, f"{common_type} not in {datatypes}"
 
     def test_sniffers(self):
         response = self._get("datatypes/sniffers")
@@ -72,19 +71,34 @@ class DatatypesApiTestCase(ApiTestCase):
         assert found_fasta_to_tabular
 
     def test_converter_present_after_toolbox_reload(self):
-        response = self._get("tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'})
+        response = self._get("tools", data={"tool_id": "CONVERTER_fasta_to_tabular"})
         self._assert_status_code_is(response, 200)
         converters = len(response.json())
         assert converters == 1
-        url = self._api_url('configuration/toolbox')
+        url = self._api_url("configuration/toolbox")
         put_response = put(url, params=dict(key=self.master_api_key))
         self._assert_status_code_is(put_response, 200)
         time.sleep(2)
-        response = self._get("tools", data={'tool_id': 'CONVERTER_fasta_to_tabular'})
+        response = self._get("tools", data={"tool_id": "CONVERTER_fasta_to_tabular"})
         self._assert_status_code_is(response, 200)
         assert converters == len(response.json())
 
-    def _index_datatypes(self, data={}):
+    def test_edam_formats(self):
+        response = self._get("datatypes/edam_formats")
+        self._assert_status_code_is(response, 200)
+        edam_formats = response.json()
+        assert isinstance(edam_formats, dict)
+        assert edam_formats["ab1"] == "format_3000"
+
+    def test_edam_data(self):
+        response = self._get("datatypes/edam_data")
+        self._assert_status_code_is(response, 200)
+        edam_data = response.json()
+        assert isinstance(edam_data, dict)
+        assert edam_data["ab1"] == "data_0924"
+
+    def _index_datatypes(self, data=None):
+        data = data or {}
         response = self._get("datatypes", data=data)
         self._assert_status_code_is(response, 200)
         datatypes = response.json()

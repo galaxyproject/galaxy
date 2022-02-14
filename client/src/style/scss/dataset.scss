@@ -132,7 +132,7 @@
     }
 
     &.state-paused {
-        background: $state-paused-bg;
+        background: $state-info-bg;
         .state-icon {
             &:before {
                 content: fa-content($fa-var-pause);
@@ -189,7 +189,15 @@
     }
 }
 
-// ---------------------------------------------------------------------------- datasets as list-items
+// ----------------------------------------------------------------------------
+// datasets as list-items
+
+.list-item.dataset,
+.list-item.dataset-collection,
+.list-item.history-content {
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
 .dataset {
     @extend .has-job-state-mixin;
 

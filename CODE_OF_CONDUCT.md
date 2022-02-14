@@ -1,5 +1,16 @@
-Galaxy Project Code of Conduct
-==============================
+# Galaxy Project Code of Conduct
+
+## Note: Change is Coming
+
+Since 2015 the Galaxy Project Code of Conduct has resided here, and updates to it have been coordinated by the Committers Group for this repo.
+
+This code of conduct has served us reasonably well over the years, but it is time for a refresh.  Since 2015 the world has become much more aware of the need for codes of conduct, and best practices for creating and enforcing them have moved forward significantly.
+
+**As a result it is past time to update both our code of conduct and our process for maintaining it.**  The Galaxy Outreach and Training [Working Group](https://galaxyproject.org/community/wg/) is currently working on a first draft of a new code and new processes.  The final code and processes we adopt will be [implemented](https://galaxyproject.org/community/coc/) only after it has been discussed, revised, and approved by the community.
+
+Until that happens this will remain the Galaxy Project Code of Conduct.
+
+# Code of Conduct
 
 This code of conduct outlines our expectations for participants within the
 Galaxy community, as well as steps to reporting unacceptable behavior. We are

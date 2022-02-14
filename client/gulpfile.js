@@ -1,7 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const del = require("del");
-const { src, dest, series, parallel } = require("gulp");
+const { src, dest, series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
 const glob = require("glob");
 
@@ -10,31 +10,47 @@ const glob = require("glob");
  * un-built visualizations in the repository; for performance and
  * simplicity just add them one at a time until we upgrade older viz's.
  */
-const PLUGIN_BUILD_DIRS = [
+const STATIC_PLUGIN_BUILD_IDS = [
     "annotate_image",
     "chiraviz",
+    "cytoscape",
+    "drawrna",
     "editor",
+    "example",
+    "heatmap/heatmap_default",
     "hyphyvision",
+    "jqplot/jqplot_bar",
     "media_player",
     "mvpapp",
+    "ngl",
+    "nvd3/nvd3_bar",
     "openlayers",
+    "openseadragon",
+    "pv",
+    "nora",
+    "venn",
 ];
+
+const DIST_PLUGIN_BUILD_IDS = ["new_user"];
+
+const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
 const paths = {
     node_modules: "./node_modules",
     plugin_dirs: [
-        "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
     ],
-    plugin_build_dirs: [`../config/plugins/visualizations/{${PLUGIN_BUILD_DIRS.join(",")}}/package.json`],
+    plugin_build_modules: [
+        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
+    ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
-        "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
+        "@galaxyproject/bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
-        "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
         "jquery.cookie": ["jquery.cookie.js", "jquery/jquery.cookie.js"],
         "jquery-migrate": ["dist/jquery-migrate.js", "jquery/jquery.migrate.js"],
         "jquery-mousewheel": ["jquery.mousewheel.js", "jquery/jquery.mousewheel.js"],
@@ -73,15 +89,19 @@ function stagePlugins() {
 
 function buildPlugins(callback) {
     /*
-     * Walk plugin_build_dirs glob and attempt to build modules.
+     * Walk plugin_build_modules glob and attempt to build modules.
      * */
-    paths.plugin_build_dirs.map((build_dir) => {
-        glob(build_dir, {}, (er, files) => {
+    paths.plugin_build_modules.map((build_module) => {
+        glob(build_module, {}, (er, files) => {
             files.map((file) => {
                 let skip_build = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
                 const plugin_name = path.dirname(file).split(path.sep).pop();
-                const hash_file_path = path.join(f, "static", "plugin_build_hash.txt");
+                const hash_file_path = path.join(
+                    f,
+                    DIST_PLUGIN_BUILD_IDS.indexOf(plugin_name) > -1 ? "dist" : "static",
+                    "plugin_build_hash.txt"
+                );
 
                 if (fs.existsSync(hash_file_path)) {
                     skip_build =
@@ -117,13 +137,20 @@ function buildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
 }
 
-client = parallel(fonts, stageLibs);
-plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+const client = parallel(fonts, stageLibs);
+const plugins = series(buildPlugins, cleanPlugins, stagePlugins);
+
+function watchPlugins() {
+    const BUILD_PLUGIN_WATCH_GLOB = [
+        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
+    ];
+    watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
+}
 
 module.exports.client = client;
 module.exports.plugins = plugins;
-
+module.exports.watchPlugins = watchPlugins;
 module.exports.default = parallel(client, plugins);

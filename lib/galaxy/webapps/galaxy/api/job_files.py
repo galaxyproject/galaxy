@@ -8,19 +8,19 @@ import shutil
 from galaxy import (
     exceptions,
     model,
-    util
+    util,
 )
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class JobFilesAPIController(BaseAPIController):
-    """ This job files controller allows remote job running mechanisms to
+class JobFilesAPIController(BaseGalaxyAPIController):
+    """This job files controller allows remote job running mechanisms to
     read and modify the current state of files for queued and running jobs.
     It is certainly not meant to represent part of Galaxy's stable, user
     facing API.
@@ -34,10 +34,10 @@ class JobFilesAPIController(BaseAPIController):
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans, job_id, **kwargs):
         """
-        index( self, trans, job_id, **kwargs )
-        * GET /api/jobs/{job_id}/files
-            Get a file required to staging a job (proper datasets, extra inputs,
-            task-split inputs, working directory files).
+        GET /api/jobs/{job_id}/files
+
+        Get a file required to staging a job (proper datasets, extra inputs,
+        task-split inputs, working directory files).
 
         :type   job_id: str
         :param  job_id: encoded id string of the job
@@ -46,6 +46,7 @@ class JobFilesAPIController(BaseAPIController):
         :type   job_key: str
         :param  job_key: A key used to authenticate this request as acting on
                          behalf or a job runner for the specified job.
+
         ..note:
             This API method is intended only for consumption by job runners,
             not end users.
@@ -55,7 +56,7 @@ class JobFilesAPIController(BaseAPIController):
         """
         self.__authorize_job_access(trans, job_id, **kwargs)
         path = kwargs.get("path", None)
-        return open(path, 'rb')
+        return open(path, "rb")
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, job_id, payload, **kwargs):
@@ -86,19 +87,20 @@ class JobFilesAPIController(BaseAPIController):
         self.__check_job_can_write_to_path(trans, job, path)
 
         # Is this writing an unneeded file? Should this just copy in Python?
-        if '__file_path' in payload:
-            file_path = payload.get('__file_path')
+        if "__file_path" in payload:
+            file_path = payload.get("__file_path")
             upload_store = trans.app.config.nginx_upload_job_files_store
-            assert upload_store, ("Request appears to have been processed by"
-                                  " nginx_upload_module but Galaxy is not"
-                                  " configured to recognize it")
-            assert file_path.startswith(upload_store), \
-                ("Filename provided by nginx (%s) is not in correct"
-                 " directory (%s)" % (file_path, upload_store))
+            assert upload_store, (
+                "Request appears to have been processed by"
+                " nginx_upload_module but Galaxy is not"
+                " configured to recognize it"
+            )
+            assert file_path.startswith(
+                upload_store
+            ), "Filename provided by nginx (%s) is not in correct" " directory (%s)" % (file_path, upload_store)
             input_file = open(file_path)
         else:
-            input_file = payload.get("file",
-                                     payload.get("__file", None)).file
+            input_file = payload.get("file", payload.get("__file", None)).file
         target_dir = os.path.dirname(path)
         util.safe_makedirs(target_dir)
         try:
@@ -115,7 +117,7 @@ class JobFilesAPIController(BaseAPIController):
     def __authorize_job_access(self, trans, encoded_job_id, **kwargs):
         for key in ["path", "job_key"]:
             if key not in kwargs:
-                error_message = "Job files action requires a valid '%s'." % key
+                error_message = f"Job files action requires a valid '{key}'."
                 raise exceptions.ObjectAttributeMissingException(error_message)
 
         job_id = trans.security.decode_id(encoded_job_id)
@@ -131,7 +133,7 @@ class JobFilesAPIController(BaseAPIController):
         return job
 
     def __check_job_can_write_to_path(self, trans, job, path):
-        """ Verify an idealized job runner should actually be able to write to
+        """Verify an idealized job runner should actually be able to write to
         the specified path - it must be a dataset output, a dataset "extra
         file", or a some place in the working directory of this job.
 
@@ -151,7 +153,7 @@ class JobFilesAPIController(BaseAPIController):
         return in_temp_dir and os.path.split(path)[-1].startswith("GALAXY_VERSION_")
 
     def __is_output_dataset_path(self, job, path):
-        """ Check if is an output path for this job or a file in the an
+        """Check if is an output path for this job or a file in the an
         output's extra files path.
         """
         da_lists = [job.output_datasets, job.output_library_datasets]
@@ -167,5 +169,7 @@ class JobFilesAPIController(BaseAPIController):
         return False
 
     def __in_working_directory(self, job, path, app):
-        working_directory = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
+        working_directory = app.object_store.get_filename(
+            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
+        )
         return util.in_directory(path, working_directory)
