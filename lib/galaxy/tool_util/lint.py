@@ -100,17 +100,13 @@ class XMLLintMessageLine(LintMessage):
     def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
         super().__init__(level, message)
         self.line = None
-        self.fname = None
         if node is not None:
             self.line = node.sourceline
-            self.fname = node.base
 
     def __str__(self) -> str:
         rval = super().__str__()
         if self.line is not None:
             rval += " ("
-            if self.fname:
-                rval += f"{self.fname}:"
             rval += str(self.line)
             rval += ")"
         return rval
