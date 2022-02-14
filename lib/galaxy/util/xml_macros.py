@@ -1,7 +1,7 @@
 import os
 from copy import copy, deepcopy
 
-from galaxy.util import parse_xml
+from galaxy.util import etree, parse_xml
 
 REQUIRED_PARAMETER = object()
 
@@ -15,36 +15,32 @@ def load_with_references(path):
     tree = raw_xml_tree(path)
     root = tree.getroot()
 
-    macro_paths = _import_macros(root, path)
-
-    # temporarily remove the children of the macros node
-    # and create a copy. this is done because this allows
-    # to iterate over all expand nodes of the tree
-    # that are not included in the macros node
     macros_el = _macros_el(root)
-    if macros_el is not None:
-        macros_copy = copy(macros_el)
-        macros_el.clear()
-    else:
-        macros_copy = None
+    if macros_el is None:
+        return tree, []
+
+    # move the macros element to a separate tree
+    # otherwise included expand elements would be treated
+    # in the macro expansion
+    macros_tree = etree.ElementTree(copy(macros_el))
+    macros_el.clear()
+    org_macros_el = macros_el
+    macros_el = macros_tree.getroot()
+
+    macro_paths = _import_macros(macros_el, path)
 
     # Collect tokens
-    tokens = _macros_of_type(macros_copy, 'token', lambda el: el.text or '')
+    tokens = _macros_of_type(macros_el, 'token', lambda el: el.text or '')
     tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
-    macro_dict = _macros_of_type(macros_copy, 'xml', lambda el: XmlMacroDef(el))
+    macro_dict = _macros_of_type(macros_el, 'xml', lambda el: XmlMacroDef(el))
     _expand_macros([root], macro_dict, tokens)
 
-    # readd the stashed children of the macros node
-    # TODO is this this really necesary? Since macro nodes are removed anyway just below.
-    if macros_copy is not None:
-        _xml_set_children(macros_el, list(macros_copy))
-
-    for el in root.xpath('//macro'):
-        if el.get('type') != 'template':
-            # Only keep template macros
-            el.getparent().remove(el)
+    # reinsert template macro which are used during tool execution
+    for el in macros_el.xpath('//macro'):
+        if el.get('type') == 'template':
+            org_macros_el.append(el)
     _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
@@ -80,13 +76,12 @@ def imported_macro_paths(root):
     return _imported_macro_paths_from_el(macros_el)
 
 
-def _import_macros(root, path):
+def _import_macros(macros_el, path):
     """
     root the parsed XML tree
     path the path to the main xml document
     """
     xml_base_dir = os.path.dirname(path)
-    macros_el = _macros_el(root)
     if macros_el is not None:
         macro_els, macro_paths = _load_macros(macros_el, xml_base_dir)
         _xml_set_children(macros_el, macro_els)
@@ -159,22 +154,22 @@ def _expand_macros(elements, macros, tokens, visited=None):
     if not macros and not tokens:
         return
 
+    if visited is None:
+        v = []
+    else:
+        v = visited
+
     for element in elements:
         while True:
             expand_el = element.find('.//expand')
             if expand_el is None:
                 break
-            if visited is None:
-                v = []
-            else:
-                v = visited
             _expand_macro(expand_el, macros, tokens, v)
 
 
 def _expand_macro(expand_el, macros, tokens, visited):
     macro_name = expand_el.get('macro')
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
-
     # check for cycles in the nested macro expansion
     assert macro_name not in visited, f"Cycle in nested macros: already expanded {visited} can't expand '{macro_name}' again"
     visited.append(macro_name)
