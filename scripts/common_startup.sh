@@ -235,6 +235,10 @@ fi
 if [ -n "$VIRTUAL_ENV" ]; then
     if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
         echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
+            echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
+            rm -rf "${VIRTUAL_ENV}/lib/node_modules"
+        fi
         nodeenv -n "$NODE_VERSION" -p
     fi
 elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
