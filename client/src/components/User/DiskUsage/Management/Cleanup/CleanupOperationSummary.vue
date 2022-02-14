@@ -78,7 +78,7 @@ export default {
             this.errorMessage = err;
         },
         onReviewItems() {
-            this.$emit("onReviewItems", this.operation.id, this.summary.totalItems);
+            this.$emit("onReviewItems", this.operation, this.summary.totalItems);
         },
     },
     watch: {

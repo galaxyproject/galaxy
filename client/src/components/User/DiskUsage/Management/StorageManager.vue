@@ -1,7 +1,7 @@
 <template>
     <ConfigProvider v-slot="{ config }">
         <b-container fluid>
-            <b-link to="StorageDashboard">Back to Dashboard</b-link>
+            <b-link to="StorageDashboard">{{ goBackText }}</b-link>
             <h2 class="text-center my-3">
                 <b>{{ title }}</b>
             </h2>
@@ -13,23 +13,27 @@
                 </b-alert>
             </b-row>
 
-            <div v-for="category in cleanupManager.categories" :key="category.id">
-                <b-row class="justify-content-md-center mb-2">
-                    <h3>
-                        <b>{{ category.name }}</b>
-                    </h3>
-                </b-row>
-                <b-row class="justify-content-md-center mb-5">
-                    <b-card-group deck>
-                        <CleanupOperationSummary
-                            v-for="operation in category.operations"
-                            :key="operation.id"
-                            :operation="operation"
-                            :refresh-operation-id="refreshOperationId"
-                            @onReviewItems="onReviewItems" />
-                    </b-card-group>
-                </b-row>
-            </div>
+            <CleanupCategoriesProvider v-slot="{ categories }">
+                <div id="categories-panel">
+                    <div v-for="category in categories" :key="category.id">
+                        <b-row class="justify-content-md-center mb-2">
+                            <h3>
+                                <b>{{ category.name }}</b>
+                            </h3>
+                        </b-row>
+                        <b-row class="justify-content-md-center mb-5">
+                            <b-card-group deck>
+                                <CleanupOperationSummary
+                                    v-for="operation in category.operations"
+                                    :key="operation.id"
+                                    :operation="operation"
+                                    :refresh-operation-id="refreshOperationId"
+                                    @onReviewItems="onReviewItems" />
+                            </b-card-group>
+                        </b-row>
+                    </div>
+                </div>
+            </CleanupCategoriesProvider>
 
             <ReviewCleanupDialog
                 :operation="currentOperation"
@@ -44,7 +48,7 @@
 <script>
 import _l from "utils/localization";
 import ConfigProvider from "components/providers/ConfigProvider";
-import { ResourceCleanupManager } from "./Cleanup";
+import CleanupCategoriesProvider from "./Cleanup/cleanupCategoriesProvider";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog";
@@ -55,13 +59,14 @@ export default {
         CleanupOperationSummary,
         ReviewCleanupDialog,
         CleanupResultDialog,
+        CleanupCategoriesProvider,
     },
     data() {
         return {
+            goBackText: _l("Back to Dashboard"),
             title: _l("Manage your account storage"),
             whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
-            cleanupManager: null,
             errorMessage: null,
             currentOperation: null,
             currentTotalItems: 0,
@@ -69,12 +74,9 @@ export default {
             refreshOperationId: null,
         };
     },
-    created() {
-        this.cleanupManager = ResourceCleanupManager.create();
-    },
     methods: {
-        onReviewItems(operationId, totalItems) {
-            this.currentOperation = this.cleanupManager.getOperationById(operationId);
+        onReviewItems(operation, totalItems) {
+            this.currentOperation = operation;
             this.currentTotalItems = totalItems;
             this.refreshOperationId = null;
             this.$bvModal.show("review-cleanup-dialog");
