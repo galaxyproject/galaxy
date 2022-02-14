@@ -35,16 +35,16 @@ const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
-const paths = {
-    node_modules: "./node_modules",
-    plugin_dirs: [
+const PATHS = {
+    nodeModules: "./node_modules",
+    pluginDirs: [
         "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
         "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
     ],
-    plugin_build_modules: [
+    pluginBuildModules: [
         `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
     ],
-    lib_locs: {
+    stagedLibraries: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
@@ -57,13 +57,12 @@ const paths = {
         requirejs: ["require.js", "require.js"],
         underscore: ["underscore.js", "underscore.js"],
     },
-    libs: ["src/libs/**/*.js"],
 };
 
 function stageLibs(callback) {
-    Object.keys(paths.lib_locs).forEach((lib) => {
-        var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
-        var p2 = path.resolve(path.join("src", "libs", paths.lib_locs[lib][1]));
+    Object.keys(PATHS.stagedLibraries).forEach((lib) => {
+        var p1 = path.resolve(path.join(PATHS.nodeModules, lib, PATHS.stagedLibraries[lib][0]));
+        var p2 = path.resolve(path.join("src", "libs", PATHS.stagedLibraries[lib][1]));
         if (fs.existsSync(p1)) {
             del.sync(p2);
             fs.createReadStream(p1).pipe(fs.createWriteStream(p2));
@@ -78,49 +77,49 @@ function stageLibs(callback) {
 }
 
 function fonts() {
-    return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*"))).pipe(
+    return src(path.resolve(path.join(PATHS.nodeModules, "font-awesome/fonts/**/*"))).pipe(
         dest("../static/images/fonts")
     );
 }
 
 function stagePlugins() {
-    return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
+    return src(PATHS.pluginDirs).pipe(dest("../static/plugins/"));
 }
 
 function buildPlugins(callback, forceRebuild) {
     /*
-     * Walk plugin_build_modules glob and attempt to build modules.
+     * Walk pluginBuildModules glob and attempt to build modules.
      * */
-    paths.plugin_build_modules.map((build_module) => {
+    PATHS.pluginBuildModules.map((build_module) => {
         glob(build_module, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
-                const plugin_name = path.dirname(file).split(path.sep).pop();
-                const hash_file_path = path.join(
+                const pluginName = path.dirname(file).split(path.sep).pop();
+                const hashFilePath = path.join(
                     f,
-                    DIST_PLUGIN_BUILD_IDS.indexOf(plugin_name) > -1 ? "dist" : "static",
+                    DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
                     "plugin_build_hash.txt"
                 );
 
                 if (!!forceRebuild) {
                     skipBuild = false;
                 } else {
-                    if (fs.existsSync(hash_file_path)) {
+                    if (fs.existsSync(hashFilePath)) {
                         skipBuild =
-                            child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hash_file_path})`, "--", f], {
+                            child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hashFilePath})`, "--", f], {
                                 stdio: "inherit",
                                 shell: true,
                             }).status === 0;
                     } else {
-                        console.log(`No build hashfile detected for ${plugin_name}, generating now.`);
+                        console.log(`No build hashfile detected for ${pluginName}, generating now.`);
                     }
                 }
 
                 if (skipBuild) {
-                    console.log(`No changes detected for ${plugin_name}`);
+                    console.log(`No changes detected for ${pluginName}`);
                 } else {
-                    console.log(`Installing Dependencies for ${plugin_name}`);
+                    console.log(`Installing Dependencies for ${pluginName}`);
                     child_process.spawnSync(
                         "yarn",
                         ["install", "--production=false", "--network-timeout=300000", "--check-files"],
@@ -130,9 +129,9 @@ function buildPlugins(callback, forceRebuild) {
                             shell: true,
                         }
                     );
-                    console.log(`Building ${plugin_name}`);
+                    console.log(`Building ${pluginName}`);
                     child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hash_file_path}`);
+                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
                 }
             });
         });
