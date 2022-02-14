@@ -845,7 +845,7 @@ class Cell(GenericMolFile):
                     f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters])}"
                 )
             else:
-                info_list.append("\Periodic:\nNo")
+                info_list.append("Periodic:\nNo")
             info_list.append(f"Atoms in file:\n{metadata.number_of_atoms}")
             info += "\n--\n".join(info_list)
         else:
@@ -907,10 +907,7 @@ class CIF(GenericMolFile):
         >>> fname = get_test_fname('Si.cif')
         >>> CIF().sniff(fname)
         True
-        >>> fname = get_test_fname('Si_cif.txt')
-        >>> CIF().sniff(fname)
-        True
-        >>> fname = get_test_fname('Si.cell')
+        >>> fname = get_test_fname('Si_lowercase.cell')
         >>> CIF().sniff(fname)
         False
         """
@@ -980,7 +977,6 @@ class CIF(GenericMolFile):
                         p = 1 if pbc.any() else 0
                     is_periodic.append(p)
                     lattice_parameters.append(list(block.get_cell().cellpar()))
-                    log.warning("metadata is: %s", dataset.metadata)
             except Exception as e:
                 log.error("Error finding metadata: %s", unicodify(e))
                 raise
@@ -993,43 +989,77 @@ class CIF(GenericMolFile):
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
-
+            log.warning("metadata is: %s", dataset.metadata)
         else:
+            dataset.metadata.number_of_molecules = count_special_lines(r'^data_', dataset.file_name)
             # simple metadata
-            with open(dataset.file_name) as f:
+            """with open(dataset.file_name) as f:
                 cell = f.read()
             try:
-                # TODO: update for CIF
                 # block data follows this pattern:
                 # data_
                 # ...
                 # _atom_site_fract_(x|y|z)
                 # atom list
-                block = (
-                    re.search(
-                        r"\n%BLOCK POSITIONS([\s\S]*?)\n%ENDBLOCK POSITIONS",
+                # TODO: fish atom data from CIF file - hard to do reliably
+
+                blocks = (
+                    re.findall(
+                        r"data_[/S]*\n",
                         cell,
-                        flags=re.IGNORECASE,
+                        flags=re.IGNORECASE | re.MULTILINE,
                     )
-                    .group(1)
-                    .split("\n")[1:]
                 )
-                log.warning(block)
-                dataset.metadata.number_of_molecules = 1  # TODO: check number of data_?
-                dataset.metadata.atom_data = [atom.strip() for atom in block]
-                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
+                log.warning(blocks)
+                dataset.metadata.number_of_molecules = len(blocks)
+                # dataset.metadata.atom_data = [atom.strip() for atom in block]
+                # dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
+
             except Exception as e:
                 log.error("Error finding atom_data: %s", unicodify(e))
                 raise
+            """
 
     def set_peek(self, dataset, is_multi_byte=False):
-        # TODO: copy dataset_info from CELL
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "CIF file"
+            dataset.info = self.get_dataset_info(dataset.metadata)
+            structure_string = (
+                "structure"
+                if dataset.metadata.number_of_molecules == 1
+                else "structures"
+            )
+            dataset.blurb = f"CIF file containing {dataset.metadata.number_of_molecules} {structure_string}"
+
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+    def get_dataset_info(self, metadata):
+        info = ""  # default to empty info
+
+        if ase_io:
+            # enhanced info
+            info_list = []
+            if metadata.number_of_molecules == 1:
+                info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
+                if metadata.is_periodic[0]:
+                    info_list.append(f"Periodic:\nYes")
+                    info_list.append(
+                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
+                    )
+                else:
+                    info_list.append("Periodic:\nNo")
+                info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
+            elif metadata.number_of_molecules > 1:
+                info_list.append("File contains multiple structures; full metadata will not be displayed.")
+                formulae = "\n".join(metadata.chemical_formula)
+                info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
+            info = "\n--\n".join(info_list)
+        #else:
+        #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
+
+        return info
 
 
 class XYZ(GenericMolFile):
