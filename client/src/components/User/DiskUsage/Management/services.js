@@ -91,8 +91,9 @@ export async function cleanupDatasets(datasets) {
             return { id: dataset.id, src: dataset.hda_ldda };
         });
         const requestResult = await purgeDatasets(datasetSourceIds);
+        result.totalItemCount = datasets.length;
         result.errors = requestResult.errors;
-        const erroredIds = requestResult.errors.reduce((acc, error) => [...acc, error.item.id], []);
+        const erroredIds = requestResult.errors.reduce((acc, error) => [...acc, error.dataset.id], []);
         result.totalFreeBytes = datasetSourceIds.reduce(
             (partial_sum, item) => partial_sum + (erroredIds.includes(item.id) ? 0 : datasetsTable[item.id].size),
             0

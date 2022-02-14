@@ -50,11 +50,4 @@ describe("DiskUsageSummary.vue", () => {
         expect(wrapper.find(`#${basicDiskUsageSummaryId}`).exists()).toBe(false);
         expect(wrapper.find(`#${quotaUsageSummaryComponentId}`).exists()).toBe(true);
     });
-
-    it("should display an error", async () => {
-        const enableQuotasInConfig = false;
-        const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
-        expect(wrapper.find(`#${basicDiskUsageSummaryId}`).exists()).toBe(true);
-        expect(wrapper.find(`#${quotaUsageSummaryComponentId}`).exists()).toBe(false);
-    });
 });
