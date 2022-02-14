@@ -73,12 +73,14 @@ const promises = {
 };
 
 export const actions = {
+    loadCurrentHistory({ dispatch, commit }) {
+        getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
+    },
     loadUserHistories({ dispatch, commit }) {
         if (!promises.load) {
-            promises.load = Promise.all([getHistoryList(), getCurrentHistoryFromServer()])
-                .then(([list, history]) => {
+            promises.load = getHistoryList()
+                .then((list) => {
                     commit("setHistories", list);
-                    dispatch("selectHistory", history);
                 })
                 .catch((err) => {
                     console.warn("loadUserHistories error", err);
