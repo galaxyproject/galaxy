@@ -1982,6 +1982,20 @@ class Tool(Dictifiable):
                 args[key] = model.User.expand_user_properties(trans.user, param.value)
             else:
                 args[key] = param.get_initial_value(trans, None)
+        if self.tool_type == "data_source_async":
+            for environment_variable in self.environment_variables:
+                # no user logged: no api_key to inject
+                if trans.user:
+                    if environment_variable["inject"]:
+                        # we need to get the value of api_key as there is no template for it
+                        from galaxy.managers import api_keys
+
+                        # aki_key is always created?
+                        api_key = api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
+                        if api_key:
+                            args[environment_variable["name"]] = api_key
+                            continue
+                args[environment_variable["name"]] = environment_variable["template"]
         return args
 
     def execute(self, trans, incoming=None, set_output_hid=True, history=None, **kwargs):
