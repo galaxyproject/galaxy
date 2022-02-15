@@ -1,6 +1,6 @@
 <template>
-    <div class="dataset history-content">
-        <nav class="p-1 cursor-pointer alert-success mb-1" @click.stop="onExpand">
+    <div :class="['dataset history-content m-1 p-0', clsState]">
+        <div class="p-1 cursor-pointer" @click.stop="onExpand">
             <div class="overflow-hidden">
                 <div class="float-left pl-1" v-if="selectable">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
@@ -60,13 +60,13 @@
                 </div>
             </div>
             <ContentDetails v-if="expanded" :item="item" />
-        </nav>
+        </div>
     </div>
 </template>
 
 <script>
 import ContentDetails from "./ContentDetails";
-
+import ContentState from "./ContentState";
 export default {
     components: {
         ContentDetails,
@@ -103,6 +103,9 @@ export default {
         },
         deleted() {
             return this.item.isDeleted && !this.item.purged;
+        },
+        clsState() {
+            return `alert-${ContentState[this.item.state] || "info"}`;
         },
     },
     created() {
