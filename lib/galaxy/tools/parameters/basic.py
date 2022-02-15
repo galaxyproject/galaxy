@@ -331,6 +331,10 @@ class SimpleTextToolParameter(ToolParameter):
         else:
             self.value = ""
 
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        return unicodify(value)
+
     def get_initial_value(self, trans, other_values):
         return self.value
 
@@ -611,10 +615,13 @@ class FileToolParameter(ToolParameter):
             if "session_id" in value:
                 # handle api upload
                 session_id = value["session_id"]
-                upload_store = trans.app.config.new_file_path
+                upload_store = trans.app.config.tus_upload_store or trans.app.config.new_file_path
                 if re.match(r"^[\w-]+$", session_id) is None:
                     raise ValueError("Invalid session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
+                if upload_store != trans.app.config.new_file_path and not os.path.exists(local_filename):
+                    # Fallback for old chunked API, remove in 22.05
+                    local_filename = os.path.abspath(os.path.join(trans.app.config.new_file_path, session_id))
             else:
                 # handle nginx upload
                 upload_store = trans.app.config.nginx_upload_store

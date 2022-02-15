@@ -1999,7 +1999,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         TusMiddleware,
         kwargs={
             "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
-            "tmp_dir": application_stack.config.new_file_path,
+            "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )

@@ -507,7 +507,6 @@ test_data:
                 history_name,
                 wait_on_history_length=history_length,
                 export_kwds={},
-                api_key=self.galaxy_interactor.api_key,
             )
             # wait a little more for those jobs, todo fix to wait for history imported false or
             # for a specific number of jobs...

@@ -103,19 +103,25 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                         this.trigger("state:ready", currModel, newState, this.previous("state"));
                         if (newState != "discarded") {
                             if (newState === "ok") {
-                                new Notification(`Job complete: ${this.get("name")}`, {
-                                    icon: "static/favicon.ico",
-                                });
+                                // If Notifications are supported, send one.
+                                if (window.Notification) {
+                                    new Notification(`Job complete: ${this.get("name")}`, {
+                                        icon: "static/favicon.ico",
+                                    });
+                                }
                                 if (TAB_UPDATES.is_hidden()) {
                                     TAB_UPDATES.hidden_count(hiddenupdates);
                                     hiddenupdates++;
                                 }
                             } else if (newState == "error") {
-                                new Notification(`Job failure: ${this.get("name")}`, {
-                                    icon: "static/erricon.ico",
-                                });
-                                if (TAB_UPDATES.is_hidden() && Notification.permission == "granted") {
-                                    TAB_UPDATES.change_favicon("static/erricon.ico");
+                                // If Notifications are supported, send one.
+                                if (window.Notification) {
+                                    new Notification(`Job failure: ${this.get("name")}`, {
+                                        icon: "static/erricon.ico",
+                                    });
+                                    if (TAB_UPDATES.is_hidden() && Notification.permission == "granted") {
+                                        TAB_UPDATES.change_favicon("static/erricon.ico");
+                                    }
                                 }
                             }
                         }

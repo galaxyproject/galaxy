@@ -976,6 +976,7 @@ class JobWrapper(HasResourceParameters):
         self.environment_variables: List[Dict[str, str]] = []
         self.interactivetools: List[Dict[str, Any]] = []
         self.command_line = None
+        self.version_command_line = None
         self._dependency_shell_commands = None
         # Tool versioning variables
         self.version_string = ""
@@ -1235,7 +1236,12 @@ class JobWrapper(HasResourceParameters):
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
-        self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
+        (
+            self.command_line,
+            self.version_command_line,
+            self.extra_filenames,
+            self.environment_variables,
+        ) = tool_evaluator.build()
         job.command_line = self.command_line
         self.interactivetools = tool_evaluator.populate_interactivetools()
         self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
@@ -2072,7 +2078,10 @@ class JobWrapper(HasResourceParameters):
         return has_output_limit or has_walltime_limit
 
     def get_command_line(self):
-        return self.command_line
+        """Return complete command line, including possible version command."""
+        if self.remote_command_line:
+            return None
+        return f'{self.version_command_line or ""}{self.command_line}'
 
     def get_session_id(self):
         return self.session_id
@@ -2327,10 +2336,10 @@ class JobWrapper(HasResourceParameters):
         method should be removed ASAP and replaced with some properly generic
         and stateful way of determining link-only datasets. -nate
         """
-        if self.tool:
+        if self.tool and self.tool.id == "upload1":
             job = self.get_job()
             param_dict = job.get_param_values(self.app)
-            return self.tool.id == "upload1" and param_dict.get("link_data_only", None) == "link_to_files"
+            return param_dict.get("link_data_only") == "link_to_files"
         else:
             # The tool is unavailable, we try to move the outputs.
             return False
@@ -2452,7 +2461,12 @@ class TaskWrapper(JobWrapper):
         self.sa_session.flush()
 
         if not self.remote_command_line:
-            self.command_line, extra_filenames, self.environment_variables = tool_evaluator.build()
+            (
+                self.command_line,
+                self.version_command_line,
+                extra_filenames,
+                self.environment_variables,
+            ) = tool_evaluator.build()
             self.extra_filenames.extend(extra_filenames)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
