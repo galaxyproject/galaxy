@@ -60,11 +60,21 @@ export default {
                 this.queryCurrent = this.queryKey;
                 this.items = [];
             } else if (this.payload) {
+                let hasNewItems = false;
                 for (const item of this.payload) {
                     const itemIndex = item[this.itemKey];
-                    this.items[itemIndex] = item;
+                    if (this.items[itemIndex]) {
+                        const localItem = this.items[itemIndex];
+                        localItem.name = item.name;
+                        localItem.hid = item.hid;
+                    } else {
+                        hasNewItems = true;
+                        this.items[itemIndex] = item;
+                    }
                 }
-                this.items = this.items.slice();
+                if (hasNewItems) {
+                    this.items = this.items.slice();
+                }
             }
         },
         onScroll(event) {
