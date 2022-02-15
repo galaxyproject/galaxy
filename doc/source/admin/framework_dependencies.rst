@@ -77,15 +77,6 @@ source code has been cloned to ``/srv/galaxy/server``.
     $ . /srv/galaxy/venv/bin/activate
     (venv)$
 
-Next, in ``galaxy.yml``, set the ``virtualenv`` option in the ``uwsgi`` section to point to your new virtualenv:
-
-.. code-block:: yaml
-
-    ---
-    uwsgi:
-        #...
-        virtualenv: /srv/galaxy/venv
-
 Install dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -190,12 +181,6 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
 .. _conda-forge: https://conda-forge.org/
 .. _Bioconda: https://bioconda.github.io/
 
-uWSGI
-^^^^^
-
-``run.sh`` should automatically set ``--virtualenv`` on uWSGI's command line. However, you can override this using the
-``virtualenv`` option in the ``uwsgi`` section of ``galaxy.yml`` as described in the `Managing dependencies manually`_
-section.
 
 Unpinned dependencies
 ^^^^^^^^^^^^^^^^^^^^^
