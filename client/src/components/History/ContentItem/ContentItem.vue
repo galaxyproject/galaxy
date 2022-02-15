@@ -1,6 +1,6 @@
 <template>
     <div :class="['content-item m-1 p-0 rounded', clsState]">
-        <div class="p-1 cursor-pointer" @click.stop="onExpand">
+        <div class="p-1 cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
             <div class="overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
@@ -65,22 +65,11 @@ export default {
         expanded: { type: Boolean, required: true },
         selected: { type: Boolean, required: true },
         showSelection: { type: Boolean, required: false, default: false },
-        index: { type: Number, required: false, default: null },
-        rowKey: { type: [Number, String], required: false, default: "" },
         writable: { type: Boolean, required: false, default: true },
     },
-    data: () => ({
-        suppressFocus: true,
-    }),
     computed: {
         loading() {
             return !this.item;
-        },
-        contentItemComponent() {
-            if (this.item.id === undefined) {
-                return "Placeholder";
-            }
-            return this.historyContentItem();
         },
         selectable() {
             return this.showSelection;
@@ -100,45 +89,6 @@ export default {
         },
     },
     created() {
-        this.$root.$on("bv::dropdown::show", () => (this.suppressFocus = true));
-        this.$root.$on("bv::dropdown::hide", () => (this.suppressFocus = false));
-    },
-    methods: {
-        onExpand() {
-            this.$emit("update:expanded", !this.expanded);
-        },
-        setFocus(index) {
-            if (this.suppressFocus) {
-                return;
-            }
-            const ul = this.$el.closest(".scroller");
-            const el = ul.querySelector(`[tabindex="${index}"]`);
-            if (el) {
-                el.focus();
-            }
-        },
-        historyContentItem() {
-            const { history_content_type } = this.item;
-            switch (history_content_type) {
-                case "dataset":
-                    return "Dataset";
-                case "dataset_collection":
-                    return "DatasetCollection";
-                default:
-                    return "Placeholder";
-            }
-        },
-        collectionContentItem() {
-            const { element_type } = this.item;
-            switch (element_type) {
-                case "hda":
-                    return "Subdataset";
-                case "hdca":
-                    return "Subcollection";
-                default:
-                    return "Placeholder";
-            }
-        },
     },
 };
 </script>
