@@ -92,7 +92,7 @@ export async function cleanupDatasets(datasets) {
         });
         const requestResult = await purgeDatasets(datasetSourceIds);
         result.totalItemCount = datasets.length;
-        result.errors = requestResult.errors;
+        result.errors = mapErrors(datasetsTable, requestResult.errors);
         const erroredIds = requestResult.errors.reduce((acc, error) => [...acc, error.dataset.id], []);
         result.totalFreeBytes = datasetSourceIds.reduce(
             (partial_sum, item) => partial_sum + (erroredIds.includes(item.id) ? 0 : datasetsTable[item.id].size),
@@ -102,4 +102,17 @@ export async function cleanupDatasets(datasets) {
         result.errorMessage = error;
     }
     return result;
+}
+
+/**
+ * Maps the error messages with the dataset name for user display.
+ * @param datasetsTable Datasets dictionary indexed by ID
+ * @param errors List of errors associated with each dataset ID
+ * @returns A list with the name of the dataset and the associated error message.
+ */
+function mapErrors(datasetsTable, errors) {
+    return errors.map((error) => {
+        const name = datasetsTable[error.dataset.id].name;
+        return { name: name, reason: error.error_message };
+    });
 }

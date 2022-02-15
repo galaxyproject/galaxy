@@ -6,9 +6,18 @@
                 <b-alert v-if="result.hasFailed" show variant="danger">
                     {{ result.errorMessage }}
                 </b-alert>
-                <b-alert v-else-if="result.hasSomeErrors" show variant="danger">
-                    {{ result.errors.length }} items couldn't be cleared
-                </b-alert>
+                <div v-else-if="result.isPartialSuccess">
+                    <h3>
+                        You've successfully cleared <b>{{ result.totalCleaned }}</b> items for a total of
+                        <b>{{ niceTotalSpaceFreed }}</b> but...
+                    </h3>
+                    <b-alert v-if="result.hasSomeErrors" show variant="warning">
+                        <h3 class="mb-0">
+                            <b>{{ result.errors.length }}</b> items couldn't be cleared
+                        </h3>
+                    </b-alert>
+                    <b-table-lite :fields="errorFields" :items="result.errors" small />
+                </div>
                 <h3 v-else-if="result.success">
                     You've cleared <b>{{ niceTotalSpaceFreed }}</b>
                 </h3>
@@ -30,6 +39,14 @@ export default {
             default: null,
         },
     },
+    data() {
+        return {
+            errorFields: [
+                { key: "name", label: _l("Name") },
+                { key: "reason", label: _l("Reason") },
+            ],
+        };
+    },
     computed: {
         /** @returns {Boolean} */
         isLoading() {
@@ -45,7 +62,7 @@ export default {
             if (this.isLoading) {
                 message = _l("Freeing up some space...");
             } else if (this.result.isPartialSuccess) {
-                message = _l("Some items couldn't be cleared");
+                message = _l("Sorry, some items couldn't be cleared");
             } else if (this.result.success) {
                 message = _l("Congratulations!");
             }
