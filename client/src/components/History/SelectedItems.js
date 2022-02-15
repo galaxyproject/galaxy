@@ -28,10 +28,10 @@ export default {
             const key = this.getItemKey(item);
             return this.items.has(key);
         },
-        setSelected(item, bSelected) {
+        setSelected(item, selected) {
             const key = this.getItemKey(item);
             const newSelected = new Map(this.items);
-            bSelected ? newSelected.set(key, item) : newSelected.delete(key);
+            selected ? newSelected.set(key, item) : newSelected.delete(key);
             this.items = newSelected;
         },
         selectItems(items = []) {

@@ -1,5 +1,5 @@
 <template>
-    <div class="p-3 details">
+    <div class="p-2 details">
         Content Details
         <h4 data-description="dataset name">{{ item.name || "(Dataset Name)" }}</h4>
     </div>
