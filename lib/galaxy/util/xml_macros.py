@@ -1,5 +1,6 @@
 import os
 from copy import deepcopy
+from typing import Dict
 
 from galaxy.util import parse_xml
 
