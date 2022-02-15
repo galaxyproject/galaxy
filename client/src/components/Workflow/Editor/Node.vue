@@ -88,6 +88,8 @@ import { ActiveOutputs } from "./modules/outputs";
 import { attachDragging } from "./modules/dragging";
 Vue.use(BootstrapVue);
 
+const OFFSET_RANGE = 100;
+
 export default {
     components: {
         LoadingSpan,
@@ -156,14 +158,14 @@ export default {
         const step = this.step;
         const el = this.$el;
         if (step.position) {
-            el.style.top = (step.position.top + this.offsetToPreventNodeOverlap(100)) + "px";
-            el.style.left = (step.position.left + this.offsetToPreventNodeOverlap(100)) + "px";
+            el.style.top = step.position.top + "px";
+            el.style.left = step.position.left + "px";
         } else {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetToPreventNodeOverlap(100);
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetToPreventNodeOverlap(100);
+                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetToPreventNodeOverlap(OFFSET_RANGE);
+                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetToPreventNodeOverlap(OFFSET_RANGE);
                 el.style.top = `${top}px`;
                 el.style.left = `${left}px`;
             }
