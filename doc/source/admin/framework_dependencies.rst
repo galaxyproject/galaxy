@@ -226,38 +226,20 @@ dependencies directly from PyPI_.
 Adding additional Galaxy dependencies
 -------------------------------------
 
-New packages can be added to Galaxy, or the versions of existing packages can be updated, using `pipenv`_ and `Starforge`_, Galaxy's Docker-based build system.
+New packages can be added to Galaxy, or the versions of existing packages can be updated, using `poetry`_ and `Starforge Recipes`_, Galaxy's Docker-based build system.
 
 The process is still under development and will be streamlined and automated over time. For the time being, please use
 the following process to add new packages and have their wheels built:
 
-1. Install `Starforge`_ (e.g. with ``pip install starforge`` or ``python setup.py install`` from the source). You will
-   also need to have Docker installed on your system.
+1. Clone https://github.com/galaxyproject/starforge-recipes/ and add or edit the wheel you would like to build under the wheels/ directory.
 
-2. Obtain `wheels.yml`_ (this file will most likely be moved in to Galaxy in the future) and add/modify the wheel
-   definition.
+2. Submit a pull request to `Starforge Recipes`_.
 
-3. Use ``starforge wheel --wheels-config=wheels.yml <wheel-name>`` to build the wheel. If the wheel includes C
-   extensions, you will probably want to also use the ``--no-qemu`` flag to prevent Starforge from attempting to build
-   on Mac OS X using QEMU/KVM.
-
-4. If the wheel build is successful, submit a pull request to `Starforge`_ with your changes to `wheels.yml`_.
-
-5. A :doc:`Galaxy Committers group </project/organization>` member will need to trigger an automated build of the wheel
-   changes in your pull request. Galaxy's Jenkins_ service will build these changes using Starforge.
-
-6. If the pull request is merged, submit a pull request to Galaxy modifying the files in `lib/galaxy/dependencies`_ as
+3. If the pull request is merged, submit a pull request to Galaxy modifying the files in `lib/galaxy/dependencies`_ as
    appropriate.
 
-You may attempt to skip directly to step 4 and let the Starforge wheel PR builder build your wheels for you. This is
-especially useful if you are simply updating an existing wheel's version. However, if you are adding a new C extension
-wheel that is not simple to build, you may need to go through many iterations of updating the PR and having a
-:doc:`Galaxy Committers group </project/organization>` member triggering builds
-before wheels are successfully built. You can avoid this cycle by performing
-steps 1-3 locally.
-
-.. _pipenv: https://pipenv.readthedocs.io/
-.. _Starforge: https://github.com/galaxyproject/starforge/
+.. _poetry: https://python-poetry.org/
+.. _Starforge Recipes: https://github.com/galaxyproject/starforge-recipes/
 .. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
 .. _Jenkins: https://jenkins.galaxyproject.org/
