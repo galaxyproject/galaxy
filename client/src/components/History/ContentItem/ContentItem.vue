@@ -59,27 +59,17 @@
                     </div>
                 </div>
             </div>
-            <div v-if="expanded" class="p-3 details">
-                <h4 data-description="dataset name">{{ name || "(Dataset Name)" }}</h4>
-            </div>
+            <ContentDetails v-if="expanded" :item="item" />
         </nav>
     </div>
 </template>
 
 <script>
-import Placeholder from "./Placeholder";
-import Dataset from "./Dataset/Dataset";
-import DatasetCollection from "./DatasetCollection";
-//import Subdataset from "./Subdataset";
-//import Subcollection from "./Subcollection";
+import ContentDetails from "./ContentDetails";
 
 export default {
     components: {
-        Placeholder,
-        Dataset,
-        DatasetCollection,
-        //Subdataset,
-        //Subcollection,
+        ContentDetails,
     },
     props: {
         item: { type: Object, required: true },
