@@ -1,0 +1,191 @@
+
+===========================================================
+January 2022 Galaxy Release (v 22.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Remove chart utilities and artifacts from code base
+  `Pull Request 12890`_
+* Large peptide IDs
+  (thanks to `@reid-wagner <https://github.com/reid-wagner>`__).
+  `Pull Request 13261`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* Add datatype iml_dataset subclassing html
+  (thanks to `@knutwa-ext <https://github.com/knutwa-ext>`__).
+  `Pull Request 12099`_
+* New interactive tool - iSEE
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 12650`_
+* Allow trailing semicolon in last column of gff3
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12673`_
+* Fix gff-version header sniffing
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12676`_
+* Mark sniffer for fastqillumina as not implemented
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12685`_
+* Fix gff and scidx parsing
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12687`_
+* Merge 21.09 -> dev
+  `Pull Request 12747`_
+* Merge 21.09 forward again
+  `Pull Request 12754`_
+* New pyupgrade cleanups
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12774`_
+* Version bump galaxy tool util and converter dependency fix
+  `Pull Request 12844`_
+* Downgrade bowtie requirement for CONVERTER_fasta_to_bowtie_color_index
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12851`_
+* Create sniffer for GRO file type
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 12885`_
+* Agp datatype
+  `Pull Request 12891`_
+* Type updates from @mr-c - part 2
+  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
+  `Pull Request 12899`_
+* Simplify Augustus datatype sniffer
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12905`_
+* 3rd round of type updates to support CWL import
+  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
+  `Pull Request 12913`_
+* Eliminate a lot of while: True loops in datatype code
+  `Pull Request 12942`_
+* Avoid setting response headers through `trans` in datatypes
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 12956`_
+* Tighten type ignores
+  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
+  `Pull Request 12965`_
+* Remove is_multi_byte
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 12996`_
+* Remove unnecessary list creations
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13002`_
+* Don't use triple-quoted strings as comments
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13007`_
+* Fix constructive_solid_geometry.py for non_utf8_error
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 13057`_
+* Add ludwig model datatype
+  (thanks to `@qiagu <https://github.com/qiagu>`__).
+  `Pull Request 13073`_
+* Add ampvis2 datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13083`_
+* Add Neper and Gmsh datatypes
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 13087`_
+* Add description of inpcrd and prmtop
+  (thanks to `@thepineapplepirate <https://github.com/thepineapplepirate>`__).
+  `Pull Request 13126`_
+* Fix .tell() error
+  `Pull Request 13137`_
+* Add new datatype GRIB
+  (thanks to `@annefou <https://github.com/annefou>`__).
+  `Pull Request 13175`_
+* Show yaml files in preview
+  `Pull Request 13176`_
+* Enable display of BAM data without sequence info
+  (thanks to `@wm75 <https://github.com/wm75>`__).
+  `Pull Request 13219`_
+* Add compression converter
+  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
+  `Pull Request 13223`_
+* Change display_in_upload to true for PHAR datatype
+  (thanks to `@simonbray <https://github.com/simonbray>`__).
+  `Pull Request 13238`_
+* Add gz as datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 13271`_
+* Limit required element validation to safe elements
+  `Pull Request 13299`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* New interactive tool - iSEE
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 12650`_
+* Ignore type in unused function
+  `Pull Request 12694`_
+* Merge 21.09 -> dev
+  `Pull Request 12747`_
+* Set profile version of ncbi_datasets so it can run containerized
+  `Pull Request 12819`_
+* Downgrade bowtie requirement for CONVERTER_fasta_to_bowtie_color_index
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 12851`_
+* Fix containerized NCBI Datasets Genomes data source tool
+  `Pull Request 12915`_
+* Tighten type ignores
+  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
+  `Pull Request 12965`_
+* Update interactivetool_pyiron.xml
+  (thanks to `@gmauro <https://github.com/gmauro>`__).
+  `Pull Request 12990`_
+* Don't use triple-quoted strings as comments
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 13007`_
+* Add parquet to csv datatype converter
+  `Pull Request 13078`_
+* Drop tool migration scripts and related code
+  `Pull Request 13099`_
+* Allow any format in export tool
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 13151`_
+* Add dynamic step to FormNumber range slider
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13233`_
+* FormNumber: notify value change on slider change
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13260`_
+* Add bioconductor as valid xref for tools
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 13268`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <22.01_announce.html>`_ for more details.
+
+.. include:: 22.01_prs.rst
+
+.. include:: _thanks.rst

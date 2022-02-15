@@ -1,0 +1,45 @@
+
+===========================================================
+January 2022 Galaxy Release (v 22.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+Also check out the `22.01 user release notes <22.01_announce_user.html>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_22.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_22.01 && git pull --ff-only origin release_22.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 22.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
