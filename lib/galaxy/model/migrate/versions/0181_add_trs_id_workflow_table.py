@@ -24,12 +24,16 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    trs_id_column = Column("trs_id", Text)
-    add_column(trs_id_column, "workflow", metadata)
+    trs_tool_id_column = Column("trs_tool_id", Text)
+    add_column(trs_tool_id_column, "workflow", metadata)
+
+    trs_version_id_column = Column("trs_version_id", Text)
+    add_column(trs_version_id_column, "workflow", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column("trs_id", "workflow", metadata)
+    drop_column("trs_tool_id", "workflow", metadata)
+    drop_column("trs_version_id", "workflow", metadata)

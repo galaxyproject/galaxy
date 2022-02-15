@@ -360,7 +360,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     trs_server = payload.get("trs_server")
                     trs_tool_id = payload.get("trs_tool_id")
                     trs_version_id = payload.get("trs_version_id")
-                    payload["trs_id"] = ":".join((trs_tool_id, trs_version_id))
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
