@@ -34,12 +34,16 @@
                         icon="trash-restore"
                         @click.stop="$emit('undelete', item)" />
                 </div>
-                <div class="float-left py-1 pl-1" v-if="selectable">
-                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
-                </div>
-                <h5 class="float-left title p-1">
-                    <span class="hid" data-description="dataset hid">{{ id }}:</span>
-                    <span class="name" data-description="dataset name">{{ name }}</span>
+                <h5 class="float-left p-1 w-75 font-weight-bold">
+                    <div v-if="selectable" class="selector float-left mr-2">
+                        <span
+                            v-if="selected"
+                            class="fa fa-lg fa-check-square-o"
+                            @click.stop="$emit('update:selected', false)" />
+                        <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
+                    </div>
+                    <span class="id" data-description="id">{{ id }}:</span>
+                    <span class="name" data-description="name">{{ name }}</span>
                 </h5>
             </div>
         </div>
@@ -59,6 +63,7 @@ export default {
         id: { type: Number, required: true },
         name: { type: String, required: true },
         expanded: { type: Boolean, required: true },
+        selected: { type: Boolean, required: true },
         showSelection: { type: Boolean, required: false, default: false },
         index: { type: Number, required: false, default: null },
         rowKey: { type: [Number, String], required: false, default: "" },
@@ -66,7 +71,6 @@ export default {
     },
     data: () => ({
         suppressFocus: true,
-        selected: false,
     }),
     computed: {
         loading() {
@@ -88,7 +92,11 @@ export default {
             return this.item.isDeleted && !this.item.purged;
         },
         clsState() {
-            return `alert-${ContentState[this.item.state] || "info"}`;
+            let state = ContentState[this.item.state];
+            if (!state || this.selected) {
+                state = "info";
+            }
+            return `alert-${state}`;
         },
     },
     created() {
@@ -134,3 +142,8 @@ export default {
     },
 };
 </script>
+<style>
+.content-item:hover {
+    filter: brightness(105%);
+}
+</style>
