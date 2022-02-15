@@ -42,8 +42,11 @@
                             @click.stop="$emit('update:selected', false)" />
                         <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
                     </div>
-                    <span class="id" data-description="id">{{ id }}:</span>
-                    <span class="name" data-description="name">{{ name }}</span>
+                    <span class="id">{{ id }}:</span>
+                    <span class="name">{{ name }}</span>
+                    <h6 v-if="item.collection_type" class="description py-1">
+                        a {{ item.collection_type }} with {{ item.element_count }} items
+                    </h6>
                 </h5>
             </div>
         </div>
@@ -81,7 +84,7 @@ export default {
             return this.item.isDeleted && !this.item.purged;
         },
         clsState() {
-            let state = ContentState[this.item.state];
+            let state = ContentState[this.item.state] || ContentState[this.item.populated_state];
             if (!state || this.selected) {
                 state = "info";
             }
@@ -89,6 +92,9 @@ export default {
         },
     },
     created() {
+        if (this.item.history_content_type != "dataset") {
+            console.log(this.item);
+        }
     },
 };
 </script>
