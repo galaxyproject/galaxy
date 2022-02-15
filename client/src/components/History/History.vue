@@ -71,7 +71,9 @@
                                     :show-selection="showSelection"
                                     @update:expanded="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
-                                    @viewCollection="$emit('viewCollection', item)" />
+                                    @viewCollection="$emit('viewCollection', item)"
+                                    @display="onDisplay"
+                                    @edit="onEdit" />
                             </template>
                         </HistoryListing>
                     </template>
@@ -100,8 +102,10 @@ import ToolHelpModal from "./ToolHelpModal";
 import HistoryMenu from "./HistoryMenu";
 import HistoryListing from "./HistoryListing";
 import ContentItem from "./ContentItem/ContentItem";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 
 export default {
+    mixins: [legacyNavigationMixin],
     components: {
         LoadingSpan,
         UrlDataProvider,
@@ -161,6 +165,19 @@ export default {
             selectedItems.forEach((item) => {
                 this.hiddenItems[item.hid] = true;
             });
+        },
+        onDisplay(item) {
+            const id = item.id;
+            this.useGalaxy((Galaxy) => {
+                if (Galaxy.frame && Galaxy.frame.active) {
+                    Galaxy.frame.addDataset(id);
+                } else {
+                    this.iframeRedirect(`datasets/${id}/display/?preview=True`);
+                }
+            });
+        },
+        onEdit(item) {
+            this.backboneRoute("datasets/edit", { dataset_id: item.id });
         },
     },
 };

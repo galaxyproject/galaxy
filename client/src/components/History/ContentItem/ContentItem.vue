@@ -1,6 +1,6 @@
 <template>
     <div class="dataset history-content">
-        <nav class="p-1 cursor-pointer alert-success mb-1"  @click.stop="onExpand">
+        <nav class="p-1 cursor-pointer alert-success mb-1" @click.stop="onExpand">
             <div class="overflow-hidden">
                 <div class="float-left pl-1" v-if="selectable">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
@@ -13,7 +13,7 @@
                         size="sm"
                         variant="link"
                         icon="eye-slash"
-                        @click.stop="$emit('unhide')" />
+                        @click.stop="$emit('unhide', item)" />
 
                     <b-button
                         v-if="deleted"
@@ -22,14 +22,14 @@
                         size="sm"
                         variant="link"
                         icon="trash-restore"
-                        @click.stop="$emit('undelete')" />
+                        @click.stop="$emit('undelete', item)" />
 
                     <b-button
                         class="float-right px-1"
                         title="Delete"
                         size="sm"
                         variant="link"
-                        @click.stop="$emit('delete')">
+                        @click.stop="$emit('delete', item)">
                         <span class="fa fa-trash" />
                     </b-button>
 
@@ -38,7 +38,7 @@
                         title="Edit"
                         size="sm"
                         variant="link"
-                        @click.stop="$emit('edit')">
+                        @click.stop="$emit('edit', item)">
                         <span class="fa fa-pencil" />
                     </b-button>
 
@@ -47,7 +47,7 @@
                         title="Display"
                         size="sm"
                         variant="link"
-                        @click.stop="$emit('display')">
+                        @click.stop="$emit('display', item)">
                         <span class="fa fa-eye" />
                     </b-button>
 
