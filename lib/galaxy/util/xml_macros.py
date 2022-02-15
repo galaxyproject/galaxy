@@ -19,7 +19,7 @@ def load_with_references(path):
     if macros_el is None:
         return tree, []
 
-    macros = {}
+    macros: Dict[str, XmlMacroDef] = {}
     macro_paths = _import_macros(macros_el, path, macros)
     macros_el.clear()
 
