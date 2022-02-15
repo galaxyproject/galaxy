@@ -2,8 +2,8 @@
     <div class="dataset history-content">
         <nav class="p-1 cursor-pointer alert-success mb-1">
             <div class="overflow-hidden">
-                <div class="pl-1" v-if="selectable">
-                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)"></b-check>
+                <div class="float-left pl-1" v-if="selectable">
+                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
                 </div>
                 <div>
                     <IconButton
@@ -49,9 +49,7 @@
                         <span class="fa fa-eye" />
                     </b-button>
 
-                    <div
-                        class="float-left content-title title p-1 overflow-hidden"
-                        @click.stop="onExpand">
+                    <div class="float-left content-title title p-1 overflow-hidden" @click.stop="onExpand">
                         <h5 class="text-truncate" v-if="collapsed">
                             <span class="hid" data-description="dataset hid">{{ id }}:</span>
                             <span class="name" data-description="dataset name">{{ name }}</span>
@@ -65,18 +63,8 @@
         </nav>
     </div>
 </template>
-<script>
-/**
- * This is a single item in the list. The main job of the contentItem is to
- * pick a specific selector for the :is attribute of the generic component
- * placeholder. This should be a dataset, collection, or other component
- * depending on the specific list implementation.
- *
- * The mixin also pulls out "selected", and "expanded" properties which are
- * derived from the current component state rather than the data itself.
- */
 
-import "./styles.scss";
+<script>
 import Placeholder from "./Placeholder";
 import Dataset from "./Dataset/Dataset";
 import DatasetCollection from "./DatasetCollection";
@@ -135,7 +123,7 @@ export default {
     methods: {
         onExpand() {
             console.log(this.expanded);
-            this.$emit('update:expanded', !this.expanded);
+            this.$emit("update:expanded", !this.expanded);
         },
         setFocus(index) {
             if (this.suppressFocus) {
