@@ -64,6 +64,8 @@
                                 <ContentItem
                                     v-if="!hiddenItems[item.hid]"
                                     :item="item"
+                                    :id="item.hid"
+                                    :name="item.name"
                                     :expanded="isExpanded(item)"
                                     :selected="isSelected(item)"
                                     :show-selection="showSelection"
