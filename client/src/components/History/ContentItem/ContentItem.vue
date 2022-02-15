@@ -14,25 +14,34 @@
                     <b-button class="px-1" title="Edit" size="sm" variant="link" @click.stop="$emit('edit', item)">
                         <span class="fa fa-pencil" />
                     </b-button>
-                    <b-button class="px-1" title="Delete" size="sm" variant="link" @click.stop="$emit('delete', item)">
-                        <span class="fa fa-trash" />
-                    </b-button>
                     <b-button
-                        v-if="!visible"
-                        class="px-1"
-                        title="Unhide"
-                        size="sm"
-                        variant="link"
-                        icon="eye-slash"
-                        @click.stop="$emit('unhide', item)" />
-                    <b-button
-                        v-if="deleted"
+                        v-if="item.deleted"
                         class="px-1"
                         title="Undelete"
                         size="sm"
                         variant="link"
-                        icon="trash-restore"
-                        @click.stop="$emit('undelete', item)" />
+                        :disabled="item.purged"
+                        @click.stop="$emit('undelete', item)">
+                        <span class="fa fa-trash-restore" />
+                    </b-button>
+                    <b-button
+                        v-else
+                        class="px-1"
+                        title="Delete"
+                        size="sm"
+                        variant="link"
+                        @click.stop="$emit('delete', item)">
+                        <span class="fa fa-trash" />
+                    </b-button>
+                    <b-button
+                        v-if="!item.visible"
+                        class="px-1"
+                        title="Unhide"
+                        size="sm"
+                        variant="link"
+                        @click.stop="$emit('unhide', item)">
+                        <span class="fa fa-eye-slash" />
+                    </b-button>
                 </div>
                 <h5 class="float-left p-1 w-75 font-weight-bold">
                     <div v-if="selectable" class="selector float-left mr-2">
@@ -71,17 +80,8 @@ export default {
         writable: { type: Boolean, required: false, default: true },
     },
     computed: {
-        loading() {
-            return !this.item;
-        },
         selectable() {
             return this.showSelection;
-        },
-        visible() {
-            return this.item.visible;
-        },
-        deleted() {
-            return this.item.isDeleted && !this.item.purged;
         },
         clsState() {
             let state = ContentState[this.item.state] || ContentState[this.item.populated_state];
