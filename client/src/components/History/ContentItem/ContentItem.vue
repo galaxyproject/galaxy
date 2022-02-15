@@ -1,5 +1,5 @@
 <template>
-    <div :class="['dataset history-content m-1 p-0 rounded', clsState]">
+    <div :class="['content-item m-1 p-0 rounded', clsState]">
         <div class="p-1 cursor-pointer" @click.stop="onExpand">
             <div class="overflow-hidden">
                 <div class="btn-group float-right">
@@ -34,7 +34,7 @@
                         icon="trash-restore"
                         @click.stop="$emit('undelete', item)" />
                 </div>
-                <div class="float-left pl-1" v-if="selectable">
+                <div class="float-left py-1 pl-1" v-if="selectable">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
                 </div>
                 <h5 class="float-left title p-1">
