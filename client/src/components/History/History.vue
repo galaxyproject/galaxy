@@ -73,7 +73,8 @@
                                     @update:selected="setSelected(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
                                     @display="onDisplay"
-                                    @edit="onEdit" />
+                                    @edit="onEdit"
+                                    @delete="onDelete" />
                             </template>
                         </HistoryListing>
                     </template>
@@ -89,6 +90,7 @@
 
 <script>
 import { History } from "./model";
+import { deleteContent } from "./model/queries";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
@@ -178,6 +180,10 @@ export default {
         },
         onEdit(item) {
             this.backboneRoute("datasets/edit", { dataset_id: item.id });
+        },
+        onDelete(item) {
+            this.hiddenItems[item.hid] = true;
+            deleteContent(item);
         },
     },
 };
