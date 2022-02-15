@@ -36,8 +36,16 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
+const galaxyStorage = localForage.createInstance({})
+galaxyStorage.config({
+    driver      : localForage.INDEXEDDB,
+    name        : 'galaxyIndexedDB',
+    version     : 1.0,
+    storeName   : 'galaxyStore',
+})
+
 const panelsPersistence = new VuexPersistence({
-    storage: localForage,
+    storage: galaxyStorage,
     asyncStorage: true,
     modules: ["panels"],
 });
