@@ -5,33 +5,32 @@
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <!-- type "text" or "password" ? -->
-                <!-- area <bool> presumably for a textarea instead of input -->
-                <!-- readonly <bool> -->
-                <!-- color <str> -->
-                <!-- style <obj?> -->
+                <!-- type        <str> "text" or "password" -->
+                <!-- area        <bool> presumably for a textarea instead of input -->
+                <!-- readonly    <bool> -->
+                <!-- color       <str> -->
+                <!-- styleObj    <obj> applied to input element -->
                 <!-- placeholder <str> -->
-                <!-- datalist -->
+                <!-- datalist    <arr> -->
 
                 <!-- multiple <bool>
                      Allow multiple entries to be created?
                      Seems to use a textarea currently... line separated values?
                  -->
 
-                <!-- TODO: do we handle style props in a <style scoped> section? -->
-
                 <component
                     :is="componentName"
                     :id="id"
                     :readonly="readonly"
                     :placeholder="placeholder"
-                    :color="color"
                     :style="style"
                     :type="type"
-                    :datalist="datalist"
                     v-model="currentValue"
-                    @change="onInputChange"
-                />
+                    @change="onInputChange" />
+
+                <datalist v-if="datalist && !area && !multiple" :id="`${id}-datalist`">
+                    <option v-for="d in datalist" value="d"></option>
+                </datalist>
             </b-col>
         </b-row>
     </div>
@@ -51,10 +50,16 @@ export default {
         },
         type: {
             type: String,
-            required: true,
+            required: false,
+            default: "text",
             validator: (prop) => ["text", "password"].includes(prop.toLowerCase()),
         },
         area: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+        multiple: {
             type: Boolean,
             required: false,
             default: false,
@@ -72,9 +77,10 @@ export default {
             type: String,
             required: false,
         },
-        style: {
-            type: Object, // Or String?
+        styleObj: {
+            type: Object,
             required: false,
+            default: () => {},
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
@@ -93,7 +99,7 @@ export default {
         currentValue: {
             get() {
                 // TODO: is silent fail on non-strings appropriate?
-                v = this.value || "";
+                const v = this.value || "";
                 if (typeof v === "array") {
                     return this.multiple ? v.map((i) => String(i)).join("\n") : String(v[0]);
                 }
@@ -107,16 +113,22 @@ export default {
             },
         },
         componentName() {
-            return this.area ? "b-form-textarea" : "b-form-input";
+            return this.area || this.multiple ? "b-form-textarea" : "b-form-input";
+        },
+        style() {
+            return this.color ? { ...this.styleObj, color: this.color } : this.styleObj;
         },
     },
     methods: {
         onInputChange(value) {
             this.resetAlert();
             // Some validation?
-            if (cond) {
-                // Show some info alert
-            }
+
+            // Could we accept a validation function in props?
+
+            // if (value !== xxx) {
+            //     // Show some info alert
+            // }
         },
         showAlert(error) {
             if (error) {
@@ -130,5 +142,3 @@ export default {
     },
 };
 </script>
-
-<style></style>
