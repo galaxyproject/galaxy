@@ -524,12 +524,10 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow.reports_config = data["report"]
         workflow.license = data.get("license")
         workflow.creator_metadata = data.get("creator")
-
-        if "license" in data:
-            workflow.license = data["license"]
-
-        if "creator" in data:
-            workflow.creator_metadata = data["creator"]
+        if hasattr(workflow_state_resolution_options, "trs_id"):
+            if workflow_state_resolution_options.trs_id:
+                workflow.trs_id = workflow_state_resolution_options.trs_id
+                workflow_state_resolution_options.trs_id = None  # so trs_id is not set for subworkflows
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -855,6 +853,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["report"] = workflow.reports_config or {}
         data["license"] = workflow.license
         data["creator"] = workflow.creator_metadata
+        data["trs_id"] = workflow.trs_id
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
 
         output_label_index = set()
@@ -1094,6 +1093,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data["creator"] = workflow.creator_metadata
         if workflow.license:
             data["license"] = workflow.license
+        if workflow.trs_id:
+            data["trs_id"] = workflow.trs_id
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
@@ -1643,6 +1644,9 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     tool_panel_section_id: str = ""
     tool_panel_section_mapping: Dict = {}
     shed_tool_conf: Optional[str] = None
+
+    # for workflows imported by trs id
+    trs_id: str = ""
 
     @property
     def is_importable(self):
