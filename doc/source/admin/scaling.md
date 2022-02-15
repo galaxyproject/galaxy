@@ -134,8 +134,8 @@ assignment method.
 ### Choosing an Assignment Method
 
 Prior to Galaxy 19.01, the most common deployment strategies (e.g. **uWSGI + Webless**) assigned handlers using what is
-now (since 19.01) referred to as *Database Preassignment*.  Although still the default in some cases (until the database
-in use supports newer features), preassignment has a few drawbacks:
+now (since 19.01) referred to as *Database Preassignment*.  Although still a fallback option when the database
+does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 
 - Web workers do not have a way to know whether a particular handler is alive when assigning that handler
 - Jobs are not load balanced across handlers
