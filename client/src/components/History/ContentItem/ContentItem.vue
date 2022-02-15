@@ -7,7 +7,7 @@
                 </div>
                 <div>
                     <IconButton
-                        v-if="!collapsed && !visible"
+                        v-if="!visible"
                         class="px-1"
                         state="hidden"
                         title="Unhide"
@@ -15,7 +15,7 @@
                         @click.stop="$emit('unhide')" />
 
                     <IconButton
-                        v-if="!collapsed && deleted"
+                        v-if="deleted"
                         class="px-1"
                         state="deleted"
                         title="Undelete"
@@ -50,7 +50,7 @@
                     </b-button>
 
                     <div class="float-left content-title title p-1 overflow-hidden" @click.stop="onExpand">
-                        <h5 class="text-truncate" v-if="collapsed">
+                        <h5 class="text-truncate">
                             <span class="hid" data-description="dataset hid">{{ id }}:</span>
                             <span class="name" data-description="dataset name">{{ name }}</span>
                         </h5>
@@ -85,6 +85,7 @@ export default {
         item: { type: Object, required: true },
         id: { type: Number, required: true },
         name: { type: String, required: true },
+        expanded: { type: Boolean, required: true },
         showSelection: { type: Boolean, required: false, default: false },
         index: { type: Number, required: false, default: null },
         rowKey: { type: [Number, String], required: false, default: "" },
@@ -93,8 +94,6 @@ export default {
     data: () => ({
         suppressFocus: true,
         selected: false,
-        collapsed: true,
-        expanded: false,
     }),
     computed: {
         loading() {
