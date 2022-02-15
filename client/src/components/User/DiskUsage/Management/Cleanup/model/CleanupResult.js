@@ -36,11 +36,19 @@ export class CleanupResult {
     }
 
     /**
+     * The number of items successfully cleaned.
+     * @returns {number}
+     */
+    get totalCleaned() {
+        return this.totalItemCount - this.errors.length;
+    }
+
+    /**
      * Whether the cleanup operation managed to
      * free some items but not all of them.
      * @returns {boolean}
      */
     get isPartialSuccess() {
-        return this.totalItemCount - this.errors.length > 0;
+        return this.errors.length > 0 && this.totalCleaned > 0;
     }
 }
