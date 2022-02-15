@@ -2,7 +2,7 @@
     <div :class="['dataset history-content m-1 p-0 rounded', clsState]">
         <div class="p-1 cursor-pointer" @click.stop="onExpand">
             <div class="overflow-hidden">
-                <div class="float-right">
+                <div class="btn-group float-right">
                     <b-button
                         class="px-1"
                         title="Display"
