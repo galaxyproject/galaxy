@@ -1,66 +1,49 @@
 <template>
-    <div :class="['dataset history-content m-1 p-0', clsState]">
+    <div :class="['dataset history-content m-1 p-0 rounded', clsState]">
         <div class="p-1 cursor-pointer" @click.stop="onExpand">
             <div class="overflow-hidden">
-                <div class="float-left pl-1" v-if="selectable">
-                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
-                </div>
-                <div>
+                <div class="float-right">
                     <b-button
-                        v-if="!visible"
-                        class="float-right px-1"
-                        title="Unhide"
-                        size="sm"
-                        variant="link"
-                        icon="eye-slash"
-                        @click.stop="$emit('unhide', item)" />
-
-                    <b-button
-                        v-if="deleted"
-                        class="float-right px-1"
-                        title="Undelete"
-                        size="sm"
-                        variant="link"
-                        icon="trash-restore"
-                        @click.stop="$emit('undelete', item)" />
-
-                    <b-button
-                        class="float-right px-1"
-                        title="Delete"
-                        size="sm"
-                        variant="link"
-                        @click.stop="$emit('delete', item)">
-                        <span class="fa fa-trash" />
-                    </b-button>
-
-                    <b-button
-                        class="float-right px-1"
-                        title="Edit"
-                        size="sm"
-                        variant="link"
-                        @click.stop="$emit('edit', item)">
-                        <span class="fa fa-pencil" />
-                    </b-button>
-
-                    <b-button
-                        class="float-right px-1"
+                        class="px-1"
                         title="Display"
                         size="sm"
                         variant="link"
                         @click.stop="$emit('display', item)">
                         <span class="fa fa-eye" />
                     </b-button>
-
-                    <div class="float-left content-title title p-1 overflow-hidden">
-                        <h5 class="text-truncate">
-                            <span class="hid" data-description="dataset hid">{{ id }}:</span>
-                            <span class="name" data-description="dataset name">{{ name }}</span>
-                        </h5>
-                    </div>
+                    <b-button class="px-1" title="Edit" size="sm" variant="link" @click.stop="$emit('edit', item)">
+                        <span class="fa fa-pencil" />
+                    </b-button>
+                    <b-button class="px-1" title="Delete" size="sm" variant="link" @click.stop="$emit('delete', item)">
+                        <span class="fa fa-trash" />
+                    </b-button>
+                    <b-button
+                        v-if="!visible"
+                        class="px-1"
+                        title="Unhide"
+                        size="sm"
+                        variant="link"
+                        icon="eye-slash"
+                        @click.stop="$emit('unhide', item)" />
+                    <b-button
+                        v-if="deleted"
+                        class="px-1"
+                        title="Undelete"
+                        size="sm"
+                        variant="link"
+                        icon="trash-restore"
+                        @click.stop="$emit('undelete', item)" />
                 </div>
+                <div class="float-left pl-1" v-if="selectable">
+                    <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
+                </div>
+                <h5 class="float-left title p-1">
+                    <span class="hid" data-description="dataset hid">{{ id }}:</span>
+                    <span class="name" data-description="dataset name">{{ name }}</span>
+                </h5>
             </div>
-            <ContentDetails v-if="expanded" :item="item" />
         </div>
+        <ContentDetails v-if="expanded" :item="item" />
     </div>
 </template>
 
@@ -114,7 +97,6 @@ export default {
     },
     methods: {
         onExpand() {
-            console.log(this.expanded);
             this.$emit("update:expanded", !this.expanded);
         },
         setFocus(index) {
