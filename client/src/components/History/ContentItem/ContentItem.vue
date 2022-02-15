@@ -1,24 +1,26 @@
 <template>
     <div class="dataset history-content">
-        <nav class="p-1 cursor-pointer alert-success mb-1">
+        <nav class="p-1 cursor-pointer alert-success mb-1"  @click.stop="onExpand">
             <div class="overflow-hidden">
                 <div class="float-left pl-1" v-if="selectable">
                     <b-check class="selector" :checked="selected" @change="$emit('update:selected', $event)" />
                 </div>
                 <div>
-                    <IconButton
+                    <b-button
                         v-if="!visible"
-                        class="px-1"
-                        state="hidden"
+                        class="float-right px-1"
                         title="Unhide"
+                        size="sm"
+                        variant="link"
                         icon="eye-slash"
                         @click.stop="$emit('unhide')" />
 
-                    <IconButton
+                    <b-button
                         v-if="deleted"
-                        class="px-1"
-                        state="deleted"
+                        class="float-right px-1"
                         title="Undelete"
+                        size="sm"
+                        variant="link"
                         icon="trash-restore"
                         @click.stop="$emit('undelete')" />
 
@@ -49,7 +51,7 @@
                         <span class="fa fa-eye" />
                     </b-button>
 
-                    <div class="float-left content-title title p-1 overflow-hidden" @click.stop="onExpand">
+                    <div class="float-left content-title title p-1 overflow-hidden">
                         <h5 class="text-truncate">
                             <span class="hid" data-description="dataset hid">{{ id }}:</span>
                             <span class="name" data-description="dataset name">{{ name }}</span>
@@ -68,7 +70,6 @@
 import Placeholder from "./Placeholder";
 import Dataset from "./Dataset/Dataset";
 import DatasetCollection from "./DatasetCollection";
-import IconButton from "components/IconButton";
 //import Subdataset from "./Subdataset";
 //import Subcollection from "./Subcollection";
 
@@ -77,7 +78,6 @@ export default {
         Placeholder,
         Dataset,
         DatasetCollection,
-        IconButton,
         //Subdataset,
         //Subcollection,
     },
