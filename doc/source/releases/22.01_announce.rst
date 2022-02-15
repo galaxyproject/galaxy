@@ -46,6 +46,11 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
 
+Deprecation Notices
+===========================================================
+PostgreSQL 9.x is now EOL and is no longer supported.  Please upgrade to PostgreSQL 10 or higher.
+Python 3.6 is officially EOL and Galaxy no longer tests or maintains compatibility.
+
 Configuration Changes
 =====================
 
