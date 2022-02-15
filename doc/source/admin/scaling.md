@@ -9,9 +9,8 @@ more thorough explanation of this problem and why you will almost surely want to
 configuration if running for more than a small handful of users, see the [production configuration](production.md)
 page.
 
-Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` or the number of plugin workers in
-`job_conf.xml` will not make you Galaxy server much more responsive.  The key to scaling Galaxy is the ability to run
-*multiple* Galaxy servers which co-operatively work on the same database.
+Just to be clear: Increasing the number of plugin workers in `job_conf.xml` will not make you Galaxy server much more responsive.
+The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which co-operatively work on the same database.
 
 ## Terminology
 
