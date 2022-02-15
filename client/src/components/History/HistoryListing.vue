@@ -65,8 +65,9 @@ export default {
                     const itemIndex = item[this.itemKey];
                     if (this.items[itemIndex]) {
                         const localItem = this.items[itemIndex];
-                        localItem.name = item.name;
-                        localItem.hid = item.hid;
+                        Object.keys(localItem).forEach((key) => {
+                            localItem[key] = item[key];
+                        });
                     } else {
                         hasNewItems = true;
                         this.items[itemIndex] = item;
