@@ -74,7 +74,9 @@
                                     @viewCollection="$emit('viewCollection', item)"
                                     @display="onDisplay"
                                     @edit="onEdit"
-                                    @delete="onDelete" />
+                                    @delete="onDelete"
+                                    @undelete="onUndelete"
+                                    @unhide="onUnhide" />
                             </template>
                         </HistoryListing>
                     </template>
@@ -90,7 +92,7 @@
 
 <script>
 import { History } from "./model";
-import { deleteContent } from "./model/queries";
+import { deleteContent, updateContentFields } from "./model/queries";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import ExpandedItems from "./ExpandedItems";
@@ -184,6 +186,14 @@ export default {
         onDelete(item) {
             this.hiddenItems[item.hid] = true;
             deleteContent(item);
+        },
+        onUndelete(item) {
+            this.hiddenItems[item.hid] = true;
+            updateContentFields(item, { deleted: false });
+        },
+        onUnhide(item) {
+            this.hiddenItems[item.hid] = true;
+            updateContentFields(item, { visible: true });
         },
     },
 };
