@@ -1,6 +1,6 @@
 import os
 from copy import deepcopy
-from typing import Dict
+from typing import Dict, List
 
 from galaxy.util import parse_xml
 
@@ -20,7 +20,7 @@ def load_with_references(path):
     if macros_el is None:
         return tree, []
 
-    macros: Dict[str, XmlMacroDef] = {}
+    macros: Dict[str, List[XmlMacroDef]] = {}
     macro_paths = _import_macros(macros_el, path, macros)
     macros_el.clear()
 
