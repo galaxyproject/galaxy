@@ -164,8 +164,8 @@ export default {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetToPreventNodeOverlap(OFFSET_RANGE);
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetToPreventNodeOverlap(OFFSET_RANGE);
+                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
                 el.style.top = `${top}px`;
                 el.style.left = `${left}px`;
             }
@@ -346,8 +346,8 @@ export default {
             // Remove active class
             element.classList.remove("node-active");
         },
-        offsetToPreventNodeOverlap(maxPixelsOffset) {
-            return Math.floor(Math.random() * maxPixelsOffset);
+        offsetVaryPosition(offsetRange) {
+            return Math.floor(Math.random() * offsetRange);
         },
     },
 };
