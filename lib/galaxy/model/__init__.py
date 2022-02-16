@@ -6605,10 +6605,10 @@ class Workflow(Base, Dictifiable, RepresentById):
     name = Column(TEXT)
     has_cycles = Column(Boolean)
     has_errors = Column(Boolean)
-    reports_config = Column(MutableJSONType)
-    creator_metadata = Column(MutableJSONType)
+    reports_config = Column(JSONType)
+    creator_metadata = Column(JSONType)
     license = Column(TEXT)
-    source_metadata = Column(MutableJSONType)
+    source_metadata = Column(JSONType)
     uuid = Column(UUIDType, nullable=True)
 
     steps = relationship(
