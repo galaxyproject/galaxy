@@ -1,34 +1,73 @@
 export default {
     /** is uploading and not ready */
-    upload: "warning",
+    upload: {
+        status: "warning",
+        text: "This dataset is currently uploading.",
+    },
     /** the job that will produce the dataset queued in the runner */
-    queued: "warning",
+    queued: {
+        status: "warning",
+        text: "This job is waiting to run.",
+    },
     /** the job that will produce the dataset is running */
-    running: "warning",
+    running: {
+        status: "warning",
+        text: "This job is currently running.",
+    },
     /** metadata for the dataset is being discovered/set */
-    setting_metadata: "warning",
+    setting_metadata: {
+        status: "warning",
+        text: "Metadata is being auto-detected.",
+    },
     /** was created without a tool */
-    new: "warning",
+    new: {
+        status: "warning",
+        text: "This is a new dataset and not all of its data are available yet.",
+    },
     /** job is being created, but not put into job queue yet */
-    waiting: "default",
+    waiting: {
+        status: "default",
+    },
     /** has no data */
-    empty: "danger",
+    empty: {
+        status: "danger",
+        text: "No data",
+    },
     /** has successfully completed running */
-    ok: "success",
+    ok: {
+        status: "success",
+    },
     /** the job that will produce the dataset paused */
-    paused: "info",
+    paused: {
+        status: "info",
+        text: "This job is paused. Use the 'Resume Paused Jobs' in the history menu to resume.",
+    },
     /** metadata discovery/setting failed or errored (but otherwise ok) */
-    failed_metadata: "danger",
+    failed_metadata: {
+        status: "danger",
+    },
     /** the tool producing this dataset failed */
-    error: "danger",
+    error: {
+        status: "danger",
+        text: "An error occurred with this dataset",
+    },
     /** deleted while uploading */
-    discarded: "danger",
-
+    discarded: {
+        status: "danger",
+        text: "The job creating this dataset was cancelled before completion.",
+    },
     //TODO: not in trans.app.model.Dataset.states - is in database
     /** not accessible to the current user (i.e. due to permissions) */
-    noPermission: "danger",
+    noPermission: {
+        status: "danger",
+        text: "You do not have permission to view this dataset.",
+    },
     // found in job-state summary model?
     // this an actual state value or something derived from deleted prop?
-    deleted: "danger",
-    loading: "warning",
+    deleted: {
+        status: "danger",
+    },
+    loading: {
+        status: "warning",
+    },
 };
