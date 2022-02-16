@@ -342,7 +342,7 @@ to specific handlers, or to handler tags, as in the following example:
    ``handler3`` will *only* handle executions of tool ``test1``.
 ```
 
-`run.sh` will start the gunicorn and job handler process(es), but if you are not using run.sh or the generated supervisor setup you will need to start the webless handler processes yourself. This is done on the command line like so:
+`run.sh` will start the gunicorn and job handler process(es), but if you are not using `run.sh` or the generated supervisor setup you will need to start the webless handler processes yourself. This is done on the command line like so:
 
 ```console
 $ cd /srv/galaxy/server
