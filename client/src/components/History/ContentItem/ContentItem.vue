@@ -60,7 +60,7 @@
                 </h5>
             </div>
         </div>
-        <ContentDetails v-if="expanded" :item="item" />
+        <ContentDetails v-if="expanded" @edit="$emit('edit', $event)" :item="item" />
     </div>
 </template>
 
