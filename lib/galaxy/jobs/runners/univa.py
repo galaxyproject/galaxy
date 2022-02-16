@@ -32,6 +32,7 @@ import logging
 import re
 import signal
 import time
+from math import inf
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import (
@@ -566,8 +567,8 @@ def _parse_native_specs(job_id, native_spec):
     specification string passed to GE
     return time,mem (or None,None if nothing found)
     """
-    tme = None
-    mem = None
+    tme = inf
+    mem = inf
     # parse time
     m = re.search(r"rt=([0-9:]+)[\s,]*", native_spec)
     if m is not None:
