@@ -1,7 +1,7 @@
 <template>
     <div :class="['content-item m-1 p-0 rounded', clsStatus]">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
-            <div class="overflow-hidden">
+            <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
                         v-if="expandable"

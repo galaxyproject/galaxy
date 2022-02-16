@@ -30,7 +30,7 @@ export default {
     data() {
         return {
             items: [],
-            throttlePeriod: 10,
+            throttlePeriod: 20,
             deltaMax: 20,
             queryCurrent: this.queryKey,
         };
