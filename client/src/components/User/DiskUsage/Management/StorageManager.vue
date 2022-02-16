@@ -3,7 +3,7 @@
         <b-container fluid>
             <b-link to="StorageDashboard">{{ goBackText }}</b-link>
             <h2 class="text-center my-3">
-                <b>{{ title }}</b>
+                <b>{{ title }}</b> <sup class="text-secondary">(Beta)</sup>
             </h2>
 
             <b-row class="justify-content-md-center mb-5">
@@ -15,7 +15,7 @@
 
             <CleanupCategoriesProvider v-slot="{ categories }">
                 <div id="categories-panel">
-                    <div v-for="category in categories" :key="category.id">
+                    <b-container v-for="category in categories" :key="category.id">
                         <b-row class="justify-content-md-center mb-2">
                             <h3>
                                 <b>{{ category.name }}</b>
@@ -31,7 +31,7 @@
                                     @onReviewItems="onReviewItems" />
                             </b-card-group>
                         </b-row>
-                    </div>
+                    </b-container>
                 </div>
             </CleanupCategoriesProvider>
 
