@@ -36,6 +36,7 @@
                                 :id="item.element_index"
                                 :name="item.element_identifier"
                                 :expandable="item.element_type == 'hda'"
+                                :state="item.object.state"
                                 :expanded="isExpanded(item)"
                                 :writeable="false"
                                 @update:expanded="setExpanded(item, $event)"
