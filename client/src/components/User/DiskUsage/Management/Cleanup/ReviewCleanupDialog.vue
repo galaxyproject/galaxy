@@ -7,11 +7,16 @@
             centered
             @show="onShowModal"
             v-model="showDialog">
+            <div>
+                {{ captionText }}
+                <b>
+                    <b-link @click="onSelectAllItems">select all {{ totalItems }} items</b-link>
+                </b>
+            </div>
             <b-table
                 v-if="operation"
                 id="cleanable-items-table"
                 hover
-                caption-top
                 :fields="fields"
                 :items="itemsProvider"
                 v-model="items"
@@ -20,10 +25,8 @@
                 no-local-sorting
                 no-provider-filtering
                 @sort-changed="onSort"
+                :busy="isBusy"
                 sticky-header="50vh">
-                <template v-slot:table-caption>
-                    {{ captionText }}
-                </template>
                 <template v-slot:head(selected)>
                     <b-form-checkbox
                         v-model="allSelected"
@@ -126,8 +129,9 @@ export default {
             selectedItems: [],
             confirmChecked: false,
             permanentlyDeleteText: _l("Permanently delete"),
-            captionText: _l("To free up account space, select items to be permanently deleted."),
+            captionText: _l("To free up account space, review and select items to be permanently deleted or"),
             agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
+            isBusy: false,
         };
     },
     methods: {
@@ -172,6 +176,18 @@ export default {
             } catch (error) {
                 return [];
             }
+        },
+        async onSelectAllItems() {
+            this.isBusy = true;
+            const options = {
+                offset: 0,
+                limit: this.totalRows,
+                sortBy: this.sortBy,
+                sortDesc: this.sortDesc,
+            };
+            const allItems = await this.operation.fetchItems(options);
+            this.selectedItems = allItems;
+            this.isBusy = false;
         },
     },
     computed: {
