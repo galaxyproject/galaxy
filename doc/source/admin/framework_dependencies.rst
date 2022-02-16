@@ -182,47 +182,6 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
 .. _Bioconda: https://bioconda.github.io/
 
 
-Unpinned dependencies
-^^^^^^^^^^^^^^^^^^^^^
-
-.. danger::
-
-    Unpinned dependencies may be useful for development but should not be used in production. Please do not install
-    unpinned dependencies unless you know what you're doing. While the :doc:`Galaxy Committers </project/organization>`
-    will do their best to keep dependencies updated, they cannot provide support for problems arising from unpinned
-    dependencies.
-
-Galaxy's dependencies can be installed either "pinned" (they will be installed at exact versions specified for your
-Galaxy release) or "unpinned" (the latest versions of all dependencies will be installed unless there are known
-incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
-
-1. Using pinned versions insures that the prebuilt wheels will be installed, and no
-   compilation will be necessary.
-
-2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
-   pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
-   are released while the Galaxy release receives fewer updates.
-
-3. Pinning furthers Galaxy's goal of reproducibility as differing dependency versions could result in non-reproducible
-   behavior.
-
-If you would like to install unpinned versions of Galaxy's dependencies, install dependencies using the `unpinned
-requirements file`_, and then instruct Galaxy to start without attempting to fetch wheels:
-
-.. code-block:: console
-
-    (venv)$ pip install -r lib/galaxy/dependencies/requirements.txt
-    (venv)$ deactivate
-    $ sh run.sh --no-create-venv --skip-wheels
-
-You may be able to save yourself some compiling by adding the argument ``--index-url
-https://wheels.galaxyproject.org/simple/`` to ``pip install``, but it is possible to install all of Galaxy's
-dependencies directly from PyPI_.
-
-.. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
-.. _PyPI: https://pypi.org
-
-
 Adding additional Galaxy dependencies
 -------------------------------------
 
