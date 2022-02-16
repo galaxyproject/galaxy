@@ -183,7 +183,7 @@ gravity:
   gunicorn:
     # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
-    bind: 'localhost:8080'
+    bind: '127.0.0.1:8080'
     # performance options
     workers: 1
     # Other options that will be passed to gunicorn
@@ -254,42 +254,24 @@ gravity:
 
 **Without a proxy server** or with a proxy server that does not speak the uWSGI native protocol:
 
-uWSGI can be configured to serve HTTP and/or HTTPS directly:
+It is strongly recommended to use a proxy server.
+
+gunicorn can be configured to serve HTTPS directly:
 
 ```yaml
   # listening options
-  http: :8080
-  https: :8443,server.crt,server.key
-  static-map: /static=static
+  gunicorn:
+    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
+    # listening options
+    bind: '0.0.0.0:443'
+    keyfile: server.key
+    certfile: server.crt
 ```
+
+See [Gunicorn's SSL documentation](https://docs.gunicorn.org/en/latest/settings.html#ssl) for more details.
 
 To bind to ports < 1024 (e.g. if you want to bind to the standard HTTP/HTTPS ports 80/443), you must bind as the `root`
-user and drop privileges to the Galaxy user with a configuration such as:
-
-```yaml
-  # listening options
-  shared-socket: :80
-  shared-socket: :443,server.crt,server.key
-  http: =0
-  https: =1
-  uid: galaxy
-  gid: galaxy
-  static-map: /static=static
-```
-
-To redirect HTTP traffic to the HTTPS port rather than serving Galaxy over HTTP, change `http: =0` in the above example
-to `http-to-https: =0`.
-
-Because `run.sh` performs setup steps, **it should not be run as `root`**. Instead, you can run uWSGI directly as root
-with:
-
-```console
-# cd /srv/galaxy/server
-# ./.venv/bin/uwsgi --yaml config/galaxy.yml
-```
-
-You can run the startup-time setup steps as the galaxy user after upgrading Galaxy with `sh
-./scripts/common_startup.sh`.
+user and drop privileges to the Galaxy user. However you are strongly encouraged to setup [Apache](apache.md) or [nginx](nginx.md) instead.
 
 ### Job Handling
 
