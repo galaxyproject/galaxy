@@ -33,7 +33,7 @@ Gunicorn. For information about uWSGI in the Galaxy context please consult the v
 appropriate to your Galaxy version.
 
 Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
-and we will drop support for being run as a WSGI application, and hence uWSGI compatibility in Galaxy release 22.05.
+and we will drop support for being run as a WSGI application via uWSGI in Galaxy release 22.05.
 
 [Gunicorn]: https://gunicorn.org/
 [paste]: https://paste.readthedocs.io/
@@ -59,7 +59,7 @@ Referred to in this documentation as the **all-in-one** strategy.
 Under this strategy, jobs will be handled by Gunicorn workers. Having web processes handle jobs will negatively impact
 UI/API performance.
 
-This is the default out-of-the-box configuration as of Galaxy Release 22.01.
+This is the default out-of-the-box configuration.
 
 ### Gunicorn for web serving and Webless Galaxy applications as job handlers
 
@@ -156,11 +156,10 @@ The preferred assignment method is *Database SKIP LOCKED* or *Database Transacti
 
 ### Gunicorn
 
-We will only outline a few of Gunicorn's options. Consult the Gunicorn documentation for more:
+We will only outline a few of Gunicorn's options, consult the [Gunicorn documentation](https://docs.gunicorn.org/en/latest/settings.html) for more.
 
-* [Configuring Gunicorn](https://docs.gunicorn.org/en/latest/settings.html)
 
-Note that by default Galaxy will use [gravity](LINK) to create a [supervisor](LINK) configuration that
+Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration that
 uses Gunicorn configuration values read from the `gravity` section of your `galaxy.yml` file.
 This is the preferred and out-of-the box way of configuring Gunicorn for serving Galaxy.
 If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager
@@ -191,14 +190,12 @@ gravity:
 
 ```
 
-Some of these options warrant explanation:
+Some of these options deserve explanation:
 
 * `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
   attained by increasing this value. If Gunicorn is the only application on the server the number of CPUs * 2 + 1 is
   a good starting value, 4 - 12 workers should be able to handle hundreds if not thousands of requests per second.
 * `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
-
-Additional options are explained in the [uWSGI Minutiae](#uwsgi-minutiae) below.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
