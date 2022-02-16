@@ -1,26 +1,31 @@
 <template>
-    <b-modal id="cleanup-result-modal" :title="title" title-tag="h2" hide-footer>
+    <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer :static="true">
         <div class="text-center">
-            <b-spinner v-if="isLoading" class="mx-auto" />
+            <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
             <div v-else>
-                <b-alert v-if="result.hasFailed" show variant="danger">
+                <b-alert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">
                     {{ result.errorMessage }}
                 </b-alert>
-                <div v-else-if="result.isPartialSuccess">
+                <h3 v-else-if="result.success" data-test-id="success-info">
+                    You've cleared <b>{{ result.niceTotalFreeBytes }}</b>
+                </h3>
+                <div v-else-if="result.isPartialSuccess" data-test-id="partial-success-info">
                     <h3>
                         You've successfully cleared <b>{{ result.totalCleaned }}</b> items for a total of
-                        <b>{{ niceTotalSpaceFreed }}</b> but...
+                        <b>{{ result.niceTotalFreeBytes }}</b> but...
                     </h3>
                     <b-alert v-if="result.hasSomeErrors" show variant="warning">
                         <h3 class="mb-0">
                             <b>{{ result.errors.length }}</b> items couldn't be cleared
                         </h3>
                     </b-alert>
-                    <b-table-lite :fields="errorFields" :items="result.errors" small />
                 </div>
-                <h3 v-else-if="result.success">
-                    You've cleared <b>{{ niceTotalSpaceFreed }}</b>
-                </h3>
+                <b-table-lite
+                    v-if="result.hasSomeErrors"
+                    :fields="errorFields"
+                    :items="result.errors"
+                    small
+                    data-test-id="errors-table" />
             </div>
         </div>
     </b-modal>
@@ -28,7 +33,6 @@
 
 <script>
 import _l from "utils/localization";
-import { bytesToString } from "utils/utils";
 import { CleanupResult } from "./model";
 
 export default {
@@ -38,9 +42,17 @@ export default {
             required: false,
             default: null,
         },
+        show: {
+            type: Boolean,
+            required: false,
+        },
+    },
+    created() {
+        this.showModal = this.show;
     },
     data() {
         return {
+            showModal: false,
             errorFields: [
                 { key: "name", label: _l("Name") },
                 { key: "reason", label: _l("Reason") },
@@ -51,10 +63,6 @@ export default {
         /** @returns {Boolean} */
         isLoading() {
             return this.result === null;
-        },
-        /** @returns {String} */
-        niceTotalSpaceFreed() {
-            return bytesToString(this.result?.totalFreeBytes, true);
         },
         /** @returns {String} */
         title() {

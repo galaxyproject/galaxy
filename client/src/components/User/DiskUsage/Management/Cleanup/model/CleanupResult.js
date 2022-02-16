@@ -1,12 +1,14 @@
+import { bytesToString } from "utils/utils";
+
 /**
  * Contains information about the result of the cleaning operation.
  */
 export class CleanupResult {
-    constructor() {
-        this.totalItemCount = 0;
-        this.totalFreeBytes = 0;
-        this.errors = [];
-        this.errorMessage = null;
+    constructor(props = {}) {
+        this.totalItemCount = props.totalItemCount || 0;
+        this.totalFreeBytes = props.totalFreeBytes || 0;
+        this.errors = props.errors || [];
+        this.errorMessage = props.errorMessage || null;
     }
 
     /**
@@ -15,7 +17,7 @@ export class CleanupResult {
      * @returns {boolean}
      */
     get hasSomeErrors() {
-        return this.errors.length > 0 || this.errorMessage !== null;
+        return this.errors.length > 0;
     }
 
     /**
@@ -50,5 +52,13 @@ export class CleanupResult {
      */
     get isPartialSuccess() {
         return this.errors.length > 0 && this.totalCleaned > 0;
+    }
+
+    /**
+     * The total amount of disk space freed by the cleanup operation.
+     * @returns {String}
+     */
+    get niceTotalFreeBytes() {
+        return bytesToString(this.totalFreeBytes, true);
     }
 }
