@@ -1,57 +1,46 @@
 <template>
-    <div class="p-2 details">
-        Content Details
-        <h4 data-description="dataset name">{{ item.name || "(Dataset Name)" }}</h4>
-    </div>
+    <UrlDataProvider :url="dataUrl" v-slot="{ loading, result: dataset }">
+        <div class="p-2 details">
+            <div class="summary">
+                <div v-if="dataset.misc_blurb" class="blurb">
+                    <span class="value">{{ dataset.misc_blurb }}</span>
+                </div>
+                <div v-if="dataset.file_ext" class="datatype">
+                    <label class="prompt" v-localize>format</label>
+                    <span class="value">{{ dataset.file_ext }}</span>
+                </div>
+                <div v-if="dataset.genome_build" class="dbkey">
+                    <label class="prompt" v-localize>database</label>
+                    <b-link class="value" @click.stop="listeners['edit']()">{{ dataset.genome_build }}</b-link>
+                </div>
+                <div v-if="dataset.misc_info" class="info">
+                    <span class="value">{{ dataset.misc_info }}</span>
+                </div>
+            </div>
+            <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek" />
+        </div>
+    </UrlDataProvider>
 </template>
 
 <script>
-import Placeholder from "./Placeholder";
-import Dataset from "./Dataset/Dataset";
-import DatasetCollection from "./DatasetCollection";
-import Subdataset from "./Subdataset";
-import Subcollection from "./Subcollection";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
 
 export default {
     components: {
-        Placeholder,
-        Dataset,
-        DatasetCollection,
-        Subdataset,
-        Subcollection,
+        UrlDataProvider,
     },
     props: {
         item: { type: Object, required: true },
     },
-    methods: {
-        contentItemComponent() {
-            if (this.item.id === undefined) {
-                return "Placeholder";
-            }
-            return this.historyContentItem();
+    computed: {
+        dataUrl() {
+            //object.id and item.element_type == "hda"
+            const datasetId = this.item.id;
+            return `api/datasets/${datasetId}`;
         },
-        historyContentItem() {
-            const { history_content_type } = this.item;
-            switch (history_content_type) {
-                case "dataset":
-                    return "Dataset";
-                case "dataset_collection":
-                    return "DatasetCollection";
-                default:
-                    return "Placeholder";
-            }
-        },
-        collectionContentItem() {
-            const { element_type } = this.item;
-            switch (element_type) {
-                case "hda":
-                    return "Subdataset";
-                case "hdca":
-                    return "Subcollection";
-                default:
-                    return "Placeholder";
-            }
-        },
+    },
+    created() {
+        console.log(this.item);
     },
 };
 </script>

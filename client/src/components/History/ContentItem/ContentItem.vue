@@ -92,9 +92,6 @@ export default {
             }
         },
     },
-    created() {
-        console.log(this.item);
-    },
     methods: {
         onClick() {
             if (this.expandable) {
