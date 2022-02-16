@@ -113,7 +113,7 @@ either through the props, and make updates through the events -->
             </div>
 
             <div class="details">
-                <DatasetSummary :dataset="dataset" class="summary" @edit="edit" />
+                
 
                 <div class="display-applications" v-if="dataset.displayLinks.length">
                     <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
@@ -138,7 +138,6 @@ import { Dataset, STATES } from "components/History/model";
 import { Nametag } from "components/Nametags";
 import StatusIcon from "components/History/StatusIcon";
 import DatasetMenu from "./DatasetMenu";
-import DatasetSummary from "./Summary";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import IconButton from "components/IconButton";
 import EditorMenu from "components/History/EditorMenu";
@@ -149,7 +148,6 @@ export default {
     components: {
         StatusIcon,
         DatasetMenu,
-        DatasetSummary,
         Nametag,
         IconButton,
         EditorMenu,

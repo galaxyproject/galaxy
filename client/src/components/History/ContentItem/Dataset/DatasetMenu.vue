@@ -70,6 +70,7 @@
                         <span v-localize>{{ "Download " + mf.file_type }}</span>
                     </b-dropdown-item>
                 </b-dropdown-group>
+
                 <b-dropdown-item
                     v-else-if="showDownloads"
                     title="Download"
@@ -80,6 +81,7 @@
                     <Icon icon="download" class="mr-1" />
                     <span v-localize>Download</span>
                 </b-dropdown-item>
+
                 <b-dropdown-item
                     v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
                     title="Run job again"
@@ -92,6 +94,7 @@
                     <Icon icon="play" class="mr-1" />
                     <span v-localize>Run job again</span>
                 </b-dropdown-item>
+
                 <b-dropdown-item
                     v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
                     title="Visualize Data"
@@ -99,6 +102,7 @@
                     <Icon icon="chart-area" class="mr-1" />
                     <span v-localize>Visualize Data</span>
                 </b-dropdown-item>
+
                 <b-dropdown-item
                     v-if="currentUser && currentUser.id && dataset.creating_job"
                     title="Tool Help"
@@ -106,6 +110,7 @@
                     <Icon icon="question" class="mr-1" />
                     <span v-localize>Tool Help</span>
                 </b-dropdown-item>
+
                 <b-dropdown-item
                     v-if="notIn(STATES.NOT_VIEWABLE)"
                     key="dataset-details"
