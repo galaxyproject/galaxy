@@ -187,8 +187,9 @@ Adding additional Galaxy dependencies
 
 New packages can be added to Galaxy, or the versions of existing packages can be updated, using `poetry`_ and `Starforge Recipes`_, Galaxy's Docker-based build system.
 
-The process is still under development and will be streamlined and automated over time. For the time being, please use
-the following process to add new packages and have their wheels built:
+The process is still under development and will be streamlined and automated over time.
+If wheels exist on PyPI for all supported platforms and python versions you can skip
+to step 3 in the process below.
 
 1. Clone https://github.com/galaxyproject/starforge-recipes/ and add or edit the wheel you would like to build under the wheels/ directory.
 
