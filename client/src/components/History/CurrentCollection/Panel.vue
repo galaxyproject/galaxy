@@ -35,11 +35,11 @@
                                 :item="item"
                                 :id="item.element_index"
                                 :name="item.element_identifier"
+                                :expandable="item.element_type == 'hda'"
                                 :expanded="isExpanded(item)"
                                 :writeable="false"
-                                :selectable="false"
                                 @update:expanded="setExpanded(item, $event)"
-                                @viewCollection="$emit('viewCollection', item)" />
+                                @drilldown="$emit('viewCollection', item)" />
                         </template>
                     </HistoryListing>
                 </template>

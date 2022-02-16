@@ -1,10 +1,10 @@
 <template>
-    <div :class="['content-item m-1 p-0 rounded', clsState]">
+    <div :class="['content-item m-1 p-0 rounded', clsStatus]">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="isDataset"
+                        v-if="expandable"
                         class="px-1"
                         title="Display"
                         size="sm"
@@ -13,7 +13,7 @@
                         <span class="fa fa-eye" />
                     </b-button>
                     <b-button
-                        v-if="isDataset"
+                        v-if="expandable"
                         class="px-1"
                         title="Edit"
                         size="sm"
@@ -72,7 +72,7 @@
 
 <script>
 import ContentDetails from "./ContentDetails";
-import ContentState from "./ContentState";
+import ContentStatus from "./ContentStatus";
 export default {
     components: {
         ContentDetails,
@@ -84,19 +84,18 @@ export default {
         state: { type: String, default: null },
         expanded: { type: Boolean, required: true },
         selected: { type: Boolean, default: false },
+        expandable: { type: Boolean, default: true },
         selectable: { type: Boolean, default: false },
         writeable: { type: Boolean, default: true },
     },
     computed: {
-        isDataset() {
-            return this.item.history_content_type == "dataset" || this.item.element_type == "hda";
-        },
-        clsState() {
-            let state = ContentState[this.state];
-            if (!state || this.selected) {
-                state = "info";
+        clsStatus() {
+            const status = ContentStatus[this.state];
+            if (!status || this.selected) {
+                return "alert-info";
+            } else {
+                return `alert-${status}`;
             }
-            return `alert-${state}`;
         },
     },
     created() {
@@ -104,10 +103,10 @@ export default {
     },
     methods: {
         onClick() {
-            if (this.isDataset) {
+            if (this.expandable) {
                 this.$emit("update:expanded", !this.expanded);
             } else {
-                this.$emit("viewCollection", this.item);
+                this.$emit("drilldown", this.item);
             }
         },
     },
