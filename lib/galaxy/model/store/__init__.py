@@ -1142,7 +1142,7 @@ class DirectoryModelExportStore(ModelExportStore):
         datasets = query.all()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
-            add_dataset = (not dataset.visible or not include_hidden) and (not dataset.deleted or include_deleted)
+            add_dataset = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
             if dataset.id in self.collection_datasets:
                 add_dataset = True
 
