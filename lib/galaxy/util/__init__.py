@@ -50,9 +50,11 @@ from boltons.iterutils import (
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    Element = etree._Element
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+    Element = etree.Element
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 

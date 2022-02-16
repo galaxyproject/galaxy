@@ -642,11 +642,12 @@ def test_loader_specify_nested_macro_by_token():
         # test with re because loading from external macros
         # adds a xml:base property (containing the source path)
         # to the node which is printed
+        print(f"{xml_to_string(xml, pretty=True)}")
         assert re.match(r"""<\?xml version="1\.0" \?>
 <tool>
     <macros/>
-    <A xml:base=".*/external.xml"/>
-    <B xml:base=".*/external.xml"/>
+    <A/>
+    <B/>
 </tool>""", xml_to_string(xml, pretty=True), re.MULTILINE)
 
 

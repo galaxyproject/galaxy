@@ -1285,7 +1285,7 @@ COMPLETE_MACROS = """<macros>
 """
 
 
-def test_tool_and_macro_xml(lint_ctx_xpath):
+def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
     """
     test linters (all of them via lint_tool_source_with) on a tool and macro xml file
     checking a list of asserts, where each assert is a 4-tuple:
@@ -1304,21 +1304,29 @@ def test_tool_and_macro_xml(lint_ctx_xpath):
         tool_xml, _ = load_with_references(tool_path)
 
     tool_source = XmlToolSource(tool_xml)
+    # lint once with the lint context using XMLLintMessageXPath and XMLLintMessageLine
     lint_tool_source_with(lint_ctx_xpath, tool_source)
+    lint_tool_source_with(lint_ctx, tool_source)
 
     asserts = (
-        ("Select parameter [select] has multiple options with the same value", "tool.xml", 5, "/tool/inputs/param[1]"),
-        ("Found param input with no name specified.", "tool.xml", 13, "/tool/inputs/param[2]"),
-        ("Param input [No_type] input with no type specified.", "macros.xml", 3, "/tool/inputs/param[3]")
+        ("Select parameter [select] has multiple options with the same value", 5, "/tool/inputs/param[1]"),
+        ("Found param input with no name specified.", 13, "/tool/inputs/param[2]"),
+        ("Param input [No_type] input with no type specified.", 3, "/tool/inputs/param[3]")
     )
     for a in asserts:
-        message, fname, line, xpath = a
+        message, line, xpath = a
         found = False
         for lint_message in lint_ctx_xpath.message_list:
             if lint_message.message != message:
                 continue
             found = True
-            assert lint_message.xpath == xpath, f"Assumed xpath {xpath} xpath {lint_message.xpath} for: {message}"
+            assert lint_message.xpath == xpath, f"Assumed xpath {xpath}; found xpath {lint_message.xpath} for: {message}"
+        assert found, f"Did not find {message}"
+        for lint_message in lint_ctx.message_list:
+            if lint_message.message != message:
+                continue
+            found = True
+            assert lint_message.line == line, f"Assumed line {line}; found line {lint_message.line} for: {message}"
         assert found, f"Did not find {message}"
 
 
