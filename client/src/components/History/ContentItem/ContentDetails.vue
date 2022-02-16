@@ -1,23 +1,25 @@
 <template>
-    <UrlDataProvider :url="dataUrl" v-slot="{ loading, result: dataset }">
-        <div class="p-2 details">
-            <div class="summary">
-                <div v-if="dataset.misc_blurb" class="blurb">
-                    <span class="value">{{ dataset.misc_blurb }}</span>
+    <UrlDataProvider :url="dataUrl" v-slot="{ loading, result }">
+        <div v-if="!loading" class="dataset">
+            <div class="p-2 details">
+                <div class="summary">
+                    <div v-if="result.misc_blurb" class="blurb">
+                        <span class="value">{{ result.misc_blurb }}</span>
+                    </div>
+                    <span v-if="result.file_ext" class="datatype">
+                        <label class="prompt" v-localize>format</label>
+                        <span class="value">{{ result.file_ext }}</span>
+                    </span>
+                    <span v-if="result.genome_build" class="dbkey">
+                        <label class="prompt" v-localize>database</label>
+                        <b-link class="value" @click.stop="$emit('edit', dataset)">{{ result.genome_build }}</b-link>
+                    </span>
+                    <div v-if="result.misc_info" class="info">
+                        <span class="value">{{ result.misc_info }}</span>
+                    </div>
                 </div>
-                <div v-if="dataset.file_ext" class="datatype">
-                    <label class="prompt" v-localize>format</label>
-                    <span class="value">{{ dataset.file_ext }}</span>
-                </div>
-                <div v-if="dataset.genome_build" class="dbkey">
-                    <label class="prompt" v-localize>database</label>
-                    <b-link class="value" @click.stop="listeners['edit']()">{{ dataset.genome_build }}</b-link>
-                </div>
-                <div v-if="dataset.misc_info" class="info">
-                    <span class="value">{{ dataset.misc_info }}</span>
-                </div>
+                <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
-            <pre v-if="dataset.peek" class="dataset-peek p-1" v-html="dataset.peek" />
         </div>
     </UrlDataProvider>
 </template>
@@ -33,9 +35,11 @@ export default {
         item: { type: Object, required: true },
     },
     computed: {
+        dataset() {
+            return this.item.object || this.item;
+        },
         dataUrl() {
-            //object.id and item.element_type == "hda"
-            const datasetId = this.item.id;
+            const datasetId = this.dataset.id;
             return `api/datasets/${datasetId}`;
         },
     },
