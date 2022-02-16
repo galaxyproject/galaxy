@@ -337,7 +337,7 @@ class JobHandlerQueue(Monitors):
         if self.sa_session.dirty:
             self.sa_session.flush()
 
-    def __recover_job_wrapper(self, job):
+    def __recover_job_wrapper(self, job, resubmit=False):
         # Already dispatched and running
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
@@ -357,7 +357,10 @@ class JobHandlerQueue(Monitors):
                 job.id,
                 job.destination_id,
             )
-        job_wrapper.job_runner_mapper.cache_job_destination(job_destination)
+        if resubmit:
+            job_wrapper.job_runner_mapper.cache_job_destination(job_destination)
+        else:
+            job_wrapper.job_runner_mapper.cached_job_destination = job_destination
         return job_wrapper
 
     def __monitor(self):
@@ -499,7 +502,7 @@ class JobHandlerQueue(Monitors):
         for job in resubmit_jobs:
             log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
             # Reassemble resubmit job destination from persisted value
-            jw = self.__recover_job_wrapper(job)
+            jw = self.__recover_job_wrapper(job, resubmit=True)
             if jw.is_ready_for_resubmission(job):
                 self.increase_running_job_count(job.user_id, jw.job_destination.id)
                 self.dispatcher.put(jw)
