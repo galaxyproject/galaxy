@@ -102,4 +102,9 @@ export default {
 .content-item:hover {
     filter: brightness(105%);
 }
+.content-item {
+    .name {
+        word-wrap: break-word;
+    }
+}
 </style>
