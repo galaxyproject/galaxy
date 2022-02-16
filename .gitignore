@@ -2,9 +2,9 @@
 # Note: mgm.ini should be renamed to amp_mgm.ini, hmgm.ini and azure.ini should be removed
 # from any local repo since they have been merged into amp_mgm.ini
 config/amp_mgm.ini
-config/mgm.ini
-config/hmgm.ini
-config/azure.ini
+
+# tools including AMP MGMs
+tools/amp_mgms
 
 # AMP project files
 /.project
