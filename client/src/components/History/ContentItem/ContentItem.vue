@@ -40,7 +40,7 @@
                         size="sm"
                         variant="link"
                         @click.stop="$emit('unhide', item)">
-                        <span class="fa fa-eye-slash" />
+                        <span class="fa fa-unlock" />
                     </b-button>
                 </div>
                 <h5 class="float-left p-1 w-75 font-weight-bold">
