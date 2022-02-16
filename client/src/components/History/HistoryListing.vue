@@ -4,7 +4,7 @@
         @scroll.prevent="onScrollThrottle"
         @wheel.prevent="onScrollThrottle"
         @touchmove.prevent="onScrollThrottle">
-        <virtual-list ref="listing" class="listing" data-key="hid" :data-sources="getItems" :data-component="{}">
+        <virtual-list ref="listing" class="listing" :data-key="itemKey" :data-sources="getItems" :data-component="{}">
             <template v-slot:item="{ item }">
                 <slot name="history-item" :item="item" />
             </template>

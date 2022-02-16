@@ -22,7 +22,7 @@
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
-                        v-if="item.deleted"
+                        v-if="writeable && item.deleted"
                         class="px-1"
                         title="Undelete"
                         size="sm"
@@ -32,7 +32,7 @@
                         <span class="fa fa-trash-restore" />
                     </b-button>
                     <b-button
-                        v-else
+                        v-else-if="writeable"
                         class="px-1"
                         title="Delete"
                         size="sm"
@@ -41,7 +41,7 @@
                         <span class="fa fa-trash" />
                     </b-button>
                     <b-button
-                        v-if="!item.visible"
+                        v-if="writeable && !item.visible"
                         class="px-1"
                         title="Unhide"
                         size="sm"
@@ -81,25 +81,26 @@ export default {
         item: { type: Object, required: true },
         id: { type: Number, required: true },
         name: { type: String, required: true },
+        state: { type: String, default: null },
         expanded: { type: Boolean, required: true },
-        selected: { type: Boolean, required: true },
-        showSelection: { type: Boolean, required: false, default: false },
-        writable: { type: Boolean, required: false, default: true },
+        selected: { type: Boolean, default: false },
+        selectable: { type: Boolean, default: false },
+        writeable: { type: Boolean, default: true },
     },
     computed: {
-        selectable() {
-            return this.showSelection;
-        },
         isDataset() {
-            return this.item.history_content_type == "dataset";
+            return this.item.history_content_type == "dataset" || this.item.element_type == "hda";
         },
         clsState() {
-            let state = ContentState[this.item.state] || ContentState[this.item.populated_state];
+            let state = ContentState[this.state];
             if (!state || this.selected) {
                 state = "info";
             }
             return `alert-${state}`;
         },
+    },
+    created() {
+        console.log(this.item);
     },
     methods: {
         onClick() {
