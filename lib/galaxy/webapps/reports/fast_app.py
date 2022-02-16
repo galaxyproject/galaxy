@@ -1,5 +1,5 @@
+from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 
 from galaxy.webapps.base.api import (
     add_exception_handler,
