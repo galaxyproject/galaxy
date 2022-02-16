@@ -366,8 +366,29 @@ as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods
 </job_conf>
 ```
 
+To let gravity know how many webless handler processes should be started set the `job_handler_count` value in galaxy.yml:
+
+```yaml
+gravity:
+  ...
+  job_handler_count: 4
+  ...
+```
+
 As with statically defined handlers, `run.sh` will start the process(es), but if you are not using `run.sh` or the generated supervisor config you will need to start the webless handler processes yourself. This is done on the command line like so (note the addition of the `--attach-to-pool`
 option):
+
+TODO: `job_handler_count` doesn't really make sense if you have multiple pools. Could be
+
+```yaml
+gravity:
+  ...
+  job_handler_count:
+    _default_: 4
+    special: 2
+```
+
+?
 
 ```console
 $ cd /srv/galaxy/server
