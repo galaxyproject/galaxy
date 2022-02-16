@@ -32,6 +32,30 @@ def test_import_export_history_failed_job():
     _assert_simple_cat_job_imported(imported_history, state='error')
 
 
+def test_import_export_history_hidden_false_with_hidden_dataset():
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    d2.visible = False
+    app.model.session.flush()
+
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
+    assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
+    assert imported_history.datasets[1].get_size() == 0
+
+
+def test_import_export_history_hidden_true_with_hidden_dataset():
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    d2.visible = False
+    app.model.session.flush()
+
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
+    assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
+    assert d2.dataset.get_size() == imported_history.datasets[1].get_size()
+
+
 def test_import_export_bag_archive():
     """Test a simple job import/export using a BagIt archive."""
     dest_parent = mkdtemp()
@@ -460,13 +484,13 @@ def _setup_simple_cat_job(app, state='ok'):
     return u, h, d1, d2, j
 
 
-def _import_export_history(app, h, dest_export=None, export_files=None):
+def _import_export_history(app, h, dest_export=None, export_files=None, include_hidden=False):
     if dest_export is None:
         dest_parent = mkdtemp()
         dest_export = os.path.join(dest_parent, "moo.tgz")
 
     with store.TarModelExportStore(dest_export, app=app, export_files=export_files) as export_store:
-        export_store.export_history(h)
+        export_store.export_history(h, include_hidden=include_hidden)
 
     imported_history = import_archive(dest_export, app, h.user)
     assert imported_history
