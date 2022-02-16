@@ -152,6 +152,18 @@ function searchInput(parentNode, options) {
                     .popover("show");
             });
     }
+    // Hack to hide the advanced search popover when clicking outside
+    $("body").on("click", function (e) {
+        $('[data-toggle="advSearchPopover"]').each(function () {
+            if (
+                !$(this).is(e.target) &&
+                $(this).has(e.target).length === 0 &&
+                $(".popover").has(e.target).length === 0
+            ) {
+                $(this).popover("hide");
+            }
+        });
+    });
 
     // .................................................................... loadingIndicator rendering
     // a button for clearing the search bar, placed on the right hand side

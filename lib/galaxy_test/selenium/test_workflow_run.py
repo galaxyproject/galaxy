@@ -192,6 +192,34 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_text_default_value_connected_to_restricted_select(self):
+        self.open_in_workflow_run(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    optional: true
+    default: ex2
+    restrictOnConnections: true
+    type: text
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+"""
+        )
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
+
+    @selenium_test
+    @managed_history
     def test_execution_with_rules(self):
         history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_RULES_1)
         self.open_in_workflow_run(WORKFLOW_WITH_RULES_1)

@@ -526,6 +526,9 @@ workflow_run:
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
     validation_error: ".validation-error"
+    input_select_field:
+      type: xpath
+      selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
 
 workflow_editor:
 
