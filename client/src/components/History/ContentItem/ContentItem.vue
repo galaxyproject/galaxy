@@ -1,9 +1,10 @@
 <template>
     <div :class="['content-item m-1 p-0 rounded', clsState]">
-        <div class="p-1 cursor-pointer" @click.stop="$emit('update:expanded', !expanded)">
+        <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
+                        v-if="isDataset"
                         class="px-1"
                         title="Display"
                         size="sm"
@@ -11,7 +12,13 @@
                         @click.stop="$emit('display', item)">
                         <span class="fa fa-eye" />
                     </b-button>
-                    <b-button class="px-1" title="Edit" size="sm" variant="link" @click.stop="$emit('edit', item)">
+                    <b-button
+                        v-if="isDataset"
+                        class="px-1"
+                        title="Edit"
+                        size="sm"
+                        variant="link"
+                        @click.stop="$emit('edit', item)">
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
@@ -83,6 +90,9 @@ export default {
         selectable() {
             return this.showSelection;
         },
+        isDataset() {
+            return this.item.history_content_type == "dataset";
+        },
         clsState() {
             let state = ContentState[this.item.state] || ContentState[this.item.populated_state];
             if (!state || this.selected) {
@@ -91,10 +101,14 @@ export default {
             return `alert-${state}`;
         },
     },
-    created() {
-        if (this.item.history_content_type != "dataset") {
-            console.log(this.item);
-        }
+    methods: {
+        onClick() {
+            if (this.isDataset) {
+                this.$emit("update:expanded", !this.expanded);
+            } else {
+                this.$emit("viewCollection", this.item);
+            }
+        },
     },
 };
 </script>
