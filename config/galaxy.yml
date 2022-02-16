@@ -138,7 +138,8 @@ galaxy:
   # files.
   # The value of this option will be resolved with respect to
   # <config_dir>.
-  tool_config_file: tool_conf.xml  
+  # tool_config_file: tool_conf.xml  
+  tool_config_file: amp_tool_conf.xml  
 
   # Monitor the tools and tool directories listed in any tool config
   # file specified in tool_config_file option.  If changes are found,
