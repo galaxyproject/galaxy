@@ -40,8 +40,8 @@ def test_import_export_history_hidden_false_with_hidden_dataset():
     app.model.session.flush()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
-    assert d2.dataset.get_size() > 0
-    assert imported_history.datasets[-1].get_size() == 0
+    assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
+    assert imported_history.datasets[1].get_size() == 0
 
 
 def test_import_export_history_hidden_true_with_hidden_dataset():
@@ -52,8 +52,8 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
     app.model.session.flush()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
-    assert d2.dataset.get_size() > 0
-    assert imported_history.datasets[-1].get_size() > 0
+    assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
+    assert d2.dataset.get_size() == imported_history.datasets[1].get_size()
 
 
 def test_import_export_bag_archive():
