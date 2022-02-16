@@ -29,12 +29,11 @@ It is possible to run the Galaxy server in many different ways, including under 
 as a standalone server with no web stack. Prior to the 18.01 release, Galaxy (by default)
 used the [Python Paste][paste] web stack, and ran in a single process. Between the 18.01 release and the 22.01 release
 uWSGI was used as the default application server. Starting with the 22.01 release the default application server is
-gunicorn. For information about uWSGI in the Galaxy context please consult the version of this document that is
+Gunicorn. For information about uWSGI in the Galaxy context please consult the version of this document that is
 appropriate to your Galaxy version.
 
 Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
 and we will drop support for being run as a WSGI application, and hence uWSGI compatibility in Galaxy release 22.05.
-
 
 [Gunicorn]: https://gunicorn.org/
 [paste]: https://paste.readthedocs.io/
@@ -46,10 +45,9 @@ the configuration of the infrastructure on which you are deploying. In all cases
 [running on a cluster](cluster.md) are supported.
 
 Although Gunicorn implements many features that were previously the responsibility of an upstream proxy server,
-it is recomended to place a proxy server in front of Gunicorn and utilize it for all of its traditional
+it is recommended to place a proxy server in front of Gunicorn and utilize it for all of its traditional
 roles (serving static content, serving dataset downloads, etc.) as described in the [production
 configuration](production.md) documentation.
-
 
 ### Gunicorn with jobs handled by web workers (default configuration)
 
@@ -71,7 +69,6 @@ You can consult the documentation for older versions of Galaxy for details.
 If you're migrating Galaxy to 22.01 or newer we recommend you set up the
 **gunicorn + Webless** strategy below.
 
-
 ### Gunicorn for web serving and Webless Galaxy applications as job handlers
 
 Referred to in this documentation as the **Gunicorn + Webless** strategy.
@@ -83,43 +80,42 @@ Referred to in this documentation as the **Gunicorn + Webless** strategy.
 * The recommended deployment strategy for production Galaxy instances
 
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
-methods (see below). However, if the database used does not support this mechanism (in practice this should only apply
+methods (see below). If the database used does not support this mechanism (in practice this should only apply
 to sqlite before version 3.25, which is not at all recommended for production Galaxy server) a handler is randomly
-assigned by the web worker when the job is submitted via the UI/API, meaning that jobs may be assigned to dead handlers.
-
+assigned by the web worker when the job is submitted via the UI/API, meaning that jobs may be assigned to unresponsive handlers.
 
 ## Job Handler Assignment Methods
 
-Job handler assignment methods configurable with the `assign_with`
+Job handler assignment methods are configurable with the `assign_with`
 attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
 
-- **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
+* **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
   job from the database using SQL transaction isolation, which uses database locks to guarantee that only one handler
   can select a given job. This occurs by the web worker that receives the tool execution request (via the UI or API)
   setting a new job's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
   is configured). Handlers "listen" for jobs by selecting jobs from the database that match the handler tag(s) for which
-  they are configured. This is the default if no handlers are defined, or handlers are defined but no assign_with attribute is set
-  on the `handlers` tag and *Database SKIP LOCKED* is not available and no uwsgi-mule-messaging is set up.
+  they are configured. `db-transaction-isolation` is the default assignment method if no handlers are defined,
+  or handlers are defined but no assign_with attribute is set on the `handlers` tag and *Database SKIP LOCKED* is not available.
 
-- **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
+* **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
   the database using `SELECT ... FOR UPDATE SKIP LOCKED` on databases that support this query (see the next section for
   details). This occurs via the same process as *Database Transaction Isolation*, the only difference is the way in
   which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no assign_with attribute is set
-  on the `handlers` tag and *Database SKIP LOCKED* is available and no uwsgi-mule-messaging is set up.
+  on the `handlers` tag and *Database SKIP LOCKED* is available.
 
-- **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
+* **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
   column in the database to the process that created the job at the time it is created. Additionally, if a tool is
   configured to use a specific handler (ID or tag), that handler is assigned (tags by *Database Preassignment*). This is
-  the default if no handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
+  the default fallback if no handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
-- **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
+* **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
   user via an internal in-memory queue. If a tool is configured to use a specific handler, that configuration is
   ignored; the process that creates the job *always* handles it. This can be slightly faster than **Database Self
   Assignment** but only makes sense in single process environments without dedicated job handlers. This option
-  supercedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
+  supersedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
   `false`.
 
-- **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
+* **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
   handlers at the time the job is created. This occurs by the web worker that receives the tool execution request (via
   the UI or API) setting a new job's 'handler' column in the database to the randomly chose handler ID (hence
   "preassignment"). This is the default only if handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
@@ -136,18 +132,18 @@ Prior to Galaxy 19.01, the most common deployment strategies (e.g. **uWSGI + Web
 now (since 19.01) referred to as *Database Preassignment*.  Although still a fallback option when the database
 does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 
-- Web workers do not have a way to know whether a particular handler is alive when assigning that handler
-- Jobs are not load balanced across handlers
-- Changing the number of handlers requires changing `job_conf.xml` and restarting *all* Galaxy processes
+* Web workers do not have a way to know whether a particular handler is alive when assigning that handler
+* Jobs are not load balanced across handlers
+* Changing the number of handlers requires changing `job_conf.xml` and restarting *all* Galaxy processes
 
 The "database locking" methods (*Database SKIP LOCKED* and *Database Transaction Isolation*) were created to solve
 these issues. The preferred method between the two options is *Database SKIP LOCKED*, but it requires PostgreSQL 9.5
-or newer, sqlite 3.25 or newer or MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested). 
+or newer, sqlite 3.25 or newer or MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested).
 If using an older database version, use *Database Transaction Isolation* instead. A detailed explanation of these database locking methods in PostgreSQL can be
 found in the excellent [What is SKIP LOCKED for in PostgreSQL 9.5?][2ndquadrant-skip-locked] entry on the [2ndQuadrant
 PostgreSQL Blog][2ndquadrant-blog].
 
-The preferred method is *Database SKIP LOCKED* or *Database Transaction Isolation*
+The preferred assignment method is *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
 [2ndquadrant-skip-locked]: https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
 [2ndquadrant-blog]: https://blog.2ndquadrant.com/
@@ -158,121 +154,103 @@ The preferred method is *Database SKIP LOCKED* or *Database Transaction Isolatio
 
 ## Configuration
 
-### uWSGI
+### Gunicorn
 
-Although this document goes in to significant detail about uWSGI configuration, many more options are available, as well
-as additional documentation about options described here. Consult the uWSGI documentation for more:
+We will only outline a few of Gunicorn's options. Consult the Gunicorn documentation for more:
 
-* [Configuring uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html)
-* [uWSGI Options](https://uwsgi-docs.readthedocs.io/en/latest/Options.html)
-* [Quickstart for Python/WSGI applications](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html)
+* [Configuring Gunicorn](https://docs.gunicorn.org/en/latest/settings.html)
 
-Configuration is performed in the `uwsgi` section of `galaxy.yml`. You will find that the default, if copied from
-`galaxy.yml.sample`, is commented out. The default configuration options are provided to uWSGI on the command line by
-Galaxy's `run.sh` script.
+Note that by default Galaxy will use [gravity](LINK) to create a [supervisor](LINK) configuration that
+uses Gunicorn configuration values read from the `gravity` section of your `galaxy.yml` file.
+This is the preferred and out-of-the box way of configuring Gunicorn for serving Galaxy.
+If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager
+all of the Gunicorn configuration values can also directly be set on the command line.
 
-Galaxy releases prior to 18.01 (or upgraded-to-18.01+ servers which have not migrated their configuration to the YAML
-format) used an INI-format configuration file, `galaxy.ini`.
+Configuration is performed in the `gravity` section of `galaxy.yml`. You will find that the default, if copied from
+`galaxy.yml.sample`, is commented out. The default configuration options are provided to Gunicorn on the command line by
+using `gravity` within the `run.sh` script.
 
-Note that uWSGI's YAML parser is hand-coded and not actually conformant to the YAML standard. Specifically:
+After making changes to the gravity section you always need to activate Galaxy's virtualenv and run `galaxyctl update`
 
-* Multiple identical keys with unique values can exist in the same dictionary/hash, as with `hook-master-start` in the
-  example below.
-* Quoting values (with single or double quotes) is unncessary since the parser treats all values as strings. The parser
-  does not correctly handle these quote characters, resulting in invalid values.
 
-If using `galaxy.ini`, the option names and values are the same but in INI format, for example:
+#### Common Gunicorn configuration
 
-```ini
-[uwsgi]
-processes = 4
-socket = 127.0.0.1:4001
-...
-```
-
-#### Configuration common to all uWSGI deployment styles
-
-In `galaxy.yml`, define a `uwsgi` section. Shown below are the options common to all deployment strategies:
+In `galaxy.yml`, define a `gravity` section. Shown below are the options common to all deployment strategies:
 
 ```yaml
-uwsgi:
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
+    # listening options
+    bind: 'localhost:8080'
+    # performance options
+    workers: 1
+    # Other options that will be passed to gunicorn
+    gunicorn_extra_args:
 
-  # required in order to start the galaxy application
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
-  virtualenv: .venv
-  pythonpath: lib
-
-  # performance options
-  master: true
-  enable-threads: true
-  processes: 2
-  threads: 4
-  offload-threads: 1
-
-  # fix up signal handling
-  die-on-term: true
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-
-  # listening options
-
-  # job handling options
 ```
 
 Some of these options warrant explanation:
 
-* `master`: Instructs uWSGI to first start a master process manager and then fork web workers, mules, http servers (if
-  enabled), and any others from the master. This is required for certain operational modes such as daemonization, but
-  can interfere with the use of `<CTRL>+<C>` to shut down Galaxy when running in the foreground on the command line, and
-  so is not enabled by default (except when `run.sh --daemon` is used). Its use is strongly recommended for all
-  production deployments.
-* `processes`: Controls the number of Galaxy application processes uWSGI will spawn. Increased web performance can be
-  attained by increasing this value.
-* `threads`: Controls the number of web worker threads each application process will spawn.
-* `offload-threads`: uWSGI can use a dedicated threadpool for serving static content and handling internal routing,
-  setting this value automatically enables such offloading.
+* `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
+  attained by increasing this value. If Gunicorn is the only application on the server the number of CPUs * 2 + 1 is
+  a good starting value, 4 - 12 workers should be able to handle hundreds if not thousands of requests per second.
+* `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
 
 Additional options are explained in the [uWSGI Minutiae](#uwsgi-minutiae) below.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
 
-Due to the Python GIL, increasing the value of `threads` has diminishing returns on web performance while increasing the
-memory footprint of each application process. Increasing it is most useful on servers experiencing a high amount of IO
-waiting, but the greatest performance gain comes from increasing `processes` as appropriate for the hardware on which
-Galaxy is running.
-
 #### Listening and proxy options
 
 **With a proxy server:**
 
-To use the native uWSGI protocol, set the `socket` option:
+To use a socket for the communication between the proxy and Gunicorn, set the `bind` option to a path:
 
 ```yaml
-  # listening options
-  socket: /srv/galaxy/var/uwsgi.sock
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
+    # listening options
+    bind: '/srv/galaxy/var/gunicorn.sock'
 ```
 
 Here we've used a UNIX domain socket because there's less overhead than a TCP socket and it can be secured by filesystem
 permissions, but you can also listen on a port:
 
 ```yaml
-  # listening options
-  socket: 127.0.0.1:4001
+  app_server: gunicorn
+  gunicorn:
+    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
+    # listening options
+    bind: '127.0.0.1:4001'
 ```
 
 The choice of port 4001 is arbitrary, but in both cases, the socket location must match whatever socket the proxy server
 is configured to communicate with. If using a UNIX domain socket, be sure that the proxy server's user has read/write
 permission on the socket. Because Galaxy and the proxy server most likely run as different users, this is not likely to
 be the case by default. One common solution is to add the proxy server's user to the Galaxy user's primary group.
-uWSGI's `chmod-socket` option can also help here.
+Gunicorn's `umask` option can also help here.
 
 You can consult the Galaxy documentation for [Apache](apache.md) or [nginx](nginx.md)
 for help with the proxy-side configuration.
 
-By setting the `socket` option, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
-you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with uWSGI
-while `socket` is set, you can use the `http` option as shown in the directions below.
+By setting the `bind` option to a socket, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
+you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with Gunicorn
+while using a socket, you can add an additional `--bind` argument via the `gunicorn_extra_args` option:
+
+```yaml
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
+    # listening options
+    bind: '/srv/galaxy/var/gunicorn.sock'
+    gunicorn_extra_args: '--bind 127.0.0.1:8080'
+```
 
 **Without a proxy server** or with a proxy server that does not speak the uWSGI native protocol:
 
