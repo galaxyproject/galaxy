@@ -4,15 +4,23 @@
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="expandable"
+                        v-if="expandable && item.state !== 'noPermission' && item.state !== 'discarded'"
+                        :disabled="item.purged || item.state == 'upload' || item.state == 'new'"
+                        :title="displayButtonTitle"
                         class="px-1"
-                        title="Display"
                         size="sm"
                         variant="link"
                         @click.stop="$emit('display', item)">
                         <span class="fa fa-eye" />
                     </b-button>
-                    <b-button class="px-1" title="Edit" size="sm" variant="link" @click.stop="$emit('edit', item)">
+                    <b-button
+                        v-if="writeable && item.state != 'discarded'"
+                        :disabled="item.purged || item.deleted || item.state == 'upload' || item.state == 'new'"
+                        class="px-1"
+                        title="Edit"
+                        size="sm"
+                        variant="link"
+                        @click.stop="$emit('edit', item)">
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
@@ -31,6 +39,7 @@
                         title="Delete"
                         size="sm"
                         variant="link"
+                        :disabled="item.purged"
                         @click.stop="$emit('delete', item)">
                         <span class="fa fa-trash" />
                     </b-button>
@@ -83,6 +92,37 @@ export default {
         writeable: { type: Boolean, default: true },
     },
     computed: {
+        editButtonTitle() {
+            if (this.item.deleted) {
+                return "Undelete dataset to edit attributes";
+            }
+            if (this.item.purged) {
+                return "Cannot edit attributes of datasets removed from disk";
+            }
+            if (this.item.state == "upload" || this.item.state != "new") {
+                return "This dataset is not yet editable";
+            }
+            return "Edit attributes";
+        },
+        displayButtonTitle() {
+            if (this.item.purged) {
+                return "Cannot display datasets removed from disk";
+            }
+            if (this.item.state == "upload") {
+                return "This dataset must finish uploading before it can be viewed";
+            }
+            if (this.item.state == "new") {
+                return "This dataset is not yet viewable";
+            }
+            return "View data";
+        },
+        deleteButtonTitle() {
+            return this.item.purged
+                ? "Dataset has been permanently deleted"
+                : this.item.deleted
+                ? "Undelete"
+                : "Delete";
+        },
         clsStatus() {
             const status = ContentStatus[this.state];
             if (!status || this.selected) {
