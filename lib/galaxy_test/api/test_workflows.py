@@ -645,6 +645,15 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
+    def test_url_import(self):
+        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+        workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert "TestWorkflow1" in workflow["name"]
+        assert (
+            workflow.get("source_metadata").get("url") == url
+        )  # disappearance of source_metadata on modification is tested in test_trs_import
+
     def test_trs_import(self):
         trs_payload = {
             "archive_source": "trs_tool",
@@ -655,8 +664,8 @@ steps:
         workflow_id = self._post("workflows", data=trs_payload).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
-        assert original_workflow.get("trs_tool_id") == trs_payload["trs_tool_id"]
-        assert original_workflow.get("trs_version_id") == trs_payload["trs_version_id"]
+        assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
+        assert original_workflow.get("source_metadata").get("trs_version_id") == trs_payload["trs_version_id"]
 
         # refactor workflow and check that the trs id is removed
         actions = [
@@ -664,12 +673,12 @@ steps:
         ]
         self.workflow_populator.refactor_workflow(workflow_id, actions)
         refactored_workflow = self._download_workflow(workflow_id)
-        assert refactored_workflow.get("trs_tool_id") is None
+        assert refactored_workflow.get("source_metadata") is None
 
         # reupload original_workflow and check that the trs id is removed
         reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
-        assert reuploaded_workflow.get("trs_tool_id") is None
+        assert reuploaded_workflow.get("source_metadata") is None
 
     def test_anonymous_published(self):
         def anonymous_published_workflows():

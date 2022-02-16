@@ -5356,6 +5356,7 @@ class TestWorkflow(BaseTest):
         reports_config = "b"
         creator_metadata = "c"
         license = "d"
+        source_metadata = "e"
         uuid = uuid4()
 
         obj = cls_()
@@ -5369,6 +5370,7 @@ class TestWorkflow(BaseTest):
         obj.reports_config = reports_config
         obj.creator_metadata = creator_metadata
         obj.license = license
+        obj.source_metadata = source_metadata
         obj.uuid = uuid
 
         with dbcleanup(session, obj) as obj_id:
@@ -5384,6 +5386,7 @@ class TestWorkflow(BaseTest):
             assert stored_obj.reports_config == reports_config
             assert stored_obj.creator_metadata == creator_metadata
             assert stored_obj.license == license
+            assert stored_obj.source_metadata == source_metadata
             assert stored_obj.uuid == uuid
 
     def test_relationships(self, session, cls_, stored_workflow, workflow, workflow_step_factory):

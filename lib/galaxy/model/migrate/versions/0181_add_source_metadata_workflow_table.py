@@ -1,5 +1,5 @@
 """
-Migration script for adding trs_id column to workflow table.
+Migration script for adding source_metadata column to workflow table.
 """
 
 import logging
@@ -7,9 +7,9 @@ import logging
 from sqlalchemy import (
     Column,
     MetaData,
-    Text,
 )
 
+from galaxy.model.custom_types import JSONType
 from galaxy.model.migrate.versions.util import (
     add_column,
     drop_column,
@@ -24,16 +24,12 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    trs_tool_id_column = Column("trs_tool_id", Text)
-    add_column(trs_tool_id_column, "workflow", metadata)
-
-    trs_version_id_column = Column("trs_version_id", Text)
-    add_column(trs_version_id_column, "workflow", metadata)
+    source_metadata_column = Column("source_metadata", JSONType)
+    add_column(source_metadata_column, "workflow", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column("trs_tool_id", "workflow", metadata)
-    drop_column("trs_version_id", "workflow", metadata)
+    drop_column("source_metadata", "workflow", metadata)

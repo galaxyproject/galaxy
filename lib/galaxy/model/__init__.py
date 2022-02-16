@@ -6608,8 +6608,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     reports_config = Column(MutableJSONType)
     creator_metadata = Column(MutableJSONType)
     license = Column(TEXT)
-    trs_tool_id = Column(TEXT)
-    trs_version_id = Column(TEXT)
+    source_metadata = Column(MutableJSONType)
     uuid = Column(UUIDType, nullable=True)
 
     steps = relationship(
