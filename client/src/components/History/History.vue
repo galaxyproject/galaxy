@@ -183,7 +183,11 @@ export default {
             });
         },
         onEdit(item) {
-            this.backboneRoute("datasets/edit", { dataset_id: item.id });
+            if (item.collection_type) {
+                this.backboneRoute(`collection/edit/${item.id}`);
+            } else {
+                this.backboneRoute("datasets/edit", { dataset_id: item.id });
+            }
         },
         onDelete(item) {
             this.hiddenItems[item.hid] = true;

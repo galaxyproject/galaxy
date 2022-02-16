@@ -12,13 +12,7 @@
                         @click.stop="$emit('display', item)">
                         <span class="fa fa-eye" />
                     </b-button>
-                    <b-button
-                        v-if="expandable"
-                        class="px-1"
-                        title="Edit"
-                        size="sm"
-                        variant="link"
-                        @click.stop="$emit('edit', item)">
+                    <b-button class="px-1" title="Edit" size="sm" variant="link" @click.stop="$emit('edit', item)">
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
