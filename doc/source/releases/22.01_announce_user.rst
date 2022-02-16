@@ -179,7 +179,8 @@ Release Testing Team
 
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
-<team members go here>
+- `Keith Suderman <https://github.com/ksuderman>`_
+- `Delphine Lariviere <https://github.com/Delphine-L>`_
 
 Release Notes
 ===========================================================
