@@ -2,7 +2,10 @@ import os
 from copy import deepcopy
 from typing import Dict, List
 
-from galaxy.util import parse_xml
+from galaxy.util import (
+    Element,
+    parse_xml,
+)
 
 REQUIRED_PARAMETER = object()
 
@@ -20,7 +23,7 @@ def load_with_references(path):
     if macros_el is None:
         return tree, []
 
-    macros: Dict[str, List[XmlMacroDef]] = {}
+    macros: Dict[str, List[Element]] = {}
     macro_paths = _import_macros(macros_el, path, macros)
     macros_el.clear()
 
