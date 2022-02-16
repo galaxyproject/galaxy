@@ -402,29 +402,6 @@ In this example:
 * `handler0` and `handler2` will handle tool executions that are not explicitly mapped to handlers
 * `handler1` and `handler2` will handle tool executions that are mapped to the `special` handler tag
 
-
-**Signals**
-
-The signal handling options (`die-on-term` and `hook-master-start` with `unix_signal` values) are not required but, if
-set, will override [uWSGI's unconventional signal handling](https://uwsgi-docs.readthedocs.io/en/latest/Management.html)
-and cause `SIGTERM` to kill the server rather than restart it, and the uWSGI master process to gracefully shut down its
-web workers and job handler mules (i.e. the various Galaxy application processes) when it receives a `SIGINT` (signal 2)
-or `SIGTERM` (signal 15) signal (e.g. from `kill(1)` or `<CTRL>+<C>`). When shutting down gracefully, uWSGI will wait 60
-seconds (by default, but this can be changed with the `reload-mercy`, `worker-reload-mercy` and `mule-reload-mercy`
-options) for child processes to die before forcefully killing them with `SIGKILL` (signal 9). Alternatively, you may
-prefer to have it shut down gracefully on `SIGTERM` but forcefully on `SIGINT` (forceful shutdown by uWSGI is still
-slightly cleaner than `kill -9` of the master process since it can attempt to release sockets cleanly) or vice-versa,
-which you can do by setting one of the signals to call `kill_them_all` rather than `gracefully_kill_them_all`:
-
-```yaml
-  # fix up signal handling
-  die-on-term: true
-  hook-master-start: unix_signal:2 kill_them_all
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-```
-
-More details on the `unix_signal` hook can be found in [uWSGI Issue #849](https://github.com/unbit/uwsgi/issues/849).
-
 **Logging and daemonization**
 
 It's possible to configure uWSGI to log to a file with the `logto` or `logto2` options (when running in the foreground,
