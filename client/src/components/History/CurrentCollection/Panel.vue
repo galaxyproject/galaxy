@@ -33,9 +33,10 @@
                         <template v-slot:history-item="{ item, index }">
                             <ContentItem
                                 :item="item"
-                                :index="index"
+                                :id="item.element_index"
+                                :name="item.element_identifier"
                                 :expanded="isExpanded(item)"
-                                :writable="false"
+                                :writeable="false"
                                 :selectable="false"
                                 @update:expanded="setExpanded(item, $event)"
                                 @viewCollection="$emit('viewCollection', item)" />
