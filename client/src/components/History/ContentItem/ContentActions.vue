@@ -34,9 +34,19 @@
 </template>
 
 <script>
+import { copy as sendToClipboard } from "utils/clipboard";
+import { absPath } from "utils/redirect";
+
 export default {
     props: {
         item: { type: Object, required: true },
+    },
+    methods: {
+        onCopyLink() {
+            const relPath = this.item.download_url;
+            const msg = this.localize("Link is copied to your clipboard");
+            sendToClipboard(absPath(relPath), msg);
+        },
     },
 };
 </script>
