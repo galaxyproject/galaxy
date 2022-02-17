@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 from galaxy.managers import (
     collections,
@@ -57,9 +58,7 @@ def testable_url_for(*a, **k):
     return f'(fake url): {a}, {k}'
 
 
-hdcas.HDCASerializer.url_for = staticmethod(testable_url_for)
-
-
+@mock.patch('galaxy.managers.hdcas.HDCASerializer.url_for', testable_url_for)
 class HDCASerializerTestCase(HDCATestCase):
 
     def set_up_managers(self):
