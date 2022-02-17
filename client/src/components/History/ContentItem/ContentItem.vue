@@ -75,7 +75,7 @@
 
 <script>
 import ContentDetails from "./ContentDetails";
-import CONTENTSTATUS from "./contentStatus";
+import CONTENTSTATE from "./contentState";
 export default {
     components: {
         ContentDetails,
@@ -124,7 +124,7 @@ export default {
                 : "Delete";
         },
         clsStatus() {
-            const status = CONTENTSTATUS[this.state] && CONTENTSTATUS[this.state].status;
+            const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
             if (!status || this.selected) {
                 return "alert-info";
             } else {
