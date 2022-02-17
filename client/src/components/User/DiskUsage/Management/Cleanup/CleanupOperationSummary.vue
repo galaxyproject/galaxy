@@ -1,22 +1,23 @@
 <template>
-    <b-card :title="operation.name" class="item-counter-card mx-2">
-        <b-alert v-if="errorMessage" variant="danger" show>
-            <h4 class="alert-heading">Failed to retrieve details.</h4>
-            {{ errorMessage }}
-        </b-alert>
+    <b-card :title="operation.name" class="operation-card mx-2" footer-bg-variant="white" footer-border-variant="white">
         <LoadingSpan v-if="loading" />
-        <div v-else>
-            <b-card-text>
-                {{ operation.description }}
-            </b-card-text>
-
-            <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
-                <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
-            </b-link>
-            <b v-else class="text-secondary">
-                {{ noItemsToClearText }}
-            </b>
-        </div>
+        <b-card-text v-if="!loading">
+            {{ operation.description }}
+        </b-card-text>
+        <template v-slot:footer>
+            <div v-if="!loading">
+                <b-alert v-if="errorMessage" variant="danger" show>
+                    <h4 class="alert-heading">Failed to retrieve details.</h4>
+                    {{ errorMessage }}
+                </b-alert>
+                <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
+                    <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
+                </b-link>
+                <b v-else class="text-secondary">
+                    {{ noItemsToClearText }}
+                </b>
+            </div>
+        </template>
     </b-card>
 </template>
 
@@ -95,7 +96,7 @@ export default {
 </script>
 
 <style scoped>
-.item-counter-card {
+.operation-card {
     text-align: center;
     width: 500px;
 }
