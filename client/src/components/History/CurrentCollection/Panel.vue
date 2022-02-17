@@ -17,7 +17,7 @@
                 </template>
 
                 <template v-slot:listcontrols>
-                    <CollectionOperations :collection="selectedCollection" :is-root="isRoot" />
+                    <Operations :collection="selectedCollection" :is-root="isRoot" />
                 </template>
 
                 <template v-slot:details>
@@ -56,7 +56,7 @@ import { updateContentFields } from "../model/queries";
 import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
-import CollectionOperations from "./CollectionOperations";
+import Operations from "./Operations";
 import Details from "./Details";
 import ContentItem from "../ContentItem/ContentItem";
 import HistoryListing from "components/History/HistoryListing";
@@ -70,7 +70,7 @@ export default {
         Details,
         ContentItem,
         ExpandedItems,
-        CollectionOperations,
+        Operations,
         HistoryListing,
     },
     props: {

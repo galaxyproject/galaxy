@@ -7,7 +7,7 @@
                 {{ dscName || "(Collection Name)" }}
             </h3>
             <p class="mt-1">
-                <DscDescription :dsc="dsc" />
+                <Description :dsc="dsc" />
             </p>
 
             <div v-if="isEditing" class="mt-3" @keydown.esc="revertAndCancel" data-description="edit form">
@@ -39,18 +39,18 @@
 </template>
 
 <script>
-import { DatasetCollection } from "../model";
+import { DatasetCollection } from "components/History/model";
 import { Nametag } from "components/Nametags";
-import EditorMenu from "../EditorMenu";
+import EditorMenu from "components/History/EditorMenu";
 import { StatelessTags } from "components/Tags";
-import DscDescription from "components/History/ContentItem/DatasetCollection/DscDescription";
+import Description from "./Description";
 
 export default {
     components: {
         Nametag,
         EditorMenu,
         StatelessTags,
-        DscDescription,
+        Description,
     },
     props: {
         dsc: { type: DatasetCollection, required: true },

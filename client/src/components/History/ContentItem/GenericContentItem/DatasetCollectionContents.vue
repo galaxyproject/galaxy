@@ -7,8 +7,8 @@
                 v-slot="{ result: item, loading }">
                 <div>
                     <loading-span v-if="loading" message="Loading datasets" />
-                    <DatasetUIWrapper v-else :item="item" :element_identifier="contentItem.element_identifier">
-                    </DatasetUIWrapper>
+                    <div v-else :item="item" :element_identifier="contentItem.element_identifier">
+                    </div>
                 </div>
             </DatasetProvider>
             <DatasetCollectionUIWrapper
@@ -21,14 +21,12 @@
 </template>
 <script>
 import { DatasetProvider } from "components/providers";
-import DatasetUIWrapper from "./DatasetUIWrapper";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
         DatasetProvider,
         DatasetCollectionUIWrapper: () => import("./DatasetCollectionUIWrapper"),
-        DatasetUIWrapper,
         LoadingSpan,
     },
     props: {

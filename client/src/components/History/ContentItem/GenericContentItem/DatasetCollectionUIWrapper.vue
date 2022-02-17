@@ -1,6 +1,6 @@
 <template>
     <div>
-        <DscUI
+        <div
             v-if="datasetCollection"
             v-bind="$attrs"
             v-on="$listeners"
@@ -20,7 +20,6 @@
 <script>
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
 import { DatasetCollection } from "../../model/DatasetCollection";
-import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
 import { DatasetCollectionContentProvider } from "components/providers";
 import DatasetCollectionContents from "./DatasetCollectionContents";
 
@@ -28,7 +27,6 @@ export default {
     components: {
         DatasetCollectionContentProvider,
         DatasetCollectionContents,
-        DscUI,
     },
     props: {
         item: { type: Object, required: true },
