@@ -2,23 +2,21 @@
     <section>
         <nav class="d-flex justify-content-end">
             <b-button-group>
-                <IconButton
+                <b-button
                     v-if="isRoot"
                     class="mb-2 mx-3"
-                    icon="download"
                     title="Download Collection"
                     :href="downloadCollectionUrl"
-                    download />
+                    download>
+                    <Icon icon="download" />
+                </b-button>
             </b-button-group>
         </nav>
     </section>
 </template>
 
 <script>
-import IconButton from "components/IconButton";
-
 export default {
-    components: { IconButton },
     props: {
         isRoot: { type: Boolean, required: true },
         collection: { type: Object, required: true },

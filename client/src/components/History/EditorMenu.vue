@@ -1,51 +1,50 @@
 <template>
     <nav class="edit-controls">
-        <IconButton
+        <b-button
             :title="label('Edit') | l"
             class="edit-button mb-1"
             :pressed="editing"
-            icon="pen"
             @click="$emit('update:editing', !editing)"
-            data-description="editor toggle" />
-
+            data-description="editor toggle">
+            <Icon icon="pen" />
+        </b-button>
         <template v-if="editing">
             <!-- save -->
-            <IconButton
+            <b-button
                 :title="label('Save') | l"
                 class="save-button mb-1"
                 :class="{ disabled: !valid }"
-                icon="save"
                 @click="$emit('save')"
-                data-description="editor save button" />
+                data-description="editor save button">
+                <Icon icon="save" />
+            </b-button>
 
             <!-- revert -->
-            <IconButton
+            <b-button
                 :title="label('Revert') | l"
                 class="revert-changes-button mb-1"
                 :class="{ disabled: !dirty }"
                 icon="undo"
                 @click="$emit('revert')"
-                data-description="editor revert button" />
+                data-description="editor revert button">
+                <Icon icon="undo" />
+            </b-button>
 
             <!-- form status -->
-            <IconButton
+            <b-button
                 :title="statusLabel | l"
                 class="status-button mb-1"
                 :class="{ valid: valid, disabled: !valid }"
-                :icon="valid ? 'check' : 'exclamation-triangle'"
                 variant="link"
-                data-description="editor status" />
+                data-description="editor status">
+                <Icon :icon="valid ? 'check' : 'exclamation-triangle'" />
+            </b-button>
         </template>
     </nav>
 </template>
 
 <script>
-import IconButton from "components/IconButton";
-
 export default {
-    components: {
-        IconButton,
-    },
     props: {
         modelName: { type: String, required: true },
         editing: { type: Boolean, required: true },

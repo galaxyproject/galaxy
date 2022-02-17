@@ -29,7 +29,6 @@ export default {
                     text: bc.name,
                 };
             });
-            console.log(options);
             return options;
         },
     },
