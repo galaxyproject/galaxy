@@ -7,7 +7,7 @@
             :get-item-key="(item) => item.element_index"
             v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
-                <template v-slot:globalnav>
+                <template v-slot:navigation>
                     <Navigation :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
                 </template>
 

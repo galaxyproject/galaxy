@@ -17,11 +17,8 @@
                     resetSelection,
                 }">
                 <Layout>
-                    <template v-slot:globalnav>
-                        <slot name="globalnav" :history="history" />
-                    </template>
-
-                    <template v-slot:localnav>
+                    <template v-slot:navigation>
+                        <slot name="navigation" :history="history" />
                         <HistoryMenu :history="history" v-on="$listeners" />
                     </template>
 
