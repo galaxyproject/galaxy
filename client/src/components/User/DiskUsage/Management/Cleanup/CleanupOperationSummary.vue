@@ -6,14 +6,19 @@
         </b-card-text>
         <template v-slot:footer>
             <div v-if="!loading">
-                <b-alert v-if="errorMessage" variant="danger" show>
+                <b-alert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
                     <h4 class="alert-heading">Failed to retrieve details.</h4>
                     {{ errorMessage }}
                 </b-alert>
-                <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
+                <b-link
+                    v-else-if="canClearItems"
+                    href="#"
+                    class="card-link"
+                    @click="onReviewItems"
+                    data-test-id="review-link">
                     <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
                 </b-link>
-                <b v-else class="text-secondary">
+                <b v-else class="text-secondary" data-test-id="no-items-indicator">
                     {{ noItemsToClearText }}
                 </b>
             </div>
@@ -73,6 +78,8 @@ export default {
                 this.summary = await this.operation.fetchSummary();
                 const duration = Date.now() - start;
                 await delay(this.refreshDelay - duration);
+            } catch (error) {
+                this.onError(error);
             } finally {
                 this.loading = false;
             }
