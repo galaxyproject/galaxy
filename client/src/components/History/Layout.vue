@@ -2,7 +2,7 @@
     <section class="history-layout d-flex flex-column">
         <header>
             <!-- navigation bar at the top-->
-            <nav class="d-flex justify-content-between">
+            <nav class="d-flex justify-content-between bg-secondary">
                 <slot name="navigation" />
             </nav>
 

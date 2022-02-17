@@ -23,15 +23,15 @@
                     <HistoryListing
                         item-key="element_index"
                         :page-size="pageSize"
-                        :payload="payload"
+                        :payload="payload.elements"
                         @scroll="onScroll">
                         <template v-slot:history-item="{ item, index }">
                             <ContentItem
                                 :item="item"
                                 :id="item.element_index"
                                 :name="item.element_identifier"
-                                :expandable="item.element_type == 'dataset'"
-                                :state="item.state"
+                                :expandable="item.element_type == 'hda'"
+                                :state="item.object ? item.object.state : item.populated_state"
                                 :expanded="isExpanded(item)"
                                 :writeable="false"
                                 @update:expanded="setExpanded(item, $event)"
@@ -100,12 +100,11 @@ export default {
     },
     methods: {
         getUrl(dsc) {
-            const element = dsc && dsc.object ? dsc.object : dsc;
-            return element.contents_url.substring(1);
+            return `api/dataset_collections/${dsc.id}`;
         },
         // change the data of the root collection, anything past the root
         // collection is part of the dataset collection, which i believe is supposed to
-        // be immutable, so only edit name, tags, blah of top-level selected collection,
+        // be immutable, so only edit name, tags etc of top-level selected collection.
         async updateDsc(collection, fields) {
             if (this.writable) {
                 await updateContentFields(collection, fields);
