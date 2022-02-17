@@ -304,6 +304,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "type",
                 "url",
                 "create_time",
+                "rerunnable",
+                "creating_job",
                 "update_time",
             ],
         )
@@ -329,8 +331,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "meta_files",
                 "data_type",
                 "peek",
-                "creating_job",
-                "rerunnable",
                 "uuid",
                 "permissions",
                 "file_name",

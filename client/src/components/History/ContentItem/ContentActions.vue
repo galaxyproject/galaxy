@@ -1,14 +1,17 @@
 <template>
     <div class="mb-1 clearfix">
         <div class="btn-group float-left">
+            <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
+                <span class="fa fa-exclamation-triangle" />
+            </b-button>
             <b-button
-                v-if="item.state == 'error'"
+                v-if="showDownloads"
                 class="px-1"
-                title="Error"
+                title="Download"
                 size="sm"
                 variant="link"
-                @click.stop="onError">
-                <span class="fa fa-exclamation-triangle" />
+                @click.stop="onDownload">
+                <span class="fa fa-save" />
             </b-button>
             <b-button
                 v-if="showDownloads"
@@ -16,36 +19,26 @@
                 title="Copy link"
                 size="sm"
                 variant="link"
-                @click.stop="$emit('link', item)">
+                @click.stop="onCopyLink">
                 <span class="fa fa-link" />
             </b-button>
             <b-button
-                v-if="showDownloads"
-                :href="downloadUrl"
+                v-if="showInfo"
                 class="px-1"
-                title="Download"
+                title="Dataset details"
                 size="sm"
                 variant="link"
-                @click.stop="$emit('save', item)">
-                <span class="fa fa-save" />
+                @click.stop="onInfo">
+                <span class="fa fa-info-circle" />
             </b-button>
             <b-button
-                v-if="item.rerunnable && item.creating_job && item.state != 'upload' && item.state != 'noPermission'"
+                v-if="showRerun"
                 class="px-1"
                 title="Run job again"
                 size="sm"
                 variant="link"
                 @click.stop="onRerun">
-                <span class="fa fa-play" />
-            </b-button>
-            <b-button
-                v-if="item.rerunnable && item.creating_job && item.state != 'upload' && item.state != 'noPermission'"
-                class="px-1"
-                title="Run job again"
-                size="sm"
-                variant="link"
-                @click.stop="onRerun">
-                <span class="fa fa-play" />
+                <span class="fa fa-redo" />
             </b-button>
             <b-button
                 v-if="showVisualizations"
@@ -56,29 +49,7 @@
                 @click.stop="onVisualize">
                 <span class="fa fa-bar-chart-o" />
             </b-button>
-            <b-dropdown-item
-                v-if="item.creating_job"
-                title="Tool Help"
-                @click.stop="showToolHelp(item.creating_job)">
-                <Icon icon="question" class="mr-1" />
-                <span v-localize>Tool Help</span>
-            </b-dropdown-item>
-            <b-button
-                v-if="item.state != 'noPermission'"
-                class="px-1"
-                title="Dataset details"
-                size="sm"
-                variant="link"
-                @click.stop="$emit('info', item)">
-                <span class="fa fa-info-circle" />
-            </b-button>
-            <b-button
-                v-if="item.state != 'noPermission'"
-                class="px-1"
-                title="Help"
-                size="sm"
-                variant="link"
-                @click.stop="$emit('help', item)">
+            <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                 <span class="fa fa-question" />
             </b-button>
         </div>
@@ -99,60 +70,69 @@
 </template>
 
 <script>
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath } from "utils/redirect";
 
 export default {
+    mixins: [legacyNavigationMixin],
     props: {
         item: { type: Object, required: true },
     },
     computed: {
+        downloadUrl() {
+            return prependPath(`datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
+        },
         showDownloads() {
-            if (this.item.purged || !this.item.file_size || !this.item.file_size == 0) {
-                return false;
-            }
-            return ["ok", "failed_metadata", "error"].includes(this.item.state);
+            return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
+        },
+        showError() {
+            return this.item.state == "error";
+        },
+        showInfo() {
+            return this.item.state != "noPermission";
+        },
+        showRerun() {
+            return (
+                this.item.rerunnable &&
+                this.item.creating_job &&
+                this.item.state != "upload" &&
+                this.item.state != "noPermission"
+            );
         },
         showVisualizations() {
-            //&& hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)
-            return true;
-        },
-        downloadUrl() {
-            return prependPath(`datasets/${this.item.id}/display?to_ext=${this.item.file_ext}`);
+            // TODO: Check hasViz, if visualizations are activated in the config
+            return this.item.state == "ok" || this.item.state == "failed_metadata";
         },
     },
     methods: {
         onCopyLink() {
-            const relPath = this.item.download_url;
             const msg = this.localize("Link is copied to your clipboard");
-            sendToClipboard(absPath(relPath), msg);
+            sendToClipboard(absPath(this.downloadUrl), msg);
+        },
+        onDownload() {
+            window.location.href = this.downloadUrl;
         },
         onError() {
-            /*@click.stop="
-                backboneRoute('datasets/error', {
-                    dataset_id: dataset.id,
-                })
-            ">*/
+            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+        },
+        onInfo() {
+            this.backboneRoute(`datasets/${this.item.id}/details`);
         },
         onRerun() {
-            /*
-            :href="prependPath(dataset.getUrl('rerun'))"
-            backboneRoute('/', {
-                job_id: dataset.creating_job,
-            })*/
+            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
         },
         onVisualize() {
-            /*const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
+            const path = `visualizations?dataset_id=${this.item.id}`;
             const redirectParams = {
-                path: showDetailsUrl,
+                path: path,
                 title: "Dataset details",
                 tryIframe: false,
             };
             if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute("visualizations", {
-                    dataset_id: this.dataset.id,
-                });
-            }*/
+                this.backboneRoute(path);
+            }
         },
     },
 };
