@@ -11,7 +11,7 @@
             </b-card-text>
 
             <b-link v-if="canClearItems" href="#" class="card-link" @click="onReviewItems">
-                <b>{{ reviewAndClearText }} {{ totalRecoverableAmount }}</b>
+                <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
             </b-link>
             <b v-else class="text-secondary">
                 {{ noItemsToClearText }}
@@ -22,7 +22,7 @@
 
 <script>
 import _l from "utils/localization";
-import { bytesToString } from "utils/utils";
+import { delay } from "utils/utils";
 import LoadingSpan from "components/LoadingSpan";
 import { CleanupOperation } from "./model";
 
@@ -40,6 +40,11 @@ export default {
             required: false,
             default: null,
         },
+        refreshDelay: {
+            type: Number,
+            required: false,
+            default: 500,
+        },
     },
     data() {
         return {
@@ -48,17 +53,12 @@ export default {
             summary: null,
             loading: true,
             errorMessage: null,
-            refreshDelay: 500,
         };
     },
     async created() {
         await this.refresh();
     },
     computed: {
-        /** @returns {String} */
-        totalRecoverableAmount() {
-            return bytesToString(this.summary.totalSize, true);
-        },
         /** @returns {Boolean} */
         canClearItems() {
             return this.summary.totalItems > 0;
@@ -68,7 +68,7 @@ export default {
         async refresh() {
             this.loading = true;
             try {
-                await new Promise((r) => setTimeout(r, this.refreshDelay));
+                await delay(this.refreshDelay);
                 this.summary = await this.operation.fetchSummary();
             } finally {
                 this.loading = false;
@@ -82,6 +82,7 @@ export default {
         },
     },
     watch: {
+        /** The parent signaled that `operationId` must be updated */
         async refreshOperationId(operationId) {
             if (this.operation.id === operationId) {
                 await this.refresh();

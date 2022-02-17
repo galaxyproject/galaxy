@@ -1,3 +1,5 @@
+import { bytesToString } from "utils/utils";
+
 /**
  * Contains summary information about how much storage space can be recovered by removing
  * a collection of items from it.
@@ -14,6 +16,14 @@ export class CleanableSummary {
      */
     get totalSize() {
         return this._totalSize;
+    }
+
+    /**
+     * The human readable total amount of disk space that can be recovered.
+     * @returns {String}
+     */
+    get niceTotalSize() {
+        return bytesToString(this.totalSize, true);
     }
 
     /**
