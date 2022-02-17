@@ -1,3 +1,8 @@
+/**
+ * Represents an operation that can potentially `clean` the user storage.
+ * The concept of `cleaning` here refers to any action that can free up
+ * some space in the user storage.
+ */
 export class CleanupOperation {
     constructor(data) {
         this._id = data.id;
@@ -32,14 +37,30 @@ export class CleanupOperation {
         return this._description;
     }
 
+    /**
+     * Fetches summary information about the total amount of
+     * space that can be cleaned/recovered using this operation.
+     * @returns {Promise<CleanableSummary>}
+     */
     async fetchSummary() {
         return await this._fetchSummary();
     }
 
-    async fetchItems(offset, limit) {
-        return await this._fetchItems(offset, limit);
+    /**
+     * Fetches an array of items that can be potentially `cleaned` by this operation.
+     * @param {Object} filterOptions The filter options for sorting and pagination of the items.
+     * @returns {Promise<Array<Item>>} An array of items that can be potentially `cleaned` and match the filtering params.
+     */
+    async fetchItems(filterOptions) {
+        return await this._fetchItems(filterOptions);
     }
 
+    /**
+     * Processes the given items to free up some user storage space and provides a result
+     * indicating how much was space was recovered or what errors may have ocurred.
+     * @param {Array<Item>} items An array of items to be `cleaned`
+     * @returns {Promise<CleanupResult>} The result of the cleanup operation.
+     */
     async cleanupItems(items) {
         return await this._cleanupItems(items);
     }
