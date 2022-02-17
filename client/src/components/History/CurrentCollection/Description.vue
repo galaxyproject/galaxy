@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import { DatasetCollection } from "../../model/DatasetCollection";
+import { DatasetCollection } from "components/History/model/DatasetCollection";
 
 export default {
     props: {
