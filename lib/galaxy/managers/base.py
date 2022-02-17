@@ -576,8 +576,6 @@ class ModelSerializer(HasAModelManager[T]):
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
-    #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(gx_url_for)
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
@@ -603,6 +601,12 @@ class ModelSerializer(HasAModelManager[T]):
         #   inspired by model.dict_{view}_visible_keys
         self.views = {}
         self.default_view = None
+
+    @staticmethod
+    def url_for(*args, context=None, **kwargs):
+        trans = context and context.get('trans')
+        url_for = trans and trans.url_builder or gx_url_for
+        return url_for(*args, **kwargs)
 
     def add_serializers(self):
         """
