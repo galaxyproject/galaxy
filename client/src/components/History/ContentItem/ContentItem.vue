@@ -69,16 +69,16 @@
                 </h5>
             </div>
         </div>
-        <ContentDetails v-if="expanded" @edit="$emit('edit', $event)" :item="item" />
+        <DatasetDetails v-if="expanded" @edit="$emit('edit', $event)" :item="item" />
     </div>
 </template>
 
 <script>
-import ContentDetails from "./ContentDetails";
+import DatasetDetails from "./Dataset/DatasetDetails";
 import CONTENTSTATE from "./contentState";
 export default {
     components: {
-        ContentDetails,
+        DatasetDetails,
     },
     props: {
         item: { type: Object, required: true },

@@ -18,7 +18,7 @@
                         <span class="value">{{ result.misc_info }}</span>
                     </div>
                 </div>
-                <ContentActions :item="result" />
+                <DatasetActions :item="result" />
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
@@ -27,11 +27,11 @@
 
 <script>
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import ContentActions from "./ContentActions";
+import DatasetActions from "./DatasetActions";
 
 export default {
     components: {
-        ContentActions,
+        DatasetActions,
         UrlDataProvider,
     },
     props: {

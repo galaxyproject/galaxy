@@ -1,6 +1,6 @@
 <!-- controls display of DisplayUI and delegates modifications -->
 <template>
-    <DatasetUI
+    <div
         v-if="dataset"
         v-bind="$attrs"
         v-on="$listeners"
@@ -12,17 +12,13 @@
         @undelete="onUndelete"
         @unhide="onUnhide"
         @update="onUpdate">
-    </DatasetUI>
+    </div>
 </template>
 <script>
-import DatasetUI from "components/History/ContentItem/Dataset/DatasetUI";
 import { Dataset } from "../../model";
 import { deleteContent, updateContentFields } from "../../model/queries";
 
 export default {
-    components: {
-        DatasetUI,
-    },
     props: {
         item: { type: Object, required: true },
         element_identifier: { type: String, required: false, default: "" },

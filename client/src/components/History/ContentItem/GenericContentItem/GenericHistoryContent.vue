@@ -9,8 +9,7 @@
 
 <script>
 import { DatasetProvider, DatasetCollectionProvider } from "components/providers";
-import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
-import DatasetUIWrapper from "./DatasetUIWrapper";
+import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";;
 import { STATES } from "components/History/model";
 import LoadingSpan from "components/LoadingSpan";
 
@@ -18,7 +17,6 @@ export default {
     components: {
         DatasetProvider,
         DatasetCollectionProvider,
-        DatasetUIWrapper,
         DatasetCollectionUIWrapper,
         LoadingSpan,
     },
@@ -29,7 +27,7 @@ export default {
     },
     computed: {
         renderComponent() {
-            return { hda: "DatasetUIWrapper", hdca: "DatasetCollectionUIWrapper" }[this.data_item.src];
+            return { hdca: "DatasetCollectionUIWrapper" }[this.data_item.src];
         },
         providerComponent() {
             return { hda: "DatasetProvider", hdca: "DatasetCollectionProvider" }[this.data_item.src];
