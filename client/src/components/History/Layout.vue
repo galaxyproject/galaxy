@@ -7,34 +7,33 @@ to learn how CSS is supposed to work. -->
     <section class="history beta d-flex flex-column">
         <header>
             <nav class="d-flex justify-content-between bg-secondary">
-                <slot name="globalnav">Global Navigation Default</slot>
-                <slot name="localnav">Local Navigation Default</slot>
+                <slot name="navigation" />
             </nav>
 
             <!-- details about the thing you're looking at -->
             <div class="px-3 py-4 details">
-                <slot name="details"></slot>
+                <slot name="details" />
             </div>
         </header>
 
         <!-- warnings, messages, dirty limericks -->
         <section v-if="$slots.messages">
-            <slot name="messages"></slot>
+            <slot name="messages" />
         </section>
 
         <!-- controls atop the list -->
         <section v-if="$slots.listcontrols" class="list-controls">
-            <slot name="listcontrols"></slot>
+            <slot name="listcontrols" />
         </section>
 
         <!-- scrolling list -->
         <section class="position-relative flex-grow-1 scroller">
-            <slot name="listing"></slot>
+            <slot name="listing" />
         </section>
 
         <!-- no dom layout, holds modal markup -->
         <section v-if="$slots.modals">
-            <slot name="modals"></slot>
+            <slot name="modals" />
         </section>
     </section>
 </template>
