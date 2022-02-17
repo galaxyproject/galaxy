@@ -9,6 +9,9 @@ extend-exclude = '''
 '''
 force-exclude = 'lib/galaxy/util/jstree.py'
 
+[tool.darker]
+isort = true
+
 [tool.poetry]
 name = "galaxy"
 version = "22.01.dev0"
