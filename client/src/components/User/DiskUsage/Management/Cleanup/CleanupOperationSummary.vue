@@ -68,8 +68,10 @@ export default {
         async refresh() {
             this.loading = true;
             try {
-                await delay(this.refreshDelay);
+                const start = Date.now();
                 this.summary = await this.operation.fetchSummary();
+                const duration = Date.now() - start;
+                await delay(this.refreshDelay - duration);
             } finally {
                 this.loading = false;
             }
