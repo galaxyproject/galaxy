@@ -10,11 +10,11 @@
                     :pressed="showSelection"
                     @click="toggleSelection" />
                 <IconButton
-                    title="Filter Items"
-                    icon="filter"
+                    title="Search Items"
+                    icon="search"
                     :pressed="showFilter"
                     @click="toggleFilter"
-                    data-description="content filter toggle" />
+                    data-description="content search toggle" />
                 <IconButton
                     title="Collapse Items"
                     icon="compress"
