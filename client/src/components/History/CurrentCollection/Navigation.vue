@@ -1,35 +1,12 @@
 <template>
-    <b-dropdown
-        v-if="breadCrumbOptions.length"
-        size="sm"
-        text="Return to..."
-        boundary="viewport"
-        data-description="collection breadcrumbs menu"
-        no-caret>
-        <template v-slot:button-content>
-            <Icon icon="arrow-up" class="mr-1" />
-            <b class="text-nowrap" v-localize>Return to...</b>
-        </template>
-
-        <b-dropdown-item @click="close" data-description="back to history">
-            <span>History: {{ history.name }}</span>
-        </b-dropdown-item>
-
-        <b-dropdown-item v-for="option in breadCrumbOptions" :key="option.key" @click="reselect(option.value)">
+    <b-breadcrumb>
+        <b-breadcrumb-item href="#" @click="close">
+            <span class="fa fa-angle-double-left" />
+        </b-breadcrumb-item>
+        <b-breadcrumb-item v-for="option in breadCrumbOptions" :key="option.key" @click="reselect(option.value)">
             <span>{{ option.text }}</span>
-        </b-dropdown-item>
-    </b-dropdown>
-
-    <b-button
-        v-else
-        class="back"
-        size="sm"
-        title="`Return to: ${history.name}`"
-        @click="close"
-        data-description="back to history">
-        <Icon icon="arrow-up" class="mr-1" />
-        <b class="text-nowrap">Return to: {{ history.name }}</b>
-    </b-button>
+        </b-breadcrumb-item>
+    </b-breadcrumb>
 </template>
 
 <script>
@@ -52,6 +29,7 @@ export default {
                     text: bc.name,
                 };
             });
+            console.log(options);
             return options;
         },
     },

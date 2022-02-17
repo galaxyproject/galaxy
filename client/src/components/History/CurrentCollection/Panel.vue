@@ -8,12 +8,7 @@
             v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:globalnav>
-                    <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
-                </template>
-
-                <template v-slot:localnav>
-                    <!-- Empty -->
-                    <div />
+                    <Navigation :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
                 </template>
 
                 <template v-slot:listcontrols>
@@ -50,12 +45,11 @@
 </template>
 
 <script>
-import { DatasetCollection } from "../model";
-import { History } from "../model";
-import { updateContentFields } from "../model/queries";
+import { DatasetCollection, History } from "components/History/model";
+import { updateContentFields } from "components/History/model/queries";
 import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
-import TopNav from "./TopNav";
+import Navigation from "./Navigation";
 import Operations from "./Operations";
 import Details from "./Details";
 import ContentItem from "../ContentItem/ContentItem";
@@ -66,7 +60,7 @@ export default {
     components: {
         UrlDataProvider,
         Layout,
-        TopNav,
+        Navigation,
         Details,
         ContentItem,
         ExpandedItems,
@@ -81,9 +75,6 @@ export default {
         return {
             pageSize: 50,
         };
-    },
-    created() {
-        console.log(this.dsc);
     },
     computed: {
         dsc() {
@@ -110,7 +101,6 @@ export default {
     methods: {
         getUrl(dsc) {
             const element = dsc && dsc.object ? dsc.object : dsc;
-            console.log(dsc);
             return element.contents_url.substring(1);
         },
         // change the data of the root collection, anything past the root
