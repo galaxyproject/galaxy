@@ -61,6 +61,7 @@
                             @click.stop="$emit('update:selected', false)" />
                         <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
                     </div>
+                    <span :class="icon" />
                     <span class="id">{{ id }}:</span>
                     <span class="name">{{ name }}</span>
                     <h6 v-if="item.collection_type" class="description py-1">
@@ -92,6 +93,12 @@ export default {
         writeable: { type: Boolean, default: true },
     },
     computed: {
+        icon() {
+            const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
+            if (stateIcon) {
+                return `fa fa-${stateIcon}`;
+            }
+        },
         editButtonTitle() {
             if (this.item.deleted) {
                 return "Undelete dataset to edit attributes";
