@@ -1087,6 +1087,10 @@ class XYZ(GenericMolFile):
         >>> fname = get_test_fname('Si.xyz')
         >>> XYZ().sniff(fname)
         True
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si_multi.xyz')
+        >>> XYZ().sniff(fname)
+        True
         >>> fname = get_test_fname('Si.cell')
         >>> XYZ().sniff(fname)
         False
