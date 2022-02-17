@@ -397,132 +397,99 @@ In this example:
 * `handler0` and `handler2` will handle tool executions that are not explicitly mapped to handlers
 * `handler1` and `handler2` will handle tool executions that are mapped to the `special` handler tag
 
-**Logging and daemonization**
+## gravity & galaxyctl
 
-It's possible to configure uWSGI to log to a file with the `logto` or `logto2` options (when running in the foreground,
-the default), but more advanced logging options that split log files for each process are possible and described in the
-Galaxy [Logging Configuration documentation](config_logging)
+[Gravity](https://github.com/galaxyproject/gravity) is a management tool for Galaxy servers,
+and is installed when you set up Galaxy.
 
-When running as a daemon with `run.sh --daemon`, output is logged to `galaxy.log` and the pid is written to
-`galaxy.pid`. These can be controlled with the `daemonize` and `pidfile` arguments (their `daemonize2` and `pidfile2`
-counterparts wait until after the application successfully loads to open and write the files). If you set a `daemonize*`
-option, you should not use the `--daemon` argument to `run.sh` (or not use `run.sh` at all, and start Galaxy directly
-with `uwsgi` on the command line).
+It provides two executables, `galaxyctl`, which is used to manage the starting, stopping, and logging of Galaxy's various processes, and `galaxy`, which can be used to run a Galaxy server in the foreground.
 
+These commands are available from within Galaxy's virtualenv, or you can install them globally.
+If you have used the standard installation method for Galaxy by running `./run.sh` or executing
+`./scripts/common_startup.sh`, a default directory has been configured in which gravity stores
+it's state. If you have installed Galaxy or gravity by another means you can use the `--state-dir` argument
+or the `GRAVITY_STATE_DIR` environment variable to control the state dir.
+In the following sections we assume you have correctly set up gravity and can use the `galaxyctl` command.
+
+## Logging and daemonization
+
+When running `./run.sh` the log output is shown on screen, and ^ctrl-c will stop all processes.
+Galaxy can be started in the background by running `./run.sh --daemon`.
+
+Alternatively, you can control galaxy using the `galaxyctl` command provided by gravity.
+After activating Galaxy's virtualenv environment you can start Galaxy in the background
+using `galaxyctl start`:
+
+```console
+$ galaxyctl start
+celery                           STARTING
+celery-beat                      STARTING
+gunicorn                         STARTING
+Log files are in /Users/mvandenb/src/doc_test/database/gravity/log
+```
+
+All process logs can be seen with `galaxyctl follow`:
+
+```console
+$ galaxyctl follow
+==> /Users/mvandenb/src/doc_test/database/gravity/log/gunicorn.log <==
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,344 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(JobHandlerQueue.monitor_thread, started daemon 123145470246912)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(JobHandlerStopQueue.monitor_thread, started daemon 123145487036416)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(WorkflowRequestMonitor.monitor_thread, started daemon 123145503825920)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(database_heartbeart_main.thread, started daemon 123145520615424)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <GalaxyQueueWorker(Thread-1, started daemon 123145537404928)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,346 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(Thread-2, started daemon 123145554194432)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,346 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(Thread-3, started daemon 123145570983936)> is alive.
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Started server process [91480]
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Waiting for application startup.
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Application startup complete.
+
+==> /Users/mvandenb/src/doc_test/database/gravity/log/celery.log <==
+[2022-02-17 16:31:27,008: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] | Consumer: Starting Events
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] | Consumer: Starting Tasks
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] | Consumer: Starting Heart
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] | Consumer: Starting event loop
+[2022-02-17 16:31:27,035: INFO/MainProcess] celery@MacBook-Pro-2.local ready.
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] basic.qos: prefetch_count->8
+
+==> /Users/mvandenb/src/doc_test/database/gravity/log/celery-beat.log <==
+[2022-02-17 16:29:04,023: DEBUG/MainProcess] beat: Ticking with max interval->5.00 minutes
+[2022-02-17 16:29:04,024: DEBUG/MainProcess] beat: Waking up in 5.00 minutes.
+No Galaxy config file found, running from current working directory: /Users/mvandenb/src/doc_test
+[2022-02-17 16:31:26,818: DEBUG/MainProcess] Setting default socket timeout to 30
+[2022-02-17 16:31:26,819: INFO/MainProcess] beat: Starting...
+[2022-02-17 16:31:26,824: DEBUG/MainProcess] Current schedule:
+<ScheduleEntry: prune-history-audit-table galaxy.celery.tasks.prune_history_audit_table() <freq: 1.00 hour>
+<ScheduleEntry: celery.backend_cleanup celery.backend_cleanup() <crontab: 0 4 * * * (m/h/d/dM/MY)>
+[2022-02-17 16:31:26,824: DEBUG/MainProcess] beat: Ticking with max interval->5.00 minutes
+[2022-02-17 16:31:26,825: DEBUG/MainProcess] beat: Waking up in 5.00 minutes.
+```
+
+More advanced logging options are described in the Galaxy [Logging Configuration documentation](config_logging)
 
 ## Starting and Stopping
 
-If you are using the **uWSGI + Webless job handlers** deployment strategy or want to run your Galaxy server as a
-persistent service, you can control it through a process manager. The current recommended process manager is
-[Supervisord](http://supervisord.org/). If you are comfortable with systemd and are running a relatively modern Linux
-distribution, you can also configure Galaxy as a service directly in systemd.
+If you want to run your Galaxy server as a persistent service, you can include the `galaxy` script from Galaxy's
+virtualenv in your process manager configuration. You can then continue using the `galaxyctl` command as usual
+to start/stop/restart Galaxy or follow the logs.
 
-### Supervisord
+## Transparent restarts
 
-You can use a supervisord config file like the following or be inspired by [this
-example](https://github.com/galaxyproject/galaxy/blob/dev/contrib/galaxy_supervisor.conf). Be sure to `supervisord
-update` or `supervisord reread && supervisord restart` whenever you make configuration changes.
-
-```ini
-[program:web]
-command         = /srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
-directory       = /srv/galaxy/server
-umask           = 022
-autostart       = true
-autorestart     = true
-startsecs       = 10
-stopwaitsecs    = 65
-user            = galaxy
-numprocs        = 1
-stopsignal      = INT
-```
-
-This configuration defines a "program" named `web` which represents our Galaxy uWSGI frontend. You'll notice that we've
-set a command, a directory, a umask, all of which you should be familiar with. Additionally we've specified that the
-process should `autostart` on boot, and `autorestart` if it ever crashes. We specify `startsecs` to say "the process
-must stay up for this long before we consider it OK. If the process crashes sooner than that (e.g. bad changes you've
-made to your local installation) supervisord will try again a couple of times to restart the process before giving up
-and marking it as failed. This is one of the many ways supervisord is much friendly for managing these sorts of tasks. 
-
-The value of `stopwaitsecs` should be at least as large as the smallest value of uWSGI's `reload-mercy`,
-`worker-reload-mercy`, and `mule-reload-mercy` options, all of which default to `60`.
-
-If using the **uWSGI + Webless** strategy, you'll need to addtionally define job handlers to start. There's no simple
-way to activate a virtualenv when using supervisor, but you can simulate the effects by setting `$PATH` and
-`$VIRTUAL_ENV`:
-
-```ini
-[program:handler]
-command         = /srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%(process_num)s --pid-file=/srv/galaxy/var/handler%(process_num)s.pid --log-file=/srv/galaxy/log/handler%(process_num)s.log
-directory       = /srv/galaxy/server
-process_name    = handler%(process_num)s
-numprocs        = 3
-umask           = 022
-autostart       = true
-autorestart     = true
-startsecs       = 15
-stopwaitsecs    = 35
-user            = galaxy
-environment     = VIRTUAL_ENV="/srv/galaxy/venv",PATH="/srv/galaxy/venv/bin:%(ENV_PATH)s"
-```
-
-This is similar to the "web" definition above, however, you'll notice that we use `%(process_num)s`. That's a variable
-substitution in the `command` and `process_name` fields. We've set `numprocs = 3`, which says to launch three handler
-processes. Supervisord will loop over `0..numprocs` and launch `handler0`, `handler1`, and `handler2` processes
-automatically for us, templating out the command string so each handler receives a different log file and name.
-
-The value of `stopwaitsecs` should be at least as large as `monitor_thread_join_timeout * runner_plugin_count`, which
-is `30` in the default configuration (`monitor_thread_join_timeout` is a Galaxy configuration option and
-`runner_plugin_count` is the number of `<plugin>`s in your `job_conf.xml`).
-
-Lastly, collect the tasks defined above into a single group. If you are not using webless handlers this is as simple as:
-
-```ini
-[group:galaxy]
-programs = web
-```
-
-With webless handlers, it is:
-
-```ini
-[group:galaxy]
-programs = web, handler
-```
-
-This will let us manage these tasks more globally with the `supervisorctl` command line tool:
-
-```console
-# supervisorctl status
-galaxy:handler0                  RUNNING   pid 7275, uptime 16:32:17
-galaxy:handler1                  RUNNING   pid 7276, uptime 16:32:17
-galaxy:handler2                  RUNNING   pid 7277, uptime 16:32:17
-galaxy:web                       RUNNING   pid 7299, uptime 16:32:16
-```
-
-This command shows us the status of our jobs, and we can easily restart all of the processes at once by naming the
-group. Familiar commands like start and stop are also available.
-
-```console
-# supervisorctl restart galaxy:
-galaxy:handler0: stopped
-galaxy:handler1: stopped
-galaxy:handler2: stopped
-galaxy:web: stopped
-galaxy:web: started
-galaxy:handler0: started
-galaxy:handler1: started
-galaxy:handler2: started
-```
+For zero-downtime restarts use the command `galaxyctl graceful`.
 
 ### Systemd
 
-Sample **uWSGI + Webless** strategy for systemd. More information on systemd.service environment
+This is a sample config for systemd. More information on systemd.service environment
 settings can be found in the [documentation](http://0pointer.de/public/systemd-man/systemd.exec.html#Environment=)
-
+The filename follows the pattern `<service_name>.service`. In this case we will use `galaxy.service`
 
 ```ini
 [Unit]
-Description=Galaxy web handler
+Description=Galaxy processes
 After=network.target
 After=time-sync.target
 
@@ -534,50 +501,15 @@ Group=galaxy
 Restart=on-abort
 WorkingDirectory=/srv/galaxy/server
 TimeoutStartSec=10
-ExecStart=/srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
+ExecStart=/srv/galaxy/venv/bin/galaxy --state-dir /srv/galaxy/database/gravity
 Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 [Install]
 WantedBy=multi-user.target
 ```
 
-For multiple handlers, the service file needs to be a [template unit](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Description>) - the filename follows the syntax 
-`<service_name>@<argument>.service` and all instances of `%I` in the service file are replaced with the `<argument>`
+We can now enable and start the the Galaxy services with systemd:
 
-```ini
-[Unit]
-Description=Galaxy job handlers
-After=network.target
-After=time-sync.target
-
-[Service]
-PermissionsStartOnly=true
-Type=simple
-User=galaxy
-Group=galaxy
-Restart=on-abort
-WorkingDirectory=/srv/galaxy/server
-TimeoutStartSec=10
-ExecStart=/srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%I --log-file=/srv/galaxy/log/handler%I.log
-#Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-[Install]
-WantedBy=multi-user.target
-```
-
-We can now enable and start the web services with systemd 
 ```console
-# systemctl enable galaxy-web
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-web.service to /etc/systemd/system/galaxy-web.service.
-# systemctl enable galaxy-handler@{0..3}
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@0.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@1.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@2.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@3.service to /etc/systemd/system/galaxy-handler@.service.
-# systemctl start galaxy-handler@{0..3}
-# systemctl start galaxy-web
+# systemctl enable galaxy
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy.service to /etc/systemd/system/galaxy.service.
 ```
-
-### Transparent Restart - Zerg Mode
-
-The standard uWSGI operation mode allows you to restart the Galaxy application while blocking client connections. Zerg Mode does away with the waiting by running a special Zerg Pool process, and connecting Zergling workers (aka Galaxy application processes) to the pool. As long as at least one is connected, requests can be served.
-
-See the [GCC2017 Admin Training session](https://github.com/galaxyproject/dagobah-training/blob/2017-montpellier/sessions/10-uwsgi/ex2-zerg-mode.md) on how to set this up.
