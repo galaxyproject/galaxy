@@ -46,7 +46,6 @@ export default {
     methods: {
         onViewCollection(collection) {
             this.breadcrumbs = [...this.breadcrumbs, collection];
-            console.log(this.breadcrumbs);
         },
     },
 };
