@@ -9,6 +9,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    Iterable,
     List,
     Optional,
     Union,
@@ -27,6 +28,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     PostJobAction,
     Workflow,
+    WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
@@ -817,7 +819,12 @@ class InputDataCollectionModule(InputModule):
         ]
         input_collection_type = TextToolParameter(None, collection_type_source)
         tag_source = dict(
-            name="tag", label="Tag filter", type="text", value=tag, help="Tags to automatically filter inputs"
+            name="tag",
+            label="Tag filter",
+            type="text",
+            optional="true",
+            value=tag,
+            help="Tags to automatically filter inputs",
         )
         input_tag = TextToolParameter(None, tag_source)
         inputs = {}
@@ -881,7 +888,7 @@ class InputParameterModule(WorkflowModule):
     name = "Input parameter"
     default_parameter_type = "text"
     default_optional = False
-    default_default_value = ""
+    default_default_value = None
     parameter_type = default_parameter_type
     optional = default_optional
     default_value = default_default_value
@@ -1097,10 +1104,53 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.cases = cases
         return {"parameter_definition": parameter_type_cond}
 
-    def get_runtime_inputs(self, connections=None, **kwds):
+    def restrict_options(self, connections: Iterable[WorkflowStepConnection], default_value):
+        try:
+            static_options = []
+            # Retrieve possible runtime options for 'select' type inputs
+            for connection in connections:
+                # Well this isn't a great assumption...
+                module = connection.input_step.module  # type: ignore[union-attr]
+                tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
+
+                def callback(input, prefixed_name, context, **kwargs):
+                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):
+                        static_options.append(input.get_options(self.trans, {}))
+
+                visit_input_values(tool_inputs, module.state.inputs, callback)
+
+            options = None
+            if static_options and len(static_options) == 1:
+                # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
+                options = [
+                    {"label": o[0], "value": o[1], "selected": bool(default_value and o[1] == default_value)}
+                    for o in static_options[0]
+                ]
+            elif static_options:
+                # Intersection based on values of multiple option connections.
+                intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
+                intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
+                d = defaultdict(set)  # Collapse labels with same values
+                for label, value, _ in intxn_opts:
+                    d[value].add(label)
+                options = [
+                    {
+                        "label": ", ".join(label),
+                        "value": value,
+                        "selected": bool(default_value and value == default_value),
+                    }
+                    for value, label in d.items()
+                ]
+
+            return options
+        except Exception:
+            log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
+
+    def get_runtime_inputs(self, connections: Optional[Iterable[WorkflowStepConnection]] = None, **kwds):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
+        default_value = parameter_def.get("default", self.default_default_value)
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
@@ -1113,41 +1163,12 @@ class InputParameterModule(WorkflowModule):
         # Really is just an attempt - tool module may not be available (small problem), get_options may really depend on other
         # values we are not setting, so this isn't great. Be sure to just fallback to text in this case.
         attemptRestrictOnConnections = is_text and parameter_def.get("restrictOnConnections") and connections
-        try:
-            if attemptRestrictOnConnections:
-                static_options = []
-                # Retrieve possible runtime options for 'select' type inputs
-                for connection in connections:
-                    # Well this isn't a great assumption...
-                    module = connection.input_step.module
-                    tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
-
-                    def callback(input, prefixed_name, context, **kwargs):
-                        if prefixed_name == connection.input_name and hasattr(input, "get_options"):
-                            static_options.append(input.get_options(self.trans, {}))
-
-                    visit_input_values(tool_inputs, module.state.inputs, callback)
-
-                options = None
-                if static_options and len(static_options) == 1:
-                    # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
-                    options = [{"label": o[0], "value": o[1]} for o in static_options[0]]
-                elif static_options:
-                    # Intersection based on values of multiple option connections.
-                    intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
-                    intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
-                    d = defaultdict(set)  # Collapse labels with same values
-                    for label, value, _ in intxn_opts:
-                        d[value].add(label)
-                    options = [
-                        {"label": ", ".join(label), "value": value, "selected": False} for value, label in d.items()
-                    ]
-
-                if options is not None:
-                    parameter_kwds["options"] = options
-                    restricted_inputs = True
-        except Exception:
-            log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
+        if attemptRestrictOnConnections:
+            connections = cast(Iterable[WorkflowStepConnection], connections)
+            restricted_options = self.restrict_options(connections=connections, default_value=default_value)
+            if restricted_options is not None:
+                restricted_inputs = True
+                parameter_kwds["options"] = restricted_options
 
         def _parameter_def_list_to_options(parameter_value):
             options = []
@@ -1178,8 +1199,10 @@ class InputParameterModule(WorkflowModule):
         parameter_class = parameter_types[client_parameter_type]
 
         if optional:
-            default_value = parameter_def.get("default", self.default_default_value)
-            parameter_kwds["value"] = default_value
+            if client_parameter_type == "select":
+                parameter_kwds["selected"] = default_value
+            else:
+                parameter_kwds["value"] = default_value
             if parameter_type == "boolean":
                 parameter_kwds["checked"] = default_value
 
