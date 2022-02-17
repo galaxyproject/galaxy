@@ -4,8 +4,8 @@
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="expandable && item.state !== 'noPermission' && item.state !== 'discarded'"
-                        :disabled="item.purged || item.state == 'upload' || item.state == 'new'"
+                        v-if="expandable && state !== 'noPermission' && state !== 'discarded'"
+                        :disabled="item.purged || state == 'upload' || state == 'new'"
                         :title="displayButtonTitle"
                         class="px-1"
                         size="sm"
@@ -14,8 +14,8 @@
                         <span class="fa fa-eye" />
                     </b-button>
                     <b-button
-                        v-if="writeable && item.state != 'discarded'"
-                        :disabled="item.purged || item.deleted || item.state == 'upload' || item.state == 'new'"
+                        v-if="writeable && state != 'discarded'"
+                        :disabled="item.purged || item.deleted || state == 'upload' || state == 'new'"
                         class="px-1"
                         title="Edit"
                         size="sm"
@@ -106,7 +106,7 @@ export default {
             if (this.item.purged) {
                 return "Cannot edit attributes of datasets removed from disk";
             }
-            if (this.item.state == "upload" || this.item.state != "new") {
+            if (this.state == "upload" || this.state != "new") {
                 return "This dataset is not yet editable";
             }
             return "Edit attributes";
@@ -115,10 +115,10 @@ export default {
             if (this.item.purged) {
                 return "Cannot display datasets removed from disk";
             }
-            if (this.item.state == "upload") {
+            if (this.state == "upload") {
                 return "This dataset must finish uploading before it can be viewed";
             }
-            if (this.item.state == "new") {
+            if (this.state == "new") {
                 return "This dataset is not yet viewable";
             }
             return "View data";

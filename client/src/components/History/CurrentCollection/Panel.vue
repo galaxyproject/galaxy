@@ -1,9 +1,9 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :url="getUrl(selectedCollection)" v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="getUrl(dsc)" v-slot="{ result: payload }">
         <ExpandedItems
-            :scope-key="selectedCollection.id"
+            :scope-key="dsc.id"
             :get-item-key="(item) => item.element_index"
             v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
@@ -17,7 +17,7 @@
                 </template>
 
                 <template v-slot:listcontrols>
-                    <Operations :collection="selectedCollection" :is-root="isRoot" />
+                    <Operations :collection="dsc" :is-root="isRoot" />
                 </template>
 
                 <template v-slot:details>
@@ -35,8 +35,8 @@
                                 :item="item"
                                 :id="item.element_index"
                                 :name="item.element_identifier"
-                                :expandable="item.element_type == 'hda'"
-                                :state="item.object.state"
+                                :expandable="item.element_type == 'dataset'"
+                                :state="item.state"
                                 :expanded="isExpanded(item)"
                                 :writeable="false"
                                 @update:expanded="setExpanded(item, $event)"
@@ -83,22 +83,21 @@ export default {
         };
     },
     created() {
-        this.dsc = new DatasetCollection(this.selectedCollection);
+        console.log(this.dsc);
     },
     computed: {
-        selectedCollection() {
+        dsc() {
             const arr = this.selectedCollections;
-            const selected = arr[arr.length - 1];
-            return selected;
+            return arr[arr.length - 1];
         },
         isRoot() {
-            return this.selectedCollection == this.rootCollection;
+            return this.dsc == this.rootCollection;
         },
         writable() {
             return this.isRoot;
         },
         rootCollection() {
-            return this.selectedCollections[0];
+            return this.dsc[0];
         },
         downloadCollectionUrl() {
             let url = "";
@@ -110,7 +109,9 @@ export default {
     },
     methods: {
         getUrl(dsc) {
-            return dsc.contents_url.substring(1);
+            const element = dsc && dsc.object ? dsc.object : dsc;
+            console.log(dsc);
+            return element.contents_url.substring(1);
         },
         // change the data of the root collection, anything past the root
         // collection is part of the dataset collection, which i believe is supposed to

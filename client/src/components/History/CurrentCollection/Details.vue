@@ -53,13 +53,13 @@ export default {
         Description,
     },
     props: {
-        dsc: { type: DatasetCollection, required: true },
+        dsc: { type: Object, required: true },
         writable: { type: Boolean, required: true },
     },
     data() {
         return {
             editing: false,
-            tempContent: this.dsc.clone(),
+            tempContent: Object.assign({}, this.dsc),
         };
     },
     computed: {
@@ -103,7 +103,7 @@ export default {
     },
     methods: {
         reset() {
-            this.tempContent = this.dsc.clone();
+            this.tempContent = Object.assign({}, this.dsc);
         },
         patchTempDsc(props = {}) {
             this.tempContent = this.tempContent.patch(props);
