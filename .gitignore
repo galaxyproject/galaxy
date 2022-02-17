@@ -6,6 +6,9 @@ config/amp_mgm.ini
 # tools including AMP MGMs
 tools/amp_mgms
 
+# various AMP/galaxy logs
+logs/
+
 # AMP project files
 /.project
 /.pydevproject
