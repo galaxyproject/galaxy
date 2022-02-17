@@ -2,7 +2,7 @@
     <div class="mb-1 clearfix">
         <div class="btn-group float-left">
             <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
-                <span class="fa fa-exclamation-triangle" />
+                <span class="fa fa-bug" />
             </b-button>
             <b-button
                 v-if="showDownloads"
