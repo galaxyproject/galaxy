@@ -1,11 +1,12 @@
 <template>
     <section>
-        <nav class="content-operations-menu d-flex justify-content-between bg-secondary">
+        <nav class="content-operations d-flex justify-content-between bg-secondary">
             <b-button-group>
                 <b-button
                     title="Select Items"
-                    class="show-history-content-selectors-btn"
+                    class="rounded-0"
                     size="sm"
+                    variant="link"
                     :disabled="!hasMatches"
                     :pressed="showSelection"
                     @click="toggleSelection">
@@ -13,92 +14,90 @@
                 </b-button>
                 <b-button
                     title="Search Items"
+                    class="rounded-0"
                     size="sm"
+                    variant="link"
                     :pressed="showFilter"
                     @click="toggleFilter"
                     data-description="content search toggle">
                     <Icon icon="search" />
                 </b-button>
-                <b-button title="Collapse Items" size="sm" :disabled="!expandedCount" @click="$emit('collapse-all')">
+                <b-button
+                    title="Collapse Items"
+                    class="rounded-0"
+                    size="sm"
+                    variant="link"
+                    :disabled="!expandedCount"
+                    @click="$emit('collapse-all')">
                     <Icon icon="compress" />
                 </b-button>
             </b-button-group>
             <b-button-group>
                 <b-dropdown
-                    class="history-contents-list-action-menu-btn"
-                    size="sm"
                     text="Selection"
-                    :disabled="!hasSelection"
-                    data-description="selected content menu">
-                    <b-dropdown-text id="history-op-selected-content">
-                        <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
-                        <span v-localize v-else>You don't have any selected content.</span>
+                    size="sm"
+                    variant="link"
+                    toggle-class="text-decoration-none"
+                    data-description="selected content menu"
+                    :disabled="!hasSelection">
+                    <b-dropdown-text>
+                        <span v-localize>With {{ numSelected }} selected...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:hide-selected-content>
-                        <span v-localize>Hide</span>
-                    </b-dropdown-item>
-                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:show-selected-content>
+                    <b-dropdown-item v-if="params.showHidden" v-b-modal:show-selected-content>
                         <span v-localize>Unhide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:delete-selected-content>
-                        <span v-localize>Delete</span>
+                    <b-dropdown-item v-else v-b-modal:hide-selected-content>
+                        <span v-localize>Hide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:restore-selected-content>
+                    <b-dropdown-item v-if="params.showDeleted" v-b-modal:restore-selected-content>
                         <span v-localize>Undelete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item
-                        aria-describedby="history-op-selected-content"
-                        v-b-modal:purge-selected-content
-                        :disabled="!hasSelection">
-                        <span v-localize>Permanently Delete</span>
+                    <b-dropdown-item v-else v-b-modal:delete-selected-content>
+                        <span v-localize>Delete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item
-                        aria-describedby="history-op-selected-content"
-                        @click="buildDatasetList"
-                        data-description="build list">
+                    <b-dropdown-item v-if="!params.showDeleted" v-b-modal:purge-selected-content>
+                        <span v-localize>Delete (permanently)</span>
+                    </b-dropdown-item>
+                    <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetList" data-description="build list">
                         <span v-localize>Build Dataset List</span>
                     </b-dropdown-item>
-                    <b-dropdown-item
-                        aria-describedby="history-op-selected-content"
-                        @click="buildDatasetPair"
-                        data-description="build pair">
+                    <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetPair" data-description="build pair">
                         <span v-localize>Build Dataset Pair</span>
                     </b-dropdown-item>
                     <b-dropdown-item
-                        aria-describedby="history-op-selected-content"
+                        v-if="showBuildOptions"
                         @click="buildListOfPairs"
                         data-description="build list of pairs">
                         <span v-localize>Build List of Dataset Pairs</span>
                     </b-dropdown-item>
                     <b-dropdown-item
-                        aria-describedby="history-op-selected-content"
+                        v-if="showBuildOptions"
                         @click="buildCollectionFromRules"
                         data-description="build collection from rules">
                         <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
                 <b-dropdown
-                    class="history-contents-list-action-menu-btn"
-                    size="sm"
                     text="History"
-                    :disabled="!hasMatches"
-                    data-description="history action menu">
+                    size="sm"
+                    variant="link"
+                    class="rounded-0"
+                    toggle-class="text-decoration-none"
+                    data-description="history action menu"
+                    :disabled="!hasMatches">
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item
-                        aria-describedby="history-op-all-content"
-                        @click="iframeRedirect('/dataset/copy_datasets')"
-                        data-description="copy datasets">
+                    <b-dropdown-item @click="iframeRedirect('/dataset/copy_datasets')" data-description="copy datasets">
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
+                    <b-dropdown-item v-b-modal:show-all-hidden-content>
                         <span v-localize>Unhide All Hidden Content</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-b-modal:delete-all-hidden-content aria-describedby="history-op-all-content">
+                    <b-dropdown-item v-b-modal:delete-all-hidden-content>
                         <span v-localize>Delete All Hidden Content</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
+                    <b-dropdown-item v-b-modal:purge-all-deleted-content>
                         <span v-localize>Purge All Hidden Content</span>
                     </b-dropdown-item>
                 </b-dropdown>
@@ -106,7 +105,7 @@
         </nav>
 
         <transition name="shutterfade">
-            <content-filters v-if="showFilter" class="content-filters p-2" :params.sync="localParams" />
+            <content-filters v-if="showFilter" class="content-operations-filters p-2" :params.sync="localParams" />
         </transition>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -179,6 +178,9 @@ export default {
         };
     },
     computed: {
+        showBuildOptions() {
+            return !this.params.showHidden && !this.params.showDeleted;
+        },
         hasContentFilters() {
             const { showHidden, showDeleted, filterText } = this.params;
             return showHidden || showDeleted || filterText;
@@ -196,9 +198,6 @@ export default {
         },
         hasSelection() {
             return this.numSelected > 0;
-        },
-        countHidden() {
-            return this.history.contents_active.hidden;
         },
     },
     methods: {
@@ -284,10 +283,3 @@ export default {
     },
 };
 </script>
-
-<style lang="scss">
-// remove borders around buttons in menu
-.content-operations-menu .btn-group .btn {
-    border-color: transparent !important;
-}
-</style>
