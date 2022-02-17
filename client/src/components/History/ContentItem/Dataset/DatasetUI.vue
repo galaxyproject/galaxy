@@ -113,8 +113,6 @@ either through the props, and make updates through the events -->
             </div>
 
             <div class="details">
-                
-
                 <div class="display-applications" v-if="dataset.displayLinks.length">
                     <div class="display-application" v-for="app in dataset.displayLinks" :key="app.label">
                         <span class="display-application-location">
