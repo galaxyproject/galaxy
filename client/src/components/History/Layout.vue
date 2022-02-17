@@ -1,12 +1,8 @@
-<!-- Layout to house all the extraneous structural markup elements
-and non-semantic utility classes that are necessary when you use an
-amateur-hour baby-tool like Bootstrap instead of taking the afternoon
-to learn how CSS is supposed to work. -->
-
 <template>
-    <section class="history beta d-flex flex-column">
+    <section class="history-layout d-flex flex-column">
         <header>
-            <nav class="d-flex justify-content-between bg-secondary">
+            <!-- navigation bar at the top-->
+            <nav class="d-flex justify-content-between">
                 <slot name="navigation" />
             </nav>
 
@@ -16,12 +12,12 @@ to learn how CSS is supposed to work. -->
             </div>
         </header>
 
-        <!-- warnings, messages, dirty limericks -->
+        <!-- warnings, messages -->
         <section v-if="$slots.messages">
             <slot name="messages" />
         </section>
 
-        <!-- controls atop the list -->
+        <!-- controls above list -->
         <section v-if="$slots.listcontrols" class="list-controls">
             <slot name="listcontrols" />
         </section>
@@ -39,8 +35,7 @@ to learn how CSS is supposed to work. -->
 </template>
 
 <style lang="scss">
-.history.beta {
-    /* TODO: css reset? */
+.history-layout {
     h1,
     h2,
     h3,
@@ -49,11 +44,6 @@ to learn how CSS is supposed to work. -->
     h6 {
         margin: 0;
     }
-
-    .list-controls {
-        margin-bottom: 2px;
-    }
-
     .list-controls:empty,
     .messages:empty {
         display: none;
