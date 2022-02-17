@@ -18,7 +18,7 @@
                         <span class="value">{{ result.misc_info }}</span>
                     </div>
                 </div>
-                <ContentActions :item="item" />
+                <ContentActions :item="result" />
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
