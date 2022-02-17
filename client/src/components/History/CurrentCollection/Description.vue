@@ -6,11 +6,9 @@
 </template>
 
 <script>
-import { DatasetCollection } from "components/History/model/DatasetCollection";
-
 export default {
     props: {
-        dsc: { type: DatasetCollection, required: true },
+        dsc: { type: Object, required: true },
     },
     computed: {
         /** @return {Boolean} */

@@ -7,8 +7,7 @@
                 v-slot="{ result: item, loading }">
                 <div>
                     <loading-span v-if="loading" message="Loading datasets" />
-                    <div v-else :item="item" :element_identifier="contentItem.element_identifier">
-                    </div>
+                    <div v-else :item="item" :element_identifier="contentItem.element_identifier"></div>
                 </div>
             </DatasetProvider>
             <DatasetCollectionUIWrapper

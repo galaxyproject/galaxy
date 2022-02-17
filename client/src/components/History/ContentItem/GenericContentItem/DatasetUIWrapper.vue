@@ -11,8 +11,7 @@
         @delete="onDelete"
         @undelete="onUndelete"
         @unhide="onUnhide"
-        @update="onUpdate">
-    </div>
+        @update="onUpdate"></div>
 </template>
 <script>
 import { Dataset } from "../../model";

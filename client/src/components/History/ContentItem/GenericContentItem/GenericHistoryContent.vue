@@ -2,7 +2,7 @@
     <component :is="providerComponent" :id="data_item.id" auto-refresh v-slot="{ result: item, loading }">
         <div>
             <loading-span v-if="loading" message="Loading dataset" />
-            <div v-if="item" :item="item"/>
+            <div v-if="item" :item="item" />
         </div>
     </component>
 </template>
