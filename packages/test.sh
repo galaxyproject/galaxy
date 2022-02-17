@@ -33,7 +33,7 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 0)
+RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"

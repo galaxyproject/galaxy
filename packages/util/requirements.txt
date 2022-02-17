@@ -1,11 +1,11 @@
 bleach
 boltons
 docutils
-markupsafe
+MarkupSafe
 packaging
 pycryptodome
-pyyaml
+PyYAML
 requests
-routes
+Routes
 typing-extensions
 zipstream-new
