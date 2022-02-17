@@ -2,26 +2,27 @@
     <section>
         <nav class="content-operations-menu d-flex justify-content-between bg-secondary">
             <b-button-group>
-                <IconButton
+                <b-button
                     title="Select Items"
                     class="show-history-content-selectors-btn"
-                    icon="check-square"
+                    size="sm"
                     :disabled="!hasMatches"
                     :pressed="showSelection"
-                    @click="toggleSelection" />
-                <IconButton
+                    @click="toggleSelection">
+                    <Icon icon="check-square" />
+                </b-button>
+                <b-button
                     title="Search Items"
-                    icon="search"
+                    size="sm"
                     :pressed="showFilter"
                     @click="toggleFilter"
-                    data-description="content search toggle" />
-                <IconButton
-                    title="Collapse Items"
-                    icon="compress"
-                    :disabled="!expandedCount"
-                    @click="$emit('collapse-all')" />
+                    data-description="content search toggle">
+                    <Icon icon="search" />
+                </b-button>
+                <b-button title="Collapse Items" size="sm" :disabled="!expandedCount" @click="$emit('collapse-all')">
+                    <Icon icon="compress" />
+                </b-button>
             </b-button-group>
-
             <b-button-group>
                 <b-dropdown
                     class="history-contents-list-action-menu-btn"
@@ -33,51 +34,42 @@
                         <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
                         <span v-localize v-else>You don't have any selected content.</span>
                     </b-dropdown-text>
-
                     <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:hide-selected-content>
                         <span v-localize>Hide</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:show-selected-content>
                         <span v-localize>Unhide</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:delete-selected-content>
                         <span v-localize>Delete</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:restore-selected-content>
                         <span v-localize>Undelete</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         v-b-modal:purge-selected-content
                         :disabled="!hasSelection">
                         <span v-localize>Permanently Delete</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildDatasetList"
                         data-description="build list">
                         <span v-localize>Build Dataset List</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildDatasetPair"
                         data-description="build pair">
                         <span v-localize>Build Dataset Pair</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildListOfPairs"
                         data-description="build list of pairs">
                         <span v-localize>Build List of Dataset Pairs</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item
                         aria-describedby="history-op-selected-content"
                         @click="buildCollectionFromRules"
@@ -85,7 +77,6 @@
                         <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
-
                 <b-dropdown
                     class="history-contents-list-action-menu-btn"
                     size="sm"
@@ -95,22 +86,18 @@
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
-
                     <b-dropdown-item
                         aria-describedby="history-op-all-content"
                         @click="iframeRedirect('/dataset/copy_datasets')"
                         data-description="copy datasets">
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
                         <span v-localize>Unhide All Hidden Content</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item v-b-modal:delete-all-hidden-content aria-describedby="history-op-all-content">
                         <span v-localize>Delete All Hidden Content</span>
                     </b-dropdown-item>
-
                     <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
                         <span v-localize>Purge All Hidden Content</span>
                     </b-dropdown-item>
@@ -172,13 +159,11 @@ import { createDatasetCollection } from "./model/queries";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
 import ContentFilters from "./ContentFilters";
-import IconButton from "components/IconButton";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
         ContentFilters,
-        IconButton,
     },
     props: {
         history: { type: History, required: true },
