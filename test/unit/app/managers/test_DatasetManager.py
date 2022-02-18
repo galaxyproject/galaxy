@@ -1,6 +1,7 @@
 """
 """
 import unittest
+from unittest import mock
 
 import sqlalchemy
 
@@ -208,9 +209,7 @@ def testable_url_for(*a, **k):
     return f'(fake url): {a}, {k}'
 
 
-DatasetSerializer.url_for = staticmethod(testable_url_for)
-
-
+@mock.patch('galaxy.managers.datasets.DatasetSerializer.url_for', testable_url_for)
 class DatasetSerializerTestCase(BaseTestCase):
 
     def set_up_managers(self):

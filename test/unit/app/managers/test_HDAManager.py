@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 
 import sqlalchemy
 
@@ -346,9 +347,7 @@ def testable_url_for(*a, **k):
     return f'(fake url): {a}, {k}'
 
 
-hdas.HDASerializer.url_for = staticmethod(testable_url_for)
-
-
+@mock.patch('galaxy.managers.hdas.HDASerializer.url_for', testable_url_for)
 class HDASerializerTestCase(HDATestCase):
 
     def set_up_managers(self):

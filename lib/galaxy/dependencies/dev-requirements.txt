@@ -1,5 +1,6 @@
 --extra-index-url https://wheels.galaxyproject.org/simple
 
+a2wsgi==1.4.0; python_version >= "3.6" and python_version < "4.0"
 adal==1.2.7
 aiofiles==0.8.0; python_version >= "3.6" and python_version < "4.0"
 alabaster==0.7.12; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"

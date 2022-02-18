@@ -427,13 +427,15 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             #   see also: https://sentry.galaxyproject.org/galaxy/galaxy-main/group/20769/events/9352883/
             'url': lambda item, key, **context: self.url_for('history_content',
                                                              history_id=self.app.security.encode_id(item.history_id),
-                                                             id=self.app.security.encode_id(item.id)),
+                                                             id=self.app.security.encode_id(item.id),
+                                                             context=context),
             'urls': self.serialize_urls,
 
             # TODO: backwards compat: need to go away
             'download_url': lambda item, key, **context: self.url_for('history_contents_display',
                                                                       history_id=self.app.security.encode_id(item.history.id),
-                                                                      history_content_id=self.app.security.encode_id(item.id)),
+                                                                      history_content_id=self.app.security.encode_id(item.id),
+                                                                      context=context),
             'parent_id': self.serialize_id,
             # TODO: to DatasetAssociationSerializer
             'accessible': lambda item, key, user=None, **c: self.manager.is_accessible(item, user, **c),

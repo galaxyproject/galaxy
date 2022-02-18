@@ -390,10 +390,8 @@ def testable_url_for(*a, **k):
     return f'(fake url): {a}, {k}'
 
 
-HistorySerializer.url_for = staticmethod(testable_url_for)
-hdas.HDASerializer.url_for = staticmethod(testable_url_for)
-
-
+@mock.patch('galaxy.managers.histories.HistorySerializer.url_for', testable_url_for)
+@mock.patch('galaxy.managers.hdas.HDASerializer.url_for', testable_url_for)
 class HistorySerializerTestCase(BaseTestCase):
 
     def set_up_managers(self):
