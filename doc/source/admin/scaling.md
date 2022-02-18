@@ -474,7 +474,7 @@ More advanced logging options are described in the Galaxy [Logging Configuration
 ## Starting and Stopping
 
 If you want to run your Galaxy server as a persistent service, you can include the `galaxy` script from Galaxy's
-virtualenv in your process manager configuration. You can then continue using the `galaxyctl` command as usual
+virtualenv in the configuration of your process manager (e.g. systemd). You can then continue using the `galaxyctl` command as usual
 to start/stop/restart Galaxy or follow the logs.
 
 ### Transparent restarts
