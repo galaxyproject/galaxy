@@ -81,8 +81,12 @@ jobs:
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh
-          ./run_tests.sh -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
+          ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: integration
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

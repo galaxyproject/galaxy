@@ -60,8 +60,12 @@ jobs:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh -integration test/integration_selenium
+        run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: integration-selenium
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

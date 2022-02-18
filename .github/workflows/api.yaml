@@ -56,8 +56,12 @@ jobs:
           path: .venv
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Run tests
-        run: ./run_tests.sh --skip_flakey_fails -api
+        run: ./run_tests.sh --coverage --skip_flakey_fails -api
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: api
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

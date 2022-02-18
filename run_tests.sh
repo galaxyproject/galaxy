@@ -644,7 +644,7 @@ fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$test_script" = 'pytest' ]; then
     if [ "$coverage_arg" = '--with-coverage' ]; then
-        coverage_arg="--cov-report term --cov=lib"
+        coverage_arg="--cov-report xml --cov-report term --cov=lib"
     fi
     if [ -n "$marker" ]; then
         marker_args=(-m "$marker")

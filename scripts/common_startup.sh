@@ -140,19 +140,15 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=16.7.9
-                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha=0d62c70883c0342d59c11d0ddac0d954d0431321a41ab20851facf2b222598f3
+                min_python_version=3.7
+                vurl="https://bootstrap.pypa.io/virtualenv/${min_python_version}/virtualenv.pyz"
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
-                # SSL certificates are not checked to prevent problems with messed
-                # up client cert environments. We verify the download using a known
-                # good sha256 sum instead.
                 echo "Fetching $vurl"
                 if command -v curl >/dev/null; then
-                    curl --insecure -L -o "$vsrc" "$vurl"
+                    curl -L -o "$vsrc" "$vurl"
                 elif command -v wget >/dev/null; then
-                    wget --no-check-certificate -O "$vsrc" "$vurl"
+                    wget -O "$vsrc" "$vurl"
                 else
                     "$GALAXY_PYTHON" -c "try:
     from urllib import urlretrieve
@@ -160,10 +156,7 @@ except:
     from urllib.request import urlretrieve
 urlretrieve('$vurl', '$vsrc')"
                 fi
-                echo "Verifying $vsrc checksum is $vsha"
-                "$GALAXY_PYTHON" -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
-                tar zxf "$vsrc" -C "$vtmp"
-                "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
             fi
         fi
