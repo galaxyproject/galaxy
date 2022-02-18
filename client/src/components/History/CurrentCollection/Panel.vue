@@ -95,13 +95,12 @@ export default {
         },
     },
     methods: {
-        // change the data of the root collection, anything past the root
-        // collection is part of the dataset collection, which i believe is supposed to
-        // be immutable, so only edit name, tags etc of top-level selected collection.
-        async updateDsc(collection, fields) {
-            if (this.writeable) {
-                await updateContentFields(collection, fields);
-            }
+        updateDsc(collection, fields) {
+            updateContentFields(collection, fields).then((response) => {
+                Object.keys(response).forEach((key) => {
+                    collection[key] = response[key];
+                });
+            });
         },
         onScroll(newHid) {
             this.maxHid = newHid;
