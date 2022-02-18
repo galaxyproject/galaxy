@@ -1,7 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="getUrl" v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" v-slot="{ result: payload }">
         <ExpandedItems
             :scope-key="dsc.id"
             :get-item-key="(item) => item.element_index"
@@ -90,14 +90,14 @@ export default {
         rootCollection() {
             return this.dsc[0];
         },
-        downloadCollectionUrl() {
+        downloadUrl() {
             let url = "";
             if (this.rootCollection) {
                 url = `${this.rootCollection.url}/download`;
             }
             return url;
         },
-        getUrl() {
+        url() {
             return `api/dataset_collections/${this.dsc.id}`;
         },
     },
