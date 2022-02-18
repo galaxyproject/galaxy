@@ -1,9 +1,9 @@
 <template>
     <HeaderDetails
         :name="dsc.name"
-        :annotation="dsc.annotation"
         :tags="dsc.tags"
         :writeable="writeable"
+        :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
             <h3 data-description="collection name display">{{ dsc.name || "(Collection Name)" }}</h3>

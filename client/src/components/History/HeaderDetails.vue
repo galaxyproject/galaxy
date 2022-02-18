@@ -29,6 +29,7 @@
                 max-rows="4"
                 data-description="name input" />
             <b-textarea
+                v-if="showAnnotation"
                 class="mb-2"
                 v-model="localProps.annotation"
                 placeholder="Annotation (optional)"
@@ -72,6 +73,7 @@ export default {
     props: {
         name: { type: String, default: null },
         annotation: { type: String, default: null },
+        showAnnotation: { type: Boolean, default: true },
         tags: { type: Array, default: null },
         writeable: { type: Boolean, default: true },
     },
