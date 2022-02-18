@@ -477,7 +477,7 @@ If you want to run your Galaxy server as a persistent service, you can include t
 virtualenv in your process manager configuration. You can then continue using the `galaxyctl` command as usual
 to start/stop/restart Galaxy or follow the logs.
 
-## Transparent restarts
+### Transparent restarts
 
 For zero-downtime restarts use the command `galaxyctl graceful`.
 
