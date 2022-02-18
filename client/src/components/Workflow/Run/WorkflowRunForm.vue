@@ -206,6 +206,9 @@ export default {
                 // Tool form always wants a list of invocations back
                 // so that inputs can be batched.
                 batch: true,
+                // the user is already warned if tool versions are wrong,
+                // they can still choose to invoke the workflow anyway.
+                require_exact_tool_versions: false,
             };
 
             console.debug("WorkflowRunForm::onExecute()", "Ready for submission.", jobDef);

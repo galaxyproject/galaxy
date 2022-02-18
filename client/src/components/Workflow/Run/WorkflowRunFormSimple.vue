@@ -114,6 +114,7 @@ export default {
                 inputs_by: "step_index",
                 batch: true,
                 use_cached_job: this.useJobCache,
+                require_exact_tool_versions: false,
             };
             if (this.targetHistory == "current") {
                 data.history_id = this.model.historyId;
