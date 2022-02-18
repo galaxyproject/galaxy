@@ -40,8 +40,7 @@ describe("CleanupResultDialog.vue", () => {
 
         expect(wrapper.find(LOADING_SPINNER).exists()).toBe(true);
 
-        wrapper.setProps({ result: SUCCESS_RESULT() });
-        await flushPromises();
+        await wrapper.setProps({ result: SUCCESS_RESULT() });
         expect(wrapper.find(LOADING_SPINNER).exists()).toBe(false);
     });
 
