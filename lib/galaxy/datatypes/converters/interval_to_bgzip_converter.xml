@@ -1,22 +1,27 @@
 <tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.1" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
-        <requirement type="package" version="8.25">coreutils</requirement>
+        <requirement type="package" version="9.0">coreutils</requirement>
+        <requirement type="package" version="1.14">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        python '$__tool_directory__/bgzip.py'
-        #if $input1.ext in ['bed', 'gff', 'vcf']
-            -P $input1.ext
+        grep -e '^"#"' -e '^track' -v '$input1' 
+        |
+        sort 
+        #if $input1.ext == "vcf"
+            -k1,1 -k2,2n
+        #elif $input1.ext == "gff"
+            -s -k1,1 -k4,4n
         #else
-            -c ${input1.metadata.chromCol}
-            -s ${input1.metadata.startCol}
-            -e ${input1.metadata.endCol}
+            -k${input1.metadata.chromCol},${input1.metadata.chromCol}
+            -k${input1.metadata.startCol},${input1.metadata.startCol}n
+            -k${input1.metadata.endCol},${input1.metadata.endCol}n
         #end if
-        '$input1' '$output1'
+        | 
+        bgzip -c > '$output1'
     ]]></command>
     <inputs>
-        <!-- gff because gff and vcf are not a subclass of interval -->
+        <!-- gff and vcf are not a subclass of interval -->
         <param format="gff,vcf,interval" name="input1" type="data" label="Choose Interval file"/>
     </inputs>
     <outputs>

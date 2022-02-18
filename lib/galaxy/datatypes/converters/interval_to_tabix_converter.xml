@@ -1,18 +1,26 @@
 <tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.1" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
+        <requirement type="package" version="1.14">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        python '$__tool_directory__/interval_to_tabix_converter.py'
+        ln -s '$bgzip' input.bgz &&
+        tabix 
         #if $input1.ext in ['bed', 'gff', 'vcf']
-            -P $input1.ext
+            -p $input1.ext
         #else
-            -c ${input1.metadata.chromCol}
-            -s ${input1.metadata.startCol}
-            -e ${input1.metadata.endCol}
+             -s ${input1.metadata.chromCol}
+             -b ${input1.metadata.startCol}
+             -e ${input1.metadata.endCol}
         #end if
-        '$input1' '$bgzip' '$output1'
+        input.bgz
+        &&
+        if [ ! -s input.bgz.tbi ]; then
+            >&2 echo "The converted tabix index file is empty, meaning the input data is invalid.";
+            exit 1;
+        fi 
+        &&
+        mv input.bgz.tbi '$output1'
     ]]></command>
     <inputs>
         <!-- gff because gff and vcf are not a subclass of interval -->
