@@ -34,8 +34,6 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 1)
-RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
     package_dir=${PACKAGE_DIRS[$i]}
@@ -53,11 +51,7 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
 
     pip install -r test-requirements.txt
 
-    if [[ "${RUN_TESTS[$i]}" == "1" ]]; then
-        pytest --doctest-modules galaxy tests
-    fi
-    if [[ "${RUN_MYPY[$i]}" == "1" ]]; then
-        make mypy
-    fi
+    pytest --doctest-modules galaxy tests
+    make mypy
     cd ..
 done
