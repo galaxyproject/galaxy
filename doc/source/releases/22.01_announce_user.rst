@@ -181,6 +181,7 @@ A special thanks to the release testing team for testing many of the new feature
 
 - `Keith Suderman <https://github.com/ksuderman>`_
 - `Delphine Lariviere <https://github.com/Delphine-L>`_
+- `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
 
 Release Notes
 ===========================================================
