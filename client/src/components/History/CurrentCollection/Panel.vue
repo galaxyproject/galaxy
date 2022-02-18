@@ -1,7 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="getUrl(dsc)" v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="getUrl" v-slot="{ result: payload }">
         <ExpandedItems
             :scope-key="dsc.id"
             :get-item-key="(item) => item.element_index"
@@ -16,7 +16,7 @@
                 </template>
 
                 <template v-slot:details>
-                    <Details :dsc="dsc" :writable="writable" @update:dsc="updateDsc(dsc, $event)" />
+                    <Details :dsc="dsc" :writeable="writeable" @update:dsc="updateDsc(dsc, $event)" />
                 </template>
 
                 <template v-slot:listing>
@@ -84,7 +84,7 @@ export default {
         isRoot() {
             return this.dsc == this.rootCollection;
         },
-        writable() {
+        writeable() {
             return this.isRoot;
         },
         rootCollection() {
@@ -97,16 +97,16 @@ export default {
             }
             return url;
         },
+        getUrl() {
+            return `api/dataset_collections/${this.dsc.id}`;
+        },
     },
     methods: {
-        getUrl(dsc) {
-            return `api/dataset_collections/${dsc.id}`;
-        },
         // change the data of the root collection, anything past the root
         // collection is part of the dataset collection, which i believe is supposed to
         // be immutable, so only edit name, tags etc of top-level selected collection.
         async updateDsc(collection, fields) {
-            if (this.writable) {
+            if (this.writeable) {
                 await updateContentFields(collection, fields);
             }
         },

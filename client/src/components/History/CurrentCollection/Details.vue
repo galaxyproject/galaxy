@@ -27,10 +27,10 @@
 
         <EditorMenu
             class="ml-3 flex-grow-0 d-flex flex-column"
-            v-if="writable"
+            v-if="writeable"
             model-name="Collection"
             :editing.sync="editing"
-            :writable="writable"
+            :writeable="writeable"
             :valid="valid"
             :dirty="dirty"
             @save="save"
@@ -54,7 +54,7 @@ export default {
     },
     props: {
         dsc: { type: Object, required: true },
-        writable: { type: Boolean, required: true },
+        writeable: { type: Boolean, required: true },
     },
     data() {
         return {
@@ -67,7 +67,7 @@ export default {
             return this.dsc.id;
         },
         isEditing() {
-            return this.writable && this.editing;
+            return this.writeable && this.editing;
         },
         valid() {
             return this.tempContent.name.length > 0;
