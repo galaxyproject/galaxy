@@ -1091,34 +1091,76 @@ class XYZ(GenericMolFile):
         >>> fname = get_test_fname('Si_multi.xyz')
         >>> XYZ().sniff(fname)
         True
-        >>> fname = get_test_fname('Si.cell')
+        >>> fname = get_test_fname('Si.cif')
         >>> XYZ().sniff(fname)
         False
         """
-        idx = 0
         with open(filename) as f:
-            xyz_lines = f.readlines(1000)[:-1]
-        for line in xyz_lines:
-            idx += 1
-            if idx == 1:
+            xyz_lines = f.readlines(1000)
+
+        try:
+            blocks = self.read_blocks(xyz_lines)
+        except (TypeError, ValueError):
+            return False
+        except IndexError as e:
+            if "pop from empty list" in str(e):
+                # xyz_lines ran out mid block – check full file
+                with open(filename) as f:
+                    xyz_lines = f.readlines()
                 try:
-                    int(line)
-                except (TypeError, ValueError):
+                    blocks = self.read_blocks(xyz_lines)
+                except (TypeError, ValueError, IndexError):
+                    # any error is now a failure
                     return False
-                else:
-                    if count_lines(filename) != int(line) + 2:
-                        return False
-            if idx > 2:
-                atom = line.split()
-                if atom[0] not in self.get_element_symbols():
-                    return False
-                try:
-                    float(atom[1])
-                    float(atom[2])
-                    float(atom[3])
-                except (TypeError, ValueError):
-                    return False
+            else:
+                # some other IndexError - invalid input
+                return False
+
+        # check blocks are valid
+        for block in blocks:
+            if block[0] is None:
+                return False
+
+        # all checks passed
         return True
+
+    def read_blocks(self, lines):
+        """
+        Parses and returns a list of XYZ structure blocks (aka frames).
+
+        Raises IndexError, TypeError, ValueError
+        """
+        # remove trailing blank lines
+        # blank lines not permitted elsewhere in file
+        while not lines[-1].strip():
+            lines = lines[:-1]
+
+        blocks = []
+
+        while lines:
+            n_atoms = None
+            comment = None
+            atoms = []
+
+            n_atoms = int(lines.pop(0))
+            comment = lines.pop(0)
+            for _ in range(n_atoms):
+                atom = lines.pop(0)
+                atom = atom.split()
+                if atom[0].lower().capitalize() not in self.get_element_symbols():
+                    raise ValueError(f"{atom[0]} is not a valid element symbol")
+
+                # these lines will raise errors if not valid XYZ format
+                # but we don't actually need the casted values for metadata
+                float(atom[1])
+                float(atom[2])
+                float(atom[3])
+
+                atoms.append(atom)
+
+            blocks.append((n_atoms, comment, atoms))
+
+        return blocks
 
     def set_meta(self, dataset, **kwd):
         """
