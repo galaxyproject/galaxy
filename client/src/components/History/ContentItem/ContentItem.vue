@@ -5,7 +5,7 @@
                 <div class="btn-group float-right">
                     <b-button
                         v-if="expandable && state !== 'noPermission' && state !== 'discarded'"
-                        :disabled="item.purged || state == 'upload' || state == 'new'"
+                        :disabled="isUnavailable"
                         :title="displayButtonTitle"
                         class="px-1"
                         size="sm"
@@ -15,7 +15,7 @@
                     </b-button>
                     <b-button
                         v-if="writeable && state != 'discarded'"
-                        :disabled="item.purged || item.deleted || state == 'upload' || state == 'new'"
+                        :disabled="isUnavailable"
                         class="px-1"
                         title="Edit"
                         size="sm"
@@ -29,7 +29,7 @@
                         title="Undelete"
                         size="sm"
                         variant="link"
-                        :disabled="item.purged"
+                        :disabled="isUnavailable"
                         @click.stop="$emit('undelete', item)">
                         <span class="fa fa-trash-restore" />
                     </b-button>
@@ -39,7 +39,7 @@
                         title="Delete"
                         size="sm"
                         variant="link"
-                        :disabled="item.purged"
+                        :disabled="isUnavailable"
                         @click.stop="$emit('delete', item)">
                         <span class="fa fa-trash" />
                     </b-button>
@@ -93,23 +93,13 @@ export default {
         writeable: { type: Boolean, default: true },
     },
     computed: {
-        icon() {
-            const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
-            if (stateIcon) {
-                return `fa fa-${stateIcon}`;
+        clsStatus() {
+            const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
+            if (!status || this.selected) {
+                return "alert-info";
+            } else {
+                return `alert-${status}`;
             }
-        },
-        editButtonTitle() {
-            if (this.item.deleted) {
-                return "Undelete dataset to edit attributes";
-            }
-            if (this.item.purged) {
-                return "Cannot edit attributes of datasets removed from disk";
-            }
-            if (this.state == "upload" || this.state != "new") {
-                return "This dataset is not yet editable";
-            }
-            return "Edit attributes";
         },
         displayButtonTitle() {
             if (this.item.purged) {
@@ -130,13 +120,26 @@ export default {
                 ? "Undelete"
                 : "Delete";
         },
-        clsStatus() {
-            const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
-            if (!status || this.selected) {
-                return "alert-info";
-            } else {
-                return `alert-${status}`;
+        editButtonTitle() {
+            if (this.item.deleted) {
+                return "Undelete dataset to edit attributes";
             }
+            if (this.item.purged) {
+                return "Cannot edit attributes of datasets removed from disk";
+            }
+            if (this.state == "upload" || this.state != "new") {
+                return "This dataset is not yet editable";
+            }
+            return "Edit attributes";
+        },
+        icon() {
+            const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
+            if (stateIcon) {
+                return `fa fa-${stateIcon}`;
+            }
+        },
+        isUnavailable() {
+            return this.item.purged || this.state == "upload" || this.state == "new";
         },
     },
     methods: {
