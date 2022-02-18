@@ -103,7 +103,7 @@ export default {
         },
         showVisualizations() {
             // TODO: Check hasViz, if visualizations are activated in the config
-            return this.item.state == "ok" || this.item.state == "failed_metadata";
+            return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
     },
     methods: {
