@@ -1,18 +1,16 @@
 <template>
-    <section>
-        <nav class="d-flex justify-content-end">
-            <b-button-group>
-                <b-button
-                    v-if="isRoot"
-                    class="mb-2 mx-3"
-                    title="Download Collection"
-                    :href="downloadCollectionUrl"
-                    download>
-                    <Icon icon="download" />
-                </b-button>
-            </b-button-group>
-        </nav>
-    </section>
+    <nav class="d-flex justify-content-end">
+        <b-button
+            v-if="isRoot"
+            class="mb-2 mx-3"
+            title="Download Collection"
+            size="sm"
+            variant="link"
+            :href="downloadUrl"
+            download>
+            <Icon icon="download" />
+        </b-button>
+    </nav>
 </template>
 
 <script>
@@ -23,7 +21,7 @@ export default {
     },
     computed: {
         /** @return {String} */
-        downloadCollectionUrl() {
+        downloadUrl() {
             return `${this.collection.url}/download`;
         },
     },

@@ -23,7 +23,7 @@
                     <HistoryListing
                         item-key="element_index"
                         :page-size="pageSize"
-                        :payload="payload.elements"
+                        :payload="payload"
                         @scroll="onScroll">
                         <template v-slot:history-item="{ item, index }">
                             <ContentItem
@@ -88,17 +88,10 @@ export default {
             return this.isRoot;
         },
         rootCollection() {
-            return this.dsc[0];
-        },
-        downloadUrl() {
-            let url = "";
-            if (this.rootCollection) {
-                url = `${this.rootCollection.url}/download`;
-            }
-            return url;
+            return this.selectedCollections[0];
         },
         url() {
-            return `api/dataset_collections/${this.dsc.id}`;
+            return `api/dataset_collections/${this.rootCollection.id}/contents/${this.dsc.id}`;
         },
     },
     methods: {
