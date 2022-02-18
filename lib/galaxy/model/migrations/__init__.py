@@ -277,8 +277,8 @@ def verify_databases(
     gxy_verifier = DatabaseStateVerifier(gxy_engine, GXY, gxy_template, gxy_encoding, is_auto_migrate)
     gxy_verifier.run()
 
-    # New database = same engine, and gxy model has just been initialized.
-    is_new_database = gxy_engine == tsi_engine and gxy_verifier.is_new_database
+    # New database = one engine or same engine, and gxy model has just been initialized.
+    is_new_database = (not tsi_engine or gxy_engine == tsi_engine) and gxy_verifier.is_new_database
 
     # Determine engine for tsi model.
     tsi_engine = tsi_engine or gxy_engine
