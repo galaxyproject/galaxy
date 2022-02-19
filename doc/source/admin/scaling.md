@@ -361,36 +361,57 @@ as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods
 </job_conf>
 ```
 
+Note that we have defined a `<handlers>` section without any `<handler>` entries,
+and we have explicitly configured the assignment method with `assign_with="db-skip-locked"`.
+
 To let gravity know how many webless handler processes should be started set the number of processes to start in the `gravity:` section of galaxy.yml:
 
 ```yaml
 gravity:
-  ...
-  process_count:
-    job_handler:
-      _default_: 4
-      special: 2
-    workflow_handler: 2
-    celery: 2
+    handlers:
+      handler:
+        processes: 3
+        pools:
+          - job-handler
+          - workflow-scheduler
+      special:
+        pools:
+          - job-handler.special
 ```
 
-In this example 4 processes will be started for the `_default_` pool, and 2 processes for the `special` pool.
-If you omit the pool name and provide an integer value instead (as we do for `workflow_handlers`) this value
-will apply to the default pool (`_default_`).
+In this example 4 processes will be started in total:
+3 processes will act as job handler and workflow scheduler, and one process will be dedicated to handling jobs for the `special` tag only. With the `job_conf.xml` configuration above these would be jobs created by the `test1` tool.
+You can omit the `pools` argument, this will then default to:
+
+```yaml
+        ...
+        pools:
+          - job-handler
+          - workflow-scheduler
+        ...
+```
+
+If you omit the `processes` argument this will default to a single process.
+You can further customize the handler names using the `name_template` section,
+for a complete example see [this gravity test case](https://github.com/galaxyproject/gravity/blob/a00df1c671fdc01e3fbc42f64a851a45a37a1870/tests/test_process_manager.py#L28).
+
+If you are not using dynamic handlers please omit the `handlers` entry completely, as these will
+otherwise be idle and not handle jobs or workflows.
 
 As with statically defined handlers, `run.sh` will start the process(es), but if you are not using `run.sh` or the generated supervisor config you will need to start the webless handler processes yourself. This is done on the command line like so (note the addition of the `--attach-to-pool` option):
 
 ```console
 $ cd /srv/galaxy/server
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler0 --attach-to-pool job-handlers --daemonize
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler1 --attach-to-pool job-handlers.special --daemonize
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --attach-to-pool job-handlers --attach-to-pool job-handlers.special --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_0 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_1 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_3 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name special_0 --attach-to-pool job-handlers.special --daemonize
 ```
 
 In this example:
 
-* `handler0` and `handler2` will handle tool executions that are not explicitly mapped to handlers
-* `handler1` and `handler2` will handle tool executions that are mapped to the `special` handler tag
+* `handler_0`, `handler_1` and `handler2` will handle tool executions that are not explicitly mapped to handlers
+* `special_0` will handle tool executions that are mapped to the `special` handler tag
 
 ## gravity & galaxyctl
 
