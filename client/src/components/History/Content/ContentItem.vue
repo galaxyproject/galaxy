@@ -10,7 +10,7 @@
                         class="px-1"
                         size="sm"
                         variant="link"
-                        @click.stop="$emit('display', item)">
+                        @click.stop="onDisplay">
                         <span class="fa fa-eye" />
                     </b-button>
                     <b-button
@@ -20,7 +20,7 @@
                         title="Edit"
                         size="sm"
                         variant="link"
-                        @click.stop="$emit('edit', item)">
+                        @click.stop="onEdit">
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
@@ -75,8 +75,10 @@
 </template>
 
 <script>
+import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import CONTENTSTATE from "./contentState";
+
 export default {
     components: {
         DatasetDetails,
@@ -140,6 +142,23 @@ export default {
         },
     },
     methods: {
+        onDisplay() {
+            const id = this.item.id;
+            useGalaxy((Galaxy) => {
+                if (Galaxy.frame && Galaxy.frame.active) {
+                    Galaxy.frame.addDataset(id);
+                } else {
+                    iframeRedirect(`datasets/${id}/display/?preview=True`);
+                }
+            });
+        },
+        onEdit() {
+            if (this.item.collection_type) {
+                backboneRoute(`collection/edit/${this.item.id}`);
+            } else {
+                backboneRoute("datasets/edit", { dataset_id: this.item.id });
+            }
+        },
         onClick() {
             if (this.expandable) {
                 this.$emit("update:expanded", !this.expanded);

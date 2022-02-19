@@ -71,8 +71,6 @@
                                     @update:expanded="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @drilldown="$emit('viewCollection', item)"
-                                    @display="onDisplay"
-                                    @edit="onEdit"
                                     @delete="onDelete"
                                     @undelete="onUndelete"
                                     @unhide="onUnhide" />
@@ -90,7 +88,6 @@
 </template>
 
 <script>
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -108,7 +105,6 @@ import HistoryMenu from "./HistoryMenu";
 import HistoryMessages from "./HistoryMessages";
 
 export default {
-    mixins: [legacyNavigationMixin],
     components: {
         LoadingSpan,
         UrlDataProvider,
@@ -168,23 +164,6 @@ export default {
             selectedItems.forEach((item) => {
                 this.hiddenItems[item.hid] = true;
             });
-        },
-        onDisplay(item) {
-            const id = item.id;
-            this.useGalaxy((Galaxy) => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.addDataset(id);
-                } else {
-                    this.iframeRedirect(`datasets/${id}/display/?preview=True`);
-                }
-            });
-        },
-        onEdit(item) {
-            if (item.collection_type) {
-                this.backboneRoute(`collection/edit/${item.id}`);
-            } else {
-                this.backboneRoute("datasets/edit", { dataset_id: item.id });
-            }
         },
         onDelete(item) {
             this.hiddenItems[item.hid] = true;
