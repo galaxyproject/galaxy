@@ -1,16 +1,14 @@
 <template>
-    <nav class="d-flex justify-content-end">
-        <b-button
-            v-if="isRoot"
-            class="mb-2 mx-3"
-            title="Download Collection"
-            size="sm"
-            variant="link"
-            :href="downloadUrl"
-            download>
-            <Icon icon="download" />
-        </b-button>
-    </nav>
+    <section>
+        <nav v-if="isRoot" class="content-operations d-flex justify-content-between bg-secondary">
+            <b-button-group>
+                <b-button title="Download Collection" size="sm" variant="link" download :href="downloadUrl">
+                    <Icon class="mr-1" icon="download" />
+                    <span>Download</span>
+                </b-button>
+            </b-button-group>
+        </nav>
+    </section>
 </template>
 
 <script>
