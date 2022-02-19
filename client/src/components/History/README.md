@@ -13,55 +13,46 @@ to interact with each other.
         <HistoryMenu />
     </slot:nav>
 
-
     <!-- if main history selected -->
     <CurrentHistory :history="history">
 
         <!-- Data providers do the heavy-lifting of mixing params, history, and 
         scroll position to deliver the content for the scroller -->
-
         <UrlDataProvider>
+            <HistoryNavigation />
             <HistoryDetails />
             <HistoryMessages />
-            <ContentOperations />
+            <HistoryOperations />
+
+            <!-- Uses a virtual scroller plugin to render all ContentItems and throttles the scrolling pace by limiting
+            the frequency and magnitude of offset changes. -->
             <Listing>
 
-                <!-- ContentItem is a dynamic component that becomes
-                either Dataset or DatasetCollection depending
-                on the props passed to it -->
-
+                <!-- The ContentItem renders a row in the list, showing the title, some attributes,
+                and basic operation buttons such as display and edit for either a dataset or a collection.
+                This component needs to be very efficient since it is re-rendered by the virtual scroller plugin. -->
                 (<ContentItem />)
-                    <Dataset />
-                    <!-- or -->
-                    <DatasetCollection />
 
+                    <!-- Is shown for datasets upon expansion, can be inefficent in comparison to the ContentItem component. -->
+                    <DatasetDetails />
             </Listing>
         </UrlDataProvider>
-
     </CurrentHistory>
-
 
     <!-- When a collection is selected for viewing, send in a 
     breadcrumbs list of collections the user has selected -->
-
     <CurrentCollection :selected-collections="breadcrumbs">
         <UrlDataProvider>
-            <CollectionNav />
-            <Details />
+            <CollectionNavigation />
+            <CollectionDetails />
+            <CollectionOperations />
+
+            <!-- As above, the same virtual scroller and ContentItem component is being used to render the elements. -->
             <Listing>
-
-                <!-- Subdataset and Subcollection are similar to the Dataset 
-                and DatasetCollection ContentItem components, but mostly 
-                read-only since they are part of the collection-->
-
                 (<ContentItem />)
-                    <Subdataset />
-                    <!-- or -->
-                    <Subcollection />
-
+                    <DatasetDetails />
             </Listing>
         </UrlDataProvider>
     </CurrentCollection>
-
 </Index>
 ```
