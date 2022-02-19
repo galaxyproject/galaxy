@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { History } from "./model";
+import { History } from "components/History/model";
 
 export default {
     props: {

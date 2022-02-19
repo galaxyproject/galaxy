@@ -20,11 +20,7 @@
                 </template>
 
                 <template v-slot:listing>
-                    <HistoryListing
-                        item-key="element_index"
-                        :page-size="pageSize"
-                        :payload="payload"
-                        @scroll="onScroll">
+                    <Listing item-key="element_index" :page-size="pageSize" :payload="payload" @scroll="onScroll">
                         <template v-slot:history-item="{ item, index }">
                             <ContentItem
                                 :item="item"
@@ -37,7 +33,7 @@
                                 @update:expanded="setExpanded(item, $event)"
                                 @drilldown="$emit('viewCollection', item)" />
                         </template>
-                    </HistoryListing>
+                    </Listing>
                 </template>
             </Layout>
         </ExpandedItems>
@@ -45,16 +41,16 @@
 </template>
 
 <script>
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { DatasetCollection, History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
-import ExpandedItems from "../ExpandedItems";
-import Layout from "../Layout";
-import Navigation from "./Navigation";
-import Operations from "./Operations";
-import Details from "./Details";
-import ContentItem from "../ContentItem/ContentItem";
-import HistoryListing from "components/History/HistoryListing";
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import ContentItem from "components/History/Content/ContentItem";
+import ExpandedItems from "components/History/Content/ExpandedItems";
+import Listing from "components/History/Layout/Listing";
+import Layout from "components/History/Layout/Layout";
+import Navigation from "./CollectionNavigation";
+import Operations from "./CollectionOperations";
+import Details from "./CollectionDetails";
 
 export default {
     components: {
@@ -65,7 +61,7 @@ export default {
         ContentItem,
         ExpandedItems,
         Operations,
-        HistoryListing,
+        Listing,
     },
     props: {
         history: { type: History, required: true },

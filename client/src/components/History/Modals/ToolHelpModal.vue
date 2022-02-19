@@ -6,7 +6,7 @@
 </template>
 
 <script>
-import { loadToolFromJob } from "./model/queries";
+import { loadToolFromJob } from "components/History/model/queries";
 
 export default {
     data() {

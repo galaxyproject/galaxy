@@ -106,8 +106,8 @@
 </template>
 
 <script>
-import { History } from "./model";
-import CopyHistoryModal from "./CopyModal";
+import { History } from "components/History/model";
+import CopyHistoryModal from "components/History/Modals/CopyModal";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 
 export default {

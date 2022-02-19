@@ -10,7 +10,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryContent from "components/History/Content/GenericContentItem/GenericHistoryContent";
 
 Vue.use(BootstrapVue);
 

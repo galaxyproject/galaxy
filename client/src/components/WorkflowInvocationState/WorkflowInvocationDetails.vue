@@ -52,7 +52,7 @@
 </template>
 <script>
 import ParameterStep from "./ParameterStep.vue";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryContent from "components/History/Content/GenericContentItem/GenericHistoryContent";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
 import { mapGetters } from "vuex";

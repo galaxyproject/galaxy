@@ -45,7 +45,7 @@
 </template>
 
 <script>
-import { History } from "./model/History";
+import { History } from "components/History/model/History";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
