@@ -16,13 +16,16 @@ Highlights
   `Pull Request 13224`_
 
 **User Preferences can be encrypted in Galaxy Vault**
-  @nuwang, could you write something about this please?
+  Galaxy can now be configured to store secrets in an external vault, which is useful for secure handling and centralization of secrets management.
+  In particular, information fields in the "Manage information" section of the user profile, such as dropbox keys, can be configured to be encrypted
+  at rest in a vault (Hashicorp, Custos or database) instead of being stored as plain text in the user preferences table. For detailed information on
+  configuration, refer to the `vault section <https://docs.galaxyproject.org/en/release_22.01/admin/special_topics/vault.html>`__ of the admin documentation.
   `Pull Request 12940`_
 
 **Resumable uploads via tus.io, improved upload provenance**
   Galaxy now supports chunked and resumable uploads via the `tus protocol <https://tus.io/>`__.
   This is more performant and easier to setup than the current nginx-based
-  solutions. For detailed documentation see the `documentation <https://docs.galaxyproject.org/en/release_22.01/admin/nginx.html#receiving-files-via-the-tus-protocol>`__.
+  solutions. For detailed configuration instructions, see the `documentation <https://docs.galaxyproject.org/en/release_22.01/admin/nginx.html#receiving-files-via-the-tus-protocol>`__.
   Galaxy now displays all manipulations that were peformed during an upload,
   such as newline conversions, converting spaces to tabs or dataset grooming.
   `Pull Request 12656`_, `Pull Request 12861`_, `Pull Request 13313`_, `Pull Request 12912`_.
