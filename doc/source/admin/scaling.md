@@ -180,7 +180,6 @@ In `galaxy.yml`, define a `gravity` section. Shown below are the options common 
 gravity:
   app_server: gunicorn
   gunicorn:
-    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
     bind: '127.0.0.1:8080'
     # performance options
@@ -210,7 +209,6 @@ To use a socket for the communication between the proxy and Gunicorn, set the `b
 gravity:
   app_server: gunicorn
   gunicorn:
-    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
     bind: '/srv/galaxy/var/gunicorn.sock'
 ```
@@ -221,7 +219,6 @@ permissions, but you can also listen on a port:
 ```yaml
   app_server: gunicorn
   gunicorn:
-    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
     bind: '127.0.0.1:4001'
 ```
@@ -243,7 +240,6 @@ while using a socket, you can add an additional `--bind` argument via the `gunic
 gravity:
   app_server: gunicorn
   gunicorn:
-    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
     bind: '/srv/galaxy/var/gunicorn.sock'
     gunicorn_extra_args: '--bind 127.0.0.1:8080'
@@ -258,7 +254,6 @@ Gunicorn can be configured to serve HTTPS directly:
 ```yaml
   # listening options
   gunicorn:
-    # TODO: CHANGE THIS IN GRAVITY, so we can use file descriptors
     # listening options
     bind: '0.0.0.0:443'
     keyfile: server.key
