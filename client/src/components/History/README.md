@@ -3,67 +3,65 @@ This is not intended to be a complete listing, but a general idea of how the com
 to interact with each other.
 
 ```html static
-<CurrentHistoryPanel>
-    <HistoryPanel :history="history">
-        
-        <!-- for the right-hand side history we show some
-        optional nav elements, can be ommitted for histories
-        shown in multi-history view -->
-        <slot:nav>
-            <HistorySelector />
-            <HistoryMenu />
-        </slot:nav>
+<Index :history="history">
+    
+    <!-- for the right-hand side history we show some
+    optional nav elements, can be ommitted for histories
+    shown in multi-history view -->
+    <slot:nav>
+        <HistorySelector />
+        <HistoryMenu />
+    </slot:nav>
 
 
-        <!-- if main history selected -->
-        <History :history="history">
+    <!-- if main history selected -->
+    <CurrentHistory :history="history">
 
-            <!-- Data providers do the heavy-lifting of mixing params, history, and 
-            scroll position to deliver the content for the scroller -->
+        <!-- Data providers do the heavy-lifting of mixing params, history, and 
+        scroll position to deliver the content for the scroller -->
 
-            <UrlDataProvider>
-                <HistoryDetails />
-                <HistoryMessages />
-                <ContentOperations />
-                <HistoryListing>
+        <UrlDataProvider>
+            <HistoryDetails />
+            <HistoryMessages />
+            <ContentOperations />
+            <Listing>
 
-                    <!-- ContentItem is a dynamic component that becomes
-                    either Dataset or DatasetCollection depending
-                    on the props passed to it -->
+                <!-- ContentItem is a dynamic component that becomes
+                either Dataset or DatasetCollection depending
+                on the props passed to it -->
 
-                    (<ContentItem />)
-                        <Dataset />
-                        <!-- or -->
-                        <DatasetCollection />
+                (<ContentItem />)
+                    <Dataset />
+                    <!-- or -->
+                    <DatasetCollection />
 
-                </HistoryListing>
-            </UrlDataProvider>
+            </Listing>
+        </UrlDataProvider>
 
-        </History>
+    </CurrentHistory>
 
 
-        <!-- When a collection is selected for viewing, send in a 
-        breadcrumbs list of collections the user has selected -->
+    <!-- When a collection is selected for viewing, send in a 
+    breadcrumbs list of collections the user has selected -->
 
-        <CurrentCollection :selected-collections="breadcrumbs">
-            <UrlDataProvider>
-                <CollectionNav />
-                <Details />
-                <HistoryListing>
+    <CurrentCollection :selected-collections="breadcrumbs">
+        <UrlDataProvider>
+            <CollectionNav />
+            <Details />
+            <Listing>
 
-                    <!-- Subdataset and Subcollection are similar to the Dataset 
-                    and DatasetCollection ContentItem components, but mostly 
-                    read-only since they are part of the collection-->
+                <!-- Subdataset and Subcollection are similar to the Dataset 
+                and DatasetCollection ContentItem components, but mostly 
+                read-only since they are part of the collection-->
 
-                    (<ContentItem />)
-                        <Subdataset />
-                        <!-- or -->
-                        <Subcollection />
+                (<ContentItem />)
+                    <Subdataset />
+                    <!-- or -->
+                    <Subcollection />
 
-                </HistoryListing>
-            </UrlDataProvider>
-        </CurrentCollection>
+            </Listing>
+        </UrlDataProvider>
+    </CurrentCollection>
 
-    </HistoryPanel>
-</CurrentHistoryPanel>
+</Index>
 ```

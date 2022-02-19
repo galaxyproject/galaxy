@@ -1,5 +1,5 @@
 <template>
-    <HeaderDetails
+    <Details
         :name="dsc.name"
         :tags="dsc.tags"
         :writeable="writeable"
@@ -14,16 +14,16 @@
                 </div>
             </div>
         </template>
-    </HeaderDetails>
+    </Details>
 </template>
 
 <script>
 import { DatasetCollection } from "components/History/model";
-import HeaderDetails from "components/History/HeaderDetails";
+import Details from "components/History/Layout/Details";
 
 export default {
     components: {
-        HeaderDetails,
+        Details,
     },
     props: {
         dsc: { type: Object, required: true },

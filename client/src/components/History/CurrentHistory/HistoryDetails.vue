@@ -1,5 +1,5 @@
 <template>
-    <HeaderDetails
+    <Details
         :name="history.name"
         :annotation="history.annotation"
         :tags="history.tags"
@@ -12,17 +12,17 @@
                 <span v-else v-localize>(empty)</span>
             </h5>
         </template>
-    </HeaderDetails>
+    </Details>
 </template>
 
 <script>
 import prettyBytes from "pretty-bytes";
-import { History } from "./model";
-import HeaderDetails from "./HeaderDetails";
+import { History } from "components/History/model";
+import Details from "components/History/Layout/Details";
 
 export default {
     components: {
-        HeaderDetails,
+        Details,
     },
     filters: {
         niceFileSize(rawSize = 0) {

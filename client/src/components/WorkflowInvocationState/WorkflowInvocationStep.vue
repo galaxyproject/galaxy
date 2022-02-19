@@ -84,7 +84,7 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryContent from "components/History/Content/GenericContentItem/GenericHistoryContent";
 import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "../LoadingSpan";
 

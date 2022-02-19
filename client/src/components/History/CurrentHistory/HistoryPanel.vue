@@ -31,7 +31,7 @@
                     </template>
 
                     <template v-slot:listcontrols>
-                        <ContentOperations
+                        <HistoryOperations
                             :history="history"
                             :params.sync="params"
                             :content-selection="selectedItems"
@@ -51,7 +51,7 @@
                         <b-alert v-else-if="loading" class="m-2" variant="info" show>
                             <LoadingSpan message="Loading History" />
                         </b-alert>
-                        <HistoryListing
+                        <Listing
                             v-else
                             :query-key="queryKey"
                             :page-size="pageSize"
@@ -77,7 +77,7 @@
                                     @undelete="onUndelete"
                                     @unhide="onUnhide" />
                             </template>
-                        </HistoryListing>
+                        </Listing>
                     </template>
 
                     <template v-slot:modals>
@@ -90,22 +90,22 @@
 </template>
 
 <script>
-import { History } from "./model";
-import { deleteContent, updateContentFields } from "./model/queries";
-import LoadingSpan from "components/LoadingSpan";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import ExpandedItems from "./ExpandedItems";
-import SelectedItems from "./SelectedItems";
-import Layout from "./Layout";
-import HistoryMessages from "./HistoryMessages";
+import LoadingSpan from "components/LoadingSpan";
+import ContentItem from "components/History/Content/ContentItem";
+import { History } from "components/History/model";
+import { deleteContent, updateContentFields } from "components/History/model/queries";
+import ExpandedItems from "components/History/Content/ExpandedItems";
+import SelectedItems from "components/History/Content/SelectedItems";
+import Layout from "components/History/Layout/Layout";
+import Listing from "components/History/Layout/Listing";
+import ToolHelpModal from "components/History/Modals/ToolHelpModal";
+import HistoryOperations from "./HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
-import ContentOperations from "./ContentOperations";
-import ToolHelpModal from "./ToolHelpModal";
 import HistoryMenu from "./HistoryMenu";
-import HistoryListing from "./HistoryListing";
-import ContentItem from "./ContentItem/ContentItem";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import HistoryMessages from "./HistoryMessages";
 
 export default {
     mixins: [legacyNavigationMixin],
@@ -113,13 +113,13 @@ export default {
         LoadingSpan,
         UrlDataProvider,
         Layout,
+        Listing,
         ContentItem,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
         HistoryMenu,
-        HistoryListing,
-        ContentOperations,
+        HistoryOperations,
         ToolHelpModal,
         ExpandedItems,
         SelectedItems,

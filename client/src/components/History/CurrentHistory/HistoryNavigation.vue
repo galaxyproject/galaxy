@@ -61,10 +61,10 @@
 </template>
 
 <script>
-import { History } from "./model";
+import { History } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { switchToLegacyHistoryPanel } from "./adapters/betaToggle";
-import HistorySelectorModal from "./HistorySelectorModal";
+import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
+import HistorySelectorModal from "components/History/Modals/HistorySelectorModal";
 
 export default {
     mixins: [legacyNavigationMixin],

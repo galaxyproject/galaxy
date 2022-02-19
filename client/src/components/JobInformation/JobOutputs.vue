@@ -23,7 +23,7 @@
 </template>
 
 <script>
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import GenericHistoryContent from "components/History/Content/GenericContentItem/GenericHistoryContent";
 
 export default {
     components: {

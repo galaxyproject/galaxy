@@ -105,7 +105,7 @@
         </nav>
 
         <transition name="shutterfade">
-            <content-filters v-if="showFilter" class="content-operations-filters p-2" :params.sync="localParams" />
+            <history-filters v-if="showFilter" class="content-operations-filters p-2" :params.sync="localParams" />
         </transition>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
@@ -143,7 +143,7 @@
 </template>
 
 <script>
-import { History } from "./model/History";
+import { History } from "components/History/model/History";
 import {
     hideSelectedContent,
     unhideSelectedContent,
@@ -153,16 +153,16 @@ import {
     unhideAllHiddenContent,
     deleteAllHiddenContent,
     purgeAllDeletedContent,
-} from "./model";
-import { createDatasetCollection } from "./model/queries";
+} from "components/History/model";
+import { createDatasetCollection } from "components/History/model/queries";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { buildCollectionModal } from "./adapters/buildCollectionModal";
-import ContentFilters from "./ContentFilters";
+import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
+import HistoryFilters from "./HistoryFilters";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
-        ContentFilters,
+        HistoryFilters,
     },
     props: {
         history: { type: History, required: true },
@@ -181,7 +181,7 @@ export default {
         showBuildOptions() {
             return !this.params.showHidden && !this.params.showDeleted;
         },
-        hasContentFilters() {
+        hasHistoryFilters() {
             const { showHidden, showDeleted, filterText } = this.params;
             return showHidden || showDeleted || filterText;
         },
