@@ -57,5 +57,6 @@ describe("ToolForm", () => {
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
+        expect(wrapper.vm.useJobRemapping).toBe(true);
     });
 });
