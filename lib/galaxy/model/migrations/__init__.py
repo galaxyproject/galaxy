@@ -83,6 +83,16 @@ class InvalidModelIdError(Exception):
         super().__init__(f"Invalid model: {model}")
 
 
+class RevisionNotFoundError(Exception):
+    # The database has an Alembic version table; however, that table does not contain a revision identifier
+    # for the given model. As a result, it is impossible to determine the state of the database for this model
+    # (gxy or tsi).
+    def __init__(self, model: str) -> None:
+        msg = "The database has an alembic version table, but that table does not contain "
+        msg += f"a revision for the {model} model"
+        super().__init__(msg)
+
+
 class AlembicManager:
     """
     Alembic operations on one database.
@@ -135,33 +145,27 @@ class AlembicManager:
 
     def is_under_version_control(self, model: ModelId) -> bool:
         """
-        True if version table contains a revision that represents `model`.
-        (checked via revision's branch labels)
+        True if the database version table contains a revision that corresponds to a revision
+        in the script directory that has branch label `model`.
         """
         if self.db_heads:
-            for head in self.db_heads:
-                revision = self._get_revision(head)
-                if revision and model in revision.branch_labels:
-                    return True
+            for db_head in self.db_heads:
+                try:
+                    revision = self._get_revision(db_head)
+                    if revision and model in revision.branch_labels:
+                        log.info(f"The version of the {model} model in the database is {db_head}.")
+                        return True
+                except alembic.util.exc.CommandError:  # No need to raise exception.
+                    log.info(f"Revision {db_head} does not exist in the script directory.")
         return False
 
     def is_up_to_date(self, model: ModelId) -> bool:
         """
-        True if the `model` version head stored in the database is in the heads
-        stored in the script directory. Neither can be empty because the
-        concept of up-to-date would be meaningless for that state.
+        True if the head revision for `model` in the script directory is stored
+        in the database.
         """
-        version_heads = self.script_directory.get_heads()
-        if not version_heads or not self.db_heads:
-            return False
-        # Verify that db_version_heads contains a head for the passed model:
-        # if the head in the database is for gxy, but we are checking for tsi
-        # this should return False.
-        for head in self.db_heads:
-            revision = self._get_revision(head)
-            if revision and model in revision.branch_labels and head in version_heads:
-                return True
-        return False
+        head_id = self.get_model_script_head(model)
+        return bool(self.db_heads and head_id in self.db_heads)
 
     def get_model_db_head(self, model: ModelId) -> Optional[str]:
         return self._get_head_revision(model, cast(Iterable[str], self.db_heads))
@@ -349,39 +353,50 @@ class DatabaseStateVerifier:
 
     def _handle_nonempty_database(self) -> None:
         if self._has_alembic_version_table():
-            am = self.alembic_manager
-            if am.is_under_version_control(self.model):
-                self._handle_with_alembic()
-            else:
-                if self._no_model_tables_exist():
-                    self._initialize_database()
-                else:
-                    self._handle_with_alembic()
+            self._handle_with_alembic()
         elif self._has_sqlalchemymigrate_version_table():
             if self._is_last_sqlalchemymigrate_version():
-                self._handle_with_alembic()
+                self._try_to_upgrade()
             else:
                 self._handle_version_too_old()
         else:
             self._handle_no_version_table()
 
     def _handle_with_alembic(self) -> None:
-        # we know model is under alembic version control
         am = self.alembic_manager
         model = self._get_model_name()
-        # first check if this model is up to date
+
         if am.is_up_to_date(self.model):
             log.info(f"Your {model} database is up-to-date")
             return
-        # is outdated: try to upgrade
+        if am.is_under_version_control(self.model):
+            # Model is under version control, but outdated. Try to upgrade.
+            self._try_to_upgrade()
+        else:
+            # Model is not under version control. We fail for the gxy model because we can't guess
+            # what the state of the database is if there is an alembic table without a gxy revision.
+            # For the tsi model, we can guess. If there are no tsi tables in the database, we  treat it
+            # as a new install; but if there is at least one table, we assume it is the same version as gxy.
+            # See more details in this PR description: https://github.com/galaxyproject/galaxy/pull/13108
+            if self.model == TSI:
+                if self._no_model_tables_exist():
+                    self._initialize_database()
+                else:
+                    self._try_to_upgrade()
+            else:
+                raise RevisionNotFoundError(model)
+
+    def _try_to_upgrade(self):
+        am = self.alembic_manager
+        model = self._get_model_name()
+        code_version = am.get_model_script_head(self.model)
         if not self.is_auto_migrate:
             db_version = am.get_model_db_head(self.model)
-            code_version = am.get_model_script_head(self.model)
             msg = self._get_upgrade_message(model, cast(str, db_version), cast(str, code_version))
             log.warning(msg)
             raise OutdatedDatabaseError(model)
         else:
-            log.info("Database is being upgraded to current version")
+            log.info("Database is being upgraded to current version: {code_version}")
             am.upgrade(self.model)
             return
 
