@@ -5,7 +5,7 @@
                 <CurrentHistory
                     v-if="!breadcrumbs.length"
                     :history="currentHistory"
-                    v-on="$listeners"
+                    v-on="handlers"
                     @viewCollection="onViewCollection">
                     <template v-slot:navigation>
                         <HistoryNavigation
