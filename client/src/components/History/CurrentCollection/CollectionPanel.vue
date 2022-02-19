@@ -8,15 +8,18 @@
             v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
-                    <Navigation :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
+                    <CollectionNavigation
+                        :history="history"
+                        :selected-collections="selectedCollections"
+                        v-on="$listeners" />
                 </template>
 
                 <template v-slot:listcontrols>
-                    <Operations :collection="dsc" :is-root="isRoot" />
+                    <CollectionOperations :collection="dsc" :is-root="isRoot" />
                 </template>
 
                 <template v-slot:details>
-                    <Details :dsc="dsc" :writeable="writeable" @update:dsc="updateDsc(dsc, $event)" />
+                    <CollectionDetails :dsc="dsc" :writeable="writeable" @update:dsc="updateDsc(dsc, $event)" />
                 </template>
 
                 <template v-slot:listing>
@@ -48,20 +51,20 @@ import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import Listing from "components/History/Layout/Listing";
 import Layout from "components/History/Layout/Layout";
-import Navigation from "./CollectionNavigation";
-import Operations from "./CollectionOperations";
-import Details from "./CollectionDetails";
+import CollectionNavigation from "./CollectionNavigation";
+import CollectionOperations from "./CollectionOperations";
+import CollectionDetails from "./CollectionDetails";
 
 export default {
     components: {
-        UrlDataProvider,
-        Layout,
-        Navigation,
-        Details,
+        CollectionDetails,
+        CollectionNavigation,
+        CollectionOperations,
         ContentItem,
         ExpandedItems,
-        Operations,
+        Layout,
         Listing,
+        UrlDataProvider,
     },
     props: {
         history: { type: History, required: true },
