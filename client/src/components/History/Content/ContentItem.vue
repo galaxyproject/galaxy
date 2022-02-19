@@ -103,34 +103,31 @@ export default {
         },
         displayButtonTitle() {
             if (this.item.purged) {
-                return "Cannot display datasets removed from disk";
+                return "Cannot display datasets removed from disk.";
             }
-            if (this.state == "upload") {
-                return "This dataset must finish uploading before it can be viewed";
+            if (this.isUnavailable) {
+                return "This dataset is not yet viewable.";
             }
-            if (this.state == "new") {
-                return "This dataset is not yet viewable";
-            }
-            return "View data";
+            return "Display";
         },
         deleteButtonTitle() {
             return this.item.purged
-                ? "Dataset has been permanently deleted"
+                ? "This dataset has been permanently deleted."
                 : this.item.deleted
                 ? "Undelete"
                 : "Delete";
         },
         editButtonTitle() {
             if (this.item.deleted) {
-                return "Undelete dataset to edit attributes";
+                return "Undelete this dataset to edit attributes.";
             }
             if (this.item.purged) {
-                return "Cannot edit attributes of datasets removed from disk";
+                return "Cannot edit attributes of datasets removed from disk.";
             }
-            if (this.state == "upload" || this.state != "new") {
-                return "This dataset is not yet editable";
+            if (this.isUnavailable) {
+                return "This dataset is not yet editable.";
             }
-            return "Edit attributes";
+            return "Edit Attributes";
         },
         icon() {
             const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
@@ -139,7 +136,7 @@ export default {
             }
         },
         isUnavailable() {
-            return this.item.purged || this.state == "upload" || this.state == "new";
+            return this.item.purged || ["upload", "new"].includes(this.state);
         },
     },
     methods: {
