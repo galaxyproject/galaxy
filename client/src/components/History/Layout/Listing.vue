@@ -79,11 +79,22 @@ export default {
             }
         },
         onScroll(event) {
-            const listing = this.$refs["listing"];
-            const deltaMax = this.deltaMax;
-            const deltaY = Math.max(Math.min(event.deltaY, deltaMax), -deltaMax);
-            this.offset = Math.max(0, listing.getOffset() + deltaY);
-            listing.scrollToOffset(this.offset);
+            if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+                // handle vertical scrolling with virtual scroller
+                const listing = this.$refs.listing;
+                const deltaMax = this.deltaMax;
+                const deltaY = Math.max(Math.min(event.deltaY, deltaMax), -deltaMax);
+                this.offset = Math.max(0, listing.getOffset() + deltaY);
+                this.$refs.listing.scrollToOffset(this.offset);
+            } else {
+                // dispatch horizontal scrolling as regular event
+                var wheelEvent = new WheelEvent("wheel", {
+                    deltaX: event.deltaX,
+                    bubbles: true,
+                    cancelable: false,
+                });
+                event.target.dispatchEvent(wheelEvent);
+            }
         },
         /*onScroll(event) {
             const itemCount = this.items.length;
