@@ -154,7 +154,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
     repo_path = repository.repo_path(app)
     content_alert_str = ''
     files_to_remove = []
-    filenames_in_archive = [os.path.join(full_path, name) for name in filenames_in_archive]
+    filenames_in_archive = [os.path.normpath(os.path.join(full_path, name)) for name in filenames_in_archive]
     if remove_repo_files_not_in_tar and not repository.is_new():
         # We have a repository that is not new (it contains files), so discover those files that are in the
         # repository, but not in the uploaded archive.
