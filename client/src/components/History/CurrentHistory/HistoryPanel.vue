@@ -41,7 +41,7 @@
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
                             @reset-selection="resetSelection"
-                            @hide-selection="onHiddenItems"
+                            @hide-selection="onhideSelection"
                             @select-all="selectItems(payload)"
                             @collapse-all="collapseAll" />
                     </template>
@@ -59,7 +59,7 @@
                             @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
-                                    v-if="!hiddenItems[item.hid]"
+                                    v-if="!hideSelection[item.hid]"
                                     :item="item"
                                     :id="item.hid"
                                     :name="item.name"
@@ -125,7 +125,7 @@ export default {
     },
     data() {
         return {
-            hiddenItems: {},
+            hideSelection: {},
             topIndex: 0,
             pageSize: 2000,
             params: {},
@@ -133,7 +133,7 @@ export default {
     },
     watch: {
         queryKey() {
-            this.hiddenItems = {};
+            this.hideSelection = {};
             this.topIndex = 0;
         },
     },
@@ -160,21 +160,21 @@ export default {
         onScroll(newHid) {
             this.topIndex = newHid;
         },
-        onHiddenItems(selectedItems) {
+        onhideSelection(selectedItems) {
             selectedItems.forEach((item) => {
-                this.hiddenItems[item.hid] = true;
+                this.hideSelection[item.hid] = true;
             });
         },
         onDelete(item) {
-            this.hiddenItems[item.hid] = true;
+            this.hideSelection[item.hid] = true;
             deleteContent(item);
         },
         onUndelete(item) {
-            this.hiddenItems[item.hid] = true;
+            this.hideSelection[item.hid] = true;
             updateContentFields(item, { deleted: false });
         },
         onUnhide(item) {
-            this.hiddenItems[item.hid] = true;
+            this.hideSelection[item.hid] = true;
             updateContentFields(item, { visible: true });
         },
     },

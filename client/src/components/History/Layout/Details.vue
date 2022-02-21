@@ -16,7 +16,7 @@
         <!-- display annotation, tags -->
         <div v-if="!editing">
             <div v-if="annotation" class="mt-2">{{ annotation }}</div>
-            <StatelessTags class="tags mt-3" :value="tags" :disabled="true" />
+            <StatelessTags v-if="tags" class="tags mt-3" :value="tags" :disabled="true" />
         </div>
 
         <!-- edit form, change title, annotation, or tags -->
@@ -36,7 +36,7 @@
                 trim
                 max-rows="4"
                 data-description="annotation input" />
-            <StatelessTags class="mb-3 tags" v-model="localProps.tags" />
+            <StatelessTags v-if="localProps.tags" class="mb-3 tags" v-model="localProps.tags" />
         </div>
         <nav class="edit-controls">
             <template v-if="editing">

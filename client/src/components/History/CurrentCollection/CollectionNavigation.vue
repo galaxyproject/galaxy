@@ -21,6 +21,7 @@ export default {
                 const last = this.selectedCollections[length - 2];
                 return last.name || last.element_identifier;
             }
+            return null;
         },
     },
     methods: {

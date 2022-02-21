@@ -9,7 +9,6 @@
 
 <script>
 import { DatasetProvider, DatasetCollectionProvider } from "components/providers";
-import { STATES } from "components/History/model";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
@@ -28,11 +27,8 @@ export default {
             return null; // { hdca: "DatasetCollectionUIWrapper" }[this.data_item.src];
         },
         providerComponent() {
-            return null; // { hda: "DatasetProvider", hdca: "DatasetCollectionProvider" }[this.data_item.src];
+            return { hda: "DatasetProvider", hdca: "DatasetCollectionProvider" }[this.data_item.src];
         },
-    },
-    provide: {
-        STATES,
     },
 };
 </script>

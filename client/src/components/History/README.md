@@ -4,17 +4,16 @@ to interact with each other.
 
 ```html static
 <Index :history="history">
-    
-    <!-- for the right-hand side history we show some
-    optional nav elements, can be ommitted for histories
-    shown in multi-history view -->
-    <slot:nav>
-        <HistorySelector />
-        <HistoryMenu />
-    </slot:nav>
 
     <!-- if main history selected -->
     <CurrentHistory :history="history">
+
+        <!-- for the right-hand side history we show some
+        optional nav elements -->
+        <slot:nav>
+            <HistorySelector />
+            <HistoryMenu />
+        </slot:nav>
 
         <!-- Data providers do the heavy-lifting of mixing params, history, and 
         scroll position to deliver the content for the scroller -->

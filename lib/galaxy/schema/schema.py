@@ -9,8 +9,8 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
     Set,
+    Union,
 )
 
 from pydantic import (
