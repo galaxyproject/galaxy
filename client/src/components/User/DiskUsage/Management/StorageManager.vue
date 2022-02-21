@@ -47,6 +47,7 @@
 
 <script>
 import _l from "utils/localization";
+import { delay } from "utils/utils";
 import ConfigProvider from "components/providers/ConfigProvider";
 import CleanupCategoriesProvider from "./Cleanup/cleanupCategoriesProvider";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary";
@@ -65,7 +66,7 @@ export default {
         return {
             goBackText: _l("Back to Dashboard"),
             title: _l("Manage your account storage"),
-            whatCountsText: _l("The storage manager only shows files that count towards your disk quota."),
+            whatCountsText: _l("The storage manager only shows elements that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
             errorMessage: null,
             currentOperation: null,
@@ -84,7 +85,7 @@ export default {
         async onConfirmCleanupSelected(items) {
             this.cleanupResult = null;
             this.$bvModal.show("cleanup-result-modal");
-            await new Promise((r) => setTimeout(r, 1000));
+            await delay(1000);
             this.cleanupResult = await this.currentOperation.cleanupItems(items);
             if (this.cleanupResult.success) {
                 this.refreshOperationId = this.currentOperation.id.toString();

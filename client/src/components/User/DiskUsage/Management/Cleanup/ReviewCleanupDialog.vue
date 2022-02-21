@@ -1,58 +1,59 @@
 <template>
-    <div>
-        <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog">
-            <template v-slot:modal-title>
-                {{ title }}
-                <span class="text-primary h3">{{ totalItems }} items</span>
+    <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog" static>
+        <template v-slot:modal-title>
+            {{ title }}
+            <span class="text-primary h3">{{ totalItems }} items</span>
+        </template>
+        <div>
+            {{ captionText }}
+            <b>
+                <b-link @click="onSelectAllItems">select all {{ totalItems }} items</b-link>
+            </b>
+        </div>
+        <b-table
+            v-if="operation"
+            v-model="items"
+            :fields="fields"
+            :items="itemsProvider"
+            :per-page="perPage"
+            :current-page="currentPage"
+            :busy="isBusy"
+            @sort-changed="onSort"
+            hover
+            no-local-sorting
+            no-provider-filtering
+            sticky-header="50vh"
+            data-test-id="review-table">
+            <template v-slot:head(selected)>
+                <b-form-checkbox
+                    v-model="allSelected"
+                    :indeterminate="indeterminate"
+                    @change="toggleSelectAll"
+                    data-test-id="select-all-checkbox" />
             </template>
-            <div>
-                {{ captionText }}
-                <b>
-                    <b-link @click="onSelectAllItems">select all {{ totalItems }} items</b-link>
-                </b>
-            </div>
-            <b-table
-                v-if="operation"
-                id="cleanable-items-table"
-                hover
-                :fields="fields"
-                :items="itemsProvider"
-                v-model="items"
-                :per-page="perPage"
-                :current-page="currentPage"
-                no-local-sorting
-                no-provider-filtering
-                @sort-changed="onSort"
-                :busy="isBusy"
-                sticky-header="50vh">
-                <template v-slot:head(selected)>
-                    <b-form-checkbox
-                        v-model="allSelected"
-                        :indeterminate="indeterminate"
-                        @change="toggleSelectAll"></b-form-checkbox>
-                </template>
-                <template v-slot:cell(selected)="data">
-                    <b-form-checkbox
-                        v-model="selectedItems"
-                        :checked="allSelected"
-                        :key="data.index"
-                        :value="data.item"></b-form-checkbox>
-                </template>
-                <template v-slot:cell(update_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed" />
-                </template>
-            </b-table>
-            <template v-slot:modal-footer>
-                <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
-                <b-button
-                    :disabled="!hasItemsSelected"
-                    :variant="deleteButtonVariant"
-                    v-b-modal.confirmation-modal
-                    class="mx-2">
-                    {{ permanentlyDeleteText }} {{ deleteItemsText }}
-                </b-button>
+            <template v-slot:cell(selected)="data">
+                <b-form-checkbox
+                    v-model="selectedItems"
+                    :checked="allSelected"
+                    :key="data.index"
+                    :value="data.item"></b-form-checkbox>
             </template>
-        </b-modal>
+            <template v-slot:cell(update_time)="data">
+                <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+        </b-table>
+        <template v-slot:modal-footer>
+            <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
+            <b-button
+                :disabled="!hasItemsSelected"
+                :variant="deleteButtonVariant"
+                v-b-modal.confirmation-modal
+                class="mx-2"
+                data-test-id="delete-button">
+                {{ permanentlyDeleteText }} {{ deleteItemsText }}
+            </b-button>
+        </template>
+
         <b-modal
             id="confirmation-modal"
             :title="confirmationTitle"
@@ -62,12 +63,13 @@
             :ok-disabled="!confirmChecked"
             @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems"
+            static
             centered>
-            <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked">
+            <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
             </b-form-checkbox>
         </b-modal>
-    </div>
+    </b-modal>
 </template>
 
 <script>
@@ -124,7 +126,7 @@ export default {
             ],
             sortBy: "update_time",
             sortDesc: true,
-            perPage: 25,
+            perPage: 5,
             currentPage: 1,
             totalRows: 1,
             allSelected: false,

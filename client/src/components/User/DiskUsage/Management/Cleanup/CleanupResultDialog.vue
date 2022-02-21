@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer :static="true">
+    <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
         <div class="text-center">
             <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
             <div v-else>
