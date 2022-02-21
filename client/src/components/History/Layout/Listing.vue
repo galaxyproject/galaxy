@@ -79,6 +79,8 @@ export default {
             }
         },
         onScroll(event) {
+            // this avoids diagonal scrolling, we either scroll left/right or top/down
+            // both events are throttled and the default handler has been prevented.
             if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
                 // handle vertical scrolling with virtual scroller
                 const listing = this.$refs.listing;

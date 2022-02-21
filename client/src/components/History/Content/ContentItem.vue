@@ -1,5 +1,5 @@
 <template>
-    <div :class="['content-item m-1 p-0 rounded', clsStatus]">
+    <div :class="['content-item m-1 p-0 rounded', clsStatus]" draggable @dragstart="onDragStart">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
@@ -142,6 +142,11 @@ export default {
         },
     },
     methods: {
+        onDragStart(evt) {
+            evt.dataTransfer.dropEffect = "move";
+            evt.dataTransfer.effectAllowed = "move";
+            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+        },
         onDisplay() {
             const id = this.item.id;
             useGalaxy((Galaxy) => {
