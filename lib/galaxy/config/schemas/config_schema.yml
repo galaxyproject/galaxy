@@ -2026,7 +2026,7 @@ mapping:
         desc: |
           Control the period (in seconds) between dumps. Use -1 to disable. Regardless
           of this setting, if use_heartbeat is enabled, you can send a Galaxy process
-          (unless running with uWSGI) SIGUSR1 (`kill -USR1`) to force a dump.
+          SIGUSR1 (`kill -USR1`) to force a dump.
 
       heartbeat_log:
         type: str
