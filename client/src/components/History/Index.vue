@@ -34,7 +34,6 @@
 <script>
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
-import { History } from "./model";
 import HistoryNavigation from "./CurrentHistory/HistoryNavigation";
 import CurrentHistory from "./CurrentHistory/HistoryPanel";
 import CurrentCollection from "./CurrentCollection/CollectionPanel";

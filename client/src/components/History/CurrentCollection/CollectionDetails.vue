@@ -18,7 +18,6 @@
 </template>
 
 <script>
-import { DatasetCollection } from "components/History/model";
 import Details from "components/History/Layout/Details";
 
 export default {

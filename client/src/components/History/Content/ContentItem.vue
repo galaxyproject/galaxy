@@ -136,6 +136,7 @@ export default {
             if (stateIcon) {
                 return `fa fa-${stateIcon}`;
             }
+            return null;
         },
         isUnavailable() {
             return this.item.purged || ["upload", "new"].includes(this.state);

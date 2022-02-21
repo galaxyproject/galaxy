@@ -11,7 +11,7 @@
                 <InvocationStepProvider
                     v-if="isReady && invocationStepId !== undefined"
                     :id="invocationStepId"
-                    auto-refresh="true"
+                    auto-refresh
                     v-slot="{ result: stepDetails, loading }">
                     <div style="min-width: 1">
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>

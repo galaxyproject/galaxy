@@ -10,11 +10,9 @@
 <script>
 import VirtualList from "vue-virtual-scroll-list";
 import { reverse, throttle } from "lodash";
-import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
-        LoadingSpan,
         VirtualList,
     },
     props: {

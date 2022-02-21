@@ -2,10 +2,7 @@
 
 <template>
     <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" v-slot="{ result: payload }">
-        <ExpandedItems
-            :scope-key="dsc.id"
-            :get-item-key="(item) => item.element_index"
-            v-slot="{ isExpanded, setExpanded }">
+        <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
                     <CollectionNavigation
@@ -24,7 +21,7 @@
 
                 <template v-slot:listing>
                     <Listing item-key="element_index" :page-size="pageSize" :payload="payload" @scroll="onScroll">
-                        <template v-slot:history-item="{ item, index }">
+                        <template v-slot:history-item="{ item }">
                             <ContentItem
                                 :item="item"
                                 :id="item.element_index"
@@ -45,7 +42,7 @@
 
 <script>
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { DatasetCollection, History } from "components/History/model";
+import { History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
@@ -90,7 +87,8 @@ export default {
             return this.selectedCollections[0];
         },
         url() {
-            return `api/dataset_collections/${this.rootCollection.id}/contents/${this.dsc.id}`;
+            const collectionId = this.dsc.object ? this.dsc.object.id : this.dsc.id;
+            return `api/dataset_collections/${this.rootCollection.id}/contents/${collectionId}`;
         },
     },
     methods: {
