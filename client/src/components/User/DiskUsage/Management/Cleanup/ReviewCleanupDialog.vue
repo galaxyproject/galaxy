@@ -93,6 +93,13 @@ export default {
             required: false,
             default: 0,
         },
+        show: {
+            type: Boolean,
+            required: false,
+        },
+    },
+    created() {
+        this.showDialog = this.show;
     },
     data() {
         return {
