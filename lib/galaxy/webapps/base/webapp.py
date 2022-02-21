@@ -203,7 +203,8 @@ def config_allows_origin(origin_raw, config):
 
 
 def url_builder(*args, **kwargs) -> str:
-    """Wrapper around the uWSGI version of the function for reversing URLs."""
+    """Wrapper around the WSGI version of the function for reversing URLs."""
+    kwargs.update(kwargs.pop("query_params", {}))
     return url_for(*args, **kwargs)
 
 

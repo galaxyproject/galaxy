@@ -1,10 +1,14 @@
 import os
-from copy import (
-    copy,
-    deepcopy,
+from copy import deepcopy
+from typing import (
+    Dict,
+    List,
 )
 
-from galaxy.util import parse_xml
+from galaxy.util import (
+    Element,
+    parse_xml,
+)
 
 REQUIRED_PARAMETER = object()
 
@@ -18,36 +22,29 @@ def load_with_references(path):
     tree = raw_xml_tree(path)
     root = tree.getroot()
 
-    macro_paths = _import_macros(root, path)
-
-    # temporarily remove the children of the macros node
-    # and create a copy. this is done because this allows
-    # to iterate over all expand nodes of the tree
-    # that are not included in the macros node
     macros_el = _macros_el(root)
-    if macros_el is not None:
-        macros_copy = copy(macros_el)
-        macros_el.clear()
-    else:
-        macros_copy = None
+    if macros_el is None:
+        return tree, []
+
+    macros: Dict[str, List[Element]] = {}
+    macro_paths = _import_macros(macros_el, path, macros)
+    macros_el.clear()
 
     # Collect tokens
-    tokens = _macros_of_type(macros_copy, "token", lambda el: el.text or "")
+    tokens = {}
+    for m in macros.get("token", []):
+        tokens[m.get("name")] = m.text or ""
     tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
-    macro_dict = _macros_of_type(macros_copy, "xml", lambda el: XmlMacroDef(el))
+    macro_dict = {}
+    for m in macros.get("xml", []):
+        macro_dict[m.get("name")] = XmlMacroDef(m)
     _expand_macros([root], macro_dict, tokens)
 
-    # readd the stashed children of the macros node
-    # TODO is this this really necesary? Since macro nodes are removed anyway just below.
-    if macros_copy is not None:
-        _xml_set_children(macros_el, list(macros_copy))
-
-    for el in root.xpath("//macro"):
-        if el.get("type") != "template":
-            # Only keep template macros
-            el.getparent().remove(el)
+    # reinsert template macro which are used during tool execution
+    for m in macros.get("template", []):
+        macros_el.append(m)
     _expand_tokens_for_el(root, tokens)
     return tree, macro_paths
 
@@ -83,16 +80,15 @@ def imported_macro_paths(root):
     return _imported_macro_paths_from_el(macros_el)
 
 
-def _import_macros(root, path):
+def _import_macros(macros_el, path, macros):
     """
     root the parsed XML tree
     path the path to the main xml document
     """
     xml_base_dir = os.path.dirname(path)
-    macros_el = _macros_el(root)
     if macros_el is not None:
-        macro_els, macro_paths = _load_macros(macros_el, xml_base_dir)
-        _xml_set_children(macros_el, macro_els)
+        macro_paths = _load_macros(macros_el, xml_base_dir, macros)
+        # _xml_set_children(macros_el, macro_els)
         return macro_paths
 
 
@@ -160,22 +156,22 @@ def _expand_macros(elements, macros, tokens, visited=None):
     if not macros and not tokens:
         return
 
+    if visited is None:
+        v = []
+    else:
+        v = visited
+
     for element in elements:
         while True:
             expand_el = element.find(".//expand")
             if expand_el is None:
                 break
-            if visited is None:
-                v = []
-            else:
-                v = visited
             _expand_macro(expand_el, macros, tokens, v)
 
 
 def _expand_macro(expand_el, macros, tokens, visited):
     macro_name = expand_el.get("macro")
     assert macro_name is not None, "Attempted to expand macro with no 'macro' attribute defined."
-
     # check for cycles in the nested macro expansion
     assert (
         macro_name not in visited
@@ -222,54 +218,47 @@ def _expand_yield_statements(macro_def, expand_el):
         _xml_replace(yield_el, expand_el_children)
 
 
-def _load_macros(macros_el, xml_base_dir):
-    macros = []
+def _load_macros(macros_el, xml_base_dir, macros):
     # Import macros from external files.
-    imported_macros, macro_paths = _load_imported_macros(macros_el, xml_base_dir)
-    macros.extend(imported_macros)
+    macro_paths = _load_imported_macros(macros_el, xml_base_dir, macros)
     # Load all directly defined macros.
-    macros.extend(_load_embedded_macros(macros_el, xml_base_dir))
-    return macros, macro_paths
+    _load_embedded_macros(macros_el, xml_base_dir, macros)
+    return macro_paths
 
 
-def _load_embedded_macros(macros_el, xml_base_dir):
-    macros = []
-
-    macro_els = []
+def _load_embedded_macros(macros_el, xml_base_dir, macros):
+    if macros_el is None:
+        return
     # attribute typed macro
-    if macros_el is not None:
-        macro_els = macros_el.findall("macro")
-    for macro in macro_els:
+    for macro in macros_el.iterfind("macro"):
         if "type" not in macro.attrib:
             macro.attrib["type"] = "xml"
-        macros.append(macro)
+        try:
+            macros[macro.attrib["type"]].append(macro)
+        except KeyError:
+            macros[macro.attrib["type"]] = [macro]
 
     # type shortcuts (<xml> is a shortcut for <macro type="xml",
     # likewise for <template>.
-    typed_tag = ["template", "xml", "token"]
-    for tag in typed_tag:
-        macro_els = []
-        if macros_el is not None:
-            macro_els = macros_el.findall(tag)
-        for macro_el in macro_els:
+    for tag in ["template", "xml", "token"]:
+        for macro_el in macros_el.iterfind(tag):
             macro_el.attrib["type"] = tag
             macro_el.tag = "macro"
-            macros.append(macro_el)
+            try:
+                macros[tag].append(macro_el)
+            except KeyError:
+                macros[tag] = [macro_el]
 
-    return macros
 
-
-def _load_imported_macros(macros_el, xml_base_dir):
-    macros = []
+def _load_imported_macros(macros_el, xml_base_dir, macros):
     macro_paths = []
 
     for tool_relative_import_path in _imported_macro_paths_from_el(macros_el):
         import_path = os.path.join(xml_base_dir, tool_relative_import_path)
         macro_paths.append(import_path)
-        file_macros, current_macro_paths = _load_macro_file(import_path, xml_base_dir)
-        macros.extend(file_macros)
+        current_macro_paths = _load_macro_file(import_path, xml_base_dir, macros)
         macro_paths.extend(current_macro_paths)
-    return macros, macro_paths
+    return macro_paths
 
 
 def _imported_macro_paths_from_el(macros_el):
@@ -283,19 +272,10 @@ def _imported_macro_paths_from_el(macros_el):
     return imported_macro_paths
 
 
-def _load_macro_file(path, xml_base_dir):
+def _load_macro_file(path, xml_base_dir, macros):
     tree = parse_xml(path, strip_whitespace=False)
-    for node in tree.iter():
-        # little hack: node.base contains that path to the file which is used in
-        # the linter. it is a property that apparently is determined from the
-        # xmltree, so if the macro is inserted into the main xml node.base will
-        # give the path of the main xml file.
-        # luckily lxml allows to set the property by adding xml:base to the node
-        # which will be returned if the property is read
-        # https://github.com/lxml/lxml/blob/5a5c7fb01d15af58def4bab2ba7b15c937042835/src/lxml/etree.pyx#L1106
-        node.base = node.base
     root = tree.getroot()
-    return _load_macros(root, xml_base_dir)
+    return _load_macros(root, xml_base_dir, macros)
 
 
 def _xml_set_children(element, new_children):

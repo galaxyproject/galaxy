@@ -455,6 +455,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "history_content",
                 history_id=self.app.security.encode_id(item.history_id),
                 id=self.app.security.encode_id(item.id),
+                context=context,
             ),
             "urls": self.serialize_urls,
             # TODO: backwards compat: need to go away
@@ -462,6 +463,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "history_contents_display",
                 history_id=self.app.security.encode_id(item.history.id),
                 history_content_id=self.app.security.encode_id(item.id),
+                context=context,
             ),
             "parent_id": self.serialize_id,
             # TODO: to DatasetAssociationSerializer

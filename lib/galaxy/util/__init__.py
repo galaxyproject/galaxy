@@ -57,9 +57,14 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+
+    Element = etree._Element
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+
+    Element = etree.Element
+
 try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1

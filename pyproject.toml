@@ -28,6 +28,7 @@ name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
 
 [tool.poetry.dependencies]
+a2wsgi = "*"
 aiofiles = "*"
 Babel = "*"
 bdbag = "*"

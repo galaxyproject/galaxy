@@ -378,7 +378,7 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
-        "history_contents_metadata_file",
+        "get_metadata_file",
         "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
         controller="datasets",
         action="get_metadata_file",

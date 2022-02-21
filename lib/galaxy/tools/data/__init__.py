@@ -1025,9 +1025,7 @@ class RefgenieToolDataTable(TabularToolDataTable):
         rval = []
         for genome in rgc.list_genomes_by_asset(self.rg_asset):
             genome_attributes = rgc.get_genome_attributes(genome)
-            description = genome_attributes.get("genome_description", None)
-            if description:
-                description = f"{description} (refgenie: {genome})"
+            genome_description = genome_attributes.get("genome_description", None)
             asset_list = rgc.list(genome, include_tags=True)[genome]
             for tagged_asset in asset_list:
                 asset, tag = tagged_asset.rsplit(":", 1)
@@ -1035,7 +1033,10 @@ class RefgenieToolDataTable(TabularToolDataTable):
                     continue
                 digest = rgc.id(genome, asset, tag=tag)
                 uuid = f"refgenie:{genome}/{self.rg_asset}:{tag}@{digest}"
-                display_name = description or f"{genome}/{tagged_asset}"
+                if genome_description:
+                    display_name = f"{genome_description} (refgenie: {genome}@{digest})"
+                else:
+                    display_name = f"{genome}/{tagged_asset}@{digest}"
 
                 def _seek_key(key):
                     return rgc.seek(genome, asset, tag_name=tag, seek_key=key)

@@ -548,10 +548,11 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
                     dict(
                         file_type=meta_type,
                         download_url=self.url_for(
-                            "history_contents_metadata_file",
+                            "get_metadata_file",
                             history_id=self.app.security.encode_id(dataset_assoc.history_id),
                             history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                            metadata_file=meta_type,
+                            query_params={"metadata_file": meta_type},
+                            context=context,
                         ),
                     )
                 )

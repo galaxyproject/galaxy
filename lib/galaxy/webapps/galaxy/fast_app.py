@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import cast
 
+from a2wsgi import WSGIMiddleware
 from fastapi import (
     FastAPI,
     Request,
 )
-from fastapi.middleware.wsgi import WSGIMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
