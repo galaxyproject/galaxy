@@ -1,12 +1,10 @@
 <template>
     <div>
-        <b-modal
-            id="review-cleanup-dialog"
-            :title="title"
-            title-tag="h2"
-            centered
-            @show="onShowModal"
-            v-model="showDialog">
+        <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog">
+            <template v-slot:modal-title>
+                {{ title }}
+                <span class="text-primary h3">{{ totalItems }} items</span>
+            </template>
             <div>
                 {{ captionText }}
                 <b>
