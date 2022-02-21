@@ -6,6 +6,12 @@
                 <b>{{ title }}</b> <sup class="text-secondary">(Beta)</sup>
             </h2>
 
+            <b-row class="justify-content-md-center">
+                <b-alert show dismissible variant="warning">
+                    {{ betaText }}
+                    <b-link :href="issuesUrl" target="_blank">here</b-link>.
+                </b-alert>
+            </b-row>
             <b-row class="justify-content-md-center mb-5">
                 <b-alert v-if="config.enable_quotas" show>
                     {{ whatCountsText }}
@@ -68,6 +74,8 @@ export default {
             title: _l("Manage your account storage"),
             whatCountsText: _l("The storage manager only shows elements that count towards your disk quota."),
             learnMoreText: _l("Learn more"),
+            betaText: _l("This feature is currently in Beta, if you find any issues please report them"),
+            issuesUrl: "https://github.com/galaxyproject/galaxy/issues",
             errorMessage: null,
             currentOperation: null,
             currentTotalItems: 0,
