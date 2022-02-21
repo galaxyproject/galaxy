@@ -28,9 +28,9 @@ The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which 
 It is possible to run the Galaxy server in many different ways, including under different web application frameworks, or
 as a standalone server with no web stack. Prior to the 18.01 release, Galaxy (by default)
 used the [Python Paste][paste] web stack, and ran in a single process. Between the 18.01 release and the 22.01 release
-uWSGI was used as the default application server. Starting with the 22.01 release the default application server is
-Gunicorn. For information about uWSGI in the Galaxy context please consult the version of this document that is
-appropriate to your Galaxy version.
+[uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default application server. Starting with the 22.01 release the default application server is
+[Gunicorn][Gunicorn]. For information about uWSGI in the Galaxy context please consult the version of this document that is
+appropriate to your Galaxy release.
 
 Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
 and we will drop support for being run as a WSGI application via uWSGI in Galaxy release 22.05.
@@ -81,7 +81,7 @@ assigned by the web worker when the job is submitted via the UI/API, meaning tha
 This strategy is deprecated and will be removed in Galaxy release 22.05.
 You can consult the documentation for older versions of Galaxy for details.
 
-If you're migrating Galaxy to 22.01 or newer we recommend you set up the
+If you're upgrading Galaxy to release 22.01 or newer we recommend you set up the
 **Gunicorn + Webless** strategy above.
 
 ## Job Handler Assignment Methods
@@ -95,12 +95,12 @@ attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
   setting a new job's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
   is configured). Handlers "listen" for jobs by selecting jobs from the database that match the handler tag(s) for which
   they are configured. `db-transaction-isolation` is the default assignment method if no handlers are defined,
-  or handlers are defined but no assign_with attribute is set on the `handlers` tag and *Database SKIP LOCKED* is not available.
+  or handlers are defined but no `assign_with` attribute is set on the `handlers` tag and *Database SKIP LOCKED* is not available.
 
 * **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
   the database using `SELECT ... FOR UPDATE SKIP LOCKED` on databases that support this query (see the next section for
   details). This occurs via the same process as *Database Transaction Isolation*, the only difference is the way in
-  which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no assign_with attribute is set
+  which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no `assign_with` attribute is set
   on the `handlers` tag and *Database SKIP LOCKED* is available.
 
 * **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
@@ -138,15 +138,15 @@ does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, pre
 
 The "database locking" methods (*Database SKIP LOCKED* and *Database Transaction Isolation*) were created to solve
 these issues. The preferred method between the two options is *Database SKIP LOCKED*, but it requires PostgreSQL 9.5
-or newer, sqlite 3.25 or newer or MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested).
+or newer, SQLite 3.25 or newer or MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested).
 If using an older database version, use *Database Transaction Isolation* instead. A detailed explanation of these database locking methods in PostgreSQL can be
 found in the excellent [What is SKIP LOCKED for in PostgreSQL 9.5?][2ndquadrant-skip-locked] entry on the [2ndQuadrant
 PostgreSQL Blog][2ndquadrant-blog].
 
 The preferred assignment method is *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
-[2ndquadrant-skip-locked]: https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
-[2ndquadrant-blog]: https://blog.2ndquadrant.com/
+[2ndquadrant-skip-locked]: https://www.2ndquadrant.com/en/blog/what-is-select-skip-locked-for-in-postgresql-9-5/
+[2ndquadrant-blog]: https://www.2ndquadrant.com/en/blog/
 
 ```eval_rst
 .. _scaling-configuration:
@@ -159,17 +159,17 @@ The preferred assignment method is *Database SKIP LOCKED* or *Database Transacti
 We will only outline a few of Gunicorn's options, consult the [Gunicorn documentation](https://docs.gunicorn.org/en/latest/settings.html) for more.
 
 
-Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration that
-uses Gunicorn configuration values read from the `gravity` section of your `galaxy.yml` file.
+Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration
+using Gunicorn configuration values read from the `gravity` section of your `galaxy.yml` file.
 This is the preferred and out-of-the box way of configuring Gunicorn for serving Galaxy.
-If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager
-all of the Gunicorn configuration values can also directly be set on the command line.
+If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager,
+all the Gunicorn configuration values can also directly be set on the command line.
 
 Configuration is performed in the `gravity` section of `galaxy.yml`. You will find that the default, if copied from
 `galaxy.yml.sample`, is commented out. The default configuration options are provided to Gunicorn on the command line by
 using `gravity` within the `run.sh` script.
 
-After making changes to the gravity section you always need to activate Galaxy's virtualenv and run `galaxyctl update`
+After making changes to the `gravity` section, you always need to activate Galaxy's virtualenv and run `galaxyctl update`
 
 
 #### Common Gunicorn configuration
@@ -192,8 +192,8 @@ gravity:
 Some of these options deserve explanation:
 
 * `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
-  attained by increasing this value. If Gunicorn is the only application on the server the number of CPUs * 2 + 1 is
-  a good starting value, 4 - 12 workers should be able to handle hundreds if not thousands of requests per second.
+  attained by increasing this value. If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
+4-12 workers should be able to handle hundreds if not thousands of requests per second.
 * `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
@@ -263,7 +263,8 @@ Gunicorn can be configured to serve HTTPS directly:
 See [Gunicorn's SSL documentation](https://docs.gunicorn.org/en/latest/settings.html#ssl) for more details.
 
 To bind to ports < 1024 (e.g. if you want to bind to the standard HTTP/HTTPS ports 80/443), you must bind as the `root`
-user and drop privileges to the Galaxy user. However you are strongly encouraged to setup [Apache](apache.md) or [nginx](nginx.md) instead.
+user and drop privileges to the Galaxy user. However you are strongly encouraged to setup a proxy server
+as described in the [production configuration](production.md) documentation.
 
 ### Job Handling
 
@@ -368,15 +369,15 @@ To let gravity know how many webless handler processes should be started set the
 
 ```yaml
 gravity:
-    handlers:
-      handler:
-        processes: 3
-        pools:
-          - job-handler
-          - workflow-scheduler
-      special:
-        pools:
-          - job-handler.special
+  handlers:
+    handler:
+      processes: 3
+      pools:
+        - job-handler
+        - workflow-scheduler
+    special:
+      pools:
+        - job-handler.special
 ```
 
 In this example 4 processes will be started in total:
@@ -423,8 +424,8 @@ It provides two executables, `galaxyctl`, which is used to manage the starting, 
 These commands are available from within Galaxy's virtualenv, or you can install them globally.
 If you have used the standard installation method for Galaxy by running `./run.sh` or executing
 `./scripts/common_startup.sh`, a default directory has been configured in which gravity stores
-it's state. If you have installed Galaxy or gravity by another means you can use the `--state-dir` argument
-or the `GRAVITY_STATE_DIR` environment variable to control the state dir.
+its state. If you have installed Galaxy or gravity by another means, you can use the `--state-dir` argument
+or the `GRAVITY_STATE_DIR` environment variable to control the state directory.
 In the following sections we assume you have correctly set up gravity and can use the `galaxyctl` command.
 
 ## Logging and daemonization
@@ -432,7 +433,7 @@ In the following sections we assume you have correctly set up gravity and can us
 When running `./run.sh` the log output is shown on screen, and ^ctrl-c will stop all processes.
 Galaxy can be started in the background by running `./run.sh --daemon`.
 
-Alternatively, you can control galaxy using the `galaxyctl` command provided by gravity.
+Alternatively, you can control Galaxy using the `galaxyctl` command provided by gravity.
 After activating Galaxy's virtualenv environment you can start Galaxy in the background
 using `galaxyctl start`:
 
@@ -485,7 +486,7 @@ No Galaxy config file found, running from current working directory: /Users/mvan
 [2022-02-17 16:31:26,825: DEBUG/MainProcess] beat: Waking up in 5.00 minutes.
 ```
 
-More advanced logging options are described in the Galaxy [Logging Configuration documentation](config_logging)
+More advanced logging options are described in the Galaxy [Logging Configuration documentation](config_logging).
 
 ## Starting and Stopping
 
@@ -500,7 +501,7 @@ For zero-downtime restarts use the command `galaxyctl graceful`.
 ### Systemd
 
 This is a sample config for systemd. More information on systemd.service environment
-settings can be found in the [documentation](http://0pointer.de/public/systemd-man/systemd.exec.html#Environment=)
+settings can be found in the [documentation](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=)
 The filename follows the pattern `<service_name>.service`. In this case we will use `galaxy.service`
 
 ```ini
