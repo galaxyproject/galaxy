@@ -2714,11 +2714,6 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
-    In addition, this will set uWSGI's `honour-stdin` option to
-    `true`; thus, preventing uWSGI from remapping stdin to `/dev/null`
-    and enabling debugging with tools like pdb. To keep uWSGI's
-    default setting, set `honor-stdin` to `false` in the `uwsgi`
-    section of this configuration file.
 :Default: ``false``
 :Type: bool
 
