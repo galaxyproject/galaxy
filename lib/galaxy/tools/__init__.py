@@ -3309,8 +3309,8 @@ class SortTool(DatabaseOperationTool):
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
                     raise Exception(message)
             else:
-                message = "Number of lines must match number of list elements (%i), but file has %i lines"
-                raise Exception(message % (data_lines, len(elements)))
+                message = f"Number of lines must match number of list elements ({len(elements)}), but file has {data_lines} lines"
+                raise Exception(message)
         else:
             raise Exception(f"Unknown sort_type '{sorttype}'")
 
