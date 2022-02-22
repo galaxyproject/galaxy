@@ -158,9 +158,11 @@ The preferred assignment method is *Database SKIP LOCKED* or *Database Transacti
 
 We will only outline a few of Gunicorn's options, consult the [Gunicorn documentation](https://docs.gunicorn.org/en/latest/settings.html) for more.
 
-
-Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration
-using Gunicorn configuration values read from the `gravity` section of your `galaxy.yml` file.
+Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration in Gravity's state directory.
+Gravity's state directory is located in `database/gravity`, and you can find the generated supervisor configuration in
+`database/gravity/supervisor`. The location of the state directory can be controlled using the `--state-dir` argument
+of `galaxyctl`, or using the `GRAVITY_STATE_DIR` environment variable.
+Configuration values for the supervisor configuration are read from the `gravity` section of your `galaxy.yml` file.
 This is the preferred and out-of-the box way of configuring Gunicorn for serving Galaxy.
 If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager,
 all the Gunicorn configuration values can also directly be set on the command line.
