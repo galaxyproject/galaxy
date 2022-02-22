@@ -171,8 +171,8 @@ Configuration is performed in the `gravity` section of `galaxy.yml`. You will fi
 `galaxy.yml.sample`, is commented out. The default configuration options are provided to Gunicorn on the command line by
 using `gravity` within the `run.sh` script.
 
-After making changes to the `gravity` section, you always need to activate Galaxy's virtualenv and run `galaxyctl update`
-
+After making changes to the `gravity` section, you always need to activate Galaxy's virtualenv and run `galaxyctl update`,
+or one of the `start`, `stop`, `restart`, and `graceful` subcommands of the `galaxyctl` command, which will run the `update` command internally.
 
 #### Common Gunicorn configuration
 
