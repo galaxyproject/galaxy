@@ -10,7 +10,7 @@
         <div class="dropdown-menu" role="menu">
             <a
                 class="rule-link dropdown-item saved-rule-item"
-                v-for="session in savedRules"
+                v-for="session in sortSavedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', session.rule)"
                 >Saved rule from {{ formatDate(session.dateTime) }}
@@ -42,10 +42,18 @@ export default {
         numOfSavedRules: function () {
             return this.savedRules.length;
         },
+        sortSavedRules: function () {
+            return this.savedRules.sort(this.onSessionDateTime);
+        },
     },
     methods: {
         formatDate(dateTime) {
             return moment.utc(dateTime).from(moment().utc());
+        },
+        onSessionDateTime(a, b) {
+            var first = new Date(a.dateTime).getTime();
+            var second = new Date(b.dateTime).getTime();
+            return second - first;
         },
     },
 };
