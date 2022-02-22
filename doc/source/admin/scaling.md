@@ -72,9 +72,7 @@ Referred to in this documentation as the **Gunicorn + Webless** strategy.
 * The recommended deployment strategy for production Galaxy instances
 
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
-methods (see below). If the database used does not support this mechanism (in practice this should only apply
-to sqlite before version 3.25, which is not at all recommended for production Galaxy server) a handler is randomly
-assigned by the web worker when the job is submitted via the UI/API, meaning that jobs may be assigned to unresponsive handlers.
+methods (see below).
 
 ### uWSGI for web serving with Mules as job handlers
 
