@@ -35,7 +35,9 @@
                 v-model="currentValue"
                 :id="id"
                 :options="attrs.options"
-                :default-value="attrs.default_value" />
+                :default-value="attrs.default_value" 
+                :multiple="attrs.multiple"
+                :display="attrs.display"/>
             <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
