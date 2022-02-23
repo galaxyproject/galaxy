@@ -14,7 +14,11 @@
                         {{ value[0].label || name }}
                     </td>
                     <td>
-                        <generic-history-content v-for="(item, index) in value" :key="index" :data_item="item.value" />
+                        <generic-history-item
+                            v-for="(item, index) in value"
+                            :key="index"
+                            :item-id="item.value.id"
+                            :item-src="item.value.src" />
                     </td>
                 </tr>
             </tbody>
@@ -23,11 +27,11 @@
 </template>
 
 <script>
-import GenericHistoryContent from "components/History/Content/GenericContentItem/GenericHistoryContent";
+import GenericHistoryItem from "components/History/Content/GenericItem";
 
 export default {
     components: {
-        GenericHistoryContent,
+        GenericHistoryItem,
     },
     props: {
         jobOutputs: Object,
