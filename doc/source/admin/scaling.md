@@ -54,7 +54,7 @@ configuration](production.md) documentation.
 Referred to in this documentation as the **all-in-one** strategy.
 
 * Job handlers and web workers are the same processes and cannot be separated
-* A web worker that receives the job request from the UI/API will be the job handler for that job
+* A random web worker will be the job handler for that job
 
 Under this strategy, jobs will be handled by Gunicorn workers. Having web processes handle jobs will negatively impact
 UI/API performance.
