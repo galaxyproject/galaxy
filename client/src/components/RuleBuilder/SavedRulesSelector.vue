@@ -43,8 +43,7 @@ export default {
             return this.savedRules.length;
         },
         sortSavedRules: function () {
-            var sortedRules = this.savedRules;
-            return sortedRules.sort(this.onSessionDateTime);
+            return [...this.savedRules].sort(this.onSessionDateTime);
         },
     },
     methods: {
