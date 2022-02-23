@@ -163,8 +163,10 @@ find_server() {
             ;;
         reports)
             # TODO: don't override this var, and is this really the only way to configure the port?
-            GUNICORN_CMD_ARGS="--bind=localhost:9001"
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-\"--bind=localhost:9001\"}
             ;;
+        tool_shed)
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-\"--bind=localhost:9009\"}
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
@@ -188,11 +190,10 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         run_server="gunicorn"
+        export GUNICORN_CMD_ARGS
         if [ "$server_app" = "tool_shed" ]; then
             server_args="'${server_app}.webapp.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
-            export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:9009\"}"
         else
-            export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
             server_args="'galaxy.webapps.${server_app}.fast_factory:factory()' --pythonpath lib -k ${gunicorn_worker:-$default_gunicorn_worker} $gunicorn_args"
         fi
         if [ "$add_pid_arg" -eq 1 ]; then
