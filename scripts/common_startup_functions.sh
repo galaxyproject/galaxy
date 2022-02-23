@@ -162,7 +162,7 @@ find_server() {
             gunicorn_worker="galaxy.webapps.galaxy.workers.Worker"
             ;;
         reports)
-            # TODO: don't override this var, and is this really the only way to configure the port?
+            # TODO: is this really the only way to configure the port?
             GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-\"--bind=localhost:9001\"}
             ;;
         tool_shed)
