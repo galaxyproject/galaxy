@@ -983,7 +983,7 @@ def build_native_uwsgi_app(paste_factory, config_section):
     return uwsgi_app
 
 
-def build_url_map(app, global_conf, local_conf):
+def build_url_map(app, global_conf, **local_conf):
     from paste.urlmap import URLMap
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
     urlmap = URLMap()
@@ -1013,4 +1013,4 @@ def build_url_map(app, global_conf, local_conf):
 
     if 'static_local_dir' in conf:
         urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)
-    return urlmap, cache_time
+    return urlmap
