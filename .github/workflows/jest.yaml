@@ -3,9 +3,11 @@ on:
   push:
     paths:
       - 'client/**'
+      - '.github/workflows/jest.yaml'
   pull_request:
     paths:
       - 'client/**'
+      - '.github/workflows/jest.yaml'
 concurrency:
   group: client-${{ github.ref }}
   cancel-in-progress: true
