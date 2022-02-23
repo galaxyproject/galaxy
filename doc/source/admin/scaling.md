@@ -250,7 +250,7 @@ gravity:
     gunicorn_extra_args: '--forwarded-allow-ips="*" --bind 127.0.0.1:8080'
 ```
 
-Note that should only be used for debugging purposes due to `--forwarded-allow-ips="*"`.
+Note that this should only be used for debugging purposes due to `--forwarded-allow-ips="*"`.
 
 **Without a proxy server**:
 
