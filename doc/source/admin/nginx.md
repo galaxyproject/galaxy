@@ -118,9 +118,13 @@ http {
         # Enable HSTS
         add_header Strict-Transport-Security "max-age=15552000; includeSubdomains";
 
-        # proxy all requests not matching other locations to uWSGI
+        # proxy all requests not matching other locations to Gunicorn
         location / {
-            proxy_pass http://unix:/srv/galaxy/var/uwsgi.sock;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_pass http://unix:/srv/galaxy/var/gunicorn.sock;
         }
 
         # serve framework static content
@@ -184,9 +188,13 @@ previous section:
     ```nginx
             #...
 
-            # proxy all requests not matching other locations to uWSGI
+            # proxy all requests not matching other locations to Gunicorn
             location /galaxy {
-                proxy_pass http://unix:/srv/galaxy/var/uwsgi.sock;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_pass http://unix:/srv/galaxy/var/gunicorn.sock:/galaxy;
             }
 
             # serve framework static content
@@ -208,10 +216,10 @@ previous section:
     gravity:
       gunicorn:
         # ...
-        bind: /srv/galaxy/var/uwsgi.sock
+        bind: /srv/galaxy/var/gunicorn.sock
     galaxy:
         # ...
-        galaxy_url_prefix: /prefix
+        galaxy_url_prefix: /galaxy
         # ...
     ```
 
@@ -478,8 +486,6 @@ subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-vi
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
 To secure this page to only Galaxy administrators, adjust your nginx config accordingly:
-
-**TODO:** This is not valid for the uWSGI proxy method and needs to be updated. -nate 2018-01-11
 
 ```nginx
         location /reports {
