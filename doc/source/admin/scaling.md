@@ -425,7 +425,7 @@ These commands are available from within Galaxy's virtualenv, or you can install
 If you have used the standard installation method for Galaxy by running `./run.sh` or executing
 `./scripts/common_startup.sh`, a default directory has been configured in which gravity stores
 its state. If you have installed Galaxy or gravity by another means, you can use the `--state-dir` argument
-or the `GRAVITY_STATE_DIR` environment variable to control the state directory.
+or the `GRAVITY_STATE_DIR` environment variable to control the state directory. If a state dir is not specified, it defaults to `~/.config/galaxy-gravity`.
 In the following sections we assume you have correctly set up gravity and can use the `galaxyctl` command.
 
 ## Logging and daemonization
@@ -434,7 +434,7 @@ When running `./run.sh` the log output is shown on screen, and ^ctrl-c will stop
 Galaxy can be started in the background by running `./run.sh --daemon`.
 
 Alternatively, you can control Galaxy using the `galaxyctl` command provided by gravity.
-After activating Galaxy's virtualenv environment you can start Galaxy in the background
+After activating Galaxy's virtual environment you can start Galaxy in the background
 using `galaxyctl start`:
 
 ```console
