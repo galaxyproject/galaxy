@@ -2,6 +2,7 @@ Galaxy Performance Tracking
 ===========================
 
 Tracking performance over time and identifying slow queries in your Galaxy can be an extremely important thing to do, especially for larger Galaxies.
+[A more in-depth tutorial is available at the Galaxy Training Network](https://training.galaxyproject.org/training-material/topics/admin/tutorials/monitoring/tutorial.html).
 
 Most performance tracking requires sending metrics to a metrics collection server such as `StatsD <https://github.com/etsy/statsd/>`__. This document assumes you have already deployed StatsD.
 
