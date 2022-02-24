@@ -58,7 +58,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset">
+                :disabled="!sourceContentPopulated">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>
@@ -88,7 +88,6 @@ export default {
             ftpFiles: [],
             uris: [],
             topInfo: "Tabular source data to extract collection files and metadata from",
-            enableReset: false,
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
@@ -132,6 +131,11 @@ export default {
                     this.sourceContent = response.data;
                 })
                 .catch((error) => console.log(error));
+        },
+    },
+    computed: {
+        sourceContentPopulated: function () {
+            return this.sourceContent.length > 0;
         },
     },
     methods: {
