@@ -10,9 +10,11 @@
         <div class="dropdown-menu" role="menu">
             <a
                 class="rule-link dropdown-item saved-rule-item"
-                v-for="session in savedRules"
+                v-for="(session, index) in savedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', session.rule)"
+                v-b-tooltip.hover.right
+                :title="formatPreview(session.rule, index)"
                 >Saved rule from {{ formatDate(session.dateTime) }}
             </a>
         </div>
@@ -24,6 +26,9 @@ import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
+import RuleDefs from "mvc/rules/rule-definitions";
+const RULES = RuleDefs.RULES;
+const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
 Vue.use(BootstrapVue);
 export default {
@@ -37,6 +42,10 @@ export default {
             type: Array,
             required: true,
         },
+        ruleColHeaders: {
+            type: Array,
+            required: true,
+        },
     },
     computed: {
         numOfSavedRules: function () {
@@ -46,6 +55,33 @@ export default {
     methods: {
         formatDate(dateTime) {
             return moment.utc(dateTime).from(moment().utc());
+        },
+        formatPreview(savedRuleJson, index) {
+            var prettyString = "";
+            var delim = "";
+            var numOfPreviewedRules = 0;
+            console.log(savedRuleJson);
+            let savedRule = JSON.parse(savedRuleJson);
+            savedRule.rules.forEach((element) => {
+                if (numOfPreviewedRules == 5) {
+                    return prettyString;
+                } else {
+                    prettyString += delim + RULES[element.type].display(element, this.ruleColHeaders[index]);
+                    prettyString = prettyString.slice(0, -1);
+                    delim = ", ";
+                    numOfPreviewedRules++;
+                }
+            });
+            savedRule.mapping.forEach((element) => {
+                if (numOfPreviewedRules == 5) {
+                    return prettyString;
+                } else {
+                    prettyString += delim + "Set " + MAPPING_TARGETS[element.type].label;
+                    delim = ", ";
+                    numOfPreviewedRules++;
+                }
+            });
+            return prettyString;
         },
     },
 };
