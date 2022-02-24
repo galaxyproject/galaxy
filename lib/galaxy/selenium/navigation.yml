@@ -154,7 +154,7 @@ history_panel:
   content_item:
     selectors:
       # specific rows selectable with attributes via suffix
-      _: '.beta.history .content-item${suffix}'
+      _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
       summary: '${_} .summary'
@@ -177,7 +177,7 @@ history_panel:
       info_button: '${_} .params-btn'
       nametags: '${_} .nametags .badge-tags'
 
-      dataset_operations_dropdown: '${_}  .dataset-operations-dropdown'
+      dataset_operations_dropdown: '${_}  .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -226,7 +226,7 @@ history_panel:
       list_items_beta: '.dataset-collection-panel .listing .content-item'
 
   selectors:
-    beta: '.beta.history'
+    beta: '.history-index'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'

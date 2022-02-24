@@ -36,8 +36,6 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         )
         ok_hid = ok_response["implicit_collections"][0]["hid"]
 
-        self.home()
-
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
         self.history_panel_wait_for_hid_state(ok_hid, "ok")
@@ -170,6 +168,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         if self.is_beta_history():
             self._rename_collection(new_name)
             self.screenshot("history_panel_collection_view_rename_beta")
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
             title_element = self.beta_history_element("collection name display").wait_for_present()
         else:
             title_element = collection_view.title.wait_for_visible()
@@ -223,7 +222,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             dataset_elements = collection_view.list_items.all()
 
         assert len(dataset_elements) == 2, dataset_elements
-        titles = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
+        titles = [de.find_element_by_css_selector(".name").text for de in dataset_elements]
         titles.sort()
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")

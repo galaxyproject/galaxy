@@ -1,5 +1,5 @@
 <template>
-    <div class="mb-1">
+    <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
                 <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
@@ -7,7 +7,7 @@
                 </b-button>
                 <b-button
                     v-if="showDownloads"
-                    class="px-1"
+                    class="download-btn px-1"
                     title="Download"
                     size="sm"
                     variant="link"
@@ -25,7 +25,7 @@
                 </b-button>
                 <b-button
                     v-if="showInfo"
-                    class="px-1"
+                    class="params-btn px-1"
                     title="Dataset Details"
                     size="sm"
                     variant="link"

@@ -16,7 +16,7 @@ export default {
         VirtualList,
     },
     props: {
-        payload: { required: true },
+        payload: { type: Array, default: null },
         itemKey: { type: String, default: "hid" },
         queryKey: { type: String, default: null },
         pageSize: { type: Number, required: true },

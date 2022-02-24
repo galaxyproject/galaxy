@@ -4,7 +4,7 @@
             <b-button-group>
                 <b-button
                     title="Select Items"
-                    class="rounded-0"
+                    class="show-history-content-selectors-btn rounded-0"
                     size="sm"
                     variant="link"
                     :disabled="!hasMatches"
@@ -19,7 +19,7 @@
                     variant="link"
                     :pressed="showFilter"
                     @click="toggleFilter"
-                    data-description="content search toggle">
+                    data-description="content filter toggle">
                     <Icon icon="search" />
                 </b-button>
                 <b-button
