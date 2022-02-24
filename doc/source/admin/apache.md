@@ -158,7 +158,7 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
 ```
 
 Be sure to set `galaxy_root` to the path to your copy of Galaxy and modify the value of `ProxyPass /`  to match your
-Gunicorn socket path. With the default configuration, gunicorn will bind to a TCP socket, so you will need to Gunicorn to bind to a UNIX domain socket as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
+Gunicorn socket path. With the default configuration, Gunicorn will bind to a TCP socket, so you will need Gunicorn to bind to a UNIX domain socket as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
 ### Additional Notes
