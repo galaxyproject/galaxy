@@ -3,12 +3,12 @@ Galaxy Performance Tracking
 
 Tracking performance over time and identifying slow queries in your Galaxy can be an extremely important thing to do, especially for larger Galaxies.
 
-Most performance tracking requires sending metrics to a metrics collection server such as `Graphite <http://graphiteapp.org/>`__ or `StatsD <https://github.com/etsy/statsd/>`__. This document assumes you have already deployed a metrics server.
+Most performance tracking requires sending metrics to a metrics collection server such as `StatsD <https://github.com/etsy/statsd/>`__. This document assumes you have already deployed StatsD.
 
 Gunicorn
 -----
 
-There is some built-in Gunicorn support for performance logging. You can send Gunicorn's internal metrics to a StatsD server by setting the `--statsd-host` and `--statsd-prefix` command line options for Gunicorn in the `gravity` section of `galaxy.yml`:
+There is some built-in `Gunicorn <https://docs.gunicorn.org/en/stable/instrumentation.html>`__ support for performance logging. You can send Gunicorn's internal metrics to a StatsD server by setting the `--statsd-host` and `--statsd-prefix` command line options for Gunicorn in the `gravity` section of `galaxy.yml`:
 
 .. code-block:: yaml
 
