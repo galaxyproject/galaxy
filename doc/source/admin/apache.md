@@ -209,7 +209,7 @@ previous section:
     ```
 
 2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages).
-   This is accomplished by configuring Galaxy in your `config/galaxy.yml` file like so and restarting Galaxy:
+   This is accomplished by configuring Galaxy and Gunicorn in your `config/galaxy.yml` file like so and restarting Galaxy:
 
     ```yaml
     gravity:
