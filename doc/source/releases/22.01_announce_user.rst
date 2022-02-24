@@ -12,8 +12,11 @@ Highlights
 
 Do you use tools which require colour inputs, like Circos? Previously we had a very restricted colour input which gave you a very limited palette. Now you have complete freedom of choice with the modern colour selector.
 
-.. figure:: https://user-images.githubusercontent.com/15801412/140774342-57f465cd-e87d-4bd4-babc-b39ca8350655.gif
-   :alt: Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour pallete, now there is a colour field and you can select any possible RGB colour.
+.. raw:: html
+
+   <video controls autoplay loop muted width="100%" alt="Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour pallete, now there is a colour field and you can select any possible RGB colour.">
+       <source src="images/22.01-colour.mp4" type="video/mp4">
+   </video>
 
 **Improved File Export**
 
@@ -22,7 +25,7 @@ If you've been exporting files from Galaxy lately, you've probably seen the amaz
 .. raw:: html
 
    <video controls autoplay loop muted width="100%" alt="Video of a user exporting a file using the new file export, selecting a folder, creating some subdirectories, before changing their mind and choosing another location to export their file to.">
-       <source src="images/22.05-export.mp4" type="video/mp4">
+       <source src="images/22.01-export.mp4" type="video/mp4">
    </video>
 
 
