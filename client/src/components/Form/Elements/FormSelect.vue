@@ -9,46 +9,8 @@
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
-            <b-col v-if=" display == null">
-                <!-- Single select from drop down -->
-                <multiselect
-                    v-if=" multiple == false"
-                    v-model="currentValue"
-                    :options="optArray"
-                    :allow-empty="false"
-                    deselect-label=""
-                    select-label=""
-                    label="label"
-                    track-by="value"
-                    > 
-                    {{ currentValue }} 
-                </multiselect>
-                <!-- Multiple select from drop down -->
-                <multiselect
-                    v-else-if=" multiple == true"
-                    v-model="currentValue"
-                    :options="optArray"
-                    :multiple="true"
-                    placeholder="Select value"
-                    deselect-label=""
-                    select-label="Selected"
-                    track-by="value"
-                    label="label"
-                    > 
-                </multiselect>
-            </b-col>
-            <b-col v-else-if=" display == 'radio'">
-                <b-form-group>
-                    <!-- Select single from checkboxes -->
-                    <b-form-radio-group
-                        v-if="multiple == false"
-                        v-model="currentValue"
-                        :options="optArray"
-                        text-field="label"
-                        value-field="value"
-                        stacked>
-                    </b-form-radio-group>
-
+            <b-col v-if=" display == 'radio'">
+                <b-form-group>                    
                     <!-- Select multiple from checkboxes -->
                     <b-form-checkbox-group
                         v-if="multiple == true"
@@ -58,7 +20,43 @@
                         text-field="label"
                         stacked>
                     </b-form-checkbox-group>
+                    <!-- Select single from radio -->
+                    <b-form-radio-group
+                        v-else
+                        v-model="currentValue"
+                        :options="optArray"
+                        text-field="label"
+                        stacked>
+                    </b-form-radio-group>
                 </b-form-group>
+            </b-col>
+            <b-col v-else>
+                <!-- Multiple select from drop down -->
+                <multiselect
+                    v-if=" multiple == true"
+                    v-model="currentValue"
+                    :options="optArray"
+                    :multiple="true"
+                    placeholder="Select value"
+                    deselect-label=""
+                    select-label=""
+                    track-by="value"
+                    label="label"
+                    > 
+                </multiselect>
+                <!-- Single select from drop down -->
+                <multiselect
+                    v-else
+                    v-model="currentValue"
+                    :options="optArray"
+                    :allow-empty="true"
+                    deselect-label=""
+                    select-label=""
+                    label="label"
+                    track-by="value"
+                    > 
+                    {{ currentValue }} 
+                </multiselect>
             </b-col>
         </b-row>
     </div>
@@ -74,12 +72,14 @@ export default {
     props: {
         value: {
             required: true,
-            type: [String, Array, null],
+            type: [String, Array],
+            nullable: true,
+            default: null,
         },
         defaultValue: {
             type: [String, Array],
             required: false,
-            default: "",
+            default: null,
         },
         options: {
             type: Array,
@@ -129,12 +129,15 @@ export default {
                 if(this.multiple) { 
                     if (this.value !== "") {
                         let selected = [];
+                        if (this.value == null) {
+                            return
+                        }
                         for(var i = 0; i < this.value.length; i++){
                             // checkboxes expects a value, multiselect expects an object
                             if (this.display == "radio") {
-                                selected.push(this.optArray.find((element) => element.value === this.value[i]).value);
+                                selected.push(this.optArray.find((element) => element.value == this.value[i]).value);
                             } else {
-                                selected.push(this.optArray.find((element) => element.value === this.value[i]));
+                                selected.push(this.optArray.find((element) => element.value == this.value[i]));
                             }
                         }
                         return selected
@@ -147,8 +150,6 @@ export default {
                         }
                         return selected;
                     // Return null if value is optional
-                    } else if (optional == "true") {
-                        return null
                     } else {
                         // Try to find a value labeled default in the options
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
@@ -164,15 +165,19 @@ export default {
                 } else {
                     // If value provided, use value
                     if (this.value !== "") {
-                        return this.optArray.find((element) => element.value === this.value);
+                        if (this.value == null) {
+                            return
+                        }
+                        if (this.display == 'radio') { 
+                            return this.optArray.find((element) => element.value === this.value).value;
+                        } else {
+                            return this.optArray.find((element) => element.value === this.value);
+                        }
                     // if no value provided, use default value
                     } else if (this.defaultValue !== "") {
                         return this.optArray.find((element) => element.default === this.defaultValue);
                     // If no default value provided and optional is selected, return null
-                    } else if (optional == "true") {
-                        return null
-                    // Try to find a value labeled default in the options
-                    }else {
+                    } else {
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
                             if (this.optArray[i].default === true) {
                                 return this.optArray[i];
@@ -186,7 +191,7 @@ export default {
             set(val) {
                 if (this.multiple){
                     if (this.display == "radio"){
-                        this.$emit("input", val.value);
+                        this.$emit("input", val);
                     } else {
                         let values = [];
                         for(var i = 0; i < val.length; i++){
@@ -211,5 +216,11 @@ export default {
 .multiselect__option--selected.multiselect__option--highlight {
     color: #2c3143 !important;
     background: #dee2e6 !important;
+}
+.multiselect__tag,
+.multiselect__tag-icon::after { 
+    background: #25537b !important;
+    border-color: #25537b !important;
+    color: white !important;
 }
 </style>
