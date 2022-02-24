@@ -63,7 +63,7 @@
                                     :item="item"
                                     :id="item.hid"
                                     :name="item.name"
-                                    :state="item.state || item.populated_state"
+                                    :state="getState(item)"
                                     :expanded="isExpanded(item)"
                                     :expandable="item.history_content_type == 'dataset'"
                                     :selected="isSelected(item)"
@@ -154,6 +154,18 @@ export default {
         },
     },
     methods: {
+        getState(item) {
+            if (item.job_state_summary) {
+                for (const key of ["error", "failed", "paused", "upload", "running"]) {
+                    if (item.job_state_summary[key] > 0) {
+                        return key;
+                    }
+                }
+                return "ok";
+            } else {
+                return item.state || item.populated_state;
+            }
+        },
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },

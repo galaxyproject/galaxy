@@ -1,5 +1,11 @@
 <template>
-    <div :class="['content-item m-1 p-0 rounded', clsStatus]" draggable @dragstart="onDragStart">
+    <div
+        :id="contentId"
+        :class="['content-item m-1 p-0 rounded', clsStatus]"
+        draggable
+        :data-hid="id"
+        :data-state="state"
+        @dragstart="onDragStart">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
@@ -17,7 +23,7 @@
                         v-if="writeable && state != 'discarded'"
                         :disabled="isUnavailable"
                         class="px-1"
-                        title="Edit"
+                        title="Edit attributes"
                         size="sm"
                         variant="link"
                         @click.stop="onEdit">
@@ -62,8 +68,9 @@
                         <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
                     </div>
                     <span :class="icon" />
-                    <span class="id">{{ id }}:</span>
-                    <span class="name">{{ name }}</span>
+                    <span class="id hid">{{ id }}</span>
+                    <span>:</span>
+                    <span class="content-title name">{{ name }}</span>
                     <h6 v-if="item.collection_type" class="description py-1">
                         a {{ item.collection_type }} with {{ item.element_count }} items
                     </h6>
@@ -95,6 +102,9 @@ export default {
         writeable: { type: Boolean, default: true },
     },
     computed: {
+        contentId() {
+            return `dataset-${this.item.id}`;
+        },
         clsStatus() {
             const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
             if (!status || this.selected) {

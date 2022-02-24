@@ -1,9 +1,9 @@
 <template>
-    <section>
+    <section data-description="edit details">
         <b-button
             v-if="writeable"
             class="edit-button ml-1 float-right"
-            data-description="editor toggle button"
+            data-description="editor toggle"
             size="sm"
             variant="link"
             :title="'Edit' | l"

@@ -134,7 +134,7 @@ def retry_during_transitions(
     return _retry
 
 
-def edit_details(f, scope=".beta.history"):
+def edit_details(f, scope=".history-index"):
     """Open the editor, run the edits, hit the save button"""
 
     @wraps(f)
@@ -1342,7 +1342,7 @@ class NavigatesGalaxy(HasDriver):
         return not self.components.history_panel.beta.is_absent
 
     # avoids problematic ID and classes on markup
-    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".beta.history"):
+    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
 
     # join list of attrs into css attribute selectors and append to base beta_item selector
@@ -1852,7 +1852,7 @@ class NavigatesGalaxy(HasDriver):
     def snapshot(self, description):
         """Test case subclass overrides this to provide detailed logging."""
 
-    def open_history_editor(self, scope=".beta.history"):
+    def open_history_editor(self, scope=".history-index"):
         if self.is_beta_history():
             panel = self.components.history_panel.editor.selector(scope=scope)
             toggle = panel.toggle
@@ -1860,7 +1860,7 @@ class NavigatesGalaxy(HasDriver):
             editor = panel.form
             editor.wait_for_present()
 
-    def close_history_editor(self, scope=".beta.history"):
+    def close_history_editor(self, scope=".history-index"):
         if self.is_beta_history():
             toggle = self.components.history_panel.edit_toggle
             toggle.wait_for_and_click()

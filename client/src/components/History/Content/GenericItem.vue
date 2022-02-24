@@ -51,7 +51,7 @@ export default {
     },
     computed: {
         providerComponent() {
-            return { hda: "DatasetProvider", hdca: "DatasetCollectionProvider" }[this.itemSrc];
+            return this.itemSrc == "hda" ? "DatasetProvider" : "DatasetCollectionProvider";
         },
     },
     methods: {
