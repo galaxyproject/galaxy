@@ -14,6 +14,7 @@ describe("SavedRulesSelector", () => {
                 // Add a unique prefix for this test run so the test is not affected by local storage values
                 prefix: "test_prefix_" + new Date().toISOString() + "_",
                 savedRules: [],
+                ruleColHeaders: [],
             },
             localVue,
         });
@@ -30,6 +31,7 @@ describe("SavedRulesSelector", () => {
     });
 
     it("should emit a click event when a session is clicked", async () => {
+
         const testRules = {
             rules: [
                 {
@@ -46,9 +48,11 @@ describe("SavedRulesSelector", () => {
                 },
             ],
         };
+        const ruleHeaders = ["A"];
         wrapper.setProps({
             user: "test_user",
-            savedRules: [testRules],
+            savedRules: [{rule: JSON.stringify(testRules)}],
+            ruleColHeaders: [ruleHeaders],
         });
         await wrapper.vm.$nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");

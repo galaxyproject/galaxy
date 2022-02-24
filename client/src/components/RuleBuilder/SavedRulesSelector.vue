@@ -60,8 +60,7 @@ export default {
             var prettyString = "";
             var delim = "";
             var numOfPreviewedRules = 0;
-            console.log(savedRuleJson);
-            let savedRule = JSON.parse(savedRuleJson);
+            const savedRule = JSON.parse(savedRuleJson);
             savedRule.rules.forEach((element) => {
                 if (numOfPreviewedRules == 5) {
                     return prettyString;
