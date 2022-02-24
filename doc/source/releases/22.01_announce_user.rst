@@ -8,25 +8,45 @@ January 2022 Galaxy Release (v 22.01)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**New Colour Selector**
 
-**Feature2**
-  Feature description.
+Do you use tools which require colour inputs, like Circos? Previously we had a very restricted colour input which gave you a very limited palette. Now you have complete freedom of choice with the modern colour selector.
 
-**Feature3**
-  Feature description.
+.. figure:: https://user-images.githubusercontent.com/15801412/140774342-57f465cd-e87d-4bd4-babc-b39ca8350655.gif
+   :alt: Gif of the colour selector in action, a mouse clicks on the colour selector and gone is the restricted 20 colour pallete, now there is a colour field and you can select any possible RGB colour.
+
+**Improved File Export**
+
+If you've been exporting files from Galaxy lately, you've probably seen the amazing new remote file source export, which allows you to export files to FTP, Dropbox, and other locations.
+
+.. raw:: html
+
+   <video controls autoplay loop muted width="100%" alt="Video of a user exporting a file using the new file export, selecting a folder, creating some subdirectories, before changing their mind and choosing another location to export their file to.">
+       <source src="images/22.05-export.mp4" type="video/mp4">
+   </video>
+
+
+**Improved File Uploads**
+
+Previously Galaxy servers used a variety of methods to let you upload large files easily, including some servers which required FTP for large files. We have replaced this with a new upload method which the largest Galaxies will all adopt shortly. This will make file uploads go significantly more smoothly, and will be more tolerant of network failures and interruptions! You do not need to make any changes. See `Pull Request 12656`_ for more information.
+
+**Beta History: Collection Improvements**
+
+If you've been trying out the beta history (which will be the default history next release!), it has been updated to indicate if collections are homogeneous or heterogeneous, which will help you see more easily if you've accidentally included an incorrect dataset. Test out the beta history today and let us know if you have any issues!
+
+.. figure:: https://user-images.githubusercontent.com/46503462/146426341-d16d07d8-164b-40ef-976a-52e73d94bfc9.png
+   :alt: Screenshot of a history named collection tests history using the new beta history panel. Several collections are shown below, some labelled "A list of 6 txt datasets" and some labelled "a list of 3 datasets", without a datatype shown.
 
 
 New Visualizations
 ===========================================================
 
 .. visualizations
-* Remove chart utilities and artifacts from code base
-  `Pull Request 12890`_
-* Large peptide IDs
-  (thanks to `@reid-wagner <https://github.com/reid-wagner>`__).
-  `Pull Request 13261`_
+
+Thanks to `@neoformit <https://github.com/neoformit>`__, a new R shiny app "iSEE" has been added, which provides a UI for visualization of single-cell RNA datasets. See `Pull Request 12650`_ for more information
+
+.. figure:: https://user-images.githubusercontent.com/42562517/136135157-40a46a31-3553-49b3-a975-b518db1374b2.png
+   :alt: screenshot of the iSEE app, on the left is a colourful scatterplot with dots grouped, labelled reduced dimension plot. On the right is a plot labelled feature assay plot with a number of violin plots. Both plots feature controls at the bottom for modifying the visualisation's parameters.
 
 New Datatypes
 ===========================================================
@@ -35,67 +55,11 @@ New Datatypes
 * Add datatype iml_dataset subclassing html
   (thanks to `@knutwa-ext <https://github.com/knutwa-ext>`__).
   `Pull Request 12099`_
-* New interactive tool - iSEE
-  (thanks to `@neoformit <https://github.com/neoformit>`__).
-  `Pull Request 12650`_
-* Allow trailing semicolon in last column of gff3
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 12673`_
-* Fix gff-version header sniffing
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 12676`_
-* Mark sniffer for fastqillumina as not implemented
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 12685`_
-* Fix gff and scidx parsing
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 12687`_
-* Merge 21.09 -> dev
-  `Pull Request 12747`_
-* Merge 21.09 forward again
-  `Pull Request 12754`_
-* New pyupgrade cleanups
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 12774`_
-* Version bump galaxy tool util and converter dependency fix
-  `Pull Request 12844`_
-* Downgrade bowtie requirement for CONVERTER_fasta_to_bowtie_color_index
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 12851`_
 * Create sniffer for GRO file type
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 12885`_
 * Agp datatype
   `Pull Request 12891`_
-* Type updates from @mr-c - part 2
-  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
-  `Pull Request 12899`_
-* Simplify Augustus datatype sniffer
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 12905`_
-* 3rd round of type updates to support CWL import
-  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
-  `Pull Request 12913`_
-* Eliminate a lot of while: True loops in datatype code
-  `Pull Request 12942`_
-* Avoid setting response headers through `trans` in datatypes
-  (thanks to `@davelopez <https://github.com/davelopez>`__).
-  `Pull Request 12956`_
-* Tighten type ignores
-  (thanks to `@common-workflow-lab <https://github.com/common-workflow-lab>`__).
-  `Pull Request 12965`_
-* Remove is_multi_byte
-  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
-  `Pull Request 12996`_
-* Remove unnecessary list creations
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 13002`_
-* Don't use triple-quoted strings as comments
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 13007`_
-* Fix constructive_solid_geometry.py for non_utf8_error
-  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
-  `Pull Request 13057`_
 * Add ludwig model datatype
   (thanks to `@qiagu <https://github.com/qiagu>`__).
   `Pull Request 13073`_
@@ -105,11 +69,6 @@ New Datatypes
 * Add Neper and Gmsh datatypes
   (thanks to `@jj-umn <https://github.com/jj-umn>`__).
   `Pull Request 13087`_
-* Add description of inpcrd and prmtop
-  (thanks to `@thepineapplepirate <https://github.com/thepineapplepirate>`__).
-  `Pull Request 13126`_
-* Fix .tell() error
-  `Pull Request 13137`_
 * Add new datatype GRIB
   (thanks to `@annefou <https://github.com/annefou>`__).
   `Pull Request 13175`_
@@ -118,17 +77,9 @@ New Datatypes
 * Enable display of BAM data without sequence info
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 13219`_
-* Add compression converter
-  (thanks to `@gallardoalba <https://github.com/gallardoalba>`__).
-  `Pull Request 13223`_
-* Change display_in_upload to true for PHAR datatype
-  (thanks to `@simonbray <https://github.com/simonbray>`__).
-  `Pull Request 13238`_
 * Add gz as datatype
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 13271`_
-* Limit required element validation to safe elements
-  `Pull Request 13299`_
 
 Builtin Tool Updates
 ===========================================================
@@ -189,6 +140,8 @@ A special thanks to the release testing team for testing many of the new feature
 
 Release Notes
 ===========================================================
+
+User facing release notes compiled by `Helena Rasche <https://github.com/hexylena>`_.
 
 Please see the `full release notes <22.01_announce.html>`_ for more details.
 
