@@ -33,7 +33,7 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" @click="$emit('dismiss')">
+            <b-button ref="btnClose" class="ui-button-default" :title="btnCloseTitle" @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
@@ -42,10 +42,16 @@
                 @click="_eventStart"
                 id="btn-start"
                 :disabled="!readyStart"
+                :title="btnStartTitle"
                 :variant="readyStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
-            <b-button ref="btnReset" class="ui-button-default" id="btn-reset" @click="_eventReset">
+            <b-button
+                ref="btnReset"
+                class="ui-button-default"
+                id="btn-reset"
+                :title="btnResetTitle"
+                @click="_eventReset">
                 {{ btnResetTitle }}
             </b-button>
         </template>

@@ -39,7 +39,12 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle | localize }}
             </b-button>
             <b-button
@@ -47,6 +52,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
+                :title="btnResetTitle"
                 :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
@@ -55,6 +61,7 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
+                :title="btnStopTitle"
                 :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
@@ -64,6 +71,7 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!enableBuild"
+                :title="btnBuildTitle"
                 :variant="enableBuild ? 'primary' : ''">
                 {{ btnBuildTitle }}
             </b-button>
@@ -72,6 +80,7 @@
                 class="ui-button-default"
                 id="btn-start"
                 @click="_eventStart"
+                :title="btnStartTitle"
                 :disabled="!enableStart"
                 :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
@@ -81,6 +90,7 @@
                 class="ui-button-default"
                 id="btn-new"
                 @click="_eventCreate(false)"
+                :title="btnCreateTitle"
                 :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
@@ -89,6 +99,7 @@
                 class="ui-button-default"
                 id="btn-ftp"
                 @click="_eventRemoteFiles"
+                :title="btnFilesTitle"
                 :disabled="!enableSources"
                 v-if="remoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
