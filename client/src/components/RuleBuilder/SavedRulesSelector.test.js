@@ -31,7 +31,6 @@ describe("SavedRulesSelector", () => {
     });
 
     it("should emit a click event when a session is clicked", async () => {
-
         const testRules = {
             rules: [
                 {
@@ -51,7 +50,7 @@ describe("SavedRulesSelector", () => {
         const ruleHeaders = ["A"];
         wrapper.setProps({
             user: "test_user",
-            savedRules: [{rule: JSON.stringify(testRules)}],
+            savedRules: [{ rule: JSON.stringify(testRules) }],
             ruleColHeaders: [ruleHeaders],
         });
         await wrapper.vm.$nextTick();
