@@ -9,9 +9,8 @@ more thorough explanation of this problem and why you will almost surely want to
 configuration if running for more than a small handful of users, see the [production configuration](production.md)
 page.
 
-Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` or the number of plugin workers in
-`job_conf.xml` will not make you Galaxy server much more responsive.  The key to scaling Galaxy is the ability to run
-*multiple* Galaxy servers which co-operatively work on the same database.
+Just to be clear: Increasing the number of plugin workers in `job_conf.xml` will not make your Galaxy server much more responsive.
+The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which co-operatively work on the same database.
 
 ## Terminology
 
@@ -22,40 +21,21 @@ Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` 
     mapped to a handler tag such that all executions of that tool are handled by the tagged handler(s).
   * **default** - Any handlers without defined tags - aka "untagged handlers" - will handle executions of all tools
     not mapped to a specific handler ID or tag.
-* **[uWSGI][uwsgi]** - Powerful application server written in C that implements the HTTP and Python WSGI protocols
-  * **[Mules][uwsgi-mules]** - uWSGI processes started after the main application (Galaxy) that can run separate code
-    and receive messages from uWSGI web workers
-  * **[Zerg Mode][uwsgi-zerg-mode]** - uWSGI configuration where multiple copies of the same application can be started
-    simultaneously in order to maintain availability during application restarts
-* **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/WSGI server
-
-[uwsgi]: https://uwsgi-docs.readthedocs.io/
-[uwsgi-mules]: https://uwsgi-docs.readthedocs.io/en/latest/Mules.html
-[uwsgi-zerg-mode]: https://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
+* **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/ASGI server
 
 ## Application Servers
 
 It is possible to run the Galaxy server in many different ways, including under different web application frameworks, or
-as a standalone server with no web stack. For most of its modern life, prior to the 18.01 release, Galaxy (by default)
-used the [Python Paste][paste] web stack, and ran in a single process.
+as a standalone server with no web stack. Prior to the 18.01 release, Galaxy (by default)
+used the [Python Paste][paste] web stack, and ran in a single process. Between the 18.01 release and the 22.01 release
+[uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default application server. Starting with the 22.01 release the default application server is
+[Gunicorn][Gunicorn]. For information about uWSGI in the Galaxy context please consult the version of this document that is
+appropriate to your Galaxy release.
 
-Beginning with Galaxy release 18.01, the default application server for new installations of Galaxy is [uWSGI][uwsgi].
-Prior to 18.01, it was possible (and indeed, recommended for production Galaxy servers) to run Galaxy under uWSGI, but
-it was necessary to install and configure uWSGI separately from Galaxy. uWSGI is now provided with Galaxy as a Python
-Wheel and installed in to its virtualenv, as described in detail in the [Framework
-Dependencies](framework_dependencies) documentation.
+Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
+and we will drop support for being run as a WSGI application via uWSGI in Galaxy release 22.05.
 
-uWSGI has numerous benefits over Python Paste for our purposes:
-
-* Written in C and designed to be high performance
-* Easily runs multiple processes by increasing `processes` config option
-* Load balances multiple processes internally rather than requiring load balancing in the proxy server
-* Offload engine for serving static content
-* Speaks high performance native protocol between uWSGI and proxy server
-* Can speak HTTP and HTTPS protocols without proxy server
-* Incredibly featureful, supports a wide array of deployment scenarios
-* Supports WebSockets, which enable Galaxy Interactive Environments out-of-the-box without a proxy server or Node.js
-
+[Gunicorn]: https://gunicorn.org/
 [paste]: https://paste.readthedocs.io/
 
 ## Deployment Options
@@ -64,61 +44,26 @@ There are multiple deployment strategies for the Galaxy application that you can
 the configuration of the infrastructure on which you are deploying. In all cases, all Galaxy job features such as
 [running on a cluster](cluster.md) are supported.
 
-Although uWSGI implements nearly all the features that were previously the responsibility of an upstream proxy server,
-at this time, it is still recomended to place a proxy server in front of uWSGI and utilize it for all of its traditional
+Although Gunicorn implements many features that were previously the responsibility of an upstream proxy server,
+it is recommended to place a proxy server in front of Gunicorn and utilize it for all of its traditional
 roles (serving static content, serving dataset downloads, etc.) as described in the [production
 configuration](production.md) documentation.
 
-When using uWSGI with a proxy server, it is recommended that you use the native high performance uWSGI protocol
-(supported by both [Apache](apache.md) and [nginx](nginx.md)) between uWSGI and the
-proxy server, rather than HTTP.
+### Gunicorn with jobs handled by web workers (default configuration)
 
-### uWSGI with jobs handled by web workers (default configuration)
-
-Referred to in this documentation as the **uWSGI all-in-one** strategy.
+Referred to in this documentation as the **all-in-one** strategy.
 
 * Job handlers and web workers are the same processes and cannot be separated
-* The web worker that receives the job request from the UI/API will be the job handler for that job
+* A random web worker will be the job handler for that job
 
-Under this strategy, jobs will be handled by uWSGI web workers. Having web processes handle jobs will negatively impact
+Under this strategy, jobs will be handled by Gunicorn workers. Having web processes handle jobs will negatively impact
 UI/API performance.
 
-This is the default out-of-the-box configuration as of Galaxy Release 18.01 and will be deprecated in Galaxy Release 21.09
-in favor of running separate processes for handling web requests (gunicorn serving a fastAPI instance), for handling jobs and
-workflows (using the current webless job handling code) and Celery workers for running long-running and/or CPU-intensive tasks.
+This is the default out-of-the-box configuration.
 
-### uWSGI for web serving with Mules as job handlers
+### Gunicorn for web serving and Webless Galaxy applications as job handlers
 
-Referred to in this documentation as the **uWSGI + Mules** strategy.
-
-* Job handlers run as children of the uWSGI process
-* Jobs are dispatched from web workers to job handlers via native *mule messaging*
-* Jobs can only be dispatched to mules on the same host
-* Trivially easy to enable (disabled by default for simplicity reasons)
-
-Under this strategy, job handling is offloaded to dedicated non-web-serving processes that are started and stopped
-directly by the master uWSGI process. As a benefit of using mule messaging, only job handlers that are alive will be
-selected to run jobs.
-
-This was the recommended deployment strategy until Galaxy release 21.01. This deployment strategy will be supported
-until Galaxy release 21.05 and will be deprecated in Galaxy release 21.09.
-
-```eval_rst
-.. important::
-
-   If using **Zerg Mode** or running more than one uWSGI *master* process, do not use **uWSGI + Mules**. Doing so can
-   can cause jobs to be executed by mutiple handlers when recovering unassigned jobs at Galaxy server startup.
-
-   Multiple master processes is a rare configuration and is typically only used in the case of load balancing the web
-   application across multiple hosts. Note that multiple master proceses is not the same thing as the ``processess``
-   uWSGI configuration option, which is perfectly safe to set when using job handler mules.
-
-   For these scenarios, **uWSGI + Webless** is the recommended deployment strategy.
-```
-
-### uWSGI for web serving and Webless Galaxy applications as job handlers
-
-Referred to in this documentation as the **uWSGI + Webless** strategy.
+Referred to in this documentation as the **Gunicorn + Webless** strategy.
 
 * Job handlers are started as standalone Python applications with no web stack
 * Jobs are dispatched from web workers to job handlers via the Galaxy database
@@ -126,73 +71,52 @@ Referred to in this documentation as the **uWSGI + Webless** strategy.
 * Additional job handlers can be added dynamically without reconfiguring/restarting Galaxy (19.01 or later)
 * The recommended deployment strategy for production Galaxy instances
 
-Like mules, under this strategy, job handling is offloaded to dedicated non-web-serving processes, but those processes
-are [managed by the administrator](#starting-and-stopping).
-
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
-methods (see below). However, if the database used does not support this mechanism (in practice this should only apply
-to sqlite before version 3.25, which is not at all recommended for production Galaxy server) a handler is randomly
-assigned by the web worker when the job is submitted via the UI/API, meaning that jobs may be assigned to dead handlers.
+methods (see below).
 
-This is the recommended deployment strategy when **Zerg Mode** is used, for Galaxy servers that run web servers and
-job handlers **on different hosts**, and for deployments where dynamic handler addition is desired.
+### uWSGI for web serving with Mules as job handlers
 
-Beginning with Galaxy release 19.01, it is also possible to use a combination of both **uWSGI + Mules** and **uWSGI +
-Webless**, referred to in the documentation as **uWSGI + Hybrid**.
+This strategy is deprecated and will be removed in Galaxy release 22.05.
+You can consult the documentation for older versions of Galaxy for details.
 
-### Legacy
-
-Other deployment strategies were commonly used in older versions of Galaxy and can be found in previous versions of the
-documentation, but these are deprecated and should no longer be used.
+If you're upgrading Galaxy to release 22.01 or newer we recommend you set up the
+**Gunicorn + Webless** strategy above.
 
 ## Job Handler Assignment Methods
 
-Job handler assignment methods configurable with the `assign_with`
+Job handler assignment methods are configurable with the `assign_with`
 attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
 
-- **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
+* **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
   job from the database using SQL transaction isolation, which uses database locks to guarantee that only one handler
   can select a given job. This occurs by the web worker that receives the tool execution request (via the UI or API)
   setting a new job's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
   is configured). Handlers "listen" for jobs by selecting jobs from the database that match the handler tag(s) for which
-  they are configured. This is the default if no handlers are defined, or handlers are defined but no assign_with attribute is set
-  on the `handlers` tag and *Database SKIP LOCKED* is not available and no uwsgi-mule-messaging is set up.
+  they are configured. `db-transaction-isolation` is the default assignment method if no handlers are defined,
+  or handlers are defined but no `assign_with` attribute is set on the `handlers` tag and *Database SKIP LOCKED* is not available.
 
-- **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
+* **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
   the database using `SELECT ... FOR UPDATE SKIP LOCKED` on databases that support this query (see the next section for
   details). This occurs via the same process as *Database Transaction Isolation*, the only difference is the way in
-  which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no assign_with attribute is set
-  on the `handlers` tag and *Database SKIP LOCKED* is available and no uwsgi-mule-messaging is set up.
+  which handlers query the database. This is the default if no handlers are defined, or handlers are defined but no `assign_with` attribute is set
+  on the `handlers` tag and *Database SKIP LOCKED* is available.
 
-- **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
+* **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
   column in the database to the process that created the job at the time it is created. Additionally, if a tool is
   configured to use a specific handler (ID or tag), that handler is assigned (tags by *Database Preassignment*). This is
-  the default if no handlers are defined and no `job-handlers` uWSGI Farm is present and the database does not support
-  *Database SKIP LOCKED* or *Database Transaction Isolation*.
+  the default fallback if no handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
-- **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
+* **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
   user via an internal in-memory queue. If a tool is configured to use a specific handler, that configuration is
   ignored; the process that creates the job *always* handles it. This can be slightly faster than **Database Self
   Assignment** but only makes sense in single process environments without dedicated job handlers. This option
-  supercedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
-  `false`. Will be removed from Galaxy in release 21.09.
+  supersedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
+  `false`.
 
-- **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
+* **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
   handlers at the time the job is created. This occurs by the web worker that receives the tool execution request (via
   the UI or API) setting a new job's 'handler' column in the database to the randomly chose handler ID (hence
-  "preassignment"). This is the default if handlers are defined and no `job-handlers` uWSGI Farm is present
-  and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
-
-- **uWSGI Mule Messaging** (`uwsgi-mule-message`) - Jobs are assigned a handler via uWSGI mule messaging.  A mule in the `job-handlers` (for
-  default/untagged tool-to-handler mappings) or `job-handlers.<tag>` farm will receive the message and assign itself.
-  This the default if a `job-handlers` uWSGI Farm is present and no handlers are configured.
-  Will be removed in Galaxy release 21.09.
-
-In the event that both a `job-handlers` uWSGI Farm is present and handlers are configured, the default is *uWSGI Mule
-Messaging* followed by *Database SKIP LOCKED* or *Database Transaction Isolation*  or *Database Preassignment*, depending on which method
-is supported by the database in use. At present, only *uWSGI Mule Messaging* is capable of deferring handler
-assignment to a later method (which would occur in the event that a tool is configured to use a tag for which there is
-not a matching farm).
+  "preassignment"). This is the default only if handlers are defined and the database does not support *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
 In all cases, if a tool is configured to use a specific handler (by ID, not tag), configured assignment methods are
 ignored and that handler is directly assigned in the job's 'handler' column at job creation time.
@@ -203,33 +127,24 @@ assignment method.
 ### Choosing an Assignment Method
 
 Prior to Galaxy 19.01, the most common deployment strategies (e.g. **uWSGI + Webless**) assigned handlers using what is
-now (since 19.01) referred to as *Database Preassignment*.  Although still the default in many cases (until the new
-methods mature), preassignment has a few drawbacks:
+now (since 19.01) referred to as *Database Preassignment*.  Although still a fallback option when the database
+does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 
-- Web workers do not have a way to know whether a particular handler is alive when assigning that handler
-- Jobs are not load balanced across handlers
-- Changing the number of handlers requires changing `job_conf.xml` and restarting *all* Galaxy processes
+* Web workers do not have a way to know whether a particular handler is alive when assigning that handler
+* Jobs are not load balanced across handlers
+* Changing the number of handlers requires changing `job_conf.xml` and restarting *all* Galaxy processes
 
-The new "database locking" methods (*Database SKIP LOCKED* and *Database Transaction Isolation*) were created to solve
-these issues. The preferred method between the two new options is *Database SKIP LOCKED*, but it requires PostgreSQL 9.5
-or newer, MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested). If using an older database version, use
-*Database Transaction Isolation* instead. A detailed explanation of these database locking methods in PostgreSQL can be
+The "database locking" methods (*Database SKIP LOCKED* and *Database Transaction Isolation*) were created to solve
+these issues. The preferred method between the two options is *Database SKIP LOCKED*, but it requires PostgreSQL 9.5
+or newer, SQLite 3.25 or newer or MySQL 8.0 or newer (untested), or MariaDB 10.3 or newer (untested).
+If using an older database version, use *Database Transaction Isolation* instead. A detailed explanation of these database locking methods in PostgreSQL can be
 found in the excellent [What is SKIP LOCKED for in PostgreSQL 9.5?][2ndquadrant-skip-locked] entry on the [2ndQuadrant
 PostgreSQL Blog][2ndquadrant-blog].
 
-The preferred method depends on your deployment strategy:
+The preferred assignment method is *Database SKIP LOCKED* or *Database Transaction Isolation*.
 
-- **uWSGI + Mules** -  Either *Database SKIP LOCKED* or *Database Transaction Isolation* is preferred.
-- **uWSGI + Webless** - Either *Database SKIP LOCKED* or *Database Transaction Isolation* is preferred.
-- **uWSGI + Hybrid** - Either *Database SKIP LOCKED* or *Database Transaction Isolation* is preferred. If your mule and
-  webless handlers are in non-overlapping pools (i.e. tags, or untagged), you can alternatively use both *uWSGI Mule
-  Messaging* followed by either *Database SKIP LOCKED* or *Database Transaction Isolation*. If pools overlap, using
-  *uWSGI Mule Messaging* would prevent any non-mule handlers in that pool from being assigned jobs.
-
-Handlers (as well as assignment methods) are not configurable when using **uWSGI all-in-one**.
-
-[2ndquadrant-skip-locked]: https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
-[2ndquadrant-blog]: https://blog.2ndquadrant.com/
+[2ndquadrant-skip-locked]: https://www.2ndquadrant.com/en/blog/what-is-select-skip-locked-for-in-postgresql-9-5/
+[2ndquadrant-blog]: https://www.2ndquadrant.com/en/blog/
 
 ```eval_rst
 .. _scaling-configuration:
@@ -237,160 +152,119 @@ Handlers (as well as assignment methods) are not configurable when using **uWSGI
 
 ## Configuration
 
-### uWSGI
+### Gunicorn
 
-Although this document goes in to significant detail about uWSGI configuration, many more options are available, as well
-as additional documentation about options described here. Consult the uWSGI documentation for more:
+We will only outline a few of Gunicorn's options, consult the [Gunicorn documentation](https://docs.gunicorn.org/en/latest/settings.html) for more.
 
-* [Configuring uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html)
-* [uWSGI Options](https://uwsgi-docs.readthedocs.io/en/latest/Options.html)
-* [Quickstart for Python/WSGI applications](https://uwsgi-docs.readthedocs.io/en/latest/WSGIquickstart.html)
+Note that by default Galaxy will use [gravity](https://github.com/galaxyproject/gravity/) to create a [supervisor](http://supervisord.org/) configuration in Gravity's state directory.
+Gravity's state directory is located in `database/gravity`, and you can find the generated supervisor configuration in
+`database/gravity/supervisor`. The location of the state directory can be controlled using the `--state-dir` argument
+of `galaxyctl`, or using the `GRAVITY_STATE_DIR` environment variable.
+Configuration values for the supervisor configuration are read from the `gravity` section of your `galaxy.yml` file.
+This is the preferred and out-of-the box way of configuring Gunicorn for serving Galaxy.
+If you are not using `./run.sh` for starting Galaxy or you would like to use another process manager,
+all the Gunicorn configuration values can also directly be set on the command line.
 
-Configuration is performed in the `uwsgi` section of `galaxy.yml`. You will find that the default, if copied from
-`galaxy.yml.sample`, is commented out. The default configuration options are provided to uWSGI on the command line by
-Galaxy's `run.sh` script.
+Configuration is performed in the `gravity` section of `galaxy.yml`. You will find that the default, if copied from
+`galaxy.yml.sample`, is commented out. The default configuration options are provided to Gunicorn on the command line by
+using `gravity` within the `run.sh` script.
 
-Galaxy releases prior to 18.01 (or upgraded-to-18.01+ servers which have not migrated their configuration to the YAML
-format) used an INI-format configuration file, `galaxy.ini`.
+After making changes to the `gravity` section, you always need to activate Galaxy's virtualenv and run `galaxyctl update`,
+or one of the `start`, `stop`, `restart`, and `graceful` subcommands of the `galaxyctl` command, which will run the `update` command internally.
 
-Note that uWSGI's YAML parser is hand-coded and not actually conformant to the YAML standard. Specifically:
+#### Common Gunicorn configuration
 
-* Multiple identical keys with unique values can exist in the same dictionary/hash, as with `hook-master-start` in the
-  example below.
-* Quoting values (with single or double quotes) is unncessary since the parser treats all values as strings. The parser
-  does not correctly handle these quote characters, resulting in invalid values.
-
-If using `galaxy.ini`, the option names and values are the same but in INI format, for example:
-
-```ini
-[uwsgi]
-processes = 4
-socket = 127.0.0.1:4001
-...
-```
-
-#### Configuration common to all uWSGI deployment styles
-
-In `galaxy.yml`, define a `uwsgi` section. Shown below are the options common to all deployment strategies:
+In `galaxy.yml`, define a `gravity` section. Shown below are the options common to all deployment strategies:
 
 ```yaml
-uwsgi:
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # listening options
+    bind: '127.0.0.1:8080'
+    # performance options
+    workers: 1
+    # Other options that will be passed to gunicorn
+    gunicorn_extra_args:
 
-  # required in order to start the galaxy application
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
-  virtualenv: .venv
-  pythonpath: lib
-
-  # performance options
-  master: true
-  enable-threads: true
-  processes: 2
-  threads: 4
-  offload-threads: 1
-
-  # fix up signal handling
-  die-on-term: true
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-
-  # listening options
-
-  # job handling options
 ```
 
-Some of these options warrant explanation:
+Some of these options deserve explanation:
 
-* `master`: Instructs uWSGI to first start a master process manager and then fork web workers, mules, http servers (if
-  enabled), and any others from the master. This is required for certain operational modes such as daemonization, but
-  can interfere with the use of `<CTRL>+<C>` to shut down Galaxy when running in the foreground on the command line, and
-  so is not enabled by default (except when `run.sh --daemon` is used). Its use is strongly recommended for all
-  production deployments.
-* `processes`: Controls the number of Galaxy application processes uWSGI will spawn. Increased web performance can be
-  attained by increasing this value.
-* `threads`: Controls the number of web worker threads each application process will spawn.
-* `offload-threads`: uWSGI can use a dedicated threadpool for serving static content and handling internal routing,
-  setting this value automatically enables such offloading.
-
-Additional options are explained in the [uWSGI Minutiae](#uwsgi-minutiae) below.
+* `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
+  attained by increasing this value. If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
+4-12 workers should be able to handle hundreds if not thousands of requests per second.
+* `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
-
-Due to the Python GIL, increasing the value of `threads` has diminishing returns on web performance while increasing the
-memory footprint of each application process. Increasing it is most useful on servers experiencing a high amount of IO
-waiting, but the greatest performance gain comes from increasing `processes` as appropriate for the hardware on which
-Galaxy is running.
 
 #### Listening and proxy options
 
 **With a proxy server:**
 
-To use the native uWSGI protocol, set the `socket` option:
+To use a socket for the communication between the proxy and Gunicorn, set the `bind` option to a path:
 
 ```yaml
-  # listening options
-  socket: /srv/galaxy/var/uwsgi.sock
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # listening options
+    bind: '/srv/galaxy/var/gunicorn.sock'
 ```
 
 Here we've used a UNIX domain socket because there's less overhead than a TCP socket and it can be secured by filesystem
 permissions, but you can also listen on a port:
 
 ```yaml
-  # listening options
-  socket: 127.0.0.1:4001
+  app_server: gunicorn
+  gunicorn:
+    # listening options
+    bind: '127.0.0.1:4001'
 ```
 
 The choice of port 4001 is arbitrary, but in both cases, the socket location must match whatever socket the proxy server
 is configured to communicate with. If using a UNIX domain socket, be sure that the proxy server's user has read/write
 permission on the socket. Because Galaxy and the proxy server most likely run as different users, this is not likely to
 be the case by default. One common solution is to add the proxy server's user to the Galaxy user's primary group.
-uWSGI's `chmod-socket` option can also help here.
+Gunicorn's `umask` option can also help here.
 
 You can consult the Galaxy documentation for [Apache](apache.md) or [nginx](nginx.md)
 for help with the proxy-side configuration.
 
-By setting the `socket` option, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
-you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with uWSGI
-while `socket` is set, you can use the `http` option as shown in the directions below.
+By setting the `bind` option to a socket, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
+you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with Gunicorn
+while using a socket, you can add an additional `--bind` argument via the `gunicorn_extra_args` option:
 
-**Without a proxy server** or with a proxy server that does not speak the uWSGI native protocol:
+```yaml
+gravity:
+  app_server: gunicorn
+  gunicorn:
+    # listening options
+    bind: '/srv/galaxy/var/gunicorn.sock'
+    gunicorn_extra_args: '--bind 127.0.0.1:8080'
+```
 
-uWSGI can be configured to serve HTTP and/or HTTPS directly:
+**Without a proxy server**:
+
+It is strongly recommended to use a proxy server.
+
+Gunicorn can be configured to serve HTTPS directly:
 
 ```yaml
   # listening options
-  http: :8080
-  https: :8443,server.crt,server.key
-  static-map: /static=static
+  gunicorn:
+    # listening options
+    bind: '0.0.0.0:443'
+    keyfile: server.key
+    certfile: server.crt
 ```
+
+See [Gunicorn's SSL documentation](https://docs.gunicorn.org/en/latest/settings.html#ssl) for more details.
 
 To bind to ports < 1024 (e.g. if you want to bind to the standard HTTP/HTTPS ports 80/443), you must bind as the `root`
-user and drop privileges to the Galaxy user with a configuration such as:
-
-```yaml
-  # listening options
-  shared-socket: :80
-  shared-socket: :443,server.crt,server.key
-  http: =0
-  https: =1
-  uid: galaxy
-  gid: galaxy
-  static-map: /static=static
-```
-
-To redirect HTTP traffic to the HTTPS port rather than serving Galaxy over HTTP, change `http: =0` in the above example
-to `http-to-https: =0`.
-
-Because `run.sh` performs setup steps, **it should not be run as `root`**. Instead, you can run uWSGI directly as root
-with:
-
-```console
-# cd /srv/galaxy/server
-# ./.venv/bin/uwsgi --yaml config/galaxy.yml
-```
-
-You can run the startup-time setup steps as the galaxy user after upgrading Galaxy with `sh
-./scripts/common_startup.sh`.
+user and drop privileges to the Galaxy user. However you are strongly encouraged to setup a proxy server
+as described in the [production configuration](production.md) documentation.
 
 ### Job Handling
 
@@ -406,11 +280,23 @@ You can run the startup-time setup steps as the galaxy user after upgrading Gala
    using an ``UPDATE`` query in the database and is only recommended for advanced Galaxy administrators.
 ```
 
-#### uWSGI all-in-one job handling
+#### all-in-one job handling
 
 Ensure that no `<handlers>` section exists in your `job_conf.xml` (or no `job_conf.xml` exists at all) and start Galaxy
 normally. No additional configuration is required. To increase the number of web workers/job handlers, increase the
-value of `processes`. Jobs will be handled according to rules outlined above in [Job Handler Assignment Methods](#job-handler-assignment-methods).
+value of `workers` in the gunicorn section of your galaxy.yml file:
+
+```yaml
+gravity:
+  ...
+  gunicorn:
+    ...
+    # performance options
+    workers: 4
+    ...
+```
+
+Jobs will be handled according to rules outlined above in [Job Handler Assignment Methods](#job-handler-assignment-methods).
 
 ```eval_rst
 .. note::
@@ -419,79 +305,6 @@ value of `processes`. Jobs will be handled according to rules outlined above in 
    job handling code, so tools cannot be mapped to specific handlers in this strategy. If you wish to control job
    handling, choose another deployment strategy.
 ```
-
-#### uWSGI + Mule job handling
-
-Ensure that no `<handlers>` section exists in your `job_conf.xml` (or no `job_conf.xml` exists at all) and add the
-following to the `uwsgi` section of `galaxy.yml` to start a single job handler mule:
-
-```yaml
-  # job handling options
-  mule: lib/galaxy/main.py
-  farm: job-handlers:1
-```
-
-Then start Galaxy normally. To add additional mule handlers, add additional `mule` options and add their ID(s), comma
-separated,  to the `job-handlers` farm. For example, 3 handlers are defined like so:
-
-```yaml
-  # job handling options
-  mule: lib/galaxy/main.py
-  mule: lib/galaxy/main.py
-  mule: lib/galaxy/main.py
-  farm: job-handlers:1,2,3
-```
-
-By default, a job will be handled by whatever mule currently has the lock on the mule message queue. After receiving a
-message, it will release the lock, giving other mules a chance to handle future jobs.  Jobs can be explicitly mapped to
-specific mules as described in the [Galaxy Job Configuration](./jobs.md) documentation
-by using the handler IDs `main.job-handlers.N`, where `N` is the mule's position in the farm, starting at 1 and incrementing for each mule in the
-farm (this is not necessarily the mule ID, but it will be if you only define one farm and you add mules to that farm in
-sequential order).  Each worker that you wish to explicitly map jobs to should be defined in the `<handlers>` section
-of `job_conf.xml`. *Do not* define a default handler.
-
-For example, to have the 2nd mule in the three-mule job-handlers farm shown above handle the `test1` tool, you would set
-the following in `job_conf.xml` (irrelevant options are not shown):
-
-```xml
-<job_conf>
-    <handlers>
-        <handler id="main.job-handlers.2" />
-    </handlers>
-    <tools>
-        <tool id="test1" handler="main.job-handlers.2" />
-    </tools>
-</job_conf>
-```
-
-It is also possible to create separate pools for handler tags: the farm name for tags is simply `job-handlers.<tag>`.
-In the following example, all jobs will be handled by mules 1 and 2, except for executions of tool ``test1``: those jobs
-will be handled by mule 3.
-
-The `uwsgi` section in `galaxy.yml`:
-
-```yaml
-  # job handling options
-  mule: lib/galaxy/main.py
-  mule: lib/galaxy/main.py
-  mule: lib/galaxy/main.py
-  farm: job-handlers:1,2
-  farm: job-handlers.special:3
-```
-
-In `job_conf.xml`:
-
-```
-<job_conf>
-    <tools>
-        <tool id="test1" handler="special" />
-    </tools>
-</job_conf>
-```
-
-#### uWSGI + Webless job handling
-
-Beginning with Galaxy release 19.01, webless handlers do not always need to be defined in `job_conf.xml`.
 
 ##### Statically defined handlers
 
@@ -525,8 +338,7 @@ to specific handlers, or to handler tags, as in the following example:
    ``handler3`` will *only* handle executions of tool ``test1``.
 ```
 
-`run.sh` will start the uWSGI process(es), but you will need to start the webless handler processes yourself. This is
-done on the command line like so:
+`run.sh` will start the gunicorn and job handler process(es), but if you are not using `run.sh` or the generated supervisor setup you will need to start the webless handler processes yourself. This is done on the command line like so:
 
 ```console
 $ cd /srv/galaxy/server
@@ -534,9 +346,6 @@ $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler0 --daemonize
 $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler1 --daemonize
 $ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --daemonize
 ```
-
-However, a better option to managing processes by hand is to use a process manager as documented in the [Starting and
-Stopping](#starting-and-stopping) section.
 
 #### Dynamically defined handlers
 
@@ -553,234 +362,151 @@ as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods
 </job_conf>
 ```
 
-As with statically defined handlers, `run.sh` will start the uWSGI process(es), but you will need to start the webless
-handler processes yourself. This is done on the command line like so (note the addition of the `--attach-to-pool`
-option):
+Note that we have defined a `<handlers>` section without any `<handler>` entries,
+and we have explicitly configured the assignment method with `assign_with="db-skip-locked"`.
+
+To let gravity know how many webless handler processes should be started set the number of processes to start in the `gravity:` section of galaxy.yml:
+
+```yaml
+gravity:
+  handlers:
+    handler:
+      processes: 3
+      pools:
+        - job-handler
+        - workflow-scheduler
+    special:
+      pools:
+        - job-handler.special
+```
+
+In this example 4 processes will be started in total:
+3 processes will act as job handler and workflow scheduler, and one process will be dedicated to handling jobs for the `special` tag only. With the `job_conf.xml` configuration above these would be jobs created by the `test1` tool.
+You can omit the `pools` argument, this will then default to:
+
+```yaml
+        ...
+        pools:
+          - job-handler
+          - workflow-scheduler
+        ...
+```
+
+If you omit the `processes` argument this will default to a single process.
+You can further customize the handler names using the `name_template` section,
+for a complete example see [this gravity test case](https://github.com/galaxyproject/gravity/blob/a00df1c671fdc01e3fbc42f64a851a45a37a1870/tests/test_process_manager.py#L28).
+
+If you are not using dynamic handlers please omit the `handlers` entry completely, as these will
+otherwise be idle and not handle jobs or workflows.
+
+As with statically defined handlers, `run.sh` will start the process(es), but if you are not using `run.sh` or the generated supervisor config you will need to start the webless handler processes yourself. This is done on the command line like so (note the addition of the `--attach-to-pool` option):
 
 ```console
 $ cd /srv/galaxy/server
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler0 --attach-to-pool job-handlers --daemonize
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler1 --attach-to-pool job-handlers.special --daemonize
-$ ./scripts/galaxy-main -c config/galaxy.yml --server-name handler2 --attach-to-pool job-handlers --attach-to-pool job-handlers.special --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_0 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_1 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name handler_3 --attach-to-pool job-handlers --attach-to-pool workflow-scheduler --daemonize
+./scripts/galaxy-main -c config/galaxy.yml --server-name special_0 --attach-to-pool job-handlers.special --daemonize
 ```
 
 In this example:
 
-- `handler0` and `handler2` will handle tool executions that are not explicitly mapped to handlers
-- `handler1` and `handler2` will handle tool executions that are mapped to the `special` handler tag
+* `handler_0`, `handler_1` and `handler2` will handle tool executions that are not explicitly mapped to handlers
+* `special_0` will handle tool executions that are mapped to the `special` handler tag
 
-#### uWSGI + Hybrid job handling
+## gravity & galaxyctl
 
-Follow the process for both **uWSGI + Mules** and **uWSGI + Webless**:
+[Gravity](https://github.com/galaxyproject/gravity) is a management tool for Galaxy servers,
+and is installed when you set up Galaxy.
 
-1. Define Mules as in **uWSGI + Mules**
-2. Define Webless handlers in `<handlers>` as in **uWSGI + Webless** (when using static handlers)
-3. Configure Webless handlers to start as in **uWSGI + Webless**
+It provides two executables, `galaxyctl`, which is used to manage the starting, stopping, and logging of Galaxy's various processes, and `galaxy`, which can be used to run a Galaxy server in the foreground.
 
-### uWSGI Minutiae
+These commands are available from within Galaxy's virtualenv, or you can install them globally.
+If you have used the standard installation method for Galaxy by running `./run.sh` or executing
+`./scripts/common_startup.sh`, a default directory has been configured in which gravity stores
+its state. If you have installed Galaxy or gravity by another means, you can use the `--state-dir` argument
+or the `GRAVITY_STATE_DIR` environment variable to control the state directory. If a state dir is not specified, it defaults to `~/.config/galaxy-gravity`.
+In the following sections we assume you have correctly set up gravity and can use the `galaxyctl` command.
 
-**Threads**
+## Logging and daemonization
 
-Although `enable-threads` was explicitly set in our example, in reality, as long as any value is set for the `threads`
-option, `enable-threads` is set implicitly. This option enables the Python GIL and application threads (threads started
-by Galaxy itself for various non-web tasks), which Galaxy uses extensively. Setting it explicitly, however, is harmless
-and can prevent strange difficult-to-debug situations if `threads` is accidentally unset.
+When running `./run.sh` the log output is shown on screen, and ^ctrl-c will stop all processes.
+Galaxy can be started in the background by running `./run.sh --daemon`.
 
-**Worker/Mule shutdown/reload mercy**
-
-By default, uWSGI will wait up to 60 seconds for web workers and mules to terminate. This is generally safe for
-servicing web requests, but some parts of Galaxy's job preparation/submission and collection/finishing operations can
-take quite a bit of time to complete and are not entirely reentrant: job errors or state inconsistencies can occur if
-interrupted (although every effort has been made to minimize such possibilities).  By default, Galaxy will wait up to 30
-seconds for the threads allocated for these operations to terminate after instructing them to shut down.  You can change
-this behavior by increasing the value of `monitor_thread_join_timeout` in the `galaxy` section of `galaxy.yml`. The
-maximum amount of time that Galaxy will take to shut down job runner workers is `monitor_thread_join_timeout *
-runner_plugin_count` since each plugin is shut down sequentially (`runner_plugin_count` is the number of `<plugin>`s in
-your `job_conf.xml`).
-
-Thus you should set the appropriate uWSGI `*-restart-mercy` option to a value higher than the maximum job runner worker
-shutdown time. If using **uWSGI all-in-one**, set `worker-reload-mercy`, and if using **uWSGI + Mule job handling**, set
-`mule-reload-mercy` (both in the `uwsgi` section of `galaxy.yml`).
-
-**Signals**
-
-The signal handling options (`die-on-term` and `hook-master-start` with `unix_signal` values) are not required but, if
-set, will override [uWSGI's unconventional signal handling](https://uwsgi-docs.readthedocs.io/en/latest/Management.html)
-and cause `SIGTERM` to kill the server rather than restart it, and the uWSGI master process to gracefully shut down its
-web workers and job handler mules (i.e. the various Galaxy application processes) when it receives a `SIGINT` (signal 2)
-or `SIGTERM` (signal 15) signal (e.g. from `kill(1)` or `<CTRL>+<C>`). When shutting down gracefully, uWSGI will wait 60
-seconds (by default, but this can be changed with the `reload-mercy`, `worker-reload-mercy` and `mule-reload-mercy`
-options) for child processes to die before forcefully killing them with `SIGKILL` (signal 9). Alternatively, you may
-prefer to have it shut down gracefully on `SIGTERM` but forcefully on `SIGINT` (forceful shutdown by uWSGI is still
-slightly cleaner than `kill -9` of the master process since it can attempt to release sockets cleanly) or vice-versa,
-which you can do by setting one of the signals to call `kill_them_all` rather than `gracefully_kill_them_all`:
-
-```yaml
-  # fix up signal handling
-  die-on-term: true
-  hook-master-start: unix_signal:2 kill_them_all
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-```
-
-More details on the `unix_signal` hook can be found in [uWSGI Issue #849](https://github.com/unbit/uwsgi/issues/849).
-
-**Logging and daemonization**
-
-It's possible to configure uWSGI to log to a file with the `logto` or `logto2` options (when running in the foreground,
-the default), but more advanced logging options that split log files for each process are possible and described in the
-Galaxy [Logging Configuration documentation](config_logging)
-
-When running as a daemon with `run.sh --daemon`, output is logged to `galaxy.log` and the pid is written to
-`galaxy.pid`. These can be controlled with the `daemonize` and `pidfile` arguments (their `daemonize2` and `pidfile2`
-counterparts wait until after the application successfully loads to open and write the files). If you set a `daemonize*`
-option, you should not use the `--daemon` argument to `run.sh` (or not use `run.sh` at all, and start Galaxy directly
-with `uwsgi` on the command line).
-
-**External uwsgi binary:**
-
-It is still possible to run Galaxy using an external copy of uWSGI (for example, installed from APT under
-Debian/Ubuntu). This was the recommended installation method in the past. To use an external uWSGI, you'll need simply
-need to start with uWSGI directly, rather than using the `run.sh` script. Once you have configured Galaxy/uWSGI, you can
-start it with:
+Alternatively, you can control Galaxy using the `galaxyctl` command provided by gravity.
+After activating Galaxy's virtual environment you can start Galaxy in the background
+using `galaxyctl start`:
 
 ```console
-$ cd /srv/galaxy/server
-$ uwsgi --yaml config/galaxy.yml
+$ galaxyctl start
+celery                           STARTING
+celery-beat                      STARTING
+gunicorn                         STARTING
+Log files are in /Users/mvandenb/src/doc_test/database/gravity/log
 ```
 
-When installing uWSGI, be sure to install the Python plugin, as this is not always contained in the same package (such
-as when installing from APT under Debian/Ubuntu). With the APT packages, you will also need to add `--plugin python` to
-the command line (or `plugin: python` to the `uwsgi` section of `galaxy.yml`).
+All process logs can be seen with `galaxyctl follow`:
 
-**Other options**
+```console
+$ galaxyctl follow
+==> /Users/mvandenb/src/doc_test/database/gravity/log/gunicorn.log <==
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,344 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(JobHandlerQueue.monitor_thread, started daemon 123145470246912)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(JobHandlerStopQueue.monitor_thread, started daemon 123145487036416)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(WorkflowRequestMonitor.monitor_thread, started daemon 123145503825920)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(database_heartbeart_main.thread, started daemon 123145520615424)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,345 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <GalaxyQueueWorker(Thread-1, started daemon 123145537404928)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,346 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(Thread-2, started daemon 123145554194432)> is alive.
+galaxy.webapps.galaxy.buildapp DEBUG 2022-02-17 16:31:33,346 [pN:main,p:91480,tN:MainThread] Prior to webapp return, Galaxy thread <Thread(Thread-3, started daemon 123145570983936)> is alive.
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Started server process [91480]
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Waiting for application startup.
+[2022-02-17 16:31:34 +0100] [91480] [INFO] Application startup complete.
 
-The `py-call-osafterfork` option may only be needed when mule messaging is in use, but it [seems to have no negative
-effect](https://github.com/unbit/uwsgi/issues/643) and may solve other situations with starting a complex threaded
-Python application.
+==> /Users/mvandenb/src/doc_test/database/gravity/log/celery.log <==
+[2022-02-17 16:31:27,008: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] | Consumer: Starting Events
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,009: DEBUG/MainProcess] | Consumer: Starting Tasks
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] | Consumer: Starting Heart
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] ^-- substep ok
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] | Consumer: Starting event loop
+[2022-02-17 16:31:27,035: INFO/MainProcess] celery@MacBook-Pro-2.local ready.
+[2022-02-17 16:31:27,035: DEBUG/MainProcess] basic.qos: prefetch_count->8
 
-The `chdir` option is useful if you are not using `run.sh`, to be able to call `uwsgi` from anywhere without having to
-`cd` to the Galaxy directory first.
+==> /Users/mvandenb/src/doc_test/database/gravity/log/celery-beat.log <==
+[2022-02-17 16:29:04,023: DEBUG/MainProcess] beat: Ticking with max interval->5.00 minutes
+[2022-02-17 16:29:04,024: DEBUG/MainProcess] beat: Waking up in 5.00 minutes.
+No Galaxy config file found, running from current working directory: /Users/mvandenb/src/doc_test
+[2022-02-17 16:31:26,818: DEBUG/MainProcess] Setting default socket timeout to 30
+[2022-02-17 16:31:26,819: INFO/MainProcess] beat: Starting...
+[2022-02-17 16:31:26,824: DEBUG/MainProcess] Current schedule:
+<ScheduleEntry: prune-history-audit-table galaxy.celery.tasks.prune_history_audit_table() <freq: 1.00 hour>
+<ScheduleEntry: celery.backend_cleanup celery.backend_cleanup() <crontab: 0 4 * * * (m/h/d/dM/MY)>
+[2022-02-17 16:31:26,824: DEBUG/MainProcess] beat: Ticking with max interval->5.00 minutes
+[2022-02-17 16:31:26,825: DEBUG/MainProcess] beat: Waking up in 5.00 minutes.
+```
 
-**Monitoring**
-
-The [uwsgitop](https://github.com/xrmx/uwsgitop) tool uses uWSGI's stats server (the `stats` option, which is configured
-to listen on a socket or port in the same manner as the `socket` option) to report on the health and performance of the
-web workers. It can be installed with `pip install uwsgitop`. This tool can be useful for determing whether a worker is
-stuck, or seeing the throughput of traffic on your site.
+More advanced logging options are described in the Galaxy [Logging Configuration documentation](config_logging).
 
 ## Starting and Stopping
 
-If you are using the **uWSGI + Webless job handlers** deployment strategy or want to run your Galaxy server as a
-persistent service, you can control it through a process manager. The current recommended process manager is
-[Supervisord](http://supervisord.org/). If you are comfortable with systemd and are running a relatively modern Linux
-distribution, you can also configure Galaxy as a service directly in systemd.
+If you want to run your Galaxy server as a persistent service, you can include the `galaxy` script from Galaxy's
+virtualenv in the configuration of your process manager (e.g. systemd). You can then continue using the `galaxyctl` command as usual
+to start/stop/restart Galaxy or follow the logs.
 
-### Supervisord
+### Transparent restarts
 
-You can use a supervisord config file like the following or be inspired by [this
-example](https://github.com/galaxyproject/galaxy/blob/dev/contrib/galaxy_supervisor.conf). Be sure to `supervisord
-update` or `supervisord reread && supervisord restart` whenever you make configuration changes.
-
-```ini
-[program:web]
-command         = /srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
-directory       = /srv/galaxy/server
-umask           = 022
-autostart       = true
-autorestart     = true
-startsecs       = 10
-stopwaitsecs    = 65
-user            = galaxy
-numprocs        = 1
-stopsignal      = INT
-```
-
-This configuration defines a "program" named `web` which represents our Galaxy uWSGI frontend. You'll notice that we've
-set a command, a directory, a umask, all of which you should be familiar with. Additionally we've specified that the
-process should `autostart` on boot, and `autorestart` if it ever crashes. We specify `startsecs` to say "the process
-must stay up for this long before we consider it OK. If the process crashes sooner than that (e.g. bad changes you've
-made to your local installation) supervisord will try again a couple of times to restart the process before giving up
-and marking it as failed. This is one of the many ways supervisord is much friendly for managing these sorts of tasks. 
-
-The value of `stopwaitsecs` should be at least as large as the smallest value of uWSGI's `reload-mercy`,
-`worker-reload-mercy`, and `mule-reload-mercy` options, all of which default to `60`.
-
-If using the **uWSGI + Webless** strategy, you'll need to addtionally define job handlers to start. There's no simple
-way to activate a virtualenv when using supervisor, but you can simulate the effects by setting `$PATH` and
-`$VIRTUAL_ENV`:
-
-```ini
-[program:handler]
-command         = /srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%(process_num)s --pid-file=/srv/galaxy/var/handler%(process_num)s.pid --log-file=/srv/galaxy/log/handler%(process_num)s.log
-directory       = /srv/galaxy/server
-process_name    = handler%(process_num)s
-numprocs        = 3
-umask           = 022
-autostart       = true
-autorestart     = true
-startsecs       = 15
-stopwaitsecs    = 35
-user            = galaxy
-environment     = VIRTUAL_ENV="/srv/galaxy/venv",PATH="/srv/galaxy/venv/bin:%(ENV_PATH)s"
-```
-
-This is similar to the "web" definition above, however, you'll notice that we use `%(process_num)s`. That's a variable
-substitution in the `command` and `process_name` fields. We've set `numprocs = 3`, which says to launch three handler
-processes. Supervisord will loop over `0..numprocs` and launch `handler0`, `handler1`, and `handler2` processes
-automatically for us, templating out the command string so each handler receives a different log file and name.
-
-The value of `stopwaitsecs` should be at least as large as `monitor_thread_join_timeout * runner_plugin_count`, which
-is `30` in the default configuration (`monitor_thread_join_timeout` is a Galaxy configuration option and
-`runner_plugin_count` is the number of `<plugin>`s in your `job_conf.xml`).
-
-Lastly, collect the tasks defined above into a single group. If you are not using webless handlers this is as simple as:
-
-```ini
-[group:galaxy]
-programs = web
-```
-
-With webless handlers, it is:
-
-```ini
-[group:galaxy]
-programs = web, handler
-```
-
-This will let us manage these tasks more globally with the `supervisorctl` command line tool:
-
-```console
-# supervisorctl status
-galaxy:handler0                  RUNNING   pid 7275, uptime 16:32:17
-galaxy:handler1                  RUNNING   pid 7276, uptime 16:32:17
-galaxy:handler2                  RUNNING   pid 7277, uptime 16:32:17
-galaxy:web                       RUNNING   pid 7299, uptime 16:32:16
-```
-
-This command shows us the status of our jobs, and we can easily restart all of the processes at once by naming the
-group. Familiar commands like start and stop are also available.
-
-```console
-# supervisorctl restart galaxy:
-galaxy:handler0: stopped
-galaxy:handler1: stopped
-galaxy:handler2: stopped
-galaxy:web: stopped
-galaxy:web: started
-galaxy:handler0: started
-galaxy:handler1: started
-galaxy:handler2: started
-```
+For zero-downtime restarts use the command `galaxyctl graceful`.
 
 ### Systemd
 
-Sample **uWSGI + Webless** strategy for systemd. More information on systemd.service environment
-settings can be found in the [documentation](http://0pointer.de/public/systemd-man/systemd.exec.html#Environment=)
-
+This is a sample config for systemd. More information on systemd.service environment
+settings can be found in the [documentation](https://www.freedesktop.org/software/systemd/man/systemd.exec.html#Environment=)
+The filename follows the pattern `<service_name>.service`. In this case we will use `galaxy.service`
 
 ```ini
 [Unit]
-Description=Galaxy web handler
+Description=Galaxy processes
 After=network.target
 After=time-sync.target
 
@@ -792,50 +518,15 @@ Group=galaxy
 Restart=on-abort
 WorkingDirectory=/srv/galaxy/server
 TimeoutStartSec=10
-ExecStart=/srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
+ExecStart=/srv/galaxy/venv/bin/galaxy --state-dir /srv/galaxy/database/gravity
 Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
 [Install]
 WantedBy=multi-user.target
 ```
 
-For multiple handlers, the service file needs to be a [template unit](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Description>) - the filename follows the syntax 
-`<service_name>@<argument>.service` and all instances of `%I` in the service file are replaced with the `<argument>`
+We can now enable and start the the Galaxy services with systemd:
 
-```ini
-[Unit]
-Description=Galaxy job handlers
-After=network.target
-After=time-sync.target
-
-[Service]
-PermissionsStartOnly=true
-Type=simple
-User=galaxy
-Group=galaxy
-Restart=on-abort
-WorkingDirectory=/srv/galaxy/server
-TimeoutStartSec=10
-ExecStart=/srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%I --log-file=/srv/galaxy/log/handler%I.log
-#Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-[Install]
-WantedBy=multi-user.target
-```
-
-We can now enable and start the web services with systemd 
 ```console
-# systemctl enable galaxy-web
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-web.service to /etc/systemd/system/galaxy-web.service.
-# systemctl enable galaxy-handler@{0..3}
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@0.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@1.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@2.service to /etc/systemd/system/galaxy-handler@.service.
-Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@3.service to /etc/systemd/system/galaxy-handler@.service.
-# systemctl start galaxy-handler@{0..3}
-# systemctl start galaxy-web
+# systemctl enable galaxy
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy.service to /etc/systemd/system/galaxy.service.
 ```
-
-### Transparent Restart - Zerg Mode
-
-The standard uWSGI operation mode allows you to restart the Galaxy application while blocking client connections. Zerg Mode does away with the waiting by running a special Zerg Pool process, and connecting Zergling workers (aka Galaxy application processes) to the pool. As long as at least one is connected, requests can be served.
-
-See the [GCC2017 Admin Training session](https://github.com/galaxyproject/dagobah-training/blob/2017-montpellier/sessions/10-uwsgi/ex2-zerg-mode.md) on how to set this up.

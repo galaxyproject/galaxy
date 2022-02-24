@@ -3433,9 +3433,7 @@ class SortTool(DatabaseOperationTool):
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == "numeric":
             presort_elements = [(int(re.sub("[^0-9]", "", dce.element_identifier)), dce) for dce in elements]
-        if presort_elements:
-            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
-        if sorttype == "file":
+        elif sorttype == "file":
             hda = incoming["sort_type"]["sort_file"]
             data_lines = hda.metadata.get("data_lines", 0)
             if data_lines == len(elements):
@@ -3450,8 +3448,13 @@ class SortTool(DatabaseOperationTool):
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
                     raise Exception(message)
             else:
-                message = "Number of lines must match number of list elements (%i), but file has %i lines"
-                raise Exception(message % (data_lines, len(elements)))
+                message = f"Number of lines must match number of list elements ({len(elements)}), but file has {data_lines} lines"
+                raise Exception(message)
+        else:
+            raise Exception(f"Unknown sort_type '{sorttype}'")
+
+        if presort_elements:
+            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
 
         for dce in sorted_elements:
             dce_object = dce.element_object
