@@ -27,28 +27,21 @@ also available.
 
 ### Apache Proxy Prerequisites
 
-Currently, the only recommended way to proxy Galaxy with Apache is using `mod_rewrite`, `mod_proxy`, and
-`mod_proxy_uwsgi`. These modules must be enabled in the Apache config. The main proxy directives, `ProxyRequests` and
-`ProxyVia` do **not** need to be enabled.
+Currently, the only recommended way to proxy Galaxy with Apache is using `mod_rewrite` and `mod_proxy`.
+These modules must be enabled in the Apache config. The main proxy directives, `ProxyRequests` and `ProxyVia` do **not** need to be enabled.
 
 Additionally, these directions are written for Apache 2.4+. Apache 2.4 for EL 6 can be obtained from the [CentOS SCLo
-SIG Repo][sclo-sig-repo]. Otherwise, your system package manager's version of Apache should be suitable. On EL, you will
-need to enable the [EPEL][epel] repository to obtain the `mod_proxy_uwsgi` package.
+SIG Repo][sclo-sig-repo]. Otherwise, your system package manager's version of Apache should be suitable.
 
-```eval_rst
-.. caution:: ``mod_uwsgi`` is not the same module as ``mod_proxy_uwsgi``. The former is the old and unsupported module.
-   Be sure that you have installed ``mod_proxy_uwsgi``.
-```
-
-Ensure that the `mod_headers`, `mod_rewrite`, `mod_proxy`, and `mod_proxy_uwsgi` modules are loaded. Although not
+Ensure that the `mod_headers`, `mod_rewrite` and `mod_proxy`modules are loaded. Although not
 required, the configuration examples also use `mod_deflate` and `mod_expires` for increased client/server performance,
 so these should also be enabled.
 
 On Debian you can install the necessary packages and enable the modules this with the following:
 
 ```shell-session
-# apt-get install apache2 libapache2-mod-proxy-uwsgi
-# a2enmod headers deflate expires rewrite proxy proxy_uwsgi
+# apt-get install apache2
+$ a2enmod headers deflate expires rewrite proxy
 Enabling module headers.
 Considering dependency filter for deflate:
 Module filter already enabled
@@ -56,9 +49,6 @@ Module deflate already enabled
 Enabling module expires.
 Enabling module rewrite.
 Enabling module proxy.
-Considering dependency proxy for proxy_uwsgi:
-Module proxy already enabled
-Enabling module proxy_uwsgi.
 To activate the new configuration, you need to run:
   service apache2 restart
 ```
@@ -66,12 +56,10 @@ To activate the new configuration, you need to run:
 And on EL:
 
 ```shell-session
-# yum install httpd mod_proxy_uwsgi
-# echo "LoadModule proxy_uwsgi_module modules/mod_proxy_uwsgi.so" > /etc/httpd/conf.modules.d/10-proxy-uwsgi.conf
+# yum install httpd
 ```
 
 [sclo-sig-repo]: https://wiki.centos.org/SpecialInterestGroup/SCLo/CollectionsList
-[epel]: https://fedoraproject.org/wiki/EPEL
 
 ## Basic configuration
 
@@ -83,7 +71,7 @@ And on EL:
 
 ```eval_rst
 .. include:: _inc_proxy_serving_root.rst
-.. _Galaxy Release 17.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/apache.html
+.. _Galaxy Release 21.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_21.09/admin/apache.html
 ```
 
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
@@ -138,15 +126,15 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
     </Directory>
 
     # Galaxy needs to know that this is https for generating URLs
-    RequestHeader set X-URL-SCHEME "%{REQUEST_SCHEME}e"
+    RequestHeader set "X-Forwarded-Proto" expr=%{REQUEST_SCHEME}
 
     # allow up to 3 minutes for Galaxy to respond to slow requests before timing out
     ProxyTimeout 180
 
-    # proxy all requests not matching other locations to uWSGI
-    ProxyPass / unix:///srv/galaxy/var/uwsgi.sock|uwsgi://
-    # or uWSGI on a TCP socket
-    #ProxyPass / uwsgi://127.0.0.1:4001/
+    # proxy all requests not matching other locations to Gunicorn
+    ProxyPass / unix:/srv/galaxy/var/gunicorn.sock|http://localhost/
+    # or Gunicorn on a TCP socket
+    # ProxyPass / http://localhost:8080/
 
     # serve framework static content
     RewriteEngine On
@@ -170,8 +158,7 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
 ```
 
 Be sure to set `galaxy_root` to the path to your copy of Galaxy and modify the value of `ProxyPass /`  to match your
-uWSGI socket path. With the default configuration, uWSGI will bind to a random TCP socket, so you will need to set it to
-a fixed value as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
+Gunicorn socket path. With the default configuration, gunicorn will bind to a TCP socket, so you will need to Gunicorn to bind to a UNIX domain socket as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
 ### Additional Notes
@@ -183,8 +170,8 @@ socket, be sure to pay particular attention to the discussion of users and permi
   disable it by commenting its `<VirtualHost>` or preventing its inclusion (under Debian this is done by removing its
   symlink from `/etc/apache2/sites-enabled`).
 - `ProxyTimeout` can be adjusted as appropriate for your site. This is the amount of time allowed for communication
-  between Apache and uWSGI to block while waiting for a response from Galaxy, and is useful for holding client (browser)
-  connections while uWSGI is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
+  between Apache and Gunicorn to block while waiting for a response from Galaxy, and is useful for holding client (browser)
+  connections while Gunicorn is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
 - If your Apache server is set up to use `mod_security`, you may need to modify the value of the `SecRequestBodyLimit`.
   The default value on some systems will limit uploads to only a few kilobytes.
 - Some Galaxy URLs contain encoded slashes (%2F) in the path and Apache will not serve these URLs by default, which is
@@ -195,6 +182,7 @@ socket, be sure to pay particular attention to the discussion of users and permi
 - If the proxy works but you are getting 404 errors for Galaxy's static content, be sure that the user that Apache runs
   as has access to Galaxy's `static/` directory (and all its parent directories) on the filesystem. You can test this on
   the command line with e.g. `sudo -u www-data ls /srv/galaxy/server/static`.
+- A sample configuration for this setup is available [here](https://github.com/mvdbeek/galaxy_doc_examples/tree/main/apache).
 
 ### Serving Galaxy at a URL Prefix
 
@@ -207,10 +195,10 @@ previous section:
     ```apache
         #...
 
-        # proxy all requests not matching other locations to uWSGI
-        ProxyPass /galaxy unix:///srv/galaxy/var/uwsgi.sock|uwsgi://
-        # or uWSGI on a TCP socket
-        #ProxyPass /galaxy uwsgi://127.0.0.1:4001/
+        # proxy all requests not matching other locations to Gunicorn
+        ProxyPass /galaxy unix:///srv/galaxy/var/gunicorn.sock|http://localhost/galaxy
+        # or Gunicorn on a TCP socket
+        #ProxyPass /galaxy http://127.0.0.1:4001/galaxy
 
         # serve framework static content
         RewriteEngine On
@@ -221,16 +209,18 @@ previous section:
     ```
 
 2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages).
-   This is accomplished by configuring uWSGI (the `uwsgi` section in `config/galaxy.yml`) like so and restarting Galaxy:
+   This is accomplished by configuring Galaxy in your `config/galaxy.yml` file like so and restarting Galaxy:
 
     ```yaml
-    uwsgi:
-        #...
-        socket: /srv/galaxy/var/uwsgi.sock
-        mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
-        manage-script-name: true
-        # `module` MUST NOT be set when `mount` is in use
-        #module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+    gravity:
+      gunicorn:
+        # ...
+        bind: /srv/galaxy/var/gunicorn.sock
+        gunicorn_extra_args: '--forwarded-allow-ips="*"'
+    galaxy:
+        # ...
+        galaxy_url_prefix: /galaxy
+        # ...
     ```
 
     ```eval_rst
@@ -239,8 +229,7 @@ previous section:
        overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
     ```
 
-   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
-   should also be set in the `uwsgi` section of the config.
+   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation.
 
 ## Advanced Configuration Topics
 
