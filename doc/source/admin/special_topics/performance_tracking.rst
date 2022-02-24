@@ -19,12 +19,6 @@ There is some built-in `Gunicorn <https://docs.gunicorn.org/en/stable/instrument
         gunicorn_extra_args: `--statsd-host 127.0.0.1:8125 --statsd-prefix=gunicorn`
       ...
 
-
-
-.. code-block:: bash
-
-   gxadmin uwsgi stats_influx 127.0.0.1:9191
-
 API / Route Timing Statistics
 -----------------------------
 
