@@ -19,18 +19,6 @@ There is some built-in `Gunicorn <https://docs.gunicorn.org/en/stable/instrument
       ...
 
 
-Alternatively, you can use `gxadmin <https://github.com/usegalaxy-eu/gxadmin#uwsgi-stats_influx>`__ to generate data ready to load in an InfluxDB database. In this case, you will need to add the stats option to your galaxy.yml:
-
-.. code-block:: yaml
-
-   gravity:
-      ...
-      gunicorn:
-        gunicorn_extra_args: `--statsd-host 127.0.0.1:9191 --statsd-prefix=galaxy`
-      ...
-
-And then run gxadmin like this:
-
 
 .. code-block:: bash
 
