@@ -1,3 +1,5 @@
+.. _interactivetools:
+
 Galaxy InteractiveTools
 =======================
 
