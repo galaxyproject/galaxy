@@ -134,7 +134,7 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
     # proxy all requests not matching other locations to Gunicorn
     ProxyPass / unix:/srv/galaxy/var/gunicorn.sock|http://localhost/
     # or Gunicorn on a TCP socket
-    # ProxyPass / http://localhost:8080/
+    # ProxyPass / http://localhost:4001/
 
     # serve framework static content
     RewriteEngine On
