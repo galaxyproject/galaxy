@@ -1445,3 +1445,16 @@ class BaseGalaxyToolBox(AbstractToolBox):
 
     def reload_dependency_manager(self):
         self._init_dependency_manager()
+
+    def load_builtin_converters(self):
+        id = "builtin_converters"
+        section = ToolSection({"name": "Built-in Converters", "id": id})
+        self._tool_panel[id] = section
+
+        converters = self.app.datatypes_registry.datatype_converters
+        for source, targets in converters.items():
+            for target, tool in targets.items():
+                tool.name = f"{source}-to-{target}"
+                tool.description = "converter"
+                tool.hidden = False
+                section.elems.append_tool(tool)
