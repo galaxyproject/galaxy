@@ -143,6 +143,7 @@ class ExpectedValues:
             "shed_tool_config_file": self._in_managed_config_dir("shed_tool_conf.xml"),
             "shed_tool_data_path": self._in_root_or_data_dir("tool-data"),
             "shed_tool_data_table_config": self._in_managed_config_dir("shed_tool_data_table_conf.xml"),
+            "short_term_storage_dir": self._in_cache_dir("short_term_web_storage"),
             "template_cache_path": self._in_cache_dir("compiled_templates"),
             "tool_cache_data_dir": self._in_cache_dir("tool_cache"),
             "tool_config_file": self._in_sample_dir("tool_conf.xml.sample"),

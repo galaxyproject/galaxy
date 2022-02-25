@@ -9,6 +9,7 @@ import time
 from typing import (
     Any,
     Callable,
+    Dict,
     List,
     Tuple,
 )
@@ -117,6 +118,12 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
+from galaxy.web.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.web_stack import (
     application_stack_instance,
     ApplicationStack,
@@ -490,6 +497,21 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
+
+        # Setup infrastructure for short term storage manager.
+        short_term_storage_config_kwds: Dict[str, Any] = {}
+        short_term_storage_config_kwds["short_term_storage_directory"] = self.config.short_term_storage_dir
+        short_term_storage_default_duration = self.config.short_term_storage_default_duration
+        short_term_storage_maximum_duration = self.config.short_term_storage_maximum_duration
+        if short_term_storage_default_duration is not None:
+            short_term_storage_config_kwds["default_storage_duration"] = short_term_storage_default_duration
+        if short_term_storage_maximum_duration is not None:
+            short_term_storage_config_kwds["maximum_storage_duration"] = short_term_storage_maximum_duration
+
+        short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
+        short_term_storage_manager = ShortTermStorageManager(config=short_term_storage_config)
+        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)
+        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)
 
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
