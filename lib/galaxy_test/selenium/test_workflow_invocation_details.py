@@ -73,5 +73,6 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
         invocations.step_output_collection(order_index="1").wait_for_and_click()
         invocations.step_output_collection_toggle(order_index="1").wait_for_and_click()
         invocations.step_output_collection_element_identifier(element_identifier="forward").wait_for_and_click()
+
         datatype = invocations.step_output_collection_element_datatype(order_index="1").wait_for_text()
         assert datatype == "txt"

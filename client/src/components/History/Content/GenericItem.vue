@@ -1,19 +1,25 @@
 <template>
     <component :is="providerComponent" :id="itemId" auto-refresh v-slot="{ result: item, loading }">
         <loading-span v-if="loading" message="Loading dataset" />
-        <ContentItem
-            v-else
-            :item="item"
-            :id="item.hid"
-            :name="item.name"
-            :state="item.state || item.populated_state"
-            :expanded="expanded"
-            :expandable="item.history_content_type == 'dataset'"
-            @update:expanded="expanded = $event"
-            @drilldown="drilldown = !drilldown"
-            @delete="onDelete"
-            @undelete="onUndelete"
-            @unhide="onUnhide" />
+        <div v-else>
+            <ContentItem
+                :item="item"
+                :id="item.hid"
+                :name="item.name"
+                :state="item.state || item.populated_state"
+                :expanded="expanded"
+                :expandable="item.history_content_type == 'dataset'"
+                @update:expanded="expanded = $event"
+                @drilldown="drilldown = !drilldown"
+                @delete="onDelete"
+                @undelete="onUndelete"
+                @unhide="onUnhide" />
+            <div v-if="drilldown">
+                <div v-for="(collectionItem, collectionIndex) in item.elements" :key="collectionIndex">
+                    <GenericElement :item="collectionItem" />
+                </div>
+            </div>
+        </div>
     </component>
 </template>
 
@@ -22,10 +28,12 @@ import LoadingSpan from "components/LoadingSpan";
 import { DatasetProvider, DatasetCollectionProvider } from "components/providers";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ContentItem from "./ContentItem";
+import GenericElement from "./GenericElement";
 
 export default {
     components: {
         ContentItem,
+        GenericElement,
         DatasetProvider,
         DatasetCollectionProvider,
         LoadingSpan,
@@ -45,9 +53,6 @@ export default {
             drilldown: false,
             expanded: false,
         };
-    },
-    created() {
-        console.log(this.itemId);
     },
     computed: {
         providerComponent() {
