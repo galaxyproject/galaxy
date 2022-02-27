@@ -1,5 +1,5 @@
 <template>
-    <UrlDataProvider :url="dataUrl" v-slot="{ loading, result }">
+    <UrlDataProvider :url="dataUrl" auto-refresh v-slot="{ loading, result }">
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
@@ -12,7 +12,9 @@
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
                         <label class="prompt" v-localize>database</label>
-                        <b-link class="value" @click.stop="$emit('edit', dataset)">{{ result.genome_build }}</b-link>
+                        <b-link class="value" @click.stop="$emit('edit', dataset)" data-label="Database/Build">{{
+                            result.genome_build
+                        }}</b-link>
                     </span>
                     <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>
