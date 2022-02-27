@@ -25,6 +25,8 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         input_collection, failed_collection = self._generate_partially_failed_collection_with_input()
         input_hid = input_collection["hid"]
         failed_hid = failed_collection["hid"]
+        self.home()
+
         ok_inputs = {
             "input1": {"batch": True, "values": [{"src": "hdca", "id": input_collection["id"]}]},
             "sleep_time": 0,
@@ -214,9 +216,9 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
         collection_view = self._click_and_wait_for_collection_view(collection_hid)
+        self.sleep_for(WAIT_TYPES.HISTORY_POLL)
 
         if self.is_beta_history():
-            self.sleep_for(WAIT_TYPES.HISTORY_POLL)
             dataset_elements = collection_view.list_items_beta.all()
         else:
             dataset_elements = collection_view.list_items.all()

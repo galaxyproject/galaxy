@@ -77,7 +77,7 @@
                 </h5>
             </div>
         </div>
-        <DatasetDetails v-if="expanded" @edit="$emit('edit', $event)" :item="item" />
+        <DatasetDetails v-if="expanded" @edit="onEdit" :item="item" />
     </div>
 </template>
 

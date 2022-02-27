@@ -193,7 +193,7 @@ history_panel:
   # beta history tags
   tag_editor:
     selectors:
-      _: '${scope} .history-details .tags'
+      _: '${scope} .details .tags'
       toggle: '${_} .toggle-link'
       display: '${_} .tag-area .tag-name'
       input: '${_} input'
@@ -240,25 +240,25 @@ history_panel:
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
-    tag_area: '.history-details .tags-display'
-    tag_area_input: '.history-details .tags-display .tags-input input'
+    tag_area: '.details .tags-display'
+    tag_area_input: '.details .tags-display .tags-input input'
     tag_close_btn: '.tags-display .ti-icon-close'
     tags: 'li.ti-tag.ti-valid .tag-name'
 
     annotation_icon: '.actions .history-annotate-btn'
-    annotation_area: '.history-details .history-annotation'
+    annotation_area: '.details .history-annotation'
     annotation_editable_text:
-      selector: 'history annotation'
+      selector: 'annotation value'
       type: data-description
     annotation_edit:
       selector: 'annotation input'
       type: data-description
 
-    annotation_done: '.history-details .history-annotation .annotation button'
+    annotation_done: '.details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
-    options_button_icon: '.history-details .menu-expand-button'
-    options_button_icon_beta: '.history-details .menu-expand-button'
+    options_button_icon: '.details .menu-expand-button'
+    options_button_icon_beta: '.details .menu-expand-button'
     options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
     options_menu_item:
