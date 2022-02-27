@@ -5,8 +5,8 @@ from datetime import timedelta
 import pytest
 
 from galaxy import config
+from galaxy.config import expand_pretty_datetime_format
 from galaxy.util import listify
-from galaxy.web.formatting import expand_pretty_datetime_format
 
 TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
