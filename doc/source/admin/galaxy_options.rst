@@ -4818,4 +4818,14 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``display_builtin_converters``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Display built-in converters in the tool panel.
+:Default: ``true``
+:Type: bool
+
+
 

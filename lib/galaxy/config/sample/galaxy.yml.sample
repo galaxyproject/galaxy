@@ -2347,3 +2347,6 @@ galaxy:
   # <config_dir>.
   #vault_config_file: vault_conf.yml
 
+  # Display built-in converters in the tool panel.
+  #display_builtin_converters: true
+

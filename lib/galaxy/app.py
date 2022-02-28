@@ -337,7 +337,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
         # Load built-in converters
-        self.toolbox.load_builtin_converters()
+        if self.config.display_builtin_converters:
+            self.toolbox.load_builtin_converters()
         self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(
