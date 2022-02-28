@@ -430,7 +430,6 @@ class TestDataManagerJobAssociation(BaseTest):
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.data_manager_id = data_manager_id
 
@@ -443,7 +442,6 @@ class TestDataManagerJobAssociation(BaseTest):
             assert stored_obj.data_manager_id == data_manager_id
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
