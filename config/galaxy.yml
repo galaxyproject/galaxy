@@ -70,15 +70,15 @@ uwsgi:
 
   # The entry point which returns the web application (e.g. Galaxy,
   # Reports, etc.) that you are loading.
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  #module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
   # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
   # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  mount: /rest/galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
   # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
   # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
+  manage-script-name: true
 
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
