@@ -69,7 +69,6 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2._yaml import ordered_load
-from pkg_resources import resource_string
 from requests.models import Response
 
 from galaxy.tool_util.client.staging import InteractorStaging
@@ -83,8 +82,8 @@ from galaxy.tool_util.verify.wait import (
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
-    unicodify,
 )
+from galaxy.util.resources import resource_string
 from . import api_asserts
 from .api import ApiTestInteractor
 
@@ -92,10 +91,10 @@ from .api import ApiTestInteractor
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
+workflow_str = resource_string(__name__.rsplit('.', 1)[0], "data/test_workflow_1.ga")
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = unicodify(resource_string(__name__, "data/test_workflow_2.ga"))
+workflow_random_x2_str = resource_string(__name__.rsplit('.', 1)[0], "data/test_workflow_2.ga")
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -1124,7 +1123,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def load_workflow_from_resource(self, name: str, filename: Optional[str] = None) -> dict:
         if filename is None:
             filename = f"data/{name}.ga"
-        content = unicodify(resource_string(__name__, filename))
+        content = resource_string(__name__.rsplit('.', 1)[0], filename)
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name: str, **create_kwds) -> str:
