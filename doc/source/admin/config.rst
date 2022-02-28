@@ -96,7 +96,9 @@ Configuration Basics
   changes. This is a `YAML configuration file`_ and should contain one or two sections, one named ``gravity`` for
   process management via `Gravity`_ (optional) and one named ``galaxy`` for Galaxy (required).
 
-    - The default port for the Galaxy web server is ``8080``, and it only binds to localhost by default. To configure
+    - The `gravity` section contain several important options about how to
+      launch Galaxy web workers and job handlers, which are documented in the
+      :doc:`Scaling and Load Balancing <scaling>` documentation.
 
 - Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
