@@ -210,7 +210,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "winSplitter": packaging.version.parse("1.0.1"),
 }
 
-BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, 'biotools_mappings.tsv')
+BIOTOOLS_MAPPING_CONTENT = resource_string(__package__, "biotools_mappings.tsv")
 BIOTOOLS_MAPPING: Dict[str, str] = dict([cast(Tuple[str, str], tuple(x.split("\t"))) for x in BIOTOOLS_MAPPING_CONTENT.splitlines() if not x.startswith("#")])
 
 REQUIRE_FULL_DIRECTORY = {
