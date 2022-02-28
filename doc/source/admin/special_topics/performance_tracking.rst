@@ -2,44 +2,22 @@ Galaxy Performance Tracking
 ===========================
 
 Tracking performance over time and identifying slow queries in your Galaxy can be an extremely important thing to do, especially for larger Galaxies.
+[A more in-depth tutorial is available at the Galaxy Training Network](https://training.galaxyproject.org/training-material/topics/admin/tutorials/monitoring/tutorial.html).
 
-Most performance tracking requires sending metrics to a metrics collection server such as `Graphite <http://graphiteapp.org/>`__ or `StatsD <https://github.com/etsy/statsd/>`__. This document assumes you have already deployed a metrics server.
+Most performance tracking requires sending metrics to a metrics collection server such as `StatsD <https://github.com/etsy/statsd/>`__. This document assumes you have already deployed StatsD.
 
-uWSGI
+Gunicorn
 -----
 
-There is some built-in uWSGI support for performance logging. You can send uWSGI's internal metrics to a carbon (Graphite) server by setting the carbon option in your galaxy.yml:
+There is some built-in `Gunicorn <https://docs.gunicorn.org/en/stable/instrumentation.html>`__ support for performance logging. You can send Gunicorn's internal metrics to a StatsD server by setting the `--statsd-host` and `--statsd-prefix` command line options for Gunicorn in the `gravity` section of `galaxy.yml`:
 
 .. code-block:: yaml
 
-   uwsgi:
-      socket: ...
-      carbon: 127.0.0.1:2003
-
-Or a StatsD server via:
-
-.. code-block:: yaml
-
-   uwsgi:
-      socket: ...
-      stats-push: statsd:127.0.0.1:8125
-
-The `official documentation <https://uwsgi-docs.readthedocs.io/en/latest/Metrics.html#stats-pushers>`__ contains further information on uWSGI and stats servers. In the `uWSGI Stats Server <https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html>`__ documentation, you can see an example of the sort of information that you will be able to collect. Note that you will need to make sure that the statsd pusher plugin is activated in your uWSGI servers.
-
-Alternatively, you can use `gxadmin <https://github.com/usegalaxy-eu/gxadmin#uwsgi-stats_influx>`__ to generate data ready to load in an InfluxDB database. In this case, you will need to add the stats option to your galaxy.yml:
-
-.. code-block:: yaml
-
-   uwsgi:
-      socket: ...
-      stats: 127.0.0.1:9191
-
-And then run gxadmin like this:
-
-
-.. code-block:: bash
-
-   gxadmin uwsgi stats_influx 127.0.0.1:9191
+   gravity:
+      ...
+      gunicorn:
+        gunicorn_extra_args: `--statsd-host 127.0.0.1:8125 --statsd-prefix=gunicorn`
+      ...
 
 API / Route Timing Statistics
 -----------------------------
