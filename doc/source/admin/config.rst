@@ -101,7 +101,6 @@ Configuration Basics
 - Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
 
-.. _large number of options: https://docs.gunicorn.org/en/latest/settings.html
 .. _Gravity: https://github.com/galaxyproject/gravity
 
 ----------------------------
