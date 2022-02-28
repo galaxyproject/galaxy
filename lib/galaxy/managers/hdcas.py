@@ -256,60 +256,36 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "type_id",
                 "name",
                 "history_id",
+                "collection_id",
                 "hid",
                 "history_content_type",
                 "collection_type",
                 "populated_state",
                 "populated_state_message",
-                "element_count",
-                "job_source_id",
-                "job_source_type",
-                "name",
-                "type_id",
-                "deleted",
-                # 'purged',
-                "visible",
-                "type",
-                "url",
-                "create_time",
-                "update_time",
-                "tags",  # TODO: detail view only (maybe),
-                "contents_url",
-            ],
-        )
-        self.add_view("detailed", ["populated", "elements"], include_keys_from="summary")
-
-        # fields for new beta web client, there is no summary/detailed split any more
-        self.add_view(
-            "betawebclient",
-            [
-                # common to hda
-                "create_time",
-                "deleted",
-                "hid",
-                "history_content_type",
-                "history_id",
-                "id",
-                "name",
-                "tags",
-                "type",
-                "type_id",
-                "update_time",
-                "url",
-                "visible",
-                # hdca only
-                "collection_id",
-                "collection_type",
-                "contents_url",
                 "element_count",
                 "job_source_id",
                 "job_source_type",
                 "job_state_summary",
+                "name",
+                "type_id",
+                "deleted",
+                "visible",
+                "type",
+                "url",
+                "create_time",
+                "update_time",
+                "tags",
+                "contents_url",
+            ],
+        )
+        self.add_view(
+            "detailed",
+            [
                 "populated",
-                "populated_state",
-                "populated_state_message",
+                "elements",
                 "elements_datatypes",
             ],
+            include_keys_from="summary",
         )
 
     def add_serializers(self):
@@ -347,10 +323,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         return contents_url
 
     def serialize_job_state_summary(self, item, key, **context):
-        states = item.job_state_summary.__dict__.copy()
-        del states["_sa_instance_state"]
-        del states["hdca_id"]
-        return states
+        return item.job_state_summary_dict
 
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]

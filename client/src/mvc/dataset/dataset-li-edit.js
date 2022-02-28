@@ -268,44 +268,27 @@ var DatasetListItemEdit = _super.extend(
 
         /** Render an icon-button or popupmenu of links based on the applicable visualizations */
         _renderVisualizationsButton: function () {
-            //TODO: someday - lazyload visualizations
             const Galaxy = getGalaxyInstance();
-            const visualizations = this.model.get("visualizations");
-            if (
-                !Galaxy.config.visualizations_visible ||
-                this.model.isDeletedOrPurged() ||
-                !this.hasUser ||
-                !this.model.hasData() ||
-                _.isEmpty(visualizations)
-            ) {
-                return null;
-            }
-            if (!_.isObject(visualizations[0])) {
-                this.warn("Visualizations have been switched off");
-                return null;
-            }
-            if (visualizations.length >= 1) {
-                const dsid = this.model.get("element_id") || this.model.get("id");
-                const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
-                return faIconButton({
-                    title: _l("Visualize this data"),
-                    href: url,
-                    classes: "visualization-link",
-                    faIcon: "fa-bar-chart-o",
-                    onclick: (ev) => {
-                        if (Galaxy.frame && Galaxy.frame.active) {
-                            ev.preventDefault();
-                            Galaxy.frame.add({ url: url, title: "Visualization" });
-                        } else if (Galaxy.router) {
-                            ev.preventDefault();
-                            Galaxy.router.push("visualizations", {
-                                dataset_id: dsid,
-                            });
-                            Galaxy.trigger("activate-hda", dsid);
-                        }
-                    },
-                });
-            }
+            const dsid = this.model.get("element_id") || this.model.get("id");
+            const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
+            return faIconButton({
+                title: _l("Visualize this data"),
+                href: url,
+                classes: "visualization-link",
+                faIcon: "fa-bar-chart-o",
+                onclick: (ev) => {
+                    if (Galaxy.frame && Galaxy.frame.active) {
+                        ev.preventDefault();
+                        Galaxy.frame.add({ url: url, title: "Visualization" });
+                    } else if (Galaxy.router) {
+                        ev.preventDefault();
+                        Galaxy.router.push("visualizations", {
+                            dataset_id: dsid,
+                        });
+                        Galaxy.trigger("activate-hda", dsid);
+                    }
+                },
+            });
         },
 
         /** Render the tags list/control */

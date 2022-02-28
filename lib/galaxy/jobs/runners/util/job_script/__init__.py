@@ -8,22 +8,21 @@ from typing import (
     Dict,
 )
 
-from pkg_resources import resource_string
-
 from galaxy.job_execution.setup import JobIO
 from galaxy.util import (
     RWXR_XR_X,
     unicodify,
 )
+from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
 DEFAULT_SHELL = "/bin/bash"
 
-DEFAULT_JOB_FILE_TEMPLATE = Template(unicodify(resource_string(__name__, "DEFAULT_JOB_FILE_TEMPLATE.sh")))
+DEFAULT_JOB_FILE_TEMPLATE = Template(resource_string(__name__, "DEFAULT_JOB_FILE_TEMPLATE.sh"))
 
-SLOTS_STATEMENT_CLUSTER_DEFAULT = unicodify(resource_string(__name__, "CLUSTER_SLOTS_STATEMENT.sh"))
+SLOTS_STATEMENT_CLUSTER_DEFAULT = resource_string(__name__, "CLUSTER_SLOTS_STATEMENT.sh")
 
-MEMORY_STATEMENT_DEFAULT = unicodify(resource_string(__name__, "MEMORY_STATEMENT.sh"))
+MEMORY_STATEMENT_DEFAULT = resource_string(__name__, "MEMORY_STATEMENT.sh")
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
