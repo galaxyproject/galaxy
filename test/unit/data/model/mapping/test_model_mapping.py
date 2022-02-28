@@ -7344,8 +7344,8 @@ def visualization_rating_association_factory():
 @pytest.fixture
 def visualization_revision_factory(visualization):
     def make_instance(*args, **kwds):
-        if "visualization" not in kwds:
-            kwds["visualization"] = visualization
+        if "visualization_id" not in kwds:
+            kwds["visualization_id"] = visualization.id
         return model.VisualizationRevision(*args, **kwds)
 
     return make_instance
