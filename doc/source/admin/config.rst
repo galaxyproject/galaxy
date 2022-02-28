@@ -97,12 +97,6 @@ Configuration Basics
   process management via `Gravity`_ (optional) and one named ``galaxy`` for Galaxy (required).
 
     - The default port for the Galaxy web server is ``8080``, and it only binds to localhost by default. To configure
-      Gunicorn to listen on all available network addresses, set ``bind`` in the ``gravity`` section of ``galaxy.yml``
-      to ``0.0.0.0:<port>`` (e.g. ``bind: 0.0.0.0:8080``).
-    - Some Gunicorn options are required for Gunicorn to run Galaxy properly and will be added to the ``gunicorn``
-      command line by `Gravity` via the ``run.sh`` script if not specified in ``galaxy.yml``.
-    - Gunicorn has a `large number of options`_. The Galaxy documentation refers to some of them, but many additional
-      advanced deployment scenarios are available.
 
 - Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
