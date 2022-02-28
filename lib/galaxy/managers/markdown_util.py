@@ -27,7 +27,6 @@ from typing import (
 )
 
 import markdown
-import pkg_resources
 try:
     import weasyprint
 except Exception:
@@ -47,6 +46,7 @@ from galaxy.managers.jobs import (
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
+from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
 from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
@@ -596,7 +596,7 @@ def to_pdf_raw(basic_markdown: str, css_paths: Optional[List[str]] = None) -> by
         output_file.write(as_html)
         output_file.close()
         html = weasyprint.HTML(filename=index)
-        stylesheets = [weasyprint.CSS(string=pkg_resources.resource_string(__name__, 'markdown_export_base.css'))]
+        stylesheets = [weasyprint.CSS(string=resource_string(__package__, "markdown_export_base.css"))]
         for css_path in css_paths:
             with open(css_path) as f:
                 css_content = f.read()
