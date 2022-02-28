@@ -93,22 +93,23 @@ Configuration Basics
 ----------------------------
 
 - Edit ``config/galaxy.yml`` (copy it from ``config/galaxy.yml.sample`` if it does not exist) to make configuration
-  changes. This is a `uWSGI YAML configuration file`_ and should contain two sections, one named ``uwsgi`` for uWSGI and
-  one named ``galaxy`` for Galaxy.
+  changes. This is a `YAML configuration file`_ and should contain one or two sections, one named ``gravity`` for
+  Gunicorn server options (optional) and one named ``galaxy`` for Galaxy (required).
 
     - The default port for the Galaxy web server is ``8080``, and it only binds to localhost by default. To configure
-      uWSGI to listen on all available network addresses, set ``http`` to ``0.0.0.0:<port>`` (e.g. ``http:
-      0.0.0.0:8080``).
-    - Some uWSGI options are required for uWSGI to run Galaxy properly and will be added to the ``uwsgi`` command line
-      by ``run.sh`` if not specified in ``galaxy.yml``.
-    - uWSGI has a `large number of options`_. The Galaxy documentation refers to some of them, but many additional
+      Gunicorn to listen on all available network addresses, set ``bind`` in the ``gravity`` section of ``galaxy.yml``
+      to ``0.0.0.0:<port>`` (e.g. ``bind: 0.0.0.0:8080``).
+    - Some Gunicorn options are required for Gunicorn to run Galaxy properly and will be added to the ``gunicorn``
+      command line by `Gravity` via the ``run.sh`` script if not specified in ``galaxy.yml``.
+    - Gunicorn has a `large number of options`_. The Galaxy documentation refers to some of them, but many additional
       advanced deployment scenarios are available.
 
 - Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
 
 .. _uWSGI YAML configuration file: https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
-.. _large number of options: https://uwsgi-docs.readthedocs.io/en/latest/Options.html
+.. _large number of options: https://docs.gunicorn.org/en/latest/settings.html
+.. _Gravity: https://github.com/galaxyproject/gravity
 
 ----------------------------
 Configuration Options
