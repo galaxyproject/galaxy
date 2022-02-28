@@ -7076,7 +7076,7 @@ def visualization_rating_association(session, user, visualization):
 
 @pytest.fixture
 def visualization_revision(session, visualization):
-    instance = model.VisualizationRevision(visualization=visualization)
+    instance = model.VisualizationRevision(visualization_id=visualization.id)
     yield from dbcleanup_wrapper(session, instance)
 
 
