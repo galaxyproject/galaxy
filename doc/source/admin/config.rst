@@ -94,7 +94,7 @@ Configuration Basics
 
 - Edit ``config/galaxy.yml`` (copy it from ``config/galaxy.yml.sample`` if it does not exist) to make configuration
   changes. This is a `YAML configuration file`_ and should contain one or two sections, one named ``gravity`` for
-  Gunicorn server options (optional) and one named ``galaxy`` for Galaxy (required).
+  process management via `Gravity`_ (optional) and one named ``galaxy`` for Galaxy (required).
 
     - The default port for the Galaxy web server is ``8080``, and it only binds to localhost by default. To configure
       Gunicorn to listen on all available network addresses, set ``bind`` in the ``gravity`` section of ``galaxy.yml``
