@@ -208,8 +208,6 @@ class ConfiguresGalaxyMixin:
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
-        from galaxy.managers.tools import DynamicToolManager
-
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
