@@ -39,11 +39,13 @@ from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowsManager,
 )
-from galaxy.model import mapping
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import database_exists
-from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.mapping import (
+    GalaxyModelMapping,
+    init_models_from_config,
+)
 from galaxy.model.scoped_session import (
     galaxy_scoped_session,
     install_model_scoped_session,
@@ -141,23 +143,6 @@ class SentryClientMixin:
                 )
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
-
-
-def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
-    model = mapping.init(
-        config.file_path,
-        config.database_connection,
-        config.database_engine_options,
-        map_install_models=map_install_models,
-        database_query_profiling_proxy=config.database_query_profiling_proxy,
-        object_store=object_store,
-        trace_logger=trace_logger,
-        use_pbkdf2=config.get_bool('use_pbkdf2', True),
-        slow_query_log_threshold=config.slow_query_log_threshold,
-        thread_local_log=config.thread_local_log,
-        log_query_counts=config.database_log_query_counts,
-    )
-    return model
 
 
 class ConfiguresGalaxyMixin:

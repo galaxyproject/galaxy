@@ -7,6 +7,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
+from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.script import app_properties_from_args, populate_config_args
 
@@ -20,7 +21,7 @@ def init():
     config = galaxy.config.Configuration(**app_properties)
 
     object_store = build_object_store_from_config(config)
-    model = galaxy.config.init_models_from_config(config, object_store=object_store)
+    model = init_models_from_config(config, object_store=object_store)
     return model, object_store
 
 
