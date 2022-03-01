@@ -74,6 +74,9 @@
                     <h6 v-if="item.collection_type" class="description py-1">
                         a {{ item.collection_type }} with {{ item.element_count }} items
                     </h6>
+                    <div v-if="!expanded && item.tags && item.tags.length > 0" class="nametags">
+                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
+                    </div>
                 </h5>
             </div>
         </div>
@@ -83,12 +86,14 @@
 
 <script>
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
+import { Nametag } from "components/Nametags";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import CONTENTSTATE from "./contentState";
 
 export default {
     components: {
         DatasetDetails,
+        Nametag,
     },
     props: {
         item: { type: Object, required: true },
