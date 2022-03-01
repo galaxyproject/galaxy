@@ -1,6 +1,7 @@
 import os
 from collections import namedtuple
 from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
 
@@ -225,8 +226,8 @@ class ExpectedValues:
         return 'uuid'
 
 
+@patch('galaxy.config.GalaxyAppConfiguration._override_tempdir', lambda a, b: None)
 def get_config_data():
-    config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
     configuration = config.GalaxyAppConfiguration()
     ev = ExpectedValues(configuration)
     items = ((k, v) for k, v in configuration.schema.app_schema.items())
