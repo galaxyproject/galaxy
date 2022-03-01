@@ -26,7 +26,6 @@ import yaml
 from paste import httpserver
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
-from galaxy.app_unittest_utils.celery_helper import rebind_container_to_task
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.database_utils import (
@@ -663,9 +662,6 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     simple_kwargs = load_app_properties(kwds=simple_kwargs)
     # Build the Universe Application
     app = GalaxyUniverseApplication(**simple_kwargs)
-    if not simple_kwargs.get("enable_celery_tasks"):
-        rebind_container_to_task(app)
-
     log.info("Embedded Galaxy application started")
 
     global galaxy_context

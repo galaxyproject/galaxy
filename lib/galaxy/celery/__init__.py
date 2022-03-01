@@ -3,6 +3,7 @@ from functools import (
     lru_cache,
     wraps,
 )
+from threading import local
 from typing import (
     Any,
     Dict,
@@ -28,16 +29,31 @@ log = get_logger(__name__)
 MAIN_TASK_MODULE = "galaxy.celery.tasks"
 TASKS_MODULES = [MAIN_TASK_MODULE]
 
+APP_LOCAL = local()
+
+
+def set_thread_app(app):
+    APP_LOCAL.app = app
+
+
+def get_galaxy_app():
+    try:
+        return APP_LOCAL.app
+    except AttributeError:
+        import galaxy.app
+
+        if galaxy.app.app:
+            return galaxy.app.app
+    return build_app()
+
 
 @lru_cache(maxsize=1)
-def get_galaxy_app():
-    import galaxy.app
-
-    if galaxy.app.app:
-        return galaxy.app.app
+def build_app():
     kwargs = get_app_properties()
     if kwargs:
         kwargs["check_migrate_databases"] = False
+        import galaxy.app
+
         galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
         return galaxy_app
 
@@ -107,7 +123,6 @@ if prune_interval > 0:
 celery_app.conf.timezone = "UTC"
 
 
-CELERY_TASKS = []
 PYDANTIC_AWARE_SERIALIER_NAME = "pydantic-aware-json"
 
 
@@ -121,8 +136,6 @@ def galaxy_task(*args, **celery_task_kwd):
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIER_NAME
 
     def decorate(func):
-        CELERY_TASKS.append(func.__name__)
-
         @shared_task(**celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):
