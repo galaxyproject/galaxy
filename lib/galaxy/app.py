@@ -21,6 +21,7 @@ from galaxy.containers import build_container_interfaces
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
+from galaxy.jobs.manager import JobManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
@@ -39,6 +40,7 @@ from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowsManager,
 )
+from galaxy.model import custom_types
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import database_exists
@@ -46,11 +48,13 @@ from galaxy.model.mapping import (
     GalaxyModelMapping,
     init_models_from_config,
 )
+from galaxy.model.migrate.check import create_or_verify_database
 from galaxy.model.scoped_session import (
     galaxy_scoped_session,
     install_model_scoped_session,
 )
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.model.tool_shed_install import mapping as install_mapping
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.queue_worker import (
@@ -64,6 +68,7 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory
 )
+from galaxy.tool_shed import tool_shed_registry
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps import containers
@@ -280,13 +285,11 @@ class ConfiguresGalaxyMixin:
         BaseDatabaseIdField.security = self.security
 
     def _configure_tool_shed_registry(self):
-        import galaxy.tool_shed.tool_shed_registry
-
         # Set up the tool sheds registry
         if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
+            self.tool_shed_registry = tool_shed_registry.Registry(self.config.tool_sheds_config_file)
         else:
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
+            self.tool_shed_registry = tool_shed_registry.Registry()
 
     def _configure_models(self, check_migrate_databases=False, config_file=None):
         """Preconditions: object_store must be set on self."""
@@ -302,13 +305,11 @@ class ConfiguresGalaxyMixin:
             self._wait_for_database(db_url)
 
         if getattr(self.config, "max_metadata_value_size", None):
-            from galaxy.model import custom_types
             custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
 
         if check_migrate_databases:
             # Initialize database / check for appropriate schema version.  # If this
             # is a new installation, we'll restrict the tool migration messaging.
-            from galaxy.model.migrate.check import create_or_verify_database
             create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self, map_install_models=combined_install_database)
             if not combined_install_database:
                 tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
@@ -323,7 +324,6 @@ class ConfiguresGalaxyMixin:
             log.info("Install database targetting Galaxy's database configuration.")
             self.install_model = self.model
         else:
-            from galaxy.model.tool_shed_install import mapping as install_mapping
             install_db_url = self.config.install_database_connection
             log.info(f"Install database using its own connection {install_db_url}")
             self.install_model = install_mapping.init(install_db_url,
@@ -429,7 +429,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_manager = self._register_singleton(LibraryManager)
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
-        from galaxy.jobs.manager import JobManager
         self.job_manager = self._register_singleton(JobManager)
 
         # ConfiguredFileSources
