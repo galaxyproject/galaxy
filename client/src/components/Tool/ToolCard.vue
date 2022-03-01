@@ -107,7 +107,7 @@
 </template>
 <script>
 import ariaAlert from "utils/ariaAlert";
-import { copyLink, downloadTool, openLink } from "./utilities";
+import { copyLink, copyId, downloadTool, openLink } from "./utilities";
 import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
@@ -257,7 +257,7 @@ export default {
             copyLink(this.id, "Link was copied to your clipboard");
         },
         onCopyId() {
-            copyLink(this.options.id, "Tool ID was copied to your clipboard");
+            copyId(this.options.id, "Tool ID was copied to your clipboard");
         },
         onDownload() {
             downloadTool(this.id);
