@@ -600,6 +600,19 @@ div.form-row-input label {
     display: block;
 }
 
+// Select input
+.multiselect__option--selected.multiselect__option--highlight {
+    color: #2c3143 !important;
+    background: #dee2e6 !important;
+}
+.multiselect__tag,
+.multiselect__tag-icon::after,
+.multiselect__tag-icon:hover { 
+    background: $brand-primary !important;
+    border-color: $brand-primary !important;
+    color: white !important;
+}
+
 // Messages
 .form-help {
     word-break: break-word;
