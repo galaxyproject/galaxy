@@ -73,6 +73,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     JOB_NAME_PREFIX = "galaxy-"
     # AWS Batch queries up to 100 jobs at once.
     MAX_JOBS_PER_QUERY = 100
+    # Higher minimum interval as jobs are queried in batches.
+    MIN_QUERY_INTERVAL = 10
 
     RUNNER_PARAM_SPEC = {
         "aws_access_key_id": {
@@ -328,7 +330,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             except Exception:
                 LOGGER.exception("Unhandled exception checking active jobs")
             # Sleep a bit before the next state check
-            time.sleep(self.app.config.job_runner_monitor_sleep)
+            time.sleep(max(self.app.config.job_runner_monitor_sleep, self.MIN_QUERY_INTERVAL))
 
     @handle_exception_call
     def check_watched_items(self):
