@@ -29,6 +29,7 @@ from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
 )
+from galaxy.model.orm.util import add_object_to_session
 from galaxy.model.metadata import MetadataCollection
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
@@ -597,6 +598,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                     self._attach_raw_id_if_editing(hdca, collection_attrs)
 
+                    add_object_to_session(hdca, self.sa_session)
                     hdca.history = history
                     if new_history and self.trust_hid(collection_attrs):
                         hdca.hid = collection_attrs["hid"]
