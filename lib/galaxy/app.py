@@ -52,6 +52,7 @@ from galaxy.model.scoped_session import (
 )
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
+from galaxy.objectstore import build_object_store_from_config
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
@@ -74,6 +75,7 @@ from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )
+from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.search import ToolBoxSearch
@@ -94,6 +96,7 @@ from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance, ApplicationStack
 from galaxy.webhooks import WebhooksRegistry
+from galaxy.workflow import scheduling_manager
 from galaxy.workflow.trs_proxy import TrsProxy
 from .di import Container
 from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
@@ -236,8 +239,6 @@ class ConfiguresGalaxyMixin:
         self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.default_container_registry.container_resolvers)
 
     def _configure_tool_data_tables(self, from_shed_config):
-        from galaxy.tools.data import ToolDataTableManager
-
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path,
                                                      config_filename=self.config.tool_data_table_config_path,
@@ -253,9 +254,8 @@ class ConfiguresGalaxyMixin:
                 raise
 
     def _configure_datatypes_registry(self, installed_repository_manager=None):
-        from galaxy.datatypes import registry
         # Create an empty datatypes registry.
-        self.datatypes_registry = registry.Registry(self.config)
+        self.datatypes_registry = Registry(self.config)
         if installed_repository_manager and self.config.load_tool_shed_datatypes:
             # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
             # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
@@ -273,12 +273,10 @@ class ConfiguresGalaxyMixin:
             self.datatypes_registry.load_datatypes(self.config.root, datatypes_config, override=True)
 
     def _configure_object_store(self, **kwds):
-        from galaxy.objectstore import build_object_store_from_config
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.security import idencoding
-        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
+        self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         BaseDatabaseIdField.security = self.security
 
     def _configure_tool_shed_registry(self):
@@ -580,7 +578,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.job_manager._check_jobs_at_startup()
         self.proxy_manager = ProxyManager(self.config)
 
-        from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
