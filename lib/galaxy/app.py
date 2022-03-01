@@ -143,16 +143,10 @@ class SentryClientMixin:
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
 
-def get_database_url(config):
-    db_url = config.database_connection
-    return db_url
-
-
 def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
-    db_url = get_database_url(config)
     model = mapping.init(
         config.file_path,
-        db_url,
+        config.database_connection,
         config.database_engine_options,
         map_install_models=map_install_models,
         database_query_profiling_proxy=config.database_query_profiling_proxy,
@@ -313,7 +307,7 @@ class ConfiguresGalaxyMixin:
 
     def _configure_models(self, check_migrate_databases=False, config_file=None):
         """Preconditions: object_store must be set on self."""
-        db_url = get_database_url(self.config)
+        db_url = self.config.database_connection
         install_db_url = self.config.install_database_connection
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.

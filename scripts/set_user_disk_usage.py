@@ -31,7 +31,7 @@ def init():
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)
     object_store = build_object_store_from_config(config)
-    engine = galaxy.config.get_database_url(config).split(":")[0]
+    engine = config.database_connection.split(":")[0]
     return galaxy.config.init_models_from_config(config, object_store=object_store), object_store, engine
 
 
