@@ -94,7 +94,6 @@
                 class="ui-button-default"
                 id="btn-ftp"
                 @click="_eventRemoteFiles"
-                :title="btnFilesTitle"
                 :disabled="!enableSources"
                 v-if="remoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
