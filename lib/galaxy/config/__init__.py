@@ -707,6 +707,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
     def _override_tempdir(self, kwargs):
         if string_as_bool(kwargs.get("override_tempdir", "True")):
+            raise Exception("How did we get here ?")
             tempfile.tempdir = self.new_file_path
 
     def config_value_for_host(self, config_option, host):

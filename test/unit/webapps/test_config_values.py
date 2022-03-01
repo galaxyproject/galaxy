@@ -18,10 +18,6 @@ def appconfig():
 
 @pytest.fixture
 def mock_config_file(monkeypatch):
-    # Patch this; otherwise tempfile.tempdir will be set, which is a global variable that
-    # defines the value of the default `dir` argument to the functions in Python's
-    # tempfile module - which breaks multiple tests.
-    monkeypatch.setattr(config.GalaxyAppConfiguration, '_override_tempdir', lambda a, b: None)
     # Set this to return None to force the creation of base config directories
     # in _set_config_directories(). Used to test the values of these directories only.
     monkeypatch.setattr(config, 'find_config_file', lambda x: None)
