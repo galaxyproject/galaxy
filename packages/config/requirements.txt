@@ -1,2 +1,5 @@
 galaxy-containers
+boltons
 pykwalify
+PyYAML
+requests
