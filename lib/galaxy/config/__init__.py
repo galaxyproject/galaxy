@@ -148,7 +148,7 @@ def configure_logging(config, facts=None):
         # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
         for name, conf in logging_conf.get('handlers', {}).items():
             if conf['class'].startswith('logging.') and conf['class'].endswith('FileHandler') and 'filename_template' in conf:
-                conf['filename'] = conf.pop('filename_template').format(**get_facts(config=config))
+                conf['filename'] = conf.pop('filename_template').format(**facts)
                 logging_conf['handlers'][name] = conf
         logging.config.dictConfig(logging_conf)
 
