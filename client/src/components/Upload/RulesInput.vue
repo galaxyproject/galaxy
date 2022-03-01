@@ -65,7 +65,7 @@
                 id="btn-reset"
                 @click="_eventReset"
                 :title="btnResetTitle"
-                :disabled="!sourceContentPopulated">
+                :disabled="!enableReset">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>
@@ -141,7 +141,7 @@ export default {
         },
     },
     computed: {
-        sourceContentPopulated: function () {
+        enableReset: function () {
             return this.sourceContent.length > 0;
         },
     },
