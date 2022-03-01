@@ -26,9 +26,7 @@ import Vue from "vue";
 import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
-import RuleDefs from "mvc/rules/rule-definitions";
-const RULES = RuleDefs.RULES;
-const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+import { RULES, MAPPING_TARGETS } from "mvc/rules/rule-definitions";
 
 Vue.use(BootstrapVue);
 export default {
@@ -57,9 +55,9 @@ export default {
             return moment.utc(dateTime).from(moment().utc());
         },
         formatPreview(savedRuleJson, index) {
-            var prettyString = "";
-            var delim = "";
-            var numOfPreviewedRules = 0;
+            let prettyString = "";
+            let delim = "";
+            let numOfPreviewedRules = 0;
             const savedRule = JSON.parse(savedRuleJson);
             savedRule.rules.forEach((element) => {
                 if (numOfPreviewedRules == 5) {
