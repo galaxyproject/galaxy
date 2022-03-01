@@ -53,6 +53,7 @@
                         </b-alert>
                         <Listing
                             v-else
+                            reversed
                             :query-key="queryKey"
                             :page-size="pageSize"
                             :payload="payload"

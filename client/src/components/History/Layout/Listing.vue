@@ -16,10 +16,11 @@ export default {
         VirtualList,
     },
     props: {
-        payload: { type: Array, default: null },
         itemKey: { type: String, default: "hid" },
-        queryKey: { type: String, default: null },
         pageSize: { type: Number, required: true },
+        payload: { type: Array, default: null },
+        queryKey: { type: String, default: null },
+        reversed: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -45,7 +46,8 @@ export default {
             return !!this.payload && this.payload.length == this.pageSize;
         },
         getItems() {
-            return reverse(this.items.filter((n) => n));
+            const filtered = this.items.filter((n) => n);
+            return this.reversed ? reverse(filtered) : filtered;
         },
     },
     methods: {

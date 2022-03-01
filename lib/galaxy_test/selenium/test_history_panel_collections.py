@@ -216,16 +216,16 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
         collection_view = self._click_and_wait_for_collection_view(collection_hid)
-        self.sleep_for(WAIT_TYPES.HISTORY_POLL)
-
+        self.sleep_for(WAIT_TYPES.UX_TRANSITION)
         if self.is_beta_history():
             dataset_elements = collection_view.list_items_beta.all()
         else:
             dataset_elements = collection_view.list_items.all()
-
         assert len(dataset_elements) == 2, dataset_elements
-        titles = [de.find_element_by_css_selector(".name").text for de in dataset_elements]
-        titles.sort()
+        selector = ".title .name"
+        if self.is_beta_history():
+            selector = ".content-title"
+        titles = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
         assert titles == ["forward", "reverse"]
         self.screenshot("history_panel_collection_view_paired")
 
@@ -247,7 +247,10 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             else:
                 dataset_elements = collection_view.list_items.all()
             assert len(dataset_elements) == 4, dataset_elements
-            title_elements = [de.find_element_by_css_selector(".title .name").text for de in dataset_elements]
+            selector = ".title .name"
+            if self.is_beta_history():
+                selector = ".content-title"
+            title_elements = [de.find_element_by_css_selector(selector).text for de in dataset_elements]
             assert title_elements == ["data1", "data2", "data3", "data4"]
 
         check_four_datasets_shown()

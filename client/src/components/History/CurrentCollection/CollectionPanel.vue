@@ -87,8 +87,7 @@ export default {
             return this.selectedCollections[0];
         },
         url() {
-            const collectionId = this.dsc.object ? this.dsc.object.id : this.dsc.id;
-            return `api/dataset_collections/${this.rootCollection.id}/contents/${collectionId}`;
+            return this.dsc.contents_url.substring(1);
         },
     },
     methods: {
