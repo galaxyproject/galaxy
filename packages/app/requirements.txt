@@ -3,6 +3,7 @@ galaxy-config
 galaxy-data
 galaxy-job-execution
 galaxy-job-metrics
+galaxy-objectstore
 galaxy-tool-util[cwl,edam]
 galaxy-web-framework
 galaxy-web-stack
