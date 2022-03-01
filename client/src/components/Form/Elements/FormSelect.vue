@@ -13,7 +13,7 @@
                 <b-form-group>                    
                     <!-- Select multiple from checkboxes -->
                     <b-form-checkbox-group
-                        v-if="multiple == true"
+                        v-if="multiple"
                         v-model="currentValue"
                         :options="optArray"
                         value-field="value"
@@ -33,7 +33,7 @@
             <b-col v-else>
                 <!-- Multiple select from drop down -->
                 <multiselect
-                    v-if=" multiple == true"
+                    v-if="multiple"
                     v-model="currentValue"
                     :options="optArray"
                     :multiple="true"
@@ -71,9 +71,6 @@ export default {
     },
     props: {
         value: {
-            required: true,
-            type: [String, Array],
-            nullable: true,
             default: null,
         },
         defaultValue: {
@@ -153,7 +150,7 @@ export default {
                     } else {
                         // Try to find a value labeled default in the options
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
-                            if (this.optArray[i].default === true) {
+                            if (this.optArray[i].default) {
                                 return this.optArray[i];
                             }
                         }
@@ -179,7 +176,7 @@ export default {
                     // If no default value provided and optional is selected, return null
                     } else {
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
-                            if (this.optArray[i].default === true) {
+                            if (this.optArray[i].default) {
                                 return this.optArray[i];
                             }
                         }
@@ -212,15 +209,3 @@ export default {
     },
 };
 </script>
-<style>
-.multiselect__option--selected.multiselect__option--highlight {
-    color: #2c3143 !important;
-    background: #dee2e6 !important;
-}
-.multiselect__tag,
-.multiselect__tag-icon::after { 
-    background: #25537b !important;
-    border-color: #25537b !important;
-    color: white !important;
-}
-</style>
