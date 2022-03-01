@@ -13,7 +13,7 @@ TestData = namedtuple('TestData', ('key', 'expected', 'loaded'))
 
 @pytest.fixture(scope='module')
 def appconfig():
-    return config.GalaxyAppConfiguration()
+    return config.GalaxyAppConfiguration(override_tempdir=False)
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def test_common_base_config(appconfig):
 def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
     # Simulated condition: running from source, config_file is None.
     monkeypatch.setattr(config, 'running_from_source', True)
-    appconfig = config.GalaxyAppConfiguration()
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
     assert not appconfig.config_file
     assert appconfig.config_dir == os.path.join(appconfig.root, 'config')
     assert appconfig.data_dir == os.path.join(appconfig.root, 'database')
@@ -45,7 +45,7 @@ def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
 def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
     # Simulated condition: running not from source, config_file is None.
     monkeypatch.setattr(config, 'running_from_source', False)
-    appconfig = config.GalaxyAppConfiguration()
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
     assert not appconfig.config_file
     assert appconfig.config_dir == os.getcwd()
     assert appconfig.data_dir == os.path.join(appconfig.config_dir, 'data')
