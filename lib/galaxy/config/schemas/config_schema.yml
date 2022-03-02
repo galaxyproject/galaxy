@@ -1236,7 +1236,7 @@ mapping:
         default: true
         required: false
         desc:
-          Set this to false to redirect users of Interacitve tools directly to the Interactive tools proxy.
+          Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy.
           `interactivetools_upstream_proxy` should only be set to false in development.
 
       interactivetools_proxy_host:

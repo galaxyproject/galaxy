@@ -126,11 +126,11 @@ An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetoo
                   <param id="require_container">true</param>
                   <param id="container_monitor">true</param>
                   <param id="docker_set_user"></param>
-                  <!-- InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
+                  <!-- InteractiveTools need real hostnames or URLs to work - simply specifying IPs will not work.
                        If you develop interactive tools on your 'localhost' and don't have a proper domain name
                        you need to tell all Docker containers a hostname where Galaxy is running.
                        This can be done via the add-host parameter during the `docker run` command.
-                       'localhost' here is an arbritrary hostname that matches the IP address of your
+                       'localhost' here is an arbitrary hostname that matches the IP address of your
                        Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
                        `galaxy_infrastructure_url: http://localhost:8080`.
                   -->

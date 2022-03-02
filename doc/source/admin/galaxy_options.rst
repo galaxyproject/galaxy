@@ -1712,7 +1712,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set this to false to redirect users of Interacitve tools directly
+    Set this to false to redirect users of Interactive tools directly
     to the Interactive tools proxy. `interactivetools_upstream_proxy`
     should only be set to false in development.
 :Default: ``true``

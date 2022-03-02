@@ -9,7 +9,7 @@ galaxy:
   outputs_to_working_directory: true
   interactivetools_map: database/interactivetools_map.sqlite
   # If you develop InteractiveTools locally and do not have a full FQDN you can
-  # use an arbritrary one, e.g. 'host.docker.internal' here, if you set this hostname in your
+  # use an arbitrary one, e.g. 'host.docker.internal' here, if you set this hostname in your
   # job_conf.xml as well (see the corresponding comment).
   # In the local development case you should use http://localhost:8080 to access
   # your Galaxy, so saving notebooks doesn't fail due to invalid certificates.
