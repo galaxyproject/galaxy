@@ -66,9 +66,9 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     else:
         next_page = None
         repo_names = []
+        repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
         while True:
-            repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
-            repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
+            repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}         
             repos_response = requests.get(
                 QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=QUAY_IO_TIMEOUT)
             repos_response_json = repos_response.json()
