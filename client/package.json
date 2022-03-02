@@ -154,7 +154,7 @@
     "jest-raw-loader": "^1.0.1",
     "jest-transform-yaml": "1.0.0",
     "json-loader": "^0.5.7",
-    "karma": "^6.3.14",
+    "karma": "^6.3.16",
     "karma-chrome-launcher": "^3.1.0",
     "karma-polyfill": "^1.1.0",
     "karma-qunit": "^4.1.2",
