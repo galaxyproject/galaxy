@@ -6262,6 +6262,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             raise AttributeError(f"Unknown element type provided: {type(element)}")
 
         self.id = id
+        add_object_to_object_session(self, collection)
         self.collection = collection
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
