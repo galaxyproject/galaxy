@@ -586,6 +586,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             self._session_add(dc)
             return dc
 
+        history_sa_session = get_object_session(history)
         for collection_attrs in collections_attrs:
             if "collection" in collection_attrs:
                 dc = import_collection(collection_attrs["collection"])
@@ -601,7 +602,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                     self._attach_raw_id_if_editing(hdca, collection_attrs)
 
-                    add_object_to_session(hdca, self.sa_session)
+                    add_object_to_session(hdca, history_sa_session)
                     hdca.history = history
                     if new_history and self.trust_hid(collection_attrs):
                         hdca.hid = collection_attrs["hid"]
