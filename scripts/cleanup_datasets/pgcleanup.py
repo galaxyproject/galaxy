@@ -1127,7 +1127,7 @@ class Cleanup:
     @property
     def conn(self):
         if self.__conn is None:
-            url = make_url(galaxy.config.get_database_url(self.config))
+            url = make_url(self.config.database_connection)
             log.info(f"Connecting to database with URL: {url}")
             args = url.translate_connect_args(username="user")
             args.update(url.query)

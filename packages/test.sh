@@ -23,6 +23,7 @@ PACKAGE_DIRS=(
     objectstore
     job_metrics
     containers
+    config
     files
     tool_util
     data

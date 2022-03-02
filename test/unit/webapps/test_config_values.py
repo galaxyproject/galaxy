@@ -5,23 +5,19 @@ from datetime import timedelta
 import pytest
 
 from galaxy import config
+from galaxy.config import expand_pretty_datetime_format
 from galaxy.util import listify
-from galaxy.web.formatting import expand_pretty_datetime_format
 
 TestData = namedtuple("TestData", ("key", "expected", "loaded"))
 
 
 @pytest.fixture(scope="module")
 def appconfig():
-    return config.GalaxyAppConfiguration()
+    return config.GalaxyAppConfiguration(override_tempdir=False)
 
 
 @pytest.fixture
 def mock_config_file(monkeypatch):
-    # Patch this; otherwise tempfile.tempdir will be set, which is a global variable that
-    # defines the value of the default `dir` argument to the functions in Python's
-    # tempfile module - which breaks multiple tests.
-    monkeypatch.setattr(config.GalaxyAppConfiguration, "_override_tempdir", lambda a, b: None)
     # Set this to return None to force the creation of base config directories
     # in _set_config_directories(). Used to test the values of these directories only.
     monkeypatch.setattr(config, "find_config_file", lambda x: None)
@@ -39,7 +35,7 @@ def test_common_base_config(appconfig):
 def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
     # Simulated condition: running from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", True)
-    appconfig = config.GalaxyAppConfiguration()
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
     assert not appconfig.config_file
     assert appconfig.config_dir == os.path.join(appconfig.root, "config")
     assert appconfig.data_dir == os.path.join(appconfig.root, "database")
@@ -49,7 +45,7 @@ def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
 def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
     # Simulated condition: running not from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", False)
-    appconfig = config.GalaxyAppConfiguration()
+    appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
     assert not appconfig.config_file
     assert appconfig.config_dir == os.getcwd()
     assert appconfig.data_dir == os.path.join(appconfig.config_dir, "data")
@@ -225,8 +221,7 @@ class ExpectedValues:
 
 
 def get_config_data():
-    config.GalaxyAppConfiguration._override_tempdir = lambda a, b: None  # method must be mocked
-    configuration = config.GalaxyAppConfiguration()
+    configuration = config.GalaxyAppConfiguration(override_tempdir=False)
     ev = ExpectedValues(configuration)
     items = ((k, v) for k, v in configuration.schema.app_schema.items())
     for key, data in items:

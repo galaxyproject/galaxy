@@ -10,6 +10,7 @@ from datetime import timedelta
 from galaxy.config import (
     BaseAppConfiguration,
     CommonConfigurationMixin,
+    expand_pretty_datetime_format,
     get_database_engine_options,
 )
 from galaxy.config.schema import AppSchema
@@ -20,7 +21,6 @@ from galaxy.version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
-from galaxy.web.formatting import expand_pretty_datetime_format
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]

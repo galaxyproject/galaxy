@@ -3,21 +3,18 @@ Universe configuration builder.
 """
 # absolute_import needed for tool_shed package.
 
-import collections
 import configparser
-import errno
 import ipaddress
+import locale
 import logging
 import logging.config
 import os
 import re
-import signal
 import socket
 import string
 import sys
 import tempfile
 import threading
-import time
 from datetime import timedelta
 from typing import (
     Any,
@@ -28,39 +25,28 @@ from typing import (
     Optional,
     Set,
     SupportsInt,
-    TYPE_CHECKING,
     TypeVar,
     Union,
 )
 
 import yaml
-from beaker.cache import CacheManager
-from beaker.util import parse_cache_config_options
 
 from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.model import mapping
-from galaxy.model.database_utils import database_exists
-from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
-from galaxy.schema.fields import BaseDatabaseIdField
-from galaxy.structured_app import BasicSharedApp
 from galaxy.util import (
-    ExecutionTimer,
     listify,
     string_as_bool,
     unicodify,
 )
 from galaxy.util.custom_logging import LOGLV_TRACE
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.dynamic import HasDynamicProperties
+from galaxy.util.facts import get_facts
 from galaxy.util.properties import (
     find_config_file,
     read_properties_from_file,
     running_from_source,
 )
-from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web_stack import get_stack_facts
 from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
@@ -72,14 +58,10 @@ except ImportError:
     # Python < 3.9
     from importlib_resources import files  # type: ignore[no-redef]
 
-if TYPE_CHECKING:
-    from galaxy.jobs import JobConfiguration
-    from galaxy.tool_util.deps.containers import ContainerFinder
-    from galaxy.tools import ToolBox
-    from galaxy.tools.cache import ToolCache
-    from galaxy.tools.search import ToolBoxSearch
-
 log = logging.getLogger(__name__)
+
+DEFAULT_LOCALE_FORMAT = "%a %b %e %H:%M:%S %Y"
+ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = files("galaxy.config") / "schemas"
@@ -141,8 +123,74 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
+def configure_logging(config, facts=None):
+    """Allow some basic logging configuration to be read from ini file.
+
+    This should be able to consume either a galaxy.config.Configuration object
+    or a simple dictionary of configuration variables.
+    """
+    facts = facts or get_facts(config=config)
+    # Get root logger
+    logging.addLevelName(LOGLV_TRACE, "TRACE")
+    # PasteScript will have already configured the logger if the
+    # 'loggers' section was found in the config file, otherwise we do
+    # some simple setup using the 'log_*' values from the config.
+    parser = getattr(config, "global_conf_parser", None)
+    if parser:
+        paste_configures_logging = config.global_conf_parser.has_section("loggers")
+    else:
+        paste_configures_logging = False
+    auto_configure_logging = not paste_configures_logging and string_as_bool(
+        config.get("auto_configure_logging", "True")
+    )
+    if auto_configure_logging:
+        logging_conf = config.get("logging", None)
+        if logging_conf is None:
+            # if using the default logging config, honor the log_level setting
+            logging_conf = LOGGING_CONFIG_DEFAULT
+            if config.get("log_level", "DEBUG") != "DEBUG":
+                logging_conf["handlers"]["console"]["level"] = config.get("log_level", "DEBUG")
+        # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
+        for name, conf in logging_conf.get("handlers", {}).items():
+            if (
+                conf["class"].startswith("logging.")
+                and conf["class"].endswith("FileHandler")
+                and "filename_template" in conf
+            ):
+                conf["filename"] = conf.pop("filename_template").format(**facts)
+                logging_conf["handlers"][name] = conf
+        logging.config.dictConfig(logging_conf)
+
+
 def find_root(kwargs):
     return os.path.abspath(kwargs.get("root_dir", "."))
+
+
+def expand_pretty_datetime_format(value):
+    """
+
+    >>> expand_pretty_datetime_format("%H:%M:%S %Z")
+    '%H:%M:%S %Z'
+    >>> locale_format = expand_pretty_datetime_format("$locale (UTC)")
+    >>> import locale
+    >>> expected_format = '%s (UTC)' % locale.nl_langinfo(locale.D_T_FMT)
+    >>> locale_format == expected_format
+    True
+    >>> expand_pretty_datetime_format("$iso8601")
+    '%Y-%m-%d %H:%M:%S'
+    """
+    locale_format = None
+    try:
+        locale_format = locale.nl_langinfo(locale.D_T_FMT)
+    except AttributeError:  # nl_langinfo not available
+        pass
+    if not locale_format:
+        locale_format = DEFAULT_LOCALE_FORMAT
+    stock_formats = dict(
+        locale=locale_format,
+        iso8601=ISO_DATETIME_FORMAT,
+    )
+    return string.Template(value).safe_substitute(**stock_formats)
 
 
 OptStr = TypeVar("OptStr", None, str)
@@ -1242,308 +1290,3 @@ def get_database_engine_options(kwargs, model_prefix=""):
                 value = conversions[key](value)
             rval[key] = value
     return rval
-
-
-def get_database_url(config):
-    db_url = config.database_connection
-    return db_url
-
-
-def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
-    db_url = get_database_url(config)
-    model = mapping.init(
-        config.file_path,
-        db_url,
-        config.database_engine_options,
-        map_install_models=map_install_models,
-        database_query_profiling_proxy=config.database_query_profiling_proxy,
-        object_store=object_store,
-        trace_logger=trace_logger,
-        use_pbkdf2=config.get_bool("use_pbkdf2", True),
-        slow_query_log_threshold=config.slow_query_log_threshold,
-        thread_local_log=config.thread_local_log,
-        log_query_counts=config.database_log_query_counts,
-    )
-    return model
-
-
-def configure_logging(config):
-    """Allow some basic logging configuration to be read from ini file.
-
-    This should be able to consume either a galaxy.config.Configuration object
-    or a simple dictionary of configuration variables.
-    """
-    # Get root logger
-    logging.addLevelName(LOGLV_TRACE, "TRACE")
-    # PasteScript will have already configured the logger if the
-    # 'loggers' section was found in the config file, otherwise we do
-    # some simple setup using the 'log_*' values from the config.
-    parser = getattr(config, "global_conf_parser", None)
-    if parser:
-        paste_configures_logging = config.global_conf_parser.has_section("loggers")
-    else:
-        paste_configures_logging = False
-    auto_configure_logging = not paste_configures_logging and string_as_bool(
-        config.get("auto_configure_logging", "True")
-    )
-    if auto_configure_logging:
-        logging_conf = config.get("logging", None)
-        if logging_conf is None:
-            # if using the default logging config, honor the log_level setting
-            logging_conf = LOGGING_CONFIG_DEFAULT
-            if config.get("log_level", "DEBUG") != "DEBUG":
-                logging_conf["handlers"]["console"]["level"] = config.get("log_level", "DEBUG")
-        # configure logging with logging dict in config, template *FileHandler handler filenames with the `filename_template` option
-        for name, conf in logging_conf.get("handlers", {}).items():
-            if (
-                conf["class"].startswith("logging.")
-                and conf["class"].endswith("FileHandler")
-                and "filename_template" in conf
-            ):
-                conf["filename"] = conf.pop("filename_template").format(**get_stack_facts(config=config))
-                logging_conf["handlers"][name] = conf
-        logging.config.dictConfig(logging_conf)
-
-
-class ConfiguresGalaxyMixin:
-    """Shared code for configuring Galaxy-like app objects."""
-
-    config: GalaxyAppConfiguration
-    tool_cache: "ToolCache"
-    job_config: "JobConfiguration"
-    toolbox: "ToolBox"
-    toolbox_search: "ToolBoxSearch"
-    container_finder: "ContainerFinder"
-
-    def _configure_genome_builds(self, data_table_name="__dbkeys__", load_old_style=True):
-        self.genome_builds = GenomeBuilds(self, data_table_name=data_table_name, load_old_style=load_old_style)
-
-    def wait_for_toolbox_reload(self, old_toolbox):
-        timer = ExecutionTimer()
-        log.debug("Waiting for toolbox reload")
-        # Wait till toolbox reload has been triggered (or more than 60 seconds have passed)
-        while timer.elapsed < 60:
-            if self.toolbox.has_reloaded(old_toolbox):
-                log.debug("Finished waiting for toolbox reload %s", timer)
-                break
-            time.sleep(0.1)
-        else:
-            log.warning("Waiting for toolbox reload timed out after 60 seconds")
-
-    def _configure_tool_config_files(self):
-        if self.config.shed_tool_config_file not in self.config.tool_configs:
-            self.config.tool_configs.append(self.config.shed_tool_config_file)
-        # The value of migrated_tools_config is the file reserved for containing only those tools that have been
-        # eliminated from the distribution and moved to the tool shed. If migration checking is disabled, only add it if
-        # it exists (since this may be an existing deployment where migrations were previously run).
-        if (
-            os.path.exists(self.config.migrated_tools_config)
-            and self.config.migrated_tools_config not in self.config.tool_configs
-        ):
-            self.config.tool_configs.append(self.config.migrated_tools_config)
-
-    def _configure_toolbox(self):
-        import galaxy.tools.search
-        from galaxy import tools
-        from galaxy.managers.citations import CitationsManager
-        from galaxy.tool_util.deps import containers
-        from galaxy.tool_util.deps.dependencies import AppInfo
-        from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
-
-        if not isinstance(self, BasicSharedApp):
-            raise Exception("Must inherit from BasicSharedApp")
-
-        self.citations_manager = CitationsManager(self)
-        self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
-
-        from galaxy.managers.tools import DynamicToolManager
-
-        self.dynamic_tools_manager = DynamicToolManager(self)
-        self._toolbox_lock = threading.RLock()
-        self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
-        galaxy_root_dir = os.path.abspath(self.config.root)
-        file_path = os.path.abspath(self.config.file_path)
-        app_info = AppInfo(
-            galaxy_root_dir=galaxy_root_dir,
-            default_file_path=file_path,
-            tool_data_path=self.config.tool_data_path,
-            shed_tool_data_path=self.config.shed_tool_data_path,
-            outputs_to_working_directory=self.config.outputs_to_working_directory,
-            container_image_cache_path=self.config.container_image_cache_path,
-            library_import_dir=self.config.library_import_dir,
-            enable_mulled_containers=self.config.enable_mulled_containers,
-            container_resolvers_config_file=self.config.container_resolvers_config_file,
-            container_resolvers_config_dict=self.config.container_resolvers,
-            involucro_path=self.config.involucro_path,
-            involucro_auto_init=self.config.involucro_auto_init,
-            mulled_channels=self.config.mulled_channels,
-        )
-        mulled_resolution_cache = None
-        if self.config.mulled_resolution_cache_type:
-            cache_opts = {
-                "cache.type": self.config.mulled_resolution_cache_type,
-                "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
-                "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
-            }
-            mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache(
-                "mulled_resolution"
-            )
-        self.container_finder = containers.ContainerFinder(app_info, mulled_resolution_cache=mulled_resolution_cache)
-        self._set_enabled_container_types()
-        index_help = getattr(self.config, "index_tool_help", True)
-        self.toolbox_search = galaxy.tools.search.ToolBoxSearch(
-            self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
-        )
-
-    def reindex_tool_search(self):
-        # Call this when tools are added or removed.
-        self.toolbox_search.build_index(tool_cache=self.tool_cache)
-        self.tool_cache.reset_status()
-
-    def _set_enabled_container_types(self):
-        container_types_to_destinations = collections.defaultdict(list)
-        for destinations in self.job_config.destinations.values():
-            for destination in destinations:
-                for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
-                    container_types_to_destinations[enabled_container_type].append(destination)
-        self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
-        self.toolbox.dependency_manager.resolver_classes.update(
-            self.container_finder.default_container_registry.resolver_classes
-        )
-        self.toolbox.dependency_manager.dependency_resolvers.extend(
-            self.container_finder.default_container_registry.container_resolvers
-        )
-
-    def _configure_tool_data_tables(self, from_shed_config):
-        from galaxy.tools.data import ToolDataTableManager
-
-        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables = ToolDataTableManager(
-            tool_data_path=self.config.tool_data_path,
-            config_filename=self.config.tool_data_table_config_path,
-            other_config_dict=self.config,
-        )
-        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
-        try:
-            self.tool_data_tables.load_from_config_file(
-                config_filename=self.config.shed_tool_data_table_config,
-                tool_data_path=self.tool_data_tables.tool_data_path,
-                from_shed_config=from_shed_config,
-            )
-        except OSError as exc:
-            # Missing shed_tool_data_table_config is okay if it's the default
-            if exc.errno != errno.ENOENT or self.config.is_set("shed_tool_data_table_config"):
-                raise
-
-    def _configure_datatypes_registry(self, installed_repository_manager=None):
-        from galaxy.datatypes import registry
-
-        # Create an empty datatypes registry.
-        self.datatypes_registry = registry.Registry(self.config)
-        if installed_repository_manager and self.config.load_tool_shed_datatypes:
-            # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
-            # load proprietary datatypes before datatypes in the distribution because Galaxy's default sniffers include some
-            # generic sniffers (eg text,xml) which catch anything, so it's impossible for proprietary sniffers to be used.
-            # However, if there is a conflict (2 datatypes with the same extension) between a proprietary datatype and a datatype
-            # in the Galaxy distribution, the datatype in the Galaxy distribution will take precedence.  If there is a conflict
-            # between 2 proprietary datatypes, the datatype from the repository that was installed earliest will take precedence.
-            installed_repository_manager.load_proprietary_datatypes()
-        # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
-        datatypes_configs = self.config.datatypes_config
-        for datatypes_config in listify(datatypes_configs):
-            # Setting override=False would make earlier files would take
-            # precedence - but then they wouldn't override tool shed
-            # datatypes.
-            self.datatypes_registry.load_datatypes(self.config.root, datatypes_config, override=True)
-
-    def _configure_object_store(self, **kwds):
-        from galaxy.objectstore import build_object_store_from_config
-
-        self.object_store = build_object_store_from_config(self.config, **kwds)
-
-    def _configure_security(self):
-        from galaxy.security import idencoding
-
-        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
-        BaseDatabaseIdField.security = self.security
-
-    def _configure_tool_shed_registry(self):
-        import galaxy.tool_shed.tool_shed_registry
-
-        # Set up the tool sheds registry
-        if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry(self.config.tool_sheds_config_file)
-        else:
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry()
-
-    def _configure_models(self, check_migrate_databases=False, config_file=None):
-        """Preconditions: object_store must be set on self."""
-        db_url = get_database_url(self.config)
-        install_db_url = self.config.install_database_connection
-        # TODO: Consider more aggressive check here that this is not the same
-        # database file under the hood.
-        combined_install_database = not (install_db_url and install_db_url != db_url)
-        install_db_url = install_db_url or db_url
-        install_database_options = (
-            self.config.database_engine_options
-            if combined_install_database
-            else self.config.install_database_engine_options
-        )
-
-        if self.config.database_wait:
-            self._wait_for_database(db_url)
-
-        if getattr(self.config, "max_metadata_value_size", None):
-            from galaxy.model import custom_types
-
-            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
-
-        if check_migrate_databases:
-            # Initialize database / check for appropriate schema version.  # If this
-            # is a new installation, we'll restrict the tool migration messaging.
-            from galaxy.model.migrate.check import create_or_verify_database
-
-            create_or_verify_database(
-                db_url,
-                config_file,
-                self.config.database_engine_options,
-                app=self,
-                map_install_models=combined_install_database,
-            )
-            if not combined_install_database:
-                tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
-
-        self.model = init_models_from_config(
-            self.config,
-            map_install_models=combined_install_database,
-            object_store=self.object_store,
-            trace_logger=getattr(self, "trace_logger", None),
-        )
-        if combined_install_database:
-            log.info("Install database targetting Galaxy's database configuration.")
-            self.install_model = self.model
-        else:
-            from galaxy.model.tool_shed_install import mapping as install_mapping
-
-            install_db_url = self.config.install_database_connection
-            log.info(f"Install database using its own connection {install_db_url}")
-            self.install_model = install_mapping.init(install_db_url, install_database_options)
-
-    def _configure_signal_handlers(self, handlers):
-        for sig, handler in handlers.items():
-            signal.signal(sig, handler)
-
-    def _wait_for_database(self, url):
-        attempts = self.config.database_wait_attempts
-        pause = self.config.database_wait_sleep
-        for i in range(1, attempts):
-            try:
-                database_exists(url)
-                break
-            except Exception:
-                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
-                time.sleep(pause)
-
-    @property
-    def tool_dependency_dir(self):
-        return self.toolbox.dependency_manager.default_base_path

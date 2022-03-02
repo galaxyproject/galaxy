@@ -18,7 +18,7 @@ with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py", "rb") as f:
     init_contents = f.read().decode("utf-8")
 
     def get_var(var_name):
-        pattern = re.compile(r"%s\s+=\s+(.*)" % var_name)
+        pattern = re.compile(rf"{var_name}\s+=\s+(.*)")
         match = pattern.search(init_contents).group(1)
         return str(ast.literal_eval(match))
 
@@ -32,73 +32,17 @@ with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py", "rb") as f:
 TEST_DIR = "tests"
 PACKAGES = [
     "galaxy",
-    "galaxy.actions",
-    "galaxy.app_unittest_utils",
-    "galaxy.authnz",
-    "galaxy.dependencies",
-    "galaxy.forms",
-    "galaxy.jobs",
-    "galaxy.jobs.rules",
-    "galaxy.jobs.runners",
-    "galaxy.jobs.runners.state_handlers",
-    "galaxy.jobs.runners.util",
-    "galaxy.jobs.runners.util.cli",
-    "galaxy.jobs.runners.util.cli.job",
-    "galaxy.jobs.runners.util.cli.shell",
-    "galaxy.jobs.runners.util.condor",
-    "galaxy.jobs.runners.util.job_script",
-    "galaxy.jobs.splitters",
-    "galaxy.managers",
-    "galaxy.tools",
-    "galaxy.tools.actions",
-    "galaxy.tools.data",
-    "galaxy.tools.data_manager",
-    "galaxy.tools.error_reports",
-    "galaxy.tools.expressions",
-    "galaxy.tools.filters",
-    "galaxy.tools.imp_exp",
-    "galaxy.tools.parameters",
-    "galaxy.tools.search",
-    "galaxy.tools.util",
-    "galaxy.tools.util.galaxyops",
-    "galaxy.tool_shed",
-    "galaxy.tool_shed.galaxy_install",
-    "galaxy.tool_shed.galaxy_install.datatypes",
-    "galaxy.tool_shed.galaxy_install.metadata",
-    "galaxy.tool_shed.galaxy_install.repository_dependencies",
-    "galaxy.tool_shed.galaxy_install.tool_dependencies",
-    "galaxy.tool_shed.galaxy_install.tool_dependencies.recipe",
-    "galaxy.tool_shed.galaxy_install.tools",
-    "galaxy.tool_shed.util",
-    "galaxy.tool_shed.metadata",
-    "galaxy.tool_shed.tools",
-    "galaxy.tours",
-    "galaxy.visualization",
-    "galaxy.visualization.data_providers",
-    "galaxy.visualization.data_providers.phyloviz",
-    "galaxy.visualization.genome",
-    "galaxy.visualization.plugins",
-    "galaxy.visualization.tracks",
-    "galaxy.webhooks",
-    "galaxy.work",
-    "galaxy.workflow",
-    "galaxy.workflow.refactor",
-    "galaxy.workflow.reports",
-    "galaxy.workflow.resources",
-    "galaxy.workflow.schedulers",
-    "galaxy_ext",
-    "galaxy_ext.container_monitor",
-    "galaxy_ext.expressions",
-    "galaxy_ext.metadata",
+    "galaxy.config",
 ]
 ENTRY_POINTS = """
         [console_scripts]
-        galaxy-main=galaxy.main:main
+        galaxy-config=galaxy.config.script:main
 """
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    "tool_shed": [
-        "scripts/bootstrap_tool_shed/user_info.xml",
+    "galaxy": [
+        "config/schemas/*.yml",
+        "config/sample/*",
     ],
 }
 PACKAGE_DIR = {
