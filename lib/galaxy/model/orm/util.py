@@ -3,7 +3,7 @@ from sqlalchemy import inspect
 
 def add_object_to_object_session(object, object_with_session):
     """
-    Explicitly add object to the session. 
+    Explicitly add object to the session.
     Addresses SQLAlchemy 2.0 compatibility issue:
     https://docs.sqlalchemy.org/en/14/changelog/migration_14.html#cascade-backrefs-behavior-deprecated-for-removal-in-2-0
 
@@ -22,7 +22,7 @@ def add_object_to_object_session(object, object_with_session):
 
 
 def add_object_to_session(object, session):
-    """ Explicitly add object to the session."""
+    """Explicitly add object to the session."""
     if session and object:
         session.add(object)
 

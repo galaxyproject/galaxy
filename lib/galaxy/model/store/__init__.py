@@ -22,7 +22,6 @@ from typing import (
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from sqlalchemy import inspect
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
@@ -30,11 +29,11 @@ from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
 )
+from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
     add_object_to_session,
     get_object_session,
 )
-from galaxy.model.metadata import MetadataCollection
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
