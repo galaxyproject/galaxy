@@ -1873,6 +1873,7 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
