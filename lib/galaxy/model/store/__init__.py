@@ -22,6 +22,7 @@ from typing import (
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
+from sqlalchemy import inspect
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
 
@@ -29,7 +30,10 @@ from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
 )
-from galaxy.model.orm.util import add_object_to_session
+from galaxy.model.orm.util import (
+    add_object_to_session,
+    get_object_session,
+)
 from galaxy.model.metadata import MetadataCollection
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
@@ -732,6 +736,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         #
         jobs_attrs = self.jobs_properties()
         # Create each job.
+        history_sa_session = get_object_session(history)
         for job_attrs in jobs_attrs:
             if "id" in job_attrs and not self.sessionless:
                 # only thing we allow editing currently is associations for incoming jobs.
@@ -745,6 +750,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_job = model.Job()
             imported_job.id = job_attrs.get("id")
             imported_job.user = self.user
+            add_object_to_session(imported_job, history_sa_session)
             imported_job.history = history
             imported_job.imported = True
             imported_job.tool_id = job_attrs["tool_id"]

@@ -16,11 +16,17 @@ def add_object_to_object_session(object, object_with_session):
       along the backref cascade path...'
     """
     if object_with_session:
-        session = inpsect(object_with_session).session
-        add_object_to_session(object, session)
+        session = get_object_session(object_with_session)
+        if session:
+            add_object_to_session(object, session)
 
 
 def add_object_to_session(object, session):
     """ Explicitly add object to the session."""
     if session and object:
         session.add(object)
+
+
+def get_object_session(object):
+    if object:
+        return inspect(object).session
