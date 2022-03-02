@@ -7,11 +7,12 @@ from typing import (
 )
 
 import yaml
-from pkg_resources import resource_stream
+
+from galaxy.util.resources import resource_string
 
 
 def get_rules_specification():
-    return yaml.safe_load(resource_stream(__name__, "rules_dsl_spec.yml"))
+    return yaml.safe_load(resource_string(__package__, "rules_dsl_spec.yml"))
 
 
 def _ensure_rule_contains_keys(rule, keys):

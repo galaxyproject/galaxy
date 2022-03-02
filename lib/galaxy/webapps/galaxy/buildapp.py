@@ -25,6 +25,7 @@ from galaxy.web.framework.middleware.batch import BatchMiddleware
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
+from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
@@ -264,13 +265,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     if kwargs.get("middleware", True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get("static_enabled", True)):
-        webapp = wrap_if_allowed(
-            webapp,
-            app.application_stack,
-            wrap_in_static,
-            args=(global_conf,),
-            kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs),
-        )
+        webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map, args=(global_conf,), kwargs=kwargs)
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
@@ -2010,8 +2005,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
         app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
-
-
-def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap

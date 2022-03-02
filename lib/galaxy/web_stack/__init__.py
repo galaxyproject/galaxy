@@ -276,7 +276,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
     name = "uWSGI"
     prohibited_middleware = frozenset(
         {
-            "wrap_in_static",
+            "build_url_map",
             "EvalException",
         }
     )

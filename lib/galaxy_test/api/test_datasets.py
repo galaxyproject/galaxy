@@ -189,7 +189,6 @@ class DatasetsApiTestCase(ApiTestCase):
         original_hda = self._get(f"histories/{self.history_id}/contents/{hda_id}").json()
         assert original_hda["extension"] == "txt"
         assert original_hda["data_type"] == "galaxy.datatypes.data.Text"
-        assert "scatterplot" not in [viz["name"] for viz in original_hda["visualizations"]]
 
         inputs = {
             "input1": {"src": "hda", "id": hda_id},
@@ -214,7 +213,6 @@ class DatasetsApiTestCase(ApiTestCase):
         ).json()
         assert successful_updated_hda_response["extension"] == "tabular"
         assert successful_updated_hda_response["data_type"] == "galaxy.datatypes.tabular.Tabular"
-        assert "scatterplot" in [viz["name"] for viz in successful_updated_hda_response["visualizations"]]
 
         invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
             f"histories/{self.history_id}/contents/{hda_id}", data={"datatype": "invalid"}, json=True

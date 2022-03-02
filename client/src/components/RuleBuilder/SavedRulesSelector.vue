@@ -10,7 +10,7 @@
         <div class="dropdown-menu" role="menu">
             <a
                 class="rule-link dropdown-item saved-rule-item"
-                v-for="(session, index) in savedRules"
+                v-for="(session, index) in sortSavedRules"
                 :key="session.dateTime"
                 @click="$emit('update-rules', session.rule)"
                 v-b-tooltip.hover.right
@@ -49,6 +49,9 @@ export default {
         numOfSavedRules: function () {
             return this.savedRules.length;
         },
+        sortSavedRules: function () {
+            return [...this.savedRules].sort(this.onSessionDateTime);
+        },
     },
     methods: {
         formatDate(dateTime) {
@@ -79,6 +82,10 @@ export default {
                 }
             });
             return prettyString;
+        onSessionDateTime(a, b) {
+            var first = new Date(a.dateTime).getTime();
+            var second = new Date(b.dateTime).getTime();
+            return second - first;
         },
     },
 };

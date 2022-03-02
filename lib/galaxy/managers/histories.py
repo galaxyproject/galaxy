@@ -442,6 +442,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "state",
                 "state_details",
                 "state_ids",
+                "hid_counter",
                 # 'community_rating',
                 # 'user_rating',
             ],
@@ -467,36 +468,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "hid_counter",
             ],
             include_keys_from="summary",
-        )
-
-        # beta web client fields, no summary/detailed/dev-detailed blah
-        self.add_view(
-            "betawebclient",
-            [
-                "annotation",
-                "contents_active",
-                "contents_url",
-                "create_time",
-                "deleted",
-                "empty",
-                "genome_build",
-                "hid_counter",
-                "id",
-                "importable",
-                "name",
-                "nice_size",
-                "published",
-                "purged",
-                # 'shared',
-                "size",
-                "slug",
-                "state",
-                "tags",
-                "update_time",
-                "url",
-                "username_and_slug",
-                "user_id",
-            ],
         )
 
     # assumes: outgoing to json.dumps and sanitized
