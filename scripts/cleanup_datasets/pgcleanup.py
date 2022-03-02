@@ -415,7 +415,7 @@ class RemovesMetadataFiles(RemovesObjects):
     uuid_column = 'deleted_metadata_file_uuid'
 
     def remove_object(self, metadata_file):
-        alt_name = self.object_store.get_store_by(metadata_file)
+        store_by = self.object_store.get_store_by(metadata_file)
         if store_by == 'uuid':
             alt_name = f"metadata_{metadata_file.uuid}.dat"
         else:
