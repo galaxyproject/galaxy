@@ -1707,13 +1707,25 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_upstream_proxy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to redirect users of Interacitve tools directly
+    to the Interactive tools proxy. `interactivetools_upstream_proxy`
+    should only be set to false in development.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Proxy host - assumed to just be hosted on the same hostname and
-    port as Galaxy by default.
+    Hostname and port of Interactive tools proxy. It is assumed to be
+    hosted on the same hostname and port as Galaxy by default.
 :Default: ``None``
 :Type: str
 

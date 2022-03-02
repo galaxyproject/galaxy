@@ -1231,11 +1231,19 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      interactivetools_upstream_proxy:
+        type: bool
+        default: true
+        required: false
+        desc:
+          Set this to false to redirect users of Interacitve tools directly to the Interactive tools proxy.
+          `interactivetools_upstream_proxy` should only be set to false in development.
+
       interactivetools_proxy_host:
         type: str
         required: false
         desc: |
-          Proxy host - assumed to just be hosted on the same hostname and port as
+          Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
           Galaxy by default.
 
       interactivetools_base_path:
