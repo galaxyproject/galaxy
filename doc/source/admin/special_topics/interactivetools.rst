@@ -42,52 +42,74 @@ Some important benefits of using Galaxy InteractiveTools
 Server-side configuration of Galaxy InteractiveTools
 ----------------------------------------------------
 
+For production deployments and additional considerations please see the `Galaxy Interactive Tools Tutorial <https://training.galaxyproject.org/training-material/topics/admin/tutorials/interactive-tools/tutorial.html>`__.
+
 The ``galaxy.yml`` file will need to be populated as seen in
 ``config/galaxy.yml.interactivetools``.
 
-Galaxy InteractiveTool routing relies on wildcard subdomain routes. For users
-who manage their own DNS, you can set the appropriate A records to redirect
-``*.interactivetool.yourdomain``, following format seen below.
+Galaxy InteractiveTool routing relies on wildcard subdomain routes and a proxy server that forwards requests to a running container.
+For users who manage their own DNS, you can set the appropriate A records to redirect
+``*.interactivetool.yourdomain``.
 
-It's not recommended for production, but for a quick local deployment
-``localhost.blankenberglab.org`` is a domain record provided by Dan Blankenberg
-(a Galaxy contributor and the architect of ITs) configured with the appropriate
-wildcard redirect to 127.0.0.1, which you can use that in place of
-``<server address>`` to resolve to your local machine.
+`gravity` will automatically start the needed proxy server.
 
-In the ``uwsgi:`` section:
+The following configuration is only recommended for local testing, as users will directly connect to the InteractiveTool Proxy.
+In a production setup an upstream proxy should route requests to the proxy via the ``*.interactivetool.yourdomain`` subdomain.
 
-.. code-block:: yaml
-
-  http-raw-body: true
-  # master: true
-
-  interactivetools_map: database/interactivetools_map.sqlite
-  python-raw: scripts/interactivetools/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ goto:interactivetool
-  route-run: goto:endendend
-  route-label: interactivetool
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.<server address>:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
-  route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
-  route: .* break:404 Not Found
-  route-label: endendend
-
-
-In the ``galaxy:`` section:
+Set these values in `galaxy.yml`:
 
 .. code-block:: yaml
 
-  interactivetools_enable: true
-  interactivetools_map: database/interactivetools_map.sqlite
-  galaxy_infrastructure_url: http://<server address>.org:8080
+        gravity:
+          # ...
+          gx_it_proxy:
+            enable: true
+            proxy_port: 4002
+        galaxy:
+          # ...
+          interactivetools_enable: true
+          interactivetools_map: database/interactivetools_map.sqlite
+          galaxy_infrastructure_url: http://localhost:8080
+          # Do not set the following 2 options if you are using an upstream proxy server like nginx
+          interactivetools_upstream_proxy: false
+          interactivetools_proxy_host: localhost:4002
+          # ...
 
 
-The admin should modify the ``route-host`` and ``interactivetools_prefix`` to match their preferred configuration.
+If you do want to use nginx as an upstream proxy server you can use the following server section to route requests to the InteractiveTool proxy:
 
+.. code-block:: nginx
+
+        server {
+            # Listen on port 443
+            listen       *:443 ssl;
+            # Match all requests for the interactive tools subdomain
+            server_name  *.interactivetool.localhost;
+
+            # Proxy all requests to the GIE Proxy application
+            location / {
+                proxy_redirect off;
+                proxy_http_version 1.1;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "upgrade";
+                proxy_pass http://localhost:4002;
+            }
+        }
+
+
+Note that this nginx example uses https, so you need to have a wildcard certificate for your domain,
+and you need to adjust ``galaxy_infrastructure_url`` as appropriate. You will most likely also want
+to replace localhost with your server domain.
+
+You will also need to enable a docker destination in the job_conf.xml file.
 An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetools``:
 
 .. code-block:: xml
 
+        <?xml version="1.0"?>
+        <!-- A sample job config for InteractiveTools using local runner. -->
         <job_conf>
             <plugins>
                 <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
@@ -96,11 +118,23 @@ An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetoo
                 <destination id="local" runner="local"/>
                 <destination id="docker_local" runner="local">
                   <param id="docker_enabled">true</param>
+                  <!-- If you have not set 'outputs_to_working_directory: true' in galaxy.yml you can remove the docker_volumes setting. -->
                   <param id="docker_volumes">$galaxy_root:ro,$tool_directory:ro,$job_directory:rw,$working_directory:rw,$default_file_path:ro</param>
                   <param id="docker_sudo">false</param>
                   <param id="docker_net">bridge</param>
                   <param id="docker_auto_rm">true</param>
                   <param id="require_container">true</param>
+                  <param id="container_monitor">true</param>
+                  <param id="docker_set_user"></param>
+                  <!-- InteractiveTools do need real hostnames or URLs to work - simply specifying IPs will not work.
+                       If you develop interactive tools on your 'localhost' and don't have a proper domain name
+                       you need to tell all Docker containers a hostname where Galaxy is running.
+                       This can be done via the add-host parameter during the `docker run` command.
+                       'localhost' here is an arbritrary hostname that matches the IP address of your
+                       Galaxy host. Make sure this hostname ('localhost') is also set in your galaxy.yml file, e.g.
+                       `galaxy_infrastructure_url: http://localhost:8080`.
+                  -->
+                  <param id="docker_run_extra_arguments">--add-host localhost:host-gateway</param>
                 </destination>
                 <destination id="docker_dispatch" runner="dynamic">
                     <param id="type">docker_dispatch</param>
@@ -108,10 +142,11 @@ An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetoo
                     <param id="default_destination_id">local</param>
                 </destination>
             </destinations>
-        </job_conf> 
+        </job_conf>
 
 
-Alternatively to the local job runner, InteractiveTools have been enabled for the condor job runner, e.g.:
+InteractiveTools have been enabled for the Condor, Slurm, Pulsar and Kuberneters job runner.
+A destination configuration for Condor may look like this:
 
 .. code-block:: xml
 
