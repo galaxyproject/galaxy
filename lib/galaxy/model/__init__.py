@@ -2534,6 +2534,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self.purged = False
         self.importing = False
         self.published = False
+        add_object_to_object_session(self, user)
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
