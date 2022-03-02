@@ -82,6 +82,7 @@ export default {
                 }
             });
             return prettyString;
+        },
         onSessionDateTime(a, b) {
             var first = new Date(a.dateTime).getTime();
             var second = new Date(b.dateTime).getTime();
