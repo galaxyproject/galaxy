@@ -64,13 +64,19 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     if resolution_cache is not None and cache_key in resolution_cache:
         repo_names = resolution_cache.get(cache_key)
     else:
-        repos_parameters = {'public': 'true', 'namespace': namespace}
-        repos_headers = {'Accept-encoding': 'gzip', 'Accept': 'application/json'}
-        repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT)
-
-        repos = repos_response.json()['repositories']
-        repo_names = [r["name"] for r in repos]
+        next_page = None
+        repo_names = []
+        repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
+        while True:
+            repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
+            repos_response = requests.get(
+                QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT)
+            repos_response_json = repos_response.json()
+            repos = repos_response_json["repositories"]
+            repo_names += [r["name"] for r in repos]
+            next_page = repos_response_json.get("next_page")
+            if not next_page:
+                break
         if resolution_cache is not None:
             resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
