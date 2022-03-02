@@ -1,7 +1,6 @@
 import DatasetCollectionUIWrapper from "./DatasetCollectionUIWrapper";
 import DscUI from "components/History/ContentItem/DatasetCollection/DscUI";
 import { shallowMount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
 import datasetCollectionRaw from "components/providers/test/json/DatasetCollection.json";
 import datasetCollectionContent from "components/providers/test/json/DatasetCollection.nested.json";
 
@@ -54,8 +53,7 @@ describe("DatasetUIWrapper.vue with Dataset", () => {
         expect(wrapper.vm.expand).toBeTruthy();
     });
     it("build dsc from collection content", async () => {
-        wrapper.setProps({ item: datasetCollectionContent });
-        await flushPromises();
+        await wrapper.setProps({ item: datasetCollectionContent });
         expect(wrapper.vm.datasetCollection.name).toBe(datasetCollectionContent.element_identifier);
     });
 });

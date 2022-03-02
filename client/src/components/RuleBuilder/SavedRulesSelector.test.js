@@ -48,12 +48,11 @@ describe("SavedRulesSelector", () => {
             ],
         };
         const ruleHeaders = ["A"];
-        wrapper.setProps({
+        await wrapper.setProps({
             user: "test_user",
             savedRules: [{ rule: JSON.stringify(testRules) }],
             ruleColHeaders: [ruleHeaders],
         });
-        await wrapper.vm.$nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length > 0).toBeTruthy();
         sessions.wrappers[0].trigger("click");
@@ -61,7 +60,7 @@ describe("SavedRulesSelector", () => {
         expect(emitted["update-rules"]).toBeTruthy();
     });
 
-    it("should emit a click event when a session is clicked", async () => {
+    it("should sort rules based on time created", async () => {
         //created less recently 12/12/2021
         const firstRule = {
             rules: [
@@ -104,11 +103,10 @@ describe("SavedRulesSelector", () => {
             rule: JSON.stringify(secondRule),
             dateTime: "2021-12-22T12:12:12.000Z",
         };
-        wrapper.setProps({
+        await wrapper.setProps({
             user: "test_user",
             savedRules: [testRules1, testRules2],
         });
-        await wrapper.vm.$nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length == 2).toBeTruthy();
         //clicking the top result of the dropdown, with sorting should be most recent created rules

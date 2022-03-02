@@ -20,10 +20,9 @@ describe("Default.vue", () => {
     });
 
     it("does render FTP is site set", async () => {
-        const { wrapper, localVue } = mountWithApp(Default);
+        const { wrapper } = mountWithApp(Default);
         expect(wrapper.find("#btn-ftp").element).toBeVisible();
-        wrapper.find("#btn-ftp").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-ftp").trigger("click");
         // TODO: test popover appears... not sure best way to do this...
     });
 
@@ -40,12 +39,10 @@ describe("Default.vue", () => {
         const { wrapper, localVue } = mountWithApp(Default);
         expect(wrapper.vm.showHelper).toBe(true);
         await localVue.nextTick();
-        wrapper.find("#btn-new").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-new").trigger("click");
         expect(wrapper.vm.showHelper).toBe(false);
         expect(wrapper.vm.counterAnnounce).toBe(1);
-        wrapper.find("#btn-reset").trigger("click");
-        await localVue.nextTick();
+        await wrapper.find("#btn-reset").trigger("click");
         expect(wrapper.vm.showHelper).toBe(true);
     });
 
