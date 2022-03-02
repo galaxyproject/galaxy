@@ -9000,6 +9000,7 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, history):
+        add_object_to_object_session(self, history)
         self.history = history
 
 
