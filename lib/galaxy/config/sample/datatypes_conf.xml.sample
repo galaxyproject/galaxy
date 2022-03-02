@@ -641,6 +641,7 @@
     <datatype extension="gpr" type="galaxy.datatypes.microarrays:Gpr" display_in_upload="true"/>
     <datatype extension="gal" type="galaxy.datatypes.microarrays:Gal" display_in_upload="true"/>
     <datatype extension="rds" type="galaxy.datatypes.binary:RDS" display_in_upload="true" description="Serialized R object generated with saveRDS"/>
+    <datatype extension="phyloseq" type="galaxy.datatypes.binary:RDS" subclass="true" display_in_upload="true" description="Serialized phyloseq object"/>
     <datatype extension="rdata" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" display_in_upload="true" description="Stored data from an R session genearted with save or save.img"/>
     <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true" description="Stored RData from a SingleCellObject"/>
     <datatype extension="rdata.xcms.raw" type="galaxy.datatypes.binary:RData" mimetype="application/x-gzip" subclass="true" display_in_upload="true"/>
