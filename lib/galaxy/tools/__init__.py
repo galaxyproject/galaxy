@@ -30,7 +30,6 @@ import packaging.version
 import webob.exc
 from lxml import etree
 from mako.template import Template
-from pkg_resources import resource_string
 from webob.compat import cgi_FieldStorage
 
 from galaxy import (
@@ -119,6 +118,7 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
+from galaxy.util.resources import resource_string
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import (
     fill_template,
@@ -217,7 +217,7 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "winSplitter": packaging.version.parse("1.0.1"),
 }
 
-BIOTOOLS_MAPPING_CONTENT = resource_string(__name__, "biotools_mappings.tsv").decode("UTF-8")
+BIOTOOLS_MAPPING_CONTENT = resource_string(__package__, "biotools_mappings.tsv")
 BIOTOOLS_MAPPING: Dict[str, str] = dict(
     [
         cast(Tuple[str, str], tuple(x.split("\t")))
@@ -3433,9 +3433,7 @@ class SortTool(DatabaseOperationTool):
             presort_elements = [(dce.element_identifier, dce) for dce in elements]
         elif sorttype == "numeric":
             presort_elements = [(int(re.sub("[^0-9]", "", dce.element_identifier)), dce) for dce in elements]
-        if presort_elements:
-            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
-        if sorttype == "file":
+        elif sorttype == "file":
             hda = incoming["sort_type"]["sort_file"]
             data_lines = hda.metadata.get("data_lines", 0)
             if data_lines == len(elements):
@@ -3450,8 +3448,13 @@ class SortTool(DatabaseOperationTool):
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
                     raise Exception(message)
             else:
-                message = "Number of lines must match number of list elements (%i), but file has %i lines"
-                raise Exception(message % (data_lines, len(elements)))
+                message = f"Number of lines must match number of list elements ({len(elements)}), but file has {data_lines} lines"
+                raise Exception(message)
+        else:
+            raise Exception(f"Unknown sort_type '{sorttype}'")
+
+        if presort_elements:
+            sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
 
         for dce in sorted_elements:
             dce_object = dce.element_object

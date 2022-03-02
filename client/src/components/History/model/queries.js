@@ -80,9 +80,7 @@ function formData(fields = {}) {
 
 // #region History Queries
 
-const stdHistoryParams = {
-    view: "betawebclient",
-};
+const stdHistoryParams = {};
 
 /**
  * Return list of available histories
@@ -287,7 +285,7 @@ export async function contentUpdate(history, type_ids = [], fields = {}) {
     });
 
     const { id } = history;
-    const url = `/histories/${id}/contents?view=betawebclient`;
+    const url = `/histories/${id}/contents`;
     const payload = Object.assign({}, fields, { items });
     const response = await api.put(url, payload);
     console.debug("Submitted request to update selected content.", response);
@@ -309,7 +307,7 @@ export async function createDatasetCollection(history, inputs = {}) {
     };
 
     const payload = Object.assign({}, defaults, inputs);
-    const url = `/histories/${history.id}/contents?view=betawebclient`; // keys=${keys}`;
+    const url = `/histories/${history.id}/contents`;
     const response = await api.post(url, payload);
     return doResponse(response);
 }

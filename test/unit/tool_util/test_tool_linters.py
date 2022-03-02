@@ -421,8 +421,8 @@ OUTPUTS_UNKNOWN_TAG = """
 OUTPUTS_UNNAMED_INVALID_NAME = """
 <tool>
     <outputs>
-        <data/>
-        <collection name="2output"/>
+        <data label="data out"/>
+        <collection name="2output" label="coll out"/>
     </outputs>
 </tool>
 """
@@ -454,6 +454,14 @@ OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
         <data name="output">
             <discover_datasets from_tool_provided_metadata="true"/>
         </data>
+    </outputs>
+</tool>
+"""
+OUTPUTS_DUPLICATED_NAME_LABEL = """
+<tool>
+    <outputs>
+        <data name="valid_name" format="fasta"/>
+        <data name="valid_name" format="fasta"/>
     </outputs>
 </tool>
 """
@@ -1177,6 +1185,18 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+def test_outputs_duplicated_name_label(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    assert "2 outputs found." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool output [valid_name] has duplicated name" in lint_ctx.error_messages
+    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_stdio_default_for_default_profile(lint_ctx):

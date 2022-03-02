@@ -61,7 +61,7 @@ as ``test_path``.  A few examples are shown below.
 Run all API tests:
     ./run_tests.sh -api
 
-The same test as above can be run using nosetests directly as follows:
+The same test as above can be run using pytest directly as follows:
     pytest lib/galaxy_test/api
 
 However when using pytest directly output options defined in this
@@ -574,7 +574,7 @@ do
             shift
           fi
           # Maybe we shouldn't break here but for now to pass more than one argument to the
-          # underlying test driver (scripts/nosetests.py) use -- instead.
+          # underlying test driver use -- instead.
           break
           ;;
     esac

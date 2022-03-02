@@ -2714,11 +2714,6 @@
     use_printdebug.  It also causes the files used by PBS/SGE
     (submission script, output, and error) to remain on disk after the
     job is complete.
-    In addition, this will set uWSGI's `honour-stdin` option to
-    `true`; thus, preventing uWSGI from remapping stdin to `/dev/null`
-    and enabling debugging with tools like pdb. To keep uWSGI's
-    default setting, set `honor-stdin` to `false` in the `uwsgi`
-    section of this configuration file.
 :Default: ``false``
 :Type: bool
 
@@ -2765,9 +2760,7 @@
     are responsible for preparing/submitting and collecting/finishing
     jobs, and which can cause job errors if not shut down cleanly. If
     using supervisord, consider also increasing the value of
-    `stopwaitsecs`. If using job handler mules, consider also setting
-    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
-    Documentation for more.
+    `stopwaitsecs`. See the Galaxy Admin Documentation for more.
 :Default: ``30``
 :Type: int
 
@@ -2791,8 +2784,7 @@
 :Description:
     Control the period (in seconds) between dumps. Use -1 to disable.
     Regardless of this setting, if use_heartbeat is enabled, you can
-    send a Galaxy process (unless running with uWSGI) SIGUSR1 (`kill
-    -USR1`) to force a dump.
+    send a Galaxy process SIGUSR1 (`kill -USR1`) to force a dump.
 :Default: ``20``
 :Type: int
 
