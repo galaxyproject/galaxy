@@ -822,4 +822,5 @@ __all__ = (
     "ready_galaxy_markdown_for_export",
     "ready_galaxy_markdown_for_import",
     "resolve_invocation_markdown",
+    "validate_galaxy_markdown",
 )

@@ -556,3 +556,14 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+
+__all__ = (
+    "SharableModelDeserializer",
+    "SharableModelFilters",
+    "SharableModelManager",
+    "SharableModelSerializer",
+    "SharingOptions",
+    "ShareWithExtra",
+    "SlugBuilder",
+)

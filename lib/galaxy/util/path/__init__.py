@@ -478,6 +478,7 @@ __all__ = (
     "extensions",
     "get_ext",
     "has_ext",
+    "join",
     "joinext",
     "safe_contains",
     "safe_makedirs",

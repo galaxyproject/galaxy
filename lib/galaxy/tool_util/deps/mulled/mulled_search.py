@@ -443,5 +443,8 @@ def main(argv=None):
         readable_output(json_results, args.organization_string, args.channel_string)
 
 
+__all__ = ("main",)
+
+
 if __name__ == "__main__":
     main()

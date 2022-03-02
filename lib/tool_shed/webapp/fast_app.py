@@ -20,3 +20,9 @@ def initialize_fast_app(gx_webapp):
     wsgi_handler = WSGIMiddleware(gx_webapp)
     app.mount("/", wsgi_handler)
     return app
+
+
+__all__ = (
+    "add_request_id_middleware",
+    "initialize_fast_app",
+)

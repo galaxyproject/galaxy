@@ -557,7 +557,10 @@ def main(argv=None):
     sys.exit(mull_targets(targets, **args_to_mull_targets_kwds(args)))
 
 
-__all__ = ("main",)
+__all__ = (
+    "main",
+    "build_target",
+)
 
 
 if __name__ == "__main__":

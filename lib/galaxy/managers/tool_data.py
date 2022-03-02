@@ -5,7 +5,7 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.app import StructuredApp
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
