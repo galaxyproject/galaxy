@@ -63,43 +63,45 @@ describe("SavedRulesSelector", () => {
 
     it("should emit a click event when a session is clicked", async () => {
         //created less recently 12/12/2021
+        const firstRule = {
+            rules: [
+                {
+                    type: "add_filter_count",
+                    count: 1,
+                    which: "first",
+                    invert: false,
+                },
+            ],
+            mapping: [
+                {
+                    type: "url",
+                    columns: [0],
+                },
+            ],
+        };
         const testRules1 = {
-            rule: {
-                rules: [
-                    {
-                        type: "add_filter_count",
-                        count: 1,
-                        which: "first",
-                        invert: false,
-                    },
-                ],
-                mapping: [
-                    {
-                        type: "url",
-                        columns: [0],
-                    },
-                ],
-            },
+            rule: JSON.stringify(firstRule),
             dateTime: "2021-12-12T12:12:12.000Z",
         };
         //created more recently 12/22/2021
+        const secondRule = {
+            rules: [
+                {
+                    type: "add_filter_count",
+                    count: 1,
+                    which: "first",
+                    invert: false,
+                },
+            ],
+            mapping: [
+                {
+                    type: "url",
+                    columns: [1],
+                },
+            ],
+        };
         const testRules2 = {
-            rule: {
-                rules: [
-                    {
-                        type: "add_filter_count",
-                        count: 1,
-                        which: "first",
-                        invert: false,
-                    },
-                ],
-                mapping: [
-                    {
-                        type: "url",
-                        columns: [1],
-                    },
-                ],
-            },
+            rule: JSON.stringify(secondRule),
             dateTime: "2021-12-22T12:12:12.000Z",
         };
         wrapper.setProps({
