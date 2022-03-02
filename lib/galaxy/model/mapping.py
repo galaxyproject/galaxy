@@ -9,6 +9,7 @@ from threading import local
 from typing import Optional, Type
 
 from galaxy import model
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import mapper_registry
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.migrate.triggers.update_audit_table import install as install_timestamp_triggers
@@ -64,3 +65,20 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     result.security_agent = GalaxyRBACAgent(result)
     result.thread_local_log = thread_local_log
     return result
+
+
+def init_models_from_config(config: GalaxyAppConfiguration, map_install_models=False, object_store=None, trace_logger=None):
+    model = init(
+        config.file_path,
+        config.database_connection,
+        config.database_engine_options,
+        map_install_models=map_install_models,
+        database_query_profiling_proxy=config.database_query_profiling_proxy,
+        object_store=object_store,
+        trace_logger=trace_logger,
+        use_pbkdf2=config.get_bool('use_pbkdf2', True),
+        slow_query_log_threshold=config.slow_query_log_threshold,
+        thread_local_log=config.thread_local_log,
+        log_query_counts=config.database_log_query_counts,
+    )
+    return model

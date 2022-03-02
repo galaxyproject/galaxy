@@ -12,11 +12,11 @@ from galaxy.config import (
     CommonConfigurationMixin,
     get_database_engine_options,
 )
+from galaxy.config import expand_pretty_datetime_format
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
-from galaxy.web.formatting import expand_pretty_datetime_format
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]

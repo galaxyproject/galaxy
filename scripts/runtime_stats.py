@@ -117,7 +117,7 @@ def parse_arguments():
 
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)
-    uri = args.config.get_database_url(config)
+    uri = config.database_connection
 
     names = {'database': 'dbname', 'username': 'user'}
     args.connect_args = url.make_url(uri).translate_connect_args(**names)

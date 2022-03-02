@@ -633,10 +633,6 @@ def get_app_kwds(config_section, app_name=None):
     return application_stack_class().get_app_kwds(config_section, app_name=app_name)
 
 
-def get_stack_facts(config=None):
-    return application_stack_instance(config=config).facts
-
-
 def _uwsgi_configured_mules():
     mules = uwsgi.opt.get('mule', [])
     return [mules] if isinstance(mules, str) or mules is True else mules

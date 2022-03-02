@@ -60,13 +60,14 @@ class TestPlanet(BaseTest):  # BaseTest is a base class; we need it to get the t
 See other model tests in this module for examples of more complex setups.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import func, select
 
 from galaxy import model
+from galaxy.model.orm.now import now
 from .common import (
     AbstractBaseTest,
     collection_consists_of_objects,
@@ -92,7 +93,7 @@ class TestAPIKeys(BaseTest):
         assert cls_.__tablename__ == "api_keys"
 
     def test_columns(self, session, cls_, user):
-        create_time, user_id, key = datetime.now(), user.id, get_unique_value()
+        create_time, user_id, key = now(), user.id, get_unique_value()
         obj = cls_(user_id=user_id, key=key, create_time=create_time)
 
         with dbcleanup(session, obj) as obj_id:
@@ -115,7 +116,7 @@ class TestCleanupEvent(BaseTest):
         assert cls_.__tablename__ == "cleanup_event"
 
     def test_columns(self, session, cls_):
-        create_time, message = datetime.now(), "a"
+        create_time, message = now(), "a"
         obj = cls_(create_time=create_time, message=message)
 
         with dbcleanup(session, obj) as obj_id:
@@ -130,7 +131,7 @@ class TestCleanupEventDatasetAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_dataset_association"
 
     def test_columns(self, session, cls_, cleanup_event, dataset):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -150,7 +151,7 @@ class TestCleanupEventHistoryAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_history_association"
 
     def test_columns(self, session, cls_, cleanup_event, history):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -170,7 +171,7 @@ class TestCleanupEventHistoryDatasetAssociationAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_hda_association"
 
     def test_columns(self, session, cls_, cleanup_event, history_dataset_association):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -192,7 +193,7 @@ class TestCleanupEventImplicitlyConvertedDatasetAssociationAssociation(BaseTest)
     def test_columns(
         self, session, cls_, cleanup_event, implicitly_converted_dataset_association
     ):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -212,7 +213,7 @@ class TestCleanupEventLibraryAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_library_association"
 
     def test_columns(self, session, cls_, cleanup_event, library):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -232,7 +233,7 @@ class TestCleanupEventLibraryDatasetAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_library_dataset_association"
 
     def test_columns(self, session, cls_, cleanup_event, library_dataset):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -254,7 +255,7 @@ class TestCleanupEventLibraryDatasetDatasetAssociationAssociation(BaseTest):
     def test_columns(
         self, session, cls_, cleanup_event, library_dataset_dataset_association
     ):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -274,7 +275,7 @@ class TestCleanupEventLibraryFolderAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_library_folder_association"
 
     def test_columns(self, session, cls_, cleanup_event, library_folder):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -294,7 +295,7 @@ class TestCleanupEventMetadataFileAssociation(BaseTest):
         assert cls_.__tablename__ == "cleanup_event_metadata_file_association"
 
     def test_columns(self, session, cls_, cleanup_event, metadata_file):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(
             create_time=create_time,
             cleanup_event_id=cleanup_event.id,
@@ -322,7 +323,7 @@ class TestCustosAuthnzToken(BaseTest):
         access_token = "c"
         id_token = "d"
         refresh_token = "e"
-        expiration_time = datetime.now()
+        expiration_time = now()
         refresh_expiration_time = expiration_time + timedelta(hours=1)
 
         obj = cls_()
@@ -391,7 +392,7 @@ class TestDataManagerHistoryAssociation(BaseTest):
         assert cls_.__tablename__ == "data_manager_history_association"
 
     def test_columns(self, session, cls_, history, user):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.create_time = create_time
@@ -424,7 +425,7 @@ class TestDataManagerJobAssociation(BaseTest):
         assert has_index(cls_.__table__, ("data_manager_id",))
 
     def test_columns(self, session, cls_, job):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         data_manager_id = "a"
         obj = cls_()
@@ -457,7 +458,7 @@ class TestDataset(BaseTest):
         assert cls_.table.name == "dataset"
 
     def test_columns(self, session, cls_, job):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         state = "a"
         deleted = True
@@ -561,7 +562,7 @@ class TestDatasetCollection(BaseTest):
         populated_state = "b"
         populated_state_message = "c"
         element_count = 1
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
 
         obj = cls_()
@@ -704,7 +705,7 @@ class TestDatasetPermissions(BaseTest):
 
     def test_columns(self, session, cls_, dataset, role):
         action = "a"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(action, dataset, role)
         obj.create_time = create_time
@@ -817,7 +818,7 @@ class TestDefaultQuotaAssociation(BaseTest):
 
     def test_columns(self, session, cls_, quota):
         type_ = cls_.types.REGISTERED
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(type_, quota)
         obj.create_time = create_time
@@ -877,7 +878,7 @@ class TestDynamicTool(BaseTest):
         active = True
         hidden = True
         value = "f"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
 
         obj = cls_()
@@ -930,7 +931,7 @@ class TestEvent(BaseTest):
 
     def test_columns(self, session, cls_, history, galaxy_session, user):
         message, tool_id = "a", "b"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.message = message
@@ -1018,7 +1019,7 @@ class TestFormDefinition(BaseTest):
 
     def test_columns(self, session, cls_, form_definition_current):
         name, desc, fields, type, layout = "a", "b", "c", "d", "e"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.name = name
@@ -1055,7 +1056,7 @@ class TestFormDefinitionCurrent(BaseTest):
         assert cls_.__tablename__ == "form_definition_current"
 
     def test_columns(self, session, cls_, form_definition):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         deleted = True
         obj = cls_()
@@ -1088,7 +1089,7 @@ class TestFormValues(BaseTest):
 
     def test_columns(self, session, cls_, form_definition):
         content = "a"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.form_definition = form_definition
@@ -1118,7 +1119,7 @@ class TestGalaxySession(BaseTest):
 
     def test_columns(self, session, cls_, user, history, galaxy_session):
 
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         remote_host = "a"
         remote_addr = "b"
@@ -1179,7 +1180,7 @@ class TestGalaxySessionToHistoryAssociation(BaseTest):
         assert cls_.__tablename__ == "galaxy_session_to_history"
 
     def test_columns(self, session, cls_, galaxy_session, history):
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_(galaxy_session, history)
         obj.create_time = create_time
 
@@ -1205,7 +1206,7 @@ class TestGenomeIndexToolData(BaseTest):
 
     def test_columns(self, session, cls_, job, dataset, user):
         fasta_path = "a"
-        created_time = datetime.now()
+        created_time = now()
         modified_time = created_time + timedelta(hours=1)
         indexer = "b"
         obj = cls_()
@@ -1246,7 +1247,7 @@ class TestGroup(BaseTest):
         assert cls_.__tablename__ == "galaxy_group"
 
     def test_columns(self, session, cls_):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         name = get_unique_value()
         deleted = True
@@ -1297,7 +1298,7 @@ class TestGroupQuotaAssociation(BaseTest):
         assert cls_.__tablename__ == "group_quota_association"
 
     def test_columns(self, session, cls_, group, quota):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(group, quota)
         obj.create_time = create_time
@@ -1326,7 +1327,7 @@ class TestGroupRoleAssociation(BaseTest):
 
     def test_columns(self, session, cls_, group, role):
         obj = cls_(group, role)
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj.create_time = create_time
         obj.update_time = update_time
@@ -1354,7 +1355,7 @@ class TestHistory(BaseTest):
         assert has_index(cls_.__table__, ("slug",))
 
     def test_columns(self, session, cls_, user):
-        create_time = datetime.now()
+        create_time = now()
         name = "a"
         hid_counter = 2
         deleted = True
@@ -1529,7 +1530,7 @@ class TestHistoryDatasetAssociation(BaseTest):
         copied_from_hda = history_dataset_association_factory()
         parent = history_dataset_association_factory()
 
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         state = "a"
         name = "b"
@@ -1760,7 +1761,7 @@ class TestHistoryDatasetAssociationDisplayAtAuthorization(BaseTest):
         )
 
     def test_columns(self, session, cls_, history_dataset_association, user):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         site = "a"
         obj = cls_(history_dataset_association, user, site)
@@ -1798,7 +1799,7 @@ class TestHistoryDatasetAssociationHistory(BaseTest):
     ):
         name, update_time, version, extension, metadata = (
             "a",
-            datetime.now(),
+            now(),
             2,
             "b",
             {"key": "value"},
@@ -1965,7 +1966,7 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
         visible = True
         deleted = True
         implicit_output_name = "b"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
 
         obj = cls_()
@@ -2339,7 +2340,7 @@ class TestImplicitlyConvertedDatasetAssociation(BaseTest):
         history_dataset_association,
         library_dataset_dataset_association,
     ):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         deleted = True
         metadata_safe = False
@@ -2453,7 +2454,7 @@ class TestInteractiveToolEntryPoint(BaseTest):
         info = "f"
         configured = True
         deleted = True
-        created_time = datetime.now()
+        created_time = now()
         modified_time = created_time + timedelta(hours=1)
 
         obj = cls_()
@@ -2513,7 +2514,7 @@ class TestJob(BaseTest):
         galaxy_session,
         user,
     ):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         tool_id = "a"
         tool_version = "b"
@@ -2756,7 +2757,7 @@ class TestJobContainerAssociation(BaseTest):
         container_type = "a"
         container_name = "b"
         container_info = "c"
-        created_time = datetime.now()
+        created_time = now()
         modified_time = created_time + timedelta(hours=1)
 
         session.add(job)  # must be bound to a session for lazy load of attributes
@@ -2988,7 +2989,7 @@ class TestJobStateHistory(BaseTest):
 
     def test_columns(self, session, cls_, job):
         state, info = job.state, job.info
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(job)
         obj.create_time = create_time
@@ -3246,7 +3247,7 @@ class TestLibrary(BaseTest):
 
     def test_columns(self, session, cls_, library_folder):
         name, deleted, purged, description, synopsis = "a", True, True, "b", "c"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, synopsis, library_folder)
         obj.create_time = create_time
@@ -3290,7 +3291,7 @@ class TestLibraryDataset(BaseTest):
 
     def test_columns(self, session, cls_, library_folder):
         order_id = 9
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         name = "a"
         info = "b"
@@ -3533,7 +3534,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
         extended_metadata,
         user,
     ):
-        create_time = datetime.now()
+        create_time = now()
         state = "a"
         name = "b"
         info = "c"
@@ -3715,7 +3716,7 @@ class TestLibraryDatasetDatasetAssociationPermissions(BaseTest):
 
     def test_columns(self, session, cls_, library_dataset_dataset_association, role):
         action = "a"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(action, library_dataset_dataset_association, role)
         obj.create_time = create_time
@@ -3843,7 +3844,7 @@ class TestLibraryDatasetPermissions(BaseTest):
 
     def test_columns(self, session, cls_, library_dataset, role):
         action = "a"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(action, library_dataset, role)
         obj.create_time = create_time
@@ -3874,7 +3875,7 @@ class TestLibraryFolder(BaseTest):
 
     def test_columns(self, session, cls_, library_folder):
         parent = library_folder
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         name = "a"
         description = "b"
@@ -3984,7 +3985,7 @@ class TestLibraryFolderPermissions(BaseTest):
     def test_columns(self, session, cls_, library_folder, role):
         action = "a"
         obj = cls_(action, library_folder, role)
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj.create_time = create_time
         obj.update_time = update_time
@@ -4041,7 +4042,7 @@ class TestLibraryPermissions(BaseTest):
     def test_columns(self, session, cls_, library, role):
         action = "a"
         obj = cls_(action, library, role)
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(action, library, role)
         obj.create_time = create_time
@@ -4077,7 +4078,7 @@ class TestMetadataFile(BaseTest):
         library_dataset_dataset_association,
     ):
         name = "a"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         object_store_id = "b"
         uuid = uuid4()
@@ -4215,7 +4216,7 @@ class TestPage(BaseTest):
 
     def test_columns(self, session, cls_, user, page_revision):
         title, deleted, importable, slug, published = "a", True, True, "b", True
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.user = user
@@ -4345,7 +4346,7 @@ class TestPageRevision(BaseTest):
 
     def test_columns(self, session, cls_, page):
         title, content = "a", "b"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.page = page
@@ -4438,7 +4439,7 @@ class TestPasswordResetToken(BaseTest):
 
     def test_columns_and_relationships(self, session, cls_, user):
         token = get_unique_value()
-        expiration_time = datetime.now()
+        expiration_time = now()
         obj = cls_(user, token)
         obj.expiration_time = expiration_time
 
@@ -4508,7 +4509,7 @@ class TestQuota(BaseTest):
 
     def test_columns(self, session, cls_):
         name, description, amount, operation = get_unique_value(), "b", 42, "+"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, amount, operation)
         obj.create_time = create_time
@@ -4567,7 +4568,7 @@ class TestRole(BaseTest):
             cls_.types.SYSTEM,
             True,
         )
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(name, description, type_, deleted)
         obj.create_time = create_time
@@ -4616,7 +4617,7 @@ class TestStoredWorkflow(BaseTest):
         assert has_index(cls_.__table__, ("slug",))
 
     def test_columns(self, session, cls_, workflow, user):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         name = "a"
         deleted = True
@@ -4905,7 +4906,7 @@ class TestTask(BaseTest):
         assert cls_.__tablename__ == "task"
 
     def test_columns(self, session, cls_, job):
-        create_time = datetime.now()
+        create_time = now()
         execution_time = create_time + timedelta(hours=1)
         update_time = execution_time + timedelta(hours=1)
         state = "p"
@@ -5051,7 +5052,7 @@ class TestUser(BaseTest):
         assert cls_.__tablename__ == "galaxy_user"
 
     def test_columns(self, session, cls_, form_values):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         email = get_unique_value()
         username = get_unique_value()
@@ -5225,7 +5226,7 @@ class TestUserAction(BaseTest):
 
     def test_columns(self, session, cls_, user, galaxy_session):
         action, params, context = "a", "b", "c"
-        create_time = datetime.now()
+        create_time = now()
         obj = cls_()
         obj.user = user
         obj.session_id = galaxy_session.id
@@ -5271,7 +5272,7 @@ class TestUserAddress(BaseTest):
             deleted,
             purged,
         ) = ("a", "b", "c", "d", "e", "f", "g", "h", "i", True, False)
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.user = user
@@ -5349,7 +5350,7 @@ class TestUserGroupAssociation(BaseTest):
         assert cls_.__tablename__ == "user_group_association"
 
     def test_columns(self, session, cls_, user, group):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(user, group)
         obj.create_time = create_time
@@ -5396,7 +5397,7 @@ class TestUserQuotaAssociation(BaseTest):
         assert cls_.__tablename__ == "user_quota_association"
 
     def test_columns(self, session, cls_, user, quota):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(user, quota)
         obj.create_time = create_time
@@ -5424,7 +5425,7 @@ class TestUserRoleAssociation(BaseTest):
         assert cls_.__tablename__ == "user_role_association"
 
     def test_columns(self, session, cls_, user, role):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_(user, role)
         obj.create_time = create_time
@@ -5452,7 +5453,7 @@ class TestVault(BaseTest):
         assert cls_.__tablename__ == "vault"
 
     def test_columns(self, session, cls_):
-        create_time = update_time = datetime.now()
+        create_time = update_time = now()
         key = '/some/path'
         parent_key = '/some'
         value = 'helloworld'
@@ -5474,7 +5475,7 @@ class TestVisualization(BaseTest):
         assert has_index(cls_.__table__, ("slug",))
 
     def test_columns(self, session, cls_, user, visualization_revision):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         title = "a"
         type = "b"
@@ -5627,7 +5628,7 @@ class TestVisualizationRevision(BaseTest):
 
     def test_columns(self, session, cls_, visualization):
         visualization, title, dbkey, config = visualization, "a", "b", "c"
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         obj = cls_()
         obj.visualization = visualization
@@ -5720,7 +5721,7 @@ class TestWorkerProcess(BaseTest):
 
     def test_columns(self, session, cls_):
         server_name, hostname = get_unique_value(), "a"
-        update_time = datetime.now()
+        update_time = now()
         obj = cls_()
         obj.server_name = server_name
         obj.hostname = hostname
@@ -5740,7 +5741,7 @@ class TestWorkflow(BaseTest):
         assert cls_.__tablename__ == "workflow"
 
     def test_columns(self, session, cls_, stored_workflow, workflow):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         name = "a"
         has_cycles = True
@@ -5805,7 +5806,7 @@ class TestWorkflowInvocation(BaseTest):
         assert cls_.__tablename__ == "workflow_invocation"
 
     def test_columns(self, session, cls_, workflow, history):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         state = "a"
         scheduler = "b"
@@ -6095,7 +6096,7 @@ class TestWorkflowInvocationStep(BaseTest):
         job,
         implicit_collection_jobs,
     ):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         state, action = "a", "b"
 
@@ -6581,7 +6582,7 @@ class TestWorkflowStep(BaseTest):
         assert cls_.__tablename__ == "workflow_step"
 
     def test_columns(self, session, cls_, workflow, dynamic_tool, workflow_factory):
-        create_time = datetime.now()
+        create_time = now()
         update_time = create_time + timedelta(hours=1)
         type = "a"
         tool_id = "b"

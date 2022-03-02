@@ -7,6 +7,7 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
+from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -31,8 +32,8 @@ def init():
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)
     object_store = build_object_store_from_config(config)
-    engine = galaxy.config.get_database_url(config).split(":")[0]
-    return galaxy.config.init_models_from_config(config, object_store=object_store), object_store, engine
+    engine = config.database_connection.split(":")[0]
+    return init_models_from_config(config, object_store=object_store), object_store, engine
 
 
 def quotacheck(sa_session, users, engine):

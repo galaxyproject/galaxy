@@ -34,7 +34,6 @@ PACKAGES = [
     'galaxy.actions',
     'galaxy.app_unittest_utils',
     'galaxy.authnz',
-    'galaxy.config',
     'galaxy.dependencies',
     'galaxy.forms',
     'galaxy.jobs',
@@ -95,14 +94,9 @@ PACKAGES = [
 ENTRY_POINTS = '''
         [console_scripts]
         galaxy-main=galaxy.main:main
-        galaxy-config=galaxy.config.script:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    'galaxy': [
-        'config/schemas/*.yml',
-        'config/sample/*',
-    ],
     'tool_shed': [
         'scripts/bootstrap_tool_shed/user_info.xml',
     ],
