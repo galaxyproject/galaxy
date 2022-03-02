@@ -1273,6 +1273,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         assoc = JobToInputDatasetAssociation(name, dataset)
         if dataset is None and dataset_id is not None:
             assoc.dataset_id = dataset_id
+        add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name, dataset):
