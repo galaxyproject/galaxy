@@ -3725,6 +3725,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
+        add_object_to_session(self, sa_session)
         self.dataset = dataset
         self.parent_id = parent_id
 
