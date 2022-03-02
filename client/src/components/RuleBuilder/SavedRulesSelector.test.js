@@ -46,11 +46,10 @@ describe("SavedRulesSelector", () => {
                 },
             ],
         };
-        wrapper.setProps({
+        await wrapper.setProps({
             user: "test_user",
             savedRules: [testRules],
         });
-        await wrapper.vm.$nextTick();
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length > 0).toBeTruthy();
         sessions.wrappers[0].trigger("click");
