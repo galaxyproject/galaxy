@@ -76,7 +76,7 @@ lxml==4.8.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (pyt
 mako==1.1.6; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 markdown==3.3.6; python_version >= "3.6"
 markupsafe==2.1.0; python_version >= "3.7"
-mercurial==6.0.3
+mercurial==6.0.2
 mistune==0.8.4; python_version >= "3.7" and python_version < "4"
 mrcfile==1.3.0
 msgpack==1.0.3; python_version >= "3.7" and python_version < "4"
