@@ -2627,6 +2627,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 dataset.hid = self._next_hid()
         if quota and is_dataset and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+        add_object_to_object_session(dataset, self)
         dataset.history = self
         if is_dataset and genome_build not in [None, "?"]:
             self.genome_build = genome_build
