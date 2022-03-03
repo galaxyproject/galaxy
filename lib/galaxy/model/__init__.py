@@ -3165,6 +3165,7 @@ class DatasetPermissions(Base, RepresentById):
 
     def __init__(self, action, dataset, role=None, role_id=None):
         self.action = action
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         if role is not None:
             self.role = role
