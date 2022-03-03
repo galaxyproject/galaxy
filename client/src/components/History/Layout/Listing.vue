@@ -28,7 +28,7 @@ export default {
     },
     props: {
         itemKey: { type: String, default: "hid" },
-        pageSize: { type: Number, required: true },
+        limit: { type: Number, required: true },
         payload: { type: Array, default: null },
         queryKey: { type: String, default: null },
         reversed: { type: Boolean, default: false },
@@ -54,7 +54,7 @@ export default {
     },
     computed: {
         loading() {
-            return !!this.payload && this.payload.length == this.pageSize;
+            return !!this.payload && this.payload.length == this.limit;
         },
         getItems() {
             const filtered = this.items.filter((n) => n);

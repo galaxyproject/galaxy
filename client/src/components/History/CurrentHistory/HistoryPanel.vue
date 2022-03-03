@@ -55,7 +55,7 @@
                             v-else
                             reversed
                             :query-key="queryKey"
-                            :page-size="pageSize"
+                            :limit="limit"
                             :payload="payload"
                             @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
@@ -127,20 +127,20 @@ export default {
     data() {
         return {
             hideSelection: {},
-            topIndex: 0,
-            pageSize: 50,
+            offset: 0,
+            limit: 500,
             params: {},
         };
     },
     watch: {
         queryKey() {
             this.hideSelection = {};
-            this.topIndex = 0;
+            this.offset = 0;
         },
     },
     computed: {
         dataUrl() {
-            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.topIndex}&limit=${this.pageSize}&${this.queryString}`;
+            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.offset}&limit=${this.limit}&${this.queryString}`;
         },
         historyId() {
             return this.history.id;
@@ -170,8 +170,8 @@ export default {
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },
-        onScroll(newHid) {
-            this.topIndex = newHid;
+        onScroll(offset) {
+            this.offset = offset;
         },
         onhideSelection(selectedItems) {
             selectedItems.forEach((item) => {

@@ -20,7 +20,7 @@
                 </template>
 
                 <template v-slot:listing>
-                    <Listing item-key="element_index" :page-size="pageSize" :payload="payload" @scroll="onScroll">
+                    <Listing item-key="element_index" :payload="payload" :limit="limit" @scroll="onScroll">
                         <template v-slot:history-item="{ item }">
                             <ContentItem
                                 :item="item"
@@ -69,7 +69,7 @@ export default {
     },
     data() {
         return {
-            pageSize: 50,
+            limit: 500,
         };
     },
     computed: {
@@ -98,8 +98,8 @@ export default {
                 });
             });
         },
-        onScroll(newHid) {
-            this.maxHid = newHid;
+        onScroll(offset) {
+            this.offset = offset;
         },
     },
 };

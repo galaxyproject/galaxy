@@ -48,8 +48,5 @@ export default {
             return `api/datasets/${datasetId}`;
         },
     },
-    created() {
-        console.log(this.item);
-    },
 };
 </script>
