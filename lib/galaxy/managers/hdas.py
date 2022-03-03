@@ -304,8 +304,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "type",
                 "url",
                 "create_time",
-                "rerunnable",
-                "creating_job",
                 "update_time",
             ],
         )
@@ -345,6 +343,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "created_from_basename",
                 "hashes",
                 "sources",
+                "rerunnable",
+                "creating_job",
             ],
             include_keys_from="summary",
         )
