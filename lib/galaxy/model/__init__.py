@@ -2978,6 +2978,7 @@ class UserRoleAssociation(Base, RepresentById):
     role = relationship("Role", back_populates="users")
 
     def __init__(self, user, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.role = role
 
