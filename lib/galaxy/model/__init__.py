@@ -2184,6 +2184,8 @@ class JobExportHistoryArchive(Base, RepresentById):
     ATTRS_FILENAME_HISTORY = "history_attrs.txt"
 
     def __init__(self, compressed=False, **kwd):
+        if 'history' in kwd:
+            add_object_to_object_session(self, kwd['history'])
         super().__init__(**kwd)
         self.compressed = compressed
 
