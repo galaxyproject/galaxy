@@ -128,7 +128,7 @@ export default {
         return {
             hideSelection: {},
             topIndex: 0,
-            pageSize: 2000,
+            pageSize: 50,
             params: {},
         };
     },
@@ -140,7 +140,7 @@ export default {
     },
     computed: {
         dataUrl() {
-            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.topIndex}&${this.queryString}`;
+            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.topIndex}&limit=${this.pageSize}&${this.queryString}`;
         },
         historyId() {
             return this.history.id;

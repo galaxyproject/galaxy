@@ -1,8 +1,17 @@
 <template>
     <div class="history-listing">
-        <virtual-list ref="listing" class="listing" :data-key="itemKey" :data-sources="getItems" :data-component="{}">
+        <virtual-list
+            ref="listing"
+            class="listing"
+            :data-key="itemKey"
+            :data-sources="getItems"
+            :data-component="{}"
+            @scroll="onScroll">
             <template v-slot:item="{ item }">
                 <slot name="history-item" :item="item" />
+            </template>
+            <template v-slot:footer>
+                <LoadingSpan v-if="loading" class="m-2" message="Loading" />
             </template>
         </virtual-list>
     </div>
@@ -10,9 +19,11 @@
 <script>
 import VirtualList from "vue-virtual-scroll-list";
 import { reverse, throttle } from "lodash";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
+        LoadingSpan,
         VirtualList,
     },
     props: {
@@ -52,6 +63,7 @@ export default {
     },
     methods: {
         updateItems() {
+            /* This function merges the existing data with new incoming data. */
             if (this.queryKey != this.queryCurrent) {
                 this.queryCurrent = this.queryKey;
                 this.items = [];
@@ -74,7 +86,8 @@ export default {
                 }
             }
         },
-        onScroll(event) {
+        onScrollHandler(event) {
+            /* CURRENTLY UNUSED
             // this avoids diagonal scrolling, we either scroll left/right or top/down
             // both events are throttled and the default handler has been prevented.
             if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
@@ -93,25 +106,12 @@ export default {
                 });
                 event.target.dispatchEvent(wheelEvent);
             }
+            */
         },
-        /*onScroll(event) {
-            const itemCount = this.items.length;
-            if (itemCount > 0) {
-                let topIndex = 0;
-                for (const index in event.target.childNodes) {
-                    const child = event.target.childNodes[index];
-                    if (child.offsetTop > event.target.scrollTop) {
-                        topIndex = index - 1;
-                        break;
-                    }
-                }
-                topIndex = Math.min(Math.max(topIndex, 0), itemCount - 1);
-                const topItem = this.getItems[topIndex];
-                if (topItem) {
-                    this.$emit("scroll", topIndex);
-                }
-            }
-        },*/
+        onScroll() {
+            const rangeStart = this.$refs.listing.range.start;
+            this.$emit("scroll", rangeStart);
+        },
     },
 };
 </script>
