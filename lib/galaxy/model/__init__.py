@@ -2673,6 +2673,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
         if set_hid:
             history_dataset_collection.hid = self._next_hid()
+        add_object_to_object_session(history_dataset_collection, self)
         history_dataset_collection.history = self
         # TODO: quota?
         self.dataset_collections.append(history_dataset_collection)
