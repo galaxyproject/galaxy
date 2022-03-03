@@ -1930,13 +1930,12 @@
 
 :Description:
     URL (with schema http/https) of the Galaxy instance as accessible
-    within your local network - if specified used as a default by
-    pulsar file staging and Jupyter Docker container for communicating
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
-    If you are attempting to set up GIEs on Mac OS X with Docker
-    Desktop for Mac and your Galaxy instance runs on port 8080 this
-    should be 'http://host.docker.internal:8080'.  For more details
-    see https://docs.docker.com/docker-for-mac/networking/
+    If you plan to run Interactive Tools make sure the docker
+    container can reach this URL. For more details see
+    `job_conf.xml.interactivetools`.
 :Default: ``http://localhost:8080``
 :Type: str
 
