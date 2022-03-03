@@ -3266,6 +3266,7 @@ class DefaultUserPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, user, action, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.action = action
         self.role = role
