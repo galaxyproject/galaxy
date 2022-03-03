@@ -6,17 +6,17 @@ Starting with Galaxy release 22.01 the default application webserver is [Gunicor
 We have made this move because uWSGI support for newer Python versions has been problematic and because
 we have modernized the API portion of our backend. The Galaxy web application is now an ASGI application
 driven by [FastAPI](https://fastapi.tiangolo.com/) and [Starlette](https://www.starlette.io/).
-This will enable numerous important features in the future that would not be possible (or more complicated to set up)
-otherwise. Importantly [FastAPI's documentation](https://fastapi.tiangolo.com/tutorial/) is very good and
+This will enable numerous important features in the future that would not be possible (or would be more complicated to set up)
+otherwise. Importantly, [FastAPI's documentation](https://fastapi.tiangolo.com/tutorial/) is very good and
 should increase developer productivity.
 
-The main advantage for our Users today is that Galaxy hosts documentation for its API as an [OpenAPI](https://www.openapis.org/)
+The main advantage for our users today is that Galaxy hosts documentation for its API as an [OpenAPI](https://www.openapis.org/)
 document that is directly generated from Galaxy's source code, and so will never be out of date or differ
-from the actual Implementation.
+from the actual implementation.
 Note that not all API endpoints have been modernized as of yet, this is an ongoing process.
 
 To see the API documentation for your Galaxy server you can go to `<galaxy_url>/api/docs`.
-Another immediate advantage is that all incoming Parameters are validated against a [Pydantic](https://pydantic-docs.helpmanual.io/) Schema.
+Another immediate advantage is that all incoming Parameters are validated against a [Pydantic](https://pydantic-docs.helpmanual.io/) schema.
 This will lead to fewer subtle bugs and make it easier to interface with Galaxy's API.
 
 In the future we are going to use Websockets and asynchronous programming to increase the reactivity
@@ -27,7 +27,7 @@ of history events in Galaxy. This would not be as simple under uWSGI.
 If you are using `run.sh` to start Galaxy and have not set up job handling via uWSGI mules
 you do not need to do anything to start Galaxy under Gunicorn.
 
-If you are using uwSGI mules please read the [Scaling and Load Balancing Documentation](scaling.md).
+If you are using uWSGI mules please read the [Scaling and Load Balancing Documentation](scaling.md).
 You will most likely want to set up the **Gunicorn + Webless** strategy.
 
 If you are using an upstream proxy server such as NGINX or Apache and you've been
@@ -39,7 +39,7 @@ If you are managing your Galaxy server via Ansible you can continue to run Galax
 under uWSGI while we are working on updating the Ansible roles for installing Galaxy.
 We will update instructions here and on the [Galaxy Training Network](https://training.galaxyproject.org/).
 
-If you are starting Web and Job Handlers using an external Process manager like
+If you are starting Web and Job Handlers using an external process manager like
 systemd or supervisor please read the [Scaling and Load Balancing Documentation](scaling.md).
-As mentioned in the scaling documentation, you can use gravity to generate supervisor configuration files
+As mentioned in the scaling documentation, you can use [gravity](https://github.com/galaxyproject/gravity) to generate supervisor configuration files
 that you can either use directly or as a basis to update your existing configuration.
