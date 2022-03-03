@@ -7,6 +7,7 @@ async function urlData({ url }) {
     try {
         console.debug("Requesting data from: ", url);
         const { data } = await axios.get(`${getAppRoot()}${url}`);
+        console.debug("Received response");
         return data;
     } catch (e) {
         rethrowSimple(e);

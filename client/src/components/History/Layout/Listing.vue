@@ -17,6 +17,7 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
 import VirtualList from "vue-virtual-scroll-list";
 import { reverse, throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
@@ -66,9 +67,8 @@ export default {
             /* This function merges the existing data with new incoming data. */
             if (this.queryKey != this.queryCurrent) {
                 this.queryCurrent = this.queryKey;
-                this.items = [];
+                this.items.splice(0);
             } else if (this.payload) {
-                let hasNewItems = false;
                 for (const item of this.payload) {
                     const itemIndex = item[this.itemKey];
                     if (this.items[itemIndex]) {
@@ -77,12 +77,8 @@ export default {
                             localItem[key] = item[key];
                         });
                     } else {
-                        hasNewItems = true;
-                        this.items[itemIndex] = item;
+                        Vue.set(this.items, itemIndex, item);
                     }
-                }
-                if (hasNewItems) {
-                    this.items = this.items.slice();
                 }
             }
         },
