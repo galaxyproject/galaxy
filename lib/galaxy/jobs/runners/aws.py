@@ -62,9 +62,10 @@ def _write_logfile(logfile, msg):
 
 def _add_galaxy_environment_variables(cpus, memory):
     # Set:
-    # GALAXY_SLOTS: to docker_cpu
-    # GALAXY_MEMORY_MB to docker_memory
-    return [{"name": "GALAXY_SLOTS", "value": cpus}, {"name": "GALAXY_MEMORY_MB", "value": memory}]
+    # GALAXY_SLOTS, round 0.25 vpuc to 1.
+    # GALAXY_MEMORY_MB
+    return [{"name": "GALAXY_SLOTS", "value": str(int(max(cpus, 1)))},
+            {"name": "GALAXY_MEMORY_MB", "value": str(memory)}]
 
 
 class AWSBatchJobRunner(AsynchronousJobRunner):
@@ -89,12 +90,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         "vcpu": {
             "default": 1.0,
             "map_name": "vcpu",
-            "map": str,
+            "map": float,
         },
         "memory": {
             "default": 2048,
             "map_name": "memory",
-            "map": str,
+            "map": int,
         },
         "job_queue": {
             "default": None,
@@ -154,6 +155,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         else:
             job_name, job_id = self._submit_ec2_job(job_def, job_wrapper, destination_params)
 
+        job_wrapper.set_external_id(job_id)
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,
             job_wrapper=job_wrapper,
@@ -225,13 +227,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 'resourceRequirements': [
                     {
                         'type': 'VCPU',
-                        'value': destination_params.get('vcpu')
+                        'value': str(destination_params.get('vcpu'))
                     },
                     {
                         'type': 'MEMORY',
-                        'value': destination_params.get('memory')
+                        'value': str(destination_params.get('memory'))
                     }
                 ],
+                'environment': _add_galaxy_environment_variables(
+                    destination_params.get('vcpu'),
+                    destination_params.get('memory')
+                ),
                 'logConfiguration': {
                     'logDriver': 'awslogs'
                 },
@@ -245,9 +251,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         )
 
         assert res['ResponseMetadata']['HTTPStatusCode'] == 200
-
         return res['jobDefinitionArn']
-
 
     def _register_ec2_job_definition(self, jd_name, docker_image, user_id, destination_params):
         return ''
@@ -269,43 +273,45 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         )
 
         assert res['ResponseMetadata']['HTTPStatusCode'] == 200
-
         return job_name, res['jobId']
 
     def _submit_ec2_job(self, job_def, job_wrapper, destination_params):
         pass
 
     @handle_exception_call
-    def stop_job(self, job_state):
-        job_id = job_state.job_id
+    def stop_job(self, job_wrapper):
+        job = job_wrapper.get_job()
+        external_id = job.get_job_runner_external_id()
+        job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
 
-        res = self._batch_client.describe_jobs
-        self._batch_client.terminate_job(jobId=job_id, reason="Killed by Galaxy!")
+        self._batch_client.terminate_job(jobId=external_id, reason="Terminated by Galaxy!")
         msg = "Job {name!r} is terminated"
-        LOGGER.debug(msg.format(name=job_state.job_name))
+        LOGGER.debug(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
         msg = "(name!r/runner!r) is still in {state!s} state, adding to" " the runner monitor queue"
         job_id = job.get_job_runner_external_id()
+        job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = self.JOB_NAME_PREFIX + str(job_id)
+        ajs.job_id = str(job_id)
+        ajs.job_name = job_name
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state=job.state))
+            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_name, state=job.state))
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_external_id, state="queued"))
+            LOGGER.debug(msg.format(name=job.id, runner=job.job_runner_name, state="queued"))
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, "stop_job", True):
-            self.stop_job(job_state)
+            self.stop_job(job_state.job_wrapper)
         job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state("failure", job_state)
         if not job_state.runner_state_handled:
@@ -396,7 +402,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     def _mark_as_failed(self, job_state, reason):
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
-        job_state.stop_job = True
+        job_state.stop_job = False
         job_state.job_wrapper.change_state(model.Job.states.ERROR)
         job_state.fail_message = reason
         self.mark_as_failed(job_state)
