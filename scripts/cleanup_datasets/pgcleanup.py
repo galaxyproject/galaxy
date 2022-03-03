@@ -13,6 +13,7 @@ import os
 import string
 import sys
 import time
+import uuid
 from collections import namedtuple
 from functools import partial
 
@@ -256,8 +257,11 @@ class RemovesObjects:
 
     def collect_removed_object_info(self, row):
         object_id = getattr(row, self.id_column, None)
+        object_uuid = getattr(row, self.uuid_column, None)
+        if object_uuid:
+            object_uuid = str(uuid.UUID(object_uuid))
         if object_id:
-            self.objects_to_remove.add(self.object_class(object_id, row.object_store_id))
+            self.objects_to_remove.add(self.object_class(object_id, row.object_store_id, object_uuid))
 
     def remove_objects(self):
         for object_to_remove in sorted(self.objects_to_remove):
@@ -303,6 +307,7 @@ class PurgesHDAs:
                     WHERE purged_hda_ids.id = metadata_file.hda_id
                 RETURNING metadata_file.hda_id AS hda_id,
                           metadata_file.id AS id,
+                          metadata_file.uuid AS uuid,
                           metadata_file.object_store_id AS object_store_id),
              deleted_icda_ids
           AS (     UPDATE implicitly_converted_dataset_association
@@ -402,35 +407,48 @@ class RequiresDiskUsageRecalculation:
 class RemovesMetadataFiles(RemovesObjects):
     """Causes MetadataFiles to be removed from the object store.
 
-    To use, ensure your query returns ``deleted_metadata_file_id`` and ``object_store_id`` columns.
+    To use, ensure your query returns ``deleted_metadata_file_id``, ``object_store_id``, and
+    ``deleted_metadata_file_uuid`` columns.
     """
-    object_class = namedtuple('MetadataFile', ['id', 'object_store_id'])
+    object_class = namedtuple('MetadataFile', ['id', 'object_store_id', 'uuid'])
     id_column = 'deleted_metadata_file_id'
+    uuid_column = 'deleted_metadata_file_uuid'
 
     def remove_object(self, metadata_file):
+        store_by = self.object_store.get_store_by(metadata_file)
+        if store_by == 'uuid':
+            alt_name = f"metadata_{metadata_file.uuid}.dat"
+        else:
+            alt_name = f"metadata_{metadata_file.id}.dat"
         self.remove_from_object_store(
             metadata_file,
             dict(
                 extra_dir='_metadata_files',
                 extra_dir_at_root=True,
-                alt_name="metadata_%d.dat" % metadata_file.id))
+                alt_name=alt_name))
 
 
 class RemovesDatasets(RemovesObjects):
     """Causes Datasets to be removed from the object store.
 
-    To use, ensure your query returns ``purged_dataset_id`` and ``object_store_id`` columns.
+    To use, ensure your query returns ``purged_dataset_id``, ``object_store_id``, and ``purged_dataset_uuid`` columns.
     """
-    object_class = namedtuple('Dataset', ['id', 'object_store_id'])
+    object_class = namedtuple('Dataset', ['id', 'object_store_id', 'uuid'])
     id_column = 'purged_dataset_id'
+    uuid_column = 'purged_dataset_uuid'
 
     def remove_object(self, dataset):
+        store_by = self.object_store.get_store_by(dataset)
+        if store_by == 'uuid':
+            extra_dir = f"dataset_{dataset.uuid}_files"
+        else:
+            extra_dir = f"dataset_{dataset.id}_files"
         self.remove_from_object_store(dataset, dict())
         self.remove_from_object_store(
             dataset,
             dict(
                 dir_only=True,
-                extra_dir="dataset_%d_files" % dataset.id),
+                extra_dir=extra_dir),
             entire_dir=True,
             check_exists=True)
 
@@ -605,6 +623,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              purged_history_ids.id AS purged_history_id,
              purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id,
@@ -739,6 +758,7 @@ class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
              purged_history_ids.id AS purged_history_id,
              purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id,
@@ -804,6 +824,7 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -841,6 +862,7 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -882,6 +904,7 @@ class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalcul
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -925,6 +948,7 @@ class PurgeHDAsOfPurgedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Act
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -976,6 +1000,7 @@ class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
              purged_history_ids.user_id AS recalculate_disk_usage_user_id,
              purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -1067,6 +1092,7 @@ class PurgeDatasets(RemovesDatasets, Action):
                     WHERE deleted{force_retry_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
+                          uuid,
                           object_store_id),
              dataset_events
           AS (INSERT INTO cleanup_event_dataset_association
@@ -1074,6 +1100,7 @@ class PurgeDatasets(RemovesDatasets, Action):
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_dataset_ids)
       SELECT id AS purged_dataset_id,
+             uuid AS purged_dataset_uuid,
              object_store_id AS object_store_id
         FROM purged_dataset_ids
     ORDER BY id
