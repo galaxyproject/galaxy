@@ -232,6 +232,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         'value': destination_params.get('memory')
                     }
                 ],
+                'logConfiguration': {
+                    'logDriver': 'awslogs'
+                },
+                'networkConfiguration': {
+                    'assignPublicIp': 'ENABLED'
+                },
                 'fargatePlatformConfiguration': {
                     'platformVersion': destination_params.get('fargate_version')
                 }
@@ -256,7 +262,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             jobDefinition=job_def,
             containerOverrides={
                 'command': [
-                    f'$SHELL {command_script_path}',
+                    '/bin/bash',
+                    f'{command_script_path}',
                 ]
             }
         )
@@ -337,7 +344,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.check_watched_items_by_batch(0, len(self.watched))
 
     def check_watched_items_by_batch(self, start: int, end: int):
-        jobs = self.watched[start: self.MAX_JOBS_PER_QUERY]
+        jobs = self.watched[start: start+self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
 
