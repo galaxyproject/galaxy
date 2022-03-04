@@ -17,6 +17,7 @@ from kombu import serialization
 
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
+from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
 from ._serialization import (
@@ -128,7 +129,7 @@ if prune_interval > 0:
 celery_app.conf.timezone = "UTC"
 
 
-def galaxy_task(*args, **celery_task_kwd):
+def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIER_NAME
 
@@ -138,7 +139,18 @@ def galaxy_task(*args, **celery_task_kwd):
         def wrapper(*args, **kwds):
             app = get_galaxy_app()
             assert app
-            return app.magic_partial(func)(*args, **kwds)
+            desc = func.__name__
+            if action is not None:
+                desc += f" to {action}"
+            timer = ExecutionTimer()
+            try:
+                rval = app.magic_partial(func)(*args, **kwds)
+                message = f"Successfully executed Celery task {desc} {timer}"
+                log.info(message)
+                return rval
+            except Exception:
+                log.warning(f"Celery task execution failed for {desc} {timer}")
+                raise
 
         return wrapper
 
