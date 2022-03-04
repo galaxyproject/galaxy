@@ -55,11 +55,14 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             }
         },
         render() {
-            return this.$scopedSlots.default({
-                loading: this.loading,
-                result: this.result,
-                error: this.error,
-            });
+            return (
+                this.$scopedSlots.default &&
+                this.$scopedSlots.default({
+                    loading: this.loading,
+                    result: this.result,
+                    error: this.error,
+                })
+            );
         },
         methods: {
             doQuery() {
