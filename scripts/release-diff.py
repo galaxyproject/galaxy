@@ -135,8 +135,6 @@ def main(old_revision, new_revision=None):
     globs = (
         "config/*.yml.sample",
         "lib/galaxy/config/schemas/*schema.yml",
-        "lib/galaxy/webapps/reports/config_schema.yml",
-        "lib/tool_shed/webapp/config_schema.yml",
     )
     files_to_diff = [f for g in globs for f in glob.glob(g)]
     added = {}

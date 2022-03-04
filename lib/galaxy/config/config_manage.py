@@ -28,6 +28,8 @@ if __name__ == "__main__":
 
 from galaxy.config import (
     GALAXY_CONFIG_SCHEMA_PATH,
+    REPORTS_CONFIG_SCHEMA_PATH,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
     UWSGI_SCHEMA_PATH,
 )
 from galaxy.config.schema import (
@@ -429,7 +431,7 @@ SHED_APP = App(
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/tool_shed/webapp/config_schema.yml",
+    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
     "tool_shed.webapp.buildapp:uwsgi_app()",
 )
 REPORTS_APP = App(
@@ -437,7 +439,7 @@ REPORTS_APP = App(
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    "lib/galaxy/webapps/reports/config_schema.yml",
+    str(REPORTS_CONFIG_SCHEMA_PATH),
     "galaxy.webapps.reports.buildapp:uwsgi_app()",
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}

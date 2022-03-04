@@ -66,6 +66,8 @@ ISO_DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 GALAXY_APP_NAME = "galaxy"
 GALAXY_SCHEMAS_PATH = files("galaxy.config") / "schemas"
 GALAXY_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "config_schema.yml"
+REPORTS_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "reports_config_schema.yml"
+TOOL_SHED_CONFIG_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "tool_shed_config_schema.yml"
 UWSGI_SCHEMA_PATH = GALAXY_SCHEMAS_PATH / "uwsgi_schema.yml"
 LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     "disable_existing_loggers": False,
