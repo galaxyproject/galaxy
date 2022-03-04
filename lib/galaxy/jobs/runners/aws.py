@@ -350,9 +350,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def check_watched_items(self):
-        self.check_watched_items_by_batch(0, len(self.watched))
+        done = []
+        self.check_watched_items_by_batch(0, len(self.watched), done)
+        self.watched = [x for x in self.watched if x[0] not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int):
+    def check_watched_items_by_batch(self, start: int, end: int, done: list):
         jobs = self.watched[start: start+self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
@@ -369,26 +371,23 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             job_state = jobs_dict[job_id]
 
             if status == 'SUCCEEDED':
-                self.watched.remove((job_id, job_state))
-                start -= 1
                 self._mark_as_successful(job_state)
+                done.append(job_id)
             elif status == 'FAILED':
-                self.watched.remove((job_id, job_state))
-                start -= 1
                 reason = job['statusReason']
                 self._mark_as_failed(job_state, reason)
+                done.append(job_id)
             elif status in ('SUBMITTED', 'PENDING', 'RUNNABLE', 'STARTING', 'RUNNING'):
                 self._mark_as_active(job_state)
             # TODO else?
 
         for job_id in set(jobs_dict.keys()) - set(gotten):
             job_state = jobs_dict[job_id]
-            self.watched.remove((job_id, job_state))
-            start -= 1
             reason = f"The track of Job {job_state} was lost for unknown reason!"
             self._mark_as_failed(job_state, reason)
+            done.append(job_id)
 
-        self.check_watched_items_by_batch(start+self.MAX_JOBS_PER_QUERY, end)
+        self.check_watched_items_by_batch(start+self.MAX_JOBS_PER_QUERY, end, done)
 
     def _mark_as_successful(self, job_state):
         msg = "Job {name!r} finished successfully"
