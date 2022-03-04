@@ -2,7 +2,7 @@
 
 ## Why do we migrate away from uWSGI
 
-Starting with Galaxy release 22.01 the default application webserver is [Gunicorn](https://gunicorn.org/), which replaces [uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/).
+Starting with Galaxy release 22.01 the default application webserver is [Gunicorn](https://gunicorn.org/), which replaces [uWSGI](https://uwsgi-docs.readthedocs.io/en/latest/). We will remove support for running Galaxy under uWSGI in Galaxy release 22.05.
 We have made this move because uWSGI support for newer Python versions has been problematic and because
 we have modernized the API portion of our backend. The Galaxy web application is now an ASGI application
 driven by [FastAPI](https://fastapi.tiangolo.com/) and [Starlette](https://www.starlette.io/).
