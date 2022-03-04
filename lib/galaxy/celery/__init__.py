@@ -142,7 +142,12 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             desc = func.__name__
             if action is not None:
                 desc += f" to {action}"
-            timer = ExecutionTimer()
+
+            try:
+                timer = app.execution_timer_factory.get_timer("internals.tasks.{func.__name__}", desc)
+            except AttributeError:
+                timer = ExecutionTimer()
+
             try:
                 rval = app.magic_partial(func)(*args, **kwds)
                 message = f"Successfully executed Celery task {desc} {timer}"
