@@ -7,9 +7,11 @@ import { LastQueue } from "utils/promise-queue";
  *
  * @param   {Function}  lookup  async function that loads the result, parameters will be an object
  *                              whose properties are the attributes assigned to the provider component
+ * @param   {Function}  stopRefresh function that will be called with result of lookup.
+ *                                  If function returns true refresh will be stopped.
  * @return  {VueComponentOptions} Vue component options definition
  */
-export const SingleQueryProvider = (lookup) => {
+export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
     return {
         props: {
@@ -23,13 +25,14 @@ export const SingleQueryProvider = (lookup) => {
             },
             autoTime: {
                 type: Number,
-                default: 500,
+                default: 3000,
             },
         },
         data() {
             return {
                 result: null,
                 error: null,
+                timeoutId: null,
             };
         },
         created() {
@@ -45,15 +48,10 @@ export const SingleQueryProvider = (lookup) => {
         },
         mounted() {
             this.doQuery();
-            if (this.autoRefresh) {
-                this.interval = setInterval(() => {
-                    this.doQuery();
-                }, this.autoTime);
-            }
         },
         destroyed() {
-            if (this.interval) {
-                clearInterval(this.interval);
+            if (this.timeoutId) {
+                clearTimeout(this.timeoutId);
             }
         },
         render() {
@@ -78,7 +76,13 @@ export const SingleQueryProvider = (lookup) => {
                 lookupPromise.then(
                     (result) => {
                         this.result = result;
+                        this.$emit("update:result", result);
                         this.error = null;
+                        if (this.autoRefresh && !stopRefresh(result)) {
+                            this.timeoutId = setTimeout(() => {
+                                this.doQuery();
+                            }, this.autoTime);
+                        }
                     },
                     (err) => {
                         this.result = {};
