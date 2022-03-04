@@ -12,11 +12,11 @@
                 </template>
 
                 <template v-slot:listcontrols>
-                    <CollectionOperations :collection="dsc" :is-root="isRoot" />
+                    <CollectionOperations v-if="isRoot" :dsc="dsc" />
                 </template>
 
                 <template v-slot:details>
-                    <CollectionDetails :dsc="dsc" :writeable="writeable" @update:dsc="updateDsc(dsc, $event)" />
+                    <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
                 </template>
 
                 <template v-slot:listing>
@@ -80,14 +80,12 @@ export default {
         isRoot() {
             return this.dsc == this.rootCollection;
         },
-        writeable() {
-            return this.isRoot;
-        },
         rootCollection() {
             return this.selectedCollections[0];
         },
         url() {
-            return this.dsc.contents_url.substring(1);
+            const source = this.dsc.object || this.dsc;
+            return source.contents_url.substring(1);
         },
     },
     methods: {

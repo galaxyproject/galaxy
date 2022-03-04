@@ -1,6 +1,6 @@
 <template>
     <section>
-        <nav v-if="isRoot" class="content-operations d-flex justify-content-between bg-secondary">
+        <nav class="content-operations d-flex justify-content-between bg-secondary">
             <b-button-group>
                 <b-button title="Download Collection" size="sm" variant="link" download :href="downloadUrl">
                     <Icon class="mr-1" icon="download" />
@@ -14,13 +14,12 @@
 <script>
 export default {
     props: {
-        isRoot: { type: Boolean, required: true },
-        collection: { type: Object, required: true },
+        dsc: { type: Object, required: true },
     },
     computed: {
         /** @return {String} */
         downloadUrl() {
-            return `${this.collection.url}/download`;
+            return `${this.dsc.url}/download`;
         },
     },
 };
