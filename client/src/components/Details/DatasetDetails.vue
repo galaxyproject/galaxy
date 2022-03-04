@@ -10,8 +10,8 @@
                     <JobDetailsProvider
                         v-if="!isDatasetLoading && dataset.creating_job !== null"
                         :jobid="dataset.creating_job"
-                        v-slot="{ result: job, loading: isJobLoading }"
-                        :use-cache="false">
+                        auto-refresh
+                        v-slot="{ result: job, loading: isJobLoading }">
                         <div v-if="!isJobLoading">
                             <dataset-information class="detail" :hda_id="datasetId" />
                             <job-parameters class="detail" dataset_type="hda" :dataset-id="datasetId" />
