@@ -9683,6 +9683,8 @@ def receive_init(target, args, kwargs):
     Addresses SQLAlchemy 2.0 compatibility issue: see inline documentation for
     `add_object_to_object_session` in galaxy.model.orm.util.
     """
-    history = kwargs.get("history")
-    if history:
-        add_object_to_object_session(target, history)
+    for key in ("history", "copied_from_history_dataset_collection_association"):
+        obj = kwargs.get(key)
+        if obj:
+            add_object_to_object_session(target, obj)
+            return  # Once is enough.
