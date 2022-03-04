@@ -788,7 +788,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 add_object_to_object_session(icja, icj)
                 icja.implicit_collection_jobs = icj
                 if job in object_import_tracker.jobs_by_key:
-                    icja.job = object_import_tracker.jobs_by_key[job]
+                    job_instance = object_import_tracker.jobs_by_key[job]
+                    add_object_to_object_session(icja, job_instance)
+                    icja.job = job_instance
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
