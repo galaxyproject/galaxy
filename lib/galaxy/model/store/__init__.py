@@ -31,6 +31,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
+    add_object_to_object_session,
     add_object_to_session,
     get_object_session,
 )
@@ -784,6 +785,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             icj.jobs = []
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
+                add_object_to_object_session(icja, icj)
                 icja.implicit_collection_jobs = icj
                 if job in object_import_tracker.jobs_by_key:
                     icja.job = object_import_tracker.jobs_by_key[job]
