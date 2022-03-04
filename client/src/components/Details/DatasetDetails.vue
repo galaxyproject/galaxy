@@ -2,7 +2,7 @@
     <ConfigProvider v-slot="{ config }">
         <DatasetProvider
             :id="datasetId"
-            v-slot="{ item: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
+            v-slot="{ result: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
             <div>
                 <LoadingSpan v-if="isDatasetLoading" />
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />

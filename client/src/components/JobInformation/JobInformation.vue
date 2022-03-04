@@ -72,7 +72,7 @@
 </template>
 
 <script>
-import { mapCacheActions } from "vuex-cache";
+import { mapActions } from "vuex";
 import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -98,8 +98,13 @@ export default {
             default: false,
         },
     },
+    data() {
+        return {
+            jobStateInterval: null,
+        };
+    },
     created: function () {
-        this.fetchJob(this.job_id);
+        this.pollUntilTerminal();
     },
     computed: {
         job: function () {
@@ -111,14 +116,26 @@ export default {
             );
         },
         jobIsTerminal() {
-            return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
+            return this.job.state && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
         },
     },
     methods: {
-        ...mapCacheActions(["fetchJob"]),
+        ...mapActions(["fetchJob"]),
+        pollUntilTerminal() {
+            console.log("calling fetchJob");
+            this.fetchJob(this.job_id).then((response) => {
+                if (!this.jobIsTerminal) {
+                    console.log("Scheduling poll")
+                    this.jobStateInterval = setTimeout(this.pollUntilTerminal, 3000)
+                }
+            })
+        },
         getAppRoot() {
             return getAppRoot();
         },
     },
+    beforeDestroy: function() {
+        clearTimeout(this.jobStateInterval);
+    }
 };
 </script>

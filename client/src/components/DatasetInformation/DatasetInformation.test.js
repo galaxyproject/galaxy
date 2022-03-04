@@ -13,7 +13,7 @@ const mockDatasetProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
-            item: datasetResponse,
+            result: datasetResponse,
         });
     },
 };
