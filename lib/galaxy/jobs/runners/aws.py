@@ -169,16 +169,19 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         tool_id = job_wrapper.tool.id
         tool_version = job_wrapper.tool.version
         h = hashlib.new("sha256")
+        h.update(smart_str(tool_id))
         h.update(smart_str(tool_version))
-        compute_type = 'fargate' if 'fargate_version' in destination_params else 'ec2'
+        for k, v in destination_params.items():
+            h.update(smart_str(k+str(v)))
+        queue_name = destination_params.get('job_queue').rsplit('/', 1)[-1]
 
-        jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{compute_type}"
+        jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
         res = self._batch_client.describe_job_definitions(
             jobDefinitionName=jd_name,
             status="ACTIVE"
         )
         if not res['jobDefinitions']:
-            docker_image = docker_image = self._find_container(job_wrapper).container_id
+            docker_image = self._find_container(job_wrapper).container_id
             # user_id = job_wrapper.user.id
             jd_arn = self._register_job_definition(jd_name, docker_image, destination_params)
         else:
