@@ -28,8 +28,13 @@ log = get_logger(__name__)
 
 MAIN_TASK_MODULE = "galaxy.celery.tasks"
 TASKS_MODULES = [MAIN_TASK_MODULE]
+PYDANTIC_AWARE_SERIALIER_NAME = "pydantic-aware-json"
 
 APP_LOCAL = local()
+
+serialization.register(
+    PYDANTIC_AWARE_SERIALIER_NAME, encoder=schema_dumps, decoder=schema_loads, content_type="application/json"
+)
 
 
 def set_thread_app(app):
@@ -121,14 +126,6 @@ if prune_interval > 0:
         },
     }
 celery_app.conf.timezone = "UTC"
-
-
-PYDANTIC_AWARE_SERIALIER_NAME = "pydantic-aware-json"
-
-
-serialization.register(
-    PYDANTIC_AWARE_SERIALIER_NAME, encoder=schema_dumps, decoder=schema_loads, content_type="application/json"
-)
 
 
 def galaxy_task(*args, **celery_task_kwd):
