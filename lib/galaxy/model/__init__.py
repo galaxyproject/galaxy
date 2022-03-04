@@ -58,6 +58,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    event,
     false,
     ForeignKey,
     func,
@@ -9671,3 +9672,17 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
+
+
+@event.listens_for(HistoryDatasetCollectionAssociation, "init")
+def receive_init(target, args, kwargs):
+    """
+    Listens for the 'init' event. This is not called when 'target' is loaded from the database.
+    https://docs.sqlalchemy.org/en/14/orm/events.html#sqlalchemy.orm.InstanceEvents.init
+
+    Addresses SQLAlchemy 2.0 compatibility issue: see inline documentation for
+    `add_object_to_object_session` in galaxy.model.orm.util.
+    """
+    history = kwargs.get("history")
+    if history:
+        add_object_to_object_session(target, history)
