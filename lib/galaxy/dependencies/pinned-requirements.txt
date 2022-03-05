@@ -51,7 +51,7 @@ ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or pyth
 edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.74.1; python_full_version >= "3.6.1"
+fastapi==0.75.0; python_full_version >= "3.6.1"
 fs==2.4.15
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
@@ -64,7 +64,7 @@ h11==0.12.0; python_version >= "3.7"
 h5py==3.6.0; python_version >= "3.7"
 humanfriendly==10.0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0"
 idna==3.3; python_full_version >= "3.6.2" and python_version >= "3.7" and python_version < "4"
-importlib-metadata==4.11.1; python_version == "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "3.8" or python_full_version >= "3.6.0" and python_version < "3.8" and python_version >= "3.7")
+importlib-metadata==4.11.2; python_version == "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "3.8" or python_full_version >= "3.6.0" and python_version < "3.8" and python_version >= "3.7")
 importlib-resources==5.4.0; python_version >= "3.6"
 isa-rwval==0.10.10
 isodate==0.6.1; python_version >= "3.7" and python_version < "4"
@@ -76,7 +76,7 @@ lxml==4.8.0; (python_version >= "2.7" and python_full_version < "3.0.0") or (pyt
 mako==1.1.6; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.4.0")
 markdown==3.3.6; python_version >= "3.6"
 markupsafe==2.1.0; python_version >= "3.7"
-mercurial==6.0.3
+mercurial==6.1
 mistune==0.8.4; python_version >= "3.7" and python_version < "4"
 mrcfile==1.3.0
 msgpack==1.0.3; python_version >= "3.7" and python_version < "4"
@@ -142,7 +142,7 @@ social-auth-core==4.0.3
 sortedcontainers==2.4.0
 sqlalchemy-migrate==0.13.0
 sqlalchemy==1.4.31; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
-sqlitedict==1.7.0
+sqlitedict==2.0.0
 sqlparse==0.4.2; python_version >= "3.5"
 starlette-context==0.3.3; python_version >= "3.7"
 starlette==0.17.1; python_version >= "3.6"
@@ -152,7 +152,7 @@ tempita==0.5.2
 tenacity==8.0.1; python_version >= "3.6"
 tifffile==2021.11.2; python_version >= "3.7"
 tornado==6.1; python_version >= "3.5"
-tqdm==4.62.3; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
+tqdm==4.63.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
 tuswsgi==0.5.4
 typing-extensions==4.1.1; python_version >= "3.6"
 tzlocal==2.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
