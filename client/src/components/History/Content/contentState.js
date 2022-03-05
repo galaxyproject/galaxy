@@ -35,7 +35,7 @@ export default {
     },
     /** has no data */
     empty: {
-        status: "danger",
+        status: "success",
         text: "No data",
     },
     /** has successfully completed running */
