@@ -71,9 +71,7 @@
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
-                    <h6 v-if="item.collection_type" class="description py-1">
-                        a {{ item.collection_type }} with {{ item.element_count }} items
-                    </h6>
+                    <ContentDescription :item="item" />
                     <div v-if="!expanded && item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
@@ -87,11 +85,13 @@
 <script>
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import { Nametag } from "components/Nametags";
+import ContentDescription from "./ContentDescription";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import CONTENTSTATE from "./contentState";
 
 export default {
     components: {
+        ContentDescription,
         DatasetDetails,
         Nametag,
     },
@@ -112,8 +112,10 @@ export default {
         },
         clsStatus() {
             const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
-            if (!status || this.selected) {
+            if (this.selected) {
                 return "alert-info";
+            } else if (!status) {
+                return `alert-success`;
             } else {
                 return `alert-${status}`;
             }

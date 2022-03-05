@@ -1,16 +1,15 @@
 <template>
     <Details
-        :name="dsc.name"
+        :name="name"
         :tags="dsc.tags"
         :writeable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
-            <h3 data-description="collection name display">{{ dsc.name || "(Collection Name)" }}</h3>
+            <h3 data-description="collection name display">{{ name || "(Collection Name)" }}</h3>
             <div class="mt-1">
                 <div class="description">
-                    {{ dsc.collectionType | localize }} of {{ dsc.totalElements }}
-                    <b v-if="isHomogeneous">{{ homogeneousDatatype }} </b>datasets
+                    <ContentDescription :item="dsc" />
                 </div>
             </div>
         </template>
@@ -19,9 +18,11 @@
 
 <script>
 import Details from "components/History/Layout/Details";
+import ContentDescription from "components/History/Content/ContentDescription";
 
 export default {
     components: {
+        ContentDescription,
         Details,
     },
     props: {
@@ -29,13 +30,8 @@ export default {
         writeable: { type: Boolean, required: true },
     },
     computed: {
-        /** @return {Boolean} */
-        isHomogeneous() {
-            return this.dsc.isHomogeneous;
-        },
-        /** @return {String} */
-        homogeneousDatatype() {
-            return this.dsc.homogeneousDatatype;
+        name() {
+            return this.dsc.name || this.dsc.element_identifier;
         },
     },
 };
