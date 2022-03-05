@@ -6,12 +6,8 @@
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
-            <h3 data-description="collection name display">{{ name || "(Collection Name)" }}</h3>
-            <div class="mt-1">
-                <div class="description">
-                    <ContentDescription :item="dsc" />
-                </div>
-            </div>
+            <h3 data-description="collection name display">{{ name || "Collection" }}</h3>
+            <ContentDescription :item="dsc" />
         </template>
     </Details>
 </template>

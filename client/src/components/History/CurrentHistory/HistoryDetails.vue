@@ -6,7 +6,7 @@
         :writeable="writeable"
         @save="$emit('update:currentHistory', $event)">
         <template v-slot:name>
-            <h3 data-description="history name display">{{ history.name || "(History Name)" }}</h3>
+            <h3 data-description="history name display">{{ history.name || "History" }}</h3>
             <h5 class="history-size">
                 <span v-if="history.size">{{ history.size | niceFileSize }}</span>
                 <span v-else v-localize>(empty)</span>

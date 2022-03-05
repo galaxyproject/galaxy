@@ -1,7 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" v-slot="{ result: payload }">
+    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" auto-refresh v-slot="{ result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
@@ -69,7 +69,8 @@ export default {
     },
     data() {
         return {
-            limit: 500,
+            offset: 0,
+            limit: 100,
         };
     },
     computed: {
@@ -85,7 +86,8 @@ export default {
         },
         url() {
             const source = this.dsc.object || this.dsc;
-            return source.contents_url.substring(1);
+            const contentUrl = source.contents_url.substring(1);
+            return `${contentUrl}?offset=${this.offset}&limit=${this.limit}`;
         },
     },
     methods: {
