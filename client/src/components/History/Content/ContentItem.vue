@@ -78,6 +78,7 @@
                 </h5>
             </div>
         </div>
+        <-- collections are not expandable, so we only need the DatasetDetails component here -->
         <DatasetDetails v-if="expanded" @edit="onEdit" :item="item" />
     </div>
 </template>
