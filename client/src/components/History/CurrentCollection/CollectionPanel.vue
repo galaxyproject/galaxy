@@ -86,8 +86,8 @@ export default {
         },
         url() {
             const source = this.dsc.object || this.dsc;
-            const contentUrl = source.contents_url.substring(1);
-            return `${contentUrl}?offset=${this.offset}&limit=${this.limit}`;
+            const contentsUrl = source.contents_url.substring(1);
+            return `${contentsUrl}?offset=${this.offset}&limit=${this.limit}`;
         },
     },
     methods: {
