@@ -164,7 +164,7 @@ export default {
                 }
                 return "ok";
             } else {
-                return item.state || item.populated_state;
+                return item.state;
             }
         },
         hasMatches(payload) {
