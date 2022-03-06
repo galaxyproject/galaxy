@@ -167,7 +167,7 @@ export default {
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
         },
         onDisplay() {
-            const id = this.item.id;
+            const id = this.item.object?.id || this.item.id;
             useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);
