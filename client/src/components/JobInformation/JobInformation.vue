@@ -123,8 +123,5 @@ export default {
             this.job = job;
         },
     },
-    beforeDestroy: function() {
-        clearTimeout(this.jobStateInterval);
-    }
 };
 </script>
