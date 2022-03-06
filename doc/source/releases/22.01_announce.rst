@@ -8,11 +8,11 @@ January 2022 Galaxy Release (v 22.01)
 Highlights
 ===========================================================
 
-**Galaxy starts as fastAPI application by default**
+**Galaxy starts as FastAPI application by default**
   Starting galaxy via ``run.sh`` will use the new `gravity process manager
   <https://github.com/galaxyproject/gravity>`__.
-  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `fastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and celery processes.
-  For more details see the documentation at <WRITE AND PUT DOCS HERE>.
+  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and celery processes.
+  For more details and instructions please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
   `Pull Request 13224`_
 
 **User Preferences can be encrypted in Galaxy Vault**
@@ -53,6 +53,9 @@ Deprecation Notices
 ===========================================================
 PostgreSQL 9.x is now EOL and is no longer supported.  Please upgrade to PostgreSQL 10 or higher.
 Python 3.6 is officially EOL and Galaxy no longer tests or maintains compatibility.
+This release will be the last Galaxy release that can run under Paste or uWSGI.
+Please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__ for .
+instructions on how to upgrade.
 
 Configuration Changes
 =====================
