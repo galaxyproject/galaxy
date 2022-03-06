@@ -4,15 +4,8 @@
 22.01
 ===============================
 
-.. announce_start
-
 Enhancements
 -------------------------------
-
-.. major_feature
-
-
-.. feature
 
 * Swap to Webpack5
   `Pull Request 11710`_
@@ -62,10 +55,6 @@ Enhancements
   `Pull Request 13175`_
 * Use Gravity to run Galaxy
   `Pull Request 13224`_
-.. enhancement_tag_viz
-
-.. enhancement_tag_datatypes
-
 * Add datatype iml_dataset subclassing html
   (thanks to `@knutwa-ext <https://github.com/knutwa-ext>`__).
   `Pull Request 12099`_
@@ -115,16 +104,12 @@ Enhancements
 * Add phyloseq datatype
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13462`_
-.. enhancement_tag_tools
-
 * Allow any format in export tool
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 13151`_
 * Add bioconductor as valid xref for tools
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 13268`_
-.. enhancement_tag_workflows
-
 * Test cases to verify only admins can import workflows from paths.
   `Pull Request 12513`_
 * Remove deprecated workflow run path through the API.
@@ -138,8 +123,6 @@ Enhancements
 * Enable macros for workflow scheduler config
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13167`_
-.. enhancement_tag_ui
-
 * Remove history service worker
   `Pull Request 12510`_
 * Implement fastAPI prefix handling, run selenium tests against prefix
@@ -148,12 +131,8 @@ Enhancements
   `Pull Request 13237`_
 * Fix toolbox cache
   `Pull Request 13333`_
-.. enhancement_tag_jobs
-
 * Limit maximum number of discovered files per job
   `Pull Request 13170`_
-.. enhancement_tag_admin
-
 * Fixes for HTML sanitization
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 13059`_
@@ -170,8 +149,6 @@ Enhancements
   `Pull Request 13470`_
 * Add Migrating from uWSGI to Gunicorn and FastAPI document
   `Pull Request 13480`_
-.. enhancement
-
 * Separated data PVC
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 12345`_
@@ -430,8 +407,6 @@ Enhancements
   `Pull Request 13461`_
 * Pin gravity to 0.10.0
   `Pull Request 13483`_
-.. small_enhancement
-
 * FastAPI: Histories API migration
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 12386`_
@@ -594,18 +569,11 @@ Enhancements
 Fixes
 -------------------------------
 
-.. major_bug
-
-
-.. bug_tag_viz
-
 * Large peptide IDs
   (thanks to `@reid-wagner <https://github.com/reid-wagner>`__).
   `Pull Request 13261`_
 * Try to unit test more of DictParser in Viz component.
   `Pull Request 13385`_
-.. bug_tag_datatypes
-
 * Allow trailing semicolon in last column of gff3
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12673`_
@@ -628,8 +596,6 @@ Fixes
 * Enable display of BAM data without sequence info
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 13219`_
-.. bug_tag_tools
-
 * Fix containerized NCBI Datasets Genomes data source tool
   `Pull Request 12915`_
 * Update interactivetool_pyiron.xml
@@ -646,8 +612,6 @@ Fixes
 * Fix `UnboundLocalError` in sort collection tool
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13429`_
-.. bug_tag_workflows
-
 * Misc fixes - round 2
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 12982`_
@@ -666,8 +630,6 @@ Fixes
   `Pull Request 13285`_
 * Fix construction of SelectToolParameter default value
   `Pull Request 13293`_
-.. bug_tag_ui
-
 * RxJS major version upgrade, client unit testing enhancements.
   `Pull Request 12686`_
 * Polyfill overhaul, fixes.
@@ -684,8 +646,6 @@ Fixes
   `Pull Request 13225`_
 * Bump nanoid from 3.1.29 to 3.2.0 in /client
   `Pull Request 13226`_
-.. bug_tag_jobs
-
 * Guard against instance of GenomeIndexToolData
   `Pull Request 12523`_
 * Fix job runner shutdown
@@ -715,8 +675,6 @@ Fixes
 * Allow UNIVA destinations without runtime and memory max given in the nativespec
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13343`_
-.. bug_tag_admin
-
 * Fix header content-length, add test for send_file
   `Pull Request 13120`_
 * Add option for disabling tool shed datatypes...
@@ -727,8 +685,6 @@ Fixes
   `Pull Request 13315`_
 * Drop uWSGI from scaling documentation
   `Pull Request 13381`_
-.. bug
-
 * Reimplement collection order test, add wrong order, add `expect_test_failure` attribute
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 10304`_
