@@ -64,13 +64,6 @@ export default {
         text: "The job creating this dataset was cancelled before completion.",
         icon: "exclamation-circle",
     },
-    //TODO: not in trans.app.model.Dataset.states - is in database
-    /** not accessible to the current user (i.e. due to permissions) */
-    noPermission: {
-        status: "danger",
-        text: "You do not have permission to view this dataset.",
-        icon: "exclamation-circle",
-    },
     // found in job-state summary model?
     // this an actual state value or something derived from deleted prop?
     deleted: {

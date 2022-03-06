@@ -10,7 +10,7 @@
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="expandable && state !== 'noPermission' && state !== 'discarded'"
+                        v-if="expandable && state !== 'discarded'"
                         :disabled="isUnavailable"
                         :title="displayButtonTitle"
                         class="px-1"
