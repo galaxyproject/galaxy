@@ -41,7 +41,7 @@
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
                             @reset-selection="resetSelection"
-                            @hide-selection="onhideSelection"
+                            @hide-selection="onHideSelection"
                             @select-all="selectItems(payload)"
                             @collapse-all="collapseAll" />
                     </template>
@@ -64,7 +64,6 @@
                                     :item="item"
                                     :id="item.hid"
                                     :name="item.name"
-                                    :state="getState(item)"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="item.history_content_type == 'dataset'"
                                     :selected="isSelected(item)"
@@ -155,25 +154,13 @@ export default {
         },
     },
     methods: {
-        getState(item) {
-            if (item.job_state_summary) {
-                for (const key of ["error", "failed", "paused", "upload", "running"]) {
-                    if (item.job_state_summary[key] > 0) {
-                        return key;
-                    }
-                }
-                return "ok";
-            } else {
-                return item.state;
-            }
-        },
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },
         onScroll(offset) {
             this.offset = offset;
         },
-        onhideSelection(selectedItems) {
+        onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
                 this.hideSelection[item.hid] = true;
             });

@@ -25,12 +25,10 @@ export default {
             return this.labels[this.collectionType] || "nested list";
         },
         collectionType() {
-            const source = this.item.object || this.item;
-            return source.collection_type;
+            return this.item.collection_type;
         },
         elementCount() {
-            const source = this.item.object || this.item;
-            return source.element_count;
+            return this.item.element_count;
         },
     },
 };

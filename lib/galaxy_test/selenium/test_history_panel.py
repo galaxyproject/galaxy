@@ -53,7 +53,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         editable_text_input_element = self.history_panel_name_input()
         editable_text_input_element.send_keys(NEW_HISTORY_NAME)
         self.send_escape(editable_text_input_element)
-        # self.components.history_panel.name_edit_input.wait_for_absent_or_hidden()
+        self.components.history_panel.name_edit_input.wait_for_absent_or_hidden()
         assert NEW_HISTORY_NAME not in self.history_panel_name()
 
     @selenium_test
@@ -170,9 +170,12 @@ class HistoryPanelTestCase(SeleniumTestCase):
         tags = add_tags(tags_size)
         assert_current_tags(tags)
 
-        # Todo: add more tags to non-empty tags area
-        # tags += add_tags(tags_size)
-        # assert_current_tags(tags)
+        # add more tags to non-empty tags area
+        tags += add_tags(tags_size)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        if self.is_beta_history():
+            tags.sort()
+        assert_current_tags(tags)
 
         # delete all tags
         expected_tags_len = len(tags)
@@ -183,7 +186,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     # after about 5 tags, a toggle link shows up and you have to click it to see the full list
     def open_tags(self):
         tags_component = self.components.history_panel.tag_editor.selector(scope=".history-index")
-        if not tags_component.toggle.is_absent:
+        if tags_component.tag_area.is_absent:
             tags_component.toggle.wait_for_and_click()
         tags_component.display.wait_for_visible()
         return tags_component.display

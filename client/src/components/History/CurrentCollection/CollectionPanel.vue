@@ -23,11 +23,10 @@
                     <Listing item-key="element_index" :payload="payload" :limit="limit" @scroll="onScroll">
                         <template v-slot:history-item="{ item }">
                             <ContentItem
-                                :item="item"
+                                :item="item.object"
                                 :id="item.element_index"
                                 :name="item.element_identifier"
                                 :is-dataset="item.element_type == 'hda'"
-                                :state="item.object ? item.object.state : item.populated_state"
                                 :expand-dataset="isExpanded(item)"
                                 :is-history-item="false"
                                 @update:expand-dataset="setExpanded(item, $event)"

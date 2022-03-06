@@ -283,3 +283,10 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+// remove borders around buttons in menu
+.content-operations .btn-group .btn {
+    border-color: transparent !important;
+}
+</style>

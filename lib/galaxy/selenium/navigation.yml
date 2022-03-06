@@ -197,6 +197,7 @@ history_panel:
       toggle: '${_} .toggle-link'
       display: '${_} .tag-area .tag-name'
       input: '${_} input'
+      tag_area: '${_} .tag-area'
       tag_close_btn: '${_} .ti-icon-close'
 
   multi_operations:

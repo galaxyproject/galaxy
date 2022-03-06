@@ -1,9 +1,44 @@
+/*
+    Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
+    for a list of available states.
+*/
 export default {
-    /** is uploading and not ready */
-    upload: {
+    /** deleted while uploading */
+    discarded: {
+        status: "danger",
+        text: "The job creating this dataset was cancelled before completion.",
+        icon: "exclamation-circle",
+    },
+    /** has no data */
+    empty: {
+        status: "success",
+        text: "No data",
+    },
+    /** the tool producing this dataset failed */
+    error: {
+        status: "danger",
+        text: "An error occurred with this dataset",
+        icon: "exclamation-circle",
+    },
+    /** metadata discovery/setting failed or errored (but otherwise ok) */
+    failed_metadata: {
+        status: "danger",
+    },
+    /** was created without a tool */
+    new: {
         status: "warning",
-        text: "This dataset is currently uploading.",
+        text: "This is a new dataset and not all of its data are available yet.",
         icon: "clock",
+    },
+    /** has successfully completed running */
+    ok: {
+        status: "success",
+    },
+    /** the job that will produce the dataset paused */
+    paused: {
+        status: "info",
+        text: "This job is paused. Use the 'Resume Paused Jobs' in the history menu to resume.",
+        icon: "pause",
     },
     /** the job that will produce the dataset queued in the runner */
     queued: {
@@ -23,54 +58,10 @@ export default {
         text: "Metadata is being auto-detected.",
         icon: "clock",
     },
-    /** was created without a tool */
-    new: {
+    /** is uploading and not ready */
+    upload: {
         status: "warning",
-        text: "This is a new dataset and not all of its data are available yet.",
+        text: "This dataset is currently uploading.",
         icon: "clock",
-    },
-    /** job is being created, but not put into job queue yet */
-    waiting: {
-        status: "default",
-    },
-    /** has no data */
-    empty: {
-        status: "success",
-        text: "No data",
-    },
-    /** has successfully completed running */
-    ok: {
-        status: "success",
-    },
-    /** the job that will produce the dataset paused */
-    paused: {
-        status: "info",
-        text: "This job is paused. Use the 'Resume Paused Jobs' in the history menu to resume.",
-        icon: "pause",
-    },
-    /** metadata discovery/setting failed or errored (but otherwise ok) */
-    failed_metadata: {
-        status: "danger",
-    },
-    /** the tool producing this dataset failed */
-    error: {
-        status: "danger",
-        text: "An error occurred with this dataset",
-        icon: "exclamation-circle",
-    },
-    /** deleted while uploading */
-    discarded: {
-        status: "danger",
-        text: "The job creating this dataset was cancelled before completion.",
-        icon: "exclamation-circle",
-    },
-    // found in job-state summary model?
-    // this an actual state value or something derived from deleted prop?
-    deleted: {
-        status: "danger",
-        icon: "exclamation-circle",
-    },
-    loading: {
-        status: "warning",
     },
 };

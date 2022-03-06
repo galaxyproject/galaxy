@@ -27,7 +27,8 @@
                 placeholder="Name"
                 trim
                 max-rows="4"
-                data-description="name input" />
+                data-description="name input"
+                @keyup.esc="onToggle" />
             <b-textarea
                 v-if="showAnnotation"
                 class="mb-2"
@@ -35,7 +36,8 @@
                 placeholder="Annotation (optional)"
                 trim
                 max-rows="4"
-                data-description="annotation input" />
+                data-description="annotation input"
+                @keyup.esc="onToggle" />
             <StatelessTags v-if="localProps.tags" class="mb-3 tags" v-model="localProps.tags" />
         </div>
         <nav class="edit-controls">

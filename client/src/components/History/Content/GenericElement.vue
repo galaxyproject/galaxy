@@ -1,11 +1,10 @@
 <template>
     <div>
         <ContentItem
-            :item="item"
+            :item="item.object"
             :id="item.element_index"
             :name="item.element_identifier"
             :is-dataset="item.element_type == 'hda'"
-            :state="item.object.state"
             :expand-dataset="expandDataset"
             :is-history-item="false"
             @update:expand-dataset="expandDataset = $event"

@@ -10,8 +10,8 @@
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="isDataset && state !== 'discarded'"
-                        :disabled="isUnavailable"
+                        v-if="isDataset"
+                        :disabled="displayDisabled"
                         :title="displayButtonTitle"
                         class="px-1"
                         size="sm"
@@ -20,8 +20,8 @@
                         <span class="fa fa-eye" />
                     </b-button>
                     <b-button
-                        v-if="isHistoryItem && state != 'discarded'"
-                        :disabled="isUnavailable"
+                        v-if="isHistoryItem"
+                        :disabled="editDisabled"
                         class="px-1"
                         title="Edit attributes"
                         size="sm"
@@ -30,24 +30,24 @@
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
+                        v-if="isHistoryItem && !item.deleted"
+                        class="px-1"
+                        title="Delete"
+                        size="sm"
+                        variant="link"
+                        :disabled="item.purged"
+                        @click.stop="$emit('delete', item)">
+                        <span class="fa fa-trash" />
+                    </b-button>
+                    <b-button
                         v-if="isHistoryItem && item.deleted"
                         class="px-1"
                         title="Undelete"
                         size="sm"
                         variant="link"
-                        :disabled="isUnavailable"
+                        :disabled="item.purged"
                         @click.stop="$emit('undelete', item)">
                         <span class="fa fa-trash-restore" />
-                    </b-button>
-                    <b-button
-                        v-else-if="isHistoryItem"
-                        class="px-1"
-                        title="Delete"
-                        size="sm"
-                        variant="link"
-                        :disabled="isUnavailable"
-                        @click.stop="$emit('delete', item)">
-                        <span class="fa fa-trash" />
                     </b-button>
                     <b-button
                         v-if="isHistoryItem && !item.visible"
@@ -97,19 +97,30 @@ export default {
         Nametag,
     },
     props: {
+        expandDataset: { type: Boolean, required: true },
         item: { type: Object, required: true },
         id: { type: Number, required: true },
-        name: { type: String, required: true },
-        state: { type: String, default: null },
-        expandDataset: { type: Boolean, required: true },
-        selected: { type: Boolean, default: false },
         isDataset: { type: Boolean, default: true },
-        selectable: { type: Boolean, default: false },
         isHistoryItem: { type: Boolean, default: true },
+        name: { type: String, required: true },
+        selected: { type: Boolean, default: false },
+        selectable: { type: Boolean, default: false },
     },
     computed: {
         contentId() {
             return `dataset-${this.item.id}`;
+        },
+        state() {
+            if (this.item.job_state_summary) {
+                for (const key of ["error", "failed", "paused", "upload", "running"]) {
+                    if (this.item.job_state_summary[key] > 0) {
+                        return key;
+                    }
+                }
+                return "ok";
+            } else {
+                return this.item.state;
+            }
         },
         clsStatus() {
             const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
@@ -125,29 +136,27 @@ export default {
             if (this.item.purged) {
                 return "Cannot display datasets removed from disk.";
             }
-            if (this.isUnavailable) {
+            if (this.displayDisabled) {
                 return "This dataset is not yet viewable.";
             }
             return "Display";
         },
-        deleteButtonTitle() {
-            return this.item.purged
-                ? "This dataset has been permanently deleted."
-                : this.item.deleted
-                ? "Undelete"
-                : "Delete";
+        displayDisabled() {
+            return this.item.purged || ["discarded", "new", "upload"].includes(this.state);
         },
         editButtonTitle() {
-            if (this.item.deleted) {
-                return "Undelete this dataset to edit attributes.";
-            }
             if (this.item.purged) {
                 return "Cannot edit attributes of datasets removed from disk.";
             }
-            if (this.isUnavailable) {
+            if (this.editDisabled) {
                 return "This dataset is not yet editable.";
             }
             return "Edit Attributes";
+        },
+        editDisabled() {
+            return (
+                this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
+            );
         },
         icon() {
             const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
@@ -155,9 +164,6 @@ export default {
                 return `fa fa-${stateIcon}`;
             }
             return null;
-        },
-        isUnavailable() {
-            return this.item.purged || ["upload", "new"].includes(this.state);
         },
     },
     methods: {
@@ -167,7 +173,7 @@ export default {
             evt.dataTransfer.setData("text", JSON.stringify([this.item]));
         },
         onDisplay() {
-            const id = this.item.object?.id || this.item.id;
+            const id = this.item.id;
             useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);

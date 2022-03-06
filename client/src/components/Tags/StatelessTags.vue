@@ -49,7 +49,7 @@ export default {
     },
     data() {
         // initialize toggle value
-        const isClosed = this.useToggleLink && this.value && this.length > this.maxVisibleTags;
+        const isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
 
         return {
             tagText: "",

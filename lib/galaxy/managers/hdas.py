@@ -329,6 +329,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "meta_files",
                 "data_type",
                 "peek",
+                "creating_job",
+                "rerunnable",
                 "uuid",
                 "permissions",
                 "file_name",
@@ -343,8 +345,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "created_from_basename",
                 "hashes",
                 "sources",
-                "rerunnable",
-                "creating_job",
             ],
             include_keys_from="summary",
         )

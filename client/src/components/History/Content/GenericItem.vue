@@ -6,7 +6,6 @@
                 :item="item"
                 :id="item.hid"
                 :name="item.name"
-                :state="item.state || item.populated_state"
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset'"
                 @update:expand-dataset="expandDataset = $event"
