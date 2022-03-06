@@ -83,6 +83,9 @@ New Datatypes
 * Add gz as datatype
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 13271`_
+* Add phyloseq datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13462`_
 
 Builtin Tool Updates
 ===========================================================

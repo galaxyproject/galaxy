@@ -112,6 +112,9 @@ Enhancements
   `Pull Request 13271`_
 * Limit required element validation to safe elements
   `Pull Request 13299`_
+* Add phyloseq datatype
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13462`_
 .. enhancement_tag_tools
 
 * Allow any format in export tool
@@ -161,6 +164,12 @@ Enhancements
   `Pull Request 13215`_
 * Add config variable for setting tus upload directory
   `Pull Request 13313`_
+* Document gunicorn and nginx
+  `Pull Request 13436`_
+* Update interactive tool docs for Gunicorn / dropping uWSGI
+  `Pull Request 13470`_
+* Add Migrating from uWSGI to Gunicorn and FastAPI document
+  `Pull Request 13480`_
 .. enhancement
 
 * Separated data PVC
@@ -406,6 +415,21 @@ Enhancements
 * Only create HDAH entries for undeleted HDAs
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 13309`_
+* Add version.json for exposing extra api information about docker container
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 13433`_
+* Document gunicorn and apache
+  `Pull Request 13439`_
+* Update jobs and cluster documentation
+  `Pull Request 13440`_
+* Update performance tracking for Gunicorn
+  `Pull Request 13441`_
+* Drop interactive environment build instructions from docs
+  `Pull Request 13442`_
+* Create config package, move app-related functionality to app
+  `Pull Request 13461`_
+* Pin gravity to 0.10.0
+  `Pull Request 13483`_
 .. small_enhancement
 
 * FastAPI: Histories API migration
@@ -563,6 +587,8 @@ Enhancements
   `Pull Request 13228`_
 * Replace custom tour ids in forms with regular DOM identifiers
   `Pull Request 13252`_
+* Drop pkg_resources
+  `Pull Request 13454`_
 
 
 Fixes
@@ -576,6 +602,8 @@ Fixes
 * Large peptide IDs
   (thanks to `@reid-wagner <https://github.com/reid-wagner>`__).
   `Pull Request 13261`_
+* Try to unit test more of DictParser in Viz component.
+  `Pull Request 13385`_
 .. bug_tag_datatypes
 
 * Allow trailing semicolon in last column of gff3
@@ -613,6 +641,11 @@ Fixes
 * FormNumber: notify value change on slider change
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 13260`_
+* Always display digest in name for refgenie assets.
+  `Pull Request 13403`_
+* Fix `UnboundLocalError` in sort collection tool
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13429`_
 .. bug_tag_workflows
 
 * Misc fixes - round 2
@@ -692,6 +725,8 @@ Fixes
   `Pull Request 13281`_
 * Restore Metadata size limit
   `Pull Request 13315`_
+* Drop uWSGI from scaling documentation
+  `Pull Request 13381`_
 .. bug
 
 * Reimplement collection order test, add wrong order, add `expect_test_failure` attribute
@@ -935,6 +970,32 @@ Fixes
   `Pull Request 13322`_
 * Fix toolbox handling of spaces in old tools
   `Pull Request 13347`_
+* Fix macro parsing
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13373`_
+* Clarify that history exports are not kept forever
+  `Pull Request 13389`_
+* Fix history search help popover not closing on click outside
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 13390`_
+* Ensure $GRAVITY_STATE_DIR is present in venv activate script any time run.sh/common_startup.sh is called normally
+  `Pull Request 13392`_
+* Use a2wsgi to serve WSGI app
+  `Pull Request 13396`_
+* Dataset annotations are optional and should not be required
+  `Pull Request 13420`_
+* Fix repository uploads with remove_repo_files_not_in_tar
+  `Pull Request 13425`_
+* Wrap reports app in static, fix tool shed entry point
+  `Pull Request 13430`_
+* Initial fix for quay.io repo query issue
+  `Pull Request 13468`_
+* Add profile version to ethercalc
+  `Pull Request 13469`_
+* Backport and fix webapps tests
+  `Pull Request 13478`_
+* Use timeout instead of interval when polling, optionally terminate polling
+  `Pull Request 13485`_
 
 .. include:: 22.01_prs.rst
 
