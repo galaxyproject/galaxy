@@ -6,7 +6,7 @@
                     v-if="!breadcrumbs.length"
                     :history="currentHistory"
                     v-on="handlers"
-                    @viewCollection="onViewCollection">
+                    @view-collection="onViewCollection">
                     <template v-slot:navigation>
                         <HistoryNavigation
                             v-on="handlers"
@@ -19,7 +19,7 @@
                     v-else-if="breadcrumbs.length"
                     :history="currentHistory"
                     :selected-collections.sync="breadcrumbs"
-                    @viewCollection="onViewCollection" />
+                    @view-collection="onViewCollection" />
                 <div v-else>
                     <span class="sr-only">Loading...</span>
                 </div>

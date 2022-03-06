@@ -7,14 +7,14 @@
                 :id="item.hid"
                 :name="item.name"
                 :state="item.state || item.populated_state"
-                :expanded="expanded"
-                :expandable="item.history_content_type == 'dataset'"
-                @update:expanded="expanded = $event"
-                @drilldown="drilldown = !drilldown"
+                :expand-dataset="expandDataset"
+                :is-dataset="item.history_content_type == 'dataset'"
+                @update:expand-dataset="expandDataset = $event"
+                @view-collection="viewCollection = !viewCollection"
                 @delete="onDelete"
                 @undelete="onUndelete"
                 @unhide="onUnhide" />
-            <div v-if="drilldown">
+            <div v-if="viewCollection">
                 <div v-for="(collectionItem, collectionIndex) in item.elements" :key="collectionIndex">
                     <GenericElement :item="collectionItem" />
                 </div>
@@ -50,8 +50,8 @@ export default {
     },
     data() {
         return {
-            drilldown: false,
-            expanded: false,
+            viewCollection: false,
+            expandDataset: false,
         };
     },
     computed: {

@@ -26,12 +26,12 @@
                                 :item="item"
                                 :id="item.element_index"
                                 :name="item.element_identifier"
-                                :expandable="item.element_type == 'hda'"
+                                :is-dataset="item.element_type == 'hda'"
                                 :state="item.object ? item.object.state : item.populated_state"
-                                :expanded="isExpanded(item)"
-                                :writeable="false"
-                                @update:expanded="setExpanded(item, $event)"
-                                @drilldown="$emit('viewCollection', item)" />
+                                :expand-dataset="isExpanded(item)"
+                                :is-history-item="false"
+                                @update:expand-dataset="setExpanded(item, $event)"
+                                @view-collection="$emit('view-collection', item)" />
                         </template>
                     </Listing>
                 </template>

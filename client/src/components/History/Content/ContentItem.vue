@@ -10,7 +10,7 @@
             <div class="clearfix overflow-hidden">
                 <div class="btn-group float-right">
                     <b-button
-                        v-if="expandable && state !== 'discarded'"
+                        v-if="isDataset && state !== 'discarded'"
                         :disabled="isUnavailable"
                         :title="displayButtonTitle"
                         class="px-1"
@@ -20,7 +20,7 @@
                         <span class="fa fa-eye" />
                     </b-button>
                     <b-button
-                        v-if="writeable && state != 'discarded'"
+                        v-if="isHistoryItem && state != 'discarded'"
                         :disabled="isUnavailable"
                         class="px-1"
                         title="Edit attributes"
@@ -30,7 +30,7 @@
                         <span class="fa fa-pencil" />
                     </b-button>
                     <b-button
-                        v-if="writeable && item.deleted"
+                        v-if="isHistoryItem && item.deleted"
                         class="px-1"
                         title="Undelete"
                         size="sm"
@@ -40,7 +40,7 @@
                         <span class="fa fa-trash-restore" />
                     </b-button>
                     <b-button
-                        v-else-if="writeable"
+                        v-else-if="isHistoryItem"
                         class="px-1"
                         title="Delete"
                         size="sm"
@@ -50,7 +50,7 @@
                         <span class="fa fa-trash" />
                     </b-button>
                     <b-button
-                        v-if="writeable && !item.visible"
+                        v-if="isHistoryItem && !item.visible"
                         class="px-1"
                         title="Unhide"
                         size="sm"
@@ -71,28 +71,28 @@
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
-                    <ContentDescription :item="item" />
-                    <div v-if="!expanded && item.tags && item.tags.length > 0" class="nametags">
+                    <CollectionDescription v-if="!isDataset" :item="item" />
+                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
                 </h5>
             </div>
         </div>
-        <-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <DatasetDetails v-if="expanded" @edit="onEdit" :item="item" />
+        <!-- collections are not expandable, so we only need the DatasetDetails component here -->
+        <DatasetDetails v-if="expandDataset" @edit="onEdit" :item="item" />
     </div>
 </template>
 
 <script>
 import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/legacyNavigation";
 import { Nametag } from "components/Nametags";
-import ContentDescription from "./ContentDescription";
+import CollectionDescription from "./Collection/CollectionDescription";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import CONTENTSTATE from "./contentState";
 
 export default {
     components: {
-        ContentDescription,
+        CollectionDescription,
         DatasetDetails,
         Nametag,
     },
@@ -101,11 +101,11 @@ export default {
         id: { type: Number, required: true },
         name: { type: String, required: true },
         state: { type: String, default: null },
-        expanded: { type: Boolean, required: true },
+        expandDataset: { type: Boolean, required: true },
         selected: { type: Boolean, default: false },
-        expandable: { type: Boolean, default: true },
+        isDataset: { type: Boolean, default: true },
         selectable: { type: Boolean, default: false },
-        writeable: { type: Boolean, default: true },
+        isHistoryItem: { type: Boolean, default: true },
     },
     computed: {
         contentId() {
@@ -184,10 +184,10 @@ export default {
             }
         },
         onClick() {
-            if (this.expandable) {
-                this.$emit("update:expanded", !this.expanded);
+            if (this.isDataset) {
+                this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
-                this.$emit("drilldown", this.item);
+                this.$emit("view-collection", this.item);
             }
         },
     },

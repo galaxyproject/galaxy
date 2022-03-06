@@ -7,18 +7,18 @@
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
             <h3 data-description="collection name display">{{ name || "Collection" }}</h3>
-            <ContentDescription :item="dsc" />
+            <CollectionDescription :item="dsc" />
         </template>
     </Details>
 </template>
 
 <script>
 import Details from "components/History/Layout/Details";
-import ContentDescription from "components/History/Content/ContentDescription";
+import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
 
 export default {
     components: {
-        ContentDescription,
+        CollectionDescription,
         Details,
     },
     props: {
