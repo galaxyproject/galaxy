@@ -85,7 +85,8 @@ export default {
             return this.selectedCollections[0];
         },
         url() {
-            const source = this.dsc.object || this.dsc;
+            // either the observered source is a collection element or the initial history item i.e. root collection
+            const source = this.dsc.object || this.rootCollection;
             const contentsUrl = source.contents_url.substring(1);
             return `${contentsUrl}?offset=${this.offset}&limit=${this.limit}`;
         },
