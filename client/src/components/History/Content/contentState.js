@@ -7,7 +7,7 @@ export default {
     discarded: {
         status: "danger",
         text: "The job creating this dataset was cancelled before completion.",
-        icon: "exclamation-circle",
+        icon: "exclamation-triangle",
     },
     /** has no data */
     empty: {
@@ -18,7 +18,7 @@ export default {
     error: {
         status: "danger",
         text: "An error occurred with this dataset",
-        icon: "exclamation-circle",
+        icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */
     failed_metadata: {

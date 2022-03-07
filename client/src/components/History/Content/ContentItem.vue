@@ -17,7 +17,7 @@
                         size="sm"
                         variant="link"
                         @click.stop="onDisplay">
-                        <span class="fa fa-eye" />
+                        <icon icon="eye" />
                     </b-button>
                     <b-button
                         v-if="isHistoryItem"
@@ -27,7 +27,7 @@
                         size="sm"
                         variant="link"
                         @click.stop="onEdit">
-                        <span class="fa fa-pencil" />
+                        <icon icon="pen" />
                     </b-button>
                     <b-button
                         v-if="isHistoryItem && !item.deleted"
@@ -37,7 +37,7 @@
                         variant="link"
                         :disabled="item.purged"
                         @click.stop="$emit('delete', item)">
-                        <span class="fa fa-trash" />
+                        <icon icon="trash" />
                     </b-button>
                     <b-button
                         v-if="isHistoryItem && item.deleted"
@@ -47,7 +47,7 @@
                         variant="link"
                         :disabled="item.purged"
                         @click.stop="$emit('undelete', item)">
-                        <span class="fa fa-trash-restore" />
+                        <icon icon="trash-restore" />
                     </b-button>
                     <b-button
                         v-if="isHistoryItem && !item.visible"
@@ -56,7 +56,7 @@
                         size="sm"
                         variant="link"
                         @click.stop="$emit('unhide', item)">
-                        <span class="fa fa-unlock" />
+                        <icon icon="unlock" />
                     </b-button>
                 </div>
                 <h5 class="float-left p-1 w-75 font-weight-bold">
@@ -67,7 +67,7 @@
                             @click.stop="$emit('update:selected', false)" />
                         <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
                     </div>
-                    <span :class="icon" />
+                    <icon v-if="stateIcon" :icon="stateIcon" />
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
@@ -158,12 +158,8 @@ export default {
                 this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
             );
         },
-        icon() {
-            const stateIcon = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
-            if (stateIcon) {
-                return `fa fa-${stateIcon}`;
-            }
-            return null;
+        stateIcon() {
+            return CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
         },
     },
     methods: {
