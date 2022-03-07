@@ -430,7 +430,6 @@ class TestDataManagerJobAssociation(BaseTest):
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.data_manager_id = data_manager_id
 
@@ -443,7 +442,6 @@ class TestDataManagerJobAssociation(BaseTest):
             assert stored_obj.data_manager_id == data_manager_id
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
@@ -7078,7 +7076,7 @@ def visualization_rating_association(session, user, visualization):
 
 @pytest.fixture
 def visualization_revision(session, visualization):
-    instance = model.VisualizationRevision(visualization=visualization)
+    instance = model.VisualizationRevision(visualization_id=visualization.id)
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -7346,8 +7344,8 @@ def visualization_rating_association_factory():
 @pytest.fixture
 def visualization_revision_factory(visualization):
     def make_instance(*args, **kwds):
-        if "visualization" not in kwds:
-            kwds["visualization"] = visualization
+        if "visualization_id" not in kwds:
+            kwds["visualization_id"] = visualization.id
         return model.VisualizationRevision(*args, **kwds)
 
     return make_instance

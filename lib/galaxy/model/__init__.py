@@ -58,6 +58,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    event,
     false,
     ForeignKey,
     func,
@@ -120,6 +121,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.now import now
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
@@ -1269,10 +1271,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         assoc = JobToInputDatasetAssociation(name, dataset)
         if dataset is None and dataset_id is not None:
             assoc.dataset_id = dataset_id
+        add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name, dataset):
-        self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
+        joda = JobToOutputDatasetAssociation(name, dataset)
+        add_object_to_object_session(self, joda)
+        self.output_datasets.append(joda)
 
     def add_input_dataset_collection(self, name, dataset_collection):
         self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
@@ -1869,6 +1874,7 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
@@ -1885,6 +1891,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
     @property
@@ -2180,6 +2187,8 @@ class JobExportHistoryArchive(Base, RepresentById):
     ATTRS_FILENAME_HISTORY = "history_attrs.txt"
 
     def __init__(self, compressed=False, **kwd):
+        if "history" in kwd:
+            add_object_to_object_session(self, kwd["history"])
         super().__init__(**kwd)
         self.compressed = compressed
 
@@ -2529,6 +2538,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self.purged = False
         self.importing = False
         self.published = False
+        add_object_to_object_session(self, user)
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
@@ -2618,6 +2628,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 dataset.hid = self._next_hid()
         if quota and is_dataset and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+        add_object_to_object_session(dataset, self)
         dataset.history = self
         if is_dataset and genome_build not in [None, "?"]:
             self.genome_build = genome_build
@@ -2666,6 +2677,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
         if set_hid:
             history_dataset_collection.hid = self._next_hid()
+        add_object_to_object_session(history_dataset_collection, self)
         history_dataset_collection.history = self
         # TODO: quota?
         self.dataset_collections.append(history_dataset_collection)
@@ -2973,6 +2985,7 @@ class UserRoleAssociation(Base, RepresentById):
     role = relationship("Role", back_populates="users")
 
     def __init__(self, user, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.role = role
 
@@ -3156,6 +3169,7 @@ class DatasetPermissions(Base, RepresentById):
 
     def __init__(self, action, dataset, role=None, role_id=None):
         self.action = action
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         if role is not None:
             self.role = role
@@ -3260,6 +3274,7 @@ class DefaultUserPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, user, action, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.action = action
         self.role = role
@@ -3721,6 +3736,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.parent_id = parent_id
 
@@ -4278,6 +4294,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
         self.hid = hid
         # Relationships
+        add_object_to_object_session(self, history)
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
@@ -6255,6 +6272,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             raise AttributeError(f"Unknown element type provided: {type(element)}")
 
         self.id = id
+        add_object_to_object_session(self, collection)
         self.collection = collection
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
@@ -8992,6 +9010,7 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, history):
+        add_object_to_object_session(self, history)
         self.history = history
 
 
@@ -9653,3 +9672,19 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
+
+
+@event.listens_for(HistoryDatasetCollectionAssociation, "init")
+def receive_init(target, args, kwargs):
+    """
+    Listens for the 'init' event. This is not called when 'target' is loaded from the database.
+    https://docs.sqlalchemy.org/en/14/orm/events.html#sqlalchemy.orm.InstanceEvents.init
+
+    Addresses SQLAlchemy 2.0 compatibility issue: see inline documentation for
+    `add_object_to_object_session` in galaxy.model.orm.util.
+    """
+    for key in ("history", "copied_from_history_dataset_collection_association"):
+        obj = kwargs.get(key)
+        if obj:
+            add_object_to_object_session(target, obj)
+            return  # Once is enough.
