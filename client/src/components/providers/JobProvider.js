@@ -2,6 +2,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { rethrowSimple } from "utils/simple-error";
+import { stateIsTerminal } from "./utils";
 
 async function jobDetails({ jobid }) {
     const url = `${getAppRoot()}api/jobs/${jobid}?full=True`;
@@ -23,5 +24,5 @@ async function jobProblems({ jobid }) {
     }
 }
 
-export const JobDetailsProvider = SingleQueryProvider(jobDetails);
-export const JobProblemProvider = SingleQueryProvider(jobProblems);
+export const JobDetailsProvider = SingleQueryProvider(jobDetails, stateIsTerminal);
+export const JobProblemProvider = SingleQueryProvider(jobProblems, stateIsTerminal);
