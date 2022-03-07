@@ -29,12 +29,12 @@ log = get_logger(__name__)
 
 MAIN_TASK_MODULE = "galaxy.celery.tasks"
 TASKS_MODULES = [MAIN_TASK_MODULE]
-PYDANTIC_AWARE_SERIALIER_NAME = "pydantic-aware-json"
+PYDANTIC_AWARE_SERIALIZER_NAME = "pydantic-aware-json"
 
 APP_LOCAL = local()
 
 serialization.register(
-    PYDANTIC_AWARE_SERIALIER_NAME, encoder=schema_dumps, decoder=schema_loads, content_type="application/json"
+    PYDANTIC_AWARE_SERIALIZER_NAME, encoder=schema_dumps, decoder=schema_loads, content_type="application/json"
 )
 
 
@@ -131,7 +131,7 @@ celery_app.conf.timezone = "UTC"
 
 def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
-        celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIER_NAME
+        celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
 
     def decorate(func):
         @shared_task(**celery_task_kwd)
