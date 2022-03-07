@@ -5393,6 +5393,7 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
         self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True
     ):
         self.id = id
+        add_object_to_object_session(self, dataset)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
