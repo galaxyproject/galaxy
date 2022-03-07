@@ -2,6 +2,8 @@ import logging
 import os
 import re
 
+from attr import Attribute
+
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -1153,12 +1155,12 @@ class XYZ(GenericMolFile):
 
     def read_blocks(self, lines):
         """
-        Parses and returns a list of XYZ structure blocks (aka frames).
+        Parses and returns a list of dictionaries representing XYZ structure blocks (aka frames).
 
         Raises IndexError, TypeError, ValueError
         """
         # remove trailing blank lines
-        # blank lines not permitted elsewhere in file
+        # blank lines not permitted elsewhere in file except for designated comment lines
         while not lines[-1].strip():
             lines = lines[:-1]
 
@@ -1200,7 +1202,8 @@ class XYZ(GenericMolFile):
         if ase_io:
             # enhanced metadata
             try:
-                ase_data = ase_io.read(dataset.file_name, index=":", format="xyz")
+                # ASE recommend always parsing as extended xyz
+                ase_data = ase_io.read(dataset.file_name, index=":", format="extxyz")
                 log.warning(str(ase_data))
             except ValueError:
                 log.error("Could not read XYZ structure data: %s", unicodify(e))
@@ -1294,6 +1297,131 @@ class XYZ(GenericMolFile):
         #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
 
         return info
+
+
+class ExtendedXYZ(XYZ):
+    """
+    Extended XYZ format.
+
+    Uses specification from https://github.com/libAtoms/extxyz.
+    """
+
+    file_ext = "extxyz"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is an Extended XYZ file.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.extxyz')
+        >>> ExtendedXYZ().sniff(fname)
+        True
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si_multi.extxyz')
+        >>> ExtendedXYZ().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.xyz')
+        >>> ExtendedXYZ().sniff(fname)
+        False
+        """
+        with open(filename) as f:
+            xyz_lines = f.readlines(1000)[:-1]
+
+        try:
+            blocks = self.read_blocks(xyz_lines)
+        except (TypeError, ValueError):
+            return False
+        except IndexError as e:
+            if "pop from empty list" in str(e):
+                # xyz_lines ran out mid block – check full file
+                with open(filename) as f:
+                    xyz_lines = f.readlines()
+                try:
+                    blocks = self.read_blocks(xyz_lines)
+                except (TypeError, ValueError, IndexError):
+                    # any error is now a failure
+                    return False
+            else:
+                # some other IndexError - invalid input
+                return False
+
+        # check blocks are valid
+        for block in blocks:
+            if block["number_of_atoms"] is None:
+                return False
+
+        # all checks passed
+        return True
+
+    def read_blocks(self, lines):
+        """
+        Parses and returns a list of XYZ structure blocks (aka frames).
+
+        Raises IndexError, TypeError, ValueError
+        """
+        # remove trailing blank lines
+        # blank lines not permitted elsewhere in file except for designated comment lines
+        while not lines[-1].strip():
+            lines = lines[:-1]
+
+        blocks = []
+
+        while lines:
+            n_atoms = None
+            comment = None
+            atoms = []
+
+            n_atoms = int(lines.pop(0))
+            comment = lines.pop(0)
+            # extract column properties
+            # these have the format 'Properties="<name>:<type>:<number>:..."' in the comment line
+            # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
+            properties=re.search(r'Properties=\"?([a-zA-Z0-9:]+)\"?',comment)
+            if properties is None: # re.search returned None
+                raise ValueError(f"Could not find column properties in line: {comment}")
+            properties = [s.split(":") for s in  re.findall(r'[a-zA-Z]+:[SIRL]:[0-9]+', properties.group(1))]
+            total_columns = sum([int(s[2]) for s in properties])
+
+            for _ in range(n_atoms):
+                atom = lines.pop(0)
+                atom = atom.split()
+                if len(atom) != total_columns:
+                    raise ValueError(f"Expected {total_columns} columns but found {len(atom)}: {atom}")
+                index=0
+                # check that atom data adheres to correct column format as specified by the properties
+                # none of this is stored permanently as it's not needed for metadata
+                # but the processing will raise errors if the format is incorrect
+                for property in properties:
+                    to_check = atom[index:index+int(property[2])]
+                    for i in to_check:
+                        if property[1] == "S": #string
+                            # check that any element symbols are correct, otherwise ignore strings
+                            if property[0].lower()=="species" and i.lower().capitalize() not in self.get_element_symbols():
+                                raise ValueError(f"{i} is not a valid element symbol")
+                        elif property[1] == "L": #logical
+                            if not re.match(r"(?:[tT]rue|TRUE|T)\b|(?:[fF]alse|FALSE|F)\b", i):
+                                raise ValueError(f"{i} is not a valid logical element.")
+                        elif property[1] == "I": #integer
+                            int(i)
+                        elif property[1] == "R": #float
+                            float(i)
+                        else:
+                            raise ValueError(f"Could not recognise property type {property[1]}.")
+                    index+=int(property[2])
+
+                atoms.append(atom)
+
+            blocks.append({
+                "number_of_atoms":n_atoms,
+                "comment": comment,
+                "atom_data":atoms
+            })
+
+        return blocks
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super().set_peek(dataset, is_multi_byte)
+        dataset.blurb = "Extended "+dataset.blurb
 
 
 class grd(Text):

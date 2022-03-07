@@ -743,6 +743,7 @@
     <datatype extension="cell" type="galaxy.datatypes.molecules:Cell" display_in_upload="true"/>
     <datatype extension="cif" type="galaxy.datatypes.molecules:CIF" display_in_upload="true"/>
     <datatype extension="xyz" type="galaxy.datatypes.molecules:XYZ" display_in_upload="true"/>
+    <datatype extension="extxyz" type="galaxy.datatypes.molecules:ExtendedXYZ" display_in_upload="true"/>
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true">
       <converter file="mdconvert.xml" target_datatype="xtc"/>
       <converter file="mdconvert.xml" target_datatype="dcd"/>
@@ -1067,6 +1068,7 @@
     <sniffer type="galaxy.datatypes.molecules:PDB"/>
     <sniffer type="galaxy.datatypes.molecules:Cell"/>
     <sniffer type="galaxy.datatypes.molecules:CIF"/>
+    <sniffer type="galaxy.datatypes.molecules:ExtendedXYZ"/>
     <sniffer type="galaxy.datatypes.molecules:XYZ"/>
     <sniffer type="galaxy.datatypes.molecules:MOL2"/>
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
