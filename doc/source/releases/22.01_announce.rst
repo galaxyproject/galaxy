@@ -9,9 +9,9 @@ Highlights
 ===========================================================
 
 **Galaxy starts as FastAPI application by default**
-  Starting galaxy via ``run.sh`` will use the new `gravity process manager
+  Starting Galaxy via ``run.sh`` will use the new `gravity process manager
   <https://github.com/galaxyproject/gravity>`__.
-  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and celery processes.
+  The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and `Celery <https://docs.celeryproject.org/>`__ processes automatically.
   For more details and instructions please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
   `Pull Request 13224`_
 
@@ -26,7 +26,7 @@ Highlights
   Galaxy now supports chunked and resumable uploads via the `tus protocol <https://tus.io/>`__.
   This is more performant and easier to setup than the current nginx-based
   solutions. For detailed configuration instructions, see the `documentation <https://docs.galaxyproject.org/en/release_22.01/admin/nginx.html#receiving-files-via-the-tus-protocol>`__.
-  Galaxy now displays all manipulations that were peformed during an upload,
+  Galaxy now displays all manipulations that were performed during an upload,
   such as newline conversions, converting spaces to tabs or dataset grooming.
   `Pull Request 12656`_, `Pull Request 12861`_, `Pull Request 13313`_, `Pull Request 12912`_.
 
