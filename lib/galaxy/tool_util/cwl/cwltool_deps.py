@@ -64,6 +64,15 @@ except ImportError:
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
+    from cwltool.utils import (
+        normalizeFilesDirs,
+        visit_class,
+    )
+except ImportError:
+    visit_class = None  # type: ignore[assignment]
+    normalizeFilesDirs = None  # type: ignore[assignment]
+
+try:
     import shellescape
 except ImportError:
     shellescape = None
@@ -74,10 +83,12 @@ try:
         ref_resolver,
         sourceline,
     )
+    from schema_salad.utils import yaml_no_ts
 except ImportError:
     schema_salad = None  # type: ignore[assignment]
     ref_resolver = None  # type: ignore[assignment]
     sourceline = None  # type: ignore[assignment]
+    yaml_no_ts = None  # type: ignore[assignment]
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
@@ -113,6 +124,7 @@ __all__ = (
     "LoadingContext",
     "main",
     "needs_shell_quoting",
+    "normalizeFilesDirs",
     "pathmapper",
     "process",
     "ref_resolver",
@@ -123,5 +135,7 @@ __all__ = (
     "shellescape",
     "sourceline",
     "StdFsAccess",
+    "visit_class",
     "workflow",
+    "yaml_no_ts",
 )
