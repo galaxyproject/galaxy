@@ -2141,6 +2141,7 @@ class JobExternalOutputMetadata(Base, RepresentById):
     job = relationship("Job", back_populates="external_output_metadata")
 
     def __init__(self, job=None, dataset=None):
+        add_object_to_object_session(self, job)
         self.job = job
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
             self.history_dataset_association = dataset
