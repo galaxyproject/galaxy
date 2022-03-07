@@ -13,14 +13,14 @@ Highlights
   <https://github.com/galaxyproject/gravity>`__.
   The new configuration uses `gunicorn <https://gunicorn.org/>`__ and `FastAPI <https://fastapi.tiangolo.com/>`__ to drive Galaxy's web process and starts job handler and `Celery <https://docs.celeryproject.org/>`__ processes automatically.
   For more details and instructions please consult the `Migrating to Gunicorn documentation <https://docs.galaxyproject.org/en/latest/admin/migrating_to_gunicorn.html>`__.
-  `Pull Request 13224`_
+  (`Pull Request 13224`_).
 
 **User Preferences can be encrypted in Galaxy Vault**
   Galaxy can now be configured to store secrets in an external vault, which is useful for secure handling and centralization of secrets management.
   In particular, information fields in the "Manage information" section of the user profile, such as dropbox keys, can be configured to be encrypted
   at rest in a vault (Hashicorp, Custos or database) instead of being stored as plain text in the user preferences table. For detailed information on
   configuration, refer to the `vault section <https://docs.galaxyproject.org/en/release_22.01/admin/special_topics/vault.html>`__ of the admin documentation.
-  `Pull Request 12940`_
+  (`Pull Request 12940`_).
 
 **Resumable uploads via tus.io, improved upload provenance**
   Galaxy now supports chunked and resumable uploads via the `tus protocol <https://tus.io/>`__.
@@ -28,7 +28,7 @@ Highlights
   solutions. For detailed configuration instructions, see the `documentation <https://docs.galaxyproject.org/en/release_22.01/admin/nginx.html#receiving-files-via-the-tus-protocol>`__.
   Galaxy now displays all manipulations that were performed during an upload,
   such as newline conversions, converting spaces to tabs or dataset grooming.
-  `Pull Request 12656`_, `Pull Request 12861`_, `Pull Request 13313`_, `Pull Request 12912`_.
+  (`Pull Request 12656`_, `Pull Request 12861`_, `Pull Request 13313`_, `Pull Request 12912`_).
 
 Also check out the `22.01 user release notes <22.01_announce_user.html>`__
 
