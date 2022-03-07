@@ -1721,6 +1721,7 @@ class Task(Base, JobLike, RepresentById):
         self.parameters = []
         self.state = Task.states.NEW
         self.working_directory = working_directory
+        add_object_to_object_session(self, job)
         self.job = job
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
