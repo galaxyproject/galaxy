@@ -88,44 +88,5 @@ The default as of this Galaxy release can be found (in Python syntax) in the
 
 .. include:: config_logging_default_yaml.rst
 
-INI
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-With an INI Galaxy configuration, it is possible to use Python's :func:`logging.config.fileConfig` configuration method for
-advanced logging configuration. For example:
-
-.. code-block:: ini
-
-    [loggers]
-    keys = root, galaxy
-
-    [handlers]
-    keys = console
-
-    [formatters]
-    keys = generic
-
-    [logger_root]
-    level = INFO
-    handlers = console
-
-    [logger_galaxy]
-    level = DEBUG
-    handlers = console
-    qualname = galaxy
-    propagate = 0
-
-    [handler_console]
-    class = StreamHandler
-    args = (sys.stderr,)
-    level = DEBUG
-    formatter = generic
-
-    [formatter_generic]
-    format = %(name)s %(levelname)-5.5s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s
-
-While Galaxy's custom log format fields can be used (as seen in the example), the ``filename_template`` handler
-configuration extension is only available in the YAML format configuration file.
-
 .. _logging levels: https://docs.python.org/library/logging.html#logging-levels
 .. _fileConfig file format: https://docs.python.org/library/logging.config.html#configuration-file-format
