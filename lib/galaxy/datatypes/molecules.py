@@ -913,6 +913,9 @@ class CIF(GenericMolFile):
         >>> fname = get_test_fname('Si_lowercase.cell')
         >>> CIF().sniff(fname)
         False
+        >>> fname = get_test_fname('1.star')
+        >>> CIF().sniff(fname)
+        False
         """
         with open(filename) as f:
             cif = f.read(1000)
@@ -994,8 +997,8 @@ class CIF(GenericMolFile):
             dataset.metadata.lattice_parameters = list(lattice_parameters)
             log.warning("metadata is: %s", dataset.metadata)
         else:
-            dataset.metadata.number_of_molecules = count_special_lines(r'^data_', dataset.file_name)
             # simple metadata
+            dataset.metadata.number_of_molecules = count_special_lines(r'^data_', dataset.file_name)
             """with open(dataset.file_name) as f:
                 cell = f.read()
             try:
@@ -1074,8 +1077,32 @@ class XYZ(GenericMolFile):
     MetadataElement(
         name="atom_data",
         default=[],
-        desc="Atom Positions",
-        readonly=False,
+        desc="Atom symbols and positions",
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
+        name="number_of_atoms",
+        desc="Number of atoms",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="chemical_formula",
+        desc="Chemical formula",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="is_periodic",
+        desc="Periodic boundary conditions",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="lattice_parameters",
+        desc="Lattice parameters",
+        readonly=True,
         visible=True,
     )
 
@@ -1096,7 +1123,7 @@ class XYZ(GenericMolFile):
         False
         """
         with open(filename) as f:
-            xyz_lines = f.readlines(1000)
+            xyz_lines = f.readlines(1000)[:-1]
 
         try:
             blocks = self.read_blocks(xyz_lines)
@@ -1118,7 +1145,7 @@ class XYZ(GenericMolFile):
 
         # check blocks are valid
         for block in blocks:
-            if block[0] is None:
+            if block["number_of_atoms"] is None:
                 return False
 
         # all checks passed
@@ -1158,7 +1185,11 @@ class XYZ(GenericMolFile):
 
                 atoms.append(atom)
 
-            blocks.append((n_atoms, comment, atoms))
+            blocks.append({
+                "number_of_atoms":n_atoms,
+                "comment": comment,
+                "atom_data":atoms
+            })
 
         return blocks
 
@@ -1166,19 +1197,103 @@ class XYZ(GenericMolFile):
         """
         Find Atom IDs for metadata.
         """
-        with open(dataset.file_name) as f:
-            lines = f.readlines()
-            dataset.metadata.atom_data = [atom.strip() for atom in lines[2:]]
+        if ase_io:
+            # enhanced metadata
+            try:
+                ase_data = ase_io.read(dataset.file_name, index=":", format="xyz")
+                log.warning(str(ase_data))
+            except ValueError:
+                log.error("Could not read XYZ structure data: %s", unicodify(e))
+                raise
+
+            atom_data = []
+            chemical_formula = []
+            is_periodic = []
+            lattice_parameters = []
+            try:
+                for block in ase_data:
+                    atom_data.append(
+                        [
+                            str(sym) + str(pos)
+                            for sym, pos in zip(
+                                block.get_chemical_symbols(), block.get_positions()
+                            )
+                        ]
+                    )
+                    chemical_formula.append(block.get_chemical_formula())
+                    pbc = block.get_pbc()
+                    try:
+                        p = 1 if pbc else 0
+                    except ValueError:  # pbc is an array
+                        p = 1 if pbc.any() else 0
+                    is_periodic.append(p)
+                    lattice_parameters.append(list(block.get_cell().cellpar()))
+            except Exception as e:
+                log.error("Error finding metadata: %s", unicodify(e))
+                raise
+
+            dataset.metadata.number_of_molecules = len(ase_data)
+            dataset.metadata.atom_data = atom_data
+            dataset.metadata.number_of_atoms = [
+                len(atoms) for atoms in dataset.metadata.atom_data
+            ]
+            dataset.metadata.chemical_formula = chemical_formula
+            dataset.metadata.is_periodic = is_periodic
+            dataset.metadata.lattice_parameters = list(lattice_parameters)
+            log.warning("metadata is: %s", dataset.metadata)
+        else:
+            # simple metadata
+            with open(dataset.file_name) as f:
+                xyz_lines = f.readlines()
+                blocks = self.read_blocks(xyz_lines)
+            dataset.metadata.number_of_molecules=len(blocks)
+            dataset.metadata.atom_data=[
+                block["atom_data"] for block in blocks
+            ]
+            dataset.metadata.number_of_atoms=[
+                block["number_of_atoms"] for block in blocks
+            ]
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = (
-                f"XYZ file containing {len(dataset.metadata.atom_data)} atoms"
+            dataset.info = self.get_dataset_info(dataset.metadata)
+            structure_string = (
+                "structure"
+                if dataset.metadata.number_of_molecules == 1
+                else "structures"
             )
+            dataset.blurb = f"XYZ file containing {dataset.metadata.number_of_molecules} {structure_string}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+    def get_dataset_info(self, metadata):
+        info = ""  # default to empty info
+
+        if ase_io:
+            # enhanced info
+            info_list = []
+            if metadata.number_of_molecules == 1:
+                info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
+                if metadata.is_periodic[0]:
+                    info_list.append(f"Periodic:\nYes")
+                    info_list.append(
+                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
+                    )
+                else:
+                    info_list.append("Periodic:\nNo")
+                info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
+            elif metadata.number_of_molecules > 1:
+                info_list.append("File contains multiple structures; full metadata will not be displayed.")
+                formulae = "\n".join(metadata.chemical_formula)
+                info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
+            info = "\n--\n".join(info_list)
+        #else:
+        # TODO: message along the lines of "ask your admin to install ase"?
+        #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
+
+        return info
 
 
 class grd(Text):
