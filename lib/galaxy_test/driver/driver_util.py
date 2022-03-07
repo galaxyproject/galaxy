@@ -39,6 +39,7 @@ from galaxy.util import (
 )
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy import buildapp
+from galaxy.webapps.galaxy.fast_app import initialize_fast_app as init_galaxy_fast_app
 from galaxy_test.base.api_util import (
     get_admin_api_key,
     get_user_api_key,
@@ -50,6 +51,7 @@ from galaxy_test.base.env import (
 from galaxy_test.base.instrument import StructuredTestDataPlugin
 from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()
@@ -770,29 +772,29 @@ class UwsgiServerWrapper(ServerWrapper):
         self._t.join()
 
 
-def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
+def launch_server(app, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
     name = prefix.lower()
-
     host, port = explicitly_configured_host_and_port(prefix, config_object)
     port = attempt_ports(port)
-    gx_app = build_galaxy_app(galaxy_config)
-
-    gx_wsgi_webapp = webapp_factory(
+    wsgi_webapp = webapp_factory(
         galaxy_config["global_conf"],
-        app=gx_app,
+        app=app,
         use_translogger=False,
         static_enabled=True,
         register_shutdown_at_exit=False,
     )
-    from galaxy.webapps.galaxy.fast_app import initialize_fast_app
+    if name == "galaxy":
+        asgi_app = init_galaxy_fast_app(wsgi_webapp, app)
+    elif name == "tool_shed":
+        asgi_app = init_tool_shed_fast_app(wsgi_webapp)
+    else:
+        raise NotImplementedError(f"Launching {name} not implemented")
 
-    app = initialize_fast_app(gx_wsgi_webapp, gx_app)
-    server, port, thread = uvicorn_serve(app, host=host, port=port)
-    set_and_wait_for_http_target(prefix, host, port, url_prefix=gx_app.config.galaxy_url_prefix)
-    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{gx_app.config.galaxy_url_prefix}")
-    return EmbeddedServerWrapper(
-        gx_app, server, name, host, port, thread=thread, prefix=gx_app.config.galaxy_url_prefix
-    )
+    server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
+    url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
+    set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
+    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
+    return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
 
 
 class TestDriver:
@@ -940,12 +942,13 @@ class GalaxyTestDriver(TestDriver):
                 if handle_galaxy_config_kwds is not None:
                     handle_galaxy_config_kwds(galaxy_config)
 
-            server_wrapper = launch_uvicorn(
-                lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
+            self.app = build_galaxy_app(galaxy_config)
+            server_wrapper = launch_server(
+                app=self.app,
+                webapp_factory=lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                 galaxy_config=galaxy_config,
                 config_object=config_object,
             )
-            self.app = server_wrapper.app
             self.server_wrappers.append(server_wrapper)
         else:
             log.info(f"Functional tests will be run against test external Galaxy server {self.external_galaxy}")

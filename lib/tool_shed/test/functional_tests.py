@@ -118,9 +118,9 @@ class ToolShedTestDriver(driver_util.TestDriver):
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
         kwargs["global_conf"]["database_connection"] = kwargs["database_connection"]
         tool_shed_server_wrapper = driver_util.launch_server(
-            toolshedapp,
-            toolshedbuildapp.app_factory,
-            kwargs,
+            app=toolshedapp,
+            webapp_factory=toolshedbuildapp.app_factory,
+            galaxy_config=kwargs,
             prefix="TOOL_SHED",
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
@@ -177,9 +177,9 @@ class ToolShedTestDriver(driver_util.TestDriver):
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxyapp = driver_util.build_galaxy_app(kwargs)
             galaxy_server_wrapper = driver_util.launch_server(
-                galaxyapp,
-                galaxybuildapp.app_factory,
-                kwargs,
+                app=galaxyapp,
+                webapp_factory=galaxybuildapp.app_factory,
+                galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")
             self.server_wrappers.append(galaxy_server_wrapper)
