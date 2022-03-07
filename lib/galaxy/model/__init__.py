@@ -9028,6 +9028,7 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     user = relationship("User")
 
     def _set_item(self, history_dataset_association):
+        add_object_to_object_session(self, history_dataset_association)
         self.history_dataset_association = history_dataset_association
 
 
@@ -9042,6 +9043,7 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, stored_workflow):
+        add_object_to_object_session(self, stored_workflow)
         self.stored_workflow = stored_workflow
 
 
@@ -9056,6 +9058,7 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, page):
+        add_object_to_object_session(self, page)
         self.page = page
 
 
@@ -9070,6 +9073,7 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, visualization):
+        add_object_to_object_session(self, visualization)
         self.visualization = visualization
 
 
@@ -9084,6 +9088,7 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
@@ -9098,6 +9103,7 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
