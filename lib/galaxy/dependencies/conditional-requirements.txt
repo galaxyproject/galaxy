@@ -12,6 +12,7 @@ python-ldap==3.4.0
 python-pam
 galaxycloudrunner
 pkce
+total-perspective-vortex
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
