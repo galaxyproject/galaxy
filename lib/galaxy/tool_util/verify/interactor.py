@@ -29,6 +29,7 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
 )
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.bunch import Bunch
 from . import verify
 from .asserts import verify_assertions
@@ -75,6 +76,7 @@ def stage_data_in_history(
     force_path_paste=False,
     maxseconds=DEFAULT_TOOL_TEST_WAIT,
     tool_version=None,
+    test_data_resolver=None,
 ):
     # Upload any needed files
     upload_waits = []
@@ -82,6 +84,7 @@ def stage_data_in_history(
     assert tool_id
 
     if UPLOAD_ASYNC:
+        # TODO paralellel download and unzipping could create problems?
         for test_data in all_test_data:
             upload_waits.append(
                 galaxy_interactor.stage_data_async(
@@ -91,6 +94,7 @@ def stage_data_in_history(
                     force_path_paste=force_path_paste,
                     maxseconds=maxseconds,
                     tool_version=tool_version,
+                    test_data_resolver=test_data_resolver,
                 )
             )
         for upload_wait in upload_waits:
@@ -104,6 +108,7 @@ def stage_data_in_history(
                 force_path_paste=force_path_paste,
                 maxseconds=maxseconds,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver,
             )
             upload_wait()
 
@@ -164,7 +169,13 @@ class GalaxyInteractorApi:
         return response.json()
 
     def verify_output_collection(
-        self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
+        self,
+        output_collection_def,
+        output_collection_id,
+        history,
+        tool_id,
+        tool_version=None,
+        test_data_resolver=None
     ):
         data_collection = self._get(
             f"dataset_collections/{output_collection_id}", data={"instance_type": "history"}
@@ -180,6 +191,7 @@ class GalaxyInteractorApi:
                     attributes=element_attrib,
                     tool_id=tool_id,
                     tool_version=tool_version,
+                    test_data_resolver=test_data_resolver
                 )
             except AssertionError as e:
                 raise AssertionError(
@@ -188,7 +200,17 @@ class GalaxyInteractorApi:
 
         verify_collection(output_collection_def, data_collection, verify_dataset)
 
-    def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds, tool_version=None):
+    def verify_output(
+        self,
+        history_id,
+        jobs,
+        output_data,
+        output_testdef,
+        tool_id,
+        maxseconds,
+        tool_version=None,
+        test_data_resolver=None
+    ):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
@@ -204,6 +226,7 @@ class GalaxyInteractorApi:
                 attributes=attributes,
                 tool_id=tool_id,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver
             )
         except AssertionError as e:
             raise AssertionError(f"Output {name}: {str(e)}")
@@ -234,6 +257,7 @@ class GalaxyInteractorApi:
                     primary_attributes,
                     tool_id=tool_id,
                     tool_version=tool_version,
+                    test_data_resolver=test_data_resolver
                 )
             except AssertionError as e:
                 raise AssertionError(f"Primary output {name}: {str(e)}")
@@ -242,7 +266,16 @@ class GalaxyInteractorApi:
         for job in jobs:
             self.wait_for_job(job["id"], history_id, maxseconds)
 
-    def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
+    def verify_output_dataset(
+        self,
+        history_id,
+        hda_id,
+        outfile,
+        attributes,
+        tool_id,
+        tool_version=None,
+        test_data_resolver=None
+    ):
         fetcher = self.__dataset_fetcher(history_id)
         test_data_downloader = self.__test_data_downloader(tool_id, tool_version)
         verify_hid(
@@ -252,6 +285,7 @@ class GalaxyInteractorApi:
             dataset_fetcher=fetcher,
             test_data_downloader=test_data_downloader,
             keep_outputs_dir=self.keep_outputs_dir,
+            test_data_resolver=test_data_resolver
         )
         self._verify_metadata(history_id, hda_id, attributes)
 
@@ -356,7 +390,7 @@ class GalaxyInteractorApi:
         return response.json()
 
     @nottest
-    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
+    def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None, test_data_resolver=None):
         result = None
         local_path = None
 
@@ -400,6 +434,15 @@ class GalaxyInteractorApi:
                 shutil.copytree(local_path, path)
                 result = path
 
+        # TODO call earlier, maybe?
+        if result is None and test_data_resolver is not None:
+            path = test_data_resolver.get_filename(filename)
+            if mode == "file":
+                with open(path, mode="rb") as f:
+                    result = f.read()
+            else:
+                result = path
+
         if result is None:
             if is_output:
                 raise AssertionError(
@@ -427,6 +470,7 @@ class GalaxyInteractorApi:
         force_path_paste=False,
         maxseconds=DEFAULT_TOOL_TEST_WAIT,
         tool_version=None,
+        test_data_resolver=None
     ):
         fname = test_data["fname"]
         tool_input = {
@@ -467,10 +511,12 @@ class GalaxyInteractorApi:
             )
             files = {}
             if force_path_paste:
+                # TODO do we need to modify also test_data_path()?
+                # which is also called in test_data_download
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
-                file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
+                file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version, test_data_resolver=test_data_resolver)
                 files = {"files_0|file_data": file_content}
         submit_response_object = self.__submit_tool(
             history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
@@ -907,7 +953,7 @@ class RunToolException(Exception):
 
 # Galaxy specific methods - rest of this can be used with arbitrary files and such.
 def verify_hid(
-    filename, hda_id, attributes, test_data_downloader, hid="", dataset_fetcher=None, keep_outputs_dir=False
+    filename, hda_id, attributes, test_data_downloader, hid="", dataset_fetcher=None, keep_outputs_dir=False, test_data_resolver=None
 ):
     assert dataset_fetcher is not None
 
@@ -918,6 +964,7 @@ def verify_hid(
             dataset_fetcher=dataset_fetcher,
             test_data_downloader=test_data_downloader,
             keep_outputs_dir=keep_outputs_dir,
+            test_data_resolver=test_data_resolver,
         )
 
     data = dataset_fetcher(hda_id)
@@ -930,6 +977,7 @@ def verify_hid(
         get_filecontent=test_data_downloader,
         keep_outputs_dir=keep_outputs_dir,
         verify_extra_files=verify_extra_files,
+        test_data_resolver=test_data_resolver,
     )
 
 
@@ -1003,6 +1051,7 @@ def _verify_composite_datatype_file_content(
     test_data_downloader=None,
     keep_outputs_dir=False,
     mode="file",
+    test_data_resolver=None
 ):
     assert dataset_fetcher is not None
 
@@ -1017,6 +1066,7 @@ def _verify_composite_datatype_file_content(
             get_filecontent=test_data_downloader,
             keep_outputs_dir=keep_outputs_dir,
             mode=mode,
+            test_data_resolver=test_data_resolver,
         )
     except AssertionError as err:
         errmsg = f"Composite file ({base_name}) of {item_label} different than expected, difference:\n"
@@ -1024,7 +1074,14 @@ def _verify_composite_datatype_file_content(
         raise AssertionError(errmsg)
 
 
-def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_downloader, keep_outputs_dir):
+def _verify_extra_files_content(
+    extra_files,
+    hda_id,
+    dataset_fetcher,
+    test_data_downloader,
+    keep_outputs_dir,
+    test_data_resolver=None
+):
     files_list = []
     cleanup_directories = []
     for extra_file_dict in extra_files:
@@ -1058,6 +1115,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
                 test_data_downloader=test_data_downloader,
                 keep_outputs_dir=keep_outputs_dir,
                 mode=extra_file_type,
+                test_data_resolver=test_data_resolver,
             )
     finally:
         for path in cleanup_directories:
@@ -1166,6 +1224,12 @@ def verify_tool(
     testdef = ToolTestDescription(tool_test_dict)
     _handle_def_errors(testdef)
 
+    test_data_resolver = testdef.test_data_resolver
+    if test_data_resolver is not None:
+        # TODO more clever / elegent initialisation of TDR? allow absent checksum?
+        test_data_resolver = [f"{t['value']}${t['checksum']}" for t in test_data_resolver]
+        test_data_resolver = TestDataResolver(",".join(test_data_resolver))
+
     created_history = False
     if test_history is None:
         created_history = True
@@ -1193,6 +1257,7 @@ def verify_tool(
                 force_path_paste=force_path_paste,
                 maxseconds=maxseconds,
                 tool_version=tool_version,
+                test_data_resolver=test_data_resolver,
             )
         except Exception as e:
             input_staging_exception = e
@@ -1217,7 +1282,13 @@ def verify_tool(
 
             try:
                 job_stdio = _verify_outputs(
-                    testdef, test_history, jobs, data_list, data_collection_list, galaxy_interactor, quiet=quiet
+                    testdef,
+                    test_history,
+                    jobs,
+                    data_list,
+                    data_collection_list,
+                    galaxy_interactor,
+                    quiet=quiet,
                 )
             except JobOutputsError as e:
                 job_stdio = e.job_stdio
@@ -1268,6 +1339,13 @@ def _handle_def_errors(testdef):
 def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, galaxy_interactor, quiet=False):
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
+
+    # TODO could be moved to verify_tool
+    test_data_resolver = testdef.test_data_resolver
+    if test_data_resolver is not None:
+        # TODO more clever / elegent initialisation of TDR? allow absent checksum?
+        test_data_resolver = [f"{t['value']}${t['checksum']}" for t in test_data_resolver]
+        test_data_resolver = TestDataResolver(",".join(test_data_resolver))
 
     found_exceptions = []
 
@@ -1341,6 +1419,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                 tool_id=job["tool_id"],
                 maxseconds=maxseconds,
                 tool_version=testdef.tool_version,
+                test_data_resolver=test_data_resolver
             )
         except Exception as e:
             register_exception(e)
@@ -1399,8 +1478,13 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             # Data collection returned from submission, elements may have been populated after
             # the job completed so re-hit the API for more information.
             data_collection_id = data_collection_list[name]["id"]
+            # TODO shouln't this call also have the tool_version?
             galaxy_interactor.verify_output_collection(
-                output_collection_def, data_collection_id, history, job["tool_id"]
+                output_collection_def,
+                data_collection_id,
+                history,
+                job["tool_id"],
+                test_data_resolver=test_data_resolver
             )
         except Exception as e:
             register_exception(e)
@@ -1484,6 +1568,7 @@ class ToolTestDescription:
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
         self.expect_failure = processed_test_dict.get("expect_failure", False)
         self.expect_test_failure = processed_test_dict.get("expect_test_failure", False)
+        self.test_data_resolver = processed_test_dict.get("test_data_resolver", None)
 
     def test_data(self):
         """
@@ -1520,6 +1605,7 @@ class ToolTestDescription:
             "required_loc_files": self.required_loc_files,
             "error": self.error,
             "exception": self.exception,
+            "test_data_resolver": self.test_data_resolver,
         }
 
 

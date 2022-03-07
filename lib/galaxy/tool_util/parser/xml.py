@@ -539,9 +539,17 @@ class XmlToolSource(ToolSource):
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
         tests = []
-        rval = dict(tests=tests)
+        test_data_resolver = []
+        rval = dict(tests=tests, test_data_resolver=test_data_resolver)
 
         if tests_elem is not None:
+            for resolver in tests_elem.findall("test_data_resolver"):
+                test_data_resolver.append(
+                    {
+                        "checksum": resolver.attrib.get("checksum", ""),
+                        "value": resolver.attrib["value"]
+                    }
+                )
             for i, test_elem in enumerate(tests_elem.findall("test")):
                 profile = self.parse_profile()
                 tests.append(_test_elem_to_dict(test_elem, i, profile))

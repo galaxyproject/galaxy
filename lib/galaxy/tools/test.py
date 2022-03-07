@@ -33,14 +33,15 @@ def parse_tests(tool, tests_source):
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
+    test_data_resolver = raw_tests_dict.get("test_data_resolver")
     tests = []
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
-        test = description_from_tool_object(tool, i, raw_test_dict)
+        test = description_from_tool_object(tool, i, raw_test_dict, test_data_resolver)
         tests.append(test)
     return tests
 
 
-def description_from_tool_object(tool, test_index, raw_test_dict):
+def description_from_tool_object(tool, test_index, raw_test_dict, test_data_resolver):
     required_files: List[Tuple[str, dict]] = []
     required_data_tables: List[str] = []
     required_loc_files: List[str] = []
@@ -72,6 +73,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "tool_version": tool.version,
             "test_index": test_index,
             "error": False,
+            "test_data_resolver": test_data_resolver,
         }
     except Exception as e:
         log.exception("Failed to load tool test number [%d] for %s" % (test_index, tool.id))

@@ -170,8 +170,8 @@ class YamlToolSource(ToolSource):
 
     def parse_tests_to_dict(self):
         tests = []
-        rval = dict(tests=tests)
-
+        rval = dict(tests=tests, test_data=None)
+        # TODO parse test_data from yaml
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
 

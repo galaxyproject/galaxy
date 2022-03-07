@@ -40,18 +40,22 @@ def verify(
     keep_outputs_dir=None,
     verify_extra_files=None,
     mode="file",
+    test_data_resolver=None,
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
     if get_filename is None:
+        if test_data_resolver is not None:
+            get_filecontent = test_data_resolver.get_filecontent
         if get_filecontent is None:
             get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
 
         def get_filename(filename):
             file_content = get_filecontent(filename)
             local_name = make_temp_fname(fname=filename)
+            # TODO why create a tmp copy?
             with open(local_name, "wb") as f:
                 f.write(file_content)
             return local_name

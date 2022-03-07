@@ -249,6 +249,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         test_defs = []
         for tool in tools:
+            log.error(f"{tool}")
             test_defs.extend([t.to_dict() for t in tool.tests])
         return test_defs
 
