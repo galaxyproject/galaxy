@@ -3291,6 +3291,7 @@ class DefaultHistoryPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, history, action, role):
+        add_object_to_object_session(self, history)
         self.history = history
         self.action = action
         self.role = role
