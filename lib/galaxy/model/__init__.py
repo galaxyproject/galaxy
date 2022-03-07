@@ -1997,6 +1997,7 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
 
