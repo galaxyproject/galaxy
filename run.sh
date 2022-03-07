@@ -50,9 +50,6 @@ if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
     python ./scripts/manage_tool_dependencies.py init_if_needed
 fi
 
-[ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
-find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
-
 if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then

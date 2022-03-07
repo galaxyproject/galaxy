@@ -64,9 +64,6 @@ open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in bro
 open-project: ## open project on github
 	$(OPEN_RESOURCE) $(PROJECT_URL)
 
-uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
-	$(CONFIG_MANAGE) build_uwsgi_yaml
-
 tool-shed-config-validate: ## validate tool shed YAML configuration file
 	$(CONFIG_MANAGE) validate tool_shed
 

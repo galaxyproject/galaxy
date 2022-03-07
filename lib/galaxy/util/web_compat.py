@@ -1,6 +1,6 @@
 """Work around for gross circular dependency between galaxy.util and galaxy.web_stack.
 
-Provide a function that will delay to forking in a uwsgi environment but run immediately
+Provide a function that will delay until a server forks but runs immediately
 otherwise.
 """
 try:

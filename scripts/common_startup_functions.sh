@@ -28,7 +28,6 @@ parse_common_args() {
                 gravity_args="stop"
                 paster_args="$paster_args --stop-daemon"
                 add_pid_arg=1
-                uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
                 stop_daemon_arg_set=1
                 shift
                 ;;
@@ -37,7 +36,6 @@ parse_common_args() {
                 paster_args="$paster_args restart"
                 add_pid_arg=1
                 add_log_arg=1
-                uwsgi_args="$uwsgi_args --reload \"$PID_FILE\""
                 restart_arg_set=1
                 daemon_or_restart_arg_set=1
                 shift
@@ -50,7 +48,6 @@ parse_common_args() {
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
-                uwsgi_args="--master --daemonize2 \"$LOG_FILE\" --pidfile2 \"$PID_FILE\" $uwsgi_args"
                 daemon_or_restart_arg_set=1
                 shift
                 ;;
@@ -69,7 +66,6 @@ parse_common_args() {
                 ;;
             *)
                 paster_args="$paster_args $1"
-                uwsgi_args="$uwsgi_args $1"
                 shift
                 ;;
         esac
@@ -170,25 +166,7 @@ find_server() {
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
-    if [ "$APP_WEBSERVER" = "uwsgi" ]; then
-        # Look for uwsgi
-        if [ -z "$skip_venv" ] && [ -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
-            UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
-        elif command -v uwsgi >/dev/null 2>&1; then
-            UWSGI=uwsgi
-        else
-            echo 'ERROR: Could not find uwsgi executable'
-            exit 1
-        fi
-        [ "$server_config" != "none" ] && arg_getter_args="-c \"$server_config\""
-        [ -n "$server_app" ] && arg_getter_args="$arg_getter_args --app $server_app"
-        run_server="$UWSGI"
-        server_args=
-        if [ -z "$stop_daemon_arg_set" ] && [ -z "$restart_arg_set" ]; then
-            server_args="$(eval python ./scripts/get_uwsgi_args.py $arg_getter_args)"
-        fi
-        server_args="$server_args $uwsgi_args"
-    elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
+    if [ "$APP_WEBSERVER" = "gunicorn" ]; then
         run_server="gunicorn"
         export GUNICORN_CMD_ARGS
         if [ "$server_app" = "tool_shed" ]; then
@@ -198,15 +176,6 @@ find_server() {
         fi
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
-        fi
-        if [ "$add_log_arg" -eq 1 ]; then
-            server_args="$server_args --log-file \"$LOG_FILE\""
-        fi
-    elif [ "$APP_WEBSERVER" = "paste" ]; then
-        run_server="python"
-        server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
-        if [ "$add_pid_arg" -eq 1 ]; then
-            server_args="$server_args --pid-file \"$PID_FILE\""
         fi
         if [ "$add_log_arg" -eq 1 ]; then
             server_args="$server_args --log-file \"$LOG_FILE\""

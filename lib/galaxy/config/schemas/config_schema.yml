@@ -20,7 +20,6 @@ desc: |
 
   Config hackers are encouraged to check there before asking for help.
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   galaxy:
     type: map
     required: true

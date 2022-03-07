@@ -1,6 +1,5 @@
 type: map
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   reports:
     type: map
     required: true

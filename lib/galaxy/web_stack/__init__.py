@@ -1,13 +1,14 @@
 """Web application stack operations."""
 
-import inspect
 import logging
 import multiprocessing
 import os
 import sys
 import threading
 from typing import (
+    Callable,
     FrozenSet,
+    List,
     Optional,
     Type,
 )
