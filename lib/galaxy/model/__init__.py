@@ -3262,6 +3262,7 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     def __init__(self, action, library_item, role):
         self.action = action
         if isinstance(library_item, LibraryDatasetDatasetAssociation):
+            add_object_to_object_session(self, library_item)
             self.library_dataset_dataset_association = library_item
         else:
             raise Exception(f"Invalid LibraryDatasetDatasetAssociation specified: {library_item.__class__.__name__}")
