@@ -2283,6 +2283,8 @@ class JobContainerAssociation(Base, RepresentById):
     job = relationship("Job", back_populates="container")
 
     def __init__(self, **kwd):
+        if "job" in kwd:
+            add_object_to_object_session(self, kwd["job"])
         super().__init__(**kwd)
         self.container_info = self.container_info or {}
 
