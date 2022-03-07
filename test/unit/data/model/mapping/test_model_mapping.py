@@ -74,6 +74,7 @@ from sqlalchemy import (
 
 from galaxy import model
 from galaxy.model.orm.now import now
+from galaxy.model.orm.util import add_object_to_object_session
 from .common import (
     AbstractBaseTest,
     collection_consists_of_objects,
@@ -1900,6 +1901,7 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
         obj = cls_()
         obj.collection = dataset_collection
         obj.history = history
+        add_object_to_object_session(obj, history_dataset_collection_association)
         obj.copied_from_history_dataset_collection_association = history_dataset_collection_association
         obj.copied_to_history_dataset_collection_association.append(copied_to_hdca)
         obj.job = job
@@ -2498,6 +2500,7 @@ class TestJob(BaseTest):
         obj.implicit_collection_jobs_association = implicit_collection_jobs_job_association
         obj.container = job_container_association
         obj.data_manager_association = data_manager_job_association
+        add_object_to_object_session(obj, history_dataset_collection_association)
         obj.history_dataset_collection_associations.append(history_dataset_collection_association)
         obj.workflow_invocation_step = workflow_invocation_step
 
@@ -3286,6 +3289,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
 
         obj = cls_()
         obj.library_dataset = library_dataset
+        add_object_to_object_session(obj, dataset)
         obj.dataset = dataset
         obj.create_time = create_time
         obj.copied_from_history_dataset_association = history_dataset_association
@@ -3374,6 +3378,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
 
         obj = cls_()
         obj.library_dataset = library_dataset
+        add_object_to_object_session(obj, dataset)
         obj.dataset = dataset
         obj.copied_from_history_dataset_association = history_dataset_association
         obj.copied_from_library_dataset_dataset_association = copied_from_ldda
@@ -3600,6 +3605,7 @@ class TestLibraryFolder(BaseTest):
         library_folder_factory,
     ):
         obj = cls_()
+        add_object_to_object_session(obj, library_folder)
         obj.parent = library_folder
         folder1 = library_folder_factory()
         obj.folders.append(folder1)
@@ -4394,6 +4400,7 @@ class TestStoredWorkflowMenuEntry(BaseTest):
         order_index = 1
         obj = cls_()
         obj.stored_workflow = stored_workflow
+        add_object_to_object_session(obj, user)
         obj.user = user
         obj.order_index = order_index
 
@@ -4407,6 +4414,7 @@ class TestStoredWorkflowMenuEntry(BaseTest):
     def test_relationships(self, session, cls_, stored_workflow, user):
         obj = cls_()
         obj.stored_workflow = stored_workflow
+        add_object_to_object_session(obj, user)
         obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
@@ -5636,6 +5644,7 @@ class TestWorkflowInvocationOutputValue(BaseTest):
         persist(session, workflow_invocation_step)
 
         obj = cls_()
+        add_object_to_object_session(obj, workflow_invocation)
         obj.workflow_invocation = workflow_invocation
         obj.workflow_step = workflow_step
         obj.workflow_output = workflow_output
@@ -5708,6 +5717,7 @@ class TestWorkflowInvocationStep(BaseTest):
         persist(session, output_value)
 
         obj = cls_()
+        add_object_to_object_session(obj, workflow_invocation)
         obj.workflow_invocation = workflow_invocation
         obj.workflow_step = workflow_step
         obj.job = job
@@ -6936,6 +6946,7 @@ def role(session):
 @pytest.fixture
 def stored_workflow(session, user):
     instance = model.StoredWorkflow()
+    add_object_to_object_session(instance, user)
     instance.user = user
     yield from dbcleanup_wrapper(session, instance)
 
@@ -7169,6 +7180,7 @@ def workflow_request_to_input_dataset_collection_association(session):
 @pytest.fixture
 def workflow_step(session, workflow):
     instance = model.WorkflowStep()
+    add_object_to_object_session(instance, workflow)
     instance.workflow = workflow
     yield from dbcleanup_wrapper(session, instance)
 
@@ -7376,7 +7388,9 @@ def workflow_step_connection_factory():
 def workflow_step_factory(workflow):
     def make_instance(*args, **kwds):
         instance = model.WorkflowStep()
-        instance.workflow = kwds.get("workflow", workflow)
+        workflow2 = kwds.get("workflow", workflow)  # rename workflow not to confuse pytest
+        add_object_to_object_session(instance, workflow2)
+        instance.workflow = workflow2
         instance.subworkflow = kwds.get("subworkflow")
         return instance
 
