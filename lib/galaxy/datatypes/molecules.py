@@ -2,8 +2,6 @@ import logging
 import os
 import re
 
-from attr import Attribute
-
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -71,7 +69,119 @@ class GenericMolFile(Text):
         return 'text/plain'
 
     def get_element_symbols(self):
-        return ["Ac", "Ag", "Al", "Am", "Ar", "As", "At", "Au", "B ", "Ba", "Be", "Bh", "Bi", "Bk", "Br", "C ", "Ca", "Cd", "Ce", "Cf", "Cl", "Cm", "Co", "Cr", "Cs", "Cu", "Ds", "Db", "Dy", "Er", "Es", "Eu", "F ", "Fe", "Fm", "Fr", "Ga", "Gd", "Ge", "H ", "He", "Hf", "Hg", "Ho", "Hs", "I ", "In", "Ir", "K ", "Kr", "La", "Li", "Lr", "Lu", "Md", "Mg", "Mn", "Mo", "Mt", "N ", "Na", "Nb", "Nd", "Ne", "Ni", "No", "Np", "O ", "Os", "P ", "Pa", "Pb", "Pd", "Pm", "Po", "Pr", "Pt", "Pu", "Ra", "Rb", "Re", "Rf", "Rg", "Rh", "Rn", "Ru", "S ", "Sb", "Sc", "Se", "Sg", "Si", "Sm", "Sn", "Sr", "Ta", "Tb", "Tc", "Te", "Th", "Ti", "Tl", "Tm", "U ", "V ", "W ", "Xe", "Y ", "Yb", "Zn", "Zr"]
+        return [
+            "Ac",
+            "Ag",
+            "Al",
+            "Am",
+            "Ar",
+            "As",
+            "At",
+            "Au",
+            "B ",
+            "Ba",
+            "Be",
+            "Bh",
+            "Bi",
+            "Bk",
+            "Br",
+            "C ",
+            "Ca",
+            "Cd",
+            "Ce",
+            "Cf",
+            "Cl",
+            "Cm",
+            "Co",
+            "Cr",
+            "Cs",
+            "Cu",
+            "Ds",
+            "Db",
+            "Dy",
+            "Er",
+            "Es",
+            "Eu",
+            "F ",
+            "Fe",
+            "Fm",
+            "Fr",
+            "Ga",
+            "Gd",
+            "Ge",
+            "H ",
+            "He",
+            "Hf",
+            "Hg",
+            "Ho",
+            "Hs",
+            "I ",
+            "In",
+            "Ir",
+            "K ",
+            "Kr",
+            "La",
+            "Li",
+            "Lr",
+            "Lu",
+            "Md",
+            "Mg",
+            "Mn",
+            "Mo",
+            "Mt",
+            "N ",
+            "Na",
+            "Nb",
+            "Nd",
+            "Ne",
+            "Ni",
+            "No",
+            "Np",
+            "O ",
+            "Os",
+            "P ",
+            "Pa",
+            "Pb",
+            "Pd",
+            "Pm",
+            "Po",
+            "Pr",
+            "Pt",
+            "Pu",
+            "Ra",
+            "Rb",
+            "Re",
+            "Rf",
+            "Rg",
+            "Rh",
+            "Rn",
+            "Ru",
+            "S ",
+            "Sb",
+            "Sc",
+            "Se",
+            "Sg",
+            "Si",
+            "Sm",
+            "Sn",
+            "Sr",
+            "Ta",
+            "Tb",
+            "Tc",
+            "Te",
+            "Th",
+            "Ti",
+            "Tl",
+            "Tm",
+            "U ",
+            "V ",
+            "W ",
+            "Xe",
+            "Y ",
+            "Yb",
+            "Zn",
+            "Zr",
+        ]
 
 
 class MOL(GenericMolFile):
@@ -768,16 +878,13 @@ class Cell(GenericMolFile):
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, format="castep-cell")
-            except ValueError:
+            except ValueError as e:
                 log.error("Could not read CELL structure data: %s", unicodify(e))
                 raise
 
             try:
                 atom_data = [
-                    str(sym) + str(pos)
-                    for sym, pos in zip(
-                        ase_data.get_chemical_symbols(), ase_data.get_positions()
-                    )
+                    str(sym) + str(pos) for sym, pos in zip(ase_data.get_chemical_symbols(), ase_data.get_positions())
                 ]
                 chemical_formula = ase_data.get_chemical_formula()
                 pbc = ase_data.get_pbc()
@@ -826,11 +933,7 @@ class Cell(GenericMolFile):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = (
-                "structure"
-                if dataset.metadata.number_of_molecules == 1
-                else "structures"
-            )
+            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"CASTEP CELL file containing {dataset.metadata.number_of_molecules} {structure_string}"
 
         else:
@@ -845,7 +948,7 @@ class Cell(GenericMolFile):
             info_list = []
             info_list.append(f"Chemical formula:\n{metadata.chemical_formula}")
             if metadata.is_periodic:
-                info_list.append(f"Periodic:\nYes")
+                info_list.append("Periodic:\nYes")
                 info_list.append(
                     f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters])}"
                 )
@@ -959,7 +1062,7 @@ class CIF(GenericMolFile):
             try:
                 ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
                 log.warning(str(ase_data))
-            except ValueError:
+            except ValueError as e:
                 log.error("Could not read CIF structure data: %s", unicodify(e))
                 raise
 
@@ -970,12 +1073,7 @@ class CIF(GenericMolFile):
             try:
                 for block in ase_data:
                     atom_data.append(
-                        [
-                            str(sym) + str(pos)
-                            for sym, pos in zip(
-                                block.get_chemical_symbols(), block.get_positions()
-                            )
-                        ]
+                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
                     )
                     chemical_formula.append(block.get_chemical_formula())
                     pbc = block.get_pbc()
@@ -991,16 +1089,14 @@ class CIF(GenericMolFile):
 
             dataset.metadata.number_of_molecules = len(ase_data)
             dataset.metadata.atom_data = atom_data
-            dataset.metadata.number_of_atoms = [
-                len(atoms) for atoms in dataset.metadata.atom_data
-            ]
+            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
             log.warning("metadata is: %s", dataset.metadata)
         else:
             # simple metadata
-            dataset.metadata.number_of_molecules = count_special_lines(r'^data_', dataset.file_name)
+            dataset.metadata.number_of_molecules = count_special_lines(r"^data_", dataset.file_name)
             """with open(dataset.file_name) as f:
                 cell = f.read()
             try:
@@ -1032,11 +1128,7 @@ class CIF(GenericMolFile):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = (
-                "structure"
-                if dataset.metadata.number_of_molecules == 1
-                else "structures"
-            )
+            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"CIF file containing {dataset.metadata.number_of_molecules} {structure_string}"
 
         else:
@@ -1052,7 +1144,7 @@ class CIF(GenericMolFile):
             if metadata.number_of_molecules == 1:
                 info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
                 if metadata.is_periodic[0]:
-                    info_list.append(f"Periodic:\nYes")
+                    info_list.append("Periodic:\nYes")
                     info_list.append(
                         f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
                     )
@@ -1064,7 +1156,7 @@ class CIF(GenericMolFile):
                 formulae = "\n".join(metadata.chemical_formula)
                 info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
             info = "\n--\n".join(info_list)
-        #else:
+        # else:
         #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
 
         return info
@@ -1187,11 +1279,7 @@ class XYZ(GenericMolFile):
 
                 atoms.append(atom)
 
-            blocks.append({
-                "number_of_atoms":n_atoms,
-                "comment": comment,
-                "atom_data":atoms
-            })
+            blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
 
         return blocks
 
@@ -1205,7 +1293,7 @@ class XYZ(GenericMolFile):
                 # ASE recommend always parsing as extended xyz
                 ase_data = ase_io.read(dataset.file_name, index=":", format="extxyz")
                 log.warning(str(ase_data))
-            except ValueError:
+            except ValueError as e:
                 log.error("Could not read XYZ structure data: %s", unicodify(e))
                 raise
 
@@ -1216,12 +1304,7 @@ class XYZ(GenericMolFile):
             try:
                 for block in ase_data:
                     atom_data.append(
-                        [
-                            str(sym) + str(pos)
-                            for sym, pos in zip(
-                                block.get_chemical_symbols(), block.get_positions()
-                            )
-                        ]
+                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
                     )
                     chemical_formula.append(block.get_chemical_formula())
                     pbc = block.get_pbc()
@@ -1237,9 +1320,7 @@ class XYZ(GenericMolFile):
 
             dataset.metadata.number_of_molecules = len(ase_data)
             dataset.metadata.atom_data = atom_data
-            dataset.metadata.number_of_atoms = [
-                len(atoms) for atoms in dataset.metadata.atom_data
-            ]
+            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
@@ -1249,23 +1330,15 @@ class XYZ(GenericMolFile):
             with open(dataset.file_name) as f:
                 xyz_lines = f.readlines()
                 blocks = self.read_blocks(xyz_lines)
-            dataset.metadata.number_of_molecules=len(blocks)
-            dataset.metadata.atom_data=[
-                block["atom_data"] for block in blocks
-            ]
-            dataset.metadata.number_of_atoms=[
-                block["number_of_atoms"] for block in blocks
-            ]
+            dataset.metadata.number_of_molecules = len(blocks)
+            dataset.metadata.atom_data = [block["atom_data"] for block in blocks]
+            dataset.metadata.number_of_atoms = [block["number_of_atoms"] for block in blocks]
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = (
-                "structure"
-                if dataset.metadata.number_of_molecules == 1
-                else "structures"
-            )
+            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"XYZ file containing {dataset.metadata.number_of_molecules} {structure_string}"
         else:
             dataset.peek = "file does not exist"
@@ -1280,7 +1353,7 @@ class XYZ(GenericMolFile):
             if metadata.number_of_molecules == 1:
                 info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
                 if metadata.is_periodic[0]:
-                    info_list.append(f"Periodic:\nYes")
+                    info_list.append("Periodic:\nYes")
                     info_list.append(
                         f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
                     )
@@ -1292,7 +1365,7 @@ class XYZ(GenericMolFile):
                 formulae = "\n".join(metadata.chemical_formula)
                 info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
             info = "\n--\n".join(info_list)
-        #else:
+        # else:
         # TODO: message along the lines of "ask your admin to install ase"?
         #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
 
@@ -1376,10 +1449,10 @@ class ExtendedXYZ(XYZ):
             # extract column properties
             # these have the format 'Properties="<name>:<type>:<number>:..."' in the comment line
             # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
-            properties=re.search(r'Properties=\"?([a-zA-Z0-9:]+)\"?',comment)
-            if properties is None: # re.search returned None
+            properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)
+            if properties is None:  # re.search returned None
                 raise ValueError(f"Could not find column properties in line: {comment}")
-            properties = [s.split(":") for s in  re.findall(r'[a-zA-Z]+:[SIRL]:[0-9]+', properties.group(1))]
+            properties = [s.split(":") for s in re.findall(r"[a-zA-Z]+:[SIRL]:[0-9]+", properties.group(1))]
             total_columns = sum([int(s[2]) for s in properties])
 
             for _ in range(n_atoms):
@@ -1387,41 +1460,40 @@ class ExtendedXYZ(XYZ):
                 atom = atom.split()
                 if len(atom) != total_columns:
                     raise ValueError(f"Expected {total_columns} columns but found {len(atom)}: {atom}")
-                index=0
+                index = 0
                 # check that atom data adheres to correct column format as specified by the properties
                 # none of this is stored permanently as it's not needed for metadata
                 # but the processing will raise errors if the format is incorrect
                 for property in properties:
-                    to_check = atom[index:index+int(property[2])]
+                    to_check = atom[index : index + int(property[2])]
                     for i in to_check:
-                        if property[1] == "S": #string
+                        if property[1] == "S":  # string
                             # check that any element symbols are correct, otherwise ignore strings
-                            if property[0].lower()=="species" and i.lower().capitalize() not in self.get_element_symbols():
+                            if (
+                                property[0].lower() == "species"
+                                and i.lower().capitalize() not in self.get_element_symbols()
+                            ):
                                 raise ValueError(f"{i} is not a valid element symbol")
-                        elif property[1] == "L": #logical
+                        elif property[1] == "L":  # logical
                             if not re.match(r"(?:[tT]rue|TRUE|T)\b|(?:[fF]alse|FALSE|F)\b", i):
                                 raise ValueError(f"{i} is not a valid logical element.")
-                        elif property[1] == "I": #integer
+                        elif property[1] == "I":  # integer
                             int(i)
-                        elif property[1] == "R": #float
+                        elif property[1] == "R":  # float
                             float(i)
                         else:
                             raise ValueError(f"Could not recognise property type {property[1]}.")
-                    index+=int(property[2])
+                    index += int(property[2])
 
                 atoms.append(atom)
 
-            blocks.append({
-                "number_of_atoms":n_atoms,
-                "comment": comment,
-                "atom_data":atoms
-            })
+            blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
 
         return blocks
 
     def set_peek(self, dataset, is_multi_byte=False):
         super().set_peek(dataset, is_multi_byte)
-        dataset.blurb = "Extended "+dataset.blurb
+        dataset.blurb = "Extended " + dataset.blurb
 
 
 class grd(Text):
