@@ -1,3 +1,2 @@
 include *.rst *.txt LICENSE
 include galaxy/jobs/runners/util/job_script/*.sh
-include galaxy/tools/*tsv
