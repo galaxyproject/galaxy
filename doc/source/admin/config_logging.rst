@@ -35,15 +35,6 @@ In ``galaxy.yml``, set ``log_level``:
     galaxy:
         log_level: LEVEL
 
-
-Or if using ``galaxy.ini``:
-
-.. code-block:: ini
-
-    [app:main]
-    log_level = LEVEL
-
-
 Where ``LEVEL`` is one of the `logging levels`_ documented in the :mod:`logging` module.
 
 **Logging to a file:**
