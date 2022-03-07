@@ -1375,8 +1375,7 @@ class TestHistory(BaseTest):
         workflow_invocation,
         job,
     ):
-        obj = cls_()
-        obj.user = user
+        obj = cls_(user=user)
         obj.datasets.append(history_dataset_association)
         obj.dataset_collections.append(history_dataset_collection_association)
         obj.exports.append(job_export_history_archive)
@@ -1580,9 +1579,8 @@ class TestHistoryDatasetAssociation(BaseTest):
             icpda,
         ]
 
-        obj = cls_()
+        obj = cls_(dataset=dataset)
         obj.history = history
-        obj.dataset = dataset
         obj.copied_from_history_dataset_association = copied_from_hda
         obj.copied_from_library_dataset_dataset_association = copied_from_ldda
         obj.extended_metadata = extended_metadata
@@ -2146,7 +2144,6 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
         order_index = 1
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = order_index
 
@@ -2160,7 +2157,6 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
     def test_relationships(self, session, cls_, implicit_collection_jobs, job):
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = 1
 
@@ -2566,9 +2562,7 @@ class TestJobContainerAssociation(BaseTest):
         created_time = now()
         modified_time = created_time + timedelta(hours=1)
 
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_()
-        obj.job = job
+        obj = cls_(job=job)
         obj.container_type = container_type
         obj.container_name = container_name
         obj.container_info = container_info
@@ -2586,7 +2580,6 @@ class TestJobContainerAssociation(BaseTest):
             assert stored_obj.modified_time == modified_time
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
@@ -5674,9 +5667,6 @@ class TestWorkflowInvocationStep(BaseTest):
         update_time = create_time + timedelta(hours=1)
         state, action = "a", "b"
 
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
-
         obj = cls_()
         obj.create_time = create_time
         obj.update_time = update_time
@@ -5711,9 +5701,6 @@ class TestWorkflowInvocationStep(BaseTest):
         workflow_invocation_step_output_dataset_association,
         workflow_invocation_output_value,
     ):
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
-
         # setup workflow_invocation_output_value to test the output_value attribute
         output_value = workflow_invocation_output_value
         output_value.workflow_invocation = workflow_invocation
