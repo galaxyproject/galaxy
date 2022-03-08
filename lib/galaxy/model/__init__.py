@@ -6583,6 +6583,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         workflow=None,
         hidden=False,
     ):
+        add_object_to_object_session(self, user)
         self.user = user
         self.name = name
         self.slug = slug
