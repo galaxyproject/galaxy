@@ -1,19 +1,22 @@
-<tool id="interactive_tool_metashark" tool_type="interactive" name="metashark" version="1.7">
+<tool id="interactive_tool_metashark" tool_type="interactive" name="MetaShARK" version="@TOOL_VERSION@">
     <description>Metadata Shiny Automated Resource and Knowledge</description>
+    <macros>
+        <token name="@TOOL_VERSION@">1.7.0</token>
+    </macros>
     <requirements>
-        <container type="docker">eliearnaud/metashark:1.7.0</container>
+        <container type="docker">eliearnaud/metashark:@TOOL_VERSION@</container>
     </requirements>
     <entry_points>
-        <entry_point name="metashark visualisation" requires_domain="True">
+        <entry_point name="MetaShARK visualisation" requires_domain="True">
             <port>3838</port>
             <url>/</url>
         </entry_point>
     </entry_points>
     <command><![CDATA[
 
-        mkdir -p /srv/shiny-server/data/ &&
-        cp '$infile' /srv/shiny-server/data/inputdata.txt &&
-        R -e "options('shiny.port'=3838,shiny.host='0.0.0.0');MetaShARK::runMetashark()"
+mkdir -p /srv/shiny-server/data/ &&
+cp '$infile' /srv/shiny-server/data/inputdata.txt &&
+R -e "options('shiny.port'=3838,shiny.host='0.0.0.0');MetaShARK::runMetashark()"
 
     ]]>
     </command>
