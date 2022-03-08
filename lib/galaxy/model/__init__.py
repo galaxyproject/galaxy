@@ -2377,6 +2377,7 @@ class UserGroupAssociation(Base, RepresentById):
     group = relationship("Group", back_populates="users")
 
     def __init__(self, user, group):
+        add_object_to_object_session(self, user)
         self.user = user
         self.group = group
 
