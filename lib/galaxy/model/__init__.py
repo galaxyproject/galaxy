@@ -6901,6 +6901,7 @@ class WorkflowStep(Base, RepresentById):
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
         conn.output_name = output_name
+        add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
         if input_subworkflow_step_index is not None:
             input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
