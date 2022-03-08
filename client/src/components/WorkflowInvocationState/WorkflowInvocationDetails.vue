@@ -14,7 +14,7 @@
                     :key="input.id"
                     :data-label="dataInputStepLabel(key, input)">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
-                    <generic-history-content :data_item="input" />
+                    <generic-history-item :item-id="input.id" :item-src="input.src" />
                 </div>
             </details>
         </div>
@@ -23,7 +23,7 @@
                 <summary><b>Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
-                    <generic-history-content :data_item="output" />
+                    <generic-history-item :item-id="output.id" :item-src="output.src" />
                 </div>
             </details>
         </div>
@@ -32,7 +32,7 @@
                 <summary><b>Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
-                    <generic-history-content :data_item="output" />
+                    <generic-history-item :item-id="output.id" :item-src="output.src" />
                 </div>
             </details>
         </div>
@@ -51,8 +51,8 @@
     </div>
 </template>
 <script>
-import ParameterStep from "./ParameterStep.vue";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import ParameterStep from "./ParameterStep";
+import GenericHistoryItem from "components/History/Content/GenericItem";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
 import { mapGetters } from "vuex";
@@ -60,7 +60,7 @@ import { mapCacheActions } from "vuex-cache";
 
 export default {
     components: {
-        GenericHistoryContent,
+        GenericHistoryItem,
         WorkflowInvocationStep,
         ParameterStep,
     },
