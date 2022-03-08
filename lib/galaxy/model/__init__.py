@@ -7258,6 +7258,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         assoc = WorkflowInvocationToSubworkflowInvocationAssociation()
         assoc.workflow_invocation = self
         assoc.workflow_step = step
+        add_object_to_object_session(subworkflow_invocation, self.history)
         subworkflow_invocation.history = self.history
         subworkflow_invocation.workflow = step.subworkflow
         assoc.subworkflow_invocation = subworkflow_invocation
