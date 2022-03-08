@@ -102,7 +102,7 @@ class BlastXml(GenericXml):
             # For one file only, use base class method (move/copy)
             return Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("Given no BLAST XML files, %r, to merge into %s" % (split_files, output_file))
+            raise ValueError(f"Given no BLAST XML files, {split_files!r}, to merge into {output_file}")
         with open(output_file, "w") as out:
             h = None
             old_header = None

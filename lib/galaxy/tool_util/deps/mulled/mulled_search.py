@@ -274,7 +274,7 @@ def readable_output(json, organization="biocontainers", channel="bioconda"):
                         "quay",
                         result["package"],
                         result["version"],
-                        "docker pull quay.io/%s/%s:%s\n" % (organization, result["package"], result["version"]),
+                        f"docker pull quay.io/{organization}/{result['package']}:{result['version']}\n",
                     ]
                 )  # NOT a real solution
         for results in json.get("conda", {}).values():

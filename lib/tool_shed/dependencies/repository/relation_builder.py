@@ -272,7 +272,7 @@ class RelationBuilder:
                                 "The revision %s defined for repository %s owned by %s is invalid, so repository "
                                 % (str(rd_changeset_revision), str(rd_name), str(rd_owner))
                             )
-                            message += f"dependencies defined for repository {str(repository_name)} will be ignored."
+                            message += f"dependencies defined for repository {repository_name} will be ignored."
                             log.debug(message)
                 else:
                     repository_components_tuple = container_util.get_components_from_key(key)
@@ -280,12 +280,8 @@ class RelationBuilder:
                         repository_components_tuple
                     )
                     toolshed, repository_name, repository_owner, repository_changeset_revision = components_list[0:4]
-                    message = "The revision %s defined for repository %s owned by %s is invalid, so repository " % (
-                        str(rd_changeset_revision),
-                        str(rd_name),
-                        str(rd_owner),
-                    )
-                    message += f"dependencies defined for repository {str(repository_name)} will be ignored."
+                    message = f"The revision {rd_changeset_revision} defined for repository {rd_name} owned by {rd_owner} is invalid, "
+                    message += f"so repository dependencies defined for repository {repository_name} will be ignored."
                     log.debug(message)
         return updated_key_rd_dicts
 

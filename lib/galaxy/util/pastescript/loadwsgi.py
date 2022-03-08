@@ -166,7 +166,7 @@ class _ObjectType:
         self.config_prefixes = [_aslist(p) for p in _aslist(self.config_prefixes)]
 
     def __repr__(self):
-        return "<{} protocols={!r} prefixes={!r}>".format(self.name, self.egg_protocols, self.config_prefixes)
+        return f"<{self.name} protocols={self.egg_protocols!r} prefixes={self.config_prefixes!r}>"
 
     def invoke(self, context):
         assert context.protocol in _flatten(self.egg_protocols)
@@ -536,7 +536,7 @@ class ConfigLoader(_Loader):
 
     def _filter_app_context(self, object_type, section, name, global_conf, local_conf, global_additions):
         if "next" not in local_conf:
-            raise LookupError("The [%s] section in %s is missing a 'next' setting" % (section, self.filename))
+            raise LookupError(f"The [{section}] section in {self.filename} is missing a 'next' setting")
         next_name = local_conf.pop("next")
         context = LoaderContext(None, FILTER_APP, None, global_conf, local_conf, self)
         context.next_context = self.get_context(APP, next_name, global_conf)
@@ -550,7 +550,7 @@ class ConfigLoader(_Loader):
 
     def _pipeline_app_context(self, object_type, section, name, global_conf, local_conf, global_additions):
         if "pipeline" not in local_conf:
-            raise LookupError("The [%s] section in %s is missing a 'pipeline' setting" % (section, self.filename))
+            raise LookupError(f"The [{section}] section in {self.filename} is missing a 'pipeline' setting")
         pipeline = local_conf.pop("pipeline").split()
         if local_conf:
             raise LookupError(

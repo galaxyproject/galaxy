@@ -163,7 +163,7 @@ class TourGenerator:
                 if name in test_inputs:
                     hid = self._hids[name]
                     dataset = self._test.inputs[name][0]
-                    step["content"] = "Select dataset: <b>{}: {}</b>".format(hid, dataset)
+                    step["content"] = f"Select dataset: <b>{hid}: {dataset}</b>"
                 else:
                     step["content"] = "Select a dataset"
 
@@ -192,7 +192,7 @@ class TourGenerator:
                             if case_id in self._data_inputs.keys():
                                 hid = self._hids[case_id]
                                 dataset = self._test.inputs[tour_id][0]
-                                step_msg = "Select dataset: <b>%s: %s</b>" % (hid, dataset)
+                                step_msg = f"Select dataset: <b>{hid}: {dataset}</b>"
                             else:
                                 case_params = ", ".join(self._test.inputs[tour_id])
                                 step_msg = "Select parameter(s): " + "<b>%s</b>" % case_params

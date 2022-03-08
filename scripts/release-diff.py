@@ -87,7 +87,7 @@ def _report_dict(title, subheading, data, mapper):
 def _indent(s, by=4):
     whitespace = " " * by
     s = s if isinstance(s, list) else s.splitlines()
-    return "\n".join((f"{whitespace}{line}" for line in s))
+    return "\n".join(f"{whitespace}{line}" for line in s)
 
 
 def report_diff(added, changed, removed, new_files):

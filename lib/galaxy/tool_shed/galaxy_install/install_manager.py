@@ -181,7 +181,7 @@ class InstallToolDependencyManager:
         # Parse the tool_dependencies.xml config.
         tree, error_message = xml_util.parse_xml(tool_dependencies_config)
         if tree is None:
-            log.debug(f"The received tool_dependencies.xml file is likely invalid: {str(error_message)}")
+            log.debug(f"The received tool_dependencies.xml file is likely invalid: {error_message}")
             return installed_packages
         root = tree.getroot()
         elems = []
@@ -228,11 +228,7 @@ class InstallToolDependencyManager:
                                 elem, tool_shed_repository, tool_dependencies=tool_dependencies
                             )
                         except Exception as e:
-                            error_message = "Error installing tool dependency %s version %s: %s" % (
-                                str(name),
-                                str(version),
-                                str(e),
-                            )
+                            error_message = f"Error installing tool dependency {name} version {version}: {e}"
                             log.exception(error_message)
                             if tool_dependency:
                                 # Since there was an installation error, update the tool dependency status to Error. The
@@ -553,12 +549,7 @@ class InstallRepositoryManager:
             )
         except Exception:
             message = "Error attempting to retrieve installation information from tool shed "
-            message += "%s for revision %s of repository %s owned by %s" % (
-                tool_shed_url,
-                changeset_revision,
-                name,
-                owner,
-            )
+            message += f"{tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
             log.exception(message)
             raise exceptions.InternalServerError(message)
         if raw_text:

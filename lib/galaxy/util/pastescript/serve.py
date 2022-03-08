@@ -639,9 +639,7 @@ class ServeCommand(Command):
     def daemonize(self):
         pid = live_pidfile(self.options.pid_file)
         if pid:
-            raise DaemonizeException(
-                "Daemon is already running (PID: %s from PID file %s)" % (pid, self.options.pid_file)
-            )
+            raise DaemonizeException(f"Daemon is already running (PID: {pid} from PID file {self.options.pid_file})")
 
         if self.verbose > 0:
             print("Entering daemon mode")
@@ -898,7 +896,7 @@ def _remove_pid_file(written_pid, filename, verbosity):
         pass
     else:
         if pid_in_file != current_pid:
-            print("PID file {} contains {}, not expected PID {}".format(filename, pid_in_file, current_pid))
+            print(f"PID file {filename} contains {pid_in_file}, not expected PID {current_pid}")
             return
     if verbosity > 0:
         print(f"Removing PID file {filename}")

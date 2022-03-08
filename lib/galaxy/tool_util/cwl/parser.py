@@ -86,25 +86,25 @@ SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
 PERSISTED_REPRESENTATION = "cwl_tool_object"
 
 ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
-InputInstanceDict = TypedDict(
-    "InputInstanceDict",
-    {
-        "type": str,
-        "name": str,
-        "title": str,
-        "label": str,
-        "help": str,
-        "optional": bool,
-        "area": bool,
-        "value": str,
-        "collection_type": str,
-    },
-    total=False,
-)
-InputInstanceArrayDict = TypedDict(
-    "InputInstanceArrayDict",
-    {"type": str, "name": str, "title": str, "blocks": List[InputInstanceDict]},
-)
+
+
+class InputInstanceDict(TypedDict, total=False):
+    type: str
+    name: str
+    title: str
+    label: str
+    help: str
+    optional: bool
+    area: bool
+    value: str
+    collection_type: str
+
+
+class InputInstanceArrayDict(TypedDict):
+    type: str
+    name: str
+    title: str
+    blocks: List[InputInstanceDict]
 
 
 def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None):

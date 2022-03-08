@@ -369,7 +369,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
 
 
 def get_repository_admin_role_name(repository_name, repository_owner):
-    return f"{str(repository_name)}_{str(repository_owner)}_admin"
+    return f"{repository_name}_{repository_owner}_admin"
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):
@@ -482,12 +482,7 @@ def get_repository_for_dependency_relationship(app, tool_shed, name, owner, chan
     tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
     if tool_shed is None or name is None or owner is None or changeset_revision is None:
         message = "Unable to retrieve the repository record from the database because one or more of the following "
-        message += "required parameters is None: tool_shed: %s, name: %s, owner: %s, changeset_revision: %s " % (
-            str(tool_shed),
-            str(name),
-            str(owner),
-            str(changeset_revision),
-        )
+        message += f"required parameters is None: tool_shed: {tool_shed}, name: {name}, owner: {owner}, changeset_revision: {changeset_revision}"
         raise Exception(message)
     repository = get_installed_repository(
         app=app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=changeset_revision

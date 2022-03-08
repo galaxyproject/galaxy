@@ -35,7 +35,7 @@ class Uploader:
 
         uploading_to = [x for x in existing if x["id"] == self.folder_id]
         if len(uploading_to) == 0:
-            raise Exception("Unknown folder [%s] in library [%s]" % (self.folder_id, self.library_id))
+            raise Exception(f"Unknown folder [{self.folder_id}] in library [{self.library_id}]")
         else:
             uploading_to = uploading_to[0]
 
