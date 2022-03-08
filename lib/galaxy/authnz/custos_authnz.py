@@ -22,6 +22,7 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
+from galaxy.model.orm.util import add_object_to_object_session
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
@@ -186,7 +187,6 @@ class CustosAuthnz(IdentityProvider):
             trans.app.user_manager.send_activation_email(trans, email, username)
 
         custos_authnz_token = CustosAuthnzToken(
-            user=user,
             external_user_id=user_id,
             provider=self.config["provider"],
             access_token=access_token,
@@ -195,6 +195,8 @@ class CustosAuthnz(IdentityProvider):
             expiration_time=expiration_time,
             refresh_expiration_time=refresh_expiration_time,
         )
+        add_object_to_object_session(custos_authnz_token, user)
+        custos_authnz_token.user = user
 
         trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
