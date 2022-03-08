@@ -1077,6 +1077,36 @@ class BaseDatasetPopulator(BasePopulator):
             timeout=timeout,
         )
 
+    def new_page(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, Any]:
+        page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
+        page_response.raise_for_status()
+        return page_response.json()
+
+    def new_page_raw(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Response:
+        page_request = self.new_page_payload(slug=slug, title=title, content_format=content_format, content=content)
+        page_response = self._post("pages", page_request, json=True)
+        return page_response
+
+    def new_page_payload(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, str]:
+        if content is None:
+            if content_format == "html":
+                content = "<p>Page!</p>"
+            else:
+                content = "*Page*\n\n"
+        request = dict(
+            slug=slug,
+            title=title,
+            content=content,
+            content_format=content_format,
+        )
+        return request
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
