@@ -6,8 +6,8 @@ from unittest import TestCase
 import webob.exc
 
 import galaxy.model
-from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.app_unittest_utils import tools_support
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
 
 BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
