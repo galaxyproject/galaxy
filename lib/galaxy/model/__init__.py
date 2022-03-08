@@ -7069,6 +7069,7 @@ class WorkflowStepInput(Base, RepresentById):
     )
 
     def __init__(self, workflow_step):
+        add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
         self.default_value_set = False
 
