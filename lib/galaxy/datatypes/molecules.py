@@ -957,7 +957,11 @@ class Cell(GenericMolFile):
             info_list.append(f"Atoms in file:\n{metadata.number_of_atoms}")
             info += "\n--\n".join(info_list)
         else:
-            info += f"Atoms in file:\n{metadata.number_of_atoms}"
+            info = """
+                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+                You can still use this dataset in tools and workflows.
+                For full metadata, ask your admin to install the 'ase' Python package.
+            """
 
         return info
 
@@ -1156,8 +1160,12 @@ class CIF(GenericMolFile):
                 formulae = "\n".join(metadata.chemical_formula)
                 info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
             info = "\n--\n".join(info_list)
-        # else:
-        #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
+        else:
+            info = """
+                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+                You can still use this dataset in tools and workflows.
+                For full metadata, ask your admin to install the 'ase' Python package.
+            """
 
         return info
 
@@ -1365,9 +1373,12 @@ class XYZ(GenericMolFile):
                 formulae = "\n".join(metadata.chemical_formula)
                 info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
             info = "\n--\n".join(info_list)
-        # else:
-        # TODO: message along the lines of "ask your admin to install ase"?
-        #   info = f"Atoms in file:\n{metadata.number_of_atoms}"
+        else:
+            info = """
+                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+                You can still use this dataset in tools and workflows.
+                For full metadata, ask your admin to install the 'ase' Python package.
+            """
 
         return info
 
