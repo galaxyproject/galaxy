@@ -3058,6 +3058,7 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["user"]
 
     def __init__(self, user, quota):
+        add_object_to_object_session(self, user)
         self.user = user
         self.quota = quota
 
