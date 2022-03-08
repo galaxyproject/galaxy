@@ -442,6 +442,7 @@ pages:
   selectors:
     create: '.manage-table-actions .action-button'
     submit: '#submit'
+    export: '.markdown-pdf-export'
   editor:
     selectors:
       wym_iframe: 'div.wym_iframe iframe'
@@ -450,7 +451,7 @@ pages:
       embed_button: '#embed-galaxy-object'
       dataset_selector: '.saved-datasets'
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
-
+      markdown_editor: '.markdown-textarea'
     labels:
       embed_dataset: 'Embed Dataset'
 

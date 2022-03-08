@@ -13,6 +13,7 @@ env:
   GALAXY_TEST_SELENIUM_RETRIES: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
   group: integration-selenium-${{ github.ref }}
   cancel-in-progress: true
