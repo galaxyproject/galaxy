@@ -45,6 +45,7 @@ def handle_exception_call(func):
             return func(*args, **kwargs)
         except Exception as e:
             LOGGER.error(unicodify(e))
+            raise
 
     return wrapper
 
@@ -60,12 +61,27 @@ def _write_logfile(logfile, msg):
         fil.write(msg)
 
 
-def _add_galaxy_environment_variables(cpus, memory):
+def _add_galaxy_environment_variables(vcpu, memory):
     # Set:
     # GALAXY_SLOTS, round 0.25 vpuc to 1.
     # GALAXY_MEMORY_MB
-    return [{"name": "GALAXY_SLOTS", "value": str(int(max(cpus, 1)))},
-            {"name": "GALAXY_MEMORY_MB", "value": str(memory)}]
+    return [
+        {"name": "GALAXY_SLOTS", "value": str(int(max(vcpu, 1)))},
+        {"name": "GALAXY_MEMORY_MB", "value": str(memory)}
+    ]
+
+
+def _add_resource_requirements(destination_params):
+    rval = [
+        {'type': 'VCPU', 'value': str(destination_params.get('vcpu'))},
+        {'type': 'MEMORY', 'value': str(destination_params.get('memory'))}
+    ]
+    n_gpu = destination_params.get('gpu')
+    if n_gpu:
+        rval.append(
+            {'type': 'GPU', 'value': str(n_gpu)}
+        )
+    return rval
 
 
 class AWSBatchJobRunner(AsynchronousJobRunner):
@@ -90,35 +106,40 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         "vcpu": {
             "default": 1.0,
             "map_name": "vcpu",
-            "map": float,
+            "map": (lambda x: int(float(x)) if int(float(x))==float(x) else float(x)),
         },
         "memory": {
             "default": 2048,
             "map_name": "memory",
             "map": int,
         },
+        "gpu": {
+            "default": 0,
+            "map_name": "gpu",
+            "map": int,
+        },
         "job_queue": {
-            "default": None,
+            "default": '',
             "map_name": "job_queue",
             "map": str,
         },
         "job_role_arn": {
-            "default": None,
+            "default": '',
             "map_name": "job_role_arn",
             "map": str,
         },
         "efs_filesystem_id": {
-            "default": None,
+            "default": '',
             "map_name": "efs_filesystem_id",
             "map": str,
         },
         "efs_mount_point": {
-            "default": None,
+            "default": '',
             "map_name": "efs_mount_point",
             "map": str,
         },
         "fargate_version": {
-            "default": None,
+            "default": '',
             "map_name": "fargate_version",
             "map": str,
         }
@@ -145,16 +166,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             return
 
         job_destination = job_wrapper.job_destination
-        if not job_destination.params.get("docker_enabled"):
-            raise AWSBatchRunnerException("AWSBatchJobRunner needs 'docker_enabled' to be set as True")
-
         destination_params = self.parse_destination_params(job_destination.params)
         job_def = self._get_job_definition(job_wrapper, destination_params)
-        if 'fargate_version' in destination_params:
-            job_name, job_id = self._submit_fargate_job(job_def, job_wrapper, destination_params)
-        else:
-            job_name, job_id = self._submit_ec2_job(job_def, job_wrapper, destination_params)
-
+        job_name, job_id = self._submit_job(job_def, job_wrapper, destination_params)
         job_wrapper.set_external_id(job_id)
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,
@@ -186,80 +200,76 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             jd_arn = self._register_job_definition(jd_name, docker_image, destination_params)
         else:
             jd_arn = res['jobDefinitions'][0]['jobDefinitionArn']
+            LOGGER.debug(f"Found existing job definition: {jd_name}.")
         
         return jd_arn
 
     def _register_job_definition(self, jd_name, docker_image, destination_params):
-        if 'fargate_version' in destination_params:
-            return self._register_fargate_job_definition(jd_name, docker_image, destination_params)
-        else:
-            return self._register_ec2_job_definition(jd_name, docker_image, destination_params)
+        LOGGER.debug(f"Registering a new job definition: {jd_name}.")
+        platform = 'FARGATE' if destination_params.get('fargate_version') else 'EC2'
+        # TODO: support multi-node
+        containerProperties = {
+            'image': docker_image,
+            'command': [
+                '/bin/sh',
+            ],
+            'jobRoleArn': destination_params.get('job_role_arn'),
+            'executionRoleArn': destination_params.get('execute_role_arn', '') or destination_params.get('job_role_arn'),
+            'volumes': [
+                {
+                    'name': 'efs_whole',
+                    'efsVolumeConfiguration': {
+                        'fileSystemId': destination_params.get('efs_filesystem_id'),
+                        'rootDirectory': '/',
+                        'transitEncryption': 'ENABLED',
+                        'authorizationConfig': {
+                            'iam': 'ENABLED'
+                        }
+                    }
+                },
+            ],
+            'mountPoints': [
+                {
+                    'containerPath': destination_params.get('efs_mount_point'),
+                    'readOnly': False,
+                    'sourceVolume': 'efs_whole'
+                },
+            ],
+            'resourceRequirements': _add_resource_requirements(destination_params),
+            'environment': _add_galaxy_environment_variables(
+                destination_params.get('vcpu'),
+                destination_params.get('memory')
+            ),
+            'logConfiguration': {
+                'logDriver': 'awslogs'
+            }
+        }
+        if platform == 'FARGATE':
+            containerProperties.update(
+                {
+                    'networkConfiguration': {
+                        'assignPublicIp': 'ENABLED'
+                    },
+                    'fargatePlatformConfiguration': {
+                        'platformVersion': destination_params.get('fargate_version')
+                    },
+                    'logConfiguration': {
+                        'logDriver': 'awslogs'
+                    }
+                }
+            )
 
-    def _register_fargate_job_definition(self, jd_name, docker_image, destination_params):
         res = self._batch_client.register_job_definition(
             jobDefinitionName=jd_name,
             type='container',
-            platformCapabilities=['FARGATE'],
-            containerProperties={
-                'image': docker_image,
-                'command': [
-                    '/bin/sh',
-                ],
-                'jobRoleArn': destination_params.get('job_role_arn'),
-                'executionRoleArn': destination_params.get('execute_role_arn', None) or destination_params.get('job_role_arn'),
-                'volumes': [
-                    {
-                        'name': 'efs_whole',
-                        'efsVolumeConfiguration': {
-                            'fileSystemId': destination_params.get('efs_filesystem_id'),
-                            'rootDirectory': '/',
-                            'transitEncryption': 'ENABLED',
-                            'authorizationConfig': {
-                                'iam': 'ENABLED'
-                            }
-                        }
-                    },
-                ],
-                'mountPoints': [
-                    {
-                        'containerPath': destination_params.get('efs_mount_point'),
-                        'readOnly': False,
-                        'sourceVolume': 'efs_whole'
-                    },
-                ],
-                'resourceRequirements': [
-                    {
-                        'type': 'VCPU',
-                        'value': str(destination_params.get('vcpu'))
-                    },
-                    {
-                        'type': 'MEMORY',
-                        'value': str(destination_params.get('memory'))
-                    }
-                ],
-                'environment': _add_galaxy_environment_variables(
-                    destination_params.get('vcpu'),
-                    destination_params.get('memory')
-                ),
-                'logConfiguration': {
-                    'logDriver': 'awslogs'
-                },
-                'networkConfiguration': {
-                    'assignPublicIp': 'ENABLED'
-                },
-                'fargatePlatformConfiguration': {
-                    'platformVersion': destination_params.get('fargate_version')
-                }
-            }
+            platformCapabilities=[platform],
+            containerProperties=containerProperties
         )
 
         assert res['ResponseMetadata']['HTTPStatusCode'] == 200
         return res['jobDefinitionArn']
 
-    def _register_ec2_job_definition(self, jd_name, docker_image, user_id, destination_params):
-        return ''
-
-    def _submit_fargate_job(self, job_def, job_wrapper, destination_params):
+    def _submit_job(self, job_def, job_wrapper, destination_params):
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         command_script_path = self.write_command(job_wrapper)
 
@@ -277,9 +287,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         assert res['ResponseMetadata']['HTTPStatusCode'] == 200
         return job_name, res['jobId']
-
-    def _submit_ec2_job(self, job_def, job_wrapper, destination_params):
-        pass
 
     @handle_exception_call
     def stop_job(self, job_wrapper):
@@ -415,6 +422,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     #     self._batch_client.delete(job_state.job_id)
 
     def parse_destination_params(self, params):
+        if not params.get("docker_enabled"):
+            raise AWSBatchRunnerException("AWSBatchJobRunner needs 'docker_enabled' to be set as True")
+
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
             value = params.get(k, spec.get("default"))
