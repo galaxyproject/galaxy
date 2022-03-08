@@ -47,6 +47,7 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
                     faked_host = rest.split("/", 1)[0]
                 url = f"{scheme}://{host_and_port}"
                 response = requests.get(url, timeout=1, headers={"Host": faked_host})
+                response.raise_for_status()
                 return response.text
             except Exception as e:
                 print(e)
