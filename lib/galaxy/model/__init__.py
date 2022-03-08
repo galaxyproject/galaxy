@@ -3078,6 +3078,7 @@ class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["group"]
 
     def __init__(self, group, quota):
+        add_object_to_object_session(self, group)
         self.group = group
         self.quota = quota
 
