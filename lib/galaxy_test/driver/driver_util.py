@@ -1,17 +1,19 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import http.client
+import json
 import logging
 import os
 import random
 import shutil
-import signal
 import socket
 import string
+import subprocess
 import sys
 import tempfile
 import threading
 import time
+from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -528,7 +530,7 @@ def attempt_port(port):
         return None
 
 
-def attempt_ports(port):
+def attempt_ports(port=None, set_galaxy_web_port=True):
     if port is not None:
         return port
 
@@ -539,7 +541,8 @@ def attempt_ports(port):
             port = attempt_port(random.randint(8000, 10000))
             if port:
                 port = str(port)
-                os.environ["GALAXY_WEB_PORT"] = port
+                if set_galaxy_web_port:
+                    os.environ["GALAXY_WEB_PORT"] = port
                 return port
 
         raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
@@ -745,37 +748,83 @@ class EmbeddedServerWrapper(ServerWrapper):
         log.info(f"{threading.active_count()} active after stopping embedded server")
 
 
-class UwsgiServerWrapper(ServerWrapper):
-    def __init__(self, p, name, host, port):
+class GravityServerWrapper(ServerWrapper):
+    def __init__(self, name, host, port, state_dir, stop_command):
         super().__init__(name, host, port)
-        self._p = p
-        self._r = None
-        self._t = threading.Thread(target=self.wait)
-        self._t.start()
+        self.state_dir = Path(state_dir)
+        self.stop_command = stop_command
 
-    def __del__(self):
-        self._t.join()
-
-    def wait(self):
-        self._r = self._p.wait()
+    def get_logs(self):
+        gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
+        gxit_logs = (self.state_dir / "log" / "gx-it-proxy.log").read_text()
+        return f"Gunicorn logs:{os.linesep}{gunicorn_logs}{os.linesep}gx-it-proxy logs:{os.linesep}{gxit_logs}"
 
     def stop(self):
-        try:
-            os.killpg(os.getpgid(self._p.pid), signal.SIGTERM)
-        except Exception:
-            pass
-        time.sleep(0.1)
-        try:
-            os.killpg(os.getpgid(self._p.pid), signal.SIGKILL)
-        except Exception:
-            pass
-        self._t.join()
+        log.info("Gravity logs:\n%s", self.get_logs())
+        self.stop_command()
 
 
-def launch_server(app, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
+def launch_gravity(port, gxit_port=None, galaxy_config=None):
+    galaxy_config = galaxy_config or {}
+    if not gxit_port:
+        gxit_port = attempt_ports(set_galaxy_web_port=False)
+    if "interactivetools_proxy_host" not in galaxy_config:
+        galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
+    config = {
+        "gravity": {
+            "gunicorn": {"bind": f"localhost:{port}"},
+            "gx_it_proxy": {
+                "enable": galaxy_config.get("interactivetools_enable", False),
+                "port": gxit_port,
+                "verbose": True,
+                "sessions": galaxy_config.get("interactivetools_map"),
+            },
+        },
+        "galaxy": galaxy_config,
+    }
+    state_dir = tempfile.mkdtemp(suffix="state")
+    with tempfile.NamedTemporaryFile("w", dir=state_dir, delete=False, suffix=".galaxy.yml") as config_fh:
+        json.dump(config, config_fh)
+    with tempfile.NamedTemporaryFile(delete=True) as socket:
+        supervisord_socket = socket.name
+    gravity_env = os.environ.copy()
+    gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
+    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "register", config_fh.name], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "update"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "start"], env=gravity_env)
+    return state_dir, lambda: subprocess.check_output(
+        ["galaxyctl", "--state-dir", state_dir, "shutdown"], env=gravity_env
+    )
+
+
+def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
     name = prefix.lower()
     host, port = explicitly_configured_host_and_port(prefix, config_object)
     port = attempt_ports(port)
+
+    enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
+    if enable_realtime_mapping:
+        interactive_tool_defaults = {
+            "interactivetools_map": tempfile.NamedTemporaryFile(
+                delete=False, suffix="interactivetools_map.sqlite"
+            ).name,
+            "interactivetools_enable": True,
+            "interactivetools_upstream_proxy": False,
+            "galaxy_infrastructure_url": f"http://localhost:{port}",
+        }
+        interactive_tool_defaults.update(galaxy_config or {})
+        galaxy_config = interactive_tool_defaults
+
+    if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
+        galaxy_config["root"] = galaxy_root
+        state_dir, stop_command = launch_gravity(port=port, galaxy_config=galaxy_config)
+        set_and_wait_for_http_target(
+            prefix, host, port, url_prefix=os.environ.get("GALAXY_CONFIG_GALAXY_URL_PREFIX", "/")
+        )
+        return GravityServerWrapper(name, host, port, state_dir, stop_command)
+
+    app = app_factory()
+    url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
     wsgi_webapp = webapp_factory(
         galaxy_config["global_conf"],
         app=app,
@@ -791,7 +840,6 @@ def launch_server(app, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_conf
         raise NotImplementedError(f"Launching {name} not implemented")
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
-    url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
     log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
@@ -942,9 +990,8 @@ class GalaxyTestDriver(TestDriver):
                 if handle_galaxy_config_kwds is not None:
                     handle_galaxy_config_kwds(galaxy_config)
 
-            self.app = build_galaxy_app(galaxy_config)
             server_wrapper = launch_server(
-                app=self.app,
+                app_factory=lambda: self.build_galaxy_app(galaxy_config),
                 webapp_factory=lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                 galaxy_config=galaxy_config,
                 config_object=config_object,
@@ -954,6 +1001,10 @@ class GalaxyTestDriver(TestDriver):
             log.info(f"Functional tests will be run against test external Galaxy server {self.external_galaxy}")
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
+
+    def build_galaxy_app(self, galaxy_config):
+        self.app = build_galaxy_app(galaxy_config)
+        return self.app
 
     def _ensure_config_object(self, config_object):
         if config_object is None:

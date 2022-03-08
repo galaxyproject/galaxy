@@ -111,14 +111,11 @@ class ToolShedTestDriver(driver_util.TestDriver):
         with open(shed_tool_data_table_conf_file, "w") as fh:
             fh.write(tool_data_table_conf_xml_template)
         os.environ["TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF"] = shed_tool_data_table_conf_file
-        # ---- Build Tool Shed Application --------------------------------------------------
-        toolshedapp = driver_util.build_shed_app(kwargs)
-
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
         kwargs["global_conf"]["database_connection"] = kwargs["database_connection"]
         tool_shed_server_wrapper = driver_util.launch_server(
-            app=toolshedapp,
+            app_factory=lambda: driver_util.build_shed_app(kwargs),
             webapp_factory=toolshedbuildapp.app_factory,
             galaxy_config=kwargs,
             prefix="TOOL_SHED",
@@ -175,9 +172,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
             print("Galaxy database connection:", kwargs["database_connection"])
 
             # ---- Run galaxy webserver ------------------------------------------------------
-            galaxyapp = driver_util.build_galaxy_app(kwargs)
             galaxy_server_wrapper = driver_util.launch_server(
-                app=galaxyapp,
+                app_factory=lambda: driver_util.build_galaxy_app(kwargs),
                 webapp_factory=galaxybuildapp.app_factory,
                 galaxy_config=kwargs,
             )
