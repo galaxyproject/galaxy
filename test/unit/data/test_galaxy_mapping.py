@@ -18,7 +18,10 @@ import galaxy.model.mapping as mapping
 from galaxy import model
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.model.orm.util import add_object_to_object_session
+from galaxy.model.orm.util import (
+    add_object_to_object_session,
+    get_object_session,
+)
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -809,6 +812,13 @@ class MappingTests(BaseModelTestCase):
             add_object_to_object_session(stored_workflow, user)
             stored_workflow.user = user
             workflow = model.Workflow()
+
+            if steps:
+                for step in steps:
+                    if get_object_session(step):
+                        add_object_to_object_session(workflow, step)
+                        break
+
             workflow.steps = steps
             workflow.stored_workflow = stored_workflow
             return workflow
