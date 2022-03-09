@@ -889,7 +889,6 @@ class Cell(GenericMolFile):
                 chemical_formula = ase_data.get_chemical_formula()
                 pbc = ase_data.get_pbc()
                 lattice_parameters = ase_data.get_cell().cellpar()
-                log.warning("metadata is: %s", dataset.metadata)
             except Exception as e:
                 log.error("Error finding metadata: %s", unicodify(e))
                 raise
@@ -921,7 +920,6 @@ class Cell(GenericMolFile):
                     .group(1)
                     .split("\n")[1:]
                 )
-                log.warning(block)
 
                 dataset.metadata.atom_data = [atom.strip() for atom in block]
                 dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
@@ -977,7 +975,7 @@ class CIF(GenericMolFile):
         default=[],
         desc="Names of the data blocks",
         readonly=True,
-        visible=False,
+        visible=True,
     )
     MetadataElement(
         name="atom_data",
@@ -1014,6 +1012,9 @@ class CIF(GenericMolFile):
     def sniff(self, filename):
         """
         Try to guess if the file is a CIF file.
+
+        Note that STAR image files and the STAR sniffer also use "data_" blocks.
+        STAR files will not pass the CIF sniffer, but CIF files can pass the STAR sniffer.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.cif')
@@ -1065,7 +1066,6 @@ class CIF(GenericMolFile):
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
-                log.warning(str(ase_data))
             except ValueError as e:
                 log.error("Could not read CIF structure data: %s", unicodify(e))
                 raise
@@ -1097,7 +1097,6 @@ class CIF(GenericMolFile):
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
-            log.warning("metadata is: %s", dataset.metadata)
         else:
             # simple metadata
             dataset.metadata.number_of_molecules = count_special_lines(r"^data_", dataset.file_name)
@@ -1212,6 +1211,8 @@ class XYZ(GenericMolFile):
         """
         Try to guess if the file is a XYZ file.
 
+        XYZ has no fingerprint phrases, so the whole file must be checked for the correct structure.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.xyz')
         >>> XYZ().sniff(fname)
@@ -1300,7 +1301,6 @@ class XYZ(GenericMolFile):
             try:
                 # ASE recommend always parsing as extended xyz
                 ase_data = ase_io.read(dataset.file_name, index=":", format="extxyz")
-                log.warning(str(ase_data))
             except ValueError as e:
                 log.error("Could not read XYZ structure data: %s", unicodify(e))
                 raise
@@ -1332,7 +1332,6 @@ class XYZ(GenericMolFile):
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
-            log.warning("metadata is: %s", dataset.metadata)
         else:
             # simple metadata
             with open(dataset.file_name) as f:
@@ -1396,6 +1395,8 @@ class ExtendedXYZ(XYZ):
         """
         Try to guess if the file is an Extended XYZ file.
 
+        XYZ files will not pass the ExtendedXYZ sniffer, but ExtendedXYZ files can pass the XYZ sniffer.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.extxyz')
         >>> ExtendedXYZ().sniff(fname)
@@ -1417,7 +1418,7 @@ class ExtendedXYZ(XYZ):
             return False
         except IndexError as e:
             if "pop from empty list" in str(e):
-                # xyz_lines ran out mid block – check full file
+                # xyz_lines ran out mid-block – check full file
                 with open(filename) as f:
                     xyz_lines = f.readlines()
                 try:
