@@ -1401,42 +1401,17 @@ class ExtendedXYZ(XYZ):
         >>> fname = get_test_fname('Si.extxyz')
         >>> ExtendedXYZ().sniff(fname)
         True
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('Si_multi.extxyz')
-        >>> ExtendedXYZ().sniff(fname)
-        True
         >>> fname = get_test_fname('Si.xyz')
         >>> ExtendedXYZ().sniff(fname)
         False
         """
         with open(filename) as f:
-            xyz_lines = f.readlines(1000)[:-1]
-
-        try:
-            blocks = self.read_blocks(xyz_lines)
-        except (TypeError, ValueError):
-            return False
-        except IndexError as e:
-            if "pop from empty list" in str(e):
-                # xyz_lines ran out mid-block – check full file
-                with open(filename) as f:
-                    xyz_lines = f.readlines()
-                try:
-                    blocks = self.read_blocks(xyz_lines)
-                except (TypeError, ValueError, IndexError):
-                    # any error is now a failure
-                    return False
-            else:
-                # some other IndexError - invalid input
-                return False
-
-        # check blocks are valid
-        for block in blocks:
-            if block["number_of_atoms"] is None:
-                return False
-
-        # all checks passed
-        return True
+            # fingerprint is 'Properties="<name>:<type>:<number>:..."' in the second line
+            # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
+            f.readline()
+            comment = f.readline()
+            properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment) # returns None if no match
+            return True if properties else False
 
     def read_blocks(self, lines):
         """

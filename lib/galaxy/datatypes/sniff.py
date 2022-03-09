@@ -390,9 +390,6 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('Si.extxyz')
     >>> guess_ext(fname, sniff_order)
     'extxyz'
-    >>> fname = get_test_fname('Si_multi.extxyz')
-    >>> guess_ext(fname, sniff_order)
-    'extxyz'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
