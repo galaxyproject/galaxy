@@ -40,6 +40,7 @@ PACKAGES = [
     "galaxy.tool_util.deps.resolvers",
     "galaxy.tool_util.linters",
     "galaxy.tool_util.locations",
+    "galaxy.tool_util.ontologies",
     "galaxy.tool_util.parser",
     "galaxy.tool_util.toolbox",
     "galaxy.tool_util.toolbox.filters",
