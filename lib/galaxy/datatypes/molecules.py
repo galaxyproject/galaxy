@@ -920,12 +920,12 @@ class Cell(GenericMolFile):
                     .group(1)
                     .split("\n")[1:]
                 )
-                atom_data=[]
+                atom_data = []
                 for atom in block:
                     atom = atom.split()
                     symbol = atom[0].lower().capitalize()
                     position = [float(i) for i in atom[1:4]]
-                    atom_data.append(symbol+str(position))
+                    atom_data.append(symbol + str(position))
                 dataset.metadata.atom_data = atom_data
                 dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
@@ -1429,7 +1429,7 @@ class ExtendedXYZ(XYZ):
                 # parse atom data according to column format specified by the properties
                 # this processing will raise errors if the format is incorrect
                 for property in properties:
-                    to_process = atom[index : index + int(property[2])]
+                    to_process = atom[index:index + int(property[2])]
                     property_name = property[0]
                     property_type = property[1]
                     for i in to_process:
