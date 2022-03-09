@@ -956,10 +956,9 @@ class Cell(GenericMolFile):
             info += "\n--\n".join(info_list)
         else:
             info = """
-                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-                You can still use this dataset in tools and workflows.
-                For full metadata, ask your admin to install the 'ase' Python package.
-            """
+Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+You can still use this dataset in tools and workflows.
+For full metadata, ask your admin to install the 'ase' Python package."""
 
         return info
 
@@ -1161,10 +1160,9 @@ class CIF(GenericMolFile):
             info = "\n--\n".join(info_list)
         else:
             info = """
-                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-                You can still use this dataset in tools and workflows.
-                For full metadata, ask your admin to install the 'ase' Python package.
-            """
+Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+You can still use this dataset in tools and workflows.
+For full metadata, ask your admin to install the 'ase' Python package."""
 
         return info
 
@@ -1277,16 +1275,14 @@ class XYZ(GenericMolFile):
             for _ in range(n_atoms):
                 atom = lines.pop(0)
                 atom = atom.split()
-                if atom[0].lower().capitalize() not in self.get_element_symbols():
+                symbol = atom[0].lower().capitalize()
+                if symbol not in self.get_element_symbols():
                     raise ValueError(f"{atom[0]} is not a valid element symbol")
 
-                # these lines will raise errors if not valid XYZ format
-                # but we don't actually need the casted values for metadata
-                float(atom[1])
-                float(atom[2])
-                float(atom[3])
+                # raises ValueError if not valid XYZ format
+                position = [float(i) for i in atom[1:4]]
 
-                atoms.append(atom)
+                atoms.append(symbol + str(position))
 
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
 
@@ -1374,10 +1370,9 @@ class XYZ(GenericMolFile):
             info = "\n--\n".join(info_list)
         else:
             info = """
-                Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-                You can still use this dataset in tools and workflows.
-                For full metadata, ask your admin to install the 'ase' Python package.
-            """
+Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+You can still use this dataset in tools and workflows.
+For full metadata, ask your admin to install the 'ase' Python package."""
 
         return info
 
@@ -1410,7 +1405,7 @@ class ExtendedXYZ(XYZ):
             # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
             f.readline()
             comment = f.readline()
-            properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment) # returns None if no match
+            properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)  # returns None if no match
             return True if properties else False
 
     def read_blocks(self, lines):
@@ -1443,39 +1438,52 @@ class ExtendedXYZ(XYZ):
             total_columns = sum([int(s[2]) for s in properties])
 
             for _ in range(n_atoms):
+                atom_dict = {}
                 atom = lines.pop(0)
                 atom = atom.split()
                 if len(atom) != total_columns:
                     raise ValueError(f"Expected {total_columns} columns but found {len(atom)}: {atom}")
                 index = 0
-                # check that atom data adheres to correct column format as specified by the properties
-                # none of this is stored permanently as it's not needed for metadata
-                # but the processing will raise errors if the format is incorrect
+                # parse atom data according to column format specified by the properties
+                # this processing will raise errors if the format is incorrect
                 for property in properties:
-                    to_check = atom[index : index + int(property[2])]
-                    for i in to_check:
-                        if property[1] == "S":  # string
+                    to_process = atom[index : index + int(property[2])]
+                    property_name = property[0]
+                    property_type = property[1]
+                    for i in to_process:
+                        if property_type == "S":  # string
                             # check that any element symbols are correct, otherwise ignore strings
-                            if (
-                                property[0].lower() == "species"
-                                and i.lower().capitalize() not in self.get_element_symbols()
-                            ):
-                                raise ValueError(f"{i} is not a valid element symbol")
-                        elif property[1] == "L":  # logical
-                            if not re.match(r"(?:[tT]rue|TRUE|T)\b|(?:[fF]alse|FALSE|F)\b", i):
+                            if property_name.lower() == "species":
+                                symbol = i.lower().capitalize()
+                                if symbol not in self.get_element_symbols():
+                                    raise ValueError(f"{i} is not a valid element symbol")
+                                else:
+                                    atom_dict[property_name] = symbol
+                            else:
+                                atom_dict[property_name] = i
+                        elif property_type == "L":  # logical
+                            if re.match(r"(?:[tT]rue|TRUE|T)\b", i):
+                                atom_dict[property_name] = True
+                            elif re.match(r"(?:[fF]alse|FALSE|F)\b", i):
+                                atom_dict[property_name] = False
+                            else:
                                 raise ValueError(f"{i} is not a valid logical element.")
-                        elif property[1] == "I":  # integer
-                            int(i)
-                        elif property[1] == "R":  # float
-                            float(i)
+                        elif property_type in ["I", "R"]:  # integer, float
+                            ii = int(i) if property_type == "I" else float(i)
+                            if int(property[2]) > 1:  # more than one column for this property - use array
+                                if property_name in atom_dict:
+                                    atom_dict[property_name].append(ii)
+                                else:
+                                    atom_dict[property_name] = [ii]
+                            else:
+                                atom_dict[property_name] = ii
                         else:
-                            raise ValueError(f"Could not recognise property type {property[1]}.")
+                            raise ValueError(f"Could not recognise property type {property_type}.")
                     index += int(property[2])
 
-                atoms.append(atom)
+                atoms.append(atom_dict)
 
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
-
         return blocks
 
     def set_peek(self, dataset, is_multi_byte=False):
