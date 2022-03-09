@@ -17,6 +17,28 @@
                         You're using <b>{{ getTotalDiskUsage(user) }}</b> of disk space.
                     </h2>
                 </b-container>
+                <b-container class="text-center mb-5 w-75">
+                    <button
+                        title="Recalculate disk usage"
+                        @click="onRefresh"
+                        :disabled="isRecalculating"
+                        variant="outline-secondary"
+                        size="sm"
+                        pill>
+                        <b-spinner v-if="isRecalculating" small />
+                        <span v-else>Refresh</span>
+                    </button>
+                    <b-alert
+                        v-if="isRecalculating"
+                        class="mt-2"
+                        variant="info"
+                        dismissible
+                        fade
+                        :show="dismissCountDown"
+                        @dismiss-count-down="countDownChanged">
+                        Recalculating disk usage... this may take some time, please check back later.
+                    </b-alert>
+                </b-container>
             </div>
         </CurrentUser>
     </ConfigProvider>
@@ -29,6 +51,9 @@ import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
 import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
 import { QuotaUsageProvider } from "./Quota/QuotaUsageProvider";
+import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
+import { rethrowSimple } from "utils/simple-error";
 
 export default {
     components: {
@@ -41,6 +66,8 @@ export default {
         return {
             errorMessageTitle: _l("Failed to access disk usage details."),
             errorMessage: null,
+            isRecalculating: false,
+            dismissCountDown: 0,
         };
     },
     methods: {
@@ -49,6 +76,27 @@ export default {
         },
         onError(errorMessage) {
             this.errorMessage = errorMessage;
+        },
+        async onRefresh() {
+            await this.requestDiskUsageRecalculation();
+            this.displayRecalculationForSeconds(30);
+        },
+        async requestDiskUsageRecalculation() {
+            try {
+                await axios.put(`${getAppRoot()}api/users/recalculate_disk_usage`);
+            } catch (e) {
+                rethrowSimple(e);
+            }
+        },
+        displayRecalculationForSeconds(seconds) {
+            this.isRecalculating = true;
+            this.dismissCountDown = seconds;
+            setTimeout(() => {
+                this.isRecalculating = false;
+            }, seconds * 1000);
+        },
+        countDownChanged(dismissCountDown) {
+            this.dismissCountDown = dismissCountDown;
         },
     },
 };

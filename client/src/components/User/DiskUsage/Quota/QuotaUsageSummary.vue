@@ -2,7 +2,7 @@
     <div class="quota-summary">
         <div class="text-center my-5">
             <h2>
-                You've got <b>{{ niceTotalQuota }}</b> of total disk quota.
+                You've got <b>{{ niceTotalQuota }}</b> of total disk quota
             </h2>
             <h4>
                 {{ quotaSummaryDescription }}
