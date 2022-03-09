@@ -1,10 +1,10 @@
 from galaxy import model
 from galaxy.celery import galaxy_task
-from galaxy.jobs.manager import JobManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.custom_logging import get_logger
 
 log = get_logger(__name__)
@@ -42,22 +42,10 @@ def set_metadata(
 
 @galaxy_task(ignore_result=True, action="setting up export history job")
 def export_history(
-    app: MinimalManagerApp,
-    sa_session: galaxy_scoped_session,
-    job_manager: JobManager,
-    store_directory: str,
-    history_id: int,
-    job_id: int,
-    include_hidden=False,
-    include_deleted=False,
+    model_store_manager: ModelStoreManager,
+    request: SetupHistoryExportJob,
 ):
-    history = sa_session.query(model.History).get(history_id)
-    with model.store.DirectoryModelExportStore(store_directory, app=app, export_files="symlink") as export_store:
-        export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-    job = sa_session.query(model.Job).filter_by(id=job_id).one()
-    job.state = model.Job.states.NEW
-    sa_session.flush()
-    job_manager.enqueue(job)
+    model_store_manager.setup_history_export_job(request)
 
 
 @galaxy_task(action="pruning history audit table")
