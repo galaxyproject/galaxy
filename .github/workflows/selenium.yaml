@@ -6,6 +6,9 @@ on:
   pull_request:
     paths-ignore:
       - 'doc/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
 env:
   GALAXY_CONFIG_GALAXY_URL_PREFIX: '/galaxypf'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -36,6 +39,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - if: github.event_name == 'schedule'
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - uses: actions/checkout@v2
         with:
           path: 'galaxy root'
