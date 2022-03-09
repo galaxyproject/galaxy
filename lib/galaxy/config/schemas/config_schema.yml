@@ -3405,6 +3405,18 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_broker:
+        type: str
+        required: false
+        desc: |
+          Celery broker (if unset falls back to amqp_internal_connection).
+
+      celery_backend:
+        type: str
+        required: false
+        desc: |
+          If set, it will be the results backend for Celery.
+
       use_pbkdf2:
         type: bool
         default: true
