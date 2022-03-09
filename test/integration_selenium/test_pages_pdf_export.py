@@ -12,7 +12,7 @@ class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         config["enable_beta_markdown_export"] = True
 
     @selenium_test
-    def test_history_import_export(self):
+    def test_page_pdf_export(self):
         self.navigate_to_pages()
         self.screenshot("pages_grid")
         name = self.create_page(
