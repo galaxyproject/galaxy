@@ -1,7 +1,7 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" auto-refresh v-slot="{ result: payload }">
+    <div>
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
@@ -20,7 +20,7 @@
                 </template>
 
                 <template v-slot:listing>
-                    <Listing item-key="element_index" :payload="payload" :limit="limit" @scroll="onScroll">
+                    <Listing :items="payload" :limit="limit" @scroll="onFetch">
                         <template v-slot:history-item="{ item }">
                             <ContentItem
                                 :item="item.object"
@@ -36,11 +36,11 @@
                 </template>
             </Layout>
         </ExpandedItems>
-    </UrlDataProvider>
+    </div>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { mapActions, mapGetters } from "vuex";
 import { History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
@@ -60,7 +60,6 @@ export default {
         ExpandedItems,
         Layout,
         Listing,
-        UrlDataProvider,
     },
     props: {
         history: { type: History, required: true },
@@ -73,6 +72,10 @@ export default {
         };
     },
     computed: {
+        ...mapGetters(["getCollectionElements"]),
+        payload() {
+            return this.getCollectionElements();
+        },
         dsc() {
             const arr = this.selectedCollections;
             return arr[arr.length - 1];
@@ -83,14 +86,12 @@ export default {
         rootCollection() {
             return this.selectedCollections[0];
         },
-        url() {
-            // either the observered source is a collection element or the initial history item i.e. root collection
-            const source = this.dsc.object || this.rootCollection;
-            const contentsUrl = source.contents_url.substring(1);
-            return `${contentsUrl}?offset=${this.offset}&limit=${this.limit}`;
-        },
+    },
+    created() {
+        this.onFetch(this.offset);
     },
     methods: {
+        ...mapActions(["fetchCollectionElements"]),
         updateDsc(collection, fields) {
             updateContentFields(collection, fields).then((response) => {
                 Object.keys(response).forEach((key) => {
@@ -98,8 +99,15 @@ export default {
                 });
             });
         },
-        onScroll(offset) {
-            this.offset = offset;
+        onFetch(offset) {
+            // either the observered source is a collection element or the initial history item i.e. root collection
+            const source = this.dsc.object || this.rootCollection;
+            const contentsUrl = source.contents_url.substring(1);
+            this.fetchCollectionElements({
+                contentsUrl: contentsUrl,
+                offset: offset,
+                limit: this.limit,
+            });
         },
     },
 };

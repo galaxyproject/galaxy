@@ -1,5 +1,5 @@
 <template>
-    <UrlDataProvider :key="history.id" :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
+    <div>
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -51,13 +51,7 @@
                         <b-alert v-else-if="loading" class="m-2" variant="info" show>
                             <LoadingSpan message="Loading History" />
                         </b-alert>
-                        <Listing
-                            v-else
-                            reversed
-                            :query-key="queryKey"
-                            :limit="limit"
-                            :payload="payload"
-                            @scroll="onScroll">
+                        <Listing v-else :limit="limit" :items="payload" @scroll="onFetch">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
                                     v-if="!hideSelection[item.hid]"
@@ -84,11 +78,11 @@
                 </Layout>
             </SelectedItems>
         </ExpandedItems>
-    </UrlDataProvider>
+    </div>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { mapActions, mapGetters } from "vuex";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { History } from "components/History/model";
@@ -107,7 +101,6 @@ import HistoryMessages from "./HistoryMessages";
 export default {
     components: {
         LoadingSpan,
-        UrlDataProvider,
         Layout,
         Listing,
         ContentItem,
@@ -129,17 +122,20 @@ export default {
             offset: 0,
             limit: 500,
             params: {},
+            loading: false,
         };
     },
     watch: {
         queryKey() {
             this.hideSelection = {};
             this.offset = 0;
+            this.onFetch(this.offset);
         },
     },
     computed: {
-        dataUrl() {
-            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.offset}&limit=${this.limit}&${this.queryString}`;
+        ...mapGetters(["getHistoryItems"]),
+        payload() {
+            return this.getHistoryItems();
         },
         historyId() {
             return this.history.id;
@@ -153,12 +149,21 @@ export default {
             return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
         },
     },
+    created() {
+        this.onFetch(this.offset);
+    },
     methods: {
+        ...mapActions(["fetchHistoryItems"]),
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },
-        onScroll(offset) {
-            this.offset = offset;
+        onFetch(offset) {
+            this.fetchHistoryItems({
+                historyId: this.historyId,
+                offset: offset,
+                limit: this.limit,
+                queryString: this.queryString,
+            });
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
