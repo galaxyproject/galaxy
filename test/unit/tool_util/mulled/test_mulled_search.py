@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_search import (
@@ -36,9 +38,18 @@ def test_conda_search():
 @external_dependency_management
 def test_github_search():
     t = GitHubSearch()
+
     search1 = t.process_json(t.get_json("adsfasdf"), "adsfasdf")
-    search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
     assert search1 == []
+
+    # The search sometimes returns no results so we retry a couple of times
+    num_retries = 3
+    search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
+    while not search2 and num_retries:
+        num_retries -= 1
+        time.sleep(1)  # Wait a bit, otherwise, the search may fail because of throttling
+        search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
+
     assert search2
     for item in search2:
         assert "bioconductor-gosemsim" in item["path"]
