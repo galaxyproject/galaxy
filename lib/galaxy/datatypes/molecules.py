@@ -920,8 +920,13 @@ class Cell(GenericMolFile):
                     .group(1)
                     .split("\n")[1:]
                 )
-
-                dataset.metadata.atom_data = [atom.strip() for atom in block]
+                atom_data=[]
+                for atom in block:
+                    atom = atom.split()
+                    symbol = atom[0].lower().capitalize()
+                    position = [float(i) for i in atom[1:4]]
+                    atom_data.append(symbol+str(position))
+                dataset.metadata.atom_data = atom_data
                 dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
                 log.error("Error finding atom_data: %s", unicodify(e))
@@ -1098,33 +1103,10 @@ class CIF(GenericMolFile):
             dataset.metadata.lattice_parameters = list(lattice_parameters)
         else:
             # simple metadata
+            # it's difficult to get the atom symbols/positions from the CIF file
+            # as extra atom data may also be included, and we can't rely on any particular column ordering
+            # so atom_data will not be set in this case
             dataset.metadata.number_of_molecules = count_special_lines(r"^data_", dataset.file_name)
-            """with open(dataset.file_name) as f:
-                cell = f.read()
-            try:
-                # block data follows this pattern:
-                # data_
-                # ...
-                # _atom_site_fract_(x|y|z)
-                # atom list
-                # TODO: fish atom data from CIF file - hard to do reliably
-
-                blocks = (
-                    re.findall(
-                        r"data_[/S]*\n",
-                        cell,
-                        flags=re.IGNORECASE | re.MULTILINE,
-                    )
-                )
-                log.warning(blocks)
-                dataset.metadata.number_of_molecules = len(blocks)
-                # dataset.metadata.atom_data = [atom.strip() for atom in block]
-                # dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
-
-            except Exception as e:
-                log.error("Error finding atom_data: %s", unicodify(e))
-                raise
-            """
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
