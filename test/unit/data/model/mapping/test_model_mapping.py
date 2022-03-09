@@ -74,6 +74,7 @@ from sqlalchemy import (
 
 from galaxy import model
 from galaxy.model.orm.now import now
+from galaxy.model.orm.util import add_object_to_object_session
 from .common import (
     AbstractBaseTest,
     collection_consists_of_objects,
@@ -1375,8 +1376,7 @@ class TestHistory(BaseTest):
         workflow_invocation,
         job,
     ):
-        obj = cls_()
-        obj.user = user
+        obj = cls_(user=user)
         obj.datasets.append(history_dataset_association)
         obj.dataset_collections.append(history_dataset_collection_association)
         obj.exports.append(job_export_history_archive)
@@ -1580,9 +1580,8 @@ class TestHistoryDatasetAssociation(BaseTest):
             icpda,
         ]
 
-        obj = cls_()
+        obj = cls_(dataset=dataset)
         obj.history = history
-        obj.dataset = dataset
         obj.copied_from_history_dataset_association = copied_from_hda
         obj.copied_from_library_dataset_dataset_association = copied_from_ldda
         obj.extended_metadata = extended_metadata
@@ -1902,6 +1901,7 @@ class TestHistoryDatasetCollectionAssociation(BaseTest):
         obj = cls_()
         obj.collection = dataset_collection
         obj.history = history
+        add_object_to_object_session(obj, history_dataset_collection_association)
         obj.copied_from_history_dataset_collection_association = history_dataset_collection_association
         obj.copied_to_history_dataset_collection_association.append(copied_to_hdca)
         obj.job = job
@@ -2146,7 +2146,6 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
         order_index = 1
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = order_index
 
@@ -2160,7 +2159,6 @@ class TestImplicitCollectionJobsJobAssociation(BaseTest):
     def test_relationships(self, session, cls_, implicit_collection_jobs, job):
         obj = cls_()
         obj.implicit_collection_jobs = implicit_collection_jobs
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj.job = job
         obj.order_index = 1
 
@@ -2502,6 +2500,7 @@ class TestJob(BaseTest):
         obj.implicit_collection_jobs_association = implicit_collection_jobs_job_association
         obj.container = job_container_association
         obj.data_manager_association = data_manager_job_association
+        add_object_to_object_session(obj, history_dataset_collection_association)
         obj.history_dataset_collection_associations.append(history_dataset_collection_association)
         obj.workflow_invocation_step = workflow_invocation_step
 
@@ -2566,9 +2565,7 @@ class TestJobContainerAssociation(BaseTest):
         created_time = now()
         modified_time = created_time + timedelta(hours=1)
 
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        obj = cls_()
-        obj.job = job
+        obj = cls_(job=job)
         obj.container_type = container_type
         obj.container_name = container_name
         obj.container_info = container_info
@@ -2586,7 +2583,6 @@ class TestJobContainerAssociation(BaseTest):
             assert stored_obj.modified_time == modified_time
 
     def test_relationships(self, session, cls_, job):
-        session.add(job)  # must be bound to a session for lazy load of attributes
         obj = cls_(job=job)
 
         with dbcleanup(session, obj) as obj_id:
@@ -3293,6 +3289,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
 
         obj = cls_()
         obj.library_dataset = library_dataset
+        add_object_to_object_session(obj, dataset)
         obj.dataset = dataset
         obj.create_time = create_time
         obj.copied_from_history_dataset_association = history_dataset_association
@@ -3381,6 +3378,7 @@ class TestLibraryDatasetDatasetAssociation(BaseTest):
 
         obj = cls_()
         obj.library_dataset = library_dataset
+        add_object_to_object_session(obj, dataset)
         obj.dataset = dataset
         obj.copied_from_history_dataset_association = history_dataset_association
         obj.copied_from_library_dataset_dataset_association = copied_from_ldda
@@ -3607,6 +3605,7 @@ class TestLibraryFolder(BaseTest):
         library_folder_factory,
     ):
         obj = cls_()
+        add_object_to_object_session(obj, library_folder)
         obj.parent = library_folder
         folder1 = library_folder_factory()
         obj.folders.append(folder1)
@@ -4401,6 +4400,7 @@ class TestStoredWorkflowMenuEntry(BaseTest):
         order_index = 1
         obj = cls_()
         obj.stored_workflow = stored_workflow
+        add_object_to_object_session(obj, user)
         obj.user = user
         obj.order_index = order_index
 
@@ -4414,6 +4414,7 @@ class TestStoredWorkflowMenuEntry(BaseTest):
     def test_relationships(self, session, cls_, stored_workflow, user):
         obj = cls_()
         obj.stored_workflow = stored_workflow
+        add_object_to_object_session(obj, user)
         obj.user = user
 
         with dbcleanup(session, obj) as obj_id:
@@ -5646,6 +5647,7 @@ class TestWorkflowInvocationOutputValue(BaseTest):
         persist(session, workflow_invocation_step)
 
         obj = cls_()
+        add_object_to_object_session(obj, workflow_invocation)
         obj.workflow_invocation = workflow_invocation
         obj.workflow_step = workflow_step
         obj.workflow_output = workflow_output
@@ -5676,9 +5678,6 @@ class TestWorkflowInvocationStep(BaseTest):
         create_time = now()
         update_time = create_time + timedelta(hours=1)
         state, action = "a", "b"
-
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
 
         obj = cls_()
         obj.create_time = create_time
@@ -5714,9 +5713,6 @@ class TestWorkflowInvocationStep(BaseTest):
         workflow_invocation_step_output_dataset_association,
         workflow_invocation_output_value,
     ):
-        session.add(job)  # must be bound to a session for lazy load of attributes
-        session.add(implicit_collection_jobs)  # must be bound to a session for lazy load of attributes
-
         # setup workflow_invocation_output_value to test the output_value attribute
         output_value = workflow_invocation_output_value
         output_value.workflow_invocation = workflow_invocation
@@ -5724,6 +5720,7 @@ class TestWorkflowInvocationStep(BaseTest):
         persist(session, output_value)
 
         obj = cls_()
+        add_object_to_object_session(obj, workflow_invocation)
         obj.workflow_invocation = workflow_invocation
         obj.workflow_step = workflow_step
         obj.job = job
@@ -6952,6 +6949,7 @@ def role(session):
 @pytest.fixture
 def stored_workflow(session, user):
     instance = model.StoredWorkflow()
+    add_object_to_object_session(instance, user)
     instance.user = user
     yield from dbcleanup_wrapper(session, instance)
 
@@ -7185,6 +7183,7 @@ def workflow_request_to_input_dataset_collection_association(session):
 @pytest.fixture
 def workflow_step(session, workflow):
     instance = model.WorkflowStep()
+    add_object_to_object_session(instance, workflow)
     instance.workflow = workflow
     yield from dbcleanup_wrapper(session, instance)
 
@@ -7392,7 +7391,9 @@ def workflow_step_connection_factory():
 def workflow_step_factory(workflow):
     def make_instance(*args, **kwds):
         instance = model.WorkflowStep()
-        instance.workflow = kwds.get("workflow", workflow)
+        workflow2 = kwds.get("workflow", workflow)  # rename workflow not to confuse pytest
+        add_object_to_object_session(instance, workflow2)
+        instance.workflow = workflow2
         instance.subworkflow = kwds.get("subworkflow")
         return instance
 

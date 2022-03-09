@@ -1721,6 +1721,7 @@ class Task(Base, JobLike, RepresentById):
         self.parameters = []
         self.state = Task.states.NEW
         self.working_directory = working_directory
+        add_object_to_object_session(self, job)
         self.job = job
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
@@ -1980,6 +1981,7 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
 
@@ -1997,6 +1999,7 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
 
@@ -2140,6 +2143,7 @@ class JobExternalOutputMetadata(Base, RepresentById):
     job = relationship("Job", back_populates="external_output_metadata")
 
     def __init__(self, job=None, dataset=None):
+        add_object_to_object_session(self, job)
         self.job = job
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
             self.history_dataset_association = dataset
@@ -2280,6 +2284,8 @@ class JobContainerAssociation(Base, RepresentById):
     job = relationship("Job", back_populates="container")
 
     def __init__(self, **kwd):
+        if "job" in kwd:
+            add_object_to_object_session(self, kwd["job"])
         super().__init__(**kwd)
         self.container_info = self.container_info or {}
 
@@ -2371,6 +2377,7 @@ class UserGroupAssociation(Base, RepresentById):
     group = relationship("Group", back_populates="users")
 
     def __init__(self, user, group):
+        add_object_to_object_session(self, user)
         self.user = user
         self.group = group
 
@@ -3052,6 +3059,7 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["user"]
 
     def __init__(self, user, quota):
+        add_object_to_object_session(self, user)
         self.user = user
         self.quota = quota
 
@@ -3070,6 +3078,7 @@ class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["group"]
 
     def __init__(self, group, quota):
+        add_object_to_object_session(self, group)
         self.group = group
         self.quota = quota
 
@@ -3257,6 +3266,7 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     def __init__(self, action, library_item, role):
         self.action = action
         if isinstance(library_item, LibraryDatasetDatasetAssociation):
+            add_object_to_object_session(self, library_item)
             self.library_dataset_dataset_association = library_item
         else:
             raise Exception(f"Invalid LibraryDatasetDatasetAssociation specified: {library_item.__class__.__name__}")
@@ -3291,6 +3301,7 @@ class DefaultHistoryPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, history, action, role):
+        add_object_to_object_session(self, history)
         self.history = history
         self.action = action
         self.role = role
@@ -5392,6 +5403,7 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
         self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True
     ):
         self.id = id
+        add_object_to_object_session(self, dataset)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
@@ -6471,6 +6483,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
+        add_object_to_object_session(self, history)
         self.history = history
 
 
@@ -6573,6 +6586,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         workflow=None,
         hidden=False,
     ):
+        add_object_to_object_session(self, user)
         self.user = user
         self.name = name
         self.slug = slug
@@ -6891,6 +6905,7 @@ class WorkflowStep(Base, RepresentById):
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
         conn.output_name = output_name
+        add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
         if input_subworkflow_step_index is not None:
             input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
@@ -7059,6 +7074,7 @@ class WorkflowStepInput(Base, RepresentById):
     )
 
     def __init__(self, workflow_step):
+        add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
         self.default_value_set = False
 
@@ -7247,6 +7263,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         assoc = WorkflowInvocationToSubworkflowInvocationAssociation()
         assoc.workflow_invocation = self
         assoc.workflow_step = step
+        add_object_to_object_session(subworkflow_invocation, self.history)
         subworkflow_invocation.history = self.history
         subworkflow_invocation.workflow = step.subworkflow
         assoc.subworkflow_invocation = subworkflow_invocation
@@ -9026,6 +9043,7 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     user = relationship("User")
 
     def _set_item(self, history_dataset_association):
+        add_object_to_object_session(self, history_dataset_association)
         self.history_dataset_association = history_dataset_association
 
 
@@ -9040,6 +9058,7 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, stored_workflow):
+        add_object_to_object_session(self, stored_workflow)
         self.stored_workflow = stored_workflow
 
 
@@ -9054,6 +9073,7 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, page):
+        add_object_to_object_session(self, page)
         self.page = page
 
 
@@ -9068,6 +9088,7 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, visualization):
+        add_object_to_object_session(self, visualization)
         self.visualization = visualization
 
 
@@ -9082,6 +9103,7 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
@@ -9096,6 +9118,7 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
