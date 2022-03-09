@@ -43,11 +43,11 @@ def test_github_search():
     assert search1 == []
 
     # The search sometimes returns no results so we retry a couple of times
-    num_retries = 3
+    num_retries = 5
     search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
     while not search2 and num_retries:
         num_retries -= 1
-        time.sleep(1)  # Wait a bit, otherwise, the search may fail because of throttling
+        time.sleep(2)  # Wait a bit, otherwise, the search may fail because of throttling
         search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
 
     assert search2
