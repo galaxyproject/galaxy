@@ -14,14 +14,19 @@
     </entry_points>
     <command><![CDATA[
 
-mkdir -p /srv/shiny-server/data/ &&
-cp '$infile' /srv/shiny-server/data/inputdata.txt &&
-R -e "options('shiny.port'=3838,shiny.host='0.0.0.0');MetaShARK::runMetashark()"
+        mkdir -p /srv/shiny-server/data/ &&
+
+        #for $count, $file in enumerate($input):
+            #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
+            ln -sf '$file' '/srv/shiny-server/data/${cleaned_name}.${file.ext}' &&
+        #end for
+
+        R -e "options('shiny.port'=3838,shiny.host='0.0.0.0');MetaShARK::runMetashark()"
 
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" multiple="true" format="tabular,csv" label="Input biodiversity data file(s)"/>
+        <param name="input" type="data" multiple="true" format="tabular,csv" label="Input biodiversity data file(s)"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
