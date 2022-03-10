@@ -17,10 +17,10 @@ const getters = {
 };
 
 const actions = {
-    fetchCollectionElements: async ({ commit }, { contentsUrl, offset, limit }) => {
-        const url = `${contentsUrl}?offset=${offset}&limit=${limit}`;
+    fetchCollectionElements: async ({ commit }, { contentsurl, offset, limit }) => {
+        const url = `${contentsurl}?offset=${offset}&limit=${limit}`;
         queue.enqueue(urlData, { url }).then((payload) => {
-            const queryKey = contentsUrl;
+            const queryKey = contentsurl;
             commit("saveCollectionElements", { queryKey, payload });
         });
     },

@@ -1,7 +1,13 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <div>
+    <CollectionElementsProvider
+        v-if="dsc"
+        :key="dsc.id"
+        :contentsurl="contentsUrl"
+        :offset="offset"
+        :limit="limit"
+        v-slot="{ loading, result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
@@ -20,7 +26,7 @@
                 </template>
 
                 <template v-slot:listing>
-                    <Listing :items="payload" :limit="limit" @scroll="onFetch">
+                    <Listing :items="payload" :loading="loading" @scroll="onScroll">
                         <template v-slot:history-item="{ item }">
                             <ContentItem
                                 :item="item.object"
@@ -36,11 +42,11 @@
                 </template>
             </Layout>
         </ExpandedItems>
-    </div>
+    </CollectionElementsProvider>
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { CollectionElementsProvider } from "components/providers/storeProviders";
 import { History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
@@ -54,6 +60,7 @@ import CollectionDetails from "./CollectionDetails";
 export default {
     components: {
         CollectionDetails,
+        CollectionElementsProvider,
         CollectionNavigation,
         CollectionOperations,
         ContentItem,
@@ -72,10 +79,6 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getCollectionElements"]),
-        payload() {
-            return this.getCollectionElements();
-        },
         dsc() {
             const arr = this.selectedCollections;
             return arr[arr.length - 1];
@@ -86,12 +89,13 @@ export default {
         rootCollection() {
             return this.selectedCollections[0];
         },
-    },
-    created() {
-        this.onFetch(this.offset);
+        contentsUrl() {
+            // either the observered source is a collection element or the initial history item i.e. root collection
+            const source = this.dsc.object || this.rootCollection;
+            return source.contents_url.substring(1);
+        },
     },
     methods: {
-        ...mapActions(["fetchCollectionElements"]),
         updateDsc(collection, fields) {
             updateContentFields(collection, fields).then((response) => {
                 Object.keys(response).forEach((key) => {
@@ -99,15 +103,8 @@ export default {
                 });
             });
         },
-        onFetch(offset) {
-            // either the observered source is a collection element or the initial history item i.e. root collection
-            const source = this.dsc.object || this.rootCollection;
-            const contentsUrl = source.contents_url.substring(1);
-            this.fetchCollectionElements({
-                contentsUrl: contentsUrl,
-                offset: offset,
-                limit: this.limit,
-            });
+        onScroll(offset) {
+            this.offset = offset;
         },
     },
 };

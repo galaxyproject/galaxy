@@ -17,7 +17,6 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import VirtualList from "vue-virtual-scroll-list";
 import { throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
@@ -28,7 +27,7 @@ export default {
         VirtualList,
     },
     props: {
-        limit: { type: Number, required: true },
+        loading: { type: Boolean, default: false },
         items: { type: Array, default: null },
     },
     data() {
@@ -41,11 +40,6 @@ export default {
         this.onScrollThrottle = throttle((event) => {
             this.onScroll(event);
         }, this.throttlePeriod);
-    },
-    computed: {
-        loading() {
-            return !!this.items && this.items.length == this.limit;
-        },
     },
     methods: {
         onScrollHandler(event) {

@@ -2,7 +2,7 @@
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 export const SimpleProviderMixin = {
     props: {
@@ -159,3 +159,42 @@ export const JobProvider = {
         },
     },
 };
+
+export const StoreProvider = (storeAction, storeGetter) => {
+    return {
+        watch: {
+            $attrs() {
+                this.load();
+            },
+        },
+        async mounted() {
+            await this.load();
+        },
+        created() {
+            this.loading = true;
+        },
+        methods: {
+            ...mapActions([storeAction]),
+            async load() {
+                this.loading = true;
+                await this[storeAction]({ ...this.$attrs });
+                this.loading = false;
+            },
+        },
+        computed: {
+            ...mapGetters([storeGetter]),
+            result() {
+                return this[storeGetter]();
+            },
+        },
+        render() {
+            return this.$scopedSlots.default({
+                loading: this.loading,
+                result: this.result,
+            });
+        },
+    };
+};
+
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems");
+export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");

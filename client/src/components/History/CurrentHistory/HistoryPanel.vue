@@ -1,5 +1,11 @@
 <template>
-    <div>
+    <HistoryItemsProvider
+        :key="history.id"
+        :historyId="historyId"
+        :offset="offset"
+        :limit="limit"
+        :queryString="queryString"
+        v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -47,11 +53,18 @@
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="payload && payload.length == 0" class="m-2" />
-                        <b-alert v-else-if="loading" class="m-2" variant="info" show>
-                            <LoadingSpan message="Loading History" />
-                        </b-alert>
-                        <Listing v-else :limit="limit" :items="payload" @scroll="onFetch">
+                        <div v-if="!payload || payload.length == 0">
+                            <b-alert v-if="loading" class="m-2" variant="info" show>
+                                <LoadingSpan message="Loading History" />
+                            </b-alert>
+                            <div v-else>
+                                <HistoryEmpty v-if="queryDefault" class="m-2" />
+                                <b-alert v-else class="m-2" variant="info" show>
+                                    No data found for selected filter.
+                                </b-alert>
+                            </div>
+                        </div>
+                        <Listing v-else :loading="loading" :items="payload" @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
                                     v-if="!hideSelection[item.hid]"
@@ -78,11 +91,11 @@
                 </Layout>
             </SelectedItems>
         </ExpandedItems>
-    </div>
+    </HistoryItemsProvider>
 </template>
 
 <script>
-import { mapActions, mapGetters } from "vuex";
+import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { History } from "components/History/model";
@@ -107,6 +120,7 @@ export default {
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryItemsProvider,
         HistoryMenu,
         HistoryOperations,
         ToolHelpModal,
@@ -120,23 +134,17 @@ export default {
         return {
             hideSelection: {},
             offset: 0,
-            limit: 500,
+            limit: 50,
             params: {},
-            loading: false,
         };
     },
     watch: {
         queryKey() {
             this.hideSelection = {};
             this.offset = 0;
-            this.onFetch(this.offset);
         },
     },
     computed: {
-        ...mapGetters(["getHistoryItems"]),
-        payload() {
-            return this.getHistoryItems();
-        },
         historyId() {
             return this.history.id;
         },
@@ -148,22 +156,16 @@ export default {
             const visible = this.params.showHidden ? "False" : "True";
             return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
         },
-    },
-    created() {
-        this.onFetch(this.offset);
+        queryDefault() {
+            return !this.params.showDeleted && !this.params.showHidden;
+        },
     },
     methods: {
-        ...mapActions(["fetchHistoryItems"]),
         hasMatches(payload) {
             return !!payload && payload.length > 0;
         },
-        onFetch(offset) {
-            this.fetchHistoryItems({
-                historyId: this.historyId,
-                offset: offset,
-                limit: this.limit,
-                queryString: this.queryString,
-            });
+        onScroll(offset) {
+            this.offset = offset;
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
