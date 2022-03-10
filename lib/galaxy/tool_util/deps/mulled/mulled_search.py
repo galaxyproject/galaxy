@@ -5,6 +5,10 @@ import json
 import logging
 import sys
 import tempfile
+from datetime import (
+    datetime,
+    timezone,
+)
 
 import requests
 
@@ -143,14 +147,29 @@ class GitHubSearch:
     Tool to search the GitHub bioconda-recipes repo
     """
 
+    @staticmethod
+    def _check_response_rate_limit(response):
+        if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
+            # It can take tens of minutes before the rate limit window resets
+            message = "GitHub API rate limit exceeded."
+            rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
+            if rate_limit_reset_UTC_timestamp:
+                rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+                message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
+            raise Exception(message)
+
     def get_json(self, search_string):
         """
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
+
+        DEPRECATED: this method is currently unreliable because the API query
+        sometimes succeeds but returns no items.
         """
         response = requests.get(
             f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
+        self._check_response_rate_limit(response)
         response.raise_for_status()
         return response.json()
 
@@ -169,6 +188,7 @@ class GitHubSearch:
             f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
+        self._check_response_rate_limit(response)
         return response.status_code == 200
 
 
@@ -392,10 +412,11 @@ def main(argv=None):
         github = GitHubSearch()
 
         for item in args.search:
-            github_json = github.get_json(item)
-            github_results[item] = github.process_json(github_json, item)
             if github.recipe_present(item):
                 github_recipe_present.append(item)
+            else:
+                github_json = github.get_json(item)
+                github_results[item] = github.process_json(github_json, item)
 
         json_results["github"] = github_results
         json_results["github_recipe_present"] = {"recipes": github_recipe_present}
