@@ -55,6 +55,7 @@ class GalaxyDataTestConfig(Bunch):
         self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
         self.new_file_path = os.path.join(self.data_dir, 'tmp')
         self.file_path = os.path.join(self.data_dir, 'files')
+        self.server_name = "main"
 
     def __del__(self):
         if self._remove_root:

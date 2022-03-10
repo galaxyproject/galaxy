@@ -30,7 +30,7 @@ with the following command-line.
 
 ::
 
-    gunicorn 'tool_shed.webapp.fast_factory:factory()' --env TOOL_SHED_CONFIG_FILE=config/tool_shed.yml --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker
+    gunicorn 'tool_shed.webapp.fast_factory:factory()' --env TOOL_SHED_CONFIG_FILE=config/tool_shed.yml --pythonpath lib -w 4 -k uvicorn.workers.UvicornWorker --config lib/galaxy/web_stack/gunicorn_config.py
 
 """
 
