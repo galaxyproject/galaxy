@@ -5,12 +5,16 @@ import os
 import time
 
 from queue import Empty
+from . import JobState
 from galaxy import model
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
 )
 from galaxy.util import smart_str, unicodify
+
+
 
 BOTO3_IMPORT_MSG = (
     "The Python 'boto3' package is required to use "
@@ -495,16 +499,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     def write_command(self, job_wrapper):
         # Create command script instead passing it in the container
         # preventing wrong characters parsing.
-        job_directory = job_wrapper.working_directory
-        if not os.path.exists(job_directory):
-            LOGGER.error("No working directory found")
-
-        path = f"{job_directory}/galaxy_{job_wrapper.get_id_tag()}.sh"
-        mode = 0o755
-
-        with open(path, "w", encoding="utf-8") as f:
-            f.write("#!/bin/bash\n")
-            f.write(f"cd {job_directory}")
-            f.write(job_wrapper.runner_command_line)
-        os.chmod(path, mode)
-        return path
+        command_line = job_wrapper.runner_command_line
+        job_id = job_wrapper.get_id_tag()
+        job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
+        exit_code_path = default_exit_code_file(job_wrapper.working_directory, job_id)
+        job_script_props = {
+            "command": command_line,
+            "exit_code_path": exit_code_path,
+            "working_directory": job_wrapper.working_directory,
+            "shell": job_wrapper.shell,
+        }
+        job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
+        self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)
+        return job_file
