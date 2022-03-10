@@ -33,7 +33,12 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -41,6 +46,7 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
+                :title="btnResetTitle"
                 :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
@@ -49,6 +55,7 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
+                :title="btnStopTitle"
                 :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
@@ -59,6 +66,7 @@
                 @click="_eventSelect"
                 v-if="selectable"
                 :disabled="!enableBuild"
+                :title="btnSelectTitle"
                 :variant="enableBuild ? 'primary' : ''">
                 {{ btnSelectTitle }}
             </b-button>
@@ -68,6 +76,7 @@
                 id="btn-start"
                 @click="_eventStart"
                 :disabled="!enableStart"
+                :title="btnStartTitle"
                 :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
@@ -76,6 +85,7 @@
                 class="ui-button-default"
                 id="btn-new"
                 @click="_eventCreate(true)"
+                :title="btnCreateTitle"
                 :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
