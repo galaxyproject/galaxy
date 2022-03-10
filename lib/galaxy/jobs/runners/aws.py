@@ -199,10 +199,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     def _get_job_definition(self, job_wrapper, destination_params):
         tool_id = job_wrapper.tool.id
-        tool_version = job_wrapper.tool.version
+        container_image = self._find_container(job_wrapper).container_id
         h = hashlib.new("sha256")
-        h.update(smart_str(tool_id))
-        h.update(smart_str(tool_version))
+        h.update(smart_str(container_image))
         for k, v in destination_params.items():
             h.update(smart_str(k + str(v)))
         queue_name = destination_params.get('job_queue').rsplit('/', 1)[-1]
@@ -213,20 +212,19 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             status="ACTIVE"
         )
         if not res['jobDefinitions']:
-            docker_image = self._find_container(job_wrapper).container_id
-            jd_arn = self._register_job_definition(jd_name, docker_image, destination_params)
+            jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
         else:
             jd_arn = res['jobDefinitions'][0]['jobDefinitionArn']
             LOGGER.debug(f"Found existing job definition: {jd_name}.")
 
         return jd_arn
 
-    def _register_job_definition(self, jd_name, docker_image, destination_params):
+    def _register_job_definition(self, jd_name, container_image, destination_params):
         LOGGER.debug(f"Registering a new job definition: {jd_name}.")
         platform = destination_params.get('platform')
         # TODO: support multi-node
         containerProperties = {
-            'image': docker_image,
+            'image': container_image,
             'command': [
                 '/bin/sh',
             ],
@@ -291,6 +289,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         command_script_path = self.write_command(job_wrapper)
 
+        LOGGER.info(f"Submitting job {job_name} to AWS Batch.")
         res = self._batch_client.submit_job(
             jobName=job_name,
             jobQueue=destination_params.get('job_queue'),
