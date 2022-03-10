@@ -135,11 +135,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "map": str,
             "required": True
         },
-        "log_group_name": {
-            "default": None,
-            "map": str,
-            "required": True
-        },
         "execute_role_arn": {
             "default": '',
             "map": str,
@@ -177,7 +172,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             aws_secret_access_key=self.runner_params.get('aws_secret_access_key') or None
         )
         self._batch_client = session.client('batch')
-        self._logs_client = session.client('logs')
 
     @handle_exception_call
     def queue_job(self, job_wrapper):
@@ -260,6 +254,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 destination_params.get('vcpu'),
                 destination_params.get('memory')
             ),
+            'user': '%d:%d' % (os.getuid(), os.getgid()),
             'logConfiguration': {
                 'logDriver': 'awslogs'
             }
@@ -394,18 +389,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         for job in res['jobs']:
             status = job['status']
             job_id = job['jobId']
-            log_stream_name = job['container']['logStreamName']
             gotten.append(job_id)
             job_state = jobs_dict[job_id]
 
             if status == 'SUCCEEDED':
-                logs = self._get_log_events(job_state, log_stream_name)
-                self._mark_as_successful(job_state, logs)
+                self._mark_as_successful(job_state)
                 done.append(job_id)
             elif status == 'FAILED':
-                logs = self._get_log_events(job_state, log_stream_name)
                 reason = job['statusReason']
-                self._mark_as_failed(job_state, reason, logs)
+                self._mark_as_failed(job_state, reason)
                 done.append(job_id)
             elif status in ('SUBMITTED', 'PENDING', 'RUNNABLE', 'STARTING', 'RUNNING'):
                 self._mark_as_active(job_state)
@@ -419,20 +411,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         self.check_watched_items_by_batch(start+self.MAX_JOBS_PER_QUERY, end, done)
 
-    def _get_log_events(self, job_state, log_stream_name):
-        log_group_name = job_state.job_destination.params.get('log_group_name')
-        try:
-            res = self._logs_client.get_log_events(
-                logGroupName=log_group_name,
-                logStreamName=log_stream_name
-            )
-            messages = [e['message']for e in res['events']]
-            return '\n'.join(messages)
-        except Exception as e:
-            LOGGER.error(e)
-
-    def _mark_as_successful(self, job_state, logs):
-        _write_logfile(job_state.output_file, logs)
+    def _mark_as_successful(self, job_state):
+        _write_logfile(job_state.output_file, "")
         _write_logfile(job_state.error_file, "")
         job_state.running = False
         job_state.job_wrapper.change_state(model.Job.states.OK)
@@ -442,9 +422,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_state.running = True
         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
 
-    def _mark_as_failed(self, job_state, reason, logs):
-        if logs:
-            reason = '\n\n'.join((reason, logs))
+    def _mark_as_failed(self, job_state, reason):
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
         job_state.stop_job = False
@@ -517,16 +495,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     def write_command(self, job_wrapper):
         # Create command script instead passing it in the container
         # preventing wrong characters parsing.
-        if not os.path.exists(job_wrapper.working_directory):
+        job_directory = job_wrapper.working_directory
+        if not os.path.exists(job_directory):
             LOGGER.error("No working directory found")
 
-        path = f"{job_wrapper.working_directory}/galaxy_{job_wrapper.get_id_tag()}.sh"
+        path = f"{job_directory}/galaxy_{job_wrapper.get_id_tag()}.sh"
         mode = 0o755
 
-        runner_command_line = job_wrapper.runner_command_line.replace(
-            '> ../outputs/tool_stdout 2> ../outputs/tool_stderr', '')
         with open(path, "w", encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
-            f.write(runner_command_line)
+            f.write(f"cd {job_directory}")
+            f.write(job_wrapper.runner_command_line)
         os.chmod(path, mode)
         return path
