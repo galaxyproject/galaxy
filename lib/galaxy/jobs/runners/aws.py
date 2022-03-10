@@ -15,7 +15,6 @@ from galaxy.jobs.runners import (
 from galaxy.util import smart_str, unicodify
 
 
-
 BOTO3_IMPORT_MSG = (
     "The Python 'boto3' package is required to use "
     "this feature, please install it or correct the "
@@ -41,7 +40,7 @@ class AWSBatchRunnerException(Exception):
 
 
 def handle_exception_call(func):
-    # Catch boto3 exceptions. 
+    # Catch boto3 exceptions.
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -109,7 +108,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     DESTINATION_PARAMS_SPEC = {
         "vcpu": {
             "default": 1.0,
-            "map": (lambda x: int(float(x)) if int(float(x))==float(x) else float(x)),
+            "map": (lambda x: int(float(x)) if int(float(x)) == float(x) else float(x)),
         },
         "memory": {
             "default": 2048,
@@ -205,7 +204,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         h.update(smart_str(tool_id))
         h.update(smart_str(tool_version))
         for k, v in destination_params.items():
-            h.update(smart_str(k+str(v)))
+            h.update(smart_str(k + str(v)))
         queue_name = destination_params.get('job_queue').rsplit('/', 1)[-1]
 
         jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
@@ -219,7 +218,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         else:
             jd_arn = res['jobDefinitions'][0]['jobDefinitionArn']
             LOGGER.debug(f"Found existing job definition: {jd_name}.")
-        
+
         return jd_arn
 
     def _register_job_definition(self, jd_name, docker_image, destination_params):
@@ -381,7 +380,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.watched = [x for x in self.watched if x[0] not in done]
 
     def check_watched_items_by_batch(self, start: int, end: int, done: list):
-        jobs = self.watched[start: start+self.MAX_JOBS_PER_QUERY]
+        jobs = self.watched[start: start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
 
@@ -413,7 +412,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             self._mark_as_failed(job_state, reason)
             done.append(job_id)
 
-        self.check_watched_items_by_batch(start+self.MAX_JOBS_PER_QUERY, end, done)
+        self.check_watched_items_by_batch(start + self.MAX_JOBS_PER_QUERY, end, done)
 
     def _mark_as_successful(self, job_state):
         _write_logfile(job_state.output_file, "")
@@ -475,7 +474,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                     if c < vcpu:
                         continue
                     for m in self.FARGATE_RESOURCES[c]:
-                        if m >= memory:     #Found the best match
+                        if m >= memory:     # Found the best match
                             new_vcpu = c
                             new_memory = m
                             break
