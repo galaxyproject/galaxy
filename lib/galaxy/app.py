@@ -51,21 +51,22 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.model import custom_types
+from galaxy.model import mapping
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
-from galaxy.model.database_utils import database_exists
-from galaxy.model.mapping import (
-    GalaxyModelMapping,
-    init_models_from_config,
+from galaxy.model.database_utils import (
+    database_exists,
+    is_one_database,
 )
-from galaxy.model.migrate.check import create_or_verify_database
+from galaxy.model.mapping import GalaxyModelMapping
+from galaxy.model.migrations import verify_databases
+from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.scoped_session import (
     galaxy_scoped_session,
     install_model_scoped_session,
 )
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.model.tool_shed_install import mapping as install_mapping
-from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
@@ -334,52 +335,66 @@ class ConfiguresGalaxyMixin:
         else:
             self.tool_shed_registry = tool_shed_registry.Registry()
 
+    def _configure_engines(self, db_url, install_db_url, combined_install_database):
+        trace_logger = getattr(self, "trace_logger", None)
+        engine = build_engine(
+            db_url,
+            self.config.database_engine_options,
+            self.config.database_query_profiling_proxy,
+            trace_logger,
+            self.config.slow_query_log_threshold,
+            self.config.thread_local_log,
+            self.config.database_log_query_counts
+        )
+        install_engine = None
+        if not combined_install_database:
+            install_engine = build_engine(install_db_url, self.config.install_database_engine_options)
+        return engine, install_engine
+
     def _configure_models(self, check_migrate_databases=False, config_file=None):
         """Preconditions: object_store must be set on self."""
+        # TODO this block doesn't seem to belong in this method
+        if getattr(self.config, "max_metadata_value_size", None):
+            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
+
         db_url = self.config.database_connection
         install_db_url = self.config.install_database_connection
-        # TODO: Consider more aggressive check here that this is not the same
-        # database file under the hood.
-        combined_install_database = not (install_db_url and install_db_url != db_url)
-        install_db_url = install_db_url or db_url
-        install_database_options = (
-            self.config.database_engine_options
-            if combined_install_database
-            else self.config.install_database_engine_options
-        )
+        combined_install_database = is_one_database(db_url, install_db_url)
+        engine, install_engine = self._configure_engines(db_url, install_db_url, combined_install_database)
 
         if self.config.database_wait:
             self._wait_for_database(db_url)
 
-        if getattr(self.config, "max_metadata_value_size", None):
-            custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
-
         if check_migrate_databases:
-            # Initialize database / check for appropriate schema version.  # If this
-            # is a new installation, we'll restrict the tool migration messaging.
-            create_or_verify_database(
-                db_url,
-                config_file,
-                self.config.database_engine_options,
-                app=self,
-                map_install_models=combined_install_database,
-            )
-            if not combined_install_database:
-                tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
+            self._verify_databases(engine, install_engine, combined_install_database)
 
-        self.model = init_models_from_config(
-            self.config,
-            map_install_models=combined_install_database,
-            object_store=self.object_store,
-            trace_logger=getattr(self, "trace_logger", None),
+        self.model = mapping.configure_model_mapping(
+            self.config.file_path,
+            self.object_store,
+            self.config.use_pbkdf2,
+            engine,
+            combined_install_database,
+            self.config.thread_local_log
         )
+
         if combined_install_database:
-            log.info("Install database targetting Galaxy's database configuration.")
+            log.info("Install database targeting Galaxy's database configuration.")  # TODO this message is ambiguous
             self.install_model = self.model
         else:
-            install_db_url = self.config.install_database_connection
+            self.install_model = install_mapping.configure_model_mapping(install_engine)
             log.info(f"Install database using its own connection {install_db_url}")
-            self.install_model = install_mapping.init(install_db_url, install_database_options)
+
+    def _verify_databases(self, engine, install_engine, combined_install_database):
+        install_template, install_encoding = None, None
+        if not combined_install_database:  # Otherwise these options are not used.
+            install_template = getattr(self.config, 'install_database_template', None)
+            install_encoding = getattr(self.config, 'install_database_encoding', None)
+
+        verify_databases(
+            engine, self.config.database_template, self.config.database_encoding,
+            install_engine, install_template, install_encoding,
+            self.config.database_auto_migrate
+        )
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
