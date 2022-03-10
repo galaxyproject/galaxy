@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from lxml.etree import XMLSyntaxError
 
@@ -28,7 +29,13 @@ def assert_has_element_with_path(output, path, negate: bool = False):
 
 
 def assert_has_n_elements_with_path(
-    output, path, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output,
+    path,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """Asserts the specified output has exactly n elements matching the
     path specified."""
@@ -74,10 +81,10 @@ def assert_xml_element(
     children=None,
     attribute=None,
     all=False,
-    n: int = None,
+    n: Optional[int] = None,
     delta: int = 0,
-    min: int = None,
-    max: int = None,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
     negate: bool = False,
 ):
     """

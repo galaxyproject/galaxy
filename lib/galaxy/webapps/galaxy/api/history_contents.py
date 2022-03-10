@@ -998,7 +998,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         # return self.hda_manager.serialize_dataset_association_roles(trans, hda)
 
     @expose_api
-    def update_permissions(self, trans, history_id, history_content_id, payload: Dict[str, Any] = None, **kwd):
+    def update_permissions(
+        self, trans, history_id, history_content_id, payload: Optional[Dict[str, Any]] = None, **kwd
+    ):
         """
         Set permissions of the given library dataset to the given role ids.
 
