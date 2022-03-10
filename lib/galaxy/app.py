@@ -50,8 +50,10 @@ from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowsManager,
 )
-from galaxy.model import custom_types
-from galaxy.model import mapping
+from galaxy.model import (
+    custom_types,
+    mapping,
+)
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.database_utils import (
@@ -344,7 +346,7 @@ class ConfiguresGalaxyMixin:
             trace_logger,
             self.config.slow_query_log_threshold,
             self.config.thread_local_log,
-            self.config.database_log_query_counts
+            self.config.database_log_query_counts,
         )
         install_engine = None
         if not combined_install_database:
@@ -374,7 +376,7 @@ class ConfiguresGalaxyMixin:
             self.config.use_pbkdf2,
             engine,
             combined_install_database,
-            self.config.thread_local_log
+            self.config.thread_local_log,
         )
 
         if combined_install_database:
@@ -387,13 +389,17 @@ class ConfiguresGalaxyMixin:
     def _verify_databases(self, engine, install_engine, combined_install_database):
         install_template, install_encoding = None, None
         if not combined_install_database:  # Otherwise these options are not used.
-            install_template = getattr(self.config, 'install_database_template', None)
-            install_encoding = getattr(self.config, 'install_database_encoding', None)
+            install_template = getattr(self.config, "install_database_template", None)
+            install_encoding = getattr(self.config, "install_database_encoding", None)
 
         verify_databases(
-            engine, self.config.database_template, self.config.database_encoding,
-            install_engine, install_template, install_encoding,
-            self.config.database_auto_migrate
+            engine,
+            self.config.database_template,
+            self.config.database_encoding,
+            install_engine,
+            install_template,
+            install_encoding,
+            self.config.database_auto_migrate,
         )
 
     def _configure_signal_handlers(self, handlers):
