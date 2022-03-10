@@ -108,15 +108,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     DESTINATION_PARAMS_SPEC = {
         "vcpu": {
             "default": 1.0,
-            "map": (lambda x: int(float(x)) if int(float(x)) == float(x) else float(x)),
+            "map": (lambda x: int(float(x)) if int(float(x)) == float(x) else float(x))
         },
         "memory": {
             "default": 2048,
-            "map": int,
+            "map": int
         },
         "gpu": {
             "default": 0,
-            "map": int,
+            "map": int
         },
         "job_queue": {
             "default": None,
@@ -140,11 +140,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "execute_role_arn": {
             "default": '',
-            "map": str,
+            "map": str
         },
         "fargate_version": {
             "default": '',
-            "map": str,
+            "map": str
         },
         "auto_platform": {
             "default": False,
@@ -322,7 +322,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)
         ajs.job_name = job_name
-        ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
@@ -378,7 +377,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [x for x in self.watched if x[0] not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int, done: list):
+    def check_watched_items_by_batch(self, start: int, end: int, done: list[str]):
         jobs = self.watched[start: start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
