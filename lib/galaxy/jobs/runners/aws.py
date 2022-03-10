@@ -9,15 +9,14 @@ from typing import List
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners import (
-    JobState,
     AsynchronousJobRunner,
     AsynchronousJobState,
+    JobState,
 )
 from galaxy.util import (
     smart_str,
     unicodify,
 )
-
 
 BOTO3_IMPORT_MSG = (
     "The Python 'boto3' package is required to use "
