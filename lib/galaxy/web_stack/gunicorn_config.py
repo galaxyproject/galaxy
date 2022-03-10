@@ -57,9 +57,10 @@ def pre_fork(server, worker):
 
 def post_fork(server, worker):
     """
-    Put the worker_id into an env variable for further use within the app.
+    Put worker_id and listeners into an env variable for further use within the app.
     """
     os.environ["GUNICORN_WORKER_ID"] = str(worker._worker_id)
+    os.environ["GUNICORN_LISTENERS"] = ",".join([str(bind) for bind in server.LISTENERS])
     if "--preload" in os.environ.get("GUNICORN_CMD_ARGS", "") or "--preload" in sys.argv:
         from galaxy.web_stack import GunicornApplicationStack
 

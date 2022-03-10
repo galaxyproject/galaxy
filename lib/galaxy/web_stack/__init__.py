@@ -601,6 +601,12 @@ class GunicornApplicationStack(ApplicationStack):
         t = threading.Thread(target=cls.run_postfork)
         t.start()
 
+    def log_startup(self):
+        msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
+        if "GUNICORN_LISTENERS" in os.environ:
+            msg.append(f'serving on {os.environ["GUNICORN_LISTENERS"]}')
+        log.info("\n".join(msg))
+
 
 class WeblessApplicationStack(ApplicationStack):
     name = 'Webless'
