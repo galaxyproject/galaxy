@@ -865,9 +865,9 @@ class InputParameterModule(WorkflowModule):
             )
             if param_type == "text":
                 if parameter_type == "text":
-                    text_default = parameter_def.get("default")
+                    text_default = parameter_def.get("default") or ""
                 else:
-                    text_default = None
+                    text_default = ""
                 default_source["value"] = text_default
                 input_default_value: Union[
                     TextToolParameter,

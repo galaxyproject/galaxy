@@ -2592,34 +2592,6 @@ text_input:
             jobs = self._history_jobs(history_id)
             assert len(jobs) == 1
 
-    def test_run_with_required_text_parameter_not_provided_fails(self):
-        with self.dataset_populator.test_history() as history_id:
-            try:
-                self._run_workflow("""
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-""", assert_ok=True, history_id=history_id)
-            except AssertionError as e:
-                assert '(text_input) is not optional' in str(e)
-
-    def test_run_with_required_text_parameter_null_fails(self):
-        with self.dataset_populator.test_history() as history_id:
-            try:
-                self._run_workflow("""
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-""", test_data="""
-text_input:
-  value: null
-  type: raw
-""", assert_ok=True, history_id=history_id)
-            except AssertionError as e:
-                assert '(text_input) is not optional' in str(e)
-
     def test_run_with_int_parameter(self):
         with self.dataset_populator.test_history() as history_id:
             failed = False
