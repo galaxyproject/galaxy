@@ -421,12 +421,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     def _get_log_events(self, job_state, log_stream_name):
         log_group_name = job_state.job_destination.params.get('log_group_name')
-        res = self._logs_client.get_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream_name
-        )
-        messages = [e['message']for e in res['events']]
-        return '\n'.join(messages)
+        try:
+            res = self._logs_client.get_log_events(
+                logGroupName=log_group_name,
+                logStreamName=log_stream_name
+            )
+            messages = [e['message']for e in res['events']]
+            return '\n'.join(messages)
+        except Exception as e:
+            LOGGER.error(e)
 
     def _mark_as_successful(self, job_state, logs):
         _write_logfile(job_state.output_file, logs)
