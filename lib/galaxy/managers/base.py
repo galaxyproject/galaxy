@@ -773,12 +773,14 @@ class ModelSerializer(HasAModelManager[T]):
         """
         Converts a known view into a list of keys.
 
-        :raises ModelSerializingError: if the view is not listed in `self.views`.
+        :raises RequestParameterInvalidException: if the view is not listed in `self.views`.
         """
         if view is None:
             view = self.default_view
         if view not in self.views:
-            raise ModelSerializingError("unknown view", view=view, available_views=self.views)
+            raise exceptions.RequestParameterInvalidException(
+                f"unknown view - {view}", view=view, available_views=self.views
+            )
         return self.views[view][:]
 
 
