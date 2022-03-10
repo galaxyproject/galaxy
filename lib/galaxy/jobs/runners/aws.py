@@ -95,57 +95,61 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     RUNNER_PARAM_SPEC = {
         "aws_access_key_id": {
-            "map": str,
+            "map": str
         },
         "aws_secret_access_key": {
-            "map": str,
+            "map": str
         }
     }
 
     DESTINATION_PARAMS_SPEC = {
         "vcpu": {
             "default": 1.0,
-            "map_name": "vcpu",
             "map": (lambda x: int(float(x)) if int(float(x))==float(x) else float(x)),
         },
         "memory": {
             "default": 2048,
-            "map_name": "memory",
             "map": int,
         },
         "gpu": {
             "default": 0,
-            "map_name": "gpu",
             "map": int,
         },
         "job_queue": {
-            "default": '',
-            "map_name": "job_queue",
+            "default": None,
             "map": str,
+            "required": True
         },
         "job_role_arn": {
-            "default": '',
-            "map_name": "job_role_arn",
+            "default": None,
             "map": str,
+            "required": True
         },
         "efs_filesystem_id": {
-            "default": '',
-            "map_name": "efs_filesystem_id",
+            "default": None,
             "map": str,
+            "required": True
         },
         "efs_mount_point": {
+            "default": None,
+            "map": str,
+            "required": True
+        },
+        "log_group_name": {
+            "default": None,
+            "map": str,
+            "required": True
+        },
+        "execute_role_arn": {
             "default": '',
-            "map_name": "efs_mount_point",
             "map": str,
         },
         "fargate_version": {
             "default": '',
-            "map_name": "fargate_version",
             "map": str,
         },
         "auto_platform": {
             "default": False,
-            "map_name": "auto_platform",
             "map": lambda x: x in ["true", "True", "TRUE"]
         }
     }
@@ -173,6 +177,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             aws_secret_access_key=self.runner_params.get('aws_secret_access_key') or None
         )
         self._batch_client = session.client('batch')
+        self._logs_client = session.client('logs')
 
     @handle_exception_call
     def queue_job(self, job_wrapper):
@@ -389,15 +394,18 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         for job in res['jobs']:
             status = job['status']
             job_id = job['jobId']
+            log_stream_name = job['container']['logStreamName']
             gotten.append(job_id)
             job_state = jobs_dict[job_id]
 
             if status == 'SUCCEEDED':
-                self._mark_as_successful(job_state)
+                logs = self._get_log_events(job_state, log_stream_name)
+                self._mark_as_successful(job_state, logs)
                 done.append(job_id)
             elif status == 'FAILED':
+                logs = self._get_log_events(job_state, log_stream_name)
                 reason = job['statusReason']
-                self._mark_as_failed(job_state, reason)
+                self._mark_as_failed(job_state, reason, logs)
                 done.append(job_id)
             elif status in ('SUBMITTED', 'PENDING', 'RUNNABLE', 'STARTING', 'RUNNING'):
                 self._mark_as_active(job_state)
@@ -411,9 +419,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         self.check_watched_items_by_batch(start+self.MAX_JOBS_PER_QUERY, end, done)
 
-    def _mark_as_successful(self, job_state):
-        msg = "Job {name!r} finished successfully"
-        _write_logfile(job_state.output_file, msg.format(name=job_state.job_name))
+    def _get_log_events(self, job_state, log_stream_name):
+        log_group_name = job_state.job_destination.params.get('log_group_name')
+        res = self._logs_client.get_log_events(
+            logGroupName=log_group_name,
+            logStreamName=log_stream_name
+        )
+        messages = [e['message']for e in res['events']]
+        return '\n'.join(messages)
+
+    def _mark_as_successful(self, job_state, logs):
+        _write_logfile(job_state.output_file, logs)
         _write_logfile(job_state.error_file, "")
         job_state.running = False
         job_state.job_wrapper.change_state(model.Job.states.OK)
@@ -423,7 +439,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_state.running = True
         job_state.job_wrapper.change_state(model.Job.states.RUNNING)
 
-    def _mark_as_failed(self, job_state, reason):
+    def _mark_as_failed(self, job_state, reason, logs):
+        if logs:
+            reason = '\n\n'.join((reason, logs))
         _write_logfile(job_state.error_file, reason)
         job_state.running = False
         job_state.stop_job = False
@@ -435,13 +453,17 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         if not params.get("docker_enabled"):
             raise AWSBatchRunnerException("AWSBatchJobRunner needs 'docker_enabled' to be set as True!")
 
+        check_required = []
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
             value = params.get(k, spec.get("default"))
-            map_to = spec.get("map_name")
+            if spec.get('required') and not value:
+                check_required.append(k)
             mapper = spec.get("map")
-            segments = map_to.split("/")
-            parsed_params.update(to_dict(segments, mapper(value)))
+            parsed_params[k] = mapper(value)
+        if check_required:
+            raise AWSBatchRunnerException("AWSBatchJobRunner requires the following params to be provided: %s."
+                                          % (', '.join(check_required)))
 
         # parse Platform
         platform = 'EC2'
@@ -498,8 +520,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         path = f"{job_wrapper.working_directory}/galaxy_{job_wrapper.get_id_tag()}.sh"
         mode = 0o755
 
+        runner_command_line = job_wrapper.runner_command_line.replace(
+            '> ../outputs/tool_stdout 2> ../outputs/tool_stderr', '')
         with open(path, "w", encoding="utf-8") as f:
             f.write("#!/bin/bash\n")
-            f.write(job_wrapper.runner_command_line)
+            f.write(runner_command_line)
         os.chmod(path, mode)
         return path
