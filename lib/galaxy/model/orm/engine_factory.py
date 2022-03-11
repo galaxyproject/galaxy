@@ -48,7 +48,7 @@ def pretty_stack():
 
 def build_engine(
     url,
-    engine_options,
+    engine_options=None,
     database_query_profiling_proxy=False,
     trace_logger=None,
     slow_query_log_threshold=0,
@@ -104,6 +104,7 @@ def build_engine(
     if "sqlite://" in url:
         connect_args["check_same_thread"] = False
     # Create the database engine
+    engine_options = engine_options or {}
     engine = create_engine(url, connect_args=connect_args, **engine_options)
     register_after_fork(engine, lambda e: e.dispose())
     return engine

@@ -27,7 +27,7 @@ fi
 
 echo "Bootstrapping from tool shed at $tool_shed."
 echo -n "Creating database... "
-python scripts/create_db.py tool_shed
+python scripts/create_toolshed_db.py tool_shed
 
 if [ $? -eq 0 ] ; then
 	echo "done."
