@@ -14,6 +14,7 @@ from galaxy.model.migrations import (
     DatabaseStateVerifier,
     get_last_sqlalchemymigrate_version,
     GXY,
+    IncorrectVersionError,
     listify,
     load_metadata,
     NoVersionTableError,
@@ -24,7 +25,6 @@ from galaxy.model.migrations import (
     SQLALCHEMYMIGRATE_TABLE,
     TSI,
     verify_databases,
-    VersionTooOldError,
 )
 from galaxy.model.migrations.scripts import LegacyManageDb
 from .common import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
@@ -423,17 +423,17 @@ class TestDatabaseStates:
         # the stored version is not the latest after which we could transition to Alembic.
         # Expect: fail with appropriate message.
         def test_combined_database(self, db_state2_combined):
-            with pytest.raises(VersionTooOldError):
+            with pytest.raises(IncorrectVersionError):
                 with disposing_engine(db_state2_combined) as engine:
                     _verify_databases(engine)
 
         def test_separate_databases_gxy_raises_error(self, db_state2_gxy, db_state6_tsi):
-            with pytest.raises(VersionTooOldError):
+            with pytest.raises(IncorrectVersionError):
                 with disposing_engine(db_state2_gxy) as engine1, disposing_engine(db_state6_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
         def test_separate_databases_tsi_raises_error(self, db_state6_gxy, db_state2_tsi):
-            with pytest.raises(VersionTooOldError):
+            with pytest.raises(IncorrectVersionError):
                 with disposing_engine(db_state6_gxy) as engine1, disposing_engine(db_state2_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
@@ -1108,14 +1108,14 @@ class TestLegacyManageDbScript:
         def test_get_gxy_db_version__state2__gxy_database(self, db_state2_gxy):
             # Expect: fail
             db_url = db_state2_gxy
-            with pytest.raises(VersionTooOldError):
+            with pytest.raises(IncorrectVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 
         def test_get_gxy_db_version__state2__combined_database(self, db_state2_combined):
             # Expect: fail
             db_url = db_state2_combined
-            with pytest.raises(VersionTooOldError):
+            with pytest.raises(IncorrectVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 

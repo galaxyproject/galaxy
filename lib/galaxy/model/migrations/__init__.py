@@ -63,12 +63,16 @@ class NoVersionTableError(Exception):
         super().__init__(f"Your {model} database has no version table; manual update is required")
 
 
-class VersionTooOldError(Exception):
-    # The database has a SQLAlchemy Migrate version table, but its version is older than
-    # {SQLALCHEMYMIGRATE_LAST_VERSION_GXY/TSI}, so it cannot be upgraded with Alembic.
+class IncorrectVersionError(Exception):
+    # The database has a SQLAlchemy Migrate version table, but its version is either older or more recent
+    # than {SQLALCHEMYMIGRATE_LAST_VERSION_GXY/TSI}, so it cannot be upgraded with Alembic.
+    # (A more recent version may indicate that something has changed in the database past the point
+    # where we can automatically migrate from SQLAlchemy Migrate to Alembic.)
     # Manual update required.
-    def __init__(self, model: str) -> None:
-        super().__init__(f"Your {model} database version is too old; manual update is required")
+    def __init__(self, model: str, expected_version: int) -> None:
+        msg = f"Your {model} database version is incorrect; version {expected_version} is expected. "
+        msg += "Manual update is required"
+        super().__init__(msg)
 
 
 class OutdatedDatabaseError(Exception):
@@ -358,7 +362,7 @@ class DatabaseStateVerifier:
             if self._is_last_sqlalchemymigrate_version():
                 self._try_to_upgrade()
             else:
-                self._handle_version_too_old()
+                self._handle_wrong_sqlalchemymigrate_version()
         else:
             self._handle_no_version_table()
 
@@ -458,9 +462,13 @@ class DatabaseStateVerifier:
         model = self._get_model_name()
         raise NoVersionTableError(model)
 
-    def _handle_version_too_old(self) -> NoReturn:
+    def _handle_wrong_sqlalchemymigrate_version(self) -> NoReturn:
+        if self.model == GXY:
+            expected_version = SQLALCHEMYMIGRATE_LAST_VERSION_GXY
+        else:
+            expected_version = SQLALCHEMYMIGRATE_LAST_VERSION_TSI
         model = self._get_model_name()
-        raise VersionTooOldError(model)
+        raise IncorrectVersionError(model, expected_version)
 
 
 def get_last_sqlalchemymigrate_version(model: ModelId) -> int:
