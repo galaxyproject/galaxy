@@ -369,6 +369,11 @@
             <param id="insecure">false</param>
             <!-- False to communicate with Chronos over HTTPS; true otherwise-->
         </plugin>
+        <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
+            <!-- By default, credentials are stored at ~/.aws/credentials -->
+            <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
+            <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param> -->
+        </plugin>
         <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
              evaluate to True or False. When setup using
                 <param id="enabled" from_environ="<VAR>">True|False</param>
@@ -1126,7 +1131,29 @@
             <param id="max_retries">0</param>
             <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
-
+        <destination id="aws_batch_auto" runner="aws_batch">
+            <!-- Fargete and non-GPU EC2 -->
+            <param id="docker_enabled">true</param>
+            <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">1</param>
+            <param id="memory">2048</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs</param>
+            <param id="fargate_version">1.4.0</param>
+            <param id="auto_platform">true</param>
+        </destination>
+        <destination id="aws_batch_gpu" runner="aws_batch">
+            <param id="docker_enabled">true</param>
+            <!-- Job queue must be built on GPU-specific compute environment -->
+            <param id="job_queue">arn_for_gpu_job_queue</param>
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">4</param>
+            <param id="memory">20000</param>
+            <param id="gpu">1</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs</param>
+        </destination>
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
         -->
