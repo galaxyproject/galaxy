@@ -5,6 +5,7 @@ import os
 import time
 
 from queue import Empty
+from typing import List
 from . import JobState
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -373,11 +374,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def check_watched_items(self):
-        done = []
+        done = []       # type: ignore
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [x for x in self.watched if x[0] not in done]
 
-    def check_watched_items_by_batch(self, start: int, end: int, done: list[str]):
+    def check_watched_items_by_batch(self, start: int, end: int, done: List[str]):
         jobs = self.watched[start: start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
@@ -438,10 +439,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         check_required = []
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
-            value = params.get(k, spec.get("default"))
-            if spec.get('required') and not value:
+            value = params.get(k, spec.get("default"))  # type: ignore[attr-defined]
+            if spec.get('required') and not value:      # type: ignore[attr-defined]
                 check_required.append(k)
-            mapper = spec.get("map")
+            mapper = spec.get("map")                    # type: ignore[attr-defined]
             parsed_params[k] = mapper(value)
         if check_required:
             raise AWSBatchRunnerException("AWSBatchJobRunner requires the following params to be provided: %s."
@@ -466,13 +467,13 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         if auto_platform:
             max_vcpu = self.FARGATE_VCPUS[-1]
             max_memory = self.FARGATE_RESOURCES[max_vcpu][-1]
-            if vcpu <= max_vcpu and memory <= max_memory:
+            if vcpu <= max_vcpu and memory <= max_memory:   # type: ignore[operator]
                 new_vcpu, new_memory = None, None
                 for c in self.FARGATE_VCPUS:
-                    if c < vcpu:
+                    if c < vcpu:                            # type: ignore[operator]
                         continue
                     for m in self.FARGATE_RESOURCES[c]:
-                        if m >= memory:     # Found the best match
+                        if m >= memory:                     # type: ignore[operator]
                             new_vcpu = c
                             new_memory = m
                             break
@@ -482,7 +483,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         parsed_params['memory'] = new_memory
                         break
             # parse JOB QUEUE
-            job_queues = parsed_params.get('job_queue').split(',')
+            job_queues = parsed_params.get('job_queue').split(',')  # type: ignore[union-attr]
             if len(job_queues) < 2:
                 raise AWSBatchRunnerException(
                     "AWSBatchJobRunner needs TWO job queues ('Farget Queue, EC2 Qeueue')"
