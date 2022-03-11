@@ -71,20 +71,18 @@ def _add_galaxy_environment_variables(vcpu, memory):
     # GALAXY_MEMORY_MB
     return [
         {"name": "GALAXY_SLOTS", "value": str(int(max(vcpu, 1)))},
-        {"name": "GALAXY_MEMORY_MB", "value": str(memory)}
+        {"name": "GALAXY_MEMORY_MB", "value": str(memory)},
     ]
 
 
 def _add_resource_requirements(destination_params):
     rval = [
-        {'type': 'VCPU', 'value': str(destination_params.get('vcpu'))},
-        {'type': 'MEMORY', 'value': str(destination_params.get('memory'))}
+        {"type": "VCPU", "value": str(destination_params.get("vcpu"))},
+        {"type": "MEMORY", "value": str(destination_params.get("memory"))},
     ]
-    n_gpu = destination_params.get('gpu')
+    n_gpu = destination_params.get("gpu")
     if n_gpu:
-        rval.append(
-            {'type': 'GPU', 'value': str(n_gpu)}
-        )
+        rval.append({"type": "GPU", "value": str(n_gpu)})
     return rval
 
 
@@ -97,64 +95,67 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     # Higher minimum interval as jobs are queried in batches.
     MIN_QUERY_INTERVAL = 10
 
+    # fmt: off
     RUNNER_PARAM_SPEC = {
         "aws_access_key_id": {
-            "map": str
+            "map": str,
         },
         "aws_secret_access_key": {
-            "map": str
+            "map": str,
         }
     }
 
+    # fmt: off
     DESTINATION_PARAMS_SPEC = {
         "vcpu": {
             "default": 1.0,
-            "map": (lambda x: int(float(x)) if int(float(x)) == float(x) else float(x))
+            "map": (lambda x: int(float(x)) if int(float(x)) == float(x) else float(x)),
         },
         "memory": {
             "default": 2048,
-            "map": int
+            "map": int,
         },
         "gpu": {
             "default": 0,
-            "map": int
+            "map": int,
         },
         "job_queue": {
             "default": None,
             "map": str,
-            "required": True
+            "required": True,
         },
         "job_role_arn": {
             "default": None,
             "map": str,
-            "required": True
+            "required": True,
         },
         "efs_filesystem_id": {
             "default": None,
             "map": str,
-            "required": True
+            "required": True,
         },
         "efs_mount_point": {
             "default": None,
             "map": str,
-            "required": True
+            "required": True,
         },
         "execute_role_arn": {
-            "default": '',
-            "map": str
+            "default": "",
+            "map": str,
         },
         "fargate_version": {
-            "default": '',
-            "map": str
+            "default": "",
+            "map": str,
         },
         "auto_platform": {
             "default": False,
-            "map": lambda x: x in ["true", "True", "TRUE"]
+            "map": lambda x: x in ["true", "True", "TRUE"],
         }
     }
 
     FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
 
+    # fmt: off
     FARGATE_RESOURCES = {
         0.25: [512, 1024, 2048],
         0.5: [1024, 2048, 3072, 4096],
@@ -172,10 +173,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         kwargs[self.RUNNER_PARAM_SPEC_KEY].update(self.RUNNER_PARAM_SPEC)
         super().__init__(app, nworkers, **kwargs)
         session = boto3.Session(
-            aws_access_key_id=self.runner_params.get('aws_access_key_id') or None,
-            aws_secret_access_key=self.runner_params.get('aws_secret_access_key') or None
+            aws_access_key_id=self.runner_params.get("aws_access_key_id") or None,
+            aws_secret_access_key=self.runner_params.get("aws_secret_access_key") or None
         )
-        self._batch_client = session.client('batch')
+        self._batch_client = session.client("batch")
 
     @handle_exception_call
     def queue_job(self, job_wrapper):
@@ -205,86 +206,72 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         h.update(smart_str(container_image))
         for k, v in destination_params.items():
             h.update(smart_str(k + str(v)))
-        queue_name = destination_params.get('job_queue').rsplit('/', 1)[-1]
+        queue_name = destination_params.get("job_queue").rsplit("/", 1)[-1]
 
         jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
-        res = self._batch_client.describe_job_definitions(
-            jobDefinitionName=jd_name,
-            status="ACTIVE"
-        )
-        if not res['jobDefinitions']:
+        res = self._batch_client.describe_job_definitions(jobDefinitionName=jd_name, status="ACTIVE")
+        if not res["jobDefinitions"]:
             jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
         else:
-            jd_arn = res['jobDefinitions'][0]['jobDefinitionArn']
+            jd_arn = res["jobDefinitions"][0]["jobDefinitionArn"]
             LOGGER.debug(f"Found existing job definition: {jd_name}.")
 
         return jd_arn
 
     def _register_job_definition(self, jd_name, container_image, destination_params):
         LOGGER.debug(f"Registering a new job definition: {jd_name}.")
-        platform = destination_params.get('platform')
+        platform = destination_params.get("platform")
         # TODO: support multi-node
         containerProperties = {
-            'image': container_image,
-            'command': [
-                '/bin/sh',
+            "image": container_image,
+            "command": [
+                "/bin/sh",
             ],
-            'jobRoleArn': destination_params.get('job_role_arn'),
-            'executionRoleArn': destination_params.get('execute_role_arn') or destination_params.get('job_role_arn'),
-            'volumes': [
+            "jobRoleArn": destination_params.get("job_role_arn"),
+            "executionRoleArn": destination_params.get("execute_role_arn") or destination_params.get("job_role_arn"),
+            "volumes": [
                 {
-                    'name': 'efs_whole',
-                    'efsVolumeConfiguration': {
-                        'fileSystemId': destination_params.get('efs_filesystem_id'),
-                        'rootDirectory': '/',
-                        'transitEncryption': 'ENABLED',
-                        'authorizationConfig': {
-                            'iam': 'ENABLED'
-                        }
+                    "name": "efs_whole",
+                    "efsVolumeConfiguration": {
+                        "fileSystemId": destination_params.get("efs_filesystem_id"),
+                        "rootDirectory": "/",
+                        "transitEncryption": "ENABLED",
+                        "authorizationConfig": {"iam": "ENABLED"}
                     }
                 },
             ],
-            'mountPoints': [
+            "mountPoints": [
                 {
-                    'containerPath': destination_params.get('efs_mount_point'),
-                    'readOnly': False,
-                    'sourceVolume': 'efs_whole'
+                    "containerPath": destination_params.get("efs_mount_point"),
+                    "readOnly": False,
+                    "sourceVolume": "efs_whole"
                 },
             ],
-            'resourceRequirements': _add_resource_requirements(destination_params),
-            'environment': _add_galaxy_environment_variables(
-                destination_params.get('vcpu'),
-                destination_params.get('memory')
+            "resourceRequirements": _add_resource_requirements(destination_params),
+            "environment": _add_galaxy_environment_variables(
+                destination_params.get("vcpu"), destination_params.get("memory")
             ),
-            'user': '%d:%d' % (os.getuid(), os.getgid()),
-            'logConfiguration': {
-                'logDriver': 'awslogs'
-            }
+            "user": "%d:%d" % (os.getuid(), os.getgid()),
+            "logConfiguration": {"logDriver": "awslogs"}
         }
-        if platform == 'FARGATE':
+        if platform == "FARGATE":
             containerProperties.update(
                 {
-                    'networkConfiguration': {
-                        'assignPublicIp': 'ENABLED'
-                    },
-                    'fargatePlatformConfiguration': {
-                        'platformVersion': destination_params.get('fargate_version')
-                    },
-                    'logConfiguration': {
-                        'logDriver': 'awslogs'
-                    }
+                    "networkConfiguration": {"assignPublicIp": "ENABLED"},
+                    "fargatePlatformConfiguration": {"platformVersion": destination_params.get("fargate_version")},
+                    "logConfiguration": {"logDriver": "awslogs"}
                 }
             )
 
         res = self._batch_client.register_job_definition(
             jobDefinitionName=jd_name,
-            type='container',
+            type="container",
             platformCapabilities=[platform],
-            containerProperties=containerProperties
+            containerProperties=containerProperties,
         )
 
-        assert res['ResponseMetadata']['HTTPStatusCode'] == 200
-        return res['jobDefinitionArn']
+        assert res["ResponseMetadata"]["HTTPStatusCode"] == 200
+        return res["jobDefinitionArn"]
 
     def _submit_job(self, job_def, job_wrapper, destination_params):
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
@@ -293,18 +280,18 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         LOGGER.info(f"Submitting job {job_name} to AWS Batch.")
         res = self._batch_client.submit_job(
             jobName=job_name,
-            jobQueue=destination_params.get('job_queue'),
+            jobQueue=destination_params.get("job_queue"),
             jobDefinition=job_def,
             containerOverrides={
-                'command': [
-                    '/bin/bash',
-                    f'{command_script_path}',
+                "command": [
+                    "/bin/bash",
+                    f"{command_script_path}",
                 ]
-            }
+            },
         )
 
-        assert res['ResponseMetadata']['HTTPStatusCode'] == 200
-        return job_name, res['jobId']
+        assert res["ResponseMetadata"]["HTTPStatusCode"] == 200
+        return job_name, res["jobId"]
 
     @handle_exception_call
     def stop_job(self, job_wrapper):
@@ -374,12 +361,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def check_watched_items(self):
-        done = []       # type: ignore
+        done = []           # type: ignore
         self.check_watched_items_by_batch(0, len(self.watched), done)
         self.watched = [x for x in self.watched if x[0] not in done]
 
     def check_watched_items_by_batch(self, start: int, end: int, done: List[str]):
-        jobs = self.watched[start: start + self.MAX_JOBS_PER_QUERY]
+        jobs = self.watched[start : start + self.MAX_JOBS_PER_QUERY]
         if not jobs:
             return
 
@@ -388,20 +375,20 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         res = self._batch_client.describe_jobs(jobs=list(jobs_dict.keys()))
 
         gotten = []
-        for job in res['jobs']:
-            status = job['status']
-            job_id = job['jobId']
+        for job in res["jobs"]:
+            status = job["status"]
+            job_id = job["jobId"]
             gotten.append(job_id)
             job_state = jobs_dict[job_id]
 
-            if status == 'SUCCEEDED':
+            if status == "SUCCEEDED":
                 self._mark_as_successful(job_state)
                 done.append(job_id)
-            elif status == 'FAILED':
-                reason = job['statusReason']
+            elif status == "FAILED":
+                reason = job["statusReason"]
                 self._mark_as_failed(job_state, reason)
                 done.append(job_id)
-            elif status in ('SUBMITTED', 'PENDING', 'RUNNABLE', 'STARTING', 'RUNNING'):
+            elif status in ("SUBMITTED", "PENDING", "RUNNABLE", "STARTING", "RUNNING"):
                 self._mark_as_active(job_state)
             # TODO else?
 
@@ -440,58 +427,61 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
             value = params.get(k, spec.get("default"))  # type: ignore[attr-defined]
-            if spec.get('required') and not value:      # type: ignore[attr-defined]
+            if spec.get("required") and not value:  # type: ignore[attr-defined]
                 check_required.append(k)
-            mapper = spec.get("map")                    # type: ignore[attr-defined]
+            mapper = spec.get("map")    # type: ignore[attr-defined]
             parsed_params[k] = mapper(value)
         if check_required:
-            raise AWSBatchRunnerException("AWSBatchJobRunner requires the following params to be provided: %s."
-                                          % (', '.join(check_required)))
+            raise AWSBatchRunnerException(
+                "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
+            )
 
         # parse Platform
-        platform = 'EC2'
-        auto_platform = parsed_params.get('auto_platform')
-        fargate_version = parsed_params.get('fargate_version')
-        vcpu = parsed_params.get('vcpu')
-        memory = parsed_params.get('memory')
-        gpu = parsed_params.get('gpu')
+        platform = "EC2"
+        auto_platform = parsed_params.get("auto_platform")
+        fargate_version = parsed_params.get("fargate_version")
+        vcpu = parsed_params.get("vcpu")
+        memory = parsed_params.get("memory")
+        gpu = parsed_params.get("gpu")
 
         if auto_platform and not fargate_version:
             raise AWSBatchRunnerException("AWSBatchJobRunner needs 'farget_version' to be set to enable auto platform!")
 
         if gpu and (fargate_version or auto_platform):
-            raise AWSBatchRunnerException("GPU mode is not allowed when 'fargate_version' and/or 'auto_platform' are set!")
+            raise AWSBatchRunnerException(
+                "GPU mode is not allowed when 'fargate_version' and/or 'auto_platform' are set!"
+            )
 
         if fargate_version and not auto_platform:
-            platform = 'FARGATE'
+            platform = "FARGATE"
         if auto_platform:
             max_vcpu = self.FARGATE_VCPUS[-1]
             max_memory = self.FARGATE_RESOURCES[max_vcpu][-1]
-            if vcpu <= max_vcpu and memory <= max_memory:   # type: ignore[operator]
+            if vcpu <= max_vcpu and memory <= max_memory:  # type: ignore[operator]
                 new_vcpu, new_memory = None, None
                 for c in self.FARGATE_VCPUS:
-                    if c < vcpu:                            # type: ignore[operator]
+                    if c < vcpu:  # type: ignore[operator]
                         continue
                     for m in self.FARGATE_RESOURCES[c]:
-                        if m >= memory:                     # type: ignore[operator]
+                        if m >= memory:  # type: ignore[operator]
                             new_vcpu = c
                             new_memory = m
                             break
                     if new_memory:
-                        platform = 'FARGATE'
-                        parsed_params['vcpu'] = new_vcpu
-                        parsed_params['memory'] = new_memory
+                        platform = "FARGATE"
+                        parsed_params["vcpu"] = new_vcpu
+                        parsed_params["memory"] = new_memory
                         break
             # parse JOB QUEUE
-            job_queues = parsed_params.get('job_queue').split(',')  # type: ignore[union-attr]
+            job_queues = parsed_params.get("job_queue").split(",")  # type: ignore[union-attr]
             if len(job_queues) < 2:
                 raise AWSBatchRunnerException(
                     "AWSBatchJobRunner needs TWO job queues ('Farget Queue, EC2 Qeueue')"
                     " when 'auto_platform' is enabled!"
                 )
-            parsed_params['job_queue'] = job_queues[platform == 'EC2'].strip()
+            parsed_params["job_queue"] = job_queues[platform == "EC2"].strip()
 
-        parsed_params['platform'] = platform
+        parsed_params["platform"] = platform
         return parsed_params
 
     def write_command(self, job_wrapper):
