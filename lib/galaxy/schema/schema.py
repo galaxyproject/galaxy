@@ -783,8 +783,8 @@ class HistoryBase(BaseModel):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class UpdateContentItem(HistoryBase):
-    """Used for updating a particular HDA. All fields are optional."""
+class HistoryContentItem(Model):
+    """Identifies a dataset or collection contained in a History."""
 
     history_content_type: HistoryContentType = Field(
         ...,
@@ -792,6 +792,14 @@ class UpdateContentItem(HistoryBase):
         description="The type of this item.",
     )
     id: EncodedDatabaseIdField = EncodedEntityIdField
+
+
+class UpdateContentItem(HistoryContentItem):
+    """Used for updating a particular history item. All fields are optional."""
+
+    class Config:
+        use_enum_values = True  # When using .dict()
+        extra = Extra.allow  # Allow any other extra fields
 
 
 class UpdateHistoryContentsBatchPayload(HistoryBase):
@@ -810,6 +818,33 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
                 "visible": False,
             }
         }
+
+
+class HistoryContentBulkOperation(str, Enum):
+    hide = "hide"
+    unhide = "unhide"
+    delete = "delete"
+    undelete = "undelete"
+    purge = "purge"
+    build_dataset_list = "build_dataset_list"
+    build_dataset_pair = "build_dataset_pair"
+    build_list_of_pairs = "build_list_of_pairs"
+    build_collection_from_rules = "build_collection_from_rules"
+
+
+class HistoryContentBulkOperationPayload(Model):
+    operation: HistoryContentBulkOperation
+    items: Optional[List[HistoryContentItem]]
+
+
+class BulkOperationItemError(Model):
+    item: HistoryContentItem
+    error: str
+
+
+class HistoryContentBulkOperationResult(Model):
+    success_count: int
+    errors: List[BulkOperationItemError]
 
 
 class UpdateHistoryContentsPayload(HistoryBase):
