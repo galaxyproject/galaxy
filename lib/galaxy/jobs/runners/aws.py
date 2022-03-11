@@ -3,17 +3,20 @@ import hashlib
 import logging
 import os
 import time
-
 from queue import Empty
 from typing import List
-from . import JobState
+
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners import (
+    JobState,
     AsynchronousJobRunner,
     AsynchronousJobState,
 )
-from galaxy.util import smart_str, unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify,
+)
 
 
 BOTO3_IMPORT_MSG = (
