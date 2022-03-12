@@ -3,8 +3,8 @@
         :key="history.id"
         :historyId="historyId"
         :offset="offset"
-        :limit="limit"
-        :queryString="queryString"
+        :showDeleted="params.showDeleted"
+        :showHidden="params.showHidden"
         v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
@@ -134,8 +134,10 @@ export default {
         return {
             hideSelection: {},
             offset: 0,
-            limit: 50,
-            params: {},
+            params: {
+                showDeleted: false,
+                showHidden: false,
+            },
         };
     },
     watch: {
@@ -149,12 +151,7 @@ export default {
             return this.history.id;
         },
         queryKey() {
-            return `${this.history.id}&${this.queryString}`;
-        },
-        queryString() {
-            const deleted = this.params.showDeleted ? "True" : "False";
-            const visible = this.params.showHidden ? "False" : "True";
-            return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
+            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}`;
         },
         queryDefault() {
             return !this.params.showDeleted && !this.params.showHidden;

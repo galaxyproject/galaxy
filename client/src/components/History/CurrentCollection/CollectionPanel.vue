@@ -4,9 +4,8 @@
     <CollectionElementsProvider
         v-if="dsc"
         :key="dsc.id"
-        :contentsurl="contentsUrl"
+        :contentsUrl="contentsUrl"
         :offset="offset"
-        :limit="limit"
         v-slot="{ loading, result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
@@ -75,7 +74,6 @@ export default {
     data() {
         return {
             offset: 0,
-            limit: 100,
         };
     },
     computed: {

@@ -3,6 +3,7 @@ import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeListing } from "./utilities";
 
+const limit = 100;
 const queue = new LastQueue();
 
 const state = {
@@ -19,11 +20,18 @@ const getters = {
     },
 };
 
+const getQueryString = (showDeleted, showHidden) => {
+    const deleted = showDeleted ? "True" : "False";
+    const visible = showHidden ? "False" : "True";
+    return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
+};
+
 const actions = {
-    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, limit, queryString }) => {
+    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, showDeleted, showHidden }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
-        const params = `v=dev&order=hid&offset=${offset}&limit=${limit}&${queryString}`;
-        const url = `api/histories/${historyId}/contents?${params}`;
+        const queryString = getQueryString(showDeleted, showHidden);
+        const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
+        const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
         queue.enqueue(urlData, { url }).then((payload) => {
             const newQueryKey = `${historyId}-${queryString}`;
             commit("saveHistoryItems", { payload, newQueryKey });

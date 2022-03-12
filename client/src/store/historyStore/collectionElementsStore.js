@@ -2,6 +2,7 @@ import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeListing } from "./utilities";
 
+const limit = 100;
 const queue = new LastQueue();
 
 const state = {
@@ -17,10 +18,10 @@ const getters = {
 };
 
 const actions = {
-    fetchCollectionElements: async ({ commit }, { contentsurl, offset, limit }) => {
-        const url = `${contentsurl}?offset=${offset}&limit=${limit}`;
+    fetchCollectionElements: async ({ commit }, { contentsUrl, offset }) => {
+        const url = `${contentsUrl}?offset=${offset}&limit=${limit}`;
         queue.enqueue(urlData, { url }).then((payload) => {
-            const newQueryKey = contentsurl;
+            const newQueryKey = contentsUrl;
             commit("saveCollectionElements", { newQueryKey, payload });
         });
     },
