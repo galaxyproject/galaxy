@@ -13,6 +13,7 @@ const state = {
 
 const getters = {
     getHistoryItems: (state) => () => {
+        // TODO: Requires client side filtering.
         const filtered = state.items.filter((n) => n);
         return reverse(filtered);
     },
