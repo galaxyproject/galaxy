@@ -1,10 +1,10 @@
 import Vue from "vue";
 
-export function mergeListing(state, { queryKey, payload }) {
-    /* This function merges the existing data with new incoming data. */
-    state.queryCurrent = state.queryCurrent || queryKey;
-    if (queryKey != state.queryCurrent) {
-        state.queryCurrent = queryKey;
+/* This function merges the existing data with new incoming data. */
+export function mergeListing(state, { payload, newQueryKey = null }) {
+    state.itemQueryKey = state.itemQueryKey || newQueryKey;
+    if (newQueryKey && state.itemQueryKey != newQueryKey) {
+        state.itemQueryKey = newQueryKey;
         state.items.splice(0);
     }
     for (const item of payload) {

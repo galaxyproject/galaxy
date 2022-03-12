@@ -15,7 +15,7 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, historyItemsStore, historyStore } from "./historyStore";
+import { collectionElementsStore, historyChangedItemsStore, historyItemsStore, historyStore } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
@@ -62,6 +62,7 @@ export function createStore() {
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,
             histories: historyStore,
+            historyChangedItems: historyChangedItemsStore,
             historyItems: historyItemsStore,
             tags: tagStore,
             jobMetrics: jobMetricsStore,

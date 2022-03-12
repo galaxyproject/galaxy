@@ -1,6 +1,6 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
-import { urlData } from "components/providers/UrlDataProvider";
+import { urlData } from "utils/url";
 import { mergeListing } from "./utilities";
 
 const queue = new LastQueue();
@@ -8,7 +8,7 @@ const queue = new LastQueue();
 const state = {
     items: [],
     itemKey: "hid",
-    queryCurrent: null,
+    itemQueryKey: null,
 };
 
 const getters = {
@@ -19,18 +19,20 @@ const getters = {
 };
 
 const actions = {
-    fetchHistoryItems: async ({ commit }, incoming) => {
-        const url = `api/histories/${incoming.historyId}/contents?v=dev&order=hid&offset=${incoming.offset}&limit=${incoming.limit}&${incoming.queryString}`;
+    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, limit, queryString }) => {
+        dispatch("startHistoryChangedItems", { historyId: historyId });
+        const params = `v=dev&order=hid&offset=${offset}&limit=${limit}&${queryString}`;
+        const url = `api/histories/${historyId}/contents?${params}`;
         queue.enqueue(urlData, { url }).then((payload) => {
-            const queryKey = `${incoming.historyId}&${incoming.queryString}`;
-            commit("saveHistoryItems", { queryKey, payload });
+            const newQueryKey = `${historyId}-${queryString}`;
+            commit("saveHistoryItems", { payload, newQueryKey });
         });
     },
 };
 
 const mutations = {
-    saveHistoryItems: (state, { queryKey, payload }) => {
-        mergeListing(state, { queryKey, payload });
+    saveHistoryItems: (state, { payload, newQueryKey }) => {
+        mergeListing(state, { payload, newQueryKey });
     },
 };
 
