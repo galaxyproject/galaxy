@@ -67,7 +67,7 @@
                         <Listing v-else :loading="loading" :items="payload" @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
-                                    v-if="!hideSelection[item.hid]"
+                                    v-if="!invisible[item.hid]"
                                     :item="item"
                                     :id="item.hid"
                                     :name="item.name"
@@ -95,6 +95,7 @@
 </template>
 
 <script>
+import Vue from "vue";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -132,7 +133,7 @@ export default {
     },
     data() {
         return {
-            hideSelection: {},
+            invisible: {},
             offset: 0,
             params: {
                 showDeleted: false,
@@ -142,7 +143,7 @@ export default {
     },
     watch: {
         queryKey() {
-            this.hideSelection = {};
+            this.invisible = {};
             this.offset = 0;
         },
     },
@@ -166,20 +167,23 @@ export default {
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
-                this.hideSelection[item.hid] = true;
+                this.setInvisible(item);
             });
         },
         onDelete(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             deleteContent(item);
         },
         onUndelete(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             updateContentFields(item, { deleted: false });
         },
         onUnhide(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             updateContentFields(item, { visible: true });
+        },
+        setInvisible(item) {
+            Vue.set(this.invisible, item.hid, true);
         },
     },
 };
