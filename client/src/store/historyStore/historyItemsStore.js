@@ -1,3 +1,8 @@
+/**
+ * Requests history items by reacting to changes of filter props passed
+ * to the history items provider used in the history panel.
+ */
+
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";

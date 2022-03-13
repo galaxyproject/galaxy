@@ -1,3 +1,8 @@
+/**
+ * Requests collection elements by reacting to changes of filter props passed
+ * to the collection elements provider used in the collection panel.
+ */
+
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeListing } from "./utilities";

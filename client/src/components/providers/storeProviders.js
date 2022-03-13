@@ -160,6 +160,11 @@ export const JobProvider = {
     },
 };
 
+/**
+ * Provider component interface to the actual stores i.e. history items and collection elements stores.
+ * @param {String} This store action is executed when the consuming component e.g. the history panel, changes the provider props.
+ * @param {String} This store getter passes its result to the slot of the corresponding provider.
+ */
 export const StoreProvider = (storeAction, storeGetter) => {
     return {
         watch: {
