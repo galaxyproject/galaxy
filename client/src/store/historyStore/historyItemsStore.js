@@ -37,7 +37,7 @@ const actions = {
         const queryString = getQueryString(showDeleted, showHidden);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
-        queue.enqueue(urlData, { url }).then((payload) => {
+        await queue.enqueue(urlData, { url }).then((payload) => {
             const newQueryKey = `${historyId}-${queryString}`;
             commit("saveHistoryItems", { payload, newQueryKey });
         });

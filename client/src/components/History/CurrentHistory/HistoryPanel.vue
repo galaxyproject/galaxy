@@ -53,7 +53,7 @@
                     </template>
 
                     <template v-slot:listing>
-                        <div v-if="!payload || payload.length == 0">
+                        <div v-if="payload && payload.length == 0">
                             <b-alert v-if="loading" class="m-2" variant="info" show>
                                 <LoadingSpan message="Loading History" />
                             </b-alert>

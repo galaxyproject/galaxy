@@ -25,7 +25,7 @@ const getters = {
 const actions = {
     fetchCollectionElements: async ({ commit }, { contentsUrl, offset }) => {
         const url = `${contentsUrl}?offset=${offset}&limit=${limit}`;
-        queue.enqueue(urlData, { url }).then((payload) => {
+        await queue.enqueue(urlData, { url }).then((payload) => {
             const newQueryKey = contentsUrl;
             commit("saveCollectionElements", { newQueryKey, payload });
         });

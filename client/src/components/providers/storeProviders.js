@@ -172,11 +172,13 @@ export const StoreProvider = (storeAction, storeGetter) => {
                 this.load();
             },
         },
-        async mounted() {
-            await this.load();
+        data() {
+            return {
+                loading: true,
+            };
         },
         created() {
-            this.loading = true;
+            this.load();
         },
         methods: {
             ...mapActions([storeAction]),
