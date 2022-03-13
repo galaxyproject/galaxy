@@ -191,7 +191,7 @@ export const StoreProvider = (storeAction, storeGetter) => {
         computed: {
             ...mapGetters([storeGetter]),
             result() {
-                return this[storeGetter]();
+                return this[storeGetter]({ ...this.$attrs });
             },
         },
         render() {

@@ -18,11 +18,23 @@ const state = {
 };
 
 const getters = {
-    getHistoryItems: (state) => () => {
-        // TODO: Requires client side filtering.
-        const filtered = state.items.filter((n) => n);
-        return reverse(filtered);
-    },
+    getHistoryItems:
+        (state) =>
+        ({ showDeleted, showHidden }) => {
+            const filtered = state.items.filter((item) => {
+                if (!item) {
+                    return false;
+                }
+                if (showDeleted != item.deleted) {
+                    return false;
+                }
+                if (showHidden == item.visible) {
+                    return false;
+                }
+                return true;
+            });
+            return reverse(filtered);
+        },
 };
 
 const getQueryString = (showDeleted, showHidden) => {
