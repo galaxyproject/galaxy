@@ -47,39 +47,6 @@ export const SimpleProviderMixin = {
     },
 };
 
-export const StoreProviderMixin = {
-    computed: {
-        storeItem() {
-            throw new Error("define me");
-        },
-    },
-    watch: {
-        storeItem: {
-            handler(newItem, oldItem) {
-                this.item = newItem;
-            },
-        },
-    },
-};
-
-export const DatasetCollectionProvider = {
-    mixins: [SimpleProviderMixin, StoreProviderMixin],
-    methods: {
-        ...mapCacheActions("datasetCollections", ["fetchDatasetCollection"]),
-        async load() {
-            this.loading = true;
-            this.item = await this.fetchDatasetCollection(this.id);
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapGetters("datasetCollections", ["getDatasetCollectionById"]),
-        storeItem() {
-            return this.getDatasetCollectionById(this.id);
-        },
-    },
-};
-
 export const GenomeProvider = {
     mixins: [SimpleProviderMixin],
     props: {
