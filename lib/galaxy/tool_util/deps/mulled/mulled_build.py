@@ -23,7 +23,10 @@ from sys import platform as _platform
 import yaml
 
 from galaxy.tool_util.deps import installable
-from galaxy.tool_util.deps.conda_util import best_search_result
+from galaxy.tool_util.deps.conda_util import (
+    best_search_result,
+    CondaContext,
+)
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
     commands,
@@ -326,18 +329,27 @@ def context_from_args(args):
     return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
 
 
-class CondaInDockerContext:
-    @property
-    def conda_exec(self):
-        conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
-        return docker_command_list("run", [conda_image, "conda"])
-
-    @property
-    def _override_channels_args(self):
-        override_channels_args = ["--override-channels"]
-        for channel in DEFAULT_CHANNELS:
-            override_channels_args.extend(["--channel", channel])
-        return override_channels_args
+class CondaInDockerContext(CondaContext):
+    def __init__(
+        self,
+        conda_prefix=None,
+        conda_exec=None,
+        shell_exec=None,
+        debug=False,
+        ensure_channels=DEFAULT_CHANNELS,
+        condarc_override=None,
+    ):
+        if not conda_exec:
+            conda_image = CONDA_IMAGE or "continuumio/miniconda3:latest"
+            conda_exec = docker_command_list("run", [conda_image, "conda"])
+        super().__init__(
+            conda_prefix=conda_prefix,
+            conda_exec=conda_exec,
+            shell_exec=shell_exec,
+            debug=debug,
+            ensure_channels=ensure_channels,
+            condarc_override=condarc_override,
+        )
 
 
 class InvolucroContext(installable.InstallableContext):
