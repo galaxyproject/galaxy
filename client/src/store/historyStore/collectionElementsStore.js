@@ -13,7 +13,6 @@ const queue = new LastQueue();
 const state = {
     items: [],
     itemKey: "element_index",
-    itemQueryKey: null,
 };
 
 const getters = {
@@ -26,15 +25,14 @@ const actions = {
     fetchCollectionElements: async ({ commit }, { contentsUrl, offset }) => {
         const url = `${contentsUrl}?offset=${offset}&limit=${limit}`;
         await queue.enqueue(urlData, { url }).then((payload) => {
-            const newQueryKey = contentsUrl;
-            commit("saveCollectionElements", { newQueryKey, payload });
+            commit("saveCollectionElements", { payload });
         });
     },
 };
 
 const mutations = {
-    saveCollectionElements: (state, { payload, newQueryKey }) => {
-        mergeListing(state, { payload, newQueryKey });
+    saveCollectionElements: (state, { payload }) => {
+        mergeListing(state, { payload });
     },
 };
 

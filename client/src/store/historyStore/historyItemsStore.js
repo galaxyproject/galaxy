@@ -14,7 +14,6 @@ const queue = new LastQueue();
 const state = {
     items: [],
     itemKey: "hid",
-    itemQueryKey: null,
 };
 
 const getters = {
@@ -50,15 +49,14 @@ const actions = {
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
         await queue.enqueue(urlData, { url }).then((payload) => {
-            const newQueryKey = `${historyId}-${queryString}`;
-            commit("saveHistoryItems", { payload, newQueryKey });
+            commit("saveHistoryItems", { payload });
         });
     },
 };
 
 const mutations = {
-    saveHistoryItems: (state, { payload, newQueryKey }) => {
-        mergeListing(state, { payload, newQueryKey });
+    saveHistoryItems: (state, { payload }) => {
+        mergeListing(state, { payload });
     },
 };
 
