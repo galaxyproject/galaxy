@@ -12,17 +12,14 @@ from datetime import (
 
 import requests
 
+from galaxy.tool_util.deps.conda_util import CondaContext
+from galaxy.util import which
 from .mulled_list import get_singularity_containers
 from .util import (
     build_target,
     MULLED_SOCKET_TIMEOUT,
     v2_image_name,
 )
-
-try:
-    from conda.cli.python_api import run_command
-except ImportError:
-    run_command = None
 
 try:
     from whoosh.fields import (
@@ -36,6 +33,7 @@ except ImportError:
     Schema = TEXT = STORED = create_in = QueryParser = None
 
 QUAY_API_URL = "https://quay.io/api/v1/repository"
+conda_path = which("conda")
 
 
 class QuaySearch:
@@ -131,11 +129,13 @@ class CondaSearch:
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
         """
-        if run_command is None:
-            raise Exception(f"Invalid search destination. {deps_error_message('conda')}")
-        raw_out, err, exit_code = run_command("search", "-c", self.channel, search_string, use_exception_handler=True)
-        if exit_code != 0:
-            logging.info(f"Search failed with: {err}")
+        if not conda_path:
+            raise Exception("Invalid search destination. Required dependency [conda] is not in your PATH.")
+        try:
+            conda_context = CondaContext(conda_exec=conda_path, ensure_channels=self.channel)
+            raw_out = conda_context.exec_search([search_string])
+        except Exception as e:
+            logging.info(f"Search failed with: {e}")
             return []
         return [
             {"package": n.split()[0], "version": n.split()[1], "build": n.split()[2]} for n in raw_out.split("\n")[2:-1]
@@ -355,7 +355,7 @@ def main(argv=None):
         return
 
     destination_defaults = ["quay", "singularity", "github"]
-    if run_command is not None:
+    if conda_path:
         destination_defaults.append("conda")
 
     parser = argparse.ArgumentParser(description="Searches in a given quay organization for a repository")
@@ -379,7 +379,7 @@ def main(argv=None):
         "--channel",
         dest="channel_string",
         default="bioconda",
-        help="Change conda channel to search; default is bioconda.",
+        help="Change conda channels to search; default is bioconda.",
     )
     parser.add_argument(
         "--non-strict",
