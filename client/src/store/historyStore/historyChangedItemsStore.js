@@ -6,15 +6,20 @@ import { urlData } from "utils/url";
 
 let fetching = false;
 let lastDate = new Date();
+const limit = 100;
 const throttlePeriod = 3000;
 
 const actions = {
     fetchHistoryChangedItems: async ({ commit, dispatch }, { historyId }) => {
-        const params = `q=update_time-ge&qv=${lastDate.toISOString()}`;
-        const url = `api/histories/${historyId}/contents?v=dev&${params}`;
+        const params = `limit=${limit}&q=update_time-ge&qv=${lastDate.toISOString()}`;
+        const url = `api/histories/${historyId}/contents?v=dev&view=detailed&${params}`;
         lastDate = new Date();
         const payload = await urlData({ url });
+        if (payload && payload.length == limit) {
+            console.debug(`Reached limit of monitored changes (limit=${limit}).`);
+        }
         commit("saveHistoryItems", { payload });
+        commit("saveDatasets", { payload });
         if (fetching) {
             setTimeout(() => {
                 dispatch("fetchHistoryChangedItems", { historyId });

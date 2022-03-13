@@ -24,7 +24,8 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
-import { DatasetProvider, DatasetCollectionProvider } from "components/providers";
+import { DatasetCollectionProvider } from "components/providers";
+import { DatasetProvider } from "components/providers/storeProviders";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";

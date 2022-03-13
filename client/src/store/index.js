@@ -26,6 +26,7 @@ import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
 import { genomeStore } from "./genomeStore";
 import { datatypeStore } from "./datatypeStore";
+import { datasetStore } from "./datasetStore";
 import { panelStore } from "./panelStore";
 
 // beta features
@@ -57,6 +58,7 @@ export function createStore() {
             user: userStore,
             config: configStore,
             collectionElements: collectionElementsStore,
+            dataset: datasetStore,
             betaHistory: betaHistoryStore,
             panels: panelStore,
             // TODO: please namespace all store modules

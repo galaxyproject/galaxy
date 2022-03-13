@@ -170,5 +170,6 @@ export const StoreProvider = (storeAction, storeGetter) => {
     };
 };
 
-export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems");
+export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems");

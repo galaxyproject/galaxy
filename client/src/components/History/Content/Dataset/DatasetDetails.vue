@@ -1,5 +1,5 @@
 <template>
-    <UrlDataProvider :url="dataUrl" auto-refresh v-slot="{ loading, result }">
+    <DatasetProvider :id="dataset.id" auto-refresh v-slot="{ loading, result }">
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
@@ -24,17 +24,17 @@
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
-    </UrlDataProvider>
+    </DatasetProvider>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 
 export default {
     components: {
         DatasetActions,
-        UrlDataProvider,
+        DatasetProvider,
     },
     props: {
         item: { type: Object, required: true },
@@ -42,10 +42,6 @@ export default {
     computed: {
         dataset() {
             return this.item.object || this.item;
-        },
-        dataUrl() {
-            const datasetId = this.dataset.id;
-            return `api/datasets/${datasetId}`;
         },
     },
 };
