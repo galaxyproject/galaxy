@@ -575,7 +575,7 @@ class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
         # Other users cannot access the dataset
         with self._different_user():
             show_response = self._get(f"datasets/{hda_id}")
-            self._assert_status_code_is(show_response, 400)
+            self._assert_status_code_is(show_response, 403)
 
         sharing_response = self._set_resource_sharing(history_id, "publish")
         assert sharing_response["published"] is True

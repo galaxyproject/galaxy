@@ -46,6 +46,10 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def serializer_by_type(self):
         return {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
 
+    @property
+    def dataset_manager_by_type(self):
+        return {'hda': self.hda_manager, 'ldda': self.ldda_manager}
+
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
         keys = kwd.get('keys')
@@ -131,7 +135,8 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
+        decoded_dataset_id = self.decode_id(id)
+        dataset = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
 
         # Use data type to return particular type of data.
         if data_type == 'state':
@@ -169,7 +174,8 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Display user-facing storage details related to the objectstore a
         dataset resides in.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         dataset = dataset_instance.dataset
         object_store = self.app.object_store
         object_store_id = dataset.object_store_id
@@ -198,7 +204,8 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         For internal use, this endpoint may change without warning.
         """
-        dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_dataset_id, trans.user)
         inherit_chain = dataset_instance.source_dataset_chain
         result = []
         for dep in inherit_chain:
@@ -218,13 +225,11 @@ class DatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if payload:
             kwd.update(payload)
         hda_ldda = kwd.get('hda_ldda', 'hda')
-        dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
-        if hda_ldda == "hda":
-            self.hda_manager.update_permissions(trans, dataset_assoc, **kwd)
-            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
-        else:
-            self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
-            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+        decoded_dataset_id = self.decode_id(dataset_id)
+        dataset_manager = self.dataset_manager_by_type[hda_ldda]
+        dataset = dataset_manager.get_accessible(decoded_dataset_id, trans.user)
+        dataset_manager.update_permissions(trans, dataset, **payload)
+        return dataset_manager.serialize_dataset_association_roles(trans, dataset)
 
     def _dataset_in_use_state(self, dataset):
         """
