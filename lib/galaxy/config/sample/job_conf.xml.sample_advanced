@@ -370,9 +370,10 @@
             <!-- False to communicate with Chronos over HTTPS; true otherwise-->
         </plugin>
         <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
-            <!-- By default, credentials are stored at ~/.aws/credentials -->
+            <!-- Run `aws configure` with aws cli or set params below -->
             <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
-            <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param> -->
+            <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param>
+            <param id="region">us-west-1</param> -->
         </plugin>
         <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
              evaluate to True or False. When setup using

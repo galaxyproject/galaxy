@@ -176,7 +176,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         super().__init__(app, nworkers, **kwargs)
         session = boto3.Session(
             aws_access_key_id=self.runner_params.get("aws_access_key_id") or None,
-            aws_secret_access_key=self.runner_params.get("aws_secret_access_key") or None
+            aws_secret_access_key=self.runner_params.get("aws_secret_access_key") or None,
+            region_name=self.runner_params.get("region") or None,
         )
         self._batch_client = session.client("batch")
 
