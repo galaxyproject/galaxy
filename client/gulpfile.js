@@ -130,8 +130,18 @@ function buildPlugins(callback, forceRebuild) {
                         }
                     );
                     console.log(`Building ${pluginName}`);
-                    child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
+
+                    if (
+                        child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true }).status ===
+                        0
+                    ) {
+                        console.log(`Successfully built, saving build state to ${hashFilePath}`);
+                        child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
+                    } else {
+                        console.error(
+                            `Error building ${pluginName}, not saving build state.  Please report this issue to the Galaxy Team.`
+                        );
+                    }
                 }
             });
         });

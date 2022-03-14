@@ -86,8 +86,7 @@ export var Input = Backbone.View.extend({
         input: "_onchange",
     },
     value: function (new_val) {
-        new_val !== undefined &&
-            this.model.set("value", new_val === null || typeof new_val === "string" ? new_val : "");
+        new_val !== undefined && this.model.set("value", typeof new_val === "string" ? new_val : "");
         return this.model.get("value");
     },
     render: function () {
