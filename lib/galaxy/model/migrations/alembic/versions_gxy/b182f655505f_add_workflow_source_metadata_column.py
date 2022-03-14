@@ -9,6 +9,7 @@ from alembic import op
 from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType
+from galaxy.model.migrations.util import drop_column
 
 # revision identifiers, used by Alembic.
 revision = "b182f655505f"
@@ -22,5 +23,4 @@ def upgrade():
 
 
 def downgrade():
-    with op.batch_alter_table("workflow") as batch_op:
-        batch_op.drop_column("source_metadata")
+    drop_column("workflow", "source_metadata")
