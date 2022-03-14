@@ -715,7 +715,7 @@ class FastAPIHistoryContents:
         # Since we are directly accessing the request's query_params we also need to exclude the
         # known params that are already parsed by FastAPI or they may be treated as filter params too.
         # This looks a bit hacky...
-        exclude_params = set(["since"])
+        exclude_params = {"since"}
         exclude_params.update(SerializationParams.__fields__.keys())
         filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
 

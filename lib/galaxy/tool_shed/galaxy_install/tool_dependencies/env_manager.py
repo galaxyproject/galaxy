@@ -93,42 +93,23 @@ class EnvManager:
                                 env_shell_file_paths.append(env_shell_file_path)
                             else:
                                 error_message = "Skipping tool dependency definition because unable to locate env.sh file for tool dependency "
-                                error_message += "type %s, name %s, version %s for repository %s" % (
-                                    str(tool_dependency_type),
-                                    str(tool_dependency_name),
-                                    str(tool_dependency_version),
-                                    str(repository.name),
-                                )
+                                error_message += f"type {tool_dependency_type}, name {tool_dependency_name}, version {tool_dependency_version} for repository {repository.name}"
                                 log.debug(error_message)
                                 continue
                         else:
                             error_message = (
                                 "Skipping tool dependency definition because unable to locate tool dependency "
                             )
-                            error_message += "type %s, name %s, version %s for repository %s" % (
-                                str(tool_dependency_type),
-                                str(tool_dependency_name),
-                                str(tool_dependency_version),
-                                str(repository.name),
-                            )
+                            error_message += f"type {tool_dependency_type}, name {tool_dependency_name}, version {tool_dependency_version} for repository {repository.name}"
                             log.debug(error_message)
                             continue
                     else:
-                        error_message = "Skipping invalid tool dependency definition: type %s, name %s, version %s." % (
-                            str(tool_dependency_type),
-                            str(tool_dependency_name),
-                            str(tool_dependency_version),
-                        )
+                        error_message = f"Skipping invalid tool dependency definition: type {tool_dependency_type}, name {tool_dependency_name}, version {tool_dependency_version}."
                         log.debug(error_message)
                         continue
             else:
                 error_message = "Skipping set_environment_for_install definition because unable to locate required installed tool shed repository: "
-                error_message += "toolshed %s, name %s, owner %s, changeset_revision %s." % (
-                    str(toolshed),
-                    str(repository_name),
-                    str(repository_owner),
-                    str(changeset_revision),
-                )
+                error_message += f"toolshed {toolshed}, name {repository_name}, owner {repository_owner}, changeset_revision {changeset_revision}."
                 log.debug(error_message)
         else:
             error_message = (

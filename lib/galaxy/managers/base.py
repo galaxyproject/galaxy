@@ -173,12 +173,10 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
         raise exceptions.ItemDeletionException(
-            '%s "%s" is not deleted' % (class_name, getattr(item, "name", id)), type="warning"
+            f'{class_name} "{getattr(item, "name", id)}" is not deleted', type="warning"
         )
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException(
-            '%s "%s" is deleted' % (class_name, getattr(item, "name", id)), type="warning"
-        )
+        raise exceptions.ItemDeletionException(f'{class_name} "{getattr(item, "name", id)}" is deleted', type="warning")
     return item
 
 
@@ -799,7 +797,7 @@ class ModelValidator:
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = f"must be a type: {str(types)}"
+            msg = f"must be a type: {types}"
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -1258,7 +1256,7 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
         return True
     if bool_string in ("False", False):
         return False
-    raise ValueError(f"invalid boolean: {str(bool_string)}")
+    raise ValueError(f"invalid boolean: {bool_string}")
 
 
 def raise_filter_err(attr, op, val, msg):

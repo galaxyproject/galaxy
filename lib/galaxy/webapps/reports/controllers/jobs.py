@@ -348,7 +348,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
             year = int(row.date.strftime("%Y"))
 
             if str(by_destination).lower() == "true":
-                month_year_str = "%s %s" % (month_name, year)
+                month_year_str = f"{month_name} {year}"
                 curr_month_year_str, unique_month_year_strs = get_curr_item(month_year_str, unique_month_year_strs)
                 if curr_month_year_str == "":
                     curr_month = ""
@@ -989,7 +989,7 @@ class Jobs(BaseUIController, ReportQueryBuilder):
         unique_month_year_strs = set()
         for row in trans.sa_session.execute(q):
             if by_destination == "true":
-                month_year_str = "%s %s" % (row.date.strftime("%B"), row.date.strftime("%Y"))
+                month_year_str = f"{row.date.strftime('%B')} {row.date.strftime('%Y')}"
                 curr_month_year_str, unique_month_year_strs = get_curr_item(month_year_str, unique_month_year_strs)
                 if curr_month_year_str == "":
                     curr_month = ""

@@ -419,17 +419,10 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
                     )
                     results["unsuccessful_count"] += 1
                 else:
-                    message = "Successfully reset metadata on repository %s owned by %s" % (
-                        str(repository.name),
-                        str(repository.owner),
-                    )
+                    message = f"Successfully reset metadata on repository {repository.name} owned by {repository.owner}"
                     results["successful_count"] += 1
             except Exception as e:
-                message = "Error resetting metadata on repository %s owned by %s: %s" % (
-                    str(repository.name),
-                    str(repository.owner),
-                    util.unicodify(e),
-                )
+                message = f"Error resetting metadata on repository {repository.name} owned by {repository.owner}: {e}"
                 results["unsuccessful_count"] += 1
             results["repository_status"].append(message)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
@@ -472,7 +465,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
         tool_shed_repository = get_tool_shed_repository_by_id(self.app, id)
         if tool_shed_repository is None:
-            log.debug(f"Unable to locate tool_shed_repository record for id {str(id)}.")
+            log.debug(f"Unable to locate tool_shed_repository record for id {id}.")
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(
             value_mapper=self.__get_value_mapper(trans, tool_shed_repository)

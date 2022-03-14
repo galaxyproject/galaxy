@@ -292,7 +292,7 @@ class FastAPIDatasets:
         and return different kinds of responses, the documentation here will be limited.
         To get more information please check the source code.
         """
-        exclude_params = set(["hda_ldda", "data_type"])
+        exclude_params = {"hda_ldda", "data_type"}
         exclude_params.update(SerializationParams.__fields__.keys())
         extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 

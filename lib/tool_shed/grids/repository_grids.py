@@ -149,10 +149,7 @@ class RepositoryGrid(grids.Grid):
             rval = "<ul>"
             if repository.categories:
                 for rca in repository.categories:
-                    rval += '<li><a href="browse_repositories?operation=repositories_by_category&id=%s">%s</a></li>' % (
-                        trans.security.encode_id(rca.category.id),
-                        rca.category.name,
-                    )
+                    rval += f'<li><a href="browse_repositories?operation=repositories_by_category&id={trans.security.encode_id(rca.category.id)}">{rca.category.name}</a></li>'
             else:
                 rval += "<li>not set</li>"
             rval += "</ul>"

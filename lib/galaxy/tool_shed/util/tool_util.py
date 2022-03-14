@@ -118,11 +118,9 @@ def generate_message_for_invalid_tools(
                 sample_ext = f"{missing_file}.sample"
             else:
                 sample_ext = missing_file
-            correction_msg = "This file refers to a missing file %s%s%s.  " % (bold_start, str(missing_file), bold_end)
-            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % (
-                bold_start,
-                sample_ext,
-                bold_end,
+            correction_msg = f"This file refers to a missing file {bold_start}{missing_file}{bold_end}.  "
+            correction_msg += (
+                f"Upload a file named {bold_start}{sample_ext}{bold_end} to the repository to correct this error."
             )
         else:
             if as_html:

@@ -100,7 +100,7 @@ def parse_arguments():
 
     args.source = args.source.lower()
     if args.source not in ("metrics", "history"):
-        print("ERROR: Data source `%s` unknown, valid source are: %s" % (args.source, ", ".join(DATA_SOURCES)))
+        print("ERROR: Data source `{}` unknown, valid source are: {}".format(args.source, ", ".join(DATA_SOURCES)))
 
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)

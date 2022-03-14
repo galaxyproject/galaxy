@@ -1044,7 +1044,7 @@ class StdioParser:
                 elif re.search("fatal", err_level, re.IGNORECASE):
                     return_level = StdioErrorLevel.FATAL
                 else:
-                    log.debug("Tool %s: error level %s did not match log/warning/fatal" % (self.id, err_level))
+                    log.debug(f"Tool {self.id}: error level {err_level} did not match log/warning/fatal")
         except Exception:
             log.exception("Exception in parse_error_level")
         return return_level

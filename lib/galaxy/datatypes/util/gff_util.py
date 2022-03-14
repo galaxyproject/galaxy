@@ -121,7 +121,7 @@ class GFFFeature(GFFInterval):
         for interval in self.intervals:
             # Error checking. NOTE: intervals need not share the same strand.
             if interval.chrom != self.chrom:
-                raise ValueError("interval chrom does not match self chrom: %s != %s" % (interval.chrom, self.chrom))
+                raise ValueError(f"interval chrom does not match self chrom: {interval.chrom} != {self.chrom}")
             # Set start, end of interval.
             if interval.start < self.start:
                 self.start = interval.start

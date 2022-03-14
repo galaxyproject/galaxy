@@ -33,7 +33,7 @@ def build_tool_dependencies_select_field(
                 app.install_model.ToolDependency.installation_status.UNINSTALLED,
             ]:
                 continue
-        option_label = f"{str(tool_dependency.name)} version {str(tool_dependency.version)}"
+        option_label = f"{tool_dependency.name} version {tool_dependency.version}"
         option_value = app.security.encode_id(tool_dependency.id)
         tool_dependencies_select_field.add_option(option_label, option_value)
     return tool_dependencies_select_field
@@ -58,13 +58,8 @@ def create_or_update_tool_dependency(app, tool_shed_repository, name, version, t
             set_tool_dependency_attributes(app, tool_dependency=tool_dependency, status=status)
     else:
         # Create a new tool_dependency record for the tool_shed_repository.
-        debug_msg = "Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  " % (
-            str(version),
-            str(name),
-            str(tool_shed_repository.changeset_revision),
-            str(tool_shed_repository.name),
-        )
-        debug_msg += f"The status is being set to {str(status)}."
+        debug_msg = f"Creating a new record for version {version} of tool dependency {name} for revision {tool_shed_repository.changeset_revision} of repository {tool_shed_repository.name}.  "
+        debug_msg += f"The status is being set to {status}."
         log.debug(debug_msg)
         tool_dependency = app.install_model.ToolDependency(tool_shed_repository.id, name, version, type, status)
         context.add(tool_dependency)
@@ -371,10 +366,7 @@ def parse_package_elem(package_elem, platform_info_dict=None, include_after_inst
                         debug_msg = (
                             "Error: <action> tags are only allowed at the end of an <actions_group> tag set after "
                         )
-                        debug_msg += "all <actions> tags.  Skipping <%s> element with type %s." % (
-                            child_element.tag,
-                            child_element.get("type", "unknown"),
-                        )
+                        debug_msg += f"all <actions> tags.  Skipping <{child_element.tag}> element with type {child_element.get('type', 'unknown')}."
                         log.debug(debug_msg)
                         continue
             if platform_info_dict is None and not include_after_install_actions:
@@ -420,12 +412,10 @@ def remove_tool_dependency_installation_directory(dependency_install_dir):
             shutil.rmtree(dependency_install_dir)
             removed = True
             error_message = ""
-            log.debug(f"Removed tool dependency installation directory: {str(dependency_install_dir)}")
+            log.debug(f"Removed tool dependency installation directory: {dependency_install_dir}")
         except Exception as e:
             removed = False
-            error_message = (
-                f"Error removing tool dependency installation directory {str(dependency_install_dir)}: {str(e)}"
-            )
+            error_message = f"Error removing tool dependency installation directory {dependency_install_dir}: {e}"
             log.warning(error_message)
     else:
         removed = True
@@ -450,7 +440,7 @@ def set_tool_dependency_attributes(app, tool_dependency, status, error_message=N
                 str(tool_shed_repository.name),
             )
         )
-        debug_msg += f"by updating the status from {str(tool_dependency.status)} to {str(status)}."
+        debug_msg += f"by updating the status from {tool_dependency.status} to {status}."
         log.debug(debug_msg)
     tool_dependency.status = status
     sa_session.add(tool_dependency)

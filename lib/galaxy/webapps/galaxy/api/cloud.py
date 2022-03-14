@@ -130,7 +130,7 @@ class CloudController(BaseGalaxyAPIController):
 
         if not isinstance(objects, list):
             raise ActionInputError(
-                "The `objects` should be a list, but received an object of type {} instead.".format(type(objects))
+                f"The `objects` should be a list, but received an object of type {type(objects)} instead."
             )
 
         datasets = self.cloud_manager.get(
