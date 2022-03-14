@@ -8,13 +8,15 @@ import shlex
 import shutil
 import sys
 import tempfile
+from typing import List
 
 import packaging.version
 
 from galaxy.util import (
     commands,
+    listify,
     smart_str,
-    unicodify,
+    which,
 )
 from . import installable
 
@@ -88,8 +90,8 @@ class CondaContext(installable.InstallableContext):
     ):
         self.condarc_override = condarc_override
         if not conda_exec and use_path_exec:
-            conda_exec = commands.which("conda")
-        if conda_exec:
+            conda_exec = which("conda")
+        if conda_exec and isinstance(conda_exec, str):
             conda_exec = os.path.normpath(conda_exec)
         self.conda_exec = conda_exec
         self.debug = debug
@@ -179,8 +181,8 @@ class CondaContext(installable.InstallableContext):
 
     def conda_info(self):
         if self.conda_exec is not None:
-            info_out = commands.execute([self.conda_exec, "info", "--json"])
-            info_out = unicodify(info_out)
+            cmd = listify(self.conda_exec) + ["info", "--json"]
+            info_out = commands.execute(cmd)
             info = json.loads(info_out)
             return info
         else:
@@ -230,8 +232,7 @@ class CondaContext(installable.InstallableContext):
 
         Return the process exit code (i.e. 0 in case of success).
         """
-        cmd = [self.conda_exec]
-        cmd.extend(operation.split())
+        cmd = listify(self.conda_exec) + operation.split()
         if self.debug:
             cmd.append("--debug")
         cmd.extend(args)
@@ -303,6 +304,24 @@ class CondaContext(installable.InstallableContext):
         if quiet:
             stdout_path = "/dev/null"
         return self.exec_command("clean", clean_args, stdout_path=stdout_path)
+
+    def exec_search(self, args: List[str], json: bool = False, offline: bool = False, platform: str = None):
+        """
+        Search conda channels for a package
+
+        Return the standard output of the conda process.
+        """
+        cmd = listify(self.conda_exec)[:]
+        cmd.append("search")
+        cmd.extend(self._override_channels_args)
+        if json:
+            cmd.append("--json")
+        if offline:
+            cmd.append("--offline")
+        if platform:
+            cmd.extend(["--platform", platform])
+        cmd.extend(args)
+        return commands.execute(cmd)
 
     def export_list(self, name, path):
         """
@@ -494,33 +513,14 @@ def cleanup_failed_install(conda_target, conda_context=None):
     cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
-def best_search_result(conda_target, conda_context, channels_override=None, offline=False, platform=None):
+def best_search_result(conda_target, conda_context: CondaContext, offline: bool = False, platform: str = None):
     """Find best "conda search" result for specified target.
 
     Return ``None`` if no results match.
     """
-    search_cmd = []
-    conda_exec = conda_context.conda_exec
-    if isinstance(conda_exec, list):
-        # for CondaInDockerContext
-        search_cmd.extend(conda_exec)
-    else:
-        search_cmd.append(conda_exec)
-    search_cmd.extend(["search", "--full-name", "--json"])
-    if offline:
-        search_cmd.append("--offline")
-    if platform:
-        search_cmd.extend(["--platform", platform])
-    if channels_override:
-        search_cmd.append("--override-channels")
-        for channel in channels_override:
-            search_cmd.extend(["--channel", channel])
-    else:
-        search_cmd.extend(conda_context._override_channels_args)
-    search_cmd.append(conda_target.package)
+    search_args = [conda_target.package]
     try:
-        res = commands.execute(search_cmd)
-        res = unicodify(res)
+        res = conda_context.exec_search(search_args, json=True, offline=offline, platform=platform)
         # Use python's stable list sorting to sort by date,
         # then build_number, then version. The top of the list
         # then is the newest version with the newest build and
@@ -528,8 +528,8 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
         hits = json.loads(res).get(conda_target.package, [])[::-1]
         hits = sorted(hits, key=lambda hit: hit["build_number"], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit["version"]), reverse=True)
-    except commands.CommandLineException:
-        log.error("Could not execute: '%s'", search_cmd)
+    except commands.CommandLineException as e:
+        log.error("Could not execute: '%s'\n%s", e.command, e)
         hits = []
 
     if len(hits) == 0:

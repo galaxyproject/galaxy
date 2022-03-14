@@ -5,20 +5,21 @@ import json
 import logging
 import sys
 import tempfile
+from datetime import (
+    datetime,
+    timezone,
+)
 
 import requests
 
+from galaxy.tool_util.deps.conda_util import CondaContext
+from galaxy.util import which
 from .mulled_list import get_singularity_containers
 from .util import (
     build_target,
     MULLED_SOCKET_TIMEOUT,
     v2_image_name,
 )
-
-try:
-    from conda.cli.python_api import run_command
-except ImportError:
-    run_command = None
 
 try:
     from whoosh.fields import (
@@ -32,6 +33,7 @@ except ImportError:
     Schema = TEXT = STORED = create_in = QueryParser = None
 
 QUAY_API_URL = "https://quay.io/api/v1/repository"
+conda_path = which("conda")
 
 
 class QuaySearch:
@@ -127,11 +129,13 @@ class CondaSearch:
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
         """
-        if run_command is None:
-            raise Exception(f"Invalid search destination. {deps_error_message('conda')}")
-        raw_out, err, exit_code = run_command("search", "-c", self.channel, search_string, use_exception_handler=True)
-        if exit_code != 0:
-            logging.info(f"Search failed with: {err}")
+        if not conda_path:
+            raise Exception("Invalid search destination. Required dependency [conda] is not in your PATH.")
+        try:
+            conda_context = CondaContext(conda_exec=conda_path, ensure_channels=self.channel)
+            raw_out = conda_context.exec_search([search_string])
+        except Exception as e:
+            logging.info(f"Search failed with: {e}")
             return []
         return [
             {"package": n.split()[0], "version": n.split()[1], "build": n.split()[2]} for n in raw_out.split("\n")[2:-1]
@@ -143,14 +147,29 @@ class GitHubSearch:
     Tool to search the GitHub bioconda-recipes repo
     """
 
+    @staticmethod
+    def _check_response_rate_limit(response):
+        if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
+            # It can take tens of minutes before the rate limit window resets
+            message = "GitHub API rate limit exceeded."
+            rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
+            if rate_limit_reset_UTC_timestamp:
+                rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+                message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
+            raise Exception(message)
+
     def get_json(self, search_string):
         """
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
+
+        DEPRECATED: this method is currently unreliable because the API query
+        sometimes succeeds but returns no items.
         """
         response = requests.get(
             f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
+        self._check_response_rate_limit(response)
         response.raise_for_status()
         return response.json()
 
@@ -169,6 +188,7 @@ class GitHubSearch:
             f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
+        self._check_response_rate_limit(response)
         return response.status_code == 200
 
 
@@ -335,7 +355,7 @@ def main(argv=None):
         return
 
     destination_defaults = ["quay", "singularity", "github"]
-    if run_command is not None:
+    if conda_path:
         destination_defaults.append("conda")
 
     parser = argparse.ArgumentParser(description="Searches in a given quay organization for a repository")
@@ -359,7 +379,7 @@ def main(argv=None):
         "--channel",
         dest="channel_string",
         default="bioconda",
-        help="Change conda channel to search; default is bioconda.",
+        help="Change conda channels to search; default is bioconda.",
     )
     parser.add_argument(
         "--non-strict",
@@ -392,10 +412,11 @@ def main(argv=None):
         github = GitHubSearch()
 
         for item in args.search:
-            github_json = github.get_json(item)
-            github_results[item] = github.process_json(github_json, item)
             if github.recipe_present(item):
                 github_recipe_present.append(item)
+            else:
+                github_json = github.get_json(item)
+                github_results[item] = github.process_json(github_json, item)
 
         json_results["github"] = github_results
         json_results["github_recipe_present"] = {"recipes": github_recipe_present}

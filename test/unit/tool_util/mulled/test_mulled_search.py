@@ -1,13 +1,11 @@
-import time
-
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_search import (
+    conda_path,
     CondaSearch,
     get_package_hash,
     GitHubSearch,
     QuaySearch,
-    run_command,
     singularity_search,
 )
 from ..util import external_dependency_management
@@ -24,35 +22,31 @@ def test_quay_search():
 
 
 @external_dependency_management
-@pytest.mark.skipif(run_command is None, reason="requires import from conda library")
+@pytest.mark.skipif(not conda_path, reason="requires conda on path")
 def test_conda_search():
     t = CondaSearch("bioconda")
     search1 = t.get_json("asdfasdf")
     search2 = t.get_json("bioconductor-gosemsim")
     assert search1 == []
-    assert search2["version"] == "2.2.0"
-    assert search2["package"] == "bioconductor-gosemsim"
-    assert search2["build"] == "0"
+    assert all(r["package"] == "bioconductor-gosemsim" for r in search2)
 
 
 @external_dependency_management
-def test_github_search():
+def test_github_recipe_present():
     t = GitHubSearch()
 
-    search1 = t.process_json(t.get_json("adsfasdf"), "adsfasdf")
-    assert search1 == []
-
-    # The search sometimes returns no results so we retry a couple of times
-    num_retries = 5
-    search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
-    while not search2 and num_retries:
-        num_retries -= 1
-        time.sleep(2)  # Wait a bit, otherwise, the search may fail because of throttling
-        search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
-
-    assert search2
-    for item in search2:
-        assert "bioconductor-gosemsim" in item["path"]
+    search_string2expected = {
+        "adsfasdf": False,
+        "bioconductor-gosemsim": True,
+    }
+    for search_string, expected in search_string2expected.items():
+        try:
+            is_recipe_present = t.recipe_present(search_string)
+        except Exception as e:
+            if "API rate limit" in str(e):
+                pytest.skip("Hitting GitHub API rate limit")
+            raise
+        assert is_recipe_present is expected
 
 
 @external_dependency_management
