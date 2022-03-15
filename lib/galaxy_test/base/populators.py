@@ -2141,7 +2141,15 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
-def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+LoadDataDictResponseT = Tuple[Dict[str, Any], Dict[str, Any], bool]
+
+
+def load_data_dict(
+    history_id: str,
+    test_data: Dict[str, Any],
+    dataset_populator: BaseDatasetPopulator,
+    dataset_collection_populator: BaseDatasetCollectionPopulator,
+) -> LoadDataDictResponseT:
     """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):
