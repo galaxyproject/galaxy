@@ -12,10 +12,13 @@ from functools import (
 from typing import (
     Any,
     Dict,
+    Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
 import requests
+import yaml
 from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
@@ -40,6 +43,7 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
+from galaxy_test.base.populators import load_data_dict
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -418,12 +422,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         text = modal_element.text
         assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
 
-    def workflow_upload_yaml_with_random_name(self, content, **kwds):
-        workflow_populator = self.workflow_populator
-        name = self._get_random_name()
-        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
-        return name
-
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
 
@@ -538,6 +536,50 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         item_body = self.history_panel_item_component(hid=hid)
         hid_text = item_body.hid.wait_for_text()
         assert hid_text == str(hid), hid_text
+
+
+class RunsWorkflows(GalaxyTestSeleniumContext):
+    def workflow_upload_yaml_with_random_name(self, content: str, **kwds) -> str:
+        name = self._get_random_name()
+        workflow_populator = self.workflow_populator
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
+
+    def workflow_run_setup_inputs(self, content: Optional[str]) -> Tuple[str, Dict[str, Any]]:
+        history_id = self.current_history_id()
+        if content:
+            yaml_content = yaml.safe_load(content)
+            if "test_data" in yaml_content:
+                test_data = yaml_content["test_data"]
+            else:
+                test_data = yaml_content
+            inputs, _, _ = load_data_dict(
+                history_id, test_data, self.dataset_populator, self.dataset_collection_populator
+            )
+            self.dataset_populator.wait_for_history(history_id)
+        else:
+            inputs = {}
+        return history_id, inputs
+
+    def workflow_run_open_workflow(self, yaml_content: str):
+        name = self.workflow_upload_yaml_with_random_name(yaml_content)
+        self.workflow_run_with_name(name)
+
+    def workflow_run_and_submit(
+        self,
+        workflow_content: str,
+        test_data_content: Optional[str] = None,
+        landing_screenshot_name=None,
+        inputs_specified_screenshot_name: Optional[str] = None,
+    ):
+        history_id, inputs = self.workflow_run_setup_inputs(test_data_content)
+        self.workflow_run_open_workflow(workflow_content)
+        self.screenshot_if(landing_screenshot_name)
+        self.workflow_run_specify_inputs(inputs)
+        self.screenshot_if(inputs_specified_screenshot_name)
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        return history_id
 
 
 def default_web_host_for_selenium_tests():

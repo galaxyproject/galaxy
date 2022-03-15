@@ -1,7 +1,4 @@
-import yaml
-
 from galaxy_test.base import rules_test_data
-from galaxy_test.base.populators import load_data_dict
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
@@ -18,13 +15,14 @@ from galaxy_test.base.workflow_fixtures import (
 )
 from .framework import (
     managed_history,
+    RunsWorkflows,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
 
 
-class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
 
     ensure_registered = True
 
@@ -33,7 +31,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_simple_execution(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_SIMPLE_CAT_TWICE)
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.screenshot("workflow_run_simple_ready")
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -53,7 +51,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_runtime_parameters_simple(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
+        self.workflow_run_open_workflow(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
         self.tool_parameter_div("num_lines")
         self.screenshot("workflow_run_runtime_parameters_initial")
         self._set_num_lines_to_3("num_lines")
@@ -67,7 +65,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_subworkflows_simple(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_NESTED_SIMPLE)
+        self.workflow_run_open_workflow(WORKFLOW_NESTED_SIMPLE)
         self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
         self.screenshot("workflow_run_nested_collapsed")
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
@@ -78,7 +76,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_subworkflow_runtime_parameters(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        self.workflow_run_open_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
         self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
         self.screenshot("workflow_run_nested_parameters_collapsed")
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
@@ -93,7 +91,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_replacement_parameters(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
+        self.workflow_run_open_workflow(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
         self.screenshot("workflow_run_rename_simple_empty")
         self._set_replacement_parameter("replaceme", "moocow")
         self.screenshot("workflow_run_rename_simple_input")
@@ -112,7 +110,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(
+        self.workflow_run_open_workflow(
             """
 class: GalaxyWorkflow
 inputs:
@@ -150,7 +148,7 @@ steps:
     def test_replacement_parameters_on_subworkflows(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
+        self.workflow_run_open_workflow(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
         self.screenshot("workflow_run_rename_subworkflow_empty")
         self._set_replacement_parameter("replaceme", "moocow")
         self.screenshot("workflow_run_rename_subworkflow_input")
@@ -176,11 +174,11 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_multiple_inputs(self):
-        history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION)
-        self.open_in_workflow_run(WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION)
-        self.workflow_run_specify_inputs(inputs)
-        self.screenshot("workflow_run_two_inputs")
-        self.workflow_run_submit()
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+            WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
+            inputs_specified_screenshot_name="workflow_run_two_inputs",
+        )
         if self.is_beta_history():
             timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
             item = self.content_item_by_attributes(hid=7, state="ok")
@@ -193,7 +191,7 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_text_default_value_connected_to_restricted_select(self):
-        self.open_in_workflow_run(
+        self.workflow_run_open_workflow(
             """
 class: GalaxyWorkflow
 inputs:
@@ -221,11 +219,12 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_rules(self):
-        history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_RULES_1)
-        self.open_in_workflow_run(WORKFLOW_WITH_RULES_1)
-        self.workflow_run_specify_inputs(inputs)
-        self.screenshot("workflow_run_rules")
-        self.workflow_run_submit()
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_RULES_1,
+            WORKFLOW_WITH_RULES_1,
+            landing_screenshot_name="workflow_run_rules_landing",
+            inputs_specified_screenshot_name="workflow_run_rules",
+        )
         if self.is_beta_history():
             timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
             item = self.content_item_by_attributes(hid=6, state="ok")
@@ -238,11 +237,10 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_custom_invocation_report(self):
-        history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA)
-        self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
-        self.workflow_run_specify_inputs(inputs)
-        self.workflow_run_submit()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_WITH_CUSTOM_REPORT_1,
+            WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+        )
         self.screenshot("workflow_run_invocation_report")
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
@@ -253,36 +251,10 @@ steps:
     @selenium_test
     @managed_history
     def test_execution_with_null_optional_select_from_data(self):
-        self.open_in_workflow_run(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
-        self.workflow_run_submit()
-        history_id = self.current_history_id()
+        history_id = self.workflow_run_and_submit(
+            WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
+        )
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-
-    def open_in_workflow_run(self, yaml_content):
-        name = self.workflow_upload_yaml_with_random_name(yaml_content)
-        self.workflow_run_with_name(name)
-
-    def workflow_run_setup_inputs(self, content):
-        history_id = self.current_history_id()
-        yaml_content = yaml.safe_load(content)
-        if "test_data" in yaml_content:
-            test_data = yaml_content["test_data"]
-        else:
-            test_data = yaml_content
-        inputs, _, _ = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
-        self.dataset_populator.wait_for_history(history_id)
-        return history_id, inputs
-
-    def workflow_run_specify_inputs(self, inputs):
-        workflow_run = self.components.workflow_run
-        for label, value in inputs.items():
-            input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select2_set_value(input_div_element, "%d: " % value["hid"])
-
-    def workflow_run_with_name(self, name):
-        self.workflow_index_open()
-        self.workflow_index_search_for(name)
-        self.workflow_click_option(".workflow-run")
 
     def _assert_has_3_lines_after_run(self, hid):
         if self.is_beta_history():
