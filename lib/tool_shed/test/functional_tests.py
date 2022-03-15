@@ -14,7 +14,7 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[0:1] = [os.path.join(galaxy_root, "lib")]
 
 # This is for the tool shed application.
-from galaxy.web import buildapp as galaxybuildapp
+from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.webapp import buildapp as toolshedbuildapp
 
@@ -174,7 +174,7 @@ class ToolShedTestDriver(driver_util.TestDriver):
             # ---- Run galaxy webserver ------------------------------------------------------
             galaxy_server_wrapper = driver_util.launch_server(
                 app_factory=lambda: driver_util.build_galaxy_app(kwargs),
-                webapp_factory=galaxybuildapp.app_factory,
+                webapp_factory=galaxy_app_factory,
                 galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")
