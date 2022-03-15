@@ -104,7 +104,10 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "aws_secret_access_key": {
             "map": str,
-        }
+        },
+        "region": {
+            "map": str,
+        },
     }
 
     # fmt: off
