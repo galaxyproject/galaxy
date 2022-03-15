@@ -1554,7 +1554,7 @@ class ToolModule(WorkflowModule):
         return self.tool.name if self.tool else self.tool_id
 
     def get_content_id(self):
-        return self.tool_id
+        return self.tool.id if self.tool else self.tool_id
 
     def get_version(self):
         return self.tool.version if self.tool else self.tool_version
