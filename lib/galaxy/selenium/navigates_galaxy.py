@@ -14,7 +14,9 @@ from functools import (
     wraps,
 )
 from typing import (
+    Any,
     cast,
+    Dict,
     Union,
 )
 
@@ -1231,6 +1233,17 @@ class NavigatesGalaxy(HasDriver):
 
             tag_area.send_keys(tag)
             self.send_enter(tag_area)
+
+    def workflow_run_with_name(self, name: str):
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self.workflow_click_option(".workflow-run")
+
+    def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
+        workflow_run = self.components.workflow_run
+        for label, value in inputs.items():
+            input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
+            self.select2_set_value(input_div_element, "%d: " % value["hid"])
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()
