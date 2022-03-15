@@ -111,6 +111,27 @@ gravity:
     # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
     # reverse_proxy: false
 
+  # Configuration for tusd server (https://github.com/tus/tusd).
+  # The ``tusd`` binary must be installed manually and made available on PATH (e.g in galaxy's .venv/bin directory).
+  tusd:
+
+    # Enable tusd server.
+    # If enabled, you also need to set up your proxy as outlined in https://docs.galaxyproject.org/en/latest/admin/nginx.html#receiving-files-via-the-tus-protocol.
+    # enable: false
+
+    # Host to bind the tusd server to
+    # host: localhost
+
+    # Port to bind the tusd server to
+    # port: 1080
+
+    # Directory to store uploads in.
+    # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
+    # upload_dir:
+
+    # Extra arguments to pass to tusd command line.
+    # extra_args:
+
   # Configure dynamic handlers in this section.
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
   # handlers: {}
