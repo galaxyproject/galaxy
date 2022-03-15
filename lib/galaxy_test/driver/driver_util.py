@@ -751,8 +751,21 @@ class EmbeddedServerWrapper(ServerWrapper):
 class GravityServerWrapper(ServerWrapper):
     def __init__(self, name, host, port, state_dir, stop_command):
         super().__init__(name, host, port)
+        self.url_prefix = os.environ.get("GALAXY_CONFIG_GALAXY_URL_PREFIX", "/")
         self.state_dir = Path(state_dir)
         self.stop_command = stop_command
+
+    def wait_for_server(self):
+        try:
+            set_and_wait_for_http_target(
+                "GALAXY",
+                self.host,
+                self.port,
+                url_prefix=self.url_prefix,
+                sleep_amount=0.4,
+            )
+        except Exception:
+            log.error("Gravity logs:\n%s", self.get_logs())
 
     def get_logs(self):
         gunicorn_logs = (self.state_dir / "log" / "gunicorn.log").read_text()
@@ -818,10 +831,9 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
     if enable_realtime_mapping or os.environ.get("GALAXY_TEST_GRAVITY"):
         galaxy_config["root"] = galaxy_root
         state_dir, stop_command = launch_gravity(port=port, galaxy_config=galaxy_config)
-        set_and_wait_for_http_target(
-            prefix, host, port, url_prefix=os.environ.get("GALAXY_CONFIG_GALAXY_URL_PREFIX", "/")
-        )
-        return GravityServerWrapper(name, host, port, state_dir, stop_command)
+        gravity_wrapper = GravityServerWrapper(name, host, port, state_dir, stop_command)
+        gravity_wrapper.wait_for_server()
+        return gravity_wrapper
 
     app = app_factory()
     url_prefix = getattr(app.config, f"{name}_url_prefix", "/")
