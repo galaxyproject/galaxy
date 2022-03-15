@@ -35,7 +35,7 @@ Previously, Galaxy servers used a variety of methods to let you upload large fil
 
 **Beta History: Collection Improvements**
 
-If you've been trying out the beta history (which will be the default history next release!), it has been updated to indicate whether collections are homogeneous or heterogeneous. This will help you see more easily if you've accidentally included an incorrect dataset. Test out the beta history today and let us know if you have any issues!
+If you've been trying out the beta history (which will be the default history next release!), it has been updated to indicate whether collections are homogeneous or heterogeneous. This will help you see more easily if you've accidentally included an incorrect dataset.
 
 .. figure:: https://user-images.githubusercontent.com/46503462/146426341-d16d07d8-164b-40ef-976a-52e73d94bfc9.png
    :alt: Screenshot of a history named collection tests history using the new beta history panel. Several collections are shown below, some labelled "A list of 6 txt datasets" and some labelled "a list of 3 datasets", without a datatype shown.

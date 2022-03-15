@@ -149,6 +149,8 @@ Enhancements
   `Pull Request 13470`_
 * Add Migrating from uWSGI to Gunicorn and FastAPI document
   `Pull Request 13480`_
+* Support ``--preload`` and worker_id for server processes
+  `Pull Request 13514`_
 * Separated data PVC
   (thanks to `@almahmoud <https://github.com/almahmoud>`__).
   `Pull Request 12345`_
@@ -405,8 +407,12 @@ Enhancements
   `Pull Request 13442`_
 * Create config package, move app-related functionality to app
   `Pull Request 13461`_
+* Fix pgcleanup.py for datasets stored by UUID
+  `Pull Request 13474`_
 * Pin gravity to 0.10.0
   `Pull Request 13483`_
+* Include gravity in sample config
+  `Pull Request 13531`_
 * FastAPI: Histories API migration
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 12386`_
@@ -574,6 +580,8 @@ Fixes
   `Pull Request 13261`_
 * Try to unit test more of DictParser in Viz component.
   `Pull Request 13385`_
+* Fix jqplot_bar import, adjust plugin hash saving
+  `Pull Request 13493`_
 * Allow trailing semicolon in last column of gff3
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 12673`_
@@ -626,10 +634,10 @@ Fixes
 * Ensure tool_id/content_id is updated when refactoring workflows
   (thanks to `@simonbray <https://github.com/simonbray>`__).
   `Pull Request 13231`_
-* Improve null value handling
-  `Pull Request 13285`_
 * Fix construction of SelectToolParameter default value
   `Pull Request 13293`_
+* Return actual tool id instead of specified tool id in workflow step
+  `Pull Request 13536`_
 * RxJS major version upgrade, client unit testing enhancements.
   `Pull Request 12686`_
 * Polyfill overhaul, fixes.
@@ -677,7 +685,7 @@ Fixes
   `Pull Request 13343`_
 * Fix header content-length, add test for send_file
   `Pull Request 13120`_
-* Add option for disabling tool shed datatypes...
+* Add option for disabling tool shed datatypes
   `Pull Request 13250`_
 * Drop OpenID post authentication protocols
   `Pull Request 13281`_
@@ -944,6 +952,9 @@ Fixes
   `Pull Request 13425`_
 * Wrap reports app in static, fix tool shed entry point
   `Pull Request 13430`_
+* enabling Reset button for Rule Builder tab
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 13443`_
 * Initial fix for quay.io repo query issue
   `Pull Request 13468`_
 * Add profile version to ethercalc
@@ -952,6 +963,9 @@ Fixes
   `Pull Request 13478`_
 * Use timeout instead of interval when polling, optionally terminate polling
   `Pull Request 13485`_
+* Pin corresponding playbook repo to sync with Galaxy release
+  (thanks to `@nuwang <https://github.com/nuwang>`__).
+  `Pull Request 13497`_
 
 .. include:: 22.01_prs.rst
 
