@@ -6,21 +6,22 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
-import { mergeListing } from "./utilities";
+import { mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();
 
 const state = {
-    items: [],
+    items: {},
     itemKey: "hid",
 };
 
 const getters = {
     getHistoryItems:
         (state) =>
-        ({ showDeleted, showHidden }) => {
-            const filtered = state.items.filter((item) => {
+        ({ historyId, showDeleted, showHidden }) => {
+            const itemArray = state.items[historyId] || [];
+            const filtered = itemArray.filter((item) => {
                 if (!item) {
                     return false;
                 }
@@ -49,14 +50,14 @@ const actions = {
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
         await queue.enqueue(urlData, { url }).then((payload) => {
-            commit("saveHistoryItems", { payload });
+            commit("saveHistoryItems", { historyId, payload });
         });
     },
 };
 
 const mutations = {
-    saveHistoryItems: (state, { payload }) => {
-        mergeListing(state, { payload });
+    saveHistoryItems: (state, { historyId, payload }) => {
+        mergeArray(historyId, state.items, state.itemKey, payload);
     },
 };
 

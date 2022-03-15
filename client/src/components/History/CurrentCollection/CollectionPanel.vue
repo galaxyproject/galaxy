@@ -4,6 +4,7 @@
     <CollectionElementsProvider
         v-if="dsc"
         :key="dsc.id"
+        :id="dsc.id"
         :contentsUrl="contentsUrl"
         :offset="offset"
         v-slot="{ loading, result: payload }">

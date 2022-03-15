@@ -18,7 +18,7 @@ const actions = {
         if (payload && payload.length == limit) {
             console.debug(`Reached limit of monitored changes (limit=${limit}).`);
         }
-        commit("saveHistoryItems", { payload });
+        commit("saveHistoryItems", { historyId, payload });
         commit("saveDatasets", { payload });
         if (fetching) {
             setTimeout(() => {

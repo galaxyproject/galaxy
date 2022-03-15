@@ -1,7 +1,3 @@
-/**
- * Requests history items by reacting to changes of filter props passed
- * to the history items provider used in the history panel.
- */
 import Vue from "vue";
 import { urlData } from "utils/url";
 
