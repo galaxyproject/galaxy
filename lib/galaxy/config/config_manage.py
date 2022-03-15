@@ -16,7 +16,10 @@ from typing import (
 import requests
 import yaml
 from boltons.iterutils import remap
-from gravity.util import settings_to_sample
+try:
+    from gravity.util import settings_to_sample
+except ImportError:
+    settings_to_sample = None
 
 try:
     from pykwalify.core import Core
@@ -763,6 +766,8 @@ def _build_sample_yaml(args, app_desc):
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
     if app_desc.app_name == "galaxy":
+        if settings_to_sample is None:
+            raise Exception("Please install gravity to rebuild the sample config")
         f.write(settings_to_sample())
     _write_sample_section(args, f, "uwsgi", Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
