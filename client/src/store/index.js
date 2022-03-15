@@ -15,7 +15,13 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, historyChangedItemsStore, historyItemsStore, historyStore } from "./historyStore";
+import {
+    collectionElementsStore,
+    datasetStore,
+    historyChangedItemsStore,
+    historyItemsStore,
+    historyStore,
+} from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
@@ -26,7 +32,6 @@ import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
 import { genomeStore } from "./genomeStore";
 import { datatypeStore } from "./datatypeStore";
-import { datasetStore } from "./datasetStore";
 import { panelStore } from "./panelStore";
 
 // beta features
