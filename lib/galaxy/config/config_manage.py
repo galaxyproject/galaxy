@@ -14,6 +14,7 @@ from typing import (
 
 import yaml
 from boltons.iterutils import remap
+
 try:
     from gravity.util import settings_to_sample
 except ImportError:
@@ -187,7 +188,6 @@ class App(NamedTuple):
     expected_app_factories: List[str]
     destination: str
     schema_path: str
-    app_factory: str
 
     @property
     def app_name(self):
@@ -211,12 +211,9 @@ class OptionValue(NamedTuple):
 GALAXY_APP = App(
     ["universe_wsgi.ini", "config/galaxy.ini"],
     "8080",
-    [
-        "galaxy.web.buildapp:app_factory"
-    ],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
+    ["galaxy.web.buildapp:app_factory"],
     "config/galaxy.yml",
     str(GALAXY_CONFIG_SCHEMA_PATH),
-    "galaxy.webapps.galaxy.fast_factory:factory()",
 )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
@@ -224,7 +221,6 @@ SHED_APP = App(
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
     str(TOOL_SHED_CONFIG_SCHEMA_PATH),
-    "tool_shed.webapp.fast_factory:factory()",
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
@@ -232,7 +228,6 @@ REPORTS_APP = App(
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
     str(REPORTS_CONFIG_SCHEMA_PATH),
-    "galaxy.webapps.reports.fast_factory:factory()",
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
