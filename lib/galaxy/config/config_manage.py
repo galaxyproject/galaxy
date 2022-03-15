@@ -16,6 +16,7 @@ from typing import (
 import requests
 import yaml
 from boltons.iterutils import remap
+
 try:
     from gravity.util import settings_to_sample
 except ImportError:
