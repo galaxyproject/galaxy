@@ -59,7 +59,7 @@
                         <icon icon="unlock" />
                     </b-button>
                 </div>
-                <h5 class="float-left p-1 w-75 font-weight-bold">
+                <span class="float-left p-1 w-75 font-weight-bold">
                     <div v-if="selectable" class="selector float-left mr-2">
                         <span
                             v-if="selected"
@@ -75,7 +75,7 @@
                     <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
-                </h5>
+                </span>
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
