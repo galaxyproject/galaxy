@@ -71,7 +71,8 @@ class IncorrectVersionError(Exception):
     # Manual update required.
     def __init__(self, model: str, expected_version: int) -> None:
         msg = f"Your {model} database version is incorrect; version {expected_version} is expected. "
-        msg += "Manual update is required"
+        msg += "Manual update is required. "
+        msg += "Please see this issue: https://github.com/galaxyproject/galaxy/issues/13528"
         super().__init__(msg)
 
 
