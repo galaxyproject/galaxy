@@ -581,6 +581,16 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         return history_id
 
+    def workflow_run_wait_for_ok(self, hid: int, expand=False):
+        if self.is_beta_history():
+            item = self.content_item_by_attributes(hid=hid, state="ok")
+            item.wait_for_present()
+            if expand:
+                item.title.wait_for_and_click()
+        else:
+            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+            self.history_panel_click_item_title(hid=hid, wait=True)
+
 
 def default_web_host_for_selenium_tests():
     if asbool(GALAXY_TEST_SELENIUM_REMOTE):
