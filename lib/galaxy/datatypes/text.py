@@ -886,9 +886,9 @@ class Yaml(Text):
 
     def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
         # Override non-standard application/yaml mediatype with
-        # non-standard text/x-yaml, so preview is shown in preview iframe,
+        # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.
-        headers['content-type'] = 'text/x-yaml'
+        headers["content-type"] = "text/plain"
         return super()._yield_user_file_content(trans, from_dataset, filename, headers)
 
     def _looks_like_yaml(self, file_prefix: FilePrefix):
