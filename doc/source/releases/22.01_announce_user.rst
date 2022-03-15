@@ -140,10 +140,6 @@ A special thanks to the release testing team for testing many of the new feature
 - `Delphine Lariviere <https://github.com/Delphine-L>`_
 - `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
 - `Natalie Kucher <https://github.com/nakucher>`_
-- `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
-- `Alex Ostrovsky <https://github.com/astrovsky01>`_
-- `Enis Afgan <https://github.com/afgane>`_
-- `Jennifer Hillman-Jackson <https://github.com/jennaj>`_
 - `Alex Ostrovsky <https://github.com/astrovsky01>`_
 - `Enis Afgan <https://github.com/afgane>`_
  
