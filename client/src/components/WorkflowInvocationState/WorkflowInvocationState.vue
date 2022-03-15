@@ -133,7 +133,7 @@ export default {
             return stepStates;
         },
         invocationAndJobTerminal: function () {
-            return this.invocationSchedulingTerminal && this.jobStatesTerminal;
+            return !!(this.invocationSchedulingTerminal && this.jobStatesTerminal);
         },
         invocationLink: function () {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);

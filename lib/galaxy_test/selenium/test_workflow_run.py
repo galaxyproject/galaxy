@@ -258,21 +258,6 @@ steps:
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
-    @selenium_test
-    def test_simple_workflow_run_form_validation_required_text_param(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-"""
-        )
-        self.simplified_workflow_run_by_id(workflow_id)
-        run_button = self.components.workflow_run.run_workflow.wait_for_visible()
-        assert run_button.get_attribute("disabled") == "true"
-        self.components.workflow_run.validation_error.wait_for_visible()
-
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_run_with_name(name)
@@ -298,9 +283,6 @@ steps: []
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.workflow_click_option(".workflow-run")
-
-    def simplified_workflow_run_by_id(self, workflow_id):
-        self.get(f"workflows/run?id={workflow_id}&simplified_workflow_run_ui=prefer")
 
     def _assert_has_3_lines_after_run(self, hid):
         if self.is_beta_history():

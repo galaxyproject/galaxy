@@ -333,7 +333,11 @@ class SimpleTextToolParameter(ToolParameter):
 
     def to_json(self, value, app, use_security):
         """Convert a value to a string representation suitable for persisting"""
-        return unicodify(value)
+        if value is None:
+            rval = "" if not self.optional else None
+        else:
+            rval = unicodify(value)
+        return rval
 
     def get_initial_value(self, trans, other_values):
         return self.value
