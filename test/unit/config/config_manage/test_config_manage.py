@@ -20,6 +20,7 @@ def test_reports_conversion_1607_sample():
         assert "reports" in config
         reports_config = config["reports"] or {}
         assert "use_beaker_session" not in reports_config
+        assert "uwsgi" not in config
 
 
 def test_reports_build_sample():

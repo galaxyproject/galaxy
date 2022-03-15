@@ -73,7 +73,6 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
     @property
     def job_config(self):
         if not self._job_configuration:
-            self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
             self._job_configuration = JobConfiguration(self.app)
         return self._job_configuration
 
