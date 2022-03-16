@@ -43,14 +43,8 @@ except ImportError:
 
 try:
     from cwltool import load_tool
-    from cwltool.load_tool import (
-        default_loader,
-        resolve_and_validate_document,
-    )
 except ImportError:
-    default_loader = None  # type: ignore[assignment]
     load_tool = None  # type: ignore[assignment]
-    resolve_and_validate_document = None  # type: ignore[assignment]
 
 
 try:
@@ -59,8 +53,12 @@ except ImportError:
     command_line_tool = None  # type: ignore[assignment]
 
 try:
-    from cwltool.load_tool import resolve_and_validate_document
+    from cwltool.load_tool import (
+        default_loader,
+        resolve_and_validate_document,
+    )
 except ImportError:
+    default_loader = None  # type: ignore[assignment]
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
