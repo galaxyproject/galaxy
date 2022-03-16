@@ -205,7 +205,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self.sleep_for(WAIT_TYPES.HISTORY_POLL)
         self.screenshot("history_panel_collection_view_add_nametag")
         self._back_to_history()
-
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
         nametags = self.history_panel_item_get_nametags(collection_hid)
         assert nametags == ["moo"]

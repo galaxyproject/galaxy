@@ -141,7 +141,7 @@ export const StoreProvider = (storeAction, storeGetter) => {
         },
         data() {
             return {
-                loading: true,
+                loading: false,
             };
         },
         created() {
