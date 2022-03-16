@@ -756,7 +756,8 @@ class User(Base, Dictifiable, RepresentById):
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-        sql_calc = """
+        sql_calc = text(
+            """
             WITH per_user_histories AS
             (
                 SELECT id
@@ -776,6 +777,7 @@ class User(Base, Dictifiable, RepresentById):
             WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
+        )
         sa_session = object_session(self)
         usage = sa_session.scalar(sql_calc, {"id": self.id})
         if not dryrun:
