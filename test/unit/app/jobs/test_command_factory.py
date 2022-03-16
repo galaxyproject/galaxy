@@ -39,6 +39,10 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         self.__assert_command_is(_surround_command(MOCK_COMMAND_LINE + "; return_code=$?"))
 
+    def test_exit_code_file_appended(self):
+        self.job_wrapper.job_id = 1
+        self.__assert_command_is(_surround_command(MOCK_COMMAND_LINE + "; return_code=$?; echo $return_code > galaxy_1.ec"))
+
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
@@ -189,6 +193,7 @@ class MockJobWrapper:
         )
         self.shell = "/bin/sh"
         self.use_metadata_binary = False
+        self.job_id = None
 
     def get_command_line(self):
         return self.command_line
