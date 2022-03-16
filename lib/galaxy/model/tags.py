@@ -256,8 +256,10 @@ class TagHandler:
 
     def _create_tag_instance(self, tag_name):
         # For good performance caller should first check if there's already an appropriate tag
-        Session = sessionmaker(self.sa_session.bind)
         tag = galaxy.model.Tag(type=0, name=tag_name)
+        if not self.sa_session:
+            return tag
+        Session = sessionmaker(self.sa_session.bind)
         with Session() as separate_session:
             separate_session.add(tag)
             try:
