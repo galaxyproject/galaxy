@@ -113,7 +113,6 @@ class ToolShedTestDriver(driver_util.TestDriver):
         os.environ["TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF"] = shed_tool_data_table_conf_file
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
-        kwargs["global_conf"]["database_connection"] = kwargs["database_connection"]
         tool_shed_server_wrapper = driver_util.launch_server(
             app_factory=lambda: driver_util.build_shed_app(kwargs),
             webapp_factory=toolshedbuildapp.app_factory,
