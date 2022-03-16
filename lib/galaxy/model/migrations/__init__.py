@@ -21,6 +21,7 @@ from sqlalchemy import (
     create_engine,
     MetaData,
     Table,
+    text,
 )
 from sqlalchemy.engine import (
     Connection,
@@ -243,7 +244,7 @@ class DatabaseStateCache:
 
     def _load_sqlalchemymigrate_version(self, conn: Connection) -> CursorResult:
         if self.has_sqlalchemymigrate_version_table():
-            sql = f"select version from {SQLALCHEMYMIGRATE_TABLE}"
+            sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
 
 

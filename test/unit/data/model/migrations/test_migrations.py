@@ -4,7 +4,10 @@ from typing import Union
 import alembic
 import pytest
 from alembic.config import Config
-from sqlalchemy import MetaData
+from sqlalchemy import (
+    MetaData,
+    text,
+)
 
 from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
@@ -696,8 +699,8 @@ def _get_paths_to_version_locations():
 def load_sqlalchemymigrate_version(db_url, version):
     with disposing_engine(db_url) as engine:
         with engine.connect() as conn:
-            sql_delete = f"delete from {SQLALCHEMYMIGRATE_TABLE}"  # there can be only 1 row
-            sql_insert = f"insert into {SQLALCHEMYMIGRATE_TABLE} values('_', '_', {version})"
+            sql_delete = text(f"delete from {SQLALCHEMYMIGRATE_TABLE}")  # there can be only 1 row
+            sql_insert = text(f"insert into {SQLALCHEMYMIGRATE_TABLE} values('_', '_', {version})")
             conn.execute(sql_delete)
             conn.execute(sql_insert)
 
@@ -707,7 +710,7 @@ def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):  # no
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
             load_metadata(metadata_state2_gxy, engine)
-            sql = f"select version from {SQLALCHEMYMIGRATE_TABLE}"
+            sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             version = 42
             with engine.connect() as conn:
                 result = conn.execute(sql).scalar()
