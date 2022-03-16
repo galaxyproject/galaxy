@@ -37,6 +37,8 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    HistoryContentBulkOperationPayload,
+    HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
     HistoryContentsResult,
     HistoryContentType,
@@ -514,6 +516,23 @@ class FastAPIHistoryContents:
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
         return HistoryContentsResult.parse_obj(result)
+
+    @router.put(
+        "/api/histories/{history_id}/contents/bulk",
+        summary="Executes an operation on a set of items contained in the given History.",
+    )
+    def bulk_operation(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+        payload: HistoryContentBulkOperationPayload = Body(...),
+    ) -> HistoryContentBulkOperationResult:
+        """Executes an operation on a set of items contained in the given History.
+
+        The items to be processed can be explicitly set or determined by a dynamic query.
+        """
+        return self.service.bulk_operation(trans, history_id, filter_query_params, payload)
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}/validate",
