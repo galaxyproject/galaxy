@@ -79,7 +79,9 @@
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <DatasetDetails v-if="expandDataset" @edit="onEdit" :item="item" />
+        <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
+            <DatasetDetails v-if="expandDataset" @edit="onEdit" :item="item" />
+        </div>
     </div>
 </template>
 
@@ -203,5 +205,14 @@ export default {
     .name {
         word-wrap: break-word;
     }
+}
+.detail-animation-wrapper {
+    overflow: hidden;
+    transition: max-height 0.5s ease-out;
+    height: auto;
+    max-height: 400px;
+}
+.detail-animation-wrapper.collapsed {
+    max-height: 0;
 }
 </style>
