@@ -264,8 +264,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
                     self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
-                    # TODO: Once we have a test...
-                    #    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
+                    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                     if 'id' in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]['id']
                     if job:
