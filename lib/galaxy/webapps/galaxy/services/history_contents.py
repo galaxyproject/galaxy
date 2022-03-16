@@ -483,12 +483,20 @@ class HistoriesContentsService(ServiceBase):
     ) -> HistoryContentBulkOperationResult:
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
-        contents = self.history_contents_manager.contents(
-            history,
-            filters,
-            limit=filter_query_params.limit,
-            offset=filter_query_params.offset,
-        )
+        contents: List[HistoryItemModel]
+        if payload.items:
+            contents = self._get_contents_by_item_list(
+                trans,
+                history,
+                payload.items,
+            )
+        else:
+            contents = self.history_contents_manager.contents(
+                history,
+                filters,
+                limit=filter_query_params.limit,
+                offset=filter_query_params.offset,
+            )
         errors = self._apply_bulk_operation(contents, payload.operation)
         trans.sa_session.flush()
         success_count = len(contents) - len(errors)
@@ -1265,3 +1273,24 @@ class HistoriesContentsService(ServiceBase):
                 HistoryContentBulkOperation.purge,
             ]
         )
+
+    def _get_contents_by_item_list(
+        self, trans, history: History, items: List[HistoryContentItem]
+    ) -> List[HistoryItemModel]:
+        contents: List[HistoryItemModel] = []
+
+        dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
+        datasets_ids = map(lambda dataset: self.decode_id(dataset.id), dataset_items)
+        contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
+
+        collection_items = filter(
+            lambda item: item.history_content_type == HistoryContentType.dataset_collection, items
+        )
+        collections = [
+            self.dataset_collection_manager.get_dataset_collection_instance(
+                trans, instance_type="history", id=collection_item.id, check_ownership=True
+            )
+            for collection_item in collection_items
+        ]
+        contents.extend(collections)
+        return contents
