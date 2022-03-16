@@ -409,7 +409,7 @@ class HistoryContentsManager(base.SortableManager):
             .options(undefer(component_class._metadata))
             .options(joinedload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
             .options(joinedload(component_class.tags))
-            .options(joinedload(component_class.annotations))
+            .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         return {row.id: row for row in query.all()}
 
