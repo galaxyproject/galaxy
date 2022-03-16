@@ -406,10 +406,10 @@ class HistoryContentsManager(base.SortableManager):
             self._session()
             .query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(undefer("_metadata"))
-            .options(eagerload("dataset.actions"))
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(undefer(component_class._metadata))
+            .options(eagerload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
+            .options(eagerload(component_class.tags))
+            .options(eagerload(component_class.annotations))
         )
         return {row.id: row for row in query.all()}
 
