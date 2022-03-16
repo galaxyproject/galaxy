@@ -10,7 +10,6 @@ from sqlalchemy import (
     desc,
 )
 from sqlalchemy.orm import (
-    eagerload,
     joinedload,
     lazyload,
     undefer,
@@ -174,8 +173,8 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             .join("user")
             .options(
                 lazyload("latest_workflow"),
-                eagerload("user").load_only("username"),
-                eagerload("annotations"),
+                joinedload("user").load_only("username"),
+                joinedload("annotations"),
                 undefer("average_rating"),
             )
         )

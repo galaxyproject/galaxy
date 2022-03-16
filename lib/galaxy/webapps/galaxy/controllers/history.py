@@ -7,7 +7,6 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
-    eagerload,
     joinedload,
     undefer,
 )
@@ -264,14 +263,14 @@ class HistoryAllPublishedGrid(grids.Grid):
 
     def build_initial_query(self, trans, **kwargs):
         # TODO: Tags are still loaded one at a time, consider doing this all at once:
-        # - eagerload would keep everything in one query but would explode the number of rows and potentially
+        # - joinedload would keep everything in one query but would explode the number of rows and potentially
         #   result in unneeded info transferred over the wire.
         # - subqueryload("tags").subqueryload("tag") would probably be better under postgres but I'd
         #   like some performance data against a big database first - might cause problems?
 
         # - Pull down only username from associated User table since that is all that is used
-        #   (can be used during search). Need join in addition to the eagerload since it is used in
-        #   the .count() query which doesn't respect the eagerload options  (could eliminate this with #5523).
+        #   (can be used during search). Need join in addition to the joinedload since it is used in
+        #   the .count() query which doesn't respect the joinedload options  (could eliminate this with #5523).
         # - Undefer average_rating column to prevent loading individual ratings per-history.
         # - Eager load annotations - this causes a left join which might be inefficient if there were
         #   potentially many items per history (like if joining HDAs for instance) but there should only
@@ -279,7 +278,7 @@ class HistoryAllPublishedGrid(grids.Grid):
         return (
             trans.sa_session.query(self.model_class)
             .join("user")
-            .options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
         )
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -685,8 +684,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         user = session.query(model.User).filter_by(username=username).first()
         history = (
             trans.sa_session.query(model.History)
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(joinedload("tags"))
+            .options(joinedload("annotations"))
             .filter_by(user=user, slug=slug, deleted=False)
             .first()
         )

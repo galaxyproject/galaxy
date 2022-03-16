@@ -19,7 +19,7 @@ from sqlalchemy import (
     null,
     true,
 )
-from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import joinedload
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
@@ -258,7 +258,7 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
         histories = (
             app.sa_session.query(app.model.History)
             .filter(and_(app.model.History.table.c.deleted == true(), app.model.History.update_time < cutoff_time))
-            .options(eagerload("datasets"))
+            .options(joinedload("datasets"))
         )
     else:
         histories = (
@@ -270,7 +270,7 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
                     app.model.History.update_time < cutoff_time,
                 )
             )
-            .options(eagerload("datasets"))
+            .options(joinedload("datasets"))
         )
     for history in histories:
         log.info("### Processing history id %d (%s)", history.id, unicodify(history.name))
