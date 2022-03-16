@@ -15,7 +15,6 @@ from galaxy import (
     model,
     util,
 )
-from galaxy.app import StructuredApp
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
 from galaxy.quota import DatabaseQuotaAgent
@@ -25,6 +24,7 @@ from galaxy.quota._schema import (
     QuotaOperation,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 

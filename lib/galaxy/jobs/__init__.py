@@ -41,7 +41,7 @@ from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
 )
-from galaxy.job_execution.setup import (  # noqa: F401; This is read by certain misbehaving tool wrappers that import Galaxy internals
+from galaxy.job_execution.setup import (
     create_working_directory_for_job,
     ensure_configs_directory,
     JobIO,
@@ -2620,3 +2620,14 @@ class NoopQueue:
 
     def shutdown(self):
         return
+
+
+__all__ = (
+    "JobDestination",
+    "NoopQueue",
+    "JobToolConfiguration",
+    "JobConfiguration",
+    "JobWrapper",
+    "TaskWrapper",
+    "TOOL_PROVIDED_JOB_METADATA_FILE",
+)

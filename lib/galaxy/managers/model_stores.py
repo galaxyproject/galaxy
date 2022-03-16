@@ -1,9 +1,9 @@
 from galaxy import model
-from galaxy.app import MinimalManagerApp
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import SetupHistoryExportJob
+from galaxy.structured_app import MinimalManagerApp
 
 
 class ModelStoreManager:

@@ -1577,3 +1577,15 @@ def sort_by_attr(seq, attr):
     intermed = [(getattr(v, attr), i, v) for i, v in enumerate(seq)]
     intermed.sort()
     return [_[-1] for _ in intermed]
+
+
+__all__ = (
+    "HTTPBadRequest",
+    "SharableMixin",
+    "sort_by_attr",
+    "url_for",
+    "UsesExtendedMetadataMixin",
+    "UsesFormDefinitionsMixin",
+    "UsesTagsMixin",
+    "web",
+)

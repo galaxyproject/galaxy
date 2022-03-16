@@ -572,3 +572,17 @@ def read_unordered_gtf(iterator, strict=False):
     for chrom_features in chroms_features_sorted:
         for feature in chrom_features:
             yield feature
+
+
+__all__ = (
+    "GFFInterval",
+    "GFFFeature",
+    "GFFIntervalToBEDReaderWrapper",
+    "GFFReaderWrapper",
+    "convert_bed_coords_to_gff",
+    "convert_gff_coords_to_bed",
+    "parse_gff_attributes",
+    "parse_gff3_attributes",
+    "gff_attributes_to_str",
+    "read_unordered_gtf",
+)

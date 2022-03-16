@@ -182,3 +182,9 @@ class CwlPageSource(PageSource):
 
     def parse_input_sources(self):
         return self._input_list
+
+
+__all__ = (
+    "CwlToolSource",
+    "tool_proxy",
+)

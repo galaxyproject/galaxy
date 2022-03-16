@@ -13,7 +13,7 @@ from pydantic import (
     Field,
 )
 
-from galaxy.app import MinimalManagerApp
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
