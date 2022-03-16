@@ -109,12 +109,13 @@ def build_command(
     if container_monitor_command:
         commands_builder.prepend_command(container_monitor_command)
 
+    working_directory = remote_job_directory or job_wrapper.working_directory
+    commands_builder.capture_return_code(join(working_directory, f"galaxy_{job_wrapper.job_id}.ec"))
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     if stdout_file and stderr_file:
         commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
-    commands_builder.capture_return_code(job_wrapper.job_id)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         working_directory = remote_job_directory or job_wrapper.working_directory
@@ -202,7 +203,6 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
         work_dir_outputs_kwds['job_working_directory'] = remote_command_params['working_directory']
     work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
-        commands_builder.capture_return_code()
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
         commands_builder.append_commands(copy_commands)
 
@@ -238,7 +238,6 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     if metadata_command:
         # Place Galaxy and its dependencies in environment for metadata regardless of tool.
         metadata_command = f"{SETUP_GALAXY_FOR_METADATA}{metadata_command}"
-        commands_builder.capture_return_code()
         commands_builder.append_command(metadata_command)
 
 
@@ -290,12 +289,12 @@ tee -a stderr.log < "$err" >&2 &""",
         self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'",
                             sep="")
 
-    def capture_return_code(self, job_id=None):
+    def capture_return_code(self, exit_code_path=None):
         if not self.return_code_captured:
             self.return_code_captured = True
             self.append_command(CAPTURE_RETURN_CODE)
-            if job_id:
-                self.append_command(f"echo $return_code > galaxy_{job_id}.ec")
+            if exit_code_path:
+                self.append_command(f"echo $return_code > {exit_code_path}")
 
     def build(self):
         if self.return_code_captured:
