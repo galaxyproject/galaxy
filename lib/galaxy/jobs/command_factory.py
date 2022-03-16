@@ -114,7 +114,7 @@ def build_command(
 
     if stdout_file and stderr_file:
         commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
-    commands_builder.capture_return_code()
+    commands_builder.capture_return_code(job_wrapper.job_id)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
         working_directory = remote_job_directory or job_wrapper.working_directory
@@ -295,10 +295,12 @@ tee -a stderr.log < "$err" >&2 &""",
         )
         self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'", sep="")
 
-    def capture_return_code(self):
+    def capture_return_code(self, job_id=None):
         if not self.return_code_captured:
             self.return_code_captured = True
             self.append_command(CAPTURE_RETURN_CODE)
+            if job_id:
+                self.append_command(f"echo $return_code > galaxy_{job_id}.ec")
 
     def build(self):
         if self.return_code_captured:
