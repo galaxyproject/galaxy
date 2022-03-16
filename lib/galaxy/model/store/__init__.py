@@ -1127,6 +1127,10 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 else:
                     raise NotImplementedError()
                 new_obj = obj.copy()
+                if not new_id and self.import_options.allow_edit:
+                    # We may not have exported all job parameters, such as dces,
+                    # but we shouldn't set the object_id to none in that case.
+                    new_id = obj["id"]
                 new_obj["id"] = new_id
                 return (k, new_obj)
 
