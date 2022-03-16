@@ -676,12 +676,12 @@ class User(Base, Dictifiable, RepresentById):
                 db_session.query(User)
                 .filter_by(id=self.id)  # don't use get, it will use session variant.
                 .options(
-                    joinedload("roles"),
-                    joinedload("roles.role"),
-                    joinedload("groups"),
-                    joinedload("groups.group"),
-                    joinedload("groups.group.roles"),
-                    joinedload("groups.group.roles.role"),
+                    joinedload(User.roles),
+                    joinedload(User.roles.role),
+                    joinedload(User.groups),
+                    joinedload(User.groups.group),
+                    joinedload(User.groups.group.roles),
+                    joinedload(User.groups.group.roles.role),
                 )
                 .one()
             )
