@@ -6,6 +6,7 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     Optional,
     Set,
@@ -32,6 +33,7 @@ from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.jobs import (
     fetch_job_states,
     summarize_jobs_to_dict,
@@ -52,12 +54,17 @@ from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
     AnyJobStateSummary,
+    BulkOperationItemError,
     ContentsNearResult,
     ContentsNearStats,
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    HistoryContentBulkOperation,
+    HistoryContentBulkOperationPayload,
+    HistoryContentBulkOperationResult,
+    HistoryContentItem,
     HistoryContentsArchiveDryRunResult,
     HistoryContentSource,
     HistoryContentType,
@@ -74,6 +81,8 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal["all"]]
+
+HistoryItemModel = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
 
 
 class DirectionOptions(str, Enum):
@@ -464,6 +473,26 @@ class HistoriesContentsService(ServiceBase):
             dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id)
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
+
+    def bulk_operation(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: EncodedDatabaseIdField,
+        filter_query_params: FilterQueryParams,
+        payload: HistoryContentBulkOperationPayload,
+    ) -> HistoryContentBulkOperationResult:
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+        contents = self.history_contents_manager.contents(
+            history,
+            filters,
+            limit=filter_query_params.limit,
+            offset=filter_query_params.offset,
+        )
+        errors = self._apply_bulk_operation(contents, payload.operation)
+        trans.sa_session.flush()
+        success_count = len(contents) - len(errors)
+        return HistoryContentBulkOperationResult.construct(success_count=success_count, errors=errors)
 
     def validate(self, trans, history_id: EncodedDatabaseIdField, history_content_id: EncodedDatabaseIdField):
         """
@@ -1193,3 +1222,46 @@ class HistoriesContentsService(ServiceBase):
             )
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
+
+    def _apply_bulk_operation(
+        self,
+        contents: Iterable[HistoryItemModel],
+        operation: HistoryContentBulkOperation,
+    ) -> List[BulkOperationItemError]:
+        errors: List[BulkOperationItemError] = []
+        if self._is_per_item_operation(operation):
+            for item in contents:
+                error = self._apply_operation_to_item(item, operation)
+                if error:
+                    errors.append(error)
+        return errors
+
+    def _apply_operation_to_item(
+        self,
+        item: HistoryItemModel,
+        operation: HistoryContentBulkOperation,
+    ) -> Optional[BulkOperationItemError]:
+        try:
+            if operation == HistoryContentBulkOperation.hide:
+                item.visible = False
+            elif operation == HistoryContentBulkOperation.unhide:
+                item.visible = True
+            return None
+        except BaseException as exc:
+            return BulkOperationItemError.construct(
+                item=HistoryContentItem.construct(
+                    id=self.encode_id(item.id), history_content_type=item.history_content_type
+                ),
+                error=str(exc),
+            )
+
+    def _is_per_item_operation(self, operation: HistoryContentBulkOperation) -> bool:
+        return operation in set(
+            [
+                HistoryContentBulkOperation.delete,
+                HistoryContentBulkOperation.undelete,
+                HistoryContentBulkOperation.hide,
+                HistoryContentBulkOperation.unhide,
+                HistoryContentBulkOperation.purge,
+            ]
+        )
