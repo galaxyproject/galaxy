@@ -7,7 +7,8 @@
         echo groups_opt $groups_opt >> '$output1' &&
         echo groups_mult_opt $groups_mult_opt >> '$output1' &&
         echo build_opt $build_opt >> '$output1' &&
-        echo build_mult_opt $build_mult_opt >> '$output1'
+        echo build_mult_opt $build_mult_opt >> '$output1' &&
+        echo select_opt_wdefault $select_opt_wdefault >> '$output1'
     ]]></command>
     <inputs>
         <!-- verify that it is possible to select no options
@@ -47,12 +48,21 @@
 
         <param name="build_opt" type="genomebuild" optional="true"/>
         <param name="build_mult_opt" type="genomebuild" multiple="true" optional="true"/>
+
+        <!-- check if an optional select with an option selected per default can be unselected in tests -->
+        <param name="select_opt_wdefault" type="select" optional="true">
+            <option value="">empty</option>
+            <option value="A" selected="true">A</option>
+            <option value="B">B</option>
+        </param>
+
     </inputs>
     <outputs>
         <data name="output1" format="tabular" />
     </outputs>
     <tests>
         <test>
+            <param name="select_opt_wdefault"/>
             <output name="output1">
                 <assert_contents>
                     <has_line line="select_opt None" />
@@ -63,6 +73,7 @@
                     <has_line line="groups_mult_opt None" />
                     <has_line line="build_opt None" />
                     <has_line line="build_mult_opt None" />
+                    <has_line line="select_opt_wdefault None" />
                 </assert_contents>
             </output>
         </test>
