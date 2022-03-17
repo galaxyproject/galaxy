@@ -1,14 +1,14 @@
 <tool id="select_optional" name="Optional select" version="1.0.0" profile="20.01">
     <command><![CDATA[
-        echo select_opt $select_opt >> '$output1' &&
-        echo select_mult_opt $select_mult_opt >> '$output1' &&
-        echo col_opt $col_opt >> '$output1' &&
-        echo col_mult_opt $col_mult_opt >> '$output1' &&
-        echo groups_opt $groups_opt >> '$output1' &&
-        echo groups_mult_opt $groups_mult_opt >> '$output1' &&
-        echo build_opt $build_opt >> '$output1' &&
-        echo build_mult_opt $build_mult_opt >> '$output1' &&
-        echo select_opt_wdefault $select_opt_wdefault >> '$output1'
+        echo "select_opt $select_opt" >> '$output1' &&
+        echo "select_mult_opt $select_mult_opt" >> '$output1' &&
+        echo "col_opt $col_opt" >> '$output1' &&
+        echo "col_mult_opt $col_mult_opt" >> '$output1' &&
+        echo "groups_opt $groups_opt" >> '$output1' &&
+        echo "groups_mult_opt $groups_mult_opt" >> '$output1' &&
+        echo "build_opt $build_opt" >> '$output1' &&
+        echo "build_mult_opt $build_mult_opt" >> '$output1' &&
+        echo "select_opt_wdefault $select_opt_wdefault" >> '$output1'
     ]]></command>
     <inputs>
         <!-- verify that it is possible to select no options
