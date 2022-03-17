@@ -1462,8 +1462,8 @@ Data input parameters can be given as a file name. The file should exist in the
 The value of a select parameter should be specified as the value of one of the
 legal options. If more than one option is selected (`multiple="true"`) they
 should be given as comma separated list. For optional selects
-(`optional="true"`) the case that no option is selected can be specified with
-`value=""`.
+(`optional="true"`) the case that no option is selected can be specified by
+omitting the `value` attribute.
 
 While in general it is preferred to specify the selected cases by their values it
 is also possible to specify them by their name (i.e. the content of the

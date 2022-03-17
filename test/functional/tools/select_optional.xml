@@ -77,5 +77,13 @@
                 </assert_contents>
             </output>
         </test>
+        <test>
+            <param name="select_opt_wdefault" value=""/>
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="select_opt_wdefault " />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
 </tool>
