@@ -57,7 +57,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         galaxy.app.app = app
     else:
         try:
-            app = galaxy.app.UniverseApplication(global_conf=global_conf, application_stack="fastAPI", **kwargs)
+            app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
             galaxy.app.app = app
         except Exception:
             traceback.print_exc()
