@@ -10,7 +10,10 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    unicodify,
+)
 
 
 log = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.post(url, data, headers=header, verify=verify_ssl)
+            res = requests.post(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A transport error occurred in the GoDocker job runner:', e)
@@ -55,7 +58,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.get(url, headers=header, verify=verify_ssl)
+            res = requests.get(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -71,7 +74,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.delete(url, headers=header, verify=verify_ssl)
+            res = requests.delete(url, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -87,7 +90,7 @@ class Godocker:
         verify_ssl = not self.noCert
         try:
             url = self.server + query
-            res = requests.put(url, data, headers=header, verify=verify_ssl)
+            res = requests.put(url, data, headers=header, verify=verify_ssl, timeout=DEFAULT_SOCKET_TIMEOUT)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             log.error('A communication error occurred in the GoDocker job runner:', e)
@@ -135,29 +138,19 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # godocker API login call
         self.auth = self.login(self.runner_params["key"], self.runner_params["user"], self.runner_params["godocker_master"])
 
-        if not self.auth:
-            log.error("Authentication failure, GoDocker runner cannot be started")
-        else:
-            """ Following methods starts threads.
-                These methods invoke threading.Thread(name,target)
-                      which in turn invokes methods monitor() and run_next().
-            """
-            self._init_monitor_thread()
-            self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """ Create job script and submit it to godocker """
         if not self.prepare_job(job_wrapper, include_metadata=False, include_work_dir_outputs=True, modify_command_for_container=False):
             return
 
         job_destination = job_wrapper.job_destination
-        """ Submit job to godocker """
+        # Submit job to godocker
         job_id = self.post_task(job_wrapper)
         if not job_id:
             log.error("Job creation failure.  No Response from GoDocker")
             job_wrapper.fail("Not submitted")
         else:
-            log.debug("Starting queue_job for job " + job_id)
+            log.debug(f"Starting queue_job for job {job_id}")
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
@@ -172,15 +165,15 @@ class GodockerJobRunner(AsynchronousJobRunner):
             else if the job is running or in pending state, simply
                     return the 'AsynchronousJobState object' (job_state).
         """
-        ''' This function is called by check_watched_items() where
-                    param job_state is an object of AsynchronousJobState.
-            Expected return type of this function is None or
-                    AsynchronousJobState object with updated running status.
-        '''
-        """ Get task from GoDocker """
+        # This function is called by check_watched_items() where param job_state
+        # is an object of AsynchronousJobState.
+        # Expected return type of this function is None or an
+        # AsynchronousJobState object with updated running status.
+
+        # Get task from GoDocker
         job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
-        log.debug("Job ID: " + str(job_state.job_id) + " Job Status: " + str(job_status_god['status']['primary']))
+        log.debug(f"Job ID: {str(job_state.job_id)} Job Status: {str(job_status_god['status']['primary'])}")
 
         if job_status_god['status']['primary'] == "over" or job_persisted_state == model.Job.states.STOPPED:
             job_state.running = False
@@ -229,12 +222,11 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """ Attempts to delete a dispatched executing Job in GoDocker """
-        '''This function is called by fail_job()
-           where param job = self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id )
-           No Return data expected
-        '''
+        # This function is called by fail_job() where
+        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # No Return data expected
         job_id = job_wrapper.job_id
-        log.debug("STOP JOB EXECUTION OF JOB ID: " + str(job_id))
+        log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")
         # Get task status from GoDocker.
         job_status_god = self.get_task_status(job_id)
         if job_status_god['status']['primary'] != "over":
@@ -244,9 +236,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """ Recovers jobs stuck in the queued/running state when Galaxy started """
-        """ This method is called by galaxy at the time of startup.
-            Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
-        """
+        # This method is called by Galaxy at startup time.
+        # Jobs in Running & Queued state in galaxy are put in the monitor_queue
+        # by creating an AsynchronousJobState object
         job_id = job_wrapper.job_id
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)
@@ -276,8 +268,8 @@ class GodockerJobRunner(AsynchronousJobRunner):
             if vol['name'] == "go-docker":
                 path = str(vol['path'])
         if path:
-            god_output_file = path + "/god.log"
-            god_error_file = path + "/god.err"
+            god_output_file = f"{path}/god.log"
+            god_error_file = f"{path}/god.err"
             try:
                 # Read from GoDocker output_file and write it into galaxy output_file.
                 f = open(god_output_file)
@@ -299,9 +291,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 log_file.write(out_log)
                 log_file.close()
                 f.close()
-                log.debug("CREATE OUTPUT FILE: " + job_state.output_file)
-                log.debug("CREATE ERROR FILE: " + job_state.error_file)
-                log.debug("CREATE EXIT CODE FILE: " + job_state.exit_code_file)
+                log.debug(f"CREATE OUTPUT FILE: {job_state.output_file}")
+                log.debug(f"CREATE ERROR FILE: {job_state.error_file}")
+                log.debug(f"CREATE EXIT CODE FILE: {job_state.exit_code_file}")
             except OSError as e:
                 log.error('Could not access task log file: %s', unicodify(e))
                 log.debug("IO Error occurred when accessing the files.")
@@ -315,13 +307,13 @@ class GodockerJobRunner(AsynchronousJobRunner):
             Create Login model schema of GoDocker and call the http_post_request method.
         """
         log.debug("LOGIN TASK TO BE EXECUTED \n")
-        log.debug("GODOCKER LOGIN: " + str(login))
+        log.debug(f"GODOCKER LOGIN: {str(login)}")
         data = json.dumps({'user': login, 'apikey': apikey})
         # Create object of Godocker class
         g_auth = Godocker(server, login, apikey, noCert)
         auth = g_auth.http_post_request("/api/1.0/authenticate", data, {'Content-type': 'application/json', 'Accept': 'application/json'})
         if not auth:
-            log.error("GoDocker authentication Error.")
+            raise Exception("Authentication failure, GoDocker runner cannot be started")
         else:
             log.debug("GoDocker authentication successful.")
             token = auth.json()['token']
@@ -348,7 +340,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 docker_image = self._find_container(job_wrapper).container_id
                 log.debug("GoDocker runner using container %s.", docker_image)
             except Exception:
-                log.error("Unable to find docker_image for job %s, failing." % job_wrapper.job_id)
+                log.error(f"Unable to find docker_image for job {job_wrapper.job_id}, failing.")
                 return False
 
             volumes = []
@@ -378,11 +370,11 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 if(job_destination.params["virtualenv"] == "true"):
                     GALAXY_VENV_TEMPLATE = """GALAXY_VIRTUAL_ENV="%s"; if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then . "$GALAXY_VIRTUAL_ENV/bin/activate"; fi;"""
                     venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-                    command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
+                    command = f"#!/bin/bash\ncd {job_wrapper.working_directory}\n{venv}\n{job_wrapper.runner_command_line}"
                 else:
-                    command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
+                    command = f"#!/bin/bash\ncd {job_wrapper.working_directory}\n{job_wrapper.runner_command_line}"
             except Exception:
-                command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
+                command = f"#!/bin/bash\ncd {job_wrapper.working_directory}\n{job_wrapper.runner_command_line}"
 
             # GoDocker Job model schema
             job = {
@@ -424,7 +416,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
             result = self.auth.http_post_request(
                 "/api/1.0/task", json.dumps(job),
-                {'Authorization': 'Bearer ' + self.auth.token, 'Content-type': 'application/json', 'Accept': 'application/json'}
+                {'Authorization': f"Bearer {self.auth.token}", 'Content-type': 'application/json', 'Accept': 'application/json'}
             )
             # Return job_id
             return str(result.json()['id'])
@@ -435,7 +427,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id), {'Authorization': 'Bearer ' + self.auth.token})
+            result = self.auth.http_get_request(f"/api/1.0/task/{str(job_id)}", {'Authorization': f"Bearer {self.auth.token}"})
             job = result.json()
         # Return the job
         return job
@@ -446,7 +438,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id) + "/suspend", {'Authorization': 'Bearer ' + self.auth.token})
+            result = self.auth.http_get_request(f"/api/1.0/task/{str(job_id)}/suspend", {'Authorization': f"Bearer {self.auth.token}"})
             job = result.json()
         # Return the job
         return job
@@ -457,7 +449,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_get_request("/api/1.0/task/" + str(job_id) + "/status", {'Authorization': 'Bearer ' + self.auth.token})
+            result = self.auth.http_get_request(f"/api/1.0/task/{str(job_id)}/status", {'Authorization': f"Bearer {self.auth.token}"})
             job = result.json()
         # Return task status
         return job
@@ -468,7 +460,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """
         job = False
         if self.auth.token:
-            result = self.auth.http_delete_request("/api/1.0/task/" + str(job_id), {'Authorization': 'Bearer ' + self.auth.token})
+            result = self.auth.http_delete_request(f"/api/1.0/task/{str(job_id)}", {'Authorization': f"Bearer {self.auth.token}"})
             job = result.json()
         # Return the job
         return job

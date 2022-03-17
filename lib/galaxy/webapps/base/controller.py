@@ -2,7 +2,7 @@
 Contains functionality needed in every web interface
 """
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from sqlalchemy import true
 from webob.exc import (
@@ -26,6 +26,7 @@ from galaxy.managers import (
     users,
     workflows
 )
+from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -106,6 +107,7 @@ class BaseController:
         """
         return trans.security.encode_all_ids(rval, recursive=recursive)
 
+    # TODO this will be replaced by lib.galaxy.managers.base.ModelFilterParser.build_filter_params
     def parse_filter_params(self, qdict, filter_attr_key='q', filter_value_key='qv', attr_op_split_char='-'):
         """
         """
@@ -167,7 +169,7 @@ class BaseUIController(BaseController):
             raise       # handled in the caller
         except Exception:
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
-            raise Exception('Server error retrieving {} id ( {} ).'.format(class_name, str(id)))
+            raise Exception(f'Server error retrieving {class_name} id ( {str(id)} ).')
 
     def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
@@ -182,43 +184,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid {} id ( {} ) specified: {}".format(class_name, str(id), util.unicodify(e)))
+            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))
-
-    def validate_in_users_and_groups(self, trans, payload):
-        """
-        For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
-        """
-        def get_id(item, model_class, column):
-            try:
-                return trans.security.decode_id(item)
-            except Exception:
-                pass  # maybe an email/group name
-            # this will raise if the item is invalid
-            return trans.sa_session.query(model_class).filter(column == item).first().id
-        new_in_users = []
-        new_in_groups = []
-        invalid = []
-        for item in util.listify(payload.get('in_users', [])):
-            try:
-                new_in_users.append(get_id(item, trans.app.model.User, trans.app.model.User.table.c.email))
-            except Exception:
-                invalid.append(item)
-        for item in util.listify(payload.get('in_groups', [])):
-            try:
-                new_in_groups.append(get_id(item, trans.app.model.Group, trans.app.model.Group.table.c.name))
-            except Exception:
-                invalid.append(item)
-        if invalid:
-            msg = "The following value(s) for associated users and/or groups could not be parsed: %s." % ', '.join(invalid)
-            msg += "  Valid values are email addresses of users, names of groups, or IDs of both."
-            raise Exception(msg)
-        payload['in_users'] = list(map(str, new_in_users))
-        payload['in_groups'] = list(map(str, new_in_groups))
 
     def not_implemented(self, trans, **kwd):
         raise HTTPNotImplemented()
@@ -230,6 +201,7 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
         ORDER_BY_SEP_CHAR = ','
         if ORDER_BY_SEP_CHAR in order_by_string:
@@ -292,24 +264,22 @@ class JSAppLauncher(BaseUIController):
         """
         root = root or web.url_for('/')
         js_options = {
-            'root'               : root,
-            'user'               : self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
-            'config'             : self._get_site_configuration(trans),
-            'params'             : dict(trans.request.params),
-            'session_csrf_token' : trans.session_csrf_token,
+            'root': root,
+            'user': self.user_serializer.serialize(trans.user, self.USER_BOOTSTRAP_KEYS, trans=trans),
+            'config': self._get_site_configuration(trans),
+            'params': dict(trans.request.params),
+            'session_csrf_token': trans.session_csrf_token,
         }
         return js_options
 
     def _get_extended_config(self, trans):
         config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
-            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
-            'toolbox'                       : trans.app.toolbox.to_dict(trans),
-            'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
-            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
+            'active_view': 'analysis',
+            'enable_webhooks': True if trans.app.webhooks_registry.webhooks else False,
+            'message_box_visible': trans.app.config.message_box_visible,
+            'show_inactivity_warning': trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls': list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs': list(trans.app.toolbox.dynamic_conf_filenames())
         }
 
         # TODO: move to user
@@ -334,7 +304,7 @@ class JSAppLauncher(BaseUIController):
             serializer = self.config_serializer
             if self.user_manager.is_admin(trans.user, trans=trans):
                 serializer = self.admin_config_serializer
-            return serializer.serialize_to_view(self.app.config, view='all')
+            return serializer.serialize_to_view(self.app.config, view='all', host=trans.host)
         except Exception as exc:
             log.exception(exc)
             return {}
@@ -397,67 +367,6 @@ class SharableItemSecurityMixin:
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin:
-
-    def serve_ready_history_export(self, trans, jeha):
-        assert jeha.ready
-        if jeha.compressed:
-            trans.response.set_content_type('application/x-gzip')
-        else:
-            trans.response.set_content_type('application/x-tar')
-        disposition = 'attachment; filename="%s"' % jeha.export_name
-        trans.response.headers["Content-Disposition"] = disposition
-        archive = trans.app.object_store.get_filename(jeha.dataset)
-        return open(archive, mode='rb')
-
-    def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False, directory_uri=None, file_name=None):
-        # Convert options to booleans.
-        if isinstance(gzip, str):
-            gzip = (gzip in ['True', 'true', 'T', 't'])
-        if isinstance(include_hidden, str):
-            include_hidden = (include_hidden in ['True', 'true', 'T', 't'])
-        if isinstance(include_deleted, str):
-            include_deleted = (include_deleted in ['True', 'true', 'T', 't'])
-
-        params = {
-            'history_to_export': history,
-            'compress': gzip,
-            'include_hidden': include_hidden,
-            'include_deleted': include_deleted
-        }
-
-        if directory_uri is None:
-            export_tool_id = '__EXPORT_HISTORY__'
-        else:
-            params['directory_uri'] = directory_uri
-            params['file_name'] = file_name or None
-            export_tool_id = '__EXPORT_HISTORY_TO_URI__'
-
-        # Run job to do export.
-        history_exp_tool = trans.app.toolbox.get_tool(export_tool_id)
-        job, _ = history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
-        return job
-
-
-class ImportsHistoryMixin:
-
-    def queue_history_import(self, trans, archive_type, archive_source):
-        # Run job to do import.
-        history_imp_tool = trans.app.toolbox.get_tool('__IMPORT_HISTORY__')
-        incoming = {'__ARCHIVE_SOURCE__' : archive_source, '__ARCHIVE_TYPE__' : archive_type}
-        job, _ = history_imp_tool.execute(trans, incoming=incoming)
-        return job
-
-
-class UsesLibraryMixin:
-
-    def get_library(self, trans, id, check_ownership=False, check_accessible=True):
-        l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
-            error("LibraryFolder is not accessible to the current user")
-        return l
-
-
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
 
     def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
@@ -484,8 +393,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return (trans.user_is_admin or
-                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
+        return (trans.user_is_admin
+                or trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -494,7 +403,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         this check.
         """
         if not trans.user:
-            return False
+            raise exceptions.ItemAccessibilityException("Anonymous users cannot add to library items")
 
         current_user_roles = trans.get_current_user_roles()
         if trans.user_is_admin:
@@ -534,7 +443,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ``library_contents.create`` will branch to this if called with 'from_hda_id'
         in its payload.
         """
-        log.debug('_copy_hda_to_library_folder: %s' % (str((from_hda_id, folder_id, ldda_message))))
+        log.debug(f'_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}')
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
@@ -648,6 +557,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
     """
     Mixin for controllers that use Visualization objects.
     """
+    slug_builder = SlugBuilder()
 
     def get_visualization(self, trans, id, check_ownership=True, check_accessible=False):
         """
@@ -744,10 +654,10 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # TODO: deleted
         # TODO: importable
         return {
-            'id'        : visualization.id,
-            'title'     : visualization.title,
-            'type'      : visualization.type,
-            'dbkey'     : visualization.dbkey,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'dbkey': visualization.dbkey,
         }
 
     def get_visualization_dict(self, visualization):
@@ -758,15 +668,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         return {
             'model_class': 'Visualization',
-            'id'         : visualization.id,
-            'title'      : visualization.title,
-            'type'       : visualization.type,
-            'user_id'    : visualization.user.id,
-            'dbkey'      : visualization.dbkey,
-            'slug'       : visualization.slug,
+            'id': visualization.id,
+            'title': visualization.title,
+            'type': visualization.type,
+            'user_id': visualization.user.id,
+            'dbkey': visualization.dbkey,
+            'slug': visualization.slug,
             # to_dict only the latest revision (allow older to be fetched elsewhere)
-            'latest_revision' : self.get_visualization_revision_dict(visualization.latest_revision),
-            'revisions' : [r.id for r in visualization.revisions],
+            'latest_revision': self.get_visualization_revision_dict(visualization.latest_revision),
+            'revisions': [r.id for r in visualization.revisions],
         }
 
     def get_visualization_revision_dict(self, revision):
@@ -775,12 +685,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         NOTE: that encoding ids isn't done here should happen at the caller level.
         """
         return {
-            'model_class'      : 'VisualizationRevision',
-            'id'               : revision.id,
-            'visualization_id' : revision.visualization.id,
-            'title'            : revision.title,
-            'dbkey'            : revision.dbkey,
-            'config'           : revision.config,
+            'model_class': 'VisualizationRevision',
+            'id': revision.id,
+            'visualization_id': revision.visualization.id,
+            'title': revision.title,
+            'dbkey': revision.dbkey,
+            'config': revision.config,
         }
 
     def import_visualization(self, trans, id, user=None):
@@ -807,7 +717,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # copy vis and alter title
         # TODO: need to handle custom db keys.
-        imported_visualization = visualization.copy(user=user, title="imported: " + visualization.title)
+        imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
         trans.sa_session.flush()
         return imported_visualization
@@ -844,7 +754,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         # precondition: only add new revision on owned vis's
         # TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
-        revision = trans.model.VisualizationRevision(visualization, title, dbkey, config)
+        revision = trans.model.VisualizationRevision(visualization=visualization, title=title, dbkey=dbkey, config=config)
+
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)
@@ -993,7 +904,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                     "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
                     "prefs": prefs,
                     "mode": track_dict.get('mode', 'Auto'),
-                    "filters": track_dict.get('filters', {'filters' : track_data_provider.get_filters()}),
+                    "filters": track_dict.get('filters', {'filters': track_data_provider.get_filters()}),
                     "tool": self.get_tool_def(trans, dataset),
                     "tool_state": track_dict.get('tool_state', {})
                 }
@@ -1065,7 +976,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             "name": dataset.name,
             "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
             "prefs": {},
-            "filters": {'filters' : track_data_provider.get_filters()},
+            "filters": {'filters': track_data_provider.get_filters()},
             "tool": self.get_tool_def(trans, dataset),
             "tool_state": {}
         }
@@ -1087,15 +998,15 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if not data:
-            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         if check_ownership:
             # Verify ownership.
@@ -1103,7 +1014,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             if not user:
                 error("Must be logged in to manage Galaxy items")
             if data.history.user != user:
-                error("%s is not owned by current user" % data.__class__.__name__)
+                error(f"{data.__class__.__name__} is not owned by current user")
 
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
@@ -1112,8 +1023,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
                 error("You are not allowed to access this dataset")
 
             if check_state and data.state == trans.model.Dataset.states.UPLOAD:
-                return trans.show_error_message("Please wait until this dataset finishes uploading " +
-                                                "before attempting to view it.")
+                return trans.show_error_message("Please wait until this dataset finishes uploading "
+                                                + "before attempting to view it.")
         return data
 
     # -- Helper functions --
@@ -1139,7 +1050,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if slug:
             visualization.slug = slug
         else:
-            self.create_item_slug(trans.sa_session, visualization)
+            self.slug_builder.create_item_slug(trans.sa_session, visualization)
         if annotation:
             annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
@@ -1212,6 +1123,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
 class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     """ Mixin for controllers that use StoredWorkflow objects. """
+    slug_builder = SlugBuilder()
 
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
@@ -1226,7 +1138,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
-                self.create_item_slug(trans.sa_session, workflow)
+                self.slug_builder.create_item_slug(trans.sa_session, workflow)
                 trans.sa_session.flush()
 
         return workflow
@@ -1244,7 +1156,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """ Imports a shared workflow """
         # Copy workflow.
         imported_stored = model.StoredWorkflow()
-        imported_stored.name = "imported: " + stored.name
+        imported_stored.name = f"imported: {stored.name}"
         workflow = stored.latest_workflow.copy(user=trans.user)
         workflow.stored_workflow = imported_stored
         imported_stored.latest_workflow = workflow
@@ -1298,15 +1210,15 @@ class UsesFormDefinitionsMixin:
         # Save a form_builder field object
         params = util.Params(kwd)
         if isinstance(field_obj, trans.model.UserAddress):
-            field_obj.desc = util.restore_text(params.get('%s_short_desc' % widget_name, ''))
-            field_obj.name = util.restore_text(params.get('%s_name' % widget_name, ''))
-            field_obj.institution = util.restore_text(params.get('%s_institution' % widget_name, ''))
-            field_obj.address = util.restore_text(params.get('%s_address' % widget_name, ''))
-            field_obj.city = util.restore_text(params.get('%s_city' % widget_name, ''))
-            field_obj.state = util.restore_text(params.get('%s_state' % widget_name, ''))
-            field_obj.postal_code = util.restore_text(params.get('%s_postal_code' % widget_name, ''))
-            field_obj.country = util.restore_text(params.get('%s_country' % widget_name, ''))
-            field_obj.phone = util.restore_text(params.get('%s_phone' % widget_name, ''))
+            field_obj.desc = util.restore_text(params.get(f'{widget_name}_short_desc', ''))
+            field_obj.name = util.restore_text(params.get(f'{widget_name}_name', ''))
+            field_obj.institution = util.restore_text(params.get(f'{widget_name}_institution', ''))
+            field_obj.address = util.restore_text(params.get(f'{widget_name}_address', ''))
+            field_obj.city = util.restore_text(params.get(f'{widget_name}_city', ''))
+            field_obj.state = util.restore_text(params.get(f'{widget_name}_state', ''))
+            field_obj.postal_code = util.restore_text(params.get(f'{widget_name}_postal_code', ''))
+            field_obj.country = util.restore_text(params.get(f'{widget_name}_country', ''))
+            field_obj.phone = util.restore_text(params.get(f'{widget_name}_phone', ''))
             trans.sa_session.add(field_obj)
             trans.sa_session.flush()
 
@@ -1345,8 +1257,9 @@ class UsesFormDefinitionsMixin:
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
 
-    manager = None
-    serializer = None
+    manager: Any = None
+    serializer: Any = None
+    slug_builder = SlugBuilder()
 
     # -- Implemented methods. --
 
@@ -1371,112 +1284,7 @@ class SharableMixin:
             Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
-        self.create_item_slug(sa_session, item)
-
-    def create_item_slug(self, sa_session, item):
-        """ Create/set item slug. Slug is unique among user's importable items
-            for item's class. Returns true if item's slug was set/changed; false
-            otherwise.
-        """
-        cur_slug = item.slug
-
-        # Setup slug base.
-        if cur_slug is None or cur_slug == "":
-            # Item can have either a name or a title.
-            if hasattr(item, 'name'):
-                item_name = item.name
-            elif hasattr(item, 'title'):
-                item_name = item.title
-            slug_base = util.ready_name_for_url(item_name.lower())
-        else:
-            slug_base = cur_slug
-
-        # Using slug base, find a slug that is not taken. If slug is taken,
-        # add integer to end.
-        new_slug = slug_base
-        count = 1
-        # Ensure unique across model class and user and don't include this item
-        # in the check in case it has previously been assigned a valid slug.
-        while sa_session.query(item.__class__).filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id).count() != 0:
-            # Slug taken; choose a new slug based on count. This approach can
-            # handle numerous items with the same name gracefully.
-            new_slug = '%s-%i' % (slug_base, count)
-            count += 1
-
-        # Set slug and return.
-        item.slug = new_slug
-        return item.slug == cur_slug
-
-    @web.legacy_expose_api
-    def sharing(self, trans, id, payload=None, **kwd):
-        skipped = False
-        class_name = self.manager.model_class.__name__
-        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
-        actions = []
-        if payload:
-            actions += payload.get("action").split("-")
-        for action in actions:
-            if action == "make_accessible_via_link":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-            elif action == "make_accessible_and_publish":
-                self._make_item_accessible(trans.sa_session, item)
-                if hasattr(item, "has_possible_members") and item.has_possible_members:
-                    skipped = self._make_members_public(trans, item)
-                item.published = True
-            elif action == "publish":
-                if item.importable:
-                    item.published = True
-                    if hasattr(item, "has_possible_members") and item.has_possible_members:
-                        skipped = self._make_members_public(trans, item)
-                else:
-                    raise exceptions.MessageException("%s not importable." % class_name)
-            elif action == "disable_link_access":
-                item.importable = False
-            elif action == "unpublish":
-                item.published = False
-            elif action == "disable_link_access_and_unpublish":
-                item.importable = item.published = False
-            elif action == "unshare_user":
-                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
-                class_name_lc = class_name.lower()
-                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
-                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
-                if not usas:
-                    raise exceptions.MessageException("%s was not shared with user." % class_name)
-                for usa in usas:
-                    trans.sa_session.delete(usa)
-            trans.sa_session.add(item)
-            trans.sa_session.flush()
-        if item.importable and not item.slug:
-            self._make_item_accessible(trans.sa_session, item)
-        item_dict = self.serializer.serialize_to_view(item,
-            user=trans.user, trans=trans, default_view="sharing")
-        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
-        if skipped:
-            item_dict["skipped"] = True
-        return item_dict
-
-    def _make_members_public(self, trans, item):
-        """ Make the non-purged datasets in history public
-        Performs pemissions check.
-        """
-        # TODO eventually we should handle more classes than just History
-        skipped = False
-        for hda in item.activatable_datasets:
-            dataset = hda.dataset
-            if not trans.app.security_agent.dataset_is_public(dataset):
-                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
-                    try:
-                        trans.app.security_agent.make_dataset_public(hda.dataset)
-                    except Exception:
-                        log.warning("Unable to make dataset with id: %s public", dataset.id)
-                        skipped = True
-                else:
-                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
-                    skipped = True
-        return skipped
+        self.slug_builder.create_item_slug(sa_session, item)
 
     # -- Abstract methods. --
 
@@ -1508,15 +1316,9 @@ class SharableMixin:
         raise NotImplementedError()
 
 
-class UsesQuotaMixin:
-
-    def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
-        return self.get_object(trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted)
-
-
 class UsesTagsMixin(SharableItemSecurityMixin):
 
-    def get_tag_handler(self, trans):
+    def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
         return trans.app.tag_handler
 
     def _get_user_tags(self, trans, item_class_name, id):
@@ -1546,7 +1348,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        log.debug("In get_item_tag_assoc with tagged_item %s" % tagged_item)
+        log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
@@ -1581,7 +1383,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
-        tags = [((name + ':' + val) if val else name) for name, val in tags]
+        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
         return sorted(tags)
 
 
@@ -1662,22 +1464,14 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         if isinstance(meta, dict):
             for a in meta:
-                yield from self._scan_json_block(meta[a], prefix + "/" + a)
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
                 yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
-
-
-class ControllerUnavailable(Exception):
-    """
-    Deprecated: `BaseController` used to be available under the name `Root`
-    """
-
-# ---- Utility methods -------------------------------------------------------
+            yield prefix, (f"{meta}").encode()
 
 
 def sort_by_attr(seq, attr):

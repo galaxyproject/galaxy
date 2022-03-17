@@ -22,7 +22,7 @@ class Xgmml(xml.GenericXml):
     """
     file_ext = "xgmml"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """
@@ -45,8 +45,8 @@ class Xgmml(xml.GenericXml):
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
         if len(split_files) > 1:
-            raise NotImplementedError("Merging multiple XML files is non-trivial " +
-                                      "and must be implemented for each XML type")
+            raise NotImplementedError("Merging multiple XML files is non-trivial "
+                                      + "and must be implemented for each XML type")
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
@@ -68,7 +68,7 @@ class Sif(tabular.Tabular):
     """
     file_ext = "sif"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """
         Set the peek and blurb text
         """

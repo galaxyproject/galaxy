@@ -26,9 +26,9 @@ def int_to_octet(size):
         size /= 1000.
         no_unit += 1
     try:
-        return "{:.2f} {}".format(size, units[no_unit])
+        return f"{size:.2f} {units[no_unit]}"
     except IndexError:
-        return "{:.0f} {}".format(size * ((no_unit - len(units) + 1) * 1000.), units[-1])
+        return f"{size * ((no_unit - len(units) + 1) * 1000.0):.0f} {units[-1]}"
 
 
 class History(BaseUIController):
@@ -90,9 +90,9 @@ class History(BaseUIController):
         # transform lists to dict with email as key and
         # number of (history/dataset)/size of history as value
         histories = {_.email if _.email is not None else "Unknown": int(_.history)
-                     for _ in histories.execute()}
+                     for _ in trans.sa_session.execute(histories)}
         datasets = {_.email if _.email is not None else "Unknown": (int(_.dataset), int(_.size))
-                    for _ in datasets.execute()}
+                    for _ in trans.sa_session.execute(datasets)}
 
         sort_keys = (
             lambda v: v[0].lower(),
@@ -157,7 +157,7 @@ class History(BaseUIController):
 
         # execute requests, replace None fields by "Unknown"
         data = [(_.name if _.name is not None else "NoNamedHistory", _.state)
-                for _ in histories.execute()]
+                for _ in trans.sa_session.execute(histories)]
 
         # sort by names descending or ascending
         data.sort(key=lambda v: v[0].lower(), reverse=reverse)

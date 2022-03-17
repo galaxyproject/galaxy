@@ -70,6 +70,41 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     </script>
 </%def>
 
+<%def name="config_plausible_analytics(plausible_server, plausible_domain)">
+    %if plausible_server and plausible_domain:
+        <script async defer data-domain="${plausible_domain}" src="${plausible_server}/js/plausible.js"></script>
+    %else:
+        <script>console.warn("Missing plausible server or plausible domain");</script>
+    %endif
+</%def>
+
+<%def name="config_matomo_analytics(matomo_server, matomo_site_id)">
+    <script type="text/javascript">
+        console.log("config_matomo_analytics matomo_server:", '${matomo_server}');
+        console.log("config_matomo_analytics matomo_site_id:", '${matomo_site_id}');
+        %if ga_code:
+            var _paq = window._paq = window._paq || [];
+            /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+            _paq.push(['trackPageView']);
+            _paq.push(['enableLinkTracking']);
+            (function () {
+                var u = "${matomo_server}/";
+                _paq.push(['setTrackerUrl', u + 'matomo.php']);
+                _paq.push(['setSiteId', '${matomo_site_id}']);
+                var d = document;
+                var g = d.createElement('script');
+                var s = d.getElementsByTagName('script')[0];
+                g.type = 'text/javascript';
+                g.async = true;
+                g.src = u + 'matomo.js';
+                s.parentNode.insertBefore(g, s);
+            })();
+        %else:
+            console.warn("Missing matomo server or matomo site id");
+        %endif
+    </script>
+</%def>
+
 
 ## ----------------------------------------------------------------------------
 <%def name="get_user_dict()">

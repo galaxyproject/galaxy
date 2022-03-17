@@ -1,5 +1,5 @@
 <template>
-    <li class="dataset" @click="$emit('element-is-selected', element)">
+    <li class="dataset unpaired" @click="$emit('element-is-selected', element)">
         <label>
             {{ element.name }}
         </label>

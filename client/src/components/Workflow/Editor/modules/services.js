@@ -55,7 +55,6 @@ export async function saveWorkflow(workflow) {
             const { data } = await axios.put(`${getAppRoot()}api/workflows/${workflow.id}`, requestData);
             workflow.name = data.name;
             workflow.hasChanges = false;
-            workflow.requiresReindex = false;
             workflow.stored = true;
             workflow.version = data.version;
             workflow.annotation = data.annotation;

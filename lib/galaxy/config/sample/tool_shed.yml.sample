@@ -179,6 +179,23 @@ tool_shed:
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
   #ga_code: null
 
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
+
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
   # should set a key to be used by the algorithm that encodes and
@@ -397,6 +414,10 @@ tool_shed:
   # connection string is available in your sentry instance under
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
+
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
 
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this

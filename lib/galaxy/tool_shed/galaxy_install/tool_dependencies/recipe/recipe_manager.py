@@ -85,7 +85,7 @@ class TagManager:
         return self.tag_handlers.get(tag, None)
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         tag_handler = self.get_tag_handler_by_tag(package_elem.tag)
         tool_dependency, proceed_with_install, action_elem_tuples = \
             tag_handler.process_tag_set(tool_shed_repository,
@@ -93,7 +93,6 @@ class TagManager:
                                         package_elem,
                                         package_name,
                                         package_version,
-                                        from_tool_migration_manager=from_tool_migration_manager,
                                         tool_dependency_db_records=tool_dependency_db_records)
         return tool_dependency, proceed_with_install, action_elem_tuples
 

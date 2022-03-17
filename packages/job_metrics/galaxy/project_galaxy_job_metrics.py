@@ -1,4 +1,4 @@
-__version__ = '20.9.1.dev0'
+__version__ = "22.1.0"
 
 PROJECT_NAME = "galaxy-job-metrics"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

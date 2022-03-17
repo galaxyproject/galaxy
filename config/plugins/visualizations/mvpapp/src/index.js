@@ -329,7 +329,7 @@ function AjaxDataProvider(confObj) {
                     var obj = {};
                     cv.forEach(function (d, idx) {
                         var escapedField = '"' + cNames[idx] + '"';
-                        if (isNumber(d)) {
+                        if (isNumber(d) && cNames[idx] != 'PEPTIDE_ID') {
                             obj[escapedField] = Number.parseFloat(d);
                         } else {
                             obj[escapedField] = d;

@@ -32,21 +32,21 @@ class TestMissingEnvSh(ShedTwillTestCase):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_package_repository(self):
-        '''Create and populate package_env_sh_1_0_1440.'''
-        '''
+        '''Create and populate package_env_sh_1_0_1440.
+
         This is step 1 - Create repository package_env_sh_1_0_1440.
 
         Create and populate a repository that is designed to fail a tool dependency installation. This tool dependency should
@@ -71,8 +71,8 @@ class TestMissingEnvSh(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_filter_repository(self):
-        '''Create and populate filter_1440.'''
-        '''
+        '''Create and populate filter_1440.
+
         This is step 2 - Create a repository that defines a complex repository dependency on the repository created in
         step 1, with prior_install_required and set_environment_for_install.
         '''
@@ -104,8 +104,8 @@ class TestMissingEnvSh(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_install_filter_repository(self):
-        '''Install the filter_1440 repository to galaxy.'''
-        '''
+        '''Install the filter_1440 repository to galaxy.
+
         This is step 3 - Attempt to install the second repository into a galaxy instance, verify that it is installed but
         missing tool dependencies.
         '''

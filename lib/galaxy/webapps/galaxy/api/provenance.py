@@ -9,21 +9,17 @@ from paste.httpexceptions import (
 )
 
 from galaxy import (
-    managers,
     web
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.managers.hdas import HDAManager
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class BaseProvenanceController(BaseAPIController):
+class BaseProvenanceController(BaseGalaxyAPIController):
     """
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
 
     @web.legacy_expose_api
     def index(self, trans, **kwd):
@@ -98,9 +94,11 @@ class HDAProvenanceController(BaseProvenanceController):
     controller_name = "history_content_provenance"
     provenance_item_class = "HistoryDatasetAssociation"
     provenance_item_id = "history_content_id"
+    hda_manager: HDAManager = depends(HDAManager)
 
 
 class LDDAProvenanceController(BaseProvenanceController):
     controller_name = "ldda_provenance"
     provenance_item_class = "LibraryDatasetDatasetAssociation"
     provenance_item_id = "library_content_id"
+    hda_manager: HDAManager = depends(HDAManager)

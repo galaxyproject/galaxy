@@ -7,9 +7,13 @@ export const sortByObjectProp = (...propNames) => {
     };
 };
 
-const resolveProp = (...propNames) => (target) => {
-    return propNames.reduce((src, propName) => {
-        if (src === undefined) return undefined;
-        return propName in src ? src[propName] : undefined;
-    }, target);
-};
+const resolveProp =
+    (...propNames) =>
+    (target) => {
+        return propNames.reduce((src, propName) => {
+            if (src === undefined) {
+                return undefined;
+            }
+            return propName in src ? src[propName] : undefined;
+        }, target);
+    };

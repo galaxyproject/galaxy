@@ -3,6 +3,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
 
+import datetime
 import json
 import logging
 
@@ -42,8 +43,23 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider, 'email': authnz.uid})
         # Add cilogon and custos identities
         for token in trans.user.custos_auth:
-            userinfo = jwt.decode(token.id_token, verify=False)
-            rtv.append({'id': trans.app.security.encode_id(token.id), 'provider': token.provider, 'email': userinfo['email']})
+            # for purely displaying the info to user, we bypass verification of
+            # signature, audience, and expiration as that's potentially useful
+            # information to share with the end user
+            try:
+                userinfo = jwt.decode(token.id_token, options={'verify_signature': False, 'verify_aud': False, 'verify_exp': False})
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'email': userinfo['email'],
+                    'expiration': str(datetime.datetime.utcfromtimestamp(userinfo['exp']))
+                })
+            except Exception:
+                rtv.append({
+                    'id': trans.app.security.encode_id(token.id),
+                    'provider': token.provider,
+                    'error': "Unable to decode token"
+                })
         return rtv
 
     @web.json
@@ -109,7 +125,7 @@ class OIDC(JSAppLauncher):
                                                                                           trans=trans,
                                                                                           login_redirect_url=url_for('/'))
         except exceptions.AuthenticationFailed as e:
-            return trans.response.send_redirect(trans.request.base + url_for('/') + 'root/login?message=' + (str(e) or "Duplicate Email"))
+            return trans.response.send_redirect(f"{trans.request.base + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}")
 
         if success is False:
             return trans.show_error_message(message)
@@ -144,7 +160,7 @@ class OIDC(JSAppLauncher):
     @web.json
     @web.expose
     def logout(self, trans, provider, **kwargs):
-        post_logout_redirect_url = trans.request.base + url_for('/') + 'root/login?is_logout_redirect=true'
+        post_logout_redirect_url = f"{trans.request.base + url_for('/')}root/login?is_logout_redirect=true"
         success, message, redirect_uri = trans.app.authnz_manager.logout(provider,
                                                                          trans,
                                                                          post_logout_redirect_url=post_logout_redirect_url)
@@ -166,7 +182,7 @@ class OIDC(JSAppLauncher):
         try:
             cilogon_idps = json.loads(url_get('https://cilogon.org/idplist/', params=dict(kwargs)))
         except Exception as e:
-            raise Exception("Invalid server response. %s." % str(e))
+            raise Exception(f"Invalid server response. {str(e)}.")
 
         if (allowed_idps):
             validated_idps = list(filter(lambda idp: idp['EntityID'] in allowed_idps, cilogon_idps))

@@ -25,7 +25,7 @@ class DatabaseHeartbeat:
 
     @property
     def sa_session(self):
-        return self.application_stack.app.model.context
+        return self.application_stack.app.model.session
 
     @property
     def server_name(self):
@@ -34,7 +34,7 @@ class DatabaseHeartbeat:
 
     def start(self):
         if not self.active:
-            self.thread = threading.Thread(target=self.send_database_heartbeat, name="database_heartbeart_%s.thread" % self.server_name)
+            self.thread = threading.Thread(target=self.send_database_heartbeat, name=f"database_heartbeart_{self.server_name}.thread")
             self.thread.daemon = True
             self.active = True
             self.thread.start()
@@ -56,7 +56,7 @@ class DatabaseHeartbeat:
         if last_seen_seconds is None:
             last_seen_seconds = self.heartbeat_interval
         seconds_ago = now() - datetime.timedelta(seconds=last_seen_seconds)
-        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.table.c.update_time > seconds_ago).all()
+        return self.sa_session.query(WorkerProcess).filter(WorkerProcess.update_time > seconds_ago).all()
 
     def add_change_callback(self, callback):
         self._observers.append(callback)
@@ -96,6 +96,6 @@ class DatabaseHeartbeat:
 
     def send_database_heartbeat(self):
         if self.active:
-            while not self.exit.isSet():
+            while not self.exit.is_set():
                 self.update_watcher_designation()
                 self.exit.wait(self.heartbeat_interval)

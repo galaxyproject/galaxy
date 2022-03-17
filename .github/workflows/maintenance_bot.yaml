@@ -2,14 +2,13 @@ name: Maintenance Bot
 on:
   pull_request_target:
     types: [opened, reopened, edited, ready_for_review, unlabeled]
-
 jobs:
   labeler:
     name: Assign labels and milestone
     if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     env:
-      MILESTONE_NUMBER: 19
+      MILESTONE_NUMBER: 22
     steps:
       - name: Get latest pull request labels
         id: get_pr_labels

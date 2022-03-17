@@ -1,10 +1,11 @@
 import time
+from uuid import uuid4
 
 from requests import (
-    post,
     put
 )
 
+from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -16,10 +17,10 @@ from ._framework import ApiTestCase
 class BaseHistories:
 
     def _show(self, history_id):
-        return self._get("histories/%s" % history_id).json()
+        return self._get(f"histories/{history_id}").json()
 
     def _update(self, history_id, data):
-        update_url = self._api_url("histories/%s" % history_id, use_key=True)
+        update_url = self._api_url(f"histories/{history_id}", use_key=True)
         put_response = put(update_url, json=data)
         return put_response
 
@@ -33,6 +34,11 @@ class BaseHistories:
 
 class HistoriesApiTestCase(ApiTestCase, BaseHistories):
 
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
     def test_create_history(self):
         # Create a history.
         create_response = self._create_history("TestHistory1")
@@ -42,6 +48,14 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
         self.assertEqual(indexed_history["name"], "TestHistory1")
+
+    def test_create_history_json(self):
+        name = "TestHistoryJson"
+        post_data = dict(name=name)
+        create_response = self._post("histories", data=post_data, json=True).json()
+        self._assert_has_keys(create_response, "name", "id")
+        self.assertEqual(create_response["name"], name)
+        return create_response
 
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
@@ -85,7 +99,7 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert not show_response["deleted"]
 
         # Delete the history
-        self._delete("histories/%s" % history_id)
+        self._delete(f"histories/{history_id}")
 
         # Check can view it - but it is deleted
         show_response = self._show(history_id)
@@ -102,15 +116,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
     def test_purge(self):
         history_id = self._create_history("TestHistoryForPurge")["id"]
         data = {'purge': True}
-        self._delete("histories/%s" % history_id, data=data)
+        self._delete(f"histories/{history_id}", data=data, json=True)
         show_response = self._show(history_id)
         assert show_response["deleted"]
         assert show_response["purged"]
 
     def test_undelete(self):
         history_id = self._create_history("TestHistoryForDeleteAndUndelete")["id"]
-        self._delete("histories/%s" % history_id)
-        self._post("histories/deleted/%s/undelete" % history_id)
+        self._delete(f"histories/{history_id}")
+        self._post(f"histories/deleted/{history_id}/undelete")
         show_response = self._show(history_id)
         assert not show_response["deleted"]
 
@@ -178,38 +192,61 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
     def test_invalid_keys(self):
         invalid_history_id = "1234123412341234"
 
-        assert self._get("histories/%s" % invalid_history_id).status_code == 400
+        assert self._get(f"histories/{invalid_history_id}").status_code == 400
         assert self._update(invalid_history_id, {"name": "new name"}).status_code == 400
-        assert self._delete("histories/%s" % invalid_history_id).status_code == 400
-        assert self._post("histories/deleted/%s/undelete" % invalid_history_id).status_code == 400
+        assert self._delete(f"histories/{invalid_history_id}").status_code == 400
+        assert self._post(f"histories/deleted/{invalid_history_id}/undelete").status_code == 400
 
     def test_create_anonymous_fails(self):
         post_data = dict(name="CannotCreate")
-        # Using lower-level _api_url will cause key to not be injected.
-        histories_url = self._api_url("histories")
-        create_response = post(url=histories_url, data=post_data)
+        create_response = self._post("histories", data=post_data, anon=True)
         self._assert_status_code_is(create_response, 403)
+
+    def test_create_without_session_fails(self):
+        post_data = dict(name="SessionNeeded")
+        # Using admin=True will boostrap an Admin user without session
+        create_response = self._post("histories", data=post_data, admin=True, json=True)
+        self._assert_status_code_is(create_response, 400)
 
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
-        history_id = self._post("histories", data=post_data).json()["id"]
+        history_id = self._post("histories", data=post_data, json=True).json()["id"]
         tag_data = dict(value="awesometagvalue")
-        tag_url = "histories/%s/tags/awesometagname" % history_id
-        tag_create_response = self._post(tag_url, data=tag_data)
+        tag_url = f"histories/{history_id}/tags/awesometagname"
+        tag_create_response = self._post(tag_url, data=tag_data, json=True)
         self._assert_status_code_is(tag_create_response, 200)
 
-    # TODO: (CE) test_create_from_copy
+    def test_copy_history(self):
+        history_id = self.dataset_populator.new_history()
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        copied_history_response = self.dataset_populator.copy_history(history_id)
+        copied_history_response.raise_for_status()
+        copied_history = copied_history_response.json()
+        copied_collection = self.dataset_populator.get_history_collection_details(history_id=copied_history['id'], history_content_type="dataset_collection")
+        assert dataset_collection['name'] == copied_collection['name']
+        assert dataset_collection['id'] != copied_collection['id']
+        assert len(dataset_collection['elements']) == len(copied_collection['elements']) == 2
+        source_element = dataset_collection['elements'][0]
+        copied_element = copied_collection['elements'][0]
+        assert source_element['element_identifier'] == copied_element['element_identifier'] == 'data0'
+        assert source_element['id'] != copied_element['id']
+        source_hda = source_element['object']
+        copied_hda = copied_element['object']
+        assert source_hda['name'] == copied_hda['name'] == 'data0'
+        assert source_hda['id'] != copied_hda['id']
+        assert source_hda['history_id'] != copied_hda['history_id']
+        assert source_hda['hid'] == copied_hda['hid'] == 2
 
 
-class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
+class ImportExportTests(BaseHistories):
 
-    def setUp(self):
-        super().setUp()
+    def _set_up_populators(self):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_import_export(self):
-        history_name = "for_export_default"
+        history_name = f"for_export_default_{uuid4()}"
         history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
@@ -236,7 +273,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
 
     def test_import_export_include_deleted(self):
-        history_name = "for_export_include_deleted"
+        history_name = f"for_export_include_deleted_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
         deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
@@ -264,9 +301,9 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
     @skip_without_tool("job_properties")
     def test_import_export_failed_job(self):
-        history_name = "for_export_include_failed_job"
+        history_name = f"for_export_include_failed_job_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.run_tool('job_properties', inputs={'failbool': True}, history_id=history_id, assert_ok=False)
+        self.dataset_populator.run_tool_raw('job_properties', inputs={'failbool': True}, history_id=history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
 
         imported_history_id = self._reimport_history(history_id, history_name, assert_ok=False, wait_on_history_length=4, export_kwds={"include_deleted": "True"})
@@ -281,7 +318,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         self._check_imported_dataset(history_id=imported_history_id, hid=1, assert_ok=False, hda_checker=check_failed, job_checker=check_failed)
 
     def test_import_metadata_regeneration(self):
-        history_name = "for_import_metadata_regeneration"
+        history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam', wait=True)
         imported_history_id = self._reimport_history(history_id, history_name)
@@ -301,13 +338,14 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
         bai_metadata = import_bam_metadata["meta_files"][0]
         assert bai_metadata["file_type"] == "bam_index"
+        assert 'api/' in bai_metadata["download_url"], bai_metadata["download_url"]
         api_url = bai_metadata["download_url"].split("api/", 1)[1]
         bai_response = self._get(api_url)
         self._assert_status_code_is(bai_response, 200)
         assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
-        history_name = "for_export_with_collections"
+        history_name = f"for_export_with_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
 
@@ -329,7 +367,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list", elements_checker=check_elements)
 
     def test_import_export_nested_collection(self):
-        history_name = "for_export_with_nested_collections"
+        history_name = f"for_export_with_nested_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
 
@@ -354,7 +392,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
 
         return self.dataset_populator.reimport_history(
-            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
+            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds,
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
@@ -367,7 +405,7 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
         return imported_history_id
 
     def _assert_history_length(self, history_id, n):
-        contents_response = self._get("histories/%s/contents" % history_id)
+        contents_response = self._get(f"histories/{history_id}/contents")
         self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
         assert len(contents) == n, contents
@@ -412,3 +450,163 @@ class ImportExportHistoryTestCase(ApiTestCase, BaseHistories):
 
         if elements_checker is not None:
             elements_checker(imported_collection_metadata["elements"])
+
+
+class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+
+    def setUp(self):
+        super().setUp()
+        self._set_up_populators()
+
+
+class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+    """Tests specific for the particularities of sharing Histories."""
+
+    api_name = "histories"
+
+    def create(self, name: str) -> str:
+        response_json = self._create_history(name)
+        history_id = response_json["id"]
+        # History to share cannot be empty
+        populator = DatasetPopulator(self.galaxy_interactor)
+        populator.new_dataset(history_id)
+        return history_id
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_sharing_with_private_datasets(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self.dataset_populator.make_private(history_id, hda_id)
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+
+        # If no share_option is provided, the extra field will contain the
+        # datasets that need to be accessible before sharing
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["extra"]["can_change"][0]["id"] == hda_id
+        assert not sharing_response["users_shared_with"]
+
+        # Now we provide the share_option
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "make_accessible_to_shared"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_without_manage_permissions(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+        owner_role_id = self.dataset_populator.user_private_role_id()
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        with self._different_user("alice@test.com"):
+            alice_role_id = self.dataset_populator.user_private_role_id()
+
+        # We have one dataset that we cannot manage
+        payload = {"access": [owner_role_id], "manage": [alice_role_id]}
+        update_response = self._update_permissions(history_id, hda_id, payload)
+        self._assert_status_code_is(update_response, 200)
+
+        # We will get an error if none of the datasets can be made accessible
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["extra"]["cannot_change"][0]["id"] == hda_id
+        assert sharing_response["errors"]
+        assert not sharing_response["users_shared_with"]
+
+        # Trying to change the permissions when sharing should fail
+        # because we don't have manage permissions
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "make_public"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["errors"]
+        assert not sharing_response["users_shared_with"]
+
+        # we can share if we don't try to make any permission changes
+        payload = {
+            "user_ids": [target_user_id],
+            "share_option": "no_changes"
+        }
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert not sharing_response["errors"]
+        assert sharing_response["users_shared_with"]
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_empty_not_allowed(self):
+        history_id = self.dataset_populator.new_history()
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        payload = {"user_ids": [target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["extra"]["can_share"] is False
+        assert sharing_response["errors"]
+        assert "empty" in sharing_response["errors"][0]
+
+    def test_sharing_with_duplicated_users(self):
+        history_id = self.create("HistoryToShareWithDuplicatedUser")
+
+        with self._different_user():
+            target_user_id = self.dataset_populator.user_id()
+
+        # Ignore repeated users in the same request
+        payload = {"user_ids": [target_user_id, target_user_id]}
+        sharing_response = self._share_history_with_payload(history_id, payload)
+        assert sharing_response["users_shared_with"]
+        assert len(sharing_response["users_shared_with"]) == 1
+        assert sharing_response["users_shared_with"][0]["id"] == target_user_id
+
+    def test_sharing_private_history_makes_datasets_public(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = hda["id"]
+
+        self.dataset_populator.make_private(history_id, hda_id)
+
+        # Other users cannot access the dataset
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 403)
+
+        sharing_response = self._set_resource_sharing(history_id, "publish")
+        assert sharing_response["published"] is True
+
+        # Other users can access the dataset after publishing
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda_id}")
+            self._assert_status_code_is(show_response, 200)
+            hda = show_response.json()
+            assert hda["id"] == hda_id
+
+    def _share_history_with_payload(self, history_id, payload):
+        sharing_response = self._put(f"histories/{history_id}/share_with_users", data=payload, json=True)
+        self._assert_status_code_is(sharing_response, 200)
+        return sharing_response.json()
+
+    def _update_permissions(self, history_id: str, dataset_id: str, payload):
+        url = f"histories/{history_id}/contents/{dataset_id}/permissions"
+        update_url = self._api_url(url, **{"use_admin_key": True})
+        update_response = put(update_url, json=payload)
+        return update_response

@@ -1,4 +1,4 @@
-__version__ = '21.1.1.dev0'
+__version__ = "22.1.0"
 
 PROJECT_NAME = "galaxy-containers"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

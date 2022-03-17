@@ -1,48 +1,52 @@
 <template>
-    <div class="d-flex">
-        <div class="ui-portlet-section" style="width: 100%;">
-            <div class="portlet-header portlet-title portlet-operations" v-on:click="toggleStep">
+    <div class="d-flex" :data-step="workflowStep.id">
+        <div class="ui-portlet-section" style="width: 100%">
+            <div class="portlet-header portlet-title portlet-operations" @click="toggleStep">
                 <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
                 <span class="portlet-title-text">
-                    <u>{{ stepLabel }}</u>
+                    <u class="step-title">{{ stepLabel }}</u>
                 </span>
             </div>
             <div class="portlet-content" v-if="expanded">
                 <InvocationStepProvider
                     v-if="isReady && invocationStepId !== undefined"
                     :id="invocationStepId"
-                    v-slot="{ item: stepDetails, loading }"
-                >
-                    <div style="min-width: 1;">
+                    auto-refresh
+                    v-slot="{ result: stepDetails, loading }">
+                    <div style="min-width: 1">
                         <loading-span v-if="loading" :message="`Loading invocation step details`"> </loading-span>
                         <div v-else>
-                            <details v-if="Object.values(stepDetails.outputs).length > 0"
-                                ><summary><b>Output Datasets</b></summary>
+                            <details
+                                v-if="Object.values(stepDetails.outputs).length > 0"
+                                class="invocation-step-output-details">
+                                <summary><b>Output Datasets</b></summary>
                                 <div v-for="(value, name) in stepDetails.outputs" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <workflow-invocation-data-contents :data_item="value" />
+                                    <generic-history-content :data_item="value" />
                                 </div>
                             </details>
-                            <details v-if="Object.values(stepDetails.output_collections).length > 0"
-                                ><summary><b>Output Dataset Collections</b></summary>
+                            <details
+                                v-if="Object.values(stepDetails.output_collections).length > 0"
+                                class="invocation-step-output-collection-details">
+                                <summary><b>Output Dataset Collections</b></summary>
                                 <div v-for="(value, name) in stepDetails.output_collections" :key="value.id">
                                     <b>{{ name }}</b>
-                                    <workflow-invocation-data-contents :data_item="value" />
+                                    <generic-history-content :data_item="value" />
                                 </div>
                             </details>
-                            <div class="portlet-body" style="width: 100%; overflow-x: auto;">
-                                <details v-if="workflowStepType == 'tool'">
+                            <div class="portlet-body" style="width: 100%; overflow-x: auto">
+                                <details v-if="workflowStepType == 'tool'" class="invocation-step-job-details">
                                     <summary><b>Jobs</b></summary>
                                     <job-step :jobs="stepDetails.jobs" />
                                 </details>
                                 <parameter-step
                                     v-else-if="workflowStepType == 'parameter_input'"
-                                    :parameters="[invocation.input_step_parameters[stepDetails.workflow_step_label]]"
-                                ></parameter-step>
-                                <workflow-invocation-data-contents
+                                    :parameters="[
+                                        invocation.input_step_parameters[stepDetails.workflow_step_label],
+                                    ]"></parameter-step>
+                                <generic-history-content
                                     v-else-if="isDataStep && invocation.inputs[workflowStep.id]"
-                                    :data_item="invocation.inputs[workflowStep.id]"
-                                />
+                                    :data_item="invocation.inputs[workflowStep.id]" />
                                 <div v-else-if="workflowStepType == 'subworkflow'">
                                     <div v-if="!stepDetails.subworkflow_invocation_id">
                                         Workflow invocation for this step is not yet scheduled.
@@ -51,16 +55,14 @@
                                         <ul v-if="workflowStep">
                                             <li
                                                 v-for="stepInput in Object.values(workflowStep.input_steps)"
-                                                :key="stepInput.source_step"
-                                            >
+                                                :key="stepInput.source_step">
                                                 {{ labelForWorkflowStep(stepInput.source_step) }}
                                             </li>
                                         </ul>
                                     </div>
                                     <workflow-invocation-state
                                         v-else
-                                        :invocationId="stepDetails.subworkflow_invocation_id"
-                                    />
+                                        :invocation-id="stepDetails.subworkflow_invocation_id" />
                                 </div>
                             </div>
                         </div>
@@ -68,8 +70,7 @@
                 </InvocationStepProvider>
                 <loading-span
                     v-else
-                    :message="`This invocation has not been scheduled yet, step information is unavailable`"
-                >
+                    :message="`This invocation has not been scheduled yet, step information is unavailable`">
                     <!-- Probably a subworkflow invocation, could walk back to parent and show
                          why step is not scheduled, but that's not necessary for a first pass, I think
                     -->
@@ -83,8 +84,8 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters, mapActions } from "vuex";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
-import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents.vue";
-import { InvocationStepProvider } from "./providers";
+import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
+import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "../LoadingSpan";
 
 export default {
@@ -93,7 +94,7 @@ export default {
         JobStep,
         ParameterStep,
         InvocationStepProvider,
-        WorkflowInvocationDataContents,
+        GenericHistoryContent,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {

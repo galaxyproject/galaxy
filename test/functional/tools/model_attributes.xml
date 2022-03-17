@@ -1,0 +1,15 @@
+<tool id="model_attributes" name="model_attributes" version="0.1.0">
+    <command><![CDATA[
+        echo '$input1.name' > "$out_file1";
+        echo '$__user__.email' > "$out_file2";
+        echo '$__user__.addresses[0].desc' > "$out_file3";
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Dataset with a name to output"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+        <data name="out_file2" format="txt" />
+        <data name="out_file3" format="txt" />
+    </outputs>
+</tool>

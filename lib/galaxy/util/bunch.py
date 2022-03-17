@@ -1,4 +1,7 @@
-class Bunch:
+from .dynamic import HasDynamicProperties
+
+
+class Bunch(HasDynamicProperties):
     """
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52308
 
@@ -28,7 +31,7 @@ class Bunch:
         return self.__dict__.values()
 
     def __str__(self):
-        return '%s' % self.__dict__
+        return f'{self.__dict__}'
 
     def __bool__(self):
         return bool(self.__dict__)

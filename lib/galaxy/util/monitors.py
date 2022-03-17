@@ -2,7 +2,6 @@ import logging
 import threading
 
 from .sleeper import Sleeper
-from .web_compat import register_postfork_function
 
 log = logging.getLogger(__name__)
 
@@ -24,9 +23,9 @@ class Monitors:
             monitor_func = getattr(self, target_name)
         self.sleeper = Sleeper()
         self.monitor_thread = threading.Thread(name=name, target=monitor_func)
-        self.monitor_thread.setDaemon(True)
+        self.monitor_thread.daemon = True
         self._start = start
-        register_postfork_function(self.start_monitoring)
+        self.start_monitoring()
 
     def _init_noop_monitor(self):
         self.sleeper = None

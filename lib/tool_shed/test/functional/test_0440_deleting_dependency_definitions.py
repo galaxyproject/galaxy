@@ -52,23 +52,23 @@ class TestDeletedDependencies(ShedTwillTestCase):
     '''Test metadata setting when dependency definitions are deleted.'''
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_column_maker_repository(self):
-        '''Create and populate a repository named column_maker_0440.'''
-        '''
+        '''Create and populate a repository named column_maker_0440.
+
         We are at simple repository dependencies, step 1 - Create and populate column_maker_0440 so that it has an installable revision 0.
         '''
         category = self.create_category(name='Test 0440 Deleted Dependency Definitions',
@@ -92,8 +92,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_convert_chars_repository(self):
-        '''Create and populate a repository named convert_chars_0440.'''
-        '''
+        '''Create and populate a repository named convert_chars_0440.
+
         We are at simple repository dependencies, step 2 - Create and populate convert_chars_0440 so that it has an installable revision 0.
         '''
         category = self.test_db_util.get_category_by_name('Test 0440 Deleted Dependency Definitions')
@@ -116,8 +116,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_dependency_on_convert_chars(self):
-        '''Create a dependency definition file that specifies column_maker_0440 and upload it to convert_chars_0440.'''
-        '''
+        '''Create a dependency definition file that specifies column_maker_0440 and upload it to convert_chars_0440.
+
         We are at simple repository dependencies, step 3 - Add a valid simple repository_dependencies.xml to
         convert_chars_0440 that points to the installable revision of column_maker_0440.
         '''
@@ -133,8 +133,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
         self.check_repository_dependency(convert_repository, column_repository)
 
     def test_0020_verify_dependency_metadata(self):
-        '''Verify that uploading the dependency moved metadata to the tip.'''
-        '''
+        '''Verify that uploading the dependency moved metadata to the tip.
+
         We are at simple repository dependencies, step 4 - Make sure the installable revision of convert_chars_0440 is now
         revision 1 (the tip) instead of revision 0.
         '''
@@ -147,8 +147,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
             (repository.name, len(repository.downloadable_revisions))
 
     def test_0025_delete_repository_dependency(self):
-        '''Delete the repository_dependencies.xml from convert_chars_0440.'''
-        '''
+        '''Delete the repository_dependencies.xml from convert_chars_0440.
+
         We are at simple repository dependencies, steps 5 and 6 - Delete repository_dependencies.xml from convert_chars_0440.
         Make sure convert_chars_0440 now has two installable revisions: 1 and 2
         '''
@@ -173,8 +173,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
             (repository.name, len(repository.downloadable_revisions))
 
     def test_0030_create_bwa_package_repository(self):
-        '''Create and populate the bwa_package_0440 repository.'''
-        '''
+        '''Create and populate the bwa_package_0440 repository.
+
         We are at complex repository dependencies, step 1 - Create and populate bwa_package_0440 so that it has a valid
         tool dependency definition and an installable revision 0.
         '''
@@ -198,8 +198,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0035_create_bwa_base_repository(self):
-        '''Create and populate the bwa_base_0440 repository.'''
-        '''
+        '''Create and populate the bwa_base_0440 repository.
+
         We are at complex repository dependencies, step 2 - Create and populate bwa_base_0440 so that it has an installable revision 0.
         This repository should contain a tool with a defined dependency that will be satisfied by the tool dependency defined in bwa_package_0440.
         '''
@@ -223,8 +223,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0040_create_dependency_on_bwa_package_repository(self):
-        '''Create a complex repository dependency on bwa_package_0440 and upload it to bwa_tool_0440.'''
-        '''
+        '''Create a complex repository dependency on bwa_package_0440 and upload it to bwa_tool_0440.
+
         We are at complex repository dependencies, step 3 - Add a valid complex repository dependency tool_dependencies.xml to
         bwa_base_0440 that points to the installable revision 0 of bwa_package_0440.
         '''
@@ -242,8 +242,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                                           version='0.5.9')
 
     def test_0045_verify_dependency_metadata(self):
-        '''Verify that uploading the dependency moved metadata to the tip.'''
-        '''
+        '''Verify that uploading the dependency moved metadata to the tip.
+
         We are at complex repository dependencies, step 4 - Make sure that bwa_base_0440 installable revision is now revision 1
         instead of revision 0.
         '''
@@ -256,8 +256,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
             (repository.name, len(repository.downloadable_revisions))
 
     def test_0050_delete_complex_repository_dependency(self):
-        '''Delete the tool_dependencies.xml from bwa_base_0440.'''
-        '''
+        '''Delete the tool_dependencies.xml from bwa_base_0440.
+
         We are at complex repository dependencies, step 5 - Delete tool_dependencies.xml from bwa_base_0440,
         and make sure bwa_base_0440 now has two installable revisions: 1 and 2
         '''
@@ -280,8 +280,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
             (repository.name, len(repository.downloadable_revisions))
 
     def test_0055_create_bwa_tool_dependency_repository(self):
-        '''Create and populate the bwa_tool_dependency_0440 repository.'''
-        '''
+        '''Create and populate the bwa_tool_dependency_0440 repository.
+
         We are at tool dependencies, step 1 - Create and populate bwa_tool_dependency_0440 so that it has a valid tool
         dependency definition and an installable revision 0.
         '''
@@ -305,8 +305,8 @@ class TestDeletedDependencies(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0060_delete_bwa_tool_dependency_definition(self):
-        '''Delete the tool_dependencies.xml file from bwa_tool_dependency_0440.'''
-        '''
+        '''Delete the tool_dependencies.xml file from bwa_tool_dependency_0440.
+
         We are at tool dependencies, step 2 - Delete tool_dependencies.xml from bwa_tool_dependency_0440.
         Make sure bwa_tool_dependency_0440 still has a downloadable changeset revision at the old tip.
         '''
@@ -323,14 +323,14 @@ class TestDeletedDependencies(ShedTwillTestCase):
         # Check that the new tip does not have a metadata revision.
         metadata_record = self.get_repository_metadata_by_changeset_revision(repository, new_changeset_revision)
         # If a changeset revision does not have metadata, the above method will return None.
-        assert metadata_record is None, 'The tip revision of %s should not have metadata, but metadata was found.' % repository.name
+        assert metadata_record is None, f'The tip revision of {repository.name} should not have metadata, but metadata was found.'
         # Verify that the new changeset revision is not downloadable.
         assert len(repository.downloadable_revisions) == 1, 'Repository %s has %d downloadable revisions, expected 1.' % \
             (repository.name, len(repository.downloadable_revisions))
 
     def test_0065_reupload_bwa_tool_dependency_definition(self):
-        '''Reupload the tool_dependencies.xml file to bwa_tool_dependency_0440.'''
-        '''
+        '''Reupload the tool_dependencies.xml file to bwa_tool_dependency_0440.
+
         We are at tool dependencies, step 3 - Add the same tool_dependencies.xml file to bwa_tool_dependency_0440, and make sure
         that bwa_tool_dependency_0440 still has a single installable revision 0.
         '''

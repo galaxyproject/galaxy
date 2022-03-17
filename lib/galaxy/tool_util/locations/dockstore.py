@@ -3,6 +3,7 @@ from urllib.parse import quote
 import requests
 import yaml
 
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..locations import (
     ToolLocationResolver,
 )
@@ -19,7 +20,7 @@ class DockStoreResolver(ToolLocationResolver):
             tool_id, version = tool_id.split(":", 1)
         else:
             tool_id, version = tool_id, "latest"
-        tmp_path = self._temp_path(uri_like + ".cwl")
+        tmp_path = self._temp_path(f"{uri_like}.cwl")
         cwl_str = _Ga4ghToolClient().get_tool_cwl(tool_id, version=version, as_string=True)
         with open(tmp_path, "wb") as f:
             f.write(cwl_str)
@@ -32,24 +33,24 @@ class _Ga4ghToolClient:
         self.base_url = base_url
 
     def get_tools(self):
-        return self._requests.get("%s/ga4gh/v1/tools" % self.base_url)
+        return self._requests.get(f"{self.base_url}/ga4gh/v1/tools", timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool(self, tool_id):
-        url = "{}/ga4gh/v1/tools/{}".format(self.base_url, quote(tool_id, safe=''))
-        return self._requests.get(url)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}"
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_version(self, tool_id, version="latest"):
-        url = "{}/ga4gh/v1/tools/{}/versions/{}".format(self.base_url, quote(tool_id, safe=''), version)
-        return self._requests.get(url)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}"
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_descriptor(self, tool_id, version="latest", tool_type="CWL"):
-        url = "{}/ga4gh/v1/tools/{}/versions/{}/{}/descriptor".format(self.base_url, quote(tool_id, safe=''), version, tool_type)
-        return self._requests.get(url)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
+        return self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def get_tool_cwl(self, tool_id, version="latest", as_string=False):
         tool_type = "CWL"
-        url = "{}/ga4gh/v1/tools/{}/versions/{}/{}/descriptor".format(self.base_url, quote(tool_id, safe=''), version, tool_type)
-        descriptor_response = self._requests.get(url)
+        url = f"{self.base_url}/ga4gh/v1/tools/{quote(tool_id, safe='')}/versions/{version}/{tool_type}/descriptor"
+        descriptor_response = self._requests.get(url, timeout=DEFAULT_SOCKET_TIMEOUT)
         descriptor_str = descriptor_response.json()["descriptor"]
         if as_string:
             return descriptor_str

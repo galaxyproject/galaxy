@@ -21,15 +21,15 @@ class TestDatatypeConverters(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert galaxy_admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_bed_to_gff_repository(self):
@@ -56,8 +56,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0010_install_datatype_converter_to_galaxy(self):
-        '''Install bed_to_gff_converter_0130 into the running Galaxy instance.'''
-        '''
+        '''Install bed_to_gff_converter_0130 into the running Galaxy instance.
+
         We are at step 1 - Install the bed_to_gff_converter repository.
         Install bed_to_gff_converter_0130, checking that the option to select the tool panel section is *not* displayed.
         '''
@@ -77,8 +77,8 @@ class TestDatatypeConverters(ShedTwillTestCase):
                                 includes_tools_for_display_in_tool_panel=False)
 
     def test_0015_uninstall_and_verify_tool_panel_section(self):
-        '''Uninstall bed_to_gff_converter_0130 and verify that the saved tool_panel_section is None.'''
-        '''
+        '''Uninstall bed_to_gff_converter_0130 and verify that the saved tool_panel_section is None.
+
         We are at step 3 - Make sure the bed_to_gff_converter tool is not displayed in the tool panel.
         The previous tool panel section for a tool is only recorded in the metadata when a repository is uninstalled,
         so we have to uninstall it first, then verify that it was not assigned a tool panel section.

@@ -79,16 +79,16 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         return
 
     # read object_store_info file
-    with open(object_store_info_file, mode="r") as osi:
+    with open(object_store_info_file) as osi:
         object_store_info = json.load(osi)
     osi_keys = tuple(object_store_info.keys())
 
     # read irods_info_file
-    with open(irods_info_file, mode="r") as ii:
+    with open(irods_info_file) as ii:
         irods_info = json.load(ii)
 
     # read db_connectin_info file
-    with open(db_connection_info_file, mode="r") as dci:
+    with open(db_connection_info_file) as dci:
         db_connection_info = json.load(dci)
 
     try:
@@ -127,7 +127,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
         args = ('ok', start_dataset_id, end_dataset_id, osi_keys)
         read_cursor.execute(read_sql_statement, args)
         rows = read_cursor.fetchall()
-        for num, row in enumerate(rows):
+        for row in rows:
             objectid = row[0]
             object_store_id = row[1]
             uuid_without_dash = row[2]
@@ -153,7 +153,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 session.collections.create(irods_file_collection_path)
 
                 # Add disk file to collection
-                options = {kw.REG_CHKSUM_KW : '', kw.RESC_NAME_KW: irods_resc}
+                options = {kw.REG_CHKSUM_KW: '', kw.RESC_NAME_KW: irods_resc}
                 session.data_objects.put(disk_file_path, irods_file_path, **options)
                 print(f"Copied disk file {disk_file_path} to irods {irods_file_path}")
 
@@ -189,7 +189,7 @@ def copy_files_to_irods(start_dataset_id, end_dataset_id, object_store_info_file
                 # Recursively verify that the checksum of all files in this folder matches that in irods
                 if os.path.isdir(disk_folder_path):
                     # Recursively traverse the files in this folder
-                    for root, dirs, files in os.walk(disk_folder_path):
+                    for root, _dirs, files in os.walk(disk_folder_path):
                         for file_name in files:
                             a_disk_file_path = os.path.join(root, file_name)
                             # Get checksum for disk file
@@ -257,7 +257,7 @@ def get_irods_resource(conn, objectid, object_store_id, irods_info):
         irods_tape_resc_cuttoff_dt = datetime.strptime(irods_tape_resc_cuttoff, "%m/%d/%Y")
 
         read_cursor = conn.cursor()
-        args = ('ok', objectid, objectid, tuple([object_store_id]), 'ok', objectid, objectid, tuple([object_store_id]))
+        args = ('ok', objectid, objectid, (object_store_id, ), 'ok', objectid, objectid, (object_store_id, ))
         read_cursor.execute(last_accessed_sql_statement, args)
         row = read_cursor.fetchone()
         if row is None:

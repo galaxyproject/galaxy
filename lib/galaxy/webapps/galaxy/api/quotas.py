@@ -3,154 +3,215 @@ API operations on Quota objects.
 """
 import logging
 
-from paste.httpexceptions import HTTPBadRequest
-from sqlalchemy import (
-    false,
-    true
-)
+from fastapi import Path
+from fastapi.param_functions import Body
 
 from galaxy import (
     util,
-    web
+    web,
 )
-from galaxy.actions.admin import AdminActions
-from galaxy.exceptions import ActionInputError
-from galaxy.web.params import QuotaParamParser
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    url_for,
-    UsesQuotaMixin
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.quota._schema import (
+    CreateQuotaParams,
+    CreateQuotaResult,
+    DeleteQuotaPayload,
+    QuotaDetails,
+    QuotaSummaryList,
+    UpdateQuotaParams,
+)
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.webapps.galaxy.services.quotas import QuotasService
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
 
-class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
+router = Router(tags=['quotas'])
+
+
+QuotaIdPathParam: EncodedDatabaseIdField = Path(
+    ...,  # Required
+    title="Quota ID",
+    description="The encoded identifier of the Quota."
+)
+
+
+@router.cbv
+class FastAPIQuota:
+    service: QuotasService = depends(QuotasService)
+
+    @router.get(
+        '/api/quotas',
+        summary="Displays a list with information of quotas that are currently active.",
+        require_admin=True,
+    )
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> QuotaSummaryList:
+        """Displays a list with information of quotas that are currently active."""
+        return self.service.index(trans)
+
+    @router.get(
+        '/api/quotas/deleted',
+        summary="Displays a list with information of quotas that have been deleted.",
+        require_admin=True,
+    )
+    def index_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> QuotaSummaryList:
+        """Displays a list with information of quotas that have been deleted."""
+        return self.service.index(trans, deleted=True)
+
+    @router.get(
+        '/api/quotas/{id}',
+        summary="Displays details on a particular active quota.",
+        require_admin=True,
+    )
+    def show(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = QuotaIdPathParam
+    ) -> QuotaDetails:
+        """Displays details on a particular active quota."""
+        return self.service.show(trans, id)
+
+    @router.get(
+        '/api/quotas/deleted/{id}',
+        summary="Displays details on a particular quota that has been deleted.",
+        require_admin=True,
+    )
+    def show_deleted(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+    ) -> QuotaDetails:
+        """Displays details on a particular quota that has been deleted."""
+        return self.service.show(trans, id, deleted=True)
+
+    @router.post(
+        '/api/quotas',
+        summary="Creates a new quota.",
+        require_admin=True,
+    )
+    def create(
+        self,
+        payload: CreateQuotaParams,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> CreateQuotaResult:
+        """Creates a new quota."""
+        return self.service.create(trans, payload)
+
+    @router.put(
+        '/api/quotas/{id}',
+        summary="Updates an existing quota.",
+        require_admin=True,
+    )
+    def update(
+        self,
+        payload: UpdateQuotaParams,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Updates an existing quota."""
+        return self.service.update(trans, id, payload)
+
+    @router.delete(
+        '/api/quotas/{id}',
+        summary="Deletes an existing quota.",
+        require_admin=True,
+    )
+    def delete(
+        self,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: DeleteQuotaPayload = Body(None),  # Optional
+    ) -> str:
+        """Deletes an existing quota."""
+        return self.service.delete(trans, id, payload)
+
+    @router.post(
+        '/api/quotas/deleted/{id}/undelete',
+        summary="Restores a previously deleted quota.",
+        require_admin=True,
+    )
+    def undelete(
+        self,
+        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Restores a previously deleted quota."""
+        return self.service.undelete(trans, id)
+
+
+class QuotaAPIController(BaseGalaxyAPIController):
+
+    service: QuotasService = depends(QuotasService)
+
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def index(self, trans, deleted='False', **kwd):
         """
         GET /api/quotas
         GET /api/quotas/deleted
         Displays a collection (list) of quotas.
         """
-        rval = []
         deleted = util.string_as_bool(deleted)
-        query = trans.sa_session.query(trans.app.model.Quota)
-        if deleted:
-            route = 'deleted_quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == true())
-        else:
-            route = 'quota'
-            query = query.filter(trans.app.model.Quota.table.c.deleted == false())
-        for quota in query:
-            item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
-            encoded_id = trans.security.encode_id(quota.id)
-            item['url'] = url_for(route, id=encoded_id)
-            rval.append(item)
-        return rval
+        return self.service.index(trans, deleted)
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def show(self, trans, id, deleted='False', **kwd):
         """
         GET /api/quotas/{encoded_quota_id}
         GET /api/quotas/deleted/{encoded_quota_id}
         Displays information about a quota.
         """
-        quota = self.get_quota(trans, id, deleted=util.string_as_bool(deleted))
-        return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
+        deleted = util.string_as_bool(deleted)
+        return self.service.show(trans, id, deleted)
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/quotas
         Creates a new quota.
         """
-        try:
-            self.validate_in_users_and_groups(trans, payload)
-        except Exception as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        params = self.get_quota_params(payload)
-        try:
-            quota, message = self._create_quota(params)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
-        item['url'] = url_for('quota', id=trans.security.encode_id(quota.id))
-        item['message'] = message
-        return item
+        params = CreateQuotaParams(**payload)
+        return self.service.create(trans, params)
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def update(self, trans, id, payload, **kwd):
         """
         PUT /api/quotas/{encoded_quota_id}
         Modifies a quota.
         """
-        try:
-            self.validate_in_users_and_groups(trans, payload)
-        except Exception as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-
-        quota = self.get_quota(trans, id, deleted=False)
-
-        # FIXME: Doing it this way makes the update non-atomic if a method fails after an earlier one has succeeded.
-        payload['id'] = id
-        params = self.get_quota_params(payload)
-        methods = []
-        if payload.get('name', None) or payload.get('description', None):
-            methods.append(self._rename_quota)
-        if payload.get('amount', None):
-            methods.append(self._edit_quota)
-        if payload.get('default', None) == 'no':
-            methods.append(self._unset_quota_default)
-        elif payload.get('default', None):
-            methods.append(self._set_quota_default)
-        if payload.get('in_users', None) or payload.get('in_groups', None):
-            methods.append(self._manage_users_and_groups_for_quota)
-
-        messages = []
-        for method in methods:
-            try:
-                message = method(quota, params)
-            except ActionInputError as e:
-                raise HTTPBadRequest(detail=util.unicodify(e))
-            messages.append(message)
-        return '; '.join(messages)
+        params = UpdateQuotaParams(**payload)
+        return self.service.update(trans, id, params)
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/quotas/{encoded_quota_id}
         Deletes a quota
         """
-        quota = self.get_quota(trans, id, deleted=False)  # deleted quotas are not technically members of this collection
-
         # a request body is optional here
-        payload = kwd.get('payload', {})
-        payload['id'] = id
-        params = self.get_quota_params(payload)
-
-        try:
-            message = self._delete_quota(quota, params)
-            if util.string_as_bool(payload.get('purge', False)):
-                message += self._purge_quota(quota, params)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
-        return message
+        payload = DeleteQuotaPayload(**kwd.get('payload', {}))
+        return self.service.delete(trans, id, payload)
 
     @web.require_admin
-    @web.legacy_expose_api
+    @web.expose_api
     def undelete(self, trans, id, **kwd):
         """
         POST /api/quotas/deleted/{encoded_quota_id}/undelete
         Undeletes a quota
         """
-        quota = self.get_quota(trans, id, deleted=True)
-        try:
-            return self._undelete_quota(quota)
-        except ActionInputError as e:
-            raise HTTPBadRequest(detail=util.unicodify(e))
+        return self.service.undelete(trans, id)

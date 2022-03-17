@@ -1,28 +1,25 @@
 <template>
     <div id="columns" class="workflow-client">
-        <StateUpgradeModal :stateMessages="stateMessages" />
+        <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
-            :stateMessages="insertedStateMessages"
+            :state-messages="insertedStateMessages"
             title="Subworkflow embedded with changes"
-            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save."
-        />
+            message="Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save." />
         <RefactorConfirmationModal
-            :workflowId="id"
-            :refactorActions="refactorActions"
+            :workflow-id="id"
+            :refactor-actions="refactorActions"
             @onWorkflowError="onWorkflowError"
             @onWorkflowMessage="onWorkflowMessage"
             @onRefactor="onRefactor"
-            @onShow="hideModal()"
-        />
+            @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <MarkdownEditor
             v-if="!isCanvas"
             :markdown-text="markdownText"
             :markdown-config="markdownConfig"
             :title="'Workflow Report: ' + name"
-            :nodes="nodes"
-            @onUpdate="onReportUpdate"
-        >
+            :get-manager="getManager"
+            @onUpdate="onReportUpdate">
             <template v-slot:buttons>
                 <b-button
                     id="workflow-canvas-button"
@@ -30,8 +27,7 @@
                     variant="link"
                     role="button"
                     v-b-tooltip.hover.bottom
-                    @click="onEdit"
-                >
+                    @click="onEdit">
                     <span class="fa fa-times" />
                 </b-button>
             </template>
@@ -39,16 +35,14 @@
         <div v-show="isCanvas">
             <SidePanel id="left" side="left">
                 <template v-slot:panel>
-                    <ToolBoxWorkflow
-                        :toolbox="toolbox"
+                    <ProviderAwareToolBoxWorkflow
                         :module-sections="moduleSections"
                         :data-managers="dataManagers"
                         :workflows="workflows"
                         @onInsertTool="onInsertTool"
                         @onInsertModule="onInsertModule"
                         @onInsertWorkflow="onInsertWorkflow"
-                        @onInsertWorkflowSteps="onInsertWorkflowSteps"
-                    />
+                        @onInsertWorkflowSteps="onInsertWorkflowSteps" />
                 </template>
             </SidePanel>
             <div id="center" class="workflow-center">
@@ -79,8 +73,7 @@
                                 @onCreate="onInsertTool"
                                 @onChange="onChange"
                                 @onActivate="onActivate"
-                                @onRemove="onRemove"
-                            />
+                                @onRemove="onRemove" />
                         </div>
                     </div>
                     <div class="workflow-overview" aria-hidden="true">
@@ -99,7 +92,7 @@
                         <div class="unified-panel-header" unselectable="on">
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
-                                    :hasChanges="hasChanges"
+                                    :has-changes="hasChanges"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -109,18 +102,38 @@
                                     @onEdit="onEdit"
                                     @onAttributes="onAttributes"
                                     @onLint="onLint"
-                                />
+                                    @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div class="unified-panel-body workflow-right">
-                            <div class="m-1">
+                        <div class="unified-panel-body workflow-right" ref="right-panel">
+                            <div class="m-2">
+                                <FormTool
+                                    v-if="hasActiveNodeTool"
+                                    :key="activeNodeId"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
+                                    @onSetData="onSetData" />
+                                <FormDefault
+                                    v-else-if="hasActiveNodeDefault"
+                                    :get-manager="getManager"
+                                    :get-node="getNode"
+                                    :datatypes="datatypes"
+                                    @onAnnotation="onAnnotation"
+                                    @onLabel="onLabel"
+                                    @onEditSubworkflow="onEditSubworkflow"
+                                    @onAttemptRefactor="onAttemptRefactor"
+                                    @onSetData="onSetData" />
                                 <WorkflowAttributes
+                                    v-else-if="showAttributes"
                                     :id="id"
                                     :tags="tags"
                                     :parameters="parameters"
-                                    :annotationCurrent.sync="annotation"
+                                    :annotation-current.sync="annotation"
                                     :annotation="annotation"
-                                    :nameCurrent.sync="name"
+                                    :name-current.sync="name"
                                     :name="name"
                                     :version="version"
                                     :versions="versions"
@@ -128,25 +141,19 @@
                                     :creator="creator"
                                     @onVersion="onVersion"
                                     @onLicense="onLicense"
-                                    @onCreator="onCreator"
-                                />
+                                    @onCreator="onCreator" />
                                 <WorkflowLint
-                                    id="lint-panel"
-                                    class="right-content"
-                                    ref="lint"
-                                    style="display: none;"
+                                    v-else-if="showLint"
                                     :untyped-parameters="parameters"
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
-                                    :nodes="nodes"
+                                    :get-manager="getManager"
                                     @onAttributes="onAttributes"
                                     @onHighlight="onHighlight"
                                     @onUnhighlight="onUnhighlight"
                                     @onRefactor="onAttemptRefactor"
-                                    @onScrollTo="onScrollTo"
-                                />
-                                <div id="right-content" class="right-content" />
+                                    @onScrollTo="onScrollTo" />
                             </div>
                         </div>
                     </div>
@@ -157,22 +164,18 @@
 </template>
 
 <script>
+import { LastQueue } from "utils/promise-queue";
 import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
-import {
-    getStateUpgradeMessages,
-    copyIntoWorkflow,
-    showAttributes,
-    showForm,
-    showLint,
-    saveAs,
-} from "./modules/utilities";
+import { getStateUpgradeMessages, copyIntoWorkflow, saveAs } from "./modules/utilities";
 import WorkflowCanvas from "./modules/canvas";
 import WorkflowOptions from "./Options";
+import FormDefault from "./Forms/FormDefault";
+import FormTool from "./Forms/FormTool";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import ToolBoxWorkflow from "components/Panels/ToolBoxWorkflow";
+import ProviderAwareToolBoxWorkflow from "components/Panels/ProviderAwareToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
 import { getAppRoot } from "onload/loadConfig";
 import reportDefault from "./reportDefault";
@@ -191,7 +194,9 @@ export default {
         MarkdownEditor,
         SidePanel,
         StateUpgradeModal,
-        ToolBoxWorkflow,
+        ProviderAwareToolBoxWorkflow,
+        FormDefault,
+        FormTool,
         WorkflowOptions,
         WorkflowAttributes,
         ZoomControl,
@@ -205,7 +210,7 @@ export default {
             type: String,
             required: true,
         },
-        version: {
+        initialVersion: {
             type: Number,
             required: true,
         },
@@ -225,10 +230,6 @@ export default {
             type: Array,
             required: true,
         },
-        toolbox: {
-            type: Array,
-            required: true,
-        },
     },
     data() {
         return {
@@ -242,7 +243,6 @@ export default {
             hasChanges: false,
             nodeIndex: 0,
             nodes: {},
-            requiresReindex: false, // track if node has been added or remove and backend may re-index nodes (hasChanges tracks a much more broad set of changes)
             datatypesMapper: null,
             datatypes: [],
             report: {},
@@ -258,10 +258,30 @@ export default {
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
+            version: this.initialVersion,
+            showInPanel: "attributes",
         };
     },
+    computed: {
+        showAttributes() {
+            return this.showInPanel == "attributes";
+        },
+        showLint() {
+            return this.showInPanel == "lint";
+        },
+        activeNodeId() {
+            return this.activeNode && this.activeNode.id;
+        },
+        hasActiveNodeDefault() {
+            return this.activeNode && this.activeNode.type != "tool";
+        },
+        hasActiveNodeTool() {
+            return this.activeNode && this.activeNode.type == "tool";
+        },
+    },
     created() {
-        getDatatypesMapper().then((mapper) => {
+        this.lastQueue = new LastQueue();
+        getDatatypesMapper(false).then((mapper) => {
             this.datatypesMapper = mapper;
             this.datatypes = mapper.datatypes;
 
@@ -294,23 +314,23 @@ export default {
         },
         nodes: function (newNodes, oldNodes) {
             this.hasChanges = true;
-            if (newNodes.length != oldNodes.length) {
-                this.requiresReindex = true;
-            }
         },
     },
     methods: {
         onActivate(node) {
             if (this.activeNode != node) {
-                if (this.activeNode) {
-                    this.activeNode.makeInactive();
-                }
-                document.activeElement.blur();
+                this.onDeactivate();
                 node.makeActive();
                 this.activeNode = node;
+                this.canvasManager.drawOverview();
+                this.$refs["right-panel"].scrollTop = 0;
             }
-            showForm(this, node, this.datatypes);
-            this.canvasManager.drawOverview();
+        },
+        onDeactivate() {
+            if (this.activeNode) {
+                this.activeNode.makeInactive();
+                this.activeNode = null;
+            }
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -326,7 +346,11 @@ export default {
                         this.refactorActions = actions;
                     })
                     .catch((response) => {
-                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...");
+                        this.onWorkflowError("Saving workflow failed, cannot apply requested changes...", response, {
+                            Ok: () => {
+                                this.hideModal();
+                            },
+                        });
                     });
             } else {
                 this.refactorActions = actions;
@@ -364,6 +388,12 @@ export default {
                 _: "true",
             }).then((response) => {
                 const newData = Object.assign({}, response, node.step);
+                newData.workflow_outputs = newData.outputs.map((o) => {
+                    return {
+                        output_name: o.name,
+                        label: o.label,
+                    };
+                });
                 node.setNode(newData);
             });
         },
@@ -374,35 +404,29 @@ export default {
             delete this.nodes[node.id];
             Vue.delete(this.steps, node.id);
             this.canvasManager.drawOverview();
-            this.activeNode = null;
-            showAttributes();
+            this.onDeactivate();
+            this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
             const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
-        onClone(node) {
+        async onClone(node) {
             const newId = this.nodeIndex++;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
-            const configFormCopy = JSON.parse(JSON.stringify(node.config_form));
-            Vue.set(this.steps, newId, {
+            await Vue.set(this.steps, newId, {
                 ...stepCopy,
                 id: newId,
-                config_form: {
-                    ...configFormCopy,
-                    inputs: configFormCopy.inputs.filter((input) => !input.skipOnClone),
-                },
                 uuid: null,
                 label: null,
+                config_form: JSON.parse(JSON.stringify(node.config_form)),
                 annotation: JSON.parse(JSON.stringify(node.annotation)),
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            Vue.nextTick().then(() => {
-                this.canvasManager.drawOverview();
-                node = this.nodes[newId];
-                this.onActivate(node);
-            });
+            this.canvasManager.drawOverview();
+            node = this.nodes[newId];
+            this.onActivate(node);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -434,8 +458,23 @@ export default {
             });
         },
         onAttributes() {
-            showAttributes();
             this._ensureParametersSet();
+            this.onDeactivate();
+            this.showInPanel = "attributes";
+        },
+        onAnnotation(nodeId, newAnnotation) {
+            const node = this.nodes[nodeId];
+            node.setAnnotation(newAnnotation);
+        },
+        onSetData(nodeId, newData) {
+            const node = this.nodes[nodeId];
+            this.lastQueue.enqueue(getModule, newData).then((data) => {
+                node.setData(data);
+            });
+        },
+        onLabel(nodeId, newLabel) {
+            const node = this.nodes[nodeId];
+            node.setLabel(newLabel);
         },
         onScrollTo(nodeId) {
             const node = this.nodes[nodeId];
@@ -451,20 +490,12 @@ export default {
             node.onUnhighlight();
         },
         onLint() {
-            if (this.requiresReindex) {
-                const r = window.confirm(
-                    "Workflow steps have been added or removed since last save, the workflow needs to be saved before best practices can be analzyed. Save workflow?"
-                );
-                if (r == false) {
-                    return;
-                }
-                this.onSave(true);
-            } else {
-                this._ensureParametersSet();
-                // See notes in Lint.vue about why refresh is needed.
-                this.$refs.lint.refresh();
-                showLint();
-            }
+            this._ensureParametersSet();
+            this.onDeactivate();
+            this.showInPanel = "lint";
+        },
+        onUpgrade() {
+            this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
         onEdit() {
             this.isCanvas = true;
@@ -542,7 +573,7 @@ export default {
                 type: type,
             });
         },
-        _loadEditorData(data) {
+        async _loadEditorData(data) {
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
@@ -555,11 +586,10 @@ export default {
             getVersions(this.id).then((versions) => {
                 this.versions = versions;
             });
-            Vue.nextTick(() => {
-                this.canvasManager.drawOverview();
-                this.canvasManager.scrollToNodes();
-                this.hasChanges = this.requiresReindex = has_changes;
-            });
+            await Vue.nextTick();
+            this.canvasManager.drawOverview();
+            this.canvasManager.scrollToNodes();
+            this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
@@ -588,6 +618,9 @@ export default {
         },
         getCanvasManager() {
             return this.canvasManager;
+        },
+        getNode() {
+            return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;

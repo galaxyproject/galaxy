@@ -4,6 +4,8 @@ import os
 import uuid
 from collections import namedtuple
 from typing import (
+    Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -24,8 +26,9 @@ from galaxy import (
     model,
     util
 )
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
     visit_input_values
@@ -68,7 +71,7 @@ class WorkflowsManager:
     the galaxy.workflow module.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
@@ -186,7 +189,7 @@ class WorkflowsManager:
         workflow_invocation = q.get(decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
-            message = "'%s' is not a valid workflow invocation id" % encoded_wfi_id
+            message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
             raise exceptions.ObjectNotFound(message)
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
@@ -247,10 +250,11 @@ class WorkflowsManager:
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True, limit=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, job_id=None, user_id=None,
+                                include_terminal=True, limit=None, offset=None, sort_by=None, sort_desc=None):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
-        invocations_query = sa_session.query(model.WorkflowInvocation).order_by(model.WorkflowInvocation.table.c.id.desc())
+        invocations_query = sa_session.query(model.WorkflowInvocation)
         if stored_workflow_id is not None:
             stored_workflow = sa_session.query(model.StoredWorkflow).get(stored_workflow_id)
             if not stored_workflow:
@@ -260,31 +264,41 @@ class WorkflowsManager:
             ).filter(
                 model.Workflow.table.c.stored_workflow_id == stored_workflow_id
             )
-
         if user_id is not None:
             invocations_query = invocations_query.join(
                 model.History
             ).filter(
                 model.History.table.c.user_id == user_id
             )
-
         if history_id is not None:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
             )
-
+        if job_id is not None:
+            invocations_query = invocations_query.join(
+                model.WorkflowInvocationStep
+            ).filter(model.WorkflowInvocationStep.table.c.job_id == job_id)
         if not include_terminal:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
             )
-
+        total_matches = invocations_query.count()
+        if sort_by:
+            sort_column = getattr(model.WorkflowInvocation, sort_by)
+            if sort_desc:
+                sort_column = sort_column.desc()
+            invocations_query = invocations_query.order_by(sort_column)
+        else:
+            invocations_query = invocations_query.order_by(model.WorkflowInvocation.table.c.id.desc())
         if limit is not None:
             invocations_query = invocations_query.limit(limit)
-
-        return [inv for inv in invocations_query if self.check_security(trans,
+        if offset is not None:
+            invocations_query = invocations_query.offset(offset)
+        invocations = [inv for inv in invocations_query if self.check_security(trans,
                                                                         inv,
                                                                         check_ownership=True,
                                                                         check_accessible=False)]
+        return invocations, total_matches
 
     def serialize_workflow_invocation(self, invocation, **kwd):
         app = self.app
@@ -305,7 +319,7 @@ CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", 
 
 class WorkflowContentsManager(UsesAnnotations):
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
 
@@ -360,8 +374,9 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(f"Invalid workflow format detected [{data}]")
 
         workflow_input_name = data['name']
-        if source:
-            name = f"{workflow_input_name} (imported from {source})"
+        imported_sufix = f"(imported from {source})"
+        if source and imported_sufix not in workflow_input_name:
+            name = f"{workflow_input_name} {imported_sufix}"
         else:
             name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
@@ -486,10 +501,10 @@ class WorkflowContentsManager(UsesAnnotations):
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
         # Create each step
-        steps = []
+        steps: List[model.WorkflowStep] = []
         # The editor will provide ids for each step that we don't need to save,
         # but do need to use to make connections
-        steps_by_external_id = {}
+        steps_by_external_id: Dict[str, model.WorkflowStep] = {}
 
         # Preload dependent workflows with locally defined content_ids.
         subworkflows = data.get("subworkflows")
@@ -537,7 +552,6 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
-
         def to_format_2(wf_dict, **kwds):
             return from_galaxy_native(wf_dict, None, **kwds)
 
@@ -610,7 +624,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.upgrade_messages:
                 has_upgrade_messages = True
-            if step.type == 'tool' or step.type is None:
+            if step.type in ('tool', 'subworkflow', None):
                 if step.module.version_changes:
                     step_version_changes.extend(step.module.version_changes)
                 step_errors = step.module.get_errors()
@@ -618,7 +632,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     errors[step.id] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
-            raise exceptions.MessageException('Following tools missing: %s' % ', '.join(missing_tools))
+            raise exceptions.MessageException(f"Following tools missing: {', '.join(missing_tools)}")
         workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
         step_order_indices = {}
         for step in workflow.steps:
@@ -627,7 +641,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             step_model = None
             if step.type == 'tool':
-                incoming = {}
+                incoming: Dict[str, Any] = {}
                 tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY, history=history)
@@ -690,8 +704,8 @@ class WorkflowContentsManager(UsesAnnotations):
                     conns = step.input_connections_by_name[prefix + param.name]
                     if not isinstance(conns, list):
                         conns = [conns]
-                    value = ["Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1) for conn in conns]
-                    value = ",".join(value)
+                    value_list = ["Output '%s' from Step %d." % (conn.output_name, int(conn.output_step.order_index) + 1) for conn in conns]
+                    value = ",".join(value_list)
                 else:
                     value = "Select at Runtime."
             else:
@@ -714,17 +728,17 @@ class WorkflowContentsManager(UsesAnnotations):
                             nested_input_dict = {}
                             index = repeat_values[i]['__index__']
                             nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                            nested_input_dict["inputs"] = do_inputs(input.inputs, repeat_values[i], prefix + input.name + "_" + str(index) + "|", step, other_values)
+                            nested_input_dict["inputs"] = do_inputs(input.inputs, repeat_values[i], f"{prefix + input.name}_{str(index)}|", step, other_values)
                             nested_input_dicts.append(nested_input_dict)
                         input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
                     group_values = values[input.name]
                     current_case = group_values['__current_case__']
-                    new_prefix = prefix + input.name + "|"
+                    new_prefix = f"{prefix + input.name}|"
                     row_for_param(input_dict, input.test_param, group_values[input.test_param.name], other_values, prefix, step)
                     input_dict["inputs"] = do_inputs(input.cases[current_case].inputs, group_values, new_prefix, step, other_values)
                 elif input.type == "section":
-                    new_prefix = prefix + input.name + "|"
+                    new_prefix = f"{prefix + input.name}|"
                     group_values = values[input.name]
                     input_dict["title"] = input.title
                     input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
@@ -743,7 +757,7 @@ class WorkflowContentsManager(UsesAnnotations):
             try:
                 module_injector.inject(step, steps=workflow.steps, exact_tools=False)
             except exceptions.ToolMissingException as e:
-                step_dict["label"] = "Unknown Tool with id '%s'" % e.tool_id
+                step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)
                 continue
             if step.type == 'tool' or step.type is None:
@@ -751,7 +765,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 if tool:
                     step_dict["label"] = step.label or tool.name
                 else:
-                    step_dict["label"] = "Unknown Tool with id '%s'" % step.tool_id
+                    step_dict["label"] = f"Unknown Tool with id '{step.tool_id}'"
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == 'subworkflow':
                 step_dict["label"] = step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow.")
@@ -792,13 +806,13 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step, exact_tools=False)
             if not module:
-                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
+                raise exceptions.MessageException(f'Unrecognized step type: {step.type}')
             # Load label from state of data input modules, necessary for backward compatibility
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
             if hasattr(module, "version_changes") and module.version_changes:
-                upgrade_message_dict[module.tool.name] = "\n".join(module.version_changes)
+                upgrade_message_dict[module.get_name()] = "\n".join(module.version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
@@ -868,12 +882,12 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict['workflow_outputs'] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
-                upgrade_message_dict['output_label_duplicate'] = "Ignoring duplicate labels: %s." % output_label_duplicate_string
+                upgrade_message_dict['output_label_duplicate'] = f"Ignoring duplicate labels: {output_label_duplicate_string}."
             if upgrade_message_dict:
                 data['upgrade_messages'][step.order_index] = upgrade_message_dict
 
             # Encode input connections as dictionary
-            input_conn_dict = {}
+            input_conn_dict: model.InputConnDictType = {}
             for conn in input_connections:
                 input_type = "dataset"
                 if conn.input_name in input_connections_type:
@@ -881,7 +895,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 conn_dict = dict(id=conn.output_step.order_index, output_name=conn.output_name, input_type=input_type)
                 if conn.input_name in multiple_input:
                     if conn.input_name in input_conn_dict:
-                        input_conn_dict[conn.input_name].append(conn_dict)
+                        cast(list, input_conn_dict[conn.input_name]).append(conn_dict)
                     else:
                         input_conn_dict[conn.input_name] = [conn_dict]
                 else:
@@ -914,6 +928,9 @@ class WorkflowContentsManager(UsesAnnotations):
                         current_data_input = current_input
                         # we've got one of the tools' input data definitions
                         break
+                if current_data_input is None:
+                    log.info(f"failed to find input {input_name} for get_step_map_over")
+                    continue
                 input_step = steps[input_value['id']]
                 for input_step_data_output in input_step['outputs']:
                     if input_step_data_output['name'] == input_value['output_name']:
@@ -982,7 +999,7 @@ class WorkflowContentsManager(UsesAnnotations):
                         collection_type = map_over
                         step_data_output['collection'] = True
                         if step_data_output.get('collection_type'):
-                            collection_type = "{}:{}".format(map_over, step_data_output['collection_type'])
+                            collection_type = f"{map_over}:{step_data_output['collection_type']}"
                         step_data_output['collection_type'] = collection_type
         return steps
 
@@ -1004,7 +1021,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     annotation_str = util.unicodify(annotations[0].annotation)
 
         # Pack workflow data into a dictionary and return
-        data = {}
+        data: Dict[str, Any] = {}
         data['a_galaxy_workflow'] = 'true'  # Placeholder for identifying galaxy workflow
         data['format-version'] = "0.1"
         data['name'] = workflow.name
@@ -1012,7 +1029,8 @@ class WorkflowContentsManager(UsesAnnotations):
         data['tags'] = tag_str
         if workflow.uuid is not None:
             data['uuid'] = str(workflow.uuid)
-        data['steps'] = {}
+        steps: Dict[int, Dict[str, Any]] = {}
+        data['steps'] = steps
         if workflow.reports_config:
             data['report'] = workflow.reports_config
         if workflow.creator_metadata:
@@ -1024,7 +1042,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Load from database representation
             module = module_factory.from_workflow_step(trans, step)
             if not module:
-                raise exceptions.MessageException('Unrecognized step type: %s' % step.type)
+                raise exceptions.MessageException(f'Unrecognized step type: {step.type}')
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
@@ -1095,12 +1113,12 @@ class WorkflowContentsManager(UsesAnnotations):
             for name, val in step_state.items():
                 input_type = type(val)
                 if input_type == RuntimeValue:
-                    input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                    input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
                 elif input_type == dict:
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
                         if type(partval) == RuntimeValue:
-                            input_dicts.append({"name": name, "description": "runtime parameter for tool %s" % module.get_name()})
+                            input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
             step_dict['inputs'] = input_dicts
 
             # User outputs
@@ -1145,7 +1163,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     visit_input_values(module.tool.inputs, module.state.inputs, callback)
 
             # Encode input connections as dictionary
-            input_conn_dict = {}
+            input_conn_dict: Dict[str, List[Dict[str, Any]]] = {}
             unique_input_names = {conn.input_name for conn in input_connections}
             for input_name in unique_input_names:
                 input_conn_dicts = []
@@ -1172,14 +1190,17 @@ class WorkflowContentsManager(UsesAnnotations):
             # tools. This should be removed at some point. Mirrored
             # hack in _workflow_from_raw_description should never be removed so
             # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).items():
-                if len(input_conn) == 1:
-                    input_conn_dict[input_name] = input_conn[0]
-            step_dict['input_connections'] = input_conn_dict
+            back_compat_input_conn_dict: model.InputConnDictType = {}
+            for input_name, input_conn_list in dict(input_conn_dict).items():
+                if len(input_conn_list) == 1:
+                    back_compat_input_conn_dict[input_name] = input_conn_list[0]
+                else:
+                    back_compat_input_conn_dict[input_name] = input_conn_list
+            step_dict['input_connections'] = back_compat_input_conn_dict
             # Position
             step_dict['position'] = step.position
             # Add to return value
-            data['steps'][step.order_index] = step_dict
+            steps[step.order_index] = step_dict
         return data
 
     def _workflow_to_dict_instance(self, stored, workflow, legacy=True):
@@ -1202,7 +1223,7 @@ class WorkflowContentsManager(UsesAnnotations):
             elif step_type == 'parameter_input':
                 label = "Input Parameter"
             else:
-                raise ValueError("Invalid step_type %s" % step_type)
+                raise ValueError(f"Invalid step_type {step_type}")
             if legacy:
                 index = step.id
             else:
@@ -1272,12 +1293,12 @@ class WorkflowContentsManager(UsesAnnotations):
             uuid = step_dict.get("uuid", None)
             if uuid and uuid != "None":
                 if uuid in discovered_uuids:
-                    raise exceptions.DuplicatedIdentifierException("Duplicate step UUID in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicate step UUID '{uuid}' in request.")
                 discovered_uuids.add(uuid)
             label = step_dict.get("label", None)
             if label:
                 if label in discovered_labels:
-                    raise exceptions.DuplicatedIdentifierException("Duplicated step label in request.")
+                    raise exceptions.DuplicatedIdentifierException(f"Duplicated step label '{label}' in request.")
                 discovered_labels.add(label)
 
             if 'workflow_outputs' in step_dict:
@@ -1290,13 +1311,13 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_label = output_dict.get("label", None)
                         if output_label:
                             if label in discovered_output_labels:
-                                raise exceptions.DuplicatedIdentifierException("Duplicated workflow output label in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicated workflow output label '{label}' in request.")
                             discovered_output_labels.add(label)
 
                         output_uuid = step_dict.get("output_uuid", None)
                         if output_uuid:
                             if output_uuid in discovered_output_uuids:
-                                raise exceptions.DuplicatedIdentifierException("Duplicate workflow output UUID in request.")
+                                raise exceptions.DuplicatedIdentifierException(f"Duplicate workflow output UUID '{output_uuid}' in request.")
                             discovered_output_uuids.add(uuid)
 
             yield step_dict
@@ -1309,7 +1330,7 @@ class WorkflowContentsManager(UsesAnnotations):
             )
             step_dict["subworkflow"] = subworkflow
 
-    def __module_from_dict(self, trans, steps, steps_by_external_id, step_dict, **kwds):
+    def __module_from_dict(self, trans, steps: List[model.WorkflowStep], steps_by_external_id: Dict[str, model.WorkflowStep], step_dict, **kwds):
         """ Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
@@ -1347,7 +1368,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     workflow_output = {"output_name": workflow_output}
                 output_name = workflow_output["output_name"]
                 if output_name in found_output_names:
-                    raise exceptions.ObjectAttributeInvalidException("Duplicate workflow outputs with name [%s] found." % output_name)
+                    raise exceptions.ObjectAttributeInvalidException(f"Duplicate workflow outputs with name [{output_name}] found.")
                 if not output_name:
                     raise exceptions.ObjectAttributeInvalidException("Workflow output with empty name encountered.")
                 found_output_names.add(output_name)
@@ -1404,7 +1425,7 @@ class WorkflowContentsManager(UsesAnnotations):
         ).workflow
         return subworkflow
 
-    def __connect_workflow_steps(self, steps, steps_by_external_id, dry_run):
+    def __connect_workflow_steps(self, steps: List[model.WorkflowStep], steps_by_external_id, dry_run: bool) -> None:
         """ Second pass to deal with connections between steps.
 
         Create workflow connection objects using externally specified ids
@@ -1412,30 +1433,31 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for step in steps:
             # Input connections
-            for input_name, conn_list in step.temp_input_connections.items():
-                if not conn_list:
-                    continue
-                if not isinstance(conn_list, list):  # Older style singleton connection
-                    conn_list = [conn_list]
+            if step.temp_input_connections:  # populated by __module_from_dict
+                for input_name, conn_list in step.temp_input_connections.items():
+                    if not conn_list:
+                        continue
+                    if not isinstance(conn_list, list):  # Older style singleton connection
+                        conn_list = [conn_list]
 
-                for conn_dict in conn_list:
-                    if 'output_name' not in conn_dict or 'id' not in conn_dict:
-                        template = "Invalid connection [%s] - must be dict with output_name and id fields."
-                        message = template % conn_dict
-                        raise exceptions.MessageException(message)
-                    external_id = conn_dict['id']
-                    if external_id not in steps_by_external_id:
-                        raise KeyError(f"Failed to find external id {external_id} in {steps_by_external_id.keys()}")
-                    output_step = steps_by_external_id[external_id]
+                    for conn_dict in conn_list:
+                        if 'output_name' not in conn_dict or 'id' not in conn_dict:
+                            template = "Invalid connection [%s] - must be dict with output_name and id fields."
+                            message = template % conn_dict
+                            raise exceptions.MessageException(message)
+                        external_id = conn_dict['id']
+                        if external_id not in steps_by_external_id:
+                            raise KeyError(f"Failed to find external id {external_id} in {steps_by_external_id.keys()}")
+                        output_step = steps_by_external_id[external_id]
 
-                    output_name = conn_dict["output_name"]
-                    input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
+                        output_name = conn_dict["output_name"]
+                        input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
 
-                    if dry_run:
-                        input_subworkflow_step_index = None
-                    step.add_connection(input_name, output_name, output_step, input_subworkflow_step_index)
+                        if dry_run:
+                            input_subworkflow_step_index = None
+                        step.add_connection(input_name, output_name, output_step, input_subworkflow_step_index)
 
-            del step.temp_input_connections
+            step.temp_input_connections = None
 
     def __set_default_label(self, step, module, state):
         """ Previously data input modules had a `name` attribute to rename individual steps. Here, this value is transferred
@@ -1483,6 +1505,17 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow=self.workflow_to_dict(trans, refactored_workflow.stored_workflow, style=refactor_request.style),
             dry_run=refactor_request.dry_run,
         )
+
+    def get_all_tools(self, workflow):
+        tools = []
+        for step in workflow.steps:
+            if step.type == 'tool':
+                if step.tool_id:
+                    if {"tool_id": step.tool_id, "tool_version": step.tool_version} not in tools:
+                        tools.append({"tool_id": step.tool_id, "tool_version": step.tool_version})
+            elif step.type == "subworkflow":
+                tools.extend(self.get_all_tools(step.subworkflow))
+        return tools
 
 
 class RefactorRequest(RefactorActions):

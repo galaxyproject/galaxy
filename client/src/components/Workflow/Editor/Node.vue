@@ -3,8 +3,7 @@
         :id="idString"
         :name="name"
         :node-label="label"
-        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }"
-    >
+        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
         <div class="node-header unselectable clearfix">
             <b-button
                 class="node-destroy py-0 float-right"
@@ -13,8 +12,7 @@
                 aria-label="destroy node"
                 v-b-tooltip.hover
                 title="Remove"
-                @click="onRemove"
-            >
+                @click="onRemove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
@@ -23,8 +21,7 @@
                 class="node-recommendations py-0 float-right"
                 variant="primary"
                 size="sm"
-                aria-label="tool recommendations"
-            >
+                aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
@@ -32,8 +29,7 @@
                     :get-node="getNode"
                     :get-manager="getManager"
                     :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate"
-                />
+                    @onCreate="onCreate" />
             </b-popover>
             <b-button
                 v-if="canClone"
@@ -43,8 +39,7 @@
                 aria-label="clone node"
                 v-b-tooltip.hover
                 title="Duplicate"
-                @click="onClone"
-            >
+                @click="onClone">
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
@@ -64,8 +59,7 @@
                 :datatypes-mapper="datatypesMapper"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
-                @onChange="onChange"
-            />
+                @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
@@ -76,8 +70,7 @@
                 @onAdd="onAddOutput"
                 @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
-                @onChange="onChange"
-            />
+                @onChange="onChange" />
         </div>
     </div>
 </template>
@@ -146,6 +139,7 @@ export default {
             outputTerminals: {},
             errors: null,
             label: null,
+            annotation: null,
             config_form: {},
             showLoading: true,
             highlight: false,
@@ -201,7 +195,7 @@ export default {
 
         // initialize node data
         this.$emit("onAdd", this);
-        if (this.step._complete) {
+        if (this.step.config_form) {
             this.initData(this.step);
         } else {
             this.$emit("onUpdate", this);
@@ -239,6 +233,7 @@ export default {
     },
     methods: {
         onChange() {
+            this.onRedraw();
             this.$emit("onChange");
         },
         onAddInput(input, terminal) {
@@ -290,86 +285,37 @@ export default {
             return this;
         },
         setNode(data) {
-            data.workflow_outputs = data.outputs.map((o) => {
-                return {
-                    output_name: o.name,
-                    label: o.label,
-                };
-            });
             this.initData(data);
-            Vue.nextTick(() => {
-                this.updateData(data);
-                this.$emit("onActivate", this);
-            });
+            this.$emit("onChange");
+            this.$emit("onActivate", this);
         },
         setAnnotation(annotation) {
-            if (this.annotationTimeout) {
-                clearTimeout(this.annotationTimeout);
-            }
-            this.annotationTimeout = setTimeout(() => {
-                if (annotation !== this.annotation) {
-                    this.annotation = annotation;
-                    this.$emit("onChange");
-                }
-            }, 100);
+            this.annotation = annotation;
+            this.$emit("onChange");
         },
         setLabel(label) {
-            if (this.labelTimeout) {
-                clearTimeout(this.labelTimeout);
-            }
-            this.labelTimeout = setTimeout(() => {
-                if (label !== this.label) {
-                    this.label = label;
-                    this.$emit("onChange");
-                }
-            }, 100);
+            this.label = label;
+            this.$emit("onChange");
         },
         setData(data) {
-            this.config_form = data.config_form;
-            this.content_id = data.config_form?.id || data.content_id;
+            this.content_id = data.content_id;
             this.tool_state = data.tool_state;
             this.errors = data.errors;
-            this.annotation = data.annotation;
             this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
-            this.label = data.label;
-            this.uuid = data.uuid;
             this.inputs = data.inputs ? data.inputs.slice() : [];
             this.outputs = data.outputs ? data.outputs.slice() : [];
+            const outputNames = this.outputs.map((output) => output.name);
+            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
+            this.activeOutputs.filterOutputs(outputNames);
+            this.postJobActions = data.post_job_actions || {};
+            this.config_form = data.config_form;
         },
         initData(data) {
+            this.uuid = data.uuid;
+            this.annotation = data.annotation;
+            this.label = data.label;
             this.setData(data);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.showLoading = false;
-        },
-        updateData(data) {
-            this.setData(data);
-            // Create array of new output names
-            const outputNames = this.outputs.map((output) => output.name);
-            this.activeOutputs.filterOutputs(outputNames);
-            // emit change completion event
-            this.showLoading = false;
-            this.$emit("onChange");
-        },
-        labelOutput(outputName, label) {
-            return this.activeOutputs.labelOutput(outputName, label);
-        },
-        changeOutputDatatype(outputName, datatype) {
-            if (datatype === "__empty__") {
-                datatype = null;
-            }
-            const outputTerminal = this.outputTerminals[outputName];
-            if (datatype) {
-                this.postJobActions["ChangeDatatypeAction" + outputName] = {
-                    action_arguments: { newtype: datatype },
-                    action_type: "ChangeDatatypeAction",
-                    output_name: outputName,
-                };
-            } else {
-                delete this.postJobActions["ChangeDatatypeAction" + outputName];
-            }
-            outputTerminal.destroyInvalidConnections();
-            this.$emit("onChange");
         },
         onScrollTo() {
             this.scrolledTo = true;
@@ -389,6 +335,7 @@ export default {
         makeInactive() {
             // Keep inactive nodes stacked from most to least recently active
             // by moving element to the end of parent's node list
+            document.activeElement.blur();
             const element = this.element;
             ((p) => {
                 p.removeChild(element);

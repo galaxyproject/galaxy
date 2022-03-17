@@ -39,8 +39,8 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
         query = self.get_query_for_setting_metadata_on_repositories(order=True)
         for repository in query:
             owner = str(repository.owner)
-            option_label = '{} ({})'.format(str(repository.name), owner)
-            option_value = '%s' % self.app.security.encode_id(repository.id)
+            option_label = f'{str(repository.name)} ({owner})'
+            option_value = f'{self.app.security.encode_id(repository.id)}'
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field
 
@@ -87,19 +87,18 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
     def reset_all_metadata_on_installed_repository(self):
         """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
         if self.relative_install_dir:
-            original_metadata_dict = self.repository.metadata
+            original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
-                self.repository.metadata = self.metadata_dict
+                self.repository.metadata_ = self.metadata_dict
                 self.update_in_shed_tool_config()
                 self.app.install_model.context.add(self.repository)
                 self.app.install_model.context.flush()
-                self.app.tool_shed_repository_cache.rebuild()
-                log.debug('Metadata has been reset on repository %s.' % self.repository.name)
+                log.debug(f'Metadata has been reset on repository {self.repository.name}.')
             else:
-                log.debug('Metadata did not need to be reset on repository %s.' % self.repository.name)
+                log.debug(f'Metadata did not need to be reset on repository {self.repository.name}.')
         else:
-            log.debug('Error locating installation directory for repository %s.' % self.repository.name)
+            log.debug(f'Error locating installation directory for repository {self.repository.name}.')
 
     def reset_metadata_on_selected_repositories(self, user, **kwd):
         """

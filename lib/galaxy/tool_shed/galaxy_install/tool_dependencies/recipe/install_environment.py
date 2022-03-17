@@ -65,11 +65,11 @@ class InstallEnvironment:
                 break
             except OSError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
-                log.debug('Error closing file descriptor: %s' % str(e))
+                log.debug(f'Error closing file descriptor: {str(e)}')
                 time.sleep(.5)
                 current_wait_time = time.time() - start_timer
                 if current_wait_time >= 600:
-                    error = 'Error closing file descriptor: %s' % str(e)
+                    error = f'Error closing file descriptor: {str(e)}'
                     break
         return error
 
@@ -100,7 +100,7 @@ class InstallEnvironment:
                 for env_setting in open(env_shell_file_path):
                     cmds.append(env_setting.strip('\n'))
             else:
-                log.debug('Invalid file {} specified, ignoring {} action.'.format(str(env_shell_file_path), str(action_type)))
+                log.debug(f'Invalid file {str(env_shell_file_path)} specified, ignoring {str(action_type)} action.')
         return cmds
 
     def environment_dict(self, action_type='template_command'):
@@ -112,7 +112,7 @@ class InstallEnvironment:
                     env_name, env_path = env_string.split('=')
                     env_vars[env_name] = env_path
             else:
-                log.debug('Invalid file %s specified, ignoring template_command action.' % str(env_shell_file_path))
+                log.debug(f'Invalid file {str(env_shell_file_path)} specified, ignoring template_command action.')
         return env_vars
 
     def handle_command(self, tool_dependency, cmd, return_output=False, job_name=""):
@@ -123,10 +123,10 @@ class InstallEnvironment:
         stdout = output.stdout
         stderr = output.stderr
         if len(stdout) > DATABASE_MAX_STRING_SIZE:
-            log.warning("Length of stdout > %s, so only a portion will be saved in the database." % str(DATABASE_MAX_STRING_SIZE_PRETTY))
+            log.warning(f"Length of stdout > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database.")
             stdout = shrink_string_by_size(stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
         if len(stderr) > DATABASE_MAX_STRING_SIZE:
-            log.warning("Length of stderr > %s, so only a portion will be saved in the database." % str(DATABASE_MAX_STRING_SIZE_PRETTY))
+            log.warning(f"Length of stderr > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database.")
             stderr = shrink_string_by_size(stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
         if output.return_code not in [0]:
             status = self.app.install_model.ToolDependency.installation_status.ERROR
@@ -159,10 +159,10 @@ class InstallEnvironment:
         # being installed.
         llog_name = __name__
         if len(job_name) > 0:
-            llog_name += ':' + job_name
+            llog_name += f":{job_name}"
         llog = logging.getLogger(llog_name)
         # Print the command we're about to execute, ``set -x`` style.
-        llog.debug('+ ' + str(command))
+        llog.debug(f"+ {str(command)}")
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen(str(command),
                                           stdout=subprocess.PIPE,
@@ -272,7 +272,7 @@ class InstallEnvironment:
                 log.exception(str(e))
 
     def __setup_environment(self):
-        return "&&".join(". %s" % _ for _ in self.__valid_env_shell_file_paths())
+        return "&&".join(f". {_}" for _ in self.__valid_env_shell_file_paths())
 
     def __valid_env_shell_file_paths(self):
         return [_ for _ in self.env_shell_file_paths if os.path.exists(_)]

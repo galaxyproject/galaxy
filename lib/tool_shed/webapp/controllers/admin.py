@@ -51,7 +51,7 @@ class AdminController(BaseUIController, Admin):
                                                                 **kwd))
             elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 if 'user_id' in kwd:
@@ -66,7 +66,7 @@ class AdminController(BaseUIController, Admin):
                     kwd['f-email'] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in list(kwd.items()):
+                for k in list(kwd.keys()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)
@@ -146,7 +146,7 @@ class AdminController(BaseUIController, Admin):
                 trans.sa_session.flush()
                 # Update the Tool Shed's repository registry.
                 trans.app.repository_registry.add_category_entry(category)
-                message = "Category '%s' has been created" % escape(category.name)
+                message = f"Category '{escape(category.name)}' has been created"
                 status = 'done'
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='manage_categories',
@@ -188,7 +188,7 @@ class AdminController(BaseUIController, Admin):
                         # Update the repository registry.
                         trans.app.repository_registry.remove_entry(repository)
                         count += 1
-                        deleted_repositories += " %s " % repository.name
+                        deleted_repositories += f" {repository.name} "
             if count:
                 message = "Deleted %d %s: %s" % (count, inflector.cond_plural(len(ids), "repository"), escape(deleted_repositories))
             else:
@@ -265,7 +265,7 @@ class AdminController(BaseUIController, Admin):
                 if original_category_name != new_name:
                     # Update the Tool Shed's repository registry.
                     trans.app.repository_registry.edit_category_entry(original_category_name, new_name)
-                message = "The information has been saved for category '%s'" % escape(category.name)
+                message = f"The information has been saved for category '{escape(category.name)}'"
                 status = 'done'
                 return trans.response.send_redirect(web.url_for(controller='admin',
                                                                 action='manage_categories',
@@ -405,7 +405,7 @@ class AdminController(BaseUIController, Admin):
                             # Update the repository registry.
                             trans.app.repository_registry.add_entry(repository)
                         count += 1
-                        undeleted_repositories += " %s" % repository.name
+                        undeleted_repositories += f" {repository.name}"
             if count:
                 message = "Undeleted %d %s: %s" % (count, inflector.cond_plural(count, "repository"), undeleted_repositories)
             else:
@@ -435,7 +435,7 @@ class AdminController(BaseUIController, Admin):
                 trans.sa_session.flush()
                 # Update the Tool Shed's repository registry.
                 trans.app.repository_registry.remove_category_entry(category)
-                message += " %s " % escape(category.name)
+                message += f" {escape(category.name)} "
         else:
             message = "No category ids received for deleting."
         trans.response.send_redirect(web.url_for(controller='admin',
@@ -463,7 +463,7 @@ class AdminController(BaseUIController, Admin):
                     for rca in category.repositories:
                         trans.sa_session.delete(rca)
                     trans.sa_session.flush()
-                    purged_categories += " %s " % category.name
+                    purged_categories += f" {category.name} "
             message = "Purged %d categories: %s" % (count, escape(purged_categories))
         else:
             message = "No category ids received for purging."
@@ -490,7 +490,7 @@ class AdminController(BaseUIController, Admin):
                     # Update the Tool Shed's repository registry.
                     trans.app.repository_registry.add_category_entry(category)
                     count += 1
-                    undeleted_categories += " %s" % category.name
+                    undeleted_categories += f" {category.name}"
             message = "Undeleted %d categories: %s" % (count, escape(undeleted_categories))
         else:
             message = "No category ids received for undeleting."

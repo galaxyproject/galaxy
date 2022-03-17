@@ -103,7 +103,7 @@ export default {
             return terminal;
         },
         onChange() {
-            this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
+            this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
         },
         onRemove() {

@@ -1,6 +1,7 @@
 """ This module define an abstract class for reasoning about Galaxy's
 dataset collection after jobs are finished.
 """
+from typing import List
 
 from galaxy.util import asbool
 from .util import is_dict
@@ -63,7 +64,7 @@ def dataset_collection_description(**kwargs):
     if discover_via == "tool_provided_metadata":
         for key in ["pattern", "sort_by"]:
             if kwargs.get(key):
-                raise Exception("Cannot specify attribute [%s] if from_provided_metadata is True" % key)
+                raise Exception(f"Cannot specify attribute [{key}] if from_provided_metadata is True")
         return ToolProvidedMetadataDatasetCollection(**kwargs)
     else:
         return FilePatternDatasetCollectionDescription(**kwargs)
@@ -80,6 +81,7 @@ class DatasetCollectionDescription:
         self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
         self.directory = kwargs.get("directory", None)
         self.recurse = False
+        self.match_relative_path = kwargs.get("match_relative_path", False)
 
     def to_dict(self):
         return {
@@ -90,7 +92,12 @@ class DatasetCollectionDescription:
             'assign_primary_output': self.assign_primary_output,
             'directory': self.directory,
             'recurse': self.recurse,
+            'match_relative_path': self.match_relative_path,
         }
+
+    @property
+    def discover_patterns(self) -> List[str]:
+        return []
 
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
@@ -106,10 +113,11 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         super().__init__(**kwargs)
         pattern = kwargs.get("pattern", "__default__")
         self.recurse = asbool(kwargs.get("recurse", False))
+        self.match_relative_path = asbool(kwargs.get("match_relative_path", False))
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern
-        sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
+        self.sort_by = sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
             self.sort_reverse = True
             sort_by = sort_by[len("reverse_"):]
@@ -136,8 +144,13 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
             "sort_comp": self.sort_comp,
             "pattern": self.pattern,
             "recurse": self.recurse,
+            "sort_by": self.sort_by,
         })
         return as_dict
+
+    @property
+    def discover_patterns(self):
+        return [self.pattern]
 
 
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = FilePatternDatasetCollectionDescription(

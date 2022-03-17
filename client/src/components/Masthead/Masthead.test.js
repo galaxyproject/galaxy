@@ -8,7 +8,6 @@ import { loadWebhookMenuItems } from "./_webhooks";
 jest.mock("app");
 jest.mock("layout/menu");
 jest.mock("./_webhooks");
-jest.mock("../History/caching");
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -70,7 +69,7 @@ describe("Masthead.vue", () => {
                 hidden: true,
             },
         ];
-        const activeTab = "shared";
+        const initialActiveTab = "shared";
 
         // scratchbook assumes this is a Backbone collection - mock that out.
         tabs.add = (x) => {
@@ -86,7 +85,7 @@ describe("Masthead.vue", () => {
         wrapper = mount(Masthead, {
             propsData: {
                 mastheadState,
-                activeTab,
+                initialActiveTab,
             },
             localVue,
         });
@@ -138,9 +137,9 @@ describe("Masthead.vue", () => {
     it("should display scratchbook button", async () => {
         expect(wrapper.find("#enable-scratchbook a span").classes("fa-th")).toBe(true);
         expect(scratchbook.active).toBe(false);
-        // wrapper.find("#enable-scratchbook a").trigger("click");
-        // await localVue.nextTick();
-        // expect(scratchbook.active).to.equals(true);
+        wrapper.find("#enable-scratchbook a").trigger("click");
+        await localVue.nextTick();
+        expect(scratchbook.active).toBe(true);
     });
 
     it("should load webhooks on creation", async () => {

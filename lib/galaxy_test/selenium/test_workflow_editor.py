@@ -1,10 +1,12 @@
 import json
 
+import yaml
 from selenium.webdriver.common.keys import Keys
 
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
+    WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_SIMPLE_MAPPING,
     WORKFLOW_WITH_INVALID_STATE,
@@ -69,8 +71,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
         new_annotation = 'look new annotation'
         edit_annotation.wait_for_and_send_keys(new_annotation)
-        self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
         self.assert_wf_annotation_is(new_annotation)
 
@@ -83,10 +84,42 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         edit_name = self.components.workflow_editor.edit_name
         edit_name.wait_for_and_send_keys(new_name)
 
-        self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(new_name)
         self.assert_wf_name_is(name)
+
+    @selenium_test
+    def test_optional_select_data_field(self):
+        editor = self.components.workflow_editor
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        editor = self.components.workflow_editor
+        node = editor.node._(label="select_from_dataset_optional")
+        node.title.wait_for_and_click()
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        # External (selenium-side) debounce hack for old backbone input
+        # TODO: remove when form elements are all converted.
+        self.components.tool_form.parameter_input(parameter='select_single').wait_for_and_send_keys('parameter valu')
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.tool_form.parameter_input(parameter='select_single').wait_for_and_send_keys('e')
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == 'parameter value'
+        # Disable optional button, resets value to null
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] is None
+        # Enable button but don't provide a value
+        self.components.tool_form.parameter_checkbox(parameter='select_single').wait_for_and_click()
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        tool_state = json.loads(workflow['steps']['0']['tool_state'])
+        assert tool_state['select_single'] == ""
 
     @selenium_test
     def test_data_input(self):
@@ -157,9 +190,10 @@ steps:
         column_names = self.components.tool_form.parameter_textarea(parameter='col_names')
         textarea_column_names = column_names.wait_for_visible()
         assert textarea_column_names.get_attribute('value') == 'a\nb\nc\n'
-        self.set_text_element(columns, '4\n5\n6\n')
-        self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.set_text_element(columns, '4\n5\n6\n')
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         self.driver.refresh()
         node.title.wait_for_and_click()
         textarea_columns = columns.wait_for_visible()
@@ -239,6 +273,45 @@ steps:
         self.assert_connected("input_int#output", "tool_exec#inttest")
 
     @selenium_test
+    def test_non_data_map_over_carried_through(self):
+        # Use auto_layout=false, which prevents placing any
+        # step outside of the scroll area
+        # xref: https://github.com/galaxyproject/galaxy/issues/13211
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list"
+steps:
+  param_value_from_file:
+    tool_id: param_value_from_file
+    in:
+      input1: input_collection
+  text_input_step:
+    tool_id: param_text_option
+    in:
+      text_param: param_value_from_file/text_param
+  collection_input:
+    tool_id: identifier_collection
+""", auto_layout=False)
+        self.workflow_editor_connect("text_input_step#out_file1", "collection_input#input1")
+        self.assert_connected("text_input_step#out_file1", "collection_input#input1")
+
+    def test_connecting_display_in_upload_false_connections(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+steps:
+  step1:
+    tool_id: test_sam_to_bam_conversions
+  step2:
+    tool_id: test_sam_to_bam_conversions
+        """)
+
+        self.workflow_editor_connect("step1#qname_input_sorted_bam_output", "step2#input5")
+        self.assert_connected("step1#qname_input_sorted_bam_output", "step2#input5")
+
+    @selenium_test
     def test_existing_connections(self):
         self.open_in_workflow_editor(WORKFLOW_SIMPLE_CAT_TWICE)
 
@@ -266,8 +339,8 @@ steps:
         self.assert_not_connected("input1#output", "first_cat#input1")
         self.workflow_editor_connect("input1#output", "first_cat#input1")
         self.assert_connected("input1#output", "first_cat#input1")
-        self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         self.workflow_index_open_with_name(name)
         self.assert_connected("input1#output", "first_cat#input1")
 
@@ -388,8 +461,8 @@ steps:
         editor.tool_version_button.wait_for_and_click()
         assert self.select_dropdown_item('Switch to 0.2'), 'Switch to tool version dropdown item not found'
         self.screenshot("workflow_editor_version_update")
-        self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow['steps']['0']['tool_version'] == '0.2'
 
@@ -402,7 +475,34 @@ steps:
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
-        self.assert_has_changes_and_save()
+        self.assert_workflow_has_changes_and_save()
+
+    @selenium_test
+    def test_editor_subworkflow_tool_upgrade_message(self):
+        workflow_populator = self.workflow_populator
+        embedded_workflow = yaml.safe_load(WORKFLOW_WITH_OLD_TOOL_VERSION)
+        # Create invalid tool state
+        embedded_workflow['steps']['mul_versions']['state']['inttest'] = 'Invalid'
+        outer_workflow = yaml.safe_load("""
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+steps:
+  nested_workflow:
+    run: {}
+    in:
+      input1: outer_input
+        """)
+        outer_workflow['steps']['nested_workflow']['run'] = embedded_workflow
+        workflow_populator.upload_yaml_workflow(json.dumps(outer_workflow), exact_tools=True)
+        self.workflow_index_open()
+        self.workflow_index_click_option("Edit")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
+        self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
+        self.screenshot("workflow_editor_subworkflow_tool_upgrade")
+        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.assert_workflow_has_changes_and_save()
 
     @staticmethod
     def set_text_element(element, value):
@@ -423,25 +523,25 @@ steps:
         self.set_text_element(editor.label_input, 'source label')
         # Select node using new label, ensures labels are synced between side panel and node
         cat_node = editor.node._(label="source label")
-        self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         editor.annotation_input.wait_for_and_send_keys("source annotation")
-        self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         editor.configure_output(output='out_file1').wait_for_and_click()
         output_label = editor.label_output(output='out_file1')
         self.set_text_element(output_label, 'workflow output label')
         self.set_text_element(editor.rename_output, 'renamed_output')
         editor.change_datatype.wait_for_and_click()
+        editor.select_dataype_text_search.wait_for_and_send_keys('bam')
         editor.select_datatype(datatype='bam').wait_for_and_click()
         self.set_text_element(editor.add_tags, '#crazynewtag')
         self.set_text_element(editor.remove_tags, '#oldboringtag')
+        self.sleep_for(self.wait_types.UX_RENDER)
         cat_node.clone.wait_for_and_click()
         editor.label_input.wait_for_and_send_keys('cloned label')
         output_label = editor.label_output(output='out_file1')
         self.set_text_element(output_label, 'cloned output label')
-        self.assert_has_changes_and_save()
         self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         edited_workflow = self.workflow_populator.download_workflow(workflow_id)
         source_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'source label'))
         cloned_step = next(iter(step for step in edited_workflow['steps'].values() if step['label'] == 'cloned label'))
@@ -473,8 +573,7 @@ steps:
         editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
         editor.workflow_link(workflow_title=child_workflow_name).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_has_changes_and_save()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
         subworkflow_step = workflow['steps']['1']
         assert subworkflow_step['name'] == child_workflow_name
@@ -549,8 +648,8 @@ steps:
 
     def workflow_editor_connect(self, source, sink, screenshot_partial=None):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
-        source_element = self.driver.find_element_by_css_selector("#" + source_id)
-        sink_element = self.driver.find_element_by_css_selector("#" + sink_id)
+        source_element = self.driver.find_element_by_css_selector(f"#{source_id}")
+        sink_element = self.driver.find_element_by_css_selector(f"#{sink_id}")
 
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()
@@ -571,11 +670,12 @@ steps:
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_absent()
 
-    def open_in_workflow_editor(self, yaml_content):
+    def open_in_workflow_editor(self, yaml_content, auto_layout=True):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_index_open()
         self.workflow_index_open_with_name(name)
-        self.workflow_editor_click_option("Auto Layout")
+        if auto_layout:
+            self.workflow_editor_click_option("Auto Layout")
         return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
@@ -644,29 +744,6 @@ steps:
         name = self._get_random_name()
         workflow_populator.upload_yaml_workflow(content, name=name)
         return name
-
-    def workflow_create_new(self, annotation=None, clear_placeholder=False):
-        self.workflow_index_open()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.click_button_new_workflow()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        form_element = self.driver.find_element_by_id("submit")
-        name = self._get_random_name()
-        annotation = annotation or self._get_random_name()
-        inputs = self.driver.find_elements_by_class_name("ui-input")
-        if clear_placeholder:
-            inputs[0].clear()
-        inputs[0].send_keys(name)
-        inputs[1].send_keys(annotation)
-        form_element.click()
-        return name
-
-    @retry_assertion_during_transitions
-    def assert_has_changes_and_save(self):
-        save_button = self.components.workflow_editor.save_button
-        save_button.wait_for_visible()
-        assert not save_button.has_class("disabled")
-        save_button.wait_for_and_click()
 
     @retry_assertion_during_transitions
     def assert_wf_name_is(self, expected_name):

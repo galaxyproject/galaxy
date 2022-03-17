@@ -64,12 +64,12 @@ def getMissval(inped=''):
 def rgConv(inpedfilepath, outhtmlname, outfilepath, plink):
     """
     """
-    pedf = '%s.ped' % inpedfilepath
+    pedf = f'{inpedfilepath}.ped'
     basename = os.path.split(inpedfilepath)[-1]  # get basename
     outroot = os.path.join(outfilepath, basename)
     missval = getMissval(inped=pedf)
     if not missval:
-        print('### lped_to_pbed_converter.py cannot identify missing value in %s' % pedf)
+        print(f'### lped_to_pbed_converter.py cannot identify missing value in {pedf}')
         missval = '0'
     subprocess.check_call([plink, '--noweb', '--file', inpedfilepath,
                            '--make-bed', '--out', outroot,
@@ -101,9 +101,9 @@ def main():
         f.write(galhtmlprefix % prog)
         s = f'## Rgenetics: http://rgenetics.org Galaxy Tools {prog} {timenow()}'  # becomes info
         print(s)
-        f.write('<div>%s\n<ol>' % (s))
+        f.write(f'<div>{s}\n<ol>')
         for data in flist:
-            f.write('<li><a href="{}">{}</a></li>\n'.format(os.path.split(data)[-1], os.path.split(data)[-1]))
+            f.write(f'<li><a href="{os.path.split(data)[-1]}">{os.path.split(data)[-1]}</a></li>\n')
         f.write("</ol></div></div></body></html>")
 
 

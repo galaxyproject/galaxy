@@ -1,14 +1,12 @@
 <template>
-    <b-card header-tag="header" body-class="p-0">
+    <b-card header-tag="header" body-class="p-0" id="lint-panel" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <font-awesome-icon icon="magic" class="mr-1" />
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
-                <a href="#" @click="onRefactor">
-                    Try to automatically fix issues.
-                </a>
+                <a href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
         <b-card-body>
@@ -19,8 +17,7 @@
                 warning-message="This workflow is not annotated. Providing an annotation helps workflow executors
                     understand the purpose and usage of the workflow."
                 attribute-link="Annotate your Workflow."
-                @onClick="onAttributes"
-            />
+                @onClick="onAttributes" />
             <LintSection
                 :okay="checkCreator"
                 success-message="This workflow defines creator information."
@@ -28,8 +25,7 @@
                     that will be published and/or shared to help workflow executors know how to cite the
                     workflow authors."
                 attribute-link="Provide Creator Details."
-                @onClick="onAttributes"
-            />
+                @onClick="onAttributes" />
             <LintSection
                 :okay="checkLicense"
                 success-message="This workflow defines a license."
@@ -37,8 +33,7 @@
                     that will be published and/or shared to help workflow executors understand how it
                     may be used."
                 attribute-link="Specify a License."
-                @onClick="onAttributes"
-            />
+                @onClick="onAttributes" />
             <LintSection
                 success-message="Workflow parameters are using formal input parameters."
                 warning-message="This workflow uses legacy workflow parameters. They should be replaced with
@@ -47,8 +42,7 @@
                 :warning-items="warningUntypedParameters"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onFixUntypedParameter"
-            />
+                @onClick="onFixUntypedParameter" />
             <LintSection
                 success-message="All non-optional inputs to workflow steps are connected to formal input parameters."
                 warning-message="Some non-optional inputs are not connected to formal workflow inputs. Formal input parameters
@@ -56,16 +50,14 @@
                 :warning-items="warningDisconnectedInputs"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onFixDisconnectedInput"
-            />
+                @onClick="onFixDisconnectedInput" />
             <LintSection
                 success-message="All workflow inputs have labels and annotations."
                 warning-message="Some workflow inputs are missing labels and/or annotations:"
                 :warning-items="warningMissingMetadata"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onScrollTo"
-            />
+                @onClick="onScrollTo" />
             <LintSection
                 success-message="This workflow has outputs and they all have valid labels."
                 warning-message="The following workflow outputs have no labels, they should be assigned a useful label or
@@ -73,8 +65,7 @@
                 :warning-items="warningUnlabeledOutputs"
                 @onMouseOver="onHighlight"
                 @onMouseLeave="onUnhighlight"
-                @onClick="onFixUnlabeledOutputs"
-            />
+                @onClick="onFixUnlabeledOutputs" />
             <div v-if="!hasActiveOutputs">
                 <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
@@ -116,8 +107,8 @@ export default {
         untypedParameters: {
             type: UntypedParameters,
         },
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             required: true,
         },
         annotation: {
@@ -195,6 +186,9 @@ export default {
         },
     },
     computed: {
+        nodes() {
+            return this.getManager().nodes;
+        },
         hasActiveOutputs() {
             this.forceRefresh;
             for (const node of Object.values(this.nodes)) {

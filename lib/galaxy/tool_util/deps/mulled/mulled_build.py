@@ -81,9 +81,9 @@ From: %(base_image)s
 
 def involucro_link():
     if IS_OS_X:
-        url = "https://github.com/mvdbeek/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
+        url = f"https://github.com/mvdbeek/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro.darwin"
     else:
-        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro" % INVOLUCRO_VERSION
+        url = f"https://github.com/involucro/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro"
     return url
 
 
@@ -103,9 +103,9 @@ def get_tests(args, pkg_path):
         if tests_commands:
             tests.append(' && '.join(tests_commands))
         if tests_imports and 'python' in requirements:
-            tests.append(' && '.join('python -c "import %s"' % imp for imp in tests_imports))
+            tests.append(' && '.join(f'python -c "import {imp}"' for imp in tests_imports))
         elif tests_imports and ('perl' in requirements or 'perl-threaded' in requirements):
-            tests.append(' && '.join('''perl -e "use %s;"''' % imp for imp in tests_imports))
+            tests.append(' && '.join(f'''perl -e "use {imp};\"''' for imp in tests_imports))
 
     tests = ' && '.join(tests)
     tests = tests.replace('$R ', 'Rscript ')
@@ -128,7 +128,7 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
+    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', f'--since="{hours} hours ago"']
     changed_files = unicodify(subprocess.check_output(cmd, cwd=recipes_dir)).splitlines()
     pkg_list = {x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')}
     for pkg in pkg_list:
@@ -142,7 +142,7 @@ def conda_versions(pkg_name, file_name):
     ret = list()
     for pkg in j['packages'].values():
         if pkg['name'] == pkg_name:
-            ret.append('{}--{}'.format(pkg['version'], pkg['build']))
+            ret.append(f"{pkg['version']}--{pkg['build']}")
     return ret
 
 
@@ -209,7 +209,7 @@ def mull_targets(
             target_tag = None
             if ":" in repo_template_kwds["image"]:
                 image_name_parts = repo_template_kwds["image"].split(":")
-                assert len(image_name_parts) == 2, ": not allowed in image name [%s]" % repo_template_kwds["image"]
+                assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
                 target_tag = image_name_parts[1]
 
             if tags and (target_tag is None or target_tag in tags):
@@ -227,11 +227,11 @@ def mull_targets(
     target_str = ",".join(map(conda_build_target_str, targets))
     bind_str = ",".join(binds)
     involucro_args = [
-        '-f', '%s/invfile.lua' % DIRNAME,
-        '-set', "CHANNELS=%s" % channels,
-        '-set', "TARGETS=%s" % target_str,
-        '-set', "REPO=%s" % repo,
-        '-set', "BINDS=%s" % bind_str,
+        '-f', f'{DIRNAME}/invfile.lua',
+        '-set', f"CHANNELS={channels}",
+        '-set', f"TARGETS={target_str}",
+        '-set', f"REPO={repo}",
+        '-set', f"BINDS={bind_str}",
     ]
     dest_base_image = None
     if base_image:
@@ -242,19 +242,19 @@ def mull_targets(
         dest_base_image = base_image_for_targets(targets)
 
     if dest_base_image:
-        involucro_args.extend(["-set", "DEST_BASE_IMAGE=%s" % dest_base_image])
+        involucro_args.extend(["-set", f"DEST_BASE_IMAGE={dest_base_image}"])
     if CONDA_IMAGE:
-        involucro_args.extend(["-set", "CONDA_IMAGE=%s" % CONDA_IMAGE])
+        involucro_args.extend(["-set", f"CONDA_IMAGE={CONDA_IMAGE}"])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE=1"])
     if singularity:
         singularity_image_name = repo_template_kwds['image']
         involucro_args.extend(["-set", "SINGULARITY=1"])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME=%s" % singularity_image_name])
-        involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR=%s" % singularity_image_dir])
+        involucro_args.extend(["-set", f"SINGULARITY_IMAGE_NAME={singularity_image_name}"])
+        involucro_args.extend(["-set", f"SINGULARITY_IMAGE_DIR={singularity_image_dir}"])
         involucro_args.extend(["-set", f"USER_ID={os.getuid()}:{os.getgid()}"])
     if test:
-        involucro_args.extend(["-set", "TEST=%s" % test])
+        involucro_args.extend(["-set", f"TEST={test}"])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes conda={conda_version}"])
@@ -270,9 +270,9 @@ def mull_targets(
                     test_bind.append(test_file)
         if test_bind:
             involucro_args.insert(6, '-set')
-            involucro_args.insert(7, "TEST_BINDS=%s" % ",".join(test_bind))
+            involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
     cmd = involucro_context.build_command(involucro_args)
-    print('Executing: ' + ' '.join(shlex.quote(_) for _ in cmd))
+    print(f"Executing: {' '.join(shlex.quote(_) for _ in cmd)}")
     if dry_run:
         return 0
     ensure_installed(involucro_context, True)
@@ -327,7 +327,7 @@ class InvolucroContext(installable.InstallableContext):
         self.verbose = verbose
 
     def build_command(self, involucro_args):
-        return [self.involucro_bin, "-v=%s" % self.verbose] + involucro_args
+        return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
 
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)

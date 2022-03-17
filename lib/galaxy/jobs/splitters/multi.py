@@ -1,9 +1,9 @@
 import logging
 import os
 import shutil
+from inspect import getfullargspec
 
 from galaxy import model, util
-from galaxy.util.getargspec import getfullargspec
 
 
 log = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ def do_split(job_wrapper):
         shared_inputs = [x.strip() for x in shared_inputs.split(",")]
     illegal_inputs = [x for x in shared_inputs if x in split_inputs]
     if len(illegal_inputs) > 0:
-        raise Exception("Inputs have conflicting parallelism attributes: %s" % str(illegal_inputs))
+        raise Exception(f"Inputs have conflicting parallelism attributes: {str(illegal_inputs)}")
 
     subdir_index = [0]  # use a list to get around Python 2.x lame closure support
     task_dirs = []
@@ -63,7 +63,7 @@ def do_split(job_wrapper):
             elif auto_shared_inputs:
                 shared_inputs.append(input.name)
             else:
-                log_error = "The input '%s' does not define a method for implementing parallelism" % str(input.name)
+                log_error = f"The input '{str(input.name)}' does not define a method for implementing parallelism"
                 log.exception(log_error)
                 raise Exception(log_error)
 
@@ -76,9 +76,9 @@ def do_split(job_wrapper):
     input_datasets = []
     for input in parent_job.input_datasets:
         if input.name in split_inputs:
-            this_input_files = job_wrapper.get_input_dataset_fnames(input.dataset)
+            this_input_files = job_wrapper.job_io.get_input_dataset_fnames(input.dataset)
             if len(this_input_files) > 1:
-                log_error = "The input '%s' is composed of multiple files - splitting is not allowed" % str(input.name)
+                log_error = f"The input '{str(input.name)}' is composed of multiple files - splitting is not allowed"
                 log.error(log_error)
                 raise Exception(log_error)
             input_datasets.append(input.dataset)
@@ -89,19 +89,19 @@ def do_split(job_wrapper):
     try:
         input_type.split(input_datasets, get_new_working_directory_name, parallel_settings)
     except AttributeError:
-        log_error = "The type '%s' does not define a method for splitting files" % str(input_type)
+        log_error = f"The type '{str(input_type)}' does not define a method for splitting files"
         log.error(log_error)
         raise
     log.debug('do_split created %d parts' % len(task_dirs))
     # next, after we know how many divisions there are, add the shared inputs via soft links
     for input in parent_job.input_datasets:
         if input and input.name in shared_inputs:
-            names = job_wrapper.get_input_dataset_fnames(input.dataset)
+            names = job_wrapper.job_io.get_input_dataset_fnames(input.dataset)
             for dir in task_dirs:
                 for file in names:
                     os.symlink(file, os.path.join(dir, os.path.basename(file)))
     tasks = []
-    prepare_files = os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh') + ' %s'
+    prepare_files = f"'{os.path.join(util.galaxy_directory(), 'extract_dataset_parts.sh')}' %s"
     for dir in task_dirs:
         task = model.Task(parent_job, dir, prepare_files % dir)
         tasks.append(task)
@@ -125,7 +125,7 @@ def do_merge(job_wrapper, task_wrappers):
 
     illegal_outputs = [x for x in merge_outputs if x in pickone_outputs]
     if len(illegal_outputs) > 0:
-        return ('Tool file error', 'Outputs have conflicting parallelism attributes: %s' % str(illegal_outputs))
+        return ('Tool file error', f'Outputs have conflicting parallelism attributes: {str(illegal_outputs)}')
 
     stdout = ''
     stderr = ''
@@ -135,8 +135,8 @@ def do_merge(job_wrapper, task_wrappers):
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         assert task_dirs, "Should be at least one sub-task!"
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
-        outputs = job_wrapper.get_output_hdas_and_fnames()
-        output_paths = job_wrapper.get_output_fnames()
+        outputs = job_wrapper.job_io.get_output_hdas_and_fnames()
+        output_paths = job_wrapper.job_io.get_output_fnames()
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         task_dirs.sort(key=lambda x: int(x.split('task_')[-1]))
@@ -151,7 +151,7 @@ def do_merge(job_wrapper, task_wrappers):
                 # file f exists; some files may not exist if a task fails.
                 output_files = [f for f in output_files if os.path.exists(f)]
                 if output_files:
-                    log.debug('files %s ' % output_files)
+                    log.debug(f'files {output_files} ')
                     if len(output_files) < len(task_dirs):
                         log.debug('merging only %i out of expected %i files for %s'
                                   % (len(output_files), len(task_dirs), output_file_name))
@@ -162,12 +162,12 @@ def do_merge(job_wrapper, task_wrappers):
                     if "output_dataset" in extra_merge_arg_names:
                         extra_merge_args["output_dataset"] = output_dataset
                     output_type.merge(output_files, output_file_name, **extra_merge_args)
-                    log.debug('merge finished: %s' % output_file_name)
+                    log.debug(f'merge finished: {output_file_name}')
                 else:
                     msg = 'nothing to merge for %s (expected %i files)' \
                           % (output_file_name, len(task_dirs))
                     log.debug(msg)
-                    stderr += msg + "\n"
+                    stderr += f"{msg}\n"
             elif output in pickone_outputs:
                 # just pick one of them
                 if output not in pickone_done:
@@ -175,7 +175,7 @@ def do_merge(job_wrapper, task_wrappers):
                     shutil.move(task_file_name, output_file_name)
                     pickone_done.append(output)
             else:
-                log_error = "The output '%s' does not define a method for implementing parallelism" % output
+                log_error = f"The output '{output}' does not define a method for implementing parallelism"
                 log.exception(log_error)
                 raise Exception(log_error)
     except Exception as e:
@@ -189,7 +189,7 @@ def do_merge(job_wrapper, task_wrappers):
         out = tw.get_task().stdout.strip()
         err = tw.get_task().stderr.strip()
         if len(out) > 0:
-            stdout += "\n" + tw.working_directory + ':\n' + out
+            stdout += f"\n{tw.working_directory}:\n{out}"
         if len(err) > 0:
-            stderr += "\n" + tw.working_directory + ':\n' + err
+            stderr += f"\n{tw.working_directory}:\n{err}"
     return (stdout, stderr)

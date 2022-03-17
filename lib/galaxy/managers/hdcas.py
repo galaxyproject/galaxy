@@ -5,6 +5,7 @@ HistoryDatasetCollectionAssociations (HDCAs) are datasets contained or created i
 history.
 """
 import logging
+from typing import Dict
 
 from galaxy import model
 from galaxy.managers import (
@@ -16,6 +17,8 @@ from galaxy.managers import (
     taggable
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
+from galaxy.model.tags import GalaxyTagHandler
+from galaxy.structured_app import MinimalManagerApp, StructuredApp
 from galaxy.util.zipstream import ZipstreamWrapper
 
 
@@ -38,6 +41,11 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
     return archive
 
 
+def set_collection_attributes(dataset_element, *payload):
+    for attribute, value in payload:
+        setattr(dataset_element, attribute[1], value[1])
+
+
 # TODO: to DatasetCollectionInstanceManager
 class HDCAManager(
         base.ModelManager,
@@ -55,11 +63,12 @@ class HDCAManager(
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
     annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         """
-        Set up and initialize other managers needed by hdcas.
+        Set up and initialize other managers needed by hdas.
         """
         super().__init__(app)
+        self.tag_handler = app[GalaxyTagHandler]
 
     def map_datasets(self, content, fn, *parents):
         """
@@ -82,7 +91,9 @@ class HDCAManager(
                 returned.append(processed)
         return returned
 
-    # TODO: un-stub
+    def update_attributes(self, content, payload: Dict):
+        # pre-requisite checked that attributes are valid
+        self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
 
 # serializers
@@ -92,7 +103,7 @@ class DCESerializer(base.ModelSerializer):
     Serializer for DatasetCollectionElements.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hda_serializer = hdas.HDASerializer(app)
         self.dc_serializer = DCSerializer(app, dce_serializer=self)
@@ -109,8 +120,8 @@ class DCESerializer(base.ModelSerializer):
     def add_serializers(self):
         super().add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollectionElement',
-            'object'        : self.serialize_object
+            'model_class': lambda *a, **c: 'DatasetCollectionElement',
+            'object': self.serialize_object
         })
 
     def serialize_object(self, item, key, **context):
@@ -126,7 +137,7 @@ class DCSerializer(base.ModelSerializer):
     Serializer for DatasetCollections.
     """
 
-    def __init__(self, app, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -148,8 +159,8 @@ class DCSerializer(base.ModelSerializer):
     def add_serializers(self):
         super().add_serializers()
         self.serializers.update({
-            'model_class'   : lambda *a, **c: 'DatasetCollection',
-            'elements'      : self.serialize_elements,
+            'model_class': lambda *a, **c: 'DatasetCollection',
+            'elements': self.serialize_elements,
         })
 
     def serialize_elements(self, item, key, **context):
@@ -164,8 +175,9 @@ class DCASerializer(base.ModelSerializer):
     """
     Base (abstract) Serializer class for HDCAs and LDCAs.
     """
+    app: StructuredApp
 
-    def __init__(self, app, dce_serializer=None):
+    def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
@@ -220,7 +232,7 @@ class HDCASerializer(
     Serializer for HistoryDatasetCollectionAssociations.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.hdca_manager = HDCAManager(app)
 
@@ -282,40 +294,47 @@ class HDCASerializer(
             'populated',
             'populated_state',
             'populated_state_message',
+            'elements_datatypes',
         ])
 
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
-
-        self.serializers.update({
-            'model_class'               : lambda *a, **c: self.hdca_manager.model_class.__class__.__name__,
+        serializers: Dict[str, base.Serializer] = {
+            'model_class': lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
-            'type'                      : lambda *a, **c: 'collection',
+            'type': lambda item, key, **context: 'collection',
             # part of a history and container
-            'history_id'                : self.serialize_id,
-            'history_content_type'      : lambda *a, **c: self.hdca_manager.model_class.content_type,
-            'type_id'                   : self.serialize_type_id,
-            'job_source_id'             : self.serialize_id,
+            'history_id': self.serialize_id,
+            'history_content_type': lambda item, key, **context: self.hdca_manager.model_class.content_type,
+            'type_id': self.serialize_type_id,
+            'job_source_id': self.serialize_id,
+            'url': lambda item, key, **context: self.url_for('history_content_typed',
+                                                             history_id=self.app.security.encode_id(item.history_id),
+                                                             id=self.app.security.encode_id(item.id),
+                                                             type=self.hdca_manager.model_class.content_type),
+            'contents_url': self.generate_contents_url,
+            'job_state_summary': self.serialize_job_state_summary,
+            'elements_datatypes': self.serialize_elements_datatypes,
+        }
+        self.serializers.update(serializers)
 
-            'url'   : lambda i, k, **c: self.url_for('history_content_typed',
-                                                     history_id=self.app.security.encode_id(i.history_id),
-                                                     id=self.app.security.encode_id(i.id),
-                                                     type=self.hdca_manager.model_class.content_type),
-            'contents_url'              : self.generate_contents_url,
-            'job_state_summary'         : self.serialize_job_state_summary
-        })
-
-    def generate_contents_url(self, hdca, key, **context):
+    def generate_contents_url(self, item, key, **context):
         encode_id = self.app.security.encode_id
-        contents_url = self.url_for('contents_dataset_collection',
-            hdca_id=encode_id(hdca.id),
-            parent_id=encode_id(hdca.collection_id))
+        trans = context.get("trans")
+        url_for = trans.url_builder if trans and trans.url_builder else self.url_for
+        contents_url = url_for('contents_dataset_collection',
+            hdca_id=encode_id(item.id),
+            parent_id=encode_id(item.collection_id))
         return contents_url
 
-    def serialize_job_state_summary(self, hdca, key, **context):
-        states = hdca.job_state_summary.__dict__.copy()
+    def serialize_job_state_summary(self, item, key, **context):
+        states = item.job_state_summary.__dict__.copy()
         del states['_sa_instance_state']
         del states['hdca_id']
         return states
+
+    def serialize_elements_datatypes(self, item, key, **context):
+        extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
+        return list(extensions_set)

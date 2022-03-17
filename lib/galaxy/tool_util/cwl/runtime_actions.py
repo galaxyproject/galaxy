@@ -79,7 +79,7 @@ def handle_outputs(job_directory=None):
         with open(metadata_params_path) as f:
             metadata_params = json.load(f)
     except OSError:
-        raise Exception("Failed to find params.json from metadata directory [%s]" % metadata_directory)
+        raise Exception(f"Failed to find params.json from metadata directory [{metadata_directory}]")
 
     cwl_job_file = os.path.join(job_directory, JOB_JSON_FILE)
     if not os.path.exists(cwl_job_file):
@@ -147,7 +147,7 @@ def handle_outputs(job_directory=None):
                         if secondary_file_basename.startswith(output_basename):
                             secondary_file_name = prefix + secondary_file_basename[len(output_basename):]
                             break
-                        prefix = "^%s" % prefix
+                        prefix = f"^{prefix}"
                         if "." not in output_basename:
                             secondary_file_name = prefix + secondary_file_name
                             break
@@ -183,7 +183,7 @@ def handle_outputs(job_directory=None):
             target_path = job_proxy.output_directory_contents_dir(output_name)
             file_metadata = move_directory(output, target_path, output_name=output_name)
         else:
-            raise Exception("Unknown output type [%s] encountered" % output)
+            raise Exception(f"Unknown output type [{output}] encountered")
         provided_metadata[output_name] = file_metadata
 
     def handle_known_output_json(output, output_name):
@@ -200,7 +200,7 @@ def handle_outputs(job_directory=None):
         if isinstance(output, dict) and "location" in output:
             handle_known_output(output, output_name, output_name)
         elif isinstance(output, dict):
-            prefix = "%s|__part__|" % output_name
+            prefix = f"{output_name}|__part__|"
             for record_key, record_value in output.items():
                 record_value_output_key = f"{prefix}{record_key}"
                 if isinstance(record_value, dict) and "class" in record_value:
@@ -216,7 +216,7 @@ def handle_outputs(job_directory=None):
                     output_path = _possible_uri_to_path(el["location"])
                     elements.append({"name": str(index), "filename": output_path, "created_from_basename": el["basename"]})
                 else:
-                    target_path = "{}____{}".format(output_name, str(index))
+                    target_path = f"{output_name}____{str(index)}"
                     with open(target_path, "w") as f:
                         f.write(json.dumps(el))
                     elements.append({"name": str(index), "filename": target_path, "ext": "expression.json"})

@@ -145,7 +145,9 @@
                             ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
                         </span>
 
-                        <a href="javascript:void(0)" role="button" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
+                        <a href="javascript:void(0)" role="button" id="edit-identifier">
+                            <span class="fa fa-pencil" style=""></span>
+                        </a>
                     </blockquote>
 
                     %if item.published:
@@ -175,11 +177,11 @@
             %else:
                 <p>This ${item_class_name_lc} is currently restricted so that only you and the users listed below can access it.</p>
                 <form action="${h.url_for(controller=controller_name, action='sharing', id=trans.security.encode_id(item.id) )}" method="POST">
-                    <input class="action-button" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
+                    <input class="action-button make-accessible" type="submit" name="make_accessible_via_link" value="Make ${item_class_name} Accessible via Link">
                     <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the ${item_class_name_lc}.</div>
 
                     <br />
-                    <input class="action-button" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
+                    <input class="action-button make-publishable" type="submit" name="make_accessible_and_publish" value="Make ${item_class_name} Accessible and Publish" method="POST">
                     <div class="toolParamHelp">
                         Makes the ${item_class_name_lc} accessible via link (see above) and publishes the ${item_class_name_lc} to Galaxy's <a href='${h.url_for('/workflows/list_published')}' target='_top'>Published ${item_class_plural_name}</a> section, where it is publicly listed and searchable.
                     </div>

@@ -34,13 +34,16 @@ import logging
 import os
 from time import sleep
 
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.util import smart_str
 from .data import (
     Data,
     get_file_peek,
     Text
 )
-from .sniff import build_sniff_from_prefix
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)
@@ -53,7 +56,7 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -62,7 +65,7 @@ class BlastXml(GenericXml):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -103,40 +106,40 @@ class BlastXml(GenericXml):
             old_header = None
             for f in split_files:
                 if not os.path.isfile(f):
-                    log.warning("BLAST XML file %s missing, retry in 1s..." % f)
+                    log.warning(f"BLAST XML file {f} missing, retry in 1s...")
                     sleep(1)
                 if not os.path.isfile(f):
-                    log.error("BLAST XML file %s missing" % f)
-                    raise ValueError("BLAST XML file %s missing" % f)
+                    log.error(f"BLAST XML file {f} missing")
+                    raise ValueError(f"BLAST XML file {f} missing")
                 h = open(f)
                 header = h.readline()
                 if not header:
                     h.close()
                     # Retry, could be transient error with networked file system...
-                    log.warning("BLAST XML file %s empty, retry in 1s..." % f)
+                    log.warning(f"BLAST XML file {f} empty, retry in 1s...")
                     sleep(1)
                     h = open(f)
                     header = h.readline()
                     if not header:
-                        log.error("BLAST XML file %s was empty" % f)
-                        raise ValueError("BLAST XML file %s was empty" % f)
+                        log.error(f"BLAST XML file {f} was empty")
+                        raise ValueError(f"BLAST XML file {f} was empty")
                 if header.strip() != '<?xml version="1.0"?>':
                     out.write(header)  # for diagnosis
                     h.close()
-                    raise ValueError("%s is not an XML file!" % f)
+                    raise ValueError(f"{f} is not an XML file!")
                 line = h.readline()
                 header += line
                 if line.strip() not in ['<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "http://www.ncbi.nlm.nih.gov/dtd/NCBI_BlastOutput.dtd">',
                                         '<!DOCTYPE BlastOutput PUBLIC "-//NCBI//NCBI BlastOutput/EN" "NCBI_BlastOutput.dtd">']:
                     out.write(header)  # for diagnosis
                     h.close()
-                    raise ValueError("%s is not a BLAST XML file!" % f)
+                    raise ValueError(f"{f} is not a BLAST XML file!")
                 while True:
                     line = h.readline()
                     if not line:
                         out.write(header)  # for diagnosis
                         h.close()
-                        raise ValueError("BLAST XML file %s ended prematurely" % f)
+                        raise ValueError(f"BLAST XML file {f} ended prematurely")
                     header += line
                     if "<Iteration>" in line:
                         break
@@ -145,7 +148,7 @@ class BlastXml(GenericXml):
                         # Write what we have to the merged file for diagnostics
                         out.write(header)
                         h.close()
-                        raise ValueError("The header in BLAST XML file %s is too long" % f)
+                        raise ValueError(f"The header in BLAST XML file {f} is too long")
                 if "<BlastOutput>" not in header:
                     h.close()
                     raise ValueError(f"{f} is not a BLAST XML file:\n{header}\n...")
@@ -173,7 +176,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -195,6 +198,7 @@ class _BlastDb(Data):
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
         """
+        headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(trans,
                                         data=data,
@@ -223,7 +227,7 @@ class _BlastDb(Data):
         if not msg:
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
-        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>")
+        return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"), headers
 
     def merge(split_files, output_file):
         """Merge BLAST databases (not implemented for now)."""
@@ -310,7 +314,7 @@ class LastDb(Data):
     file_ext = 'lastdb'
     composite_type = 'basic'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"

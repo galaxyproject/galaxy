@@ -18,6 +18,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.config
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
+from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -89,9 +90,9 @@ def main():
     if args.legacy_config:
         config_override = args.legacy_config
 
-    if not (args.purge_folders ^ args.delete_userless_histories ^
-            args.purge_libraries ^ args.purge_histories ^
-            args.purge_datasets ^ args.delete_datasets):
+    if not (args.purge_folders ^ args.delete_userless_histories
+            ^ args.purge_libraries ^ args.purge_histories
+            ^ args.purge_datasets ^ args.delete_datasets):
         parser.print_help()
         sys.exit(0)
 
@@ -140,12 +141,12 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.user_id == null(),
-                                               app.model.History.table.c.update_time < cutoff_time))
+                                               app.model.History.update_time < cutoff_time))
     else:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.user_id == null(),
                                                app.model.History.table.c.deleted == false(),
-                                               app.model.History.table.c.update_time < cutoff_time))
+                                               app.model.History.update_time < cutoff_time))
     for history in histories:
         if not info_only:
             log.info("Deleting history id %d", history.id)
@@ -170,13 +171,13 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.deleted == true(),
-                                               app.model.History.table.c.update_time < cutoff_time)) \
+                                               app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     else:
         histories = app.sa_session.query(app.model.History) \
                                   .filter(and_(app.model.History.table.c.deleted == true(),
                                                app.model.History.table.c.purged == false(),
-                                               app.model.History.table.c.update_time < cutoff_time)) \
+                                               app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     for history in histories:
         log.info("### Processing history id %d (%s)", history.id, unicodify(history.name))
@@ -297,7 +298,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # and add it to our accrued list of Datasets for later processing.  We mark  as deleted all of its
     # LibraryDatasetDatasetAssociations.  Then we mark the LibraryDataset as purged.  We then process our
     # list of Datasets.
-    library_dataset_ids = [row.id for row in library_dataset_ids_query.execute()]
+    library_dataset_ids = [row.id for row in app.sa_session.execute(library_dataset_ids_query)]
     dataset_ids = []
     for library_dataset_id in library_dataset_ids:
         log.info("######### Processing LibraryDataset id: %d", library_dataset_id)
@@ -322,7 +323,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
         log.info("Marked LibraryDataset id %d as purged", ld.id)
         app.sa_session.flush()
     # Add all datasets associated with Histories to our list
-    dataset_ids.extend([row.id for row in history_dataset_ids_query.execute()])
+    dataset_ids.extend([row.id for row in app.sa_session.execute(history_dataset_ids_query)])
     # Process each of the Dataset objects
     for dataset_id in dataset_ids:
         dataset = app.sa_session.query(app.model.Dataset).get(dataset_id)
@@ -519,7 +520,7 @@ class CleanupDatasetsApplication:
     def __init__(self, config):
         self.object_store = build_object_store_from_config(config)
         # Setup the database engine and ORM
-        self.model = galaxy.config.init_models_from_config(config, object_store=self.object_store)
+        self.model = init_models_from_config(config, object_store=self.object_store)
         registry = Registry()
         registry.load_datatypes()
         galaxy.model.set_datatypes_registry(registry)

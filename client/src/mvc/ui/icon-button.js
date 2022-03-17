@@ -156,7 +156,9 @@ var IconButtonMenuView = Backbone.View.extend({
  */
 var create_icon_buttons_menu = (config, global_config) => {
     // initialize global configuration
-    if (!global_config) global_config = {};
+    if (!global_config) {
+        global_config = {};
+    }
 
     // create and initialize menu
     var buttons = new IconButtonCollection(

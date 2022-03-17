@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo | l">
-        <span style="width: 25%; display: inline; height: 100%;" class="float-left">
+        <span style="width: 25%; display: inline; height: 100%" class="float-left">
             <div class="upload-rule-option">
                 <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
                 <div class="rule-data-type">
@@ -33,16 +33,20 @@
                 </div>
             </div>
         </span>
-        <span style="display: inline; float: right; width: 75%; height: 300px;">
+        <span style="display: inline; float: right; width: 75%; height: 300px">
             <textarea
                 class="upload-rule-source-content form-control"
-                style="height: 100%;"
+                style="height: 100%"
                 v-model="sourceContent"
-                :disabled="selectionType != 'paste'"
-            ></textarea>
+                :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
             </b-button>
             <b-button
@@ -51,8 +55,8 @@
                 id="btn-build"
                 @click="_eventBuild"
                 :disabled="!sourceContent"
-                :variant="sourceContent ? 'primary' : ''"
-            >
+                :title="btnBuildTitle"
+                :variant="sourceContent ? 'primary' : ''">
                 {{ btnBuildTitle | l }}
             </b-button>
             <b-button
@@ -60,8 +64,8 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset"
-            >
+                :title="btnResetTitle"
+                :disabled="!enableReset">
                 {{ btnResetTitle | l }}
             </b-button>
         </template>
@@ -91,7 +95,6 @@ export default {
             ftpFiles: [],
             uris: [],
             topInfo: "Tabular source data to extract collection files and metadata from",
-            enableReset: false,
             enableBuild: false,
             dataType: "datasets",
             selectedDatasetId: null,
@@ -135,6 +138,11 @@ export default {
                     this.sourceContent = response.data;
                 })
                 .catch((error) => console.log(error));
+        },
+    },
+    computed: {
+        enableReset: function () {
+            return this.sourceContent.length > 0;
         },
     },
     methods: {

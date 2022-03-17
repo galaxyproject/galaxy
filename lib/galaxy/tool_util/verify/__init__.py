@@ -62,7 +62,7 @@ def verify(
         try:
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -82,7 +82,7 @@ def verify(
         try:
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
-            errmsg = '%s different than expected\n' % (item_label)
+            errmsg = f'{item_label} different than expected\n'
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
@@ -157,7 +157,7 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
-                raise Exception('Unimplemented Compare type: %s' % compare)
+                raise Exception(f'Unimplemented Compare type: {compare}')
         except AssertionError as err:
             errmsg = f'{item_label} different than expected, difference (using {compare}):\n'
             errmsg += f"( {local_name} v. {temp_name} )\n"
@@ -186,12 +186,12 @@ def _bam_to_sam(local_name, temp_name):
         try:
             pysam.view('-h', '--no-PG', '-o', temp_local.name, local_name, catch_stdout=False)
         except Exception as e:
-            msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting local (test-data) BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
         try:
             pysam.view('-h', '--no-PG', '-o', temp.name, temp_name, catch_stdout=False)
         except Exception as e:
-            msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
+            msg = f"Converting history BAM to SAM failed: {unicodify(e)}"
             raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp.name
@@ -199,7 +199,7 @@ def _bam_to_sam(local_name, temp_name):
 
 def _verify_checksum(data, checksum_type, expected_checksum_value):
     if checksum_type not in ["md5", "sha1", "sha256", "sha512"]:
-        raise Exception("Unimplemented hash algorithm [%s] encountered." % checksum_type)
+        raise Exception(f"Unimplemented hash algorithm [{checksum_type}] encountered.")
 
     h = hashlib.new(checksum_type)
     h.update(data)
@@ -255,8 +255,8 @@ def files_diff(file1, file2, attributes=None):
                 is_pdf = True
                 # Replace non-Unicode characters using unicodify(),
                 # difflib.unified_diff doesn't work on list of bytes
-                history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
-                local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
+                history_data = [unicodify(line) for line in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+                local_file = [unicodify(line) for line in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):

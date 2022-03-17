@@ -16,6 +16,8 @@ from galaxy import (
     exceptions,
     util
 )
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -32,7 +34,7 @@ from galaxy.web import (
     require_admin,
     url_for
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 
 log = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ def get_message_for_no_shed_tool_config():
     return message
 
 
-class ToolShedRepositoriesController(BaseAPIController):
+class ToolShedRepositoriesController(BaseGalaxyAPIController):
     """RESTful controller for interactions with tool shed repositories."""
 
     def __ensure_can_install_repos(self, trans):
@@ -67,7 +69,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         return value_mapper
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/tool_shed_repositories
         Display a list of dictionaries containing information about installed tool shed repositories.
@@ -75,19 +77,19 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories
         clause_list = []
         if 'name' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.name == kwd.get('name'))
+            clause_list.append(ToolShedRepository.table.c.name == kwd.get('name'))
         if 'owner' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.owner == kwd.get('owner'))
+            clause_list.append(ToolShedRepository.table.c.owner == kwd.get('owner'))
         if 'changeset' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.changeset_revision == kwd.get('changeset'))
+            clause_list.append(ToolShedRepository.table.c.changeset_revision == kwd.get('changeset'))
         if 'deleted' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.deleted == util.asbool(kwd.get('deleted')))
+            clause_list.append(ToolShedRepository.table.c.deleted == util.asbool(kwd.get('deleted')))
         if 'uninstalled' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
+            clause_list.append(ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
-        query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                           .order_by(self.app.install_model.ToolShedRepository.table.c.name) \
-                                           .order_by(cast(self.app.install_model.ToolShedRepository.ctx_rev, Integer).desc())
+        query = trans.install_model.context.query(ToolShedRepository) \
+                                           .order_by(ToolShedRepository.table.c.name) \
+                                           .order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
         if len(clause_list) > 0:
             query = query.filter(and_(*clause_list))
         for tool_shed_repository in query.all():
@@ -101,7 +103,7 @@ class ToolShedRepositoriesController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def install_repository_revision(self, trans, payload, **kwd):
+    def install_repository_revision(self, trans: ProvidesUserContext, payload, **kwd):
         """
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.
@@ -286,13 +288,13 @@ class ToolShedRepositoriesController(BaseAPIController):
             try:
                 repository = get_tool_shed_repository_by_id(self.app, id)
             except ValueError:
-                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
+                raise HTTPBadRequest(detail=f"No repository with id '{id}' found")
         else:
             tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
             try:
                 tsr_arguments = {key: kwd[key] for key in tsr_arguments}
             except KeyError as e:
-                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
+                raise HTTPBadRequest(detail=f"Missing required parameter '{e.args[0]}'")
             repository = get_installed_repository(app=self.app,
                                                   tool_shed=tsr_arguments['tool_shed_url'],
                                                   name=tsr_arguments['name'],
@@ -361,11 +363,11 @@ class ToolShedRepositoriesController(BaseAPIController):
                 except Exception:
                     failed.append(repository_id)
             if successful:
-                message = "Successful reset of metadata for %s." % len(successful)
+                message = f"Successful reset of metadata for {len(successful)}."
                 if failed:
-                    message += " Failed for %s." % len(failed)
+                    message += f" Failed for {len(failed)}."
             elif failed:
-                message = "Failed to reset metadata for %s." % len(failed)
+                message = f"Failed to reset metadata for {len(failed)}."
             return dict(message=message, successful=successful, failed=failed)
         else:
             raise exceptions.MessageException("Please specify repository ids [repository_ids].")
@@ -451,7 +453,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
         tool_shed_repository = get_tool_shed_repository_by_id(self.app, id)
         if tool_shed_repository is None:
-            log.debug("Unable to locate tool_shed_repository record for id %s." % (str(id)))
+            log.debug(f"Unable to locate tool_shed_repository record for id {str(id)}.")
             return {}
         tool_shed_repository_dict = tool_shed_repository.as_dict(value_mapper=self.__get_value_mapper(trans, tool_shed_repository))
         tool_shed_repository_dict['url'] = url_for(controller='tool_shed_repositories',

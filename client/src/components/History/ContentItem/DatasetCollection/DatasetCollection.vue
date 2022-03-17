@@ -3,20 +3,19 @@
         v-if="dsc"
         v-bind="$attrs"
         v-on="$listeners"
-        class="dataset-collection"
+        class="dataset-collection history-content"
         :dsc="dsc"
         @update:dsc="onUpdate"
         @delete="onDelete"
         @undelete="onUndelete"
-        @unhide="onUnhide"
-    />
+        @unhide="onUnhide" />
 </template>
 
 <script>
 import DscUI from "./DscUI";
 import { DatasetCollection } from "../../model";
 import { deleteDatasetCollection, updateContentFields } from "../../model/queries";
-import { cacheContent } from "../../caching";
+import { cacheContent } from "components/providers/History/caching";
 
 export default {
     components: {

@@ -3,9 +3,15 @@ import os
 import re
 import sys
 from json import loads
+from typing import Dict
 
 from bx.seq.twobit import TwoBitFile
 
+from galaxy.exceptions import (
+    ObjectNotFound,
+    ReferenceDataError,
+)
+from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -44,7 +50,7 @@ class GenomeRegion:
         self.sequence = sequence
 
     def __str__(self):
-        return self.chrom + ":" + str(self.start) + "-" + str(self.end)
+        return f"{self.chrom}:{str(self.start)}-{str(self.end)}"
 
     @staticmethod
     def from_dict(obj_dict):
@@ -86,6 +92,9 @@ class Genome:
         """
         Returns representation of self as a dictionary.
         """
+        # if there's no len_file, there's nothing to return
+        if not self.len_file:
+            raise ReferenceDataError(f'len_file not set for {self.key}')
 
         def check_int(s):
             if s.isdigit():
@@ -117,69 +126,70 @@ class Genome:
         #   (b) whether there are previous, next chroms;
         #   (c) index of start chrom.
         #
-        len_file_enumerate = enumerate(open(self.len_file))
-        chroms = {}
-        prev_chroms = False
-        start_index = 0
-        if chrom:
-            # Use starting chrom to start list.
-            found = False
-            count = 0
-            for line_num, line in len_file_enumerate:
-                if line.startswith("#"):
-                    continue
-                name, len = line.split("\t")
-                if found:
-                    chroms[name] = int(len)
-                    count += 1
-                elif name == chrom:
-                    # Found starting chrom.
-                    chroms[name] = int(len)
-                    count += 1
-                    found = True
-                    start_index = line_num
-                    if line_num != 0:
-                        prev_chroms = True
-                if count >= num:
-                    break
-        else:
-            # Use low to start list.
-            high = low + int(num)
-            prev_chroms = (low != 0)
-            start_index = low
+        with open(self.len_file) as f:
+            len_file_enumerate = enumerate(f)
+            chroms = {}
+            prev_chroms = False
+            start_index = 0
+            if chrom:
+                # Use starting chrom to start list.
+                found = False
+                count = 0
+                for line_num, line in len_file_enumerate:
+                    if line.startswith("#"):
+                        continue
+                    name, len = line.split("\t")
+                    if found:
+                        chroms[name] = int(len)
+                        count += 1
+                    elif name == chrom:
+                        # Found starting chrom.
+                        chroms[name] = int(len)
+                        count += 1
+                        found = True
+                        start_index = line_num
+                        if line_num != 0:
+                            prev_chroms = True
+                    if count >= num:
+                        break
+            else:
+                # Use low to start list.
+                high = low + int(num)
+                prev_chroms = (low != 0)
+                start_index = low
 
-            # Read chrom data from len file.
-            for line_num, line in len_file_enumerate:
-                if line_num < low:
-                    continue
-                if line_num >= high:
-                    break
-                if line.startswith("#"):
-                    continue
-                # LEN files have format:
-                #   <chrom_name><tab><chrom_length>
-                fields = line.split("\t")
-                chroms[fields[0]] = int(fields[1])
+                # Read chrom data from len file.
+                for line_num, line in len_file_enumerate:
+                    if line_num < low:
+                        continue
+                    if line_num >= high:
+                        break
+                    if line.startswith("#"):
+                        continue
+                    # LEN files have format:
+                    #   <chrom_name><tab><chrom_length>
+                    fields = line.split("\t")
+                    chroms[fields[0]] = int(fields[1])
 
-        # Set flag to indicate whether there are more chroms after list.
-        next_chroms = False
-        try:
-            next(len_file_enumerate)
-            next_chroms = True
-        except StopIteration:
-            # No more chroms to read.
-            pass
+            # Set flag to indicate whether there are more chroms after list.
+            next_chroms = False
+            try:
+                next(len_file_enumerate)
+                next_chroms = True
+            except StopIteration:
+                # No more chroms to read.
+                pass
 
-        to_sort = [{'chrom': chrm, 'len': length} for chrm, length in chroms.items()]
-        to_sort.sort(key=lambda _: split_by_number(_['chrom']))
-        return {
-            'id': self.key,
-            'reference': self.twobit_file is not None,
-            'chrom_info': to_sort,
-            'prev_chroms' : prev_chroms,
-            'next_chroms' : next_chroms,
-            'start_index' : start_index
-        }
+            to_sort = [{'chrom': chrm, 'len': length} for chrm, length in chroms.items()]
+            to_sort.sort(key=lambda _: split_by_number(_['chrom']))
+            return {
+                'id': self.key,
+                'reference': self.twobit_file is not None,
+                'chrom_info': to_sort,
+                'prev_chroms': prev_chroms,
+                'next_chroms': next_chroms,
+                'start_index': start_index
+            }
 
 
 class Genomes:
@@ -187,10 +197,10 @@ class Genomes:
     Provides information about available genome data and methods for manipulating that data.
     """
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         # Create list of genomes from app.genome_builds
-        self.genomes = {}
+        self.genomes: Dict[str, Genome] = {}
         # Store internal versions of data tables for twobit and __dbkey__
         self._table_versions = {'twobit': None, '__dbkeys__': None}
         self.reload_genomes()
@@ -208,13 +218,15 @@ class Genomes:
         if twobit_table is None:
             # Add genome data (twobit files) to genomes, directly from twobit.loc
             try:
-                for line in open(os.path.join(self.app.config.tool_data_path, "twobit.loc")):
-                    if line.startswith("#"):
-                        continue
-                    val = line.split()
-                    if len(val) == 2:
-                        key, path = val
-                        twobit_fields[key] = path
+                twobit_path = os.path.join(self.app.config.tool_data_path, "twobit.loc")
+                with open(twobit_path) as f:
+                    for line in f:
+                        if line.startswith("#"):
+                            continue
+                        val = line.split()
+                        if len(val) == 2:
+                            key, path = val
+                            twobit_fields[key] = path
             except OSError:
                 # Thrown if twobit.loc does not exist.
                 log.exception("Error reading twobit.loc")
@@ -246,18 +258,15 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, trans, chrom_info=False, **kwd):
+    def get_dbkeys(self, user, chrom_info=False):
         """ Returns all known dbkeys. If chrom_info is True, only dbkeys with
             chromosome lengths are returned. """
         self.check_and_reload()
         dbkeys = []
 
         # Add user's custom keys to dbkeys.
-        user_keys_dict = {}
-        user = trans.get_user()
-        if user:
-            if 'dbkeys' in user.preferences:
-                user_keys_dict = loads(user.preferences['dbkeys'])
+        if user and 'dbkeys' in user.preferences:
+            user_keys_dict = loads(user.preferences['dbkeys'])
             dbkeys.extend([(attributes['name'], key) for key, attributes in user_keys_dict.items()])
 
         # Add app keys to dbkeys.
@@ -325,14 +334,10 @@ class Genomes:
             elif dbkey in self.genomes:
                 genome = self.genomes[dbkey]
 
-        # Set up return value or log exception if genome not found for key.
-        rval = None
-        if genome:
-            rval = genome.to_dict(num=num, chrom=chrom, low=low)
-        else:
-            log.exception('genome not found for key %s', dbkey)
+        if not genome:
+            raise ObjectNotFound(f'genome not found for key {dbkey}')
 
-        return rval
+        return genome.to_dict(num=num, chrom=chrom, low=low)
 
     def has_reference_data(self, dbkey, dbkey_owner=None):
         """
@@ -369,7 +374,7 @@ class Genomes:
             dbkey_user = trans.user
 
         if not self.has_reference_data(dbkey, dbkey_user):
-            return None
+            raise ReferenceDataError(f"No reference data for {dbkey}")
 
         #
         # Get twobit file with reference data.
@@ -389,11 +394,13 @@ class Genomes:
                 twobit_dataset = fasta_dataset.get_converted_dataset(trans, 'twobit')
                 twobit_file_name = twobit_dataset.file_name
 
+        return self._get_reference_data(twobit_file_name, chrom, low, high)
+
+    @staticmethod
+    def _get_reference_data(twobit_file_name, chrom, low, high):
         # Read and return reference data.
-        try:
-            twobit = TwoBitFile(open(twobit_file_name, 'rb'))
+        with open(twobit_file_name, 'rb') as f:
+            twobit = TwoBitFile(f)
             if chrom in twobit:
                 seq_data = twobit[chrom].get(int(low), int(high))
                 return GenomeRegion(chrom=chrom, start=low, end=high, sequence=seq_data)
-        except OSError:
-            return None

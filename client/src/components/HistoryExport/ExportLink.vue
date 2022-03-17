@@ -8,13 +8,11 @@
             title="Copy export URL to your clipboard"
             class="copy-export-link"
             icon="link"
-            style="cursor: pointer;"
-            @click="copyUrl"
-        />
+            style="cursor: pointer"
+            @click="copyUrl" />
         <i
-            title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator."
-        >
-            (<a class="show-job-link" href="#" @click="showDetails">view job details</a>)
+            title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
+            (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)
         </i>
         <b-modal v-model="details" modal-class="job-information-modal" scrollable ok-only hide-header>
             <job-information :job_id="historyExport.job_id" :include-times="true" />
@@ -55,7 +53,7 @@ export default {
             this.details = true;
         },
         copyUrl() {
-            copy(this.latestExportUrl, "Export URL copied to your clipboard");
+            copy(this.link, "Export URL copied to your clipboard");
         },
     },
 };

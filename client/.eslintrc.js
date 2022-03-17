@@ -21,9 +21,13 @@ module.exports = {
         "no-unused-vars": ["error", { args: "none" }],
         "prefer-const": "error",
         "one-var": ["error", "never"],
+        "curly": "error",
 
         "vue/valid-v-slot": "error",
         "vue/v-slot-style": ["error", { atComponent: "v-slot", default: "v-slot", named: "longform" }],
+
+        // Now in strongly-recommended, enforce instead of warn.
+        "vue/attribute-hyphenation": "error",
 
         // Vue TODO (enable these)
         "vue/require-default-prop": "warn",

@@ -3,11 +3,11 @@ Manager and (de)serializer for cloud authorizations (cloudauthzs).
 """
 
 import logging
+from typing import Dict
 
 from galaxy import model
 from galaxy.exceptions import (
     InternalServerError,
-    MalformedId
 )
 from galaxy.managers import base
 from galaxy.managers import sharable
@@ -52,18 +52,19 @@ class CloudAuthzsSerializer(base.ModelSerializer):
         # i  : an instance of galaxy.model.CloudAuthz.
         # k  : serialized dictionary key (e.g., 'model_class', 'provider').
         # **c: a dictionary containing 'trans' and 'user' objects.
-        self.serializers.update({
-            'id'           : lambda i, k, **c: self.app.security.encode_id(i.id),
-            'model_class'  : lambda *a, **c: 'CloudAuthz',
-            'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
-            'provider'     : lambda i, k, **c: str(i.provider),
-            'config'       : lambda i, k, **c: i.config,
-            'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id) if i.authn_id else None,
-            'last_update'  : lambda i, k, **c: str(i.last_update),
-            'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time),
-            'description'  : lambda i, k, **c: str(i.description)
-        })
+        serializers: Dict[str, base.Serializer] = {
+            'id': lambda item, key, **context: self.app.security.encode_id(item.id),
+            'model_class': lambda item, key, **context: 'CloudAuthz',
+            'user_id': lambda item, key, **context: self.app.security.encode_id(item.user_id),
+            'provider': lambda item, key, **context: str(item.provider),
+            'config': lambda item, key, **context: item.config,
+            'authn_id': lambda item, key, **context: self.app.security.encode_id(item.authn_id) if item.authn_id else None,
+            'last_update': lambda item, key, **context: str(item.last_update),
+            'last_activity': lambda item, key, **context: str(item.last_activity),
+            'create_time': lambda item, key, **context: str(item.create_time),
+            'description': lambda item, key, **context: str(item.description)
+        }
+        self.serializers.update(serializers)
 
 
 class CloudAuthzsDeserializer(base.ModelDeserializer):
@@ -103,11 +104,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         :return:        decoded authentication ID.
         """
 
-        try:
-            decoded_authn_id = self.app.security.decode_id(val)
-        except Exception:
-            log.debug("cannot decode authz_id `" + str(val) + "`")
-            raise MalformedId(f"Invalid `authz_id` {val}!")
+        decoded_authn_id = self.app.security.decode_id(val, object_name='authz')
 
         trans = context.get("trans")
         if trans is None:

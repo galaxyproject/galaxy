@@ -12,11 +12,11 @@ class ApiBatchTestCase(ApiTestCase):
 
     def _with_key(self, url, admin=False):
         sep = '&' if '?' in url else '?'
-        return url + sep + 'key=' + self._get_api_key(admin=admin)
+        return f"{url + sep}key={self._get_api_key(admin=admin)}"
 
     def _post_batch(self, batch):
-        data = json.dumps({"batch" : batch})
-        return post("%s/batch" % (self.galaxy_interactor.api_url), data=data)
+        data = json.dumps({"batch": batch})
+        return post(f"{self.galaxy_interactor.api_url}/batch", data=data)
 
     # ---- tests
     def test_simple_array(self):
@@ -65,9 +65,9 @@ class ApiBatchTestCase(ApiTestCase):
         post_data = dict(name='test')
         create_response = self._post('histories', data=post_data).json()
 
-        history_url = '/api/histories/' + create_response['id']
-        history_url_with_keys = history_url + '?v=dev&keys=size,non_ready_jobs'
-        contents_url_with_filters = history_url + '/contents?v=dev&q=deleted&qv=True'
+        history_url = f"/api/histories/{create_response['id']}"
+        history_url_with_keys = f"{history_url}?v=dev&keys=size,non_ready_jobs"
+        contents_url_with_filters = f"{history_url}/contents?v=dev&q=deleted&qv=True"
         batch = [
             dict(url=self._with_key(history_url_with_keys)),
             dict(url=self._with_key(contents_url_with_filters)),

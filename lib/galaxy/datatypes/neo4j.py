@@ -42,7 +42,7 @@ class Neo4j(Html):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'Neo4j database (multiple files)'
@@ -124,7 +124,7 @@ class Neo4jDBzip(Neo4j, Data):
     MetadataElement(name='reference_name', default='neostore_file', desc='Reference Name',
                     readonly=True, visible=True, set_in_upload=True, no_value='neostore')
     MetadataElement(name="neostore_zip", default=None, desc="Neostore zip",
-                    readonly=True, visible=True, set_in_upload=True, no_value=None, optional=True)
+                    readonly=True, visible=True, set_in_upload=True, optional=True)
 
     file_ext = "neostore.zip"
     composite_type = 'auto_primary_file'

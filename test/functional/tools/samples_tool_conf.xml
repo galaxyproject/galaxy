@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <toolbox tool_path="${tool_conf_dir}" is_shed_conf="false">
   <tool file="upload.xml"/>
+  <tool file="export_remote.xml"/>
   <section id="test" name="Test Section">
     <tool file="multi_data_optional.xml" />
     <tool file="paths_as_file.xml" />
@@ -40,15 +41,20 @@
   <tool file="tool_provided_metadata_11.xml" />
   <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
+  <tool file="is_of_type.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_profile.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="inputs_as_json_with_staging_path_and_source_path.xml" />
+  <tool file="filter_multiple_splitter.xml" />
+  <tool file="filter_param_value.xml" />
+  <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_dataset_optional.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
-  <tool file="dbkey_filter_paired_collection.xml" />
   <tool file="dbkey_output_action.xml" />
   <tool file="composite_output.xml" />
   <tool file="composite_output_tests.xml" />
@@ -90,6 +96,7 @@
   <tool file="exit_code_from_file.xml" />
   <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
+  <tool file="options_from_metadata_file.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
   <tool file="output_format_deprecated_when.xml" />
@@ -117,6 +124,7 @@
   <tool file="column_param_configfile.xml" />
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="select_optional.xml"/>
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -130,6 +138,9 @@
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
   <tool file="validation_metadata_in_range.xml"/>
+  <tool file="validation_metadata_in_datatable.xml"/>
+  <tool file="validation_dataset_metadata_in_file.xml"/>
+  <tool file="validation_value_in_datatable.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
@@ -190,16 +201,19 @@
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
+  <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
 
   <tool file="multiple_versions_v01.xml" />
+  <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
 
   <tool file="interactivetool_simple.xml" />
   <tool file="interactivetool_two_entry_points.xml" />
+  <tool file="converter_target_datatype.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
@@ -236,8 +250,10 @@
   <tool file="mulled_example_explicit.xml" />
   <tool file="mulled_example_invalid_case.xml" />
   <tool file="mulled_example_broken_no_requirements.xml" />
+  <tool file="mulled_example_broken_no_requirements_fallback.xml" />
 
   <tool file="simple_constructs.yml" />
+  <tool file="from_work_dir_glob.xml" />
 
   <!-- Tools without tool test but useful for hand-crafted, artisanal test cases. -->
   <tool file="cat_data_and_sleep.xml" />
@@ -257,6 +273,7 @@
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
   <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

@@ -57,7 +57,7 @@ def __main__():
 
             position_dict = {}
             print("column\tcount\tmin\tmax\tsum\tmean\tQ1\tmed\tQ3\tIQR\tlW\trW", file=fout)
-            for k, line in enumerate(open(infile_name)):
+            for line in open(infile_name):
                 line = line.strip()
                 if not(line) or line.startswith("#") or line.startswith(">"):
                     continue

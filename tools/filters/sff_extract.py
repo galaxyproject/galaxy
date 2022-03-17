@@ -31,6 +31,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+from typing import Dict, List
 
 __author__ = 'Jose Blanca and Bastien Chevreux'
 __copyright__ = 'Copyright 2008, Jose Blanca, COMAV, and Bastien Chevreux'
@@ -42,9 +43,9 @@ __status__ = 'beta'
 fake_sff_name = 'fake_sff_name'
 
 # readname as key: lines with matches from SSAHA, one best match
-ssahapematches = {}
+ssahapematches: Dict[str, List] = {}
 # linker readname as key: length of linker sequence
-linkerlengths = {}
+linkerlengths: Dict[str, int] = {}
 
 # set to true if something really fishy is going on with the sequences
 stern_warning = True
@@ -94,12 +95,8 @@ def check_magic(magic):
 
 def check_version(version):
     '''It checks that the version is supported, otherwise it raises an error.'''
-    supported = ('\x00', '\x00', '\x00', '\x01')
-    i = 0
-    for item in version:
-        if version[i] != supported[i]:
-            raise RuntimeError('SFF version not supported. Please contact the author of the software.')
-        i += 1
+    if version != ('\x00', '\x00', '\x00', '\x01'):
+        raise RuntimeError('SFF version not supported. Please contact the author of the software.')
 
 
 def read_header(fileh):
@@ -322,8 +319,8 @@ def create_basic_xml_info(readname, fname):
     # we print the info that we have
     if info:
         for key in info:
-            to_print.append('        <' + key + '>' + info[key] +
-                            '</' + key + '>\n')
+            to_print.append('        <' + key + '>' + info[key]
+                            + '</' + key + '>\n')
 
     return ''.join(to_print)
 
@@ -1326,7 +1323,7 @@ def main():
         if len(args) == 0:
             raise RuntimeError("No SFF file given?")
         extract_reads_from_sff(config, args)
-    except (OSError, IOError, RuntimeError) as errval:
+    except (OSError, IOError, RuntimeError) as errval:  # noqa: B014 Python 2.7
         print(errval)
         return 1
 

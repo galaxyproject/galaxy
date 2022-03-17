@@ -129,19 +129,19 @@ class ViewQueryBaseClass:
                     elif operator == "like":
                         self.query = self.query.filter(sqlalchemy_field_value.like(right))
                     else:
-                        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+                        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
                 elif field.handler is not None:
                     field.handler(self, left, operator, right)
                 elif field.post_filter is not None:
                     self.post_filter.append([field.post_filter, left, operator, right])
                 else:
-                    raise GalaxyParseError("Unable to filter on field: %s" % (left))
+                    raise GalaxyParseError(f"Unable to filter on field: {left}")
 
             else:
-                raise GalaxyParseError("Unknown field: %s" % (left))
+                raise GalaxyParseError(f"Unknown field: {left}")
 
     def search(self, trans):
-        raise GalaxyParseError("Unable to search view: %s" % (self.VIEW_NAME))
+        raise GalaxyParseError(f"Unable to search view: {self.VIEW_NAME}")
 
     def get_results(self, force_query=False):
         if self.query is not None and (force_query or self.do_query):
@@ -165,7 +165,7 @@ def library_extended_metadata_filter(view, left, operator, right):
         view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
-    field = "/%s" % ("/".join(left.split(".")[1:]))
+    field = f"/{'/'.join(left.split('.')[1:])}"
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -180,7 +180,7 @@ def ldda_parent_library_filter(item, left, operator, right):
         return right == item.library_dataset.folder.parent_library.id
     elif operator == '!=':
         return right != item.library_dataset.folder.parent_library.id
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryDatasetDatasetView(ViewQueryBaseClass):
@@ -222,16 +222,16 @@ def library_folder_parent_library_id_filter(item, left, operator, right):
         return item.parent_library.id == right
     if operator == '!=':
         return item.parent_library.id != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def library_path_filter(item, left, operator, right):
-    lpath = "/" + "/".join(item.library_path)
+    lpath = f"/{'/'.join(item.library_path)}"
     if operator == '=':
         return lpath == right
     if operator == '!=':
         return lpath != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryFolderView(ViewQueryBaseClass):
@@ -256,7 +256,7 @@ def library_dataset_name_filter(item, left, operator, right):
         return item.name == right
     if operator == '!=':
         return item.name != right
-    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+    raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class LibraryDatasetView(ViewQueryBaseClass):
@@ -302,7 +302,7 @@ def history_dataset_handle_tag(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def history_dataset_extended_metadata_filter(view, left, operator, right):
@@ -311,7 +311,7 @@ def history_dataset_extended_metadata_filter(view, left, operator, right):
         view.query = view.query.join(ExtendedMetadata)
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
-    field = "/%s" % ("/".join(left.split(".")[1:]))
+    field = f"/{'/'.join(left.split('.')[1:])}"
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -359,7 +359,7 @@ def history_handle_tag(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(tag_table.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 def history_handle_annotation(view, left, operator, right):
@@ -376,7 +376,7 @@ def history_handle_annotation(view, left, operator, right):
             HistoryAnnotationAssociation.annotation.like(right)
         ))
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class HistoryView(ViewQueryBaseClass):
@@ -409,7 +409,7 @@ def workflow_tag_handler(view, left, operator, right):
         if len(tmp) > 1:
             view.query = view.query.filter(StoredWorkflowTagAssociation.user_value == tmp[1])
     else:
-        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+        raise GalaxyParseError(f"Invalid comparison operator: {operator}")
 
 
 class WorkflowView(ViewQueryBaseClass):
@@ -686,4 +686,4 @@ class GalaxySearchEngine:
         if q.table_name in view_mapping:
             view = view_mapping[q.table_name]()
             return SearchQuery(view, q)
-        raise GalaxyParseError("No such table %s" % (q.table_name))
+        raise GalaxyParseError(f"No such table {q.table_name}")

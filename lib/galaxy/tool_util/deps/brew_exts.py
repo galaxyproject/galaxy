@@ -96,7 +96,7 @@ class RecipeContext:
             assert len(parts) == 3
             parts = recipe.split("/")
             username = parts[0]
-            repository = "homebrew-%s" % parts[1]
+            repository = f"homebrew-{parts[1]}"
 
         path = os.path.join(username, repository)
         return path
@@ -247,7 +247,7 @@ def commit_for_version(recipe_context, package, version):
                 if mapping[0] == version:
                     commit = mapping[1]
     if commit is None:
-        raise Exception("Failed to find commit for version %s" % version)
+        raise Exception(f"Failed to find commit for version {version}")
     return commit
 
 
@@ -256,7 +256,7 @@ def print_versioned_deps(recipe_context, recipe, version):
     for dep in deps:
         val = dep['name']
         if dep['versioned']:
-            val += "@%s" % dep['version']
+            val += f"@{dep['version']}"
         print(val)
 
 
@@ -394,7 +394,7 @@ class EnvAction:
             template = '''${variable}="$$${variable}:${value}"'''
         return [
             self.__eval(template),
-            "export %s" % self.variable
+            f"export {self.variable}"
         ]
 
 
@@ -477,9 +477,9 @@ def extended_brew_info(recipe):
         if line.startswith("From: "):
             extra_info["from_url"] = line[len("From: "):].strip()
         for dep_type in ["Build", "Required", "Recommended", "Optional"]:
-            if line.startswith("%s: " % dep_type):
-                key = "%s_dependencies" % dep_type.lower()
-                raw_val = line[len("%s: " % dep_type):]
+            if line.startswith(f"{dep_type}: "):
+                key = f"{dep_type.lower()}_dependencies"
+                raw_val = line[len(f"{dep_type}: "):]
                 extra_info[key].extend(raw_val.split(", "))
     return extra_info
 
@@ -513,7 +513,7 @@ def __action(sys):
 def recipe_cellar_path(cellar_path, recipe, version):
     recipe_base = recipe.split("/")[-1]
     recipe_base_path = os.path.join(cellar_path, recipe_base, version)
-    revision_paths = glob.glob(recipe_base_path + "_*")
+    revision_paths = glob.glob(f"{recipe_base_path}_*")
     if revision_paths:
         revisions = map(lambda x: int(x.rsplit("_", 1)[-1]), revision_paths)
         max_revision = max(revisions)
@@ -530,7 +530,7 @@ def ensure_brew_on_path(args):
 
     def ensure_on_path(brew):
         if brew != brew_on_path:
-            os.environ["PATH"] = "{}:{}".format(os.path.dirname(brew), os.environ["PATH"])
+            os.environ["PATH"] = f"{os.path.dirname(brew)}:{os.environ['PATH']}"
 
     default_brew_path = os.path.join(DEFAULT_HOMEBREW_ROOT, "bin", "brew")
     if args and args.brew:
@@ -547,8 +547,8 @@ def ensure_brew_on_path(args):
 def which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
+        if os.path.exists(f"{path}/{file}"):
+            return f"{path}/{file}"
 
     return None
 

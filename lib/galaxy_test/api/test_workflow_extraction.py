@@ -8,6 +8,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 
 
 class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -179,7 +180,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     @skip_without_tool("collection_paired_test")
     def test_extract_workflows_with_dataset_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -190,7 +191,7 @@ steps:
         $link: text_input1
 test_data:
   text_input1:
-    type: paired
+    collection_type: paired
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
@@ -213,7 +214,7 @@ test_data:
 
     @skip_without_tool("cat_collection")
     def test_subcollection_mapping(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -229,7 +230,7 @@ steps:
         $link: noop/out_file1
 test_data:
   text_input1:
-    type: "list:paired"
+    collection_type: "list:paired"
         """)
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
@@ -254,7 +255,7 @@ test_data:
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_dynamic_nested")
     def test_subcollection_reduction(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   creates_nested_list:
@@ -276,7 +277,7 @@ steps:
 
     @skip_without_tool("collection_split_on_column")
     def test_extract_workflow_with_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -323,7 +324,7 @@ test_data:
     @skip_without_tool("collection_creates_pair")
     @summarize_instance_history_on_error
     def test_extract_with_mapped_output_collections(self):
-        jobs_summary = self._run_jobs("""
+        jobs_summary = self._run_workflow("""
 class: GalaxyWorkflow
 steps:
   - label: text_input1
@@ -349,7 +350,7 @@ steps:
         $link: cat_pairs/out_file1
 test_data:
   text_input1:
-    type: list
+    collection_type: list
     elements:
       - identifier: samp1
         content: "samp1\t10.0\nsamp2\t20.0\n"
@@ -445,7 +446,7 @@ test_data:
     def _history_contents(self, history_id=None):
         if history_id is None:
             history_id = self.history_id
-        return self._get("histories/%s/contents" % history_id).json()
+        return self._get(f"histories/{history_id}/contents").json()
 
     def __copy_content_to_history(self, history_id, content):
         if content["history_content_type"] == "dataset":
@@ -453,21 +454,21 @@ test_data:
                 source="hda",
                 content=content["id"]
             )
-            response = self._post("histories/%s/contents/datasets" % history_id, payload)
+            response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
 
         else:
             payload = dict(
                 source="hdca",
                 content=content["id"]
             )
-            response = self._post("histories/%s/contents/dataset_collections" % history_id, payload)
+            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload, json=True)
         self._assert_status_code_is(response, 200)
         return response.json()
 
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
-        workflow_request, history_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post("workflows", data=workflow_request)
+        workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -498,7 +499,7 @@ test_data:
                 history_length = self.dataset_populator.history_length(history_id)
 
             new_history_id = self.dataset_populator.reimport_history(
-                history_id, history_name, wait_on_history_length=history_length, export_kwds={}, url=self.url, api_key=self.galaxy_interactor.api_key
+                history_id, history_name, wait_on_history_length=history_length, export_kwds={},
             )
             # wait a little more for those jobs, todo fix to wait for history imported false or
             # for a specific number of jobs...
@@ -523,7 +524,7 @@ test_data:
                 if "job_ids" in extract_payload:
                     job_ids = extract_payload["job_ids"]
                     new_job_ids = []
-                    for i, job_id in enumerate(job_ids):
+                    for job_id in job_ids:
                         new_job_ids.append(new_history_job_ids[history_job_ids.index(job_id)])
 
                     extract_payload["job_ids"] = new_job_ids
@@ -546,7 +547,7 @@ test_data:
         self._assert_status_code_is(create_workflow_response, 200)
 
         new_workflow_id = create_workflow_response.json()["id"]
-        download_response = self._get("workflows/%s/download" % new_workflow_id)
+        download_response = self._get(f"workflows/{new_workflow_id}/download")
         self._assert_status_code_is(download_response, 200)
         downloaded_workflow = download_response.json()
         return downloaded_workflow

@@ -1,16 +1,21 @@
 import json
+import os
+import urllib.parse
 
 import pytest
+from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
+    ONE_TO_SIX_WITH_SPACES_ON_WINDOWS,
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    skip_if_github_down,
     skip_if_site_down,
     skip_without_datatype,
     stage_inputs,
@@ -107,6 +112,11 @@ class ToolsUploadTestCase(ApiTestCase):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_fetch_tab_to_space_doesnt_swap_newlines(self):
+        table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
+        result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
+        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -283,7 +293,7 @@ class ToolsUploadTestCase(ApiTestCase):
             history_id=history_id,
             dataset=dataset
         )
-        # By default this appends the newline.
+        # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
         self.assertEqual(content, "This is a line of text.")
         details = self.dataset_populator.get_history_dataset_details(
             history_id=history_id,
@@ -292,6 +302,7 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["genome_build"] == "hg19"
 
     @uses_test_history(require_new=False)
+    @skip_if_github_down
     def test_upload_multiple_mixed_success(self, history_id):
         destination = {"type": "hdas"}
         targets = [{
@@ -323,15 +334,28 @@ class ToolsUploadTestCase(ApiTestCase):
         assert output1["state"] == "error"
 
     @uses_test_history(require_new=False)
+    @skip_if_github_down
     def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
+        item = {
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "ext": "bam"
+        }
+        output = self.dataset_populator.fetch_hda(
+            history_id, item
+        )
+        self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
+
+    @uses_test_history(require_new=False)
+    @skip_if_github_down
+    def test_fetch_html_from_url(self, history_id):
         destination = {"type": "hdas"}
         targets = [{
             "destination": destination,
             "items": [
                 {
                     "src": "url",
-                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
-                    "ext": "bam"
+                    "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
                 },
             ]
         }]
@@ -341,8 +365,13 @@ class ToolsUploadTestCase(ApiTestCase):
         }
         fetch_response = self.dataset_populator.fetch(payload)
         self._assert_status_code_is(fetch_response, 200)
-        outputs = fetch_response.json()["outputs"]
-        self.dataset_populator.get_history_dataset_details(history_id, dataset=outputs[0], assert_ok=True)
+        response = fetch_response.json()
+        output = response['outputs'][0]
+        job = response['jobs'][0]
+        self.dataset_populator.wait_for_job(job['id'])
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=False)
+        assert dataset['state'] == 'error'
+        assert dataset['name'] == 'html_file.txt'
 
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
@@ -360,31 +389,18 @@ class ToolsUploadTestCase(ApiTestCase):
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
     def test_composite_datatype_fetch(self, history_id):
-        destination = {"type": "hdas"}
-        targets = [{
-            "destination": destination,
-            "items": [{
-                "src": "composite",
-                "ext": "velvet",
-                "composite": {
-                    "items": [
-                        {"src": "pasted", "paste_content": "sequences content"},
-                        {"src": "pasted", "paste_content": "roadmaps content"},
-                        {"src": "pasted", "paste_content": "log content"},
-                    ]
-                },
-            }],
-        }]
-        payload = {
-            "history_id": history_id,
-            "targets": json.dumps(targets),
+        item = {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {
+                "items": [
+                    {"src": "pasted", "paste_content": "sequences content"},
+                    {"src": "pasted", "paste_content": "roadmaps content"},
+                    {"src": "pasted", "paste_content": "log content"},
+                ]
+            },
         }
-        fetch_response = self.dataset_populator.fetch(payload)
-        self._assert_status_code_is(fetch_response, 200)
-        outputs = fetch_response.json()["outputs"]
-        assert len(outputs) == 1
-        output = outputs[0]
-
+        output = self.dataset_populator.fetch_hda(history_id, item)
         roadmaps_content = self._get_roadmaps_content(history_id, output)
         assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
@@ -792,11 +808,16 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_upload_from_404_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
-        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
+        assert dataset_details['state'] == 'error', f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
     @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_valid_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/api/version')
+        self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
+    @skip_if_site_down("https://usegalaxy.org")
+    def test_upload_from_valid_url_spaces(self):
+        history_id, new_dataset = self._upload('  https://usegalaxy.org/api/version  ')
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
     def test_upload_and_validate_invalid(self):
@@ -871,3 +892,25 @@ class ToolsUploadTestCase(ApiTestCase):
             new_dataset = self.dataset_populator.fetch(payload, assert_ok=assert_ok).json()["outputs"][0]
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
         return history_id, new_dataset
+
+    def test_upload_dataset_resumable(self):
+
+        def upload_file(url, path, api_key, history_id):
+            filename = os.path.basename(path)
+            metadata = {
+                'filename': filename,
+                'history_id': history_id,
+            }
+            my_client = client.TusClient(url, headers={'x-api-key': api_key})
+
+            # Upload a file to a tus server.
+            uploader = my_client.uploader(path, metadata=metadata)
+            uploader.upload()
+            return uploader.url.rsplit('/', 1)[1]
+
+        with self.dataset_populator.test_history() as history_id:
+            session_id = upload_file(url=urllib.parse.urljoin(self.url, "api/upload/resumable_upload"), path=TestDataResolver().get_filename("1.fastqsanger.gz"), api_key=self.galaxy_interactor.api_key, history_id=history_id)
+            hda = self._upload_and_get_details(content=json.dumps({'session_id': session_id}), api='fetch', ext='fastqsanger.gz', name='1.fastqsanger.gz')
+            assert hda['name'] == '1.fastqsanger.gz'
+            assert hda['file_ext'] == 'fastqsanger.gz'
+            assert hda['state'] == 'ok'

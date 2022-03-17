@@ -109,10 +109,9 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                 try:
                     line = stringify_dictionary_keys(json.loads(line))
                     assert 'type' in line
-                except Exception:
-                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % getattr(job_wrapper, "job_id", None))
-                    log.debug('Offending data was: %s' % line)
-                    continue
+                except Exception as e:
+                    message = f"Got JSON data from tool, but line is improperly formatted or no \"type\" key in: [{line}]"
+                    raise ValueError(message) from e
                 # Set the dataset id if it's a dataset entry and isn't set.
                 # This isn't insecure.  We loop the job's output datasets in
                 # the finish method, so if a tool writes out metadata for a
@@ -122,14 +121,14 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                     dataset_basename = line['dataset']
                     if job_wrapper:
                         try:
-                            line['dataset_id'] = job_wrapper.get_output_file_id(dataset_basename)
+                            line['dataset_id'] = job_wrapper.job_io.get_output_file_id(dataset_basename)
                         except KeyError:
-                            log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
+                            log.warning(f'({job_wrapper.job_id}) Tool provided job dataset-specific metadata without specifying a dataset')
                             continue
                     else:
                         match = re.match(r'(galaxy_)?dataset_(.*)\.dat', dataset_basename)
                         if match is None:
-                            raise Exception("processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [%s]" % dataset_basename)
+                            raise Exception(f"processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [{dataset_basename}]")
                         dataset_id = match.group(2)
                         if dataset_id.isdigit():
                             line['dataset_id'] = dataset_id
@@ -159,7 +158,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         found_failed = False
         for meta in self.tool_provided_job_metadata:
             if meta.get("failed", False):
-                log.info("One or more tool outputs is marked as failed (%s)." % meta)
+                log.info(f"One or more tool outputs is marked as failed ({meta}).")
                 found_failed = True
 
         return found_failed
@@ -170,7 +169,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
     def rewrite(self):
         with open(self.meta_file, 'wt') as job_metadata_fh:
             for meta in self.tool_provided_job_metadata:
-                job_metadata_fh.write("%s\n" % (json.dumps(meta)))
+                job_metadata_fh.write(f"{json.dumps(meta)}\n")
 
     def get_new_datasets_for_metadata_collection(self):
         for meta in self.tool_provided_job_metadata:
@@ -222,13 +221,13 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
                 continue
 
             if meta.get("failed", False):
-                log.info("One or more tool outputs is marked as failed (%s)." % meta)
+                log.info(f"One or more tool outputs is marked as failed ({meta}).")
                 found_failed = True
 
         return found_failed
 
     def get_unnamed_outputs(self):
-        log.debug("unnamed outputs [%s]" % self.tool_provided_job_metadata)
+        log.debug(f"unnamed outputs [{self.tool_provided_job_metadata}]")
         return self.tool_provided_job_metadata.get("__unnamed_outputs", [])
 
     def rewrite(self):

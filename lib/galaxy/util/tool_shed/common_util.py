@@ -12,11 +12,6 @@ from galaxy.util.tool_shed import encoding_util, xml_util
 log = logging.getLogger(__name__)
 
 REPOSITORY_OWNER = 'devteam'
-# not valid for installed Galaxy, fix
-MIGRATE_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, 'galaxy', 'tool_shed', 'galaxy_install', 'migrate'))
-TOOL_MIGRATION_SCRIPTS_DIR = os.path.join(MIGRATE_DIR, 'scripts')
-TOOL_MIGRATION_VERSIONS_DIR = os.path.join(MIGRATE_DIR, 'versions')
 
 
 def accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies):
@@ -129,7 +124,7 @@ def generate_clone_url_for_repository_in_tool_shed(user, repository):
     base_url = url_for('/', qualified=True).rstrip('/')
     if user:
         protocol, base = base_url.split('://')
-        username = '%s@' % user.username
+        username = f'{user.username}@'
         return f'{protocol}://{username}{base}/repos/{repository.user.username}/{repository.name}'
     else:
         return f'{base_url}/repos/{repository.user.username}/{repository.name}'
@@ -154,9 +149,9 @@ def get_non_shed_tool_panel_configs(app):
         try:
             tree, error_message = xml_util.parse_xml(config_filename)
         except OSError as exc:
-            if (config_filename == app.config.shed_tool_conf and not
-                    app.config.shed_tool_conf_set and
-                    exc.errno == errno.ENOENT):
+            if (config_filename == app.config.shed_tool_conf
+                    and not app.config.shed_tool_conf_set
+                    and exc.errno == errno.ENOENT):
                 continue
             raise
         if tree is None:
@@ -264,14 +259,14 @@ def get_tool_shed_repository_url(app, tool_shed, owner, name):
     if tool_shed_url:
         # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
         # the last part of a URL if it does not end with a forward slash.
-        tool_shed_url = '%s/' % tool_shed_url
+        tool_shed_url = f'{tool_shed_url}/'
         return urljoin(tool_shed_url, f'view/{owner}/{name}')
     return tool_shed_url
 
 
 def get_user_by_username(app, username):
     """Get a user from the database by username."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     try:
         user = sa_session.query(app.model.User) \
                          .filter(app.model.User.table.c.username == username) \

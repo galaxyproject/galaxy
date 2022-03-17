@@ -28,9 +28,7 @@ Instructions for [proxying with Apache](apache.md) are also available.
 
 ### NGINX Proxy Prerequisities
 
-If you plan to use nginx to handle your file uploads, you will (most likely) not be able to use your package manager's
-version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx) section explains this in detail and
-provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
+If you are **not** planning to use the recommended [tus.io method](#receiving-files-via-the-tus-protocol) to handle file uploads but want to use nginx to handle uploads, you will (most likely) not be able to use your package manager's version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx) section explains this in detail and provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
 
 Otherwise, your system package manager's version of nginx should be suitable. Under Debian, the
 [nginx-light][nginx-light] package contains all the necessary modules used in this guide. On EL, the [EPEL][epel]
@@ -49,10 +47,8 @@ version of nginx is suitable.
 
 ```eval_rst
 .. include:: _inc_proxy_serving_root.rst
-.. _Galaxy Release 17.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_17.09/admin/special_topics/nginx.html
+.. _Galaxy Release 21.09 Proxy Documentation: https://docs.galaxyproject.org/en/release_21.09/admin/nginx.html
 ```
-
-uWSGI protocol support is built in to nginx, so (unlike Apache) no extra modules or recompiling should be required.
 
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
 be incorporated with your existing/default nginx config as is appropriate for your server. Notably, the nginx package
@@ -75,7 +71,7 @@ http {
     gzip_buffers 16 8k;
 
     # allow up to 3 minutes for Galaxy to respond to slow requests before timing out
-    uwsgi_read_timeout 180;
+    proxy_read_timeout 180;
 
     # maximum file upload size
     client_max_body_size 10g;
@@ -112,8 +108,8 @@ http {
     }
 
     server {
-        listen 443 default_server;
-        listen [::]:443 default_server;
+        listen 443 ssl default_server;
+        listen [::]:443 ssl default_server;
         server_name _;
 
         # use a variable for convenience
@@ -122,11 +118,13 @@ http {
         # Enable HSTS
         add_header Strict-Transport-Security "max-age=15552000; includeSubdomains";
 
-        # proxy all requests not matching other locations to uWSGI
+        # proxy all requests not matching other locations to Gunicorn
         location / {
-            uwsgi_pass unix:///srv/galaxy/var/uwsgi.sock;
-            uwsgi_param UWSGI_SCHEME $scheme;
-            include uwsgi_params;
+            proxy_set_header Host $http_host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_pass http://unix:/srv/galaxy/var/gunicorn.sock;
         }
 
         # serve framework static content
@@ -152,9 +150,8 @@ http {
 }
 ```
 
-Be sure to set `$galaxy_root` to the path to your copy of Galaxy and modify the value of `uwsgi_pass` to match your
-uWSGI socket path. With the default configuration, uWSGI will bind to a random TCP socket, so you will need to set it to
-a fixed value as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
+Be sure to set `$galaxy_root` to the path to your copy of Galaxy and modify the value of `proxy_pass` to match your
+Gunicorn socket path. With the default configuration, gunicorn will bind to a TCP socket, so you will need to Gunicorn to bind to a UNIX domain socket as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
 ### Additional Notes
@@ -165,9 +162,9 @@ socket, be sure to pay particular attention to the discussion of users and permi
 - If your existing nginx configuration contains a line or included config file defining a default server, be sure to
   disable it by commenting its `server {}` or preventing its inclusion (under Debian this is done by removing its
   symlink from `/etc/nginx/sites-enabled`).
-- `uwsgi_read_timeout` can be adjusted as appropriate for your site. This is the amount of time allowed for
-  communication between nginx and uWSGI to block while waiting for a response from Galaxy, and is useful for holding
-  client (browser) connections while uWSGI is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
+- `proxy_read_timeout` can be adjusted as appropriate for your site. This is the amount of time allowed for
+  communication between nginx and Gunicorn to block while waiting for a response from Galaxy, and is useful for holding
+  client (browser) connections while Gunicorn is restarting Galaxy subprocesses or Galaxy is performing a slow operation.
 - The parameter `client_max_body_size` specifies the maximum upload size that can be handled by POST requests through
   nginx. You should set this to the largest file size that you wish to allow for upload and that could be reasonably
   handled by your site. It defaults to 1MB, so it will need to be increased if you are dealing with genome sized
@@ -191,11 +188,13 @@ previous section:
     ```nginx
             #...
 
-            # proxy all requests not matching other locations to uWSGI
+            # proxy all requests not matching other locations to Gunicorn
             location /galaxy {
-                uwsgi_pass unix:///srv/galaxy/var/uwsgi.sock
-                uwsgi_param UWSGI_SCHEME $scheme;
-                include uwsgi_params;
+                proxy_set_header Host $http_host;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_pass http://unix:/srv/galaxy/var/gunicorn.sock:/galaxy;
             }
 
             # serve framework static content
@@ -211,16 +210,19 @@ previous section:
     ```
 
 2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages).
-   This is accomplished by configuring uWSGI (the `uwsgi` section in `config/galaxy.yml`) like so and restarting Galaxy:
+   This is accomplished by configuring Galaxy in your `config/galaxy.yml` file like so and restarting Galaxy:
 
     ```yaml
-    uwsgi:
-        #...
-        socket: /srv/galaxy/var/uwsgi.sock
-        mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
-        manage-script-name: true
-        # `module` MUST NOT be set when `mount` is in use
-        #module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+    gravity:
+      gunicorn:
+        # ...
+        bind: /srv/galaxy/var/gunicorn.sock
+        gunicorn_extra_args: '--forwarded-allow-ips="*"'
+        # ...
+    galaxy:
+        # ...
+        galaxy_url_prefix: /galaxy
+        # ...
     ```
 
     ```eval_rst
@@ -229,8 +231,7 @@ previous section:
        overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
     ```
 
-   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
-   should also be set in the `uwsgi` section of the config.
+   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation.
 
 ## Advanced Configuration Topics
 
@@ -276,7 +277,90 @@ If you start Galaxy from supervisord, you can set the `umask` option in the [pro
 section](http://supervisord.org/configuration.html#program-x-section-settings) after adding the nginx user to the Galaxy
 group as shown above.
 
-### Receiving Files With Nginx
+### Receiving Files via the tus protocol
+
+[tus](https://tus.io/) is a protocol based on HTTP for resumable file uploads. Resumable means that an upload can be interrupted at any moment and can be resumed without re-uploading the previous data again. An interruption may happen willingly, if the user wants to pause, or by accident in case of an network issue or server outage.
+
+Galaxy includes a WSGI middleware that implements a tus server for which no configuration is needed.
+However the middleware ties up resources on the Galaxy server process, and uploads will be interrupted
+while Galaxy restarts. A more efficient alternative is to run an external server that implements the tus protocol.
+Any tus server will work. Here we will use [tusd](https://github.com/tus/tusd).
+Binaries can be downloaded from https://github.com/tus/tusd/releases/.
+
+In this example we will set up tusd to:
+
+- listen on port 1080 on localhost (`-host localhost -port 1080`)
+- store uploads in database/tmp (replace this with the value of new_file_path in your galaxy.yml config) (`-upload-dir=<galaxy_root>/database/tmp`)
+- send an event via http to /api/upload/hooks to ensure the user is logged in (`-hooks-http=<galaxy_url>/api/upload/hooks`)
+- forward authentication headers in that event (`-hooks-http-forward-headers=X-Api-Key,Cookie`)
+
+The complete command is thus (replace `<galaxy_url>` with your Galaxy URL and `<galaxy_root>` with the path to your Galaxy installation):
+
+```sh
+tusd -host localhost -port 1080 -upload-dir=<galaxy_root>/database/tmp -hooks-http=<galaxy_url>/api/upload/hooks -hooks-http-forward-headers=X-Api-Key,Cookie
+```
+
+We now need to set up nginx to proxy requests to /api/upload/resumable_upload to our tusd server.
+To do this, add the following to your Galaxy's `server {}` block:
+
+```nginx
+        location /api/upload/resumable_upload {
+        # Disable request and response buffering
+            proxy_request_buffering  off;
+            proxy_buffering          off;
+            proxy_http_version       1.1;
+
+            # Add X-Forwarded-* headers
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            proxy_set_header         Upgrade $http_upgrade;
+            proxy_set_header         Connection "upgrade";
+            client_max_body_size     0;
+            proxy_pass http://localhost:1080/files;
+        }
+```
+
+If you serve Galaxy at a prefix exchange `/api/upload/resumable_upload` with `/prefix/api/upload/resumable_upload`.
+
+After reloading the nginx configuration you can verify that this configuration works correctly by uploading a file to Galaxy. Make sure the tusd server logs the request. It should look similar to the following
+
+```log
+[tusd] 2021/10/12 13:30:14 Using '/Users/mvandenb/src/galaxy/database/tmp' as directory storage.
+[tusd] 2021/10/12 13:30:14 Using 0.00MB as maximum size.
+[tusd] 2021/10/12 13:30:14 Using 'http://localhost:8000/api/upload/hooks' as the endpoint for hooks
+[tusd] 2021/10/12 13:30:14 Enabled hook events: pre-create, post-create, post-receive, post-terminate, post-finish
+[tusd] 2021/10/12 13:30:14 Using localhost:1080 as address to listen.
+[tusd] 2021/10/12 13:30:14 Using /files/ as the base path.
+[tusd] 2021/10/12 13:30:14 Using /metrics as the metrics path.
+[tusd] 2021/10/12 13:30:14 Supported tus extensions: creation,creation-with-upload,termination,concatenation,creation-defer-length
+[tusd] 2021/10/12 13:30:14 You can now upload files to: http://localhost:1080/files/
+[tusd] 2021/10/12 13:30:59 event="RequestIncoming" method="POST" path="" requestId=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="pre-create" id=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="pre-create" id=""
+[tusd] 2021/10/12 13:30:59 event="UploadCreated" id="b1b16fdf8cd76eb0dc4f86d492424949" size="3670032" url="http://localhost:1080/files/b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="ResponseOutgoing" status="201" method="POST" path="" requestId=""
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-create" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-create" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="RequestIncoming" method="PATCH" path="b1b16fdf8cd76eb0dc4f86d492424949" requestId=""
+[tusd] 2021/10/12 13:30:59 event="ChunkWriteStart" id="b1b16fdf8cd76eb0dc4f86d492424949" maxSize="3670032" offset="0"
+[tusd] 2021/10/12 13:30:59 event="ChunkWriteComplete" id="b1b16fdf8cd76eb0dc4f86d492424949" bytesWritten="3670032"
+[tusd] 2021/10/12 13:30:59 event="ResponseOutgoing" status="204" method="PATCH" path="b1b16fdf8cd76eb0dc4f86d492424949" requestId=""
+[tusd] 2021/10/12 13:30:59 event="UploadFinished" id="b1b16fdf8cd76eb0dc4f86d492424949" size="3670032"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-finish" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationStart" type="post-receive" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-receive" id="b1b16fdf8cd76eb0dc4f86d492424949"
+[tusd] 2021/10/12 13:30:59 event="HookInvocationFinish" type="post-finish" id="b1b16fdf8cd76eb0dc4f86d492424949"
+```
+
+Note that the tusd server does not need to run on the same host that serves Galaxy.
+See the [tusd documentation](https://github.com/tus/tusd#documentation) for additional information.
+
+### Receiving Files With Nginx (Legacy)
+
+As of Galaxy release 22.01 we recommend setting up tusd to upload files.
+The instructions below will continue to work for older, legacy client applications,
+but the Galaxy user interface will not use this method of uploading files.
 
 Galaxy receives files (e.g. dataset uploads) by streaming them in chunks through the proxy server and writing the files
 to disk. However, this again ties up the Galaxy process. nginx can assume this task instead and as an added benefit,
@@ -404,8 +488,6 @@ subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-vi
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
 To secure this page to only Galaxy administrators, adjust your nginx config accordingly:
-
-**TODO:** This is not valid for the uWSGI proxy method and needs to be updated. -nate 2018-01-11
 
 ```nginx
         location /reports {

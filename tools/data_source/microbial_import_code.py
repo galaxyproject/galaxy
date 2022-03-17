@@ -10,7 +10,7 @@ def load_microbial_data(GALAXY_DATA_INDEX_DIR, sep='\t'):
     orgs = {}
 
     filename = "%s/microbial_data.loc" % GALAXY_DATA_INDEX_DIR
-    for i, line in enumerate(open(filename)):
+    for line in open(filename):
         line = line.rstrip('\r\n')
         if line and not line.startswith('#'):
             fields = line.split(sep)

@@ -2,7 +2,6 @@ import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import { DefaultForm, ToolForm } from "./forms";
 import { loadWorkflow } from "./services";
 import { toSimple } from "./model";
 import { show_modal } from "layout/modal";
@@ -28,44 +27,6 @@ export function copyIntoWorkflow(workflow, id = null, stepCount = null) {
             },
             Copy: _copy_into_workflow_ajax,
         });
-    }
-}
-
-export function showAttributes() {
-    $(".right-content").hide();
-    $("#edit-attributes").show();
-}
-
-export function showLint() {
-    $(".right-content").hide();
-    $("#lint-panel").show();
-}
-
-export function showForm(workflow, node, datatypes) {
-    if (node && node.config_form && Object.keys(node.config_form).length > 0) {
-        const cls = "right-content";
-        var id = `${cls}-${node.id}`;
-        var $container = $(`#${cls}`);
-        if ($container.find(`#${id}`).length === 0) {
-            var $el = $(`<div id="${id}" class="${cls}"/>`);
-            const options = {
-                node,
-                workflow,
-                datatypes,
-            };
-            let formWrapper = null;
-            if (node.type == "tool") {
-                formWrapper = new ToolForm(options);
-            } else {
-                formWrapper = new DefaultForm(options);
-            }
-            $el.append(formWrapper.form.$el);
-            $container.append($el);
-        }
-        $(`.${cls}`).hide();
-        $container.find(`#${id}`).show();
-        $container.show();
-        $container.scrollTop();
     }
 }
 
@@ -161,4 +122,20 @@ export function getCompatibleRecommendations(predChild, outputDatatypes, datatyp
         }
     }
     return cTools;
+}
+
+export function checkLabels(nodeId, newLabel, nodes) {
+    let duplicate = false;
+    for (const i in nodes) {
+        const n = nodes[i];
+        if (n.label && n.label == newLabel && n.id != nodeId) {
+            duplicate = true;
+            break;
+        }
+    }
+    if (duplicate) {
+        return "Duplicate label. Please fix this before saving the workflow.";
+    } else {
+        return "";
+    }
 }

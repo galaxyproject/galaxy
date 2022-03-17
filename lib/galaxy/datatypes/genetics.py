@@ -25,7 +25,10 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
 from galaxy.util import (
@@ -102,18 +105,18 @@ class GenomeGraphs(Tabular):
                     internal_url = "%s" % app.url_for(controller='dataset',
                                                       dataset_id=dataset.id,
                                                       action='display_at',
-                                                      filename='ucsc_' + site_name)
+                                                      filename=f"ucsc_{site_name}")
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type)
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
                     sl = [f"{site_url}db={dataset.dbkey}", ]
                     # sl.append("&hgt.customText=%s")
-                    sl.append("&hgGenome_dataSetName={}&hgGenome_dataSetDescription={}".format(dataset.name, 'GalaxyGG_data'))
+                    sl.append(f"&hgGenome_dataSetName={dataset.name}&hgGenome_dataSetDescription=GalaxyGG_data")
                     sl.append("&hgGenome_formatType=best guess&hgGenome_markerType=best guess")
                     sl.append("&hgGenome_columnLabels=first row&hgGenome_maxVal=&hgGenome_labelVals=")
                     sl.append("&hgGenome_doSubmitUpload=submit")
-                    sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%s" % display_url)
+                    sl.append(f"&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile={display_url}")
                     s = ''.join(sl)
                     s = quote_plus(s)
                     redirect_url = s
@@ -130,28 +133,28 @@ class GenomeGraphs(Tabular):
             with open(dataset.file_name) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
-                out = "Cannot find anything to parse in %s" % dataset.name
+                out = f"Cannot find anything to parse in {dataset.name}"
                 return out
             hasheader = 0
             try:
-                ['%f' % x for x in d[0][1:]]  # first is name - see if starts all numerics
+                [f'{x:f}' for x in d[0][1:]]  # first is name - see if starts all numerics
             except Exception:
                 hasheader = 1
             # Generate column header
             out.append('<tr>')
             if hasheader:
                 for i, name in enumerate(d[0].split()):
-                    out.append('<th>{}.{}</th>'.format(i + 1, name))
+                    out.append(f'<th>{i + 1}.{name}</th>')
                 d.pop(0)
                 out.append('</tr>')
             for row in d:
                 out.append('<tr>')
-                out.append(''.join('<td>%s</td>' % x for x in row.split()))
+                out.append(''.join(f'<td>{x}</td>' for x in row.split()))
                 out.append('</tr>')
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % exc
+            out = f"Can't create peek {exc}"
         return out
 
     def validate(self, dataset, **kwd):
@@ -166,7 +169,7 @@ class GenomeGraphs(Tabular):
                     x = float(x)
         return DatatypeValidation.validated()
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in gg format
 
@@ -179,7 +182,7 @@ class GenomeGraphs(Tabular):
         True
         """
         buf = file_prefix.contents_header
-        rows = [l.split() for l in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
+        rows = [line.split() for line in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
 
         if len(rows) < 1:
             return False
@@ -284,7 +287,7 @@ class Rgenetics(Html):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"application/binary\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
@@ -324,13 +327,13 @@ class Rgenetics(Html):
             efp = dataset.extra_files_path
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed {} - dataset {} has no efp ?'.format(sys.exc_info()[0], dataset.name))
+                gal_Log.debug(f'@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?')
             return False
         try:
             flist = os.listdir(efp)
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed {} - dataset {} has no efp ?'.format(sys.exc_info()[0], dataset.name))
+                gal_Log.debug(f'@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?')
             return False
         if len(flist) == 0:
             if verbose:
@@ -659,7 +662,7 @@ class RexpBase(Html):
             for j in range(i + 1, nuse):
                 kdict = {}
                 for row in phe:  # row is a list of lists
-                    k = '{}{}'.format(row[i], row[j])  # composite key
+                    k = f'{row[i]}{row[j]}'  # composite key
                     kdict[k] = k
                 if (len(kdict.keys()) == len(concordance[useCols[j]])):  # i and j are always matched
                     delme.append(j)
@@ -707,12 +710,12 @@ class RexpBase(Html):
         note that R is weird and does not include the row.name in
         the header. why?"""
         if not dataset.dataset.purged:
-            pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
+            pp = os.path.join(dataset.extra_files_path, f'{dataset.metadata.base_name}.pheno')
             try:
                 with open(pp) as f:
                     p = f.readlines()
             except Exception:
-                p = ['##failed to find %s' % pp, ]
+                p = [f'##failed to find {pp}', ]
             dataset.peek = ''.join(p[:5])
             dataset.blurb = 'Galaxy Rexpression composite file'
         else:
@@ -723,12 +726,12 @@ class RexpBase(Html):
         """
         expects a .pheno file in the extra_files_dir - ugh
         """
-        pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
+        pp = os.path.join(dataset.extra_files_path, f'{dataset.metadata.base_name}.pheno')
         try:
             with open(pp) as f:
                 p = f.readlines()
         except Exception:
-            p = ['##failed to find %s' % pp]
+            p = [f'##failed to find {pp}']
         return ''.join(p[:5])
 
     def get_file_peek(self, filename):
@@ -749,7 +752,7 @@ class RexpBase(Html):
         """
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
+        rval = [f'<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>']
         for fname in flist:
             sfname = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{sfname}">{sfname}</a>')
@@ -784,7 +787,7 @@ class RexpBase(Html):
         if not bn:
             bn = '?'
             dataset.metadata.base_name = bn
-        pn = '%s.pheno' % (bn)
+        pn = f'{bn}.pheno'
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
@@ -824,18 +827,18 @@ class RexpBase(Html):
             for i, row in enumerate(p):
                 lrow = row.strip().split('\t')
                 if i == 0:
-                    orow = ['<th>%s</th>' % escape(x) for x in lrow]
+                    orow = [f'<th>{escape(x)}</th>' for x in lrow]
                     orow.insert(0, '<tr>')
                     orow.append('</tr>')
                 else:
-                    orow = ['<td>%s</td>' % escape(x) for x in lrow]
+                    orow = [f'<td>{escape(x)}</td>' for x in lrow]
                     orow.insert(0, '<tr>')
                     orow.append('</tr>')
                 out.append(''.join(orow))
             out.append('</table>')
             out = "\n".join(out)
         except Exception as exc:
-            out = "Can't create html table %s" % unicodify(exc)
+            out = f"Can't create html table {unicodify(exc)}"
         return out
 
     def display_peek(self, dataset):
@@ -918,13 +921,13 @@ class GenotypeMatrix(LinkageStudies):
             return False
 
         try:
-            return all([int(sid) > 0 for sid in header_elems[1:]])
+            return all(int(sid) > 0 for sid in header_elems[1:])
         except ValueError:
             return False
 
         return True
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -984,7 +987,7 @@ class MarkerMap(LinkageStudies):
 
         return False
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1040,7 +1043,7 @@ class DataIn(LinkageStudies):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1116,7 +1119,7 @@ class AllegroLOD(LinkageStudies):
 
         return False
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname

@@ -53,13 +53,15 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
         ids_dict[line.split('\t')[0].strip()] = True
 
     # Filter GFF file using ids.
-    output = open(output_file, 'w')
-    for line in open(gff_file):
-        fields = line.split('\t')
-        attributes = parse_gff_attributes(fields[8])
-        if (attribute_name in attributes) and (attributes[attribute_name] in ids_dict):
-            output.write(line)
-    output.close()
+    with open(output_file, 'w') as output, open(gff_file) as ingff:
+        for line in ingff:
+            if not line or line.startswith('#'):
+                output.write(line)
+                continue
+            fields = line.split('\t')
+            attributes = parse_gff_attributes(fields[8])
+            if attribute_name in attributes and attributes[attribute_name] in ids_dict:
+                output.write(line)
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import "bootstrap-tour";
+import "@galaxyproject/bootstrap-tour";
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
 const Tour = window.Tour;

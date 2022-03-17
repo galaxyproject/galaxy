@@ -1,6 +1,13 @@
 import pytest
 
-from galaxy.tool_util.deps.mulled.mulled_search import CondaSearch, get_package_hash, GitHubSearch, QuaySearch, run_command, singularity_search
+from galaxy.tool_util.deps.mulled.mulled_search import (
+    CondaSearch,
+    get_package_hash,
+    GitHubSearch,
+    QuaySearch,
+    run_command,
+    singularity_search
+)
 from ..util import external_dependency_management
 
 
@@ -50,7 +57,10 @@ def test_get_package_hash():
 @external_dependency_management
 def test_singularity_search():
     sing1 = singularity_search('mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa')
+    sing1_versions = {result['version'] for result in sing1}
+    assert {
+        'c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0',
+        'f471ba33d45697daad10614c5bd25a67693f67f1-0',
+        'fc33176431a4b9ef3213640937e641d731db04f1-0'}.issubset(sing1_versions)
     sing2 = singularity_search('mulled-v2-19fa9431f5863b2be81ff13791f1b00160ed0852')
-    assert sing1[0]['version'] in ['c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0', 'fc33176431a4b9ef3213640937e641d731db04f1-0']
-    assert sing1[1]['version'] in ['c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0', 'fc33176431a4b9ef3213640937e641d731db04f1-0']
     assert sing2 == []

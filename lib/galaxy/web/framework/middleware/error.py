@@ -113,10 +113,10 @@ class ErrorMiddleware:
             show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get('show_exceptions_in_wsgi_errors'))
         self.debug_mode = converters.asbool(debug)
         if error_email is None:
-            error_email = (global_conf.get('error_email') or
-                           global_conf.get('admin_email') or
-                           global_conf.get('webmaster_email') or
-                           global_conf.get('sysadmin_email'))
+            error_email = (global_conf.get('error_email')
+                           or global_conf.get('admin_email')
+                           or global_conf.get('webmaster_email')
+                           or global_conf.get('sysadmin_email'))
         self.error_email = converters.aslist(error_email)
         self.error_log = error_log
         self.show_exceptions_in_wsgi_errors = show_exceptions_in_wsgi_errors
@@ -252,8 +252,7 @@ class CatchingIter:
                 exc_info, self.environ)
             if close_response is not None:
                 response += (
-                    '<hr noshade>Error in .close():<br>%s'
-                    % close_response)
+                    f'<hr noshade>Error in .close():<br>{close_response}')
 
             if not self.start_checker.response_started:
                 self.start_checker('500 Internal Server Error',
@@ -309,10 +308,11 @@ class Supplement:
                 wsgi_vars[name] = value
         if self.environ['wsgi.version'] != (1, 0):
             wsgi_vars['wsgi.version'] = self.environ['wsgi.version']
-        proc_desc = tuple([int(bool(self.environ[key]))
-                           for key in ('wsgi.multiprocess',
-                                       'wsgi.multithread',
-                                       'wsgi.run_once')])
+        proc_desc = tuple(int(bool(self.environ[key])) for key in (
+            'wsgi.multiprocess',
+            'wsgi.multithread',
+            'wsgi.run_once'
+        ))
         wsgi_vars['wsgi process'] = self.process_combos[proc_desc]
         wsgi_vars['application'] = self.middleware.application
         if 'paste.config' in self.environ:
@@ -423,14 +423,14 @@ def handle_exception(exc_info, error_stream, html=True,
             extra = "<p><b>The error has been logged to our team.</b>"
             if 'sentry_event_id' in environ:
                 extra += " If you want to contact us about this error, please reference the following<br><br>"
-                extra += "<b><large>GURU MEDITATION: #" + environ['sentry_event_id'] + "</large></b>"
+                extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
             extra += "</p>"
             return_error = error_template('', msg, extra)
     else:
         return_error = None
     if not reported and error_stream:
         err_report = formatter.format_text(exc_data, show_hidden_frames=True)
-        err_report += '\n' + '-' * 60 + '\n'
+        err_report += f"\n{'-' * 60}\n"
         error_stream.write(err_report)
     if extra_data:
         error_stream.write(extra_data)

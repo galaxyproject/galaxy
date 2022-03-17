@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 import tempfile
 from datetime import datetime
@@ -29,9 +30,9 @@ def add_changeset(repo_path, path_to_filename_in_archive):
     try:
         subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error adding '{}' to repository: {}".format(path_to_filename_in_archive, unicodify(e))
+        error_message = f"Error adding '{path_to_filename_in_archive}' to repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
 
 
@@ -41,9 +42,9 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
     try:
         subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error attempting to archive revision '{}' of repository '{}': {}".format(changeset_revision, repository.name, unicodify(e))
+        error_message = f"Error attempting to archive revision '{changeset_revision}' of repository '{repository.name}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            error_message += f"\nOutput was:\n{unicodify(e.output)}"
         log.exception(error_message)
         raise Exception(error_message)
 
@@ -52,11 +53,11 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
         subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error committing '{}' to repository: {}".format(full_path_to_changeset, unicodify(e))
+        error_message = f"Error committing '{full_path_to_changeset}' to repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
             if e.returncode == 1 and 'nothing changed' in unicodify(e.output):
                 return
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
 
 
@@ -78,8 +79,8 @@ def create_hgrc_file(app, repository):
         fp.write('default = .\n')
         fp.write('default-push = .\n')
         fp.write('[web]\n')
-        fp.write('allow_push = %s\n' % repository.user.username)
-        fp.write('name = %s\n' % repository.name)
+        fp.write(f'allow_push = {repository.user.username}\n')
+        fp.write(f'name = {repository.name}\n')
         fp.write('push_ssl = false\n')
         fp.write('[extensions]\n')
         fp.write('hgext.purge=')
@@ -145,7 +146,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
     else:
         if include_hash:
-            return "-1:%s" % changeset_revision
+            return f"-1:{changeset_revision}"
         else:
             return "-1"
 
@@ -162,18 +163,18 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = "{}:{} ({})".format(str(ctx.rev()), changeset_revision, changeset_revision_date)
+                label = f"{str(ctx.rev())}:{changeset_revision} ({changeset_revision_date})"
             else:
-                label = "{} ({})".format(str(ctx.rev()), changeset_revision_date)
+                label = f"{str(ctx.rev())} ({changeset_revision_date})"
         else:
             if include_hash:
-                label = "{}:{}".format(str(ctx.rev()), changeset_revision)
+                label = f"{str(ctx.rev())}:{changeset_revision}"
             else:
-                label = "%s" % str(ctx.rev())
+                label = f"{str(ctx.rev())}"
     else:
         rev = '-1'
         if include_hash:
-            label = "-1:%s" % changeset_revision
+            label = f"-1:{changeset_revision}"
         else:
             label = "-1"
     return rev, label, changeset_revision
@@ -189,7 +190,7 @@ def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
                 (str(ctx.rev()), str(get_readable_ctx_date(ctx)))
     else:
         if include_hash:
-            return '{}:{}'.format(str(ctx.rev()), str(ctx))
+            return f'{str(ctx.rev())}:{str(ctx)}'
         else:
             return str(ctx.rev())
 
@@ -205,21 +206,28 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
         label = get_revision_label_from_ctx(ctx, include_date=include_date)
     else:
         rev = '-1'
-        label = "-1:%s" % changeset_revision
+        label = f"-1:{changeset_revision}"
     return rev, label
 
 
-def remove_file(repo_path, selected_file, force=True):
-    cmd = ['hg', 'remove']
-    if force:
-        cmd.append('--force')
-    cmd.append(selected_file)
+def remove_path(repo_path, selected_file):
+    cmd = ['hg', 'remove', '--force', selected_file]
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error removing file '{}': {}".format(selected_file, unicodify(e))
+        error_message = f"Error removing path '{selected_file}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            output = unicodify(e.output)
+            if 'is untracked' in output:
+                # That's ok, happens if we add a new file or directory via tarball upload,
+                # just delete the file or dir on disk
+                selected_file_path = os.path.join(repo_path, selected_file)
+                if os.path.isdir(selected_file_path):
+                    shutil.rmtree(selected_file_path)
+                else:
+                    os.remove(selected_file_path)
+                return
+            error_message += f"\nOutput was:\n{output}"
         raise Exception(error_message)
 
 
@@ -230,9 +238,9 @@ def init_repository(repo_path):
     try:
         subprocess.check_output(['hg', 'init'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = 'Error initializing repository: %s' % unicodify(e)
+        error_message = f'Error initializing repository: {unicodify(e)}'
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
 
 
@@ -243,9 +251,9 @@ def changeset2rev(repo_path, changeset_revision):
     try:
         rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = "Error looking for changeset '{}': {}".format(changeset_revision, unicodify(e))
+        error_message = f"Error looking for changeset '{changeset_revision}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % unicodify(e.output)
+            error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
     return int(rev.strip())
 
@@ -270,7 +278,7 @@ __all__ = (
     'get_revision_label_from_ctx',
     'get_rev_label_from_changeset_revision',
     'pull_repository',
-    'remove_file',
+    'remove_path',
     'reversed_lower_upper_bounded_changelog',
     'reversed_upper_bounded_changelog',
     'update_repository',

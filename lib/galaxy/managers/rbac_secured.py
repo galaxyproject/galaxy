@@ -81,7 +81,7 @@ class DatasetRBACPermission(RBACPermission):
     # ---- double secrect probation
     def __assert_action(self):
         if not self.action_name:
-            raise NotImplementedError("abstract parent class" + " needs action_name")
+            raise NotImplementedError("abstract parent class needs action_name")
 
     # ---- interface
     def by_dataset(self, dataset):
@@ -238,10 +238,9 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
         current_roles = self._roles(dataset)
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets
-        return (self._is_public_based_on_roles(current_roles) or
-                # admin is always permitted
-                self.user_manager.is_admin(user) or
-                self._user_has_all_roles(user, current_roles))
+        return (self._is_public_based_on_roles(current_roles)
+                or self.user_manager.is_admin(user)  # admin is always permitted
+                or self._user_has_all_roles(user, current_roles))
 
     def grant(self, item, user):
         pass
@@ -274,6 +273,6 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
 
     def _role_is_permitted(self, dataset, role):
         current_roles = self._roles(dataset)
-        return (self._is_public_based_on_roles(current_roles) or
+        return (self._is_public_based_on_roles(current_roles)
                 # if there's only one role and this is it, let em in
-                ((len(current_roles) == 1) and (role == current_roles[0])))
+                or ((len(current_roles) == 1) and (role == current_roles[0])))

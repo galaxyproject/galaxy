@@ -90,7 +90,7 @@ inv.task('build')
             .. 'conda install '
             .. channel_args .. ' '
             .. target_args
-            .. ' -p /usr/local --copy --yes '
+            .. ' --strict-channel-priority -p /usr/local --copy --yes '
             .. verbose
             .. postinstall)
     .wrap('build/dist')

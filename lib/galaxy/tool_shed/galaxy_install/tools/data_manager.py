@@ -40,7 +40,7 @@ class DataManagerHandler:
         """
         data_managers_path = self.data_managers_path
         if data_managers_path:
-            root_str = '<?xml version="1.0"?><data_managers tool_path="%s"></data_managers>' % data_managers_path
+            root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
         root = parse_xml_string(root_str)
@@ -93,7 +93,7 @@ class DataManagerHandler:
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get('data_managers', {}).get(data_manager_id, None)
                     if data_manager_dict is None:
-                        log.error("Data manager metadata is not defined properly for '%s'." % (data_manager_id))
+                        log.error(f"Data manager metadata is not defined properly for '{data_manager_id}'.")
                         continue
                     guid = data_manager_dict.get('guid', None)
                     if guid is None:
@@ -116,7 +116,7 @@ class DataManagerHandler:
                         continue
                     tool_config_filename = tool_dict.get('tool_config_filename', None)
                     if tool_config_filename is None:
-                        log.error("Data manager metadata is missing 'tool_config_file' for '%s'." % (data_manager_id))
+                        log.error(f"Data manager metadata is missing 'tool_config_file' for '{data_manager_id}'.")
                         continue
                     elem.set('shed_conf_file', shed_config_dict['config_filename'])
                     if elem.get('tool_file', None) is not None:
@@ -137,7 +137,7 @@ class DataManagerHandler:
                 elif elem.tag is etree.Comment:
                     pass
                 else:
-                    log.warning("Encountered unexpected element '{}':\n{}".format(elem.tag, xml_to_string(elem)))
+                    log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")
                 config_elems.append(elem)
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.
@@ -149,13 +149,13 @@ class DataManagerHandler:
         return rval
 
     def remove_from_data_manager(self, repository):
-        metadata_dict = repository.metadata
+        metadata_dict = repository.metadata_
         if metadata_dict and 'data_manager' in metadata_dict:
             shed_data_manager_conf_filename = self.app.config.shed_data_manager_config_file
             tree, error_message = parse_xml(shed_data_manager_conf_filename)
             if tree:
                 root = tree.getroot()
-                assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % (shed_data_manager_conf_filename)
+                assert root.tag == 'data_managers', f'The file provided ({shed_data_manager_conf_filename}) for removing data managers from is not a valid data manager xml file.'
                 guids = [data_manager_dict.get('guid') for data_manager_dict in metadata_dict.get('data_manager', {}).get('data_managers', {}).values() if 'guid' in data_manager_dict]
                 load_old_data_managers_by_guid = {}
                 data_manager_config_has_changes = False

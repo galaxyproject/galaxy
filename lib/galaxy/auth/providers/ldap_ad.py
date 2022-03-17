@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 def _get_subs(d, k, params):
     if k not in d or not d[k]:
-        raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
+        raise ConfigurationError(f"Missing '{k}' parameter in LDAP options")
     return str(d[k]).format(**params)
 
 
@@ -144,20 +144,22 @@ class LDAP(AuthProvider):
 
         if 'search-fields' in options:
             try:
-                l = ldap.initialize(_get_subs(options, 'server', params))
-                l.protocol_version = 3
+                conn = ldap.initialize(_get_subs(options, 'server', params))
+                conn.protocol_version = 3
 
                 if 'search-user' in options:
-                    l.simple_bind_s(_get_subs(options, 'search-user', params),
-                                    _get_subs(options, 'search-password', params))
+                    conn.simple_bind_s(
+                        _get_subs(options, 'search-user', params),
+                        _get_subs(options, 'search-password', params))
                 else:
-                    l.simple_bind_s()
+                    conn.simple_bind_s()
 
                 # setup search
                 attributes = {_.strip().format(**params) for _ in options['search-fields'].split(',')}
                 if 'search-memberof-filter' in options:
                     attributes.add('memberOf')
-                suser = l.search_ext_s(_get_subs(options, 'search-base', params),
+                suser = conn.search_ext_s(
+                    _get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
                     timeout=60, sizelimit=1)
@@ -230,17 +232,17 @@ class LDAP(AuthProvider):
         Do the actual authentication by binding as the user to check their credentials
         """
         try:
-            l = ldap.initialize(_get_subs(options, 'server', params))
-            l.protocol_version = 3
+            conn = ldap.initialize(_get_subs(options, 'server', params))
+            conn.protocol_version = 3
             bind_user = _get_subs(options, 'bind-user', params)
             bind_password = _get_subs(options, 'bind-password', params)
         except Exception:
             log.exception('LDAP authenticate: initialize exception')
             return False
         try:
-            l.simple_bind_s(bind_user, bind_password)
+            conn.simple_bind_s(bind_user, bind_password)
             try:
-                whoami = l.whoami_s()
+                whoami = conn.whoami_s()
             except ldap.PROTOCOL_ERROR:
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass

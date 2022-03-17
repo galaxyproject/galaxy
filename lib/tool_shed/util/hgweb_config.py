@@ -78,7 +78,7 @@ class HgWebConfigManager:
             # We used to raise an exception here...
             # raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
             # ...but now we just log the missing file and create a new empty one.
-            log.debug("Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." % hgweb_config)
+            log.debug(f"Required file {hgweb_config} does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir.")
             with open(hgweb_config, 'w') as hgweb_config_file:
                 hgweb_config_file.write(new_hgweb_config_template)
         return os.path.abspath(hgweb_config)
@@ -87,7 +87,7 @@ class HgWebConfigManager:
         # Make a backup of the hgweb.config file.
         today = date.today()
         backup_date = today.strftime("%Y_%m_%d")
-        hgweb_config_backup_filename = 'hgweb.config_%s_backup' % backup_date
+        hgweb_config_backup_filename = f'hgweb.config_{backup_date}_backup'
         hgweb_config_copy = os.path.join(self.hgweb_config_dir, hgweb_config_backup_filename)
         shutil.copy(os.path.abspath(self.hgweb_config), os.path.abspath(hgweb_config_copy))
 

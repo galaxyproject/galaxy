@@ -61,20 +61,20 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
-        '''Create and populate the emboss_datatypes_0460 repository'''
-        '''
+        '''Create and populate the emboss_datatypes_0460 repository
+
         This is step 1 - Create and populate emboss_datatypes_0460.
         '''
         self.create_category(name=category_name, description=category_description)
@@ -97,8 +97,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_create_bwa_package_repository(self):
-        '''Create and populate the package_bwa_0_5_9_0460 repository.'''
-        '''
+        '''Create and populate the package_bwa_0_5_9_0460 repository.
+
         This is step 2 - Create and populate package_bwa_0_5_9_0460.
         '''
         category = self.test_db_util.get_category_by_name(category_name)
@@ -119,8 +119,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0015_create_tool_dependency_repositories(self):
-        '''Create repositories for testing complex dependency generation.'''
-        '''
+        '''Create repositories for testing complex dependency generation.
+
         This is step 3 - Create complex_dependency_test_1_0460, complex_dependency_test_2_0460, complex_dependency_test_3_0460,
         complex_dependency_test_4_0460, complex_dependency_test_5_0460. Each of these repositories will be populated in a way
         that tests a different way to achieve the same resulting dependency structure using complex tool dependencies.
@@ -144,8 +144,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                           strings_displayed=[])
 
     def test_0020_populate_complex_dependency_test_1_0460(self):
-        '''Populate complex_dependency_test_1_0460.'''
-        '''
+        '''Populate complex_dependency_test_1_0460.
+
         This is step 4 - Upload an uncompressed tool_dependencies.xml to complex_dependency_test_1_0460 that specifies
         a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         '''
@@ -166,8 +166,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         self.display_repository_file_contents(repository, filename='tool_dependencies.xml', strings_displayed=[changeset_revision])
 
     def test_0025_populate_complex_dependency_test_2_0460(self):
-        '''Populate complex_dependency_test_2_0460.'''
-        '''
+        '''Populate complex_dependency_test_2_0460.
+
         This is step 5 - Upload an tarball with tool_dependencies.xml to complex_dependency_test_2_0460 that specifies
         a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         '''
@@ -188,8 +188,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         self.display_repository_file_contents(repository, filename='tool_dependencies.xml', strings_displayed=[changeset_revision])
 
     def test_0030_populate_complex_dependency_test_3_0460(self):
-        '''Populate complex_dependency_test_3_0460.'''
-        '''
+        '''Populate complex_dependency_test_3_0460.
+
         This is step 6 - Upload an tarball with tool_dependencies.xml in a subfolder to complex_dependency_test_3_0460 that
         specifies a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         '''
@@ -213,8 +213,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                               strings_displayed=[changeset_revision])
 
     def test_0035_create_repositories_for_url_upload(self):
-        '''Create and populate hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460.'''
-        '''
+        '''Create and populate hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460.
+
         This is step 7 - Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with tool dependencies.
         '''
         category = self.test_db_util.get_category_by_name(category_name)
@@ -250,8 +250,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0040_url_upload_to_complex_test(self):
-        '''Populate complex_dependency_test_4_0460.'''
-        '''
+        '''Populate complex_dependency_test_4_0460.
+
         This is step 8 - Upload to complex_dependency_test_4_0460 using the url hg://<tool shed url>/repos/user1/hg_tool_dependency_0460.
         '''
         url = f'hg://{self.host}:{self.port}/repos/user1/hg_tool_dependency_0460'
@@ -274,8 +274,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                               strings_displayed=[changeset_revision])
 
     def test_0045_url_upload_to_complex_test(self):
-        '''Populate complex_dependency_test_4_0460.'''
-        '''
+        '''Populate complex_dependency_test_4_0460.
+
         This is step 9 - Upload to complex_dependency_test_5_0460 using the url hg://<tool shed url>/repos/user1/hg_subfolder_tool_dependency_0460.
         '''
         url = f'hg://{self.host}:{self.port}/repos/user1/hg_subfolder_tool_dependency_0460'
@@ -299,8 +299,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                               strings_displayed=[changeset_revision])
 
     def test_0050_create_repositories_for_simple_dependencies(self):
-        '''Create repositories for testing simple dependency generation.'''
-        '''
+        '''Create repositories for testing simple dependency generation.
+
         This is step 10 - Create repository_dependency_test_1_0460, repository_dependency_test_2_0460, repository_dependency_test_3_0460,
         repository_dependency_test_4_0460, repository_dependency_test_4_0460.. Each of these repositories will be populated in a way
         that tests a different way to achieve the same resulting dependency structure using complex tool dependencies.
@@ -324,8 +324,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                           strings_displayed=[])
 
     def test_0055_populate_repository_dependency_test_1_0460(self):
-        '''Populate repository_dependency_test_1_0460.'''
-        '''
+        '''Populate repository_dependency_test_1_0460.
+
         This is step 11 - Upload an uncompressed repository_dependencies.xml to repository_dependency_test_1_0460 that specifies a
         repository dependency on emboss_datatypes_0460 without a specified changeset revision or tool shed url.
         '''
@@ -346,8 +346,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         self.display_repository_file_contents(repository, filename='repository_dependencies.xml', strings_displayed=[changeset_revision])
 
     def test_0060_populate_repository_dependency_test_2_0460(self):
-        '''Populate repository_dependency_test_2_0460.'''
-        '''
+        '''Populate repository_dependency_test_2_0460.
+
         This is step 12 - Upload a tarball to repository_dependency_test_2_0460 with a repository_dependencies.xml in the root of the tarball.
         '''
         repository = self.test_db_util.get_repository_by_name_and_owner('repository_dependency_test_2_0460', common.test_user_1_name)
@@ -367,8 +367,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         self.display_repository_file_contents(repository, filename='repository_dependencies.xml', strings_displayed=[changeset_revision])
 
     def test_0065_populate_repository_dependency_test_3_0460(self):
-        '''Populate repository_dependency_test_3_0460.'''
-        '''
+        '''Populate repository_dependency_test_3_0460.
+
         This is step 13 - Upload a tarball to repository_dependency_test_3_0460 with a repository_dependencies.xml in a
         subfolder within the tarball.
         '''
@@ -392,8 +392,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                               strings_displayed=[changeset_revision])
 
     def test_0070_create_repositories_for_url_upload(self):
-        '''Create and populate hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460.'''
-        '''
+        '''Create and populate hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460.
+
         This is step 14 - Create hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460 and populate
         with repository dependencies.
         '''
@@ -430,8 +430,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0075_url_upload_to_complex_test(self):
-        '''Populate repository_dependency_test_4_0460.'''
-        '''
+        '''Populate repository_dependency_test_4_0460.
+
         This is step 15 - Upload to repository_dependency_test_4_0460 using the url
         hg://<tool shed url>/repos/user1/hg_repository_dependency_0460.
         '''
@@ -455,8 +455,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                                               strings_displayed=[changeset_revision])
 
     def test_0080_url_upload_to_complex_test(self):
-        '''Populate repository_dependency_test_4_0460.'''
-        '''
+        '''Populate repository_dependency_test_4_0460.
+
         This is step 16 - Upload to repository_dependency_test_5_0460 using the url
         hg://<tool shed url>/repos/user1/hg_subfolder_repository_dependency_0460.
         '''

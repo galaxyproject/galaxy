@@ -37,8 +37,8 @@
             <tr>
                 <td colspan="2">${job.tool_id}</td>
                 <td>
-                    %if job.user and job.user.email:
-                        ${job.user.email}
+                    %if job.get_user_email():
+                        ${job.get_user_email()}
                     %else:
                         anonymous
                     %endif
@@ -47,16 +47,20 @@
                 <td>${job.job_runner_external_id}</td>
             </tr>
             <tr class="header">
-                <td colspan="5">Remote Host</td>
+                <td colspan="3">Remote Host</td>
+                <td>Destination Id</td>
+                <td>Destination params</td>
             </tr>
             <tr>
-                <td colspan="5">
+                <td colspan="3">
                     %if job.galaxy_session and job.galaxy_session.remote_host:
                         ${job.galaxy_session.remote_host}
                     %else:
                         no remote host
                     %endif
                 </td>
+                <td>${job.destination_id}</td>
+                <td>${job.destination_params}</td>
             </tr>
             <tr class="header">
                 <td colspan="5">Command Line</td>
@@ -93,3 +97,4 @@
         </table>
     </div>
 </div>
+

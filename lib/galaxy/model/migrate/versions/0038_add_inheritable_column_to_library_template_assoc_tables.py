@@ -52,7 +52,7 @@ def upgrade(migrate_engine):
         assert c is LibraryInfoAssociation_table.c.inheritable
     except Exception:
         log.exception("Adding column 'inheritable' to 'library_info_association' table failed.")
-    cmd = "UPDATE library_info_association SET inheritable = %s" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_info_association SET inheritable = {engine_false(migrate_engine)}"
     try:
         migrate_engine.execute(cmd)
     except Exception:
@@ -64,7 +64,7 @@ def upgrade(migrate_engine):
         assert c is LibraryFolderInfoAssociation_table.c.inheritable
     except Exception:
         log.exception("Adding column 'inheritable' to 'library_folder_info_association' table failed.")
-    cmd = "UPDATE library_folder_info_association SET inheritable = %s" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_folder_info_association SET inheritable = {engine_false(migrate_engine)}"
     try:
         migrate_engine.execute(cmd)
     except Exception:

@@ -60,8 +60,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         query = self.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=True)
         for repository in query:
             owner = str(repository.user.username)
-            option_label = '{} ({})'.format(str(repository.name), owner)
-            option_value = '%s' % self.app.security.encode_id(repository.id)
+            option_label = f'{str(repository.name)} ({owner})'
+            option_value = f'{self.app.security.encode_id(repository.id)}'
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field
 
@@ -162,14 +162,18 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
     def compare_data_manager(self, ancestor_metadata, current_metadata):
         """Determine if ancestor_metadata is the same as or a subset of current_metadata for data_managers."""
+
         def __data_manager_dict_to_tuple_list(metadata_dict):
             # we do not check tool_guid or tool conf file name
-            return set(sorted([(name,
-                                tuple(sorted(value.get('data_tables', []))),
-                                value.get('guid'),
-                                value.get('version'),
-                                value.get('name'),
-                                value.get('id')) for name, value in metadata_dict.items()]))
+            return set(sorted((
+                name,
+                tuple(sorted(value.get('data_tables', []))),
+                value.get('guid'),
+                value.get('version'),
+                value.get('name'),
+                value.get('id')
+            ) for name, value in metadata_dict.items()))
+
         # only compare valid entries, any invalid entries are ignored
         ancestor_metadata = __data_manager_dict_to_tuple_list(ancestor_metadata.get('data_managers', {}))
         current_metadata = __data_manager_dict_to_tuple_list(current_metadata.get('data_managers', {}))
@@ -734,7 +738,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
 
     def reset_all_metadata_on_repository_in_tool_shed(self):
         """Reset all metadata on a single repository in a tool shed."""
-        log.debug("Resetting all metadata on repository: %s" % self.repository.name)
+        log.debug(f"Resetting all metadata on repository: {self.repository.name}")
         repo = self.repository.hg_repo
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records

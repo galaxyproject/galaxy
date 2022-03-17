@@ -1,14 +1,13 @@
 <template>
     <div class="collection-creator">
         <div class="header flex-row no-flex">
-            <div class="main-help well clear" v-bind:class="{ expanded: isExpanded }">
+            <div class="main-help well clear" :class="{ expanded: isExpanded }">
                 <a
                     class="more-help"
                     href="javascript:void(0);"
                     role="button"
                     @click="_clickForHelp"
-                    :title="titleForHelp"
-                >
+                    :title="titleForHelp">
                     <div v-if="!isExpanded">
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -24,8 +23,7 @@
                         href="javascript:void(0);"
                         role="button"
                         @click="_clickForHelp"
-                        :title="titleForHelp"
-                    >
+                        :title="titleForHelp">
                     </a>
                 </div>
             </div>
@@ -42,8 +40,7 @@
                             class="remove-extensions float-right"
                             type="checkbox"
                             @click="$emit('remove-extensions-toggle')"
-                            checked
-                        />
+                            checked />
                     </label>
                     <label class="setting-prompt float-right">
                         {{ hideOriginalsText }}
@@ -54,8 +51,7 @@
                     <input
                         class="collection-name form-control float-right"
                         :placeholder="placeholderEnterName"
-                        v-model="collectionName"
-                    />
+                        v-model="collectionName" />
                     <div class="collection-name-prompt float-right">
                         {{ l("Name:") }}
                     </div>
@@ -71,9 +67,8 @@
                     <button
                         class="create-collection btn btn-primary"
                         @click="$emit('clicked-create', collectionName)"
-                        :disabled="!validInput"
-                    >
-                        {{ l("Create list") }}
+                        :disabled="!validInput">
+                        {{ l("Create collection") }}
                     </button>
                 </div>
             </div>
@@ -89,10 +84,6 @@ export default {
             type: Function,
             required: true,
         },
-        creationFn: {
-            type: Function,
-            required: true,
-        },
         renderExtensionsToggle: {
             type: Boolean,
             default: false,
@@ -100,6 +91,11 @@ export default {
         hideSourceItems: {
             type: Boolean,
             required: true,
+        },
+        suggestedName: {
+            type: String,
+            required: false,
+            default: "",
         },
     },
     computed: {
@@ -115,7 +111,7 @@ export default {
             placeholderEnterName: _l("Enter a name for your new collection"),
             dropdownText: _l("Create a <i>single</> pair"),
             isExpanded: false,
-            collectionName: "",
+            collectionName: this.suggestedName,
             removeFileExtensionsText: "Remove file extensions?",
             localHideSourceItems: this.hideSourceItems,
         };
@@ -147,9 +143,9 @@ export default {
 <style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "../../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
 .collection-creator {
     height: 100%;
     overflow: hidden;

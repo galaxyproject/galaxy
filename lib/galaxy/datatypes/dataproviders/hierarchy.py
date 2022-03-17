@@ -34,8 +34,8 @@ class XMLDataProvider(HierarchalDataProvider):
     # using lxml.etree's iterparse method to keep mem down
     # TODO:   this, however (AFAIK), prevents the use of xpath
     settings = {
-        'selector'  : 'str',  # urlencoded
-        'max_depth' : 'int',
+        'selector': 'str',  # urlencoded
+        'max_depth': 'int',
     }
     ITERPARSE_ALL_EVENTS = ('start', 'end', 'start-ns', 'end-ns')
     # TODO: move appropo into super
@@ -65,8 +65,8 @@ class XMLDataProvider(HierarchalDataProvider):
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
         Element = getattr(etree, '_Element', etree.Element)
-        return bool((selector is None) or
-                    (isinstance(element, Element) and selector in element.tag))
+        return bool((selector is None)
+                    or (isinstance(element, Element) and selector in element.tag))
 
     def element_as_dict(self, element):
         """
@@ -76,10 +76,10 @@ class XMLDataProvider(HierarchalDataProvider):
         """
         # TODO: Key collision is unlikely here, but still should be better handled
         return {
-            'tag'      : element.tag,
-            'text'     : element.text.strip() if element.text else None,
+            'tag': element.tag,
+            'text': element.text.strip() if element.text else None,
             # needs shallow copy to protect v. element.clear()
-            'attrib'   : dict(element.attrib)
+            'attrib': dict(element.attrib)
         }
 
     def get_children(self, element, max_depth=None):
@@ -111,8 +111,8 @@ class XMLDataProvider(HierarchalDataProvider):
                 self.namespaces[ns] = uri
 
             elif event == 'start':
-                if((selected_element is None) and
-                        (self.matches_selector(element, self.selector))):
+                if((selected_element is None)
+                        and (self.matches_selector(element, self.selector))):
                     # start tag of selected element - wait for 'end' to emit/yield
                     selected_element = element
 

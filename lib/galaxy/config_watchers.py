@@ -2,7 +2,8 @@ import logging
 from os.path import dirname
 
 from galaxy.queue_worker import job_rule_modules
-from galaxy.tools.toolbox.watcher import (
+from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.toolbox.watcher import (
     get_tool_conf_watcher,
     get_tool_watcher,
 )
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 class ConfigWatchers:
     """Contains ToolConfWatcher, ToolWatcher and ToolDataWatcher objects."""
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.active = False
         # ToolConfWatcher objects will watch the tool_cache if the tool_cache is passed into get_tool_conf_watcher.

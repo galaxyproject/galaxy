@@ -1,21 +1,30 @@
 """Integration tests for the CLI shell plugins and runners."""
-import collections
 import os
 import string
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from typing import ClassVar, NamedTuple
 
+from galaxy.security.ssh_util import generate_ssh_keys
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.base.ssh_util import generate_ssh_keys
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
-RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'port', 'private_key', 'public_key'])
+PBS_STARTUP_DELAY = 5
 
 
-def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
+class RemoteConnection(NamedTuple):
+    hostname: str
+    username: str
+    port: int
+    private_key: str
+    public_key: str
+
+
+def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm') -> RemoteConnection:
     ssh_keys = generate_ssh_keys()
     START_SLURM_DOCKER = ['docker',
                           'run',
@@ -36,7 +45,11 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
+    if 'openpbs' in image:
+        time.sleep(PBS_STARTUP_DELAY)
     if sys.platform != 'darwin':
+        # Change testuser's uid to match current user id. This ensures that /home/testuser/.ssh/authorized_keys
+        # is owned by the right user and that job outputs can be cleaned up.
         subprocess.check_call(['docker', 'exec', container_name, 'usermod', '-u', str(os.getuid()), 'testuser'])
     return RemoteConnection('localhost', 'testuser', port, ssh_keys.private_key_file, ssh_keys.public_key_file)
 
@@ -77,6 +90,12 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
 
 @integration_util.skip_unless_docker()
 class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+    container_name: ClassVar[str]
+    jobs_directory: ClassVar[str]
+    remote_connection: ClassVar[RemoteConnection]
+    image: ClassVar[str]
+    shell_plugin: ClassVar[str]
+    job_plugin: ClassVar[str]
 
     @classmethod
     def setUpClass(cls):
@@ -108,14 +127,14 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         assert job_env.some_env == '42'
 
 
-class TorqueSetup:
-    job_plugin = 'Torque'
-    image = 'mvdbeek/galaxy-integration-docker-images:torque_latest'
+class OpenPBSSetup:
+    job_plugin = 'OpenPBS'
+    image = 'mvdbeek/galaxy-integration-docker-images:openpbs-22.01'
 
 
 class SlurmSetup:
     job_plugin = 'Slurm'
-    image = 'mvdbeek/galaxy-integration-docker-images:slurm_latest'
+    image = 'mvdbeek/galaxy-integration-docker-images:slurm-22.01'
 
 
 class ParamikoShell:
@@ -134,9 +153,9 @@ class ShellJobCliSlurmIntegrationTestCase(SlurmSetup, SecureShell, BaseCliIntegr
     pass
 
 
-class ParamikoCliTorqueIntegrationTestCase(TorqueSetup, ParamikoShell, BaseCliIntegrationTestCase):
+class ParamikoCliOpenPBSIntegrationTestCase(OpenPBSSetup, ParamikoShell, BaseCliIntegrationTestCase):
     pass
 
 
-class ShellJobCliTorqueIntegrationTestCase(TorqueSetup, SecureShell, BaseCliIntegrationTestCase):
+class ShellJobCliOpenPBSIntegrationTestCase(OpenPBSSetup, SecureShell, BaseCliIntegrationTestCase):
     pass

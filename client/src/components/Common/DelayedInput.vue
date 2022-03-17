@@ -6,20 +6,19 @@
             v-model="queryInput"
             @input="delayQuery"
             @change="setQuery"
-            @keydown.esc="setQuery()"
-        />
+            @keydown.esc="setQuery()" />
         <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
         <font-awesome-icon
             v-else
             v-b-tooltip.hover
-            title="clear search (esc)"
+            :title="titleClearSearch"
             class="search-clear"
             icon="times-circle"
-            @click="setQuery()"
-        />
+            @click="setQuery()" />
     </div>
 </template>
 <script>
+import _l from "utils/localization";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
@@ -53,6 +52,7 @@ export default {
             queryInput: null,
             queryTimer: null,
             queryCurrent: null,
+            titleClearSearch: _l("clear search (esc)"),
         };
     },
     watch: {

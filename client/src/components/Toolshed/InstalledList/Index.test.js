@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import Index from "./Index";
 
 jest.mock("app");
@@ -10,6 +11,8 @@ getAppRoot.mockImplementation(() => "/");
 import { Services } from "../services";
 jest.mock("../services");
 
+const localVue = getLocalVue();
+
 Services.mockImplementation(() => {
     return {
         async getInstalledRepositories() {
@@ -17,6 +20,7 @@ Services.mockImplementation(() => {
                 {
                     name: "name_0",
                     description: "description_0",
+                    tool_shed: "toolshed_1",
                     tool_shed_status: {
                         latest_installable_revision: false,
                     },
@@ -24,6 +28,7 @@ Services.mockImplementation(() => {
                 {
                     name: "name_1",
                     description: "description_1",
+                    tool_shed: "toolshed_2",
                     tool_shed_status: {
                         latest_installable_revision: true,
                     },
@@ -42,6 +47,7 @@ describe("InstalledList", () => {
             stubs: {
                 RepositoryDetails: true,
             },
+            localVue,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading installed repositories...");
         await wrapper.vm.$nextTick();
@@ -54,5 +60,6 @@ describe("InstalledList", () => {
         expect(links.length).toBe(3);
         const badge = links.at(1).find(".badge");
         expect(badge.text()).toBe("Newer version available!");
+        expect(wrapper.find('th[role="columnheader"][aria-colindex="3"] > div').text()).toBe("Tool Shed");
     });
 });

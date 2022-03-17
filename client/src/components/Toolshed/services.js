@@ -78,7 +78,7 @@ export class Services {
         const url = `${getAppRoot()}api/tool_shed_repositories/?uninstalled=False`;
         try {
             const response = await axios.get(url);
-            const repositories = this._groupByNameOwner(response.data, options.filter, options.selectLatest);
+            const repositories = this._groupByNameOwnerToolshed(response.data, options.filter, options.selectLatest);
             this._fixToolshedUrls(repositories, Galaxy.config.tool_shed_urls);
             return repositories;
         } catch (e) {
@@ -125,15 +125,16 @@ export class Services {
             rethrowSimple(e);
         }
     }
-    _groupByNameOwner(incoming, filter, selectLatest) {
+    _groupByNameOwnerToolshed(incoming, filter, selectLatest) {
         if (selectLatest) {
             const getSortValue = (x, y) => {
-                return x == y ? 0 : x < y ? -1 : 1;
+                return x === y ? 0 : x < y ? -1 : 1;
             };
             incoming = incoming.sort((a, b) => {
                 return (
                     getSortValue(a.name, b.name) ||
                     getSortValue(a.owner, b.owner) ||
+                    getSortValue(a.tool_shed, b.tool_shed) ||
                     getSortValue(parseInt(b.ctx_rev), parseInt(a.ctx_rev))
                 );
             });
@@ -141,7 +142,7 @@ export class Services {
         const hash = {};
         const repositories = [];
         incoming.forEach((x) => {
-            const hashCode = `${x.name}_${x.owner}`;
+            const hashCode = `${x.name}_${x.owner}_${x.tool_shed}`;
             if (!filter || filter(x)) {
                 if (!hash[hashCode]) {
                     hash[hashCode] = true;
@@ -162,7 +163,9 @@ export class Services {
         });
     }
     _formatCount(value) {
-        if (value > 1000) return `>${Math.floor(value / 1000)}k`;
+        if (value > 1000) {
+            return `>${Math.floor(value / 1000)}k`;
+        }
         return value;
     }
     _getParamsString(params) {

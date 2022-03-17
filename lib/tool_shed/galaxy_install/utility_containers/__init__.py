@@ -138,7 +138,7 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                                                             label='Invalid Data Managers')
                 containers_dict['invalid_data_managers'] = invalid_data_managers_root_folder
         except Exception as e:
-            log.debug("Exception in build_repository_containers: %s" % str(e))
+            log.debug(f"Exception in build_repository_containers: {str(e)}")
         finally:
             lock.release()
         return containers_dict

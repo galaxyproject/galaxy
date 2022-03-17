@@ -87,7 +87,7 @@ class Forms(BaseUIController):
         if 'operation' in kwd:
             id = kwd.get('id')
             if not id:
-                return self.message_exception(trans, 'Invalid form id (%s) received.' % str(id))
+                return self.message_exception(trans, f'Invalid form id ({str(id)}) received.')
             ids = util.listify(id)
             operation = kwd['operation'].lower()
             if operation == 'delete':
@@ -105,24 +105,23 @@ class Forms(BaseUIController):
         if trans.request.method == 'GET':
             fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
             return {
-                'title'         : 'Create new form',
-                'submit_title'  : 'Create',
-                'inputs'        : [{
-                    'name'    : 'name',
-                    'label'   : 'Name'
+                'title': 'Create new form',
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name'
                 }, {
-                    'name'    : 'desc',
-                    'label'   : 'Description'
+                    'name': 'desc',
+                    'label': 'Description'
                 }, {
-                    'name'    : 'type',
-                    'type'    : 'select',
-                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
-                    'label'   : 'Type'
+                    'name': 'type',
+                    'type': 'select',
+                    'options': [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label': 'Type'
                 }, {
-                    'name'    : 'csv_file',
-                    'label'   : 'Import from CSV',
-                    'type'    : 'upload',
-                    'help'    : 'Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.'
+                    'name': 'csv_file',
+                    'label': 'Import from CSV',
+                    'type': 'upload',
+                    'help': 'Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.'
                 }]
             }
         else:
@@ -135,19 +134,19 @@ class Forms(BaseUIController):
                     row = line.split(',')
                     if len(row) >= 6:
                         prefix = 'fields_%i|' % index
-                        payload['{}{}'.format(prefix, 'name')] = '%i_imported_field' % (index + 1)
-                        payload['{}{}'.format(prefix, 'label')] = row[0]
-                        payload['{}{}'.format(prefix, 'helptext')] = row[1]
-                        payload['{}{}'.format(prefix, 'type')] = row[2]
-                        payload['{}{}'.format(prefix, 'default')] = row[3]
-                        payload['{}{}'.format(prefix, 'selectlist')] = row[4].split(',')
-                        payload['{}{}'.format(prefix, 'required')] = row[5].lower() == 'true'
+                        payload[f"{prefix}name"] = '%i_imported_field' % (index + 1)
+                        payload[f"{prefix}label"] = row[0]
+                        payload[f"{prefix}helptext"] = row[1]
+                        payload[f"{prefix}type"] = row[2]
+                        payload[f"{prefix}default"] = row[3]
+                        payload[f"{prefix}selectlist"] = row[4].split(',')
+                        payload[f"{prefix}required"] = row[5].lower() == 'true'
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
             imported = (' with %i imported fields' % index) if index > 0 else ''
-            message = 'The form \'{}\' has been created{}.'.format(payload.get('name'), imported)
+            message = f"The form '{payload.get('name')}' has been created{imported}."
             return {'message': util.sanitize_text(message)}
 
     @web.legacy_expose_api
@@ -163,57 +162,57 @@ class Forms(BaseUIController):
             ff_types = [(t.__name__.replace('Field', ''), t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [{
-                'name'    : 'name',
-                'label'   : 'Name',
-                'value'   : 'field_name',
-                'help'    : 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
+                'name': 'name',
+                'label': 'Name',
+                'value': 'field_name',
+                'help': 'The field name must be unique for each field and must contain only alphanumeric characters and underscore.'
             }, {
-                'name'    : 'label',
-                'label'   : 'Label',
-                'value'   : 'Field label'
+                'name': 'label',
+                'label': 'Label',
+                'value': 'Field label'
             }, {
-                'name'    : 'helptext',
-                'label'   : 'Help text'
+                'name': 'helptext',
+                'label': 'Help text'
             }, {
-                'name'    : 'type',
-                'label'   : 'Type',
-                'type'    : 'select',
-                'options' : ff_types
+                'name': 'type',
+                'label': 'Type',
+                'type': 'select',
+                'options': ff_types
             }, {
-                'name'    : 'default',
-                'label'   : 'Default value'
+                'name': 'default',
+                'label': 'Default value'
             }, {
-                'name'    : 'selectlist',
-                'label'   : 'Options',
-                'help'    : '*Only for fields which allow multiple selections, provide comma-separated values.'
+                'name': 'selectlist',
+                'label': 'Options',
+                'help': '*Only for fields which allow multiple selections, provide comma-separated values.'
             }, {
-                'name'    : 'required',
-                'label'   : 'Required',
-                'type'    : 'boolean',
-                'value'   : 'false'
+                'name': 'required',
+                'label': 'Required',
+                'type': 'boolean',
+                'value': 'false'
             }]
             form_dict = {
-                'title'  : 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
-                'inputs' : [{
-                    'name'    : 'name',
-                    'label'   : 'Name',
-                    'value'   : latest_form.name
+                'title': 'Edit form for \'%s\'' % (util.sanitize_text(latest_form.name)),
+                'inputs': [{
+                    'name': 'name',
+                    'label': 'Name',
+                    'value': latest_form.name
                 }, {
-                    'name'    : 'desc',
-                    'label'   : 'Description',
-                    'value'   : latest_form.desc
+                    'name': 'desc',
+                    'label': 'Description',
+                    'value': latest_form.desc
                 }, {
-                    'name'    : 'type',
-                    'type'    : 'select',
-                    'options' : [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
-                    'label'   : 'Type',
-                    'value'   : latest_form.type
+                    'name': 'type',
+                    'type': 'select',
+                    'options': [('None', 'none')] + [(ft[1], ft[1]) for ft in fd_types],
+                    'label': 'Type',
+                    'value': latest_form.type
                 }, {
-                    'name'    : 'fields',
-                    'title'   : 'Field',
-                    'type'    : 'repeat',
-                    'cache'   : field_cache,
-                    'inputs'  : field_inputs
+                    'name': 'fields',
+                    'title': 'Field',
+                    'type': 'repeat',
+                    'cache': field_cache,
+                    'inputs': field_inputs
                 }]
             }
             for field in latest_form.fields:
@@ -230,7 +229,7 @@ class Forms(BaseUIController):
             new_form, message = self.save_form_definition(trans, id, payload)
             if new_form is None:
                 return self.message_exception(trans, message)
-            message = 'The form \'%s\' has been updated.' % payload.get('name')
+            message = f"The form '{payload.get('name')}' has been updated."
             return {'message': util.sanitize_text(message)}
 
     def get_current_form(self, trans, payload=None, **kwd):
@@ -245,7 +244,7 @@ class Forms(BaseUIController):
         index = 0
         while True:
             prefix = 'fields_%i|' % index
-            if '{}{}'.format(prefix, 'label') in payload:
+            if f"{prefix}label" in payload:
                 field_attributes = ['name', 'label', 'helptext', 'required', 'type', 'selectlist', 'default']
                 field_dict = {attr: payload.get(f'{prefix}{attr}') for attr in field_attributes}
                 field_dict['visible'] = True
@@ -279,9 +278,9 @@ class Forms(BaseUIController):
             if not field['label']:
                 return None, 'All the field labels must be completed.'
             if not VALID_FIELDNAME_RE.match(field['name']):
-                return None, '%s is not a valid field name.' % field['name']
+                return None, f"{field['name']} is not a valid field name."
             if field['name'] in field_names_dict:
-                return None, 'Each field name must be unique in the form definition. %s is not unique.' % field['name']
+                return None, f"Each field name must be unique in the form definition. {field['name']} is not unique."
             else:
                 field_names_dict[field['name']] = 1
         # create a new form definition
@@ -295,7 +294,7 @@ class Forms(BaseUIController):
         if form_id:
             form_definition_current = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
             if form_definition_current is None:
-                return None, 'Invalid form id (%s) provided. Cannot save form.' % form_id
+                return None, f'Invalid form id ({form_id}) provided. Cannot save form.'
         else:
             form_definition_current = trans.app.model.FormDefinitionCurrent()
         # create corresponding row in the form_definition_current table
@@ -332,5 +331,5 @@ def get_form(trans, form_id):
     """Get a FormDefinition from the database by id."""
     form = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
     if not form:
-        return trans.show_error_message("Form not found for id (%s)" % str(form_id))
+        return trans.show_error_message(f"Form not found for id ({str(form_id)})")
     return form

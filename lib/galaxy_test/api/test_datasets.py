@@ -9,6 +9,7 @@ from ._framework import ApiTestCase
 
 
 class DatasetsApiTestCase(ApiTestCase):
+    history_id: str
 
     def setUp(self):
         super().setUp()
@@ -28,15 +29,15 @@ class DatasetsApiTestCase(ApiTestCase):
         assert index_response[0]['id'] == hda_id
         hdca_id = self.dataset_collection_populator.create_list_in_history(self.history_id,
                                                                            contents=["1\n2\n3"]).json()['id']
-        payload = {'limit': 3, 'offset': 0}
-        index_response = self._get("datasets", payload).json()
+        index_payload_1 = {'limit': 3, 'offset': 0}
+        index_response = self._get("datasets", index_payload_1).json()
         assert len(index_response) == 3
         assert index_response[0]['id'] == hdca_id
         assert index_response[0]['history_content_type'] == 'dataset_collection'
         assert index_response[2]['id'] == hda_id
         assert index_response[2]['history_content_type'] == 'dataset'
-        payload = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
-        index_response = self._get("datasets", payload).json()
+        index_payload_2 = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
+        index_response = self._get("datasets", index_payload_2).json()
         assert index_response[1]['id'] == hda_id
 
     def test_search_by_tag(self):
@@ -46,7 +47,7 @@ class DatasetsApiTestCase(ApiTestCase):
         }
         updated_hda = self._put(
             f"histories/{self.history_id}/contents/{hda_id}",
-            update_payload).json()
+            update_payload, json=True).json()
         assert 'cool:new_tag' in updated_hda['tags']
         assert 'cool:another_tag' in updated_hda['tags']
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag'], 'qv': ['dataset', 'cool:new_tag']}
@@ -97,9 +98,32 @@ class DatasetsApiTestCase(ApiTestCase):
 
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
-        show_response = self._get("datasets/%s" % (hda1["id"]))
+        show_response = self._get(f"datasets/{hda1['id']}")
         self._assert_status_code_is(show_response, 200)
         self.__assert_matches_hda(hda1, show_response.json())
+
+    def test_show_permission_denied(self):
+        hda = self.dataset_populator.new_dataset(self.history_id)
+        self.dataset_populator.make_private(history_id=self.history_id, dataset_id=hda['id'])
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is(show_response, 403)
+
+    def test_admin_can_update_permissions(self):
+        # Create private dataset
+        hda = self.dataset_populator.new_dataset(self.history_id)
+        dataset_id = hda['id']
+        self.dataset_populator.make_private(history_id=self.history_id, dataset_id=dataset_id)
+
+        # Admin removes restrictions
+        payload = {"action": "remove_restrictions"}
+        update_response = self._put(f"datasets/{dataset_id}/permissions", payload, admin=True, json=True)
+        self._assert_status_code_is_ok(update_response)
+
+        # Other users can access the dataset
+        with self._different_user():
+            show_response = self._get(f"datasets/{hda['id']}")
+            self._assert_status_code_is_ok(show_response)
 
     def __assert_matches_hda(self, input_hda, query_hda):
         self._assert_has_keys(query_hda, "id", "name")
@@ -114,7 +138,7 @@ class DatasetsApiTestCase(ApiTestCase):
         """)
         hda1 = self.dataset_populator.new_dataset(self.history_id, content=contents)
         self.dataset_populator.wait_for_history(self.history_id)
-        display_response = self._get("histories/{}/contents/{}/display".format(self.history_id, hda1["id"]), {
+        display_response = self._get(f"histories/{self.history_id}/contents/{hda1['id']}/display", {
             'raw': 'True'
         })
         self._assert_status_code_is(display_response, 200)
@@ -127,7 +151,9 @@ class DatasetsApiTestCase(ApiTestCase):
             'item_class': 'HistoryDatasetAssociation',
             'item_tags': ['cool:tag_a', 'cool:tag_b', 'tag_c', 'name:tag_d', '#tag_e'],
         }
-        self._put("tags", payload).json()
+
+        put_response = self._put("tags", data=payload, json=True)
+        self._assert_status_code_is_ok(put_response)
         updated_hda = self._get(
             f"histories/{self.history_id}/contents/{hda_id}").json()
         assert 'cool:tag_a' in updated_hda['tags']
@@ -149,29 +175,28 @@ class DatasetsApiTestCase(ApiTestCase):
             'input1': {'src': 'hda', 'id': hda_id},
             'sleep_time': 10,
         }
-        run_response = self.dataset_populator.run_tool(
+        run_response = self.dataset_populator.run_tool_raw(
             "cat_data_and_sleep",
             inputs,
             self.history_id,
-            assert_ok=False,
         )
         queued_id = run_response.json()["outputs"][0]["id"]
 
         update_while_incomplete_response = self._put(  # try updating datatype while used as output of a running job
             f"histories/{self.history_id}/contents/{queued_id}",
-            {'datatype': 'tabular'})
+            data={'datatype': 'tabular'}, json=True)
         self._assert_status_code_is(update_while_incomplete_response, 400)
 
         self.dataset_populator.wait_for_history_jobs(self.history_id)  # now wait for upload to complete
 
         successful_updated_hda_response = self._put(
             f"histories/{self.history_id}/contents/{hda_id}",
-            {'datatype': 'tabular'}).json()
+            data={'datatype': 'tabular'}, json=True).json()
         assert successful_updated_hda_response['extension'] == 'tabular'
         assert successful_updated_hda_response['data_type'] == 'galaxy.datatypes.tabular.Tabular'
         assert 'scatterplot' in [viz['name'] for viz in successful_updated_hda_response['visualizations']]
 
         invalidly_updated_hda_response = self._put(  # try updating with invalid datatype
             f"histories/{self.history_id}/contents/{hda_id}",
-            {'datatype': 'invalid'})
+            data={'datatype': 'invalid'}, json=True)
         self._assert_status_code_is(invalidly_updated_hda_response, 400)

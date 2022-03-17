@@ -27,7 +27,7 @@ class ToolOutputActionGroup:
                 elif elem.tag == "action":
                     self.actions.append(ToolOutputAction.from_elem(self, elem))
                 else:
-                    log.debug("Unknown ToolOutputAction tag specified: %s" % elem.tag)
+                    log.debug(f"Unknown ToolOutputAction tag specified: {elem.tag}")
 
     def apply_action(self, output_dataset, other_values):
         for action in self.actions:
@@ -66,7 +66,7 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
     def get_ref(self, output_dataset, other_values):
         ref = other_values
         for ref_name in self.parent.name:
-            assert ref_name in ref, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         return ref
 
@@ -203,7 +203,7 @@ class FromFileToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromFileToolOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromFileToolOutputActionOption get_value: {e}")
         return None
 
 
@@ -226,7 +226,7 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
     def get_value(self, other_values):
         value = other_values
         for ref_name in self.name:
-            assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
             value = value.get(ref_name)
         for attr_name in self.param_attribute:
             # if the value is a list from a repeat tag you can access the first element of the repeat with
@@ -252,7 +252,7 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromParamToolOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromParamToolOutputActionOption get_value: {e}")
         return None
 
 
@@ -287,7 +287,7 @@ class FromDataTableOutputActionOption(ToolOutputActionOption):
             if options:
                 return str(options[self.offset][self.column])
         except Exception as e:
-            log.debug("Error in FromDataTableOutputActionOption get_value: %s" % e)
+            log.debug(f"Error in FromDataTableOutputActionOption get_value: {e}")
         return None
 
 
@@ -368,7 +368,7 @@ class ParamValueToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
             # find ref value
             value = other_values
             for ref_name in self.ref:
-                assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+                assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
                 value = value.get(ref_name)
             for attr_name in self.param_attribute:
                 value = getattr(value, attr_name)
@@ -400,6 +400,7 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
         self.column = elem.get('column', None)  # None is append
         if self.column:
             self.column = int(self.column)
+        # TODO not supported in xsd
         self.iterate = util.string_as_bool(elem.get("iterate", 'False'))
 
     def filter_options(self, options, other_values):
@@ -407,7 +408,7 @@ class InsertColumnToolOutputActionOptionFilter(ToolOutputActionOptionFilter):
             # find ref value
             value = other_values
             for ref_name in self.ref:
-                assert ref_name in value, "Required dependency '%s' not found in incoming values" % ref_name
+                assert ref_name in value, f"Required dependency '{ref_name}' not found in incoming values"
                 value = value.get(ref_name)
             value = str(value)
         else:
@@ -514,7 +515,7 @@ class MetadataValueFilter(ToolOutputActionOptionFilter):
     def filter_options(self, options, other_values):
         ref = other_values
         for ref_name in self.ref:
-            assert ref_name in ref, "Required dependency '%s' not found in incoming values" % ref_name
+            assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         value = str(getattr(ref.metadata, self.name))
         rval = []
@@ -583,6 +584,7 @@ for filter_type in [ParamValueToolOutputActionOptionFilter, InsertColumnToolOutp
 
 # helper classes
 # determine cast function
+# TODO add float
 def parse_cast_attribute(cast):
     if cast == 'string_as_bool':
         cast = util.string_as_bool
@@ -601,7 +603,7 @@ def parse_cast_attribute(cast):
 def parse_compare_type(compare):
     if compare is None:
         compare = 'eq'
-    assert compare in compare_types, "Invalid compare type specified: %s" % compare
+    assert compare in compare_types, f"Invalid compare type specified: {compare}"
     return compare_types[compare]
 
 

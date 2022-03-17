@@ -22,8 +22,7 @@ class CancelsJob:
             "cat_data_and_sleep",
             running_inputs,
             history_id,
-            assert_ok=False,
-        ).json()
+        )
         job_dict = running_response["jobs"][0]
         return job_dict["id"]
 
@@ -91,7 +90,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
 
             state = None
             # Now make sure the job becomes complete.
-            for i in range(100):
+            for _ in range(100):
                 sa_session.refresh(job)
                 state = job.state
                 if state == app.model.Job.states.DELETED:
@@ -99,7 +98,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
                 time.sleep(.1)
 
             # Now make sure the pid is actually killed.
-            for i in range(100):
+            for _ in range(100):
                 if not pid_exists:
                     break
                 pid_exists = psutil.pid_exists(external_id)

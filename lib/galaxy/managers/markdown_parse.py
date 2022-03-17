@@ -6,6 +6,8 @@ Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in o
 projects (e.g. gxformat2).
 """
 import re
+from typing import cast, Dict, List, Union
+
 
 BLOCK_FENCE_START = re.compile(r'```.*')
 BLOCK_FENCE_END = re.compile(r'```[\s]*')
@@ -13,8 +15,15 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
-DYNAMIC_ARGUMENTS = object()
-VALID_ARGUMENTS = {
+
+
+class DynamicArguments:
+    pass
+
+
+DYNAMIC_ARGUMENTS = DynamicArguments()
+VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
+    "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
@@ -32,9 +41,9 @@ VALID_ARGUMENTS = {
     "tool_stdout": ["step", "job_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
-    "invocation_time": ["invocation_id"],
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
+    "invocation_time": ["invocation_id"],
     "invocation_outputs": [],
     "invocation_inputs": [],
 }
@@ -46,7 +55,7 @@ FUNCTION_ARG = r'\s*[\w\|]+\s*=\s*(?:%s)\s*' % ARG_VAL_REGEX
 # embed commas between arguments
 FUNCTION_MULTIPLE_ARGS = fr'(?P<firstargcall>{FUNCTION_ARG})(?P<restargcalls>(?:,{FUNCTION_ARG})*)'
 FUNCTION_MULTIPLE_ARGS_PATTERN = re.compile(FUNCTION_MULTIPLE_ARGS)
-FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_MULTIPLE_ARGS + r')?\)\s*'
+FUNCTION_CALL_LINE_TEMPLATE = f"\\s*%s\\s*\\((?:{FUNCTION_MULTIPLE_ARGS})?\\)\\s*"
 GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
@@ -92,9 +101,10 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 if function_calls > 1:
                     invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
                 container = func_call_match.group("container")
-                valid_args = VALID_ARGUMENTS[container]
-                if valid_args is DYNAMIC_ARGUMENTS:
+                valid_args_raw = VALID_ARGUMENTS[container]
+                if isinstance(valid_args_raw, DynamicArguments):
                     continue
+                valid_args = cast(List[str], valid_args_raw)
 
                 first_arg_call = func_call_match.group("firstargcall")
 
@@ -138,7 +148,7 @@ def _split_markdown_lines(markdown):
     indent_fenced = False
     for line_number, line in enumerate(markdown.splitlines(True)):
         open_fence_this_iteration = False
-        indent_fenced = line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line))
+        indent_fenced = bool(line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line)))
         if not block_fenced:
             if BLOCK_FENCE_START.match(line):
                 open_fence_this_iteration = True

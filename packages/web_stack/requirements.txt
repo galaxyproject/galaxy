@@ -1,2 +1,2 @@
-SQLAlchemy>=1.3.0,<1.4.0  # https://github.com/kvesteri/sqlalchemy-utils/issues/474
+SQLAlchemy>=1.4.25,<2
 galaxy-util

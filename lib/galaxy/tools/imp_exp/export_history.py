@@ -24,7 +24,7 @@ def create_archive(export_directory, out_file, gzip=False):
         print('Created history archive.')
         return 0
     except Exception as e:
-        print('Error creating history archive: %s' % unicodify(e), file=sys.stderr)
+        print(f'Error creating history archive: {unicodify(e)}', file=sys.stderr)
         return 1
     finally:
         shutil.rmtree(export_directory, ignore_errors=True)
@@ -69,7 +69,7 @@ def _write_to_destination(file_sources_path, out_file, destination_uri):
 
 
 def get_file_sources(file_sources_path):
-    assert os.path.exists(file_sources_path), "file sources path [%s] does not exist" % file_sources_path
+    assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
     from galaxy.files import ConfiguredFileSources
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)

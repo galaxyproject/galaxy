@@ -9,16 +9,20 @@ import logging
 import re
 from html.entities import name2codepoint
 from html.parser import HTMLParser
+from typing import (
+    Callable,
+)
 
 from galaxy import exceptions, model
 from galaxy.managers import base, sharable
-from galaxy.managers.hdas import HDAManager
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
-from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.schema import PageContentFormat
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -57,8 +61,7 @@ _cp1252 = {
 
 
 class PageManager(sharable.SharableModelManager, UsesAnnotations):
-    """
-    """
+    """Provides operations for managing a Page."""
 
     model_class = model.Page
     foreign_key_name = 'page'
@@ -68,15 +71,11 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
     annotation_assoc = model.PageAnnotationAssociation
     rating_assoc = model.PageRatingAssociation
 
-    def __init__(self, app, *args, **kwargs):
+    def __init__(self, app: MinimalManagerApp):
         """
         """
-        super().__init__(app, *args, **kwargs)
-        self.workflow_manager = WorkflowsManager(app)
-
-    def copy(self, trans, page, user, **kwargs):
-        """
-        """
+        super().__init__(app)
+        self.workflow_manager = app.workflow_manager
 
     def create(self, trans, payload):
         user = trans.get_user()
@@ -129,8 +128,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         content_format = payload.get("content_format", None)
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
-        if content_format not in [None, "html", "markdown"]:
-            raise exceptions.RequestParameterInvalidException("content_format [%s], if specified, must be either html or markdown" % content_format)
+        if content_format not in [None, PageContentFormat.html.value, PageContentFormat.markdown.value]:
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}], if specified, must be either html or markdown")
 
         if 'title' in payload:
             title = payload['title']
@@ -153,8 +152,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         session.flush()
         return page_revision
 
-    def rewrite_content_for_import(self, trans, content, content_format):
-        if content_format == "html":
+    def rewrite_content_for_import(self, trans, content, content_format: str):
+        if content_format == PageContentFormat.html.value:
             try:
                 content = sanitize_html(content)
                 processor = PageContentProcessor(trans, placeholderRenderForSave)
@@ -164,28 +163,27 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             except exceptions.MessageException:
                 raise
             except Exception:
-                raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
-        elif content_format == "markdown":
+                raise exceptions.RequestParameterInvalidException(f"problem with embedded HTML content [{content}]")
+        elif content_format == PageContentFormat.markdown.value:
             content = ready_galaxy_markdown_for_import(trans, content)
         else:
-            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
-
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}] must be either html or markdown")
         return content
 
     def rewrite_content_for_export(self, trans, as_dict):
         content = as_dict["content"]
-        content_format = as_dict.get("content_format", "html")
-        if content_format == "html":
+        content_format = as_dict.get("content_format", PageContentFormat.html.value)
+        if content_format == PageContentFormat.html.value:
             processor = PageContentProcessor(trans, placeholderRenderForEdit)
             processor.feed(content)
             content = unicodify(processor.output(), 'utf-8')
             as_dict["content"] = content
-        elif content_format == "markdown":
+        elif content_format == PageContentFormat.markdown.value:
             content, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
             as_dict["content"] = content
             as_dict.update(extra_attributes)
         else:
-            raise exceptions.RequestParameterInvalidException("content_format [%s] must be either html or markdown" % content_format)
+            raise exceptions.RequestParameterInvalidException(f"content_format [{content_format}] must be either html or markdown")
         return as_dict
 
 
@@ -196,7 +194,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = PageManager(app)
 
@@ -217,7 +215,7 @@ class PageDeserializer(sharable.SharableModelDeserializer):
     """
     model_manager_class = PageManager
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.page_manager = self.manager
 
@@ -240,7 +238,7 @@ class PageContentProcessor(HTMLParser):
         'source', 'track', 'wbr'
     }
 
-    def __init__(self, trans, render_embed_html_fn):
+    def __init__(self, trans, render_embed_html_fn: Callable):
         HTMLParser.__init__(self)
         self.trans = trans
         self.ignore_content = False
@@ -254,9 +252,9 @@ class PageContentProcessor(HTMLParser):
     def _shorttag_replace(self, match):
         tag = match.group(1)
         if tag in self.elements_no_end_tag:
-            return '<' + tag + ' />'
+            return f"<{tag} />"
         else:
-            return '<' + tag + '></' + tag + '>'
+            return f"<{tag}></{tag}>"
 
     def feed(self, data):
         data = re.compile(r'<!((?!DOCTYPE|--|\[))', re.IGNORECASE).sub(r'&lt;!\1', data)
@@ -331,7 +329,7 @@ class PageContentProcessor(HTMLParser):
 
         # Default behavior: reconstruct the original end tag.
         if tag not in self.elements_no_end_tag:
-            self.pieces.append("</%s>" % tag)
+            self.pieces.append(f"</{tag}>")
 
     def handle_charref(self, ref):
         # called for each character reference, e.g. for '&#160;', ref will be '160'
@@ -343,17 +341,17 @@ class PageContentProcessor(HTMLParser):
             value = int(ref)
 
         if value in _cp1252:
-            self.pieces.append('&#%s;' % hex(ord(_cp1252[value]))[1:])
+            self.pieces.append(f'&#{hex(ord(_cp1252[value]))[1:]};')
         else:
-            self.pieces.append('&#%s;' % ref)
+            self.pieces.append(f'&#{ref};')
 
     def handle_entityref(self, ref):
         # called for each entity reference, e.g. for '&copy;', ref will be 'copy'
         # Reconstruct the original entity reference.
         if ref in name2codepoint or ref == 'apos':
-            self.pieces.append('&%s;' % ref)
+            self.pieces.append(f'&{ref};')
         else:
-            self.pieces.append('&amp;%s' % ref)
+            self.pieces.append(f'&amp;{ref}')
 
     def handle_data(self, text):
         """
@@ -369,19 +367,19 @@ class PageContentProcessor(HTMLParser):
     def handle_comment(self, text):
         # called for each HTML comment, e.g. <!-- insert Javascript code here -->
         # Reconstruct the original comment.
-        self.pieces.append('<!--%s-->' % text)
+        self.pieces.append(f'<!--{text}-->')
 
     def handle_decl(self, text):
         # called for the DOCTYPE, if present, e.g.
         # <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
         #     "http://www.w3.org/TR/html4/loose.dtd">
         # Reconstruct original DOCTYPE
-        self.pieces.append('<!%s>' % text)
+        self.pieces.append(f'<!{text}>')
 
     def handle_pi(self, text):
         # called for each processing instruction, e.g. <?instruction>
         # Reconstruct original processing instruction.
-        self.pieces.append('<?%s>' % text)
+        self.pieces.append(f'<?{text}>')
 
     def output(self):
         '''Return processed HTML as a single string'''
@@ -417,28 +415,28 @@ PAGE_CLASS_MAPPING = {
 }
 
 
-def placeholderRenderForEdit(trans, item_class, item_id):
+def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id):
     return placeholderRenderForSave(trans, item_class, item_id, encode=True)
 
 
-def placeholderRenderForSave(trans, item_class, item_id, encode=False):
+def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
     item_name = ''
     if item_class == 'History':
-        history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
+        history = trans.sa_session.query(model.History).get(decoded_item_id)
         history = base.security_check(trans, history, False, True)
         item_name = history.name
     elif item_class == 'HistoryDatasetAssociation':
-        hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
-        hda_manager = HDAManager(trans.app)
+        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == 'StoredWorkflow':
-        wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
+        wf = trans.sa_session.query(model.StoredWorkflow).get(decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
         item_name = wf.name
     elif item_class == 'Visualization':
-        visualization = trans.sa_session.query(trans.model.Visualization).get(decoded_item_id)
+        visualization = trans.sa_session.query(model.Visualization).get(decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]

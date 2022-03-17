@@ -8,6 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
+import { History } from "./History";
 
 // #region setup & utils
 
@@ -25,7 +26,9 @@ const api = axios.create({
  */
 
 const doResponse = (response) => {
-    if (response.status != 200) throw new Error(response);
+    if (response.status != 200) {
+        throw new Error(response);
+    }
     return response.data;
 };
 
@@ -51,8 +54,12 @@ function buildLegacyParam(fields = {}) {
 }
 
 function pythonBooleanFormat(val) {
-    if (val === true) return "True";
-    if (val === false) return "False";
+    if (val === true) {
+        return "True";
+    }
+    if (val === false) {
+        return "False";
+    }
     return val;
 }
 
@@ -75,15 +82,16 @@ function formData(fields = {}) {
 
 const stdHistoryParams = {
     view: "betawebclient",
-    // keys: historyFields.join(","),
 };
 
 /**
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const response = await api.get("/histories?view=summary");
-    return doResponse(response);
+    const params = { view: "summary", keys: "size" };
+    const response = await api.get("/histories", { params });
+    const rawList = doResponse(response);
+    return rawList.map((props) => new History(props));
 }
 
 /**
@@ -93,20 +101,30 @@ export async function getHistoryList() {
 export async function getHistoryById(id, since) {
     const path = `/histories/${id}`;
     const sinceParam = since !== undefined ? moment.utc(since).toISOString() : null;
-    const url = sinceParam ? path : `${path}?q=update_time-gt&qv=${sinceParam}`;
+    const url = sinceParam ? `${path}?q=update_time-gt&qv=${sinceParam}` : path;
     const response = await api.get(url, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
  * Create new history
- * @param {Object} props Optional history props
  */
-export async function createNewHistory(props = {}) {
-    const url = `/histories`;
-    const data = Object.assign({ name: "New History" }, props);
-    const response = await api.post(url, data, { params: stdHistoryParams });
-    return doResponse(response);
+export async function createNewHistory() {
+    // TODO: adjust api, keep this for later
+    // const url = `/histories`;
+    // const data = Object.assign({ name: "New History" }, props);
+    // const response = await api.post(url, data, { params: stdHistoryParams });
+
+    // using old route to create and select new history at same time
+    const url = prependPath("/history/create_new_current");
+    const createResponse = await api.get(url, { baseURL: "" });
+    const id = createResponse?.data?.id || null;
+    if (!id) {
+        throw new Error("failed to create and select new history");
+    }
+    const newHistoryProps = doResponse(createResponse);
+    return new History(newHistoryProps);
 }
 
 /**
@@ -124,7 +142,8 @@ export async function cloneHistory(history, name, copyAll) {
         current: true,
     };
     const response = await api.post(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const clonedProps = doResponse(response);
+    return new History(clonedProps);
 }
 
 /**
@@ -139,16 +158,6 @@ export async function deleteHistoryById(id, purge = false) {
 }
 
 /**
- * Undelete a deleted (but not purged) history
- * @param {String} id Encoded history id
- */
-export async function undeleteHistoryById(id) {
-    const url = `/histories/deleted/${id}/undelete`;
-    const response = await api.post(url, null, { params: stdHistoryParams });
-    return doResponse(response);
-}
-
-/**
  * Update specific fields in history
  * @param {Object} history
  * @param {Object} payload fields to update
@@ -156,7 +165,8 @@ export async function undeleteHistoryById(id) {
 export async function updateHistoryFields(id, payload) {
     const url = `/histories/${id}`;
     const response = await api.put(url, payload, { params: stdHistoryParams });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 /**
@@ -178,16 +188,16 @@ export async function secureHistory(history) {
     return await getHistoryById(id);
 }
 
-// #endregion
-
-// #region "Current History"
-
+/**
+ * Content Current History
+ */
 export async function getCurrentHistoryFromServer() {
     const url = "/history/current_history_json";
     const response = await api.get(url, {
         baseURL: prependPath("/"), // old api doesn't use api path
     });
-    return doResponse(response);
+    const props = doResponse(response);
+    return new History(props);
 }
 
 export async function setCurrentHistoryOnServer(history_id) {
@@ -201,31 +211,9 @@ export async function setCurrentHistoryOnServer(history_id) {
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Content Queries
-
 /**
- * Loads specific fields for provided content object, handy for loading
- * visualizations or any other field that's too unwieldy to reasonably include
- * in the standard content caching cycle.
- *
- * @param {Object} content content object
- * @param {Array} fields Array of fields to load
+ * Content Queries
  */
-export async function loadContentFields(content, fields = []) {
-    if (fields.length) {
-        const { history_id, id, history_content_type: type } = content;
-        const url = `/histories/${history_id}/contents/${type}s/${id}`;
-        const params = { keys: fields.join(",") };
-        const response = await api.get(url, { params });
-        if (response.status != 200) {
-            throw new Error(response);
-        }
-        return response.data;
-    }
-    return null;
-}
 
 /**
  * Generic content query function originally intended to help with bulk updates
@@ -286,27 +274,6 @@ export async function updateContentFields(content, newFields = {}) {
 }
 
 /**
- * Undeletes content flagged as deleted.
- * @param {Object} content
- */
-export async function undeleteContent(content) {
-    return await updateContentFields(content, {
-        deleted: false,
-    });
-}
-
-/**
- * Marks as purged
- * @param {*} history
- * @param {*} content
- */
-export async function purgeContent(history, content) {
-    const url = `/histories/${history.id}/contents/${content.id}?purge=True`;
-    const response = await api.delete(url);
-    return doResponse(response);
-}
-
-/**
  * Bulk update endpoint (TODO: rewrite)
  *
  * @param {*} history
@@ -327,9 +294,9 @@ export async function bulkContentUpdate(history, type_ids = [], fields = {}) {
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Collections
+/**
+ * Collections
+ */
 
 export async function createDatasetCollection(history, inputs = {}) {
     const defaults = {
@@ -337,7 +304,7 @@ export async function createDatasetCollection(history, inputs = {}) {
         copy_elements: true,
         name: "list",
         element_identifiers: [],
-        hide_source_items: "True",
+        hide_source_items: true,
         type: "dataset_collection",
     };
 
@@ -355,14 +322,13 @@ export async function deleteDatasetCollection(collection, recursive = false, pur
     return doResponse(response);
 }
 
-// #endregion
-
-// #region Job Queries
-
+/**
+ * Job Queries
+ */
 const jobStash = new Map();
 const toolStash = new Map();
 
-export async function loadJobById(jobId) {
+async function loadJobById(jobId) {
     if (!jobStash.has(jobId)) {
         const url = `/jobs/${jobId}?full=false`;
         const response = await api.get(url);
@@ -372,7 +338,7 @@ export async function loadJobById(jobId) {
     return jobStash.get(jobId);
 }
 
-export async function loadToolForJob(job) {
+async function loadToolForJob(job) {
     const { tool_id, history_id } = job;
     const key = `${tool_id}-${history_id}`;
     if (!toolStash.has(key)) {
@@ -388,5 +354,3 @@ export async function loadToolFromJob(jobId) {
     const job = await loadJobById(jobId);
     return await loadToolForJob(job);
 }
-
-// #endregion

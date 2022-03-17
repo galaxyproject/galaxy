@@ -157,7 +157,7 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
 
 def get_user(app, id):
     """Get a user from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.User).get(app.security.decode_id(id))
 
 
@@ -174,10 +174,10 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
     """
     if text:
         if repository_util.is_tool_shed_client(app) and encoded_repository_id:
-            route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
+            route_to_images = f'admin_toolshed/static/images/{encoded_repository_id}'
         elif encoded_repository_id:
             # We're in the tool shed.
-            route_to_images = '/repository/static/images/%s' % encoded_repository_id
+            route_to_images = f'/repository/static/images/{encoded_repository_id}'
         elif tool_shed_repository and tool_id and tool_version:
             route_to_images = 'shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}'.format(
                 shed=tool_shed_repository.tool_shed,

@@ -54,7 +54,7 @@ class TaskedJobRunner(BaseJobRunner):
                 splitter = getattr(__import__('galaxy.jobs.splitters', globals(), locals(), [parallelism.method]), parallelism.method)
             except Exception:
                 job_wrapper.change_state(model.Job.states.ERROR)
-                job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
+                job_wrapper.fail(f"Job Splitting Failed, no match for '{parallelism}'")
                 return
             tasks = splitter.do_split(job_wrapper)
             # Not an option for now.  Task objects don't *do* anything
@@ -111,7 +111,7 @@ class TaskedJobRunner(BaseJobRunner):
                     if sleep_time < 8:
                         sleep_time *= 2
             job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
-            log.debug('execution finished - beginning merge: %s' % command_line)
+            log.debug(f'execution finished - beginning merge: {command_line}')
             stdout, stderr = splitter.do_merge(job_wrapper, task_wrappers)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
@@ -138,7 +138,7 @@ class TaskedJobRunner(BaseJobRunner):
         tasks = job.get_tasks()
         if (len(tasks) > 0):
             for task in tasks:
-                log.debug("Killing task's job %s" % task.id)
+                log.debug(f"Killing task's job {task.id}")
                 self.app.job_manager.job_handler.dispatcher.stop(task)
 
         # There were no subtasks, so just kill the job. We'll touch
@@ -152,7 +152,7 @@ class TaskedJobRunner(BaseJobRunner):
             else:
                 pid = job.job_runner_external_id
             if pid in [None, '']:
-                log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
+                log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
                 return
             self._stop_pid(pid, job.id)
 
@@ -217,7 +217,7 @@ class TaskedJobRunner(BaseJobRunner):
         job's id (which is used for logging messages only right now).
         """
         pid = int(pid)
-        log.debug("Stopping pid %s" % pid)
+        log.debug(f"Stopping pid {pid}")
         if not self._check_pid(pid):
             log.warning("_stop_pid(): %s: PID %d was already dead or can't be signaled" % (job_id, pid))
             return

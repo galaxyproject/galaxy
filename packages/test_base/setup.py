@@ -38,7 +38,9 @@ ENTRY_POINTS = '''
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
-    'galaxy': [
+    'galaxy': [],
+    'galaxy_test': [
+        'galaxy_test/base/tool_sheds_conf.xml',
     ],
 }
 PACKAGE_DIR = {
@@ -87,10 +89,10 @@ setup(
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
         "Programming Language :: Python :: 3",
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements

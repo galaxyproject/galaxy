@@ -49,8 +49,10 @@
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_month_in_error', sort_id='default', order='default' )}">Jobs in error per day this month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='specified_date_handler', operation='unfinished', sort_id='default', order='default' )}">All unfinished jobs</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_all', sort_id='default', order='default' )}">Jobs per month</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_all', by_destination=True, sort_id='default', order='default' )}">Jobs per month by user / node type</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_month_in_error', sort_id='default', order='default' )}">Jobs in error per month</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user', sort_id='default', order='default' )}">Jobs per user</a></div>
+                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_user', by_destination=True, sort_id='default', order='default' )}">Jobs per user / node type</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='per_tool', sort_id='default', order='default' )}">Jobs per tool</a></div>
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='jobs', action='errors_per_tool', sort_id='default', order='default', spark_time='')}">Errors per tool</a></div>
                     </div>

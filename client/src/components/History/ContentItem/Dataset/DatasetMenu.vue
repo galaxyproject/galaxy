@@ -1,159 +1,157 @@
 <template>
-    <PriorityMenu :starting-height="27">
-        <PriorityMenuItem
-            v-if="notIn(STATES.NOT_VIEWABLE, STATES.DISCARDED)"
-            key="view-dataset"
-            :title="displayButtonTitle"
-            :disabled="dataset.purged || isIn(STATES.UPLOAD, STATES.NEW)"
-            @click.stop="viewData"
-            icon="fas fa-eye"
-        />
+    <div>
+        <b-button-group>
+            <IconButton
+                v-if="notIn(STATES.NOT_VIEWABLE, STATES.DISCARDED)"
+                icon="eye"
+                :title="displayButtonTitle"
+                :disabled="dataset.purged || isIn(STATES.UPLOAD, STATES.NEW)"
+                @click.stop="viewData"
+                variant="link"
+                class="px-1 display-btn" />
+            <IconButton
+                v-if="writable && notIn(STATES.DISCARDED)"
+                icon="pen"
+                :title="editButtonTitle"
+                :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
+                @click.stop="$emit('edit')"
+                variant="link"
+                class="px-1 edit-btn" />
+            <IconButton
+                v-if="writable && dataset.accessible"
+                :icon="dataset.deleted ? 'trash-restore' : 'trash'"
+                :title="deleteButtonTitle"
+                :disabled="dataset.purged"
+                v-b-modal="bsId('delete-modal')"
+                variant="link"
+                class="px-1 delete-btn"
+                @click.stop />
 
-        <PriorityMenuItem
-            v-if="notIn(STATES.DISCARDED)"
-            key="edit-dataset"
-            :title="editButtonTitle"
-            :disabled="dataset.deleted || isIn(STATES.UPLOAD, STATES.NEW)"
-            @click.stop="
-                backboneRoute('datasets/edit', {
-                    dataset_id: dataset.id,
-                })
-            "
-            icon="fa fa-pencil"
-        />
+            <b-dropdown
+                right
+                size="sm"
+                variant="link"
+                :text="'Dataset Operations' | l"
+                toggle-class="p-1 pl-2"
+                class="flex-grow-0 dataset-operations-dropdown"
+                v-if="expanded"
+                boundary="window">
+                <template v-slot:button-content>
+                    <Icon icon="ellipsis-v" variant="link" />
+                    <span class="sr-only">Dataset Operations</span>
+                </template>
 
-        <PriorityMenuItem
-            v-if="dataset.accessible"
-            key="delete-dataset"
-            :title="deleteButtonTitle"
-            :disabled="dataset.purged"
-            @click.stop="onDeleteClick"
-            :icon="dataset.deleted ? 'fas fa-trash-restore' : 'fas fa-trash'"
-        />
+                <b-dropdown-item
+                    v-if="isIn(STATES.ERROR)"
+                    key="show-error"
+                    title="Error"
+                    @click.stop="
+                        backboneRoute('datasets/error', {
+                            dataset_id: dataset.id,
+                        })
+                    ">
+                    <Icon icon="exclamation-triangle" class="mr-1" />
+                    <span v-localize>Show Error</span>
+                </b-dropdown-item>
 
-        <PriorityMenuItem
-            v-if="expanded"
-            key="edit-tags"
-            title="Edit Dataset Tags"
-            :pressed="showTags"
-            @click.stop="$emit('update:showTags', !showTags)"
-            icon="fas fa-tags"
-        />
+                <b-dropdown-item
+                    v-if="showDownloads && dataset.getUrl('download')"
+                    title="Copy Link"
+                    @click.stop="$emit('copy-link')">
+                    <Icon icon="link" class="mr-1" />
+                    <span v-localize>Copy Link</span>
+                </b-dropdown-item>
 
-        <PriorityMenuItem
-            v-if="isIn(STATES.ERROR)"
-            key="show-error"
-            title="Error"
-            @click.stop="
-                backboneRoute('datasets/error', {
-                    dataset_id: dataset.id,
-                })
-            "
-            icon="fa fa-bug"
-        />
+                <b-dropdown-group v-if="showDownloads && dataset.hasMetaData">
+                    <b-dropdown-item
+                        v-for="mf in dataset.meta_files"
+                        :key="'download-' + mf.download_url"
+                        :title="'Download ' + mf.file_type"
+                        :href="prependPath(dataset.getUrl('meta_download') + mf.file_type)"
+                        target="_blank"
+                        download>
+                        <Icon icon="download" class="mr-1" />
+                        <span v-localize>{{ "Download " + mf.file_type }}</span>
+                    </b-dropdown-item>
+                </b-dropdown-group>
 
-        <PriorityMenuItem
-            v-if="!(showDownloads && dataset.hasMetaData)"
-            key="download"
-            title="Download"
-            :href="prependPath(dataset.getUrl('download'))"
-            target="_blank"
-            download
-            icon="fas fa-file-download"
-        />
+                <b-dropdown-item
+                    v-else-if="showDownloads"
+                    title="Download"
+                    :href="prependPath(dataset.getUrl('download'))"
+                    target="_blank"
+                    class="download-btn"
+                    download>
+                    <Icon icon="download" class="mr-1" />
+                    <span v-localize>Download</span>
+                </b-dropdown-item>
 
-        <PriorityMenuItem
-            v-if="showDownloads && dataset.hasMetaData"
-            key="download-metadata"
-            title="Download"
-            :href="prependPath(dataset.getUrl('download'))"
-            target="_blank"
-            download
-            icon="fas fa-file-download"
-        />
+                <b-dropdown-item
+                    v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
+                    title="Run job again"
+                    :href="prependPath(dataset.getUrl('rerun'))"
+                    @click.stop.prevent="
+                        backboneRoute('/', {
+                            job_id: dataset.creating_job,
+                        })
+                    ">
+                    <Icon icon="play" class="mr-1" />
+                    <span v-localize>Run job again</span>
+                </b-dropdown-item>
 
-        <PriorityMenuItem
-            v-if="!dataset.purged && dataset.getUrl('download')"
-            key="copy-link"
-            title="Copy Link"
-            icon="fa fa-chain"
-            @click.stop="$emit('copy-link')"
-        />
+                <b-dropdown-item
+                    v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
+                    title="Visualize Data"
+                    @click.stop.prevent="visualize">
+                    <Icon icon="chart-area" class="mr-1" />
+                    <span v-localize>Visualize Data</span>
+                </b-dropdown-item>
 
-        <div v-if="showDownloads && dataset.hasMetaData">
-            <PriorityMenuItem
-                v-for="mf in dataset.meta_files"
-                :key="'download-' + mf.download_url"
-                :title="'Download ' + mf.file_type"
-                :href="prependPath(dataset.getUrl('meta_download') + mf.file_type)"
-                target="_blank"
-                download
-                icon="fas fa-file-download"
-            />
-        </div>
+                <b-dropdown-item
+                    v-if="currentUser && currentUser.id && dataset.creating_job"
+                    title="Tool Help"
+                    @click.stop="showToolHelp(dataset.creating_job)">
+                    <Icon icon="question" class="mr-1" />
+                    <span v-localize>Tool Help</span>
+                </b-dropdown-item>
 
-        <PriorityMenuItem
-            v-if="dataset.rerunnable && dataset.creating_job && notIn(STATES.UPLOAD, STATES.NOT_VIEWABLE)"
-            key="run-job"
-            title="Run job again"
-            :href="prependPath(dataset.getUrl('rerun'))"
-            @click.stop="
-                backboneRoute('/', {
-                    job_id: dataset.creating_job,
-                })
-            "
-            icon="fa fa-refresh"
-        />
+                <b-dropdown-item
+                    v-if="notIn(STATES.NOT_VIEWABLE)"
+                    key="dataset-details"
+                    title="View Dataset Details"
+                    class="params-btn"
+                    @click.stop.prevent="showDetails">
+                    <Icon icon="info-circle" class="mr-1" />
+                    <span v-localize>View Dataset Details</span>
+                </b-dropdown-item>
+            </b-dropdown>
+        </b-button-group>
 
-        <PriorityMenuItem
-            v-if="showViz && hasViz && isIn(STATES.OK, STATES.FAILED_METADATA)"
-            key="visualize"
-            title="Visualize Data"
-            @click.stop.prevent="visualize"
-            icon="fa-bar-chart"
-        />
-
-        <PriorityMenuItem
-            v-if="currentUser && currentUser.id && dataset.creating_job"
-            key="tool-tip"
-            title="Tool Help"
-            @click.stop="showToolHelp(dataset.creating_job)"
-            icon="fa fa-question"
-        />
-
-        <PriorityMenuItem
-            v-if="notIn(STATES.NOT_VIEWABLE)"
-            key="dataset-details"
-            title="View Details"
-            @click.stop.prevent="
-                iframeAdd({
-                    path: dataset.getUrl('show_params'),
-                    title: 'Dataset details',
-                })
-            "
-            icon="fa fa-info-circle"
-        />
-    </PriorityMenu>
+        <!-- modals -->
+        <b-modal :id="bsId('delete-modal')" title="Delete Dataset?" title-tag="h2" @ok="onDeleteClick">
+            <p v-localize>Really delete this dataset?</p>
+        </b-modal>
+    </div>
 </template>
 
 <script>
 import { mapGetters } from "vuex";
-import { Dataset, STATES } from "../../model";
-import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
+import { Dataset } from "../../model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import IconButton from "components/IconButton";
 
 export default {
     mixins: [legacyNavigationMixin],
+    inject: ["STATES"],
 
     components: {
-        PriorityMenu,
-        PriorityMenuItem,
+        IconButton,
     },
 
     props: {
         dataset: { type: Dataset, required: true },
         expanded: { type: Boolean, required: true },
-        showTags: { type: Boolean, required: false, default: false },
+        writable: { type: Boolean, default: true },
     },
 
     data() {
@@ -161,11 +159,6 @@ export default {
             toolHelp: null,
             testVal: false,
         };
-    },
-
-    created() {
-        // make available to template
-        this.STATES = STATES;
     },
 
     computed: {
@@ -180,10 +173,10 @@ export default {
             if (this.dataset.purged) {
                 return "Cannot display datasets removed from disk";
             }
-            if (this.dataset.state == STATES.UPLOAD) {
+            if (this.dataset.state == this.STATES.UPLOAD) {
                 return "This dataset must finish uploading before it can be viewed";
             }
-            if (this.dataset.state == STATES.NEW) {
+            if (this.dataset.state == this.STATES.NEW) {
                 return "This dataset is not yet viewable";
             }
             return "View data";
@@ -196,7 +189,7 @@ export default {
             if (this.dataset.purged) {
                 return "Cannot edit attributes of datasets removed from disk";
             }
-            const unreadyStates = new Set([STATES.UPLOAD, STATES.NEW]);
+            const unreadyStates = new Set([this.STATES.UPLOAD, this.STATES.NEW]);
             if (unreadyStates.has(this.dataset.state)) {
                 return "This dataset is not yet editable";
             }
@@ -218,7 +211,7 @@ export default {
             if (!this.dataset.hasData) {
                 return false;
             }
-            const okStates = new Set([STATES.OK, STATES.FAILED_METADATA, STATES.ERROR]);
+            const okStates = new Set([this.STATES.OK, this.STATES.FAILED_METADATA, this.STATES.ERROR]);
             return okStates.has(this.dataset.state);
         },
 
@@ -241,7 +234,9 @@ export default {
 
         viewData() {
             const id = this.dataset.id;
-            if (!id) return;
+            if (!id) {
+                return;
+            }
             this.useGalaxy((Galaxy) => {
                 if (Galaxy.frame && Galaxy.frame.active) {
                     Galaxy.frame.addDataset(id);
@@ -256,8 +251,9 @@ export default {
 
         // wierd iframe navigation
         visualize() {
+            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
             const redirectParams = {
-                path: this.dataset.getUrl("show_params"),
+                path: showDetailsUrl,
                 title: "Dataset details",
                 tryIframe: false,
             };
@@ -268,6 +264,18 @@ export default {
             }
         },
 
+        showDetails() {
+            const showDetailsUrl = `/datasets/${this.dataset.id}/details`;
+            const redirectParams = {
+                path: showDetailsUrl,
+                title: "Dataset details",
+                tryIframe: false,
+            };
+            if (!this.iframeAdd(redirectParams)) {
+                this.backboneRoute(showDetailsUrl);
+            }
+        },
+
         showToolHelp(job_id) {
             this.eventHub.$emit("toggleToolHelp", job_id);
         },
@@ -275,6 +283,11 @@ export default {
         onDeleteClick() {
             const eventName = this.dataset.deleted ? "undelete" : "delete";
             this.$emit(eventName);
+        },
+
+        // bootstrap demands ids instead of simply using a ref so I guess we're doing this
+        bsId(suffix) {
+            return `dataset-${this.dataset.id}-${suffix}`;
         },
     },
 };

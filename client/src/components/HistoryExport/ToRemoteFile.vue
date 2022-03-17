@@ -4,10 +4,9 @@
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
-                style="margin-top: 15px;"
+                style="margin-top: 15px"
                 header="History export job ended in error"
-                :job="jobError"
-            />
+                :job="jobError" />
         </b-alert>
         <div v-if="waitingOnJob">
             <loading-span message="Executing history export job, this will likely take a while." />
@@ -23,9 +22,8 @@
                 id="fieldset-directory"
                 label-for="directory"
                 description="Select a 'remote files' directory to export history archive to."
-                class="mt-3"
-            >
-                <files-input id="directory" v-model="directory" mode="directory" :requireWritable="true" />
+                class="mt-3">
+                <files-input id="directory" v-model="directory" mode="directory" :require-writable="true" />
             </b-form-group>
             <b-form-group id="fieldset-name" label-for="name" description="Give the exported file a name." class="mt-3">
                 <b-form-input id="name" v-model="name" placeholder="Name" required></b-form-input>

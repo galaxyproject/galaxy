@@ -13,7 +13,7 @@ from galaxy.workflow.modules import module_factory
 class MockTrans:
 
     def __init__(self):
-        self.app = TestApp()
+        self.app = MockApp()
         self.sa_session = self.app.model.context
         self._user = None
 
@@ -36,7 +36,7 @@ class MockTrans:
         return self._user
 
 
-class TestApp:
+class MockApp:
 
     def __init__(self):
         self.config = bunch.Bunch(
@@ -47,13 +47,13 @@ class TestApp:
             "sqlite:///:memory:",
             create_tables=True
         )
-        self.toolbox = TestToolbox()
-        self.datatypes_registry = TestDatatypesRegistry()
+        self.toolbox = MockToolbox()
+        self.datatypes_registry = MockDatatypesRegistry()
         self.security = IdEncodingHelper(id_secret="testing")
         self.workflow_manager = WorkflowsManager(self)
 
 
-class TestDatatypesRegistry:
+class MockDatatypesRegistry:
 
     def __init__(self):
         pass
@@ -66,7 +66,7 @@ class TestDatatypesRegistry:
         return {"fasta": object(), "fastqsanger": object(), "txt": object()}
 
 
-class TestToolbox:
+class MockToolbox:
 
     def __init__(self):
         self.tools = {}
@@ -74,10 +74,6 @@ class TestToolbox:
     def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
-
-    def get_tool_id(self, tool_id):
-        tool = self.get_tool(tool_id)
-        return tool and tool.id
 
 
 def yaml_to_model(has_dict, id_offset=100):

@@ -39,12 +39,13 @@ class CompressionUtilTestCase(unittest.TestCase):
             if expected_to_be_safe:
                 CompressedFile(path).extract(temp_dir)
             else:
-                with self.assertRaises(Exception):
+                with self.assertRaisesRegex(Exception, "is blocked"):
                     CompressedFile(path).extract(temp_dir)
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def assert_format_detected(self, path, expected_fmt, allowed_fmts=None):
+        expected_type: type
         for mode in ['r', 'rb', 'rt', 'U']:
             if 'b' in mode:
                 expected_type = bytes

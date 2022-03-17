@@ -8,6 +8,7 @@ from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
@@ -127,6 +128,7 @@ class PSAAuthnz(IdentityProvider):
         self.config['KEY'] = oidc_backend_config.get('client_id')
         self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
+        self.config['EXTRA_SCOPES'] = oidc_backend_config.get('extra_scopes')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
         if oidc_backend_config.get('api_url') is not None:
@@ -154,13 +156,17 @@ class PSAAuthnz(IdentityProvider):
                 "SOCIAL_AUTH_SECONDARY_AUTH_PROVIDER" in self.config and \
                 "SOCIAL_AUTH_SECONDARY_AUTH_ENDPOINT" in self.config:
             backend.DEFAULT_SCOPE.append("https://www.googleapis.com/auth/cloud-platform")
+
+        if self.config['EXTRA_SCOPES'] is not None:
+            backend.DEFAULT_SCOPE.extend(self.config['EXTRA_SCOPES'])
+
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         on_the_fly_config(trans.sa_session)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
-        strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
+        strategy.session_set(f"{BACKENDS_NAME[self.config['provider']]}_state", state_token)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         redirect_url = do_complete(
             backend,
@@ -350,8 +356,11 @@ def verify(strategy=None, response=None, details=None, **kwargs):
         result = requests.post(
             f"https://iam.googleapis.com/v1/projects/-/serviceAccounts/{endpoint}:getIamPolicy",
             headers={
-                'Authorization': 'Bearer {}'.format(response.get("access_token")),
-                'Accept': 'application/json'})
+                'Authorization': f"Bearer {response.get('access_token')}",
+                'Accept': 'application/json',
+            },
+            timeout=DEFAULT_SOCKET_TIMEOUT
+        )
         res = json.loads(result.content)
         if result.status_code == requests.codes.ok:
             email_addresses = res["bindings"][0]["members"]

@@ -2,11 +2,11 @@ import os
 from collections import namedtuple
 
 from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
 from tool_shed.util import hg_util
-from .uses_shed import UsesShed
 
-REPO_TYPE = namedtuple('Repository', 'name owner changeset')
+REPO_TYPE = namedtuple('REPO_TYPE', 'name owner changeset')
 REPO = REPO_TYPE(
     'collection_column_join',
     'iuc',

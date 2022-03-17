@@ -9,7 +9,10 @@ Phylip datatype sniffer
 """
 from galaxy import util
 from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.util import nice_size
 from .metadata import MetadataElement
 
@@ -21,7 +24,6 @@ class Phylip(Text):
     edam_format = "format_1997"
     file_ext = "phylip"
 
-    """Add metadata elements"""
     MetadataElement(name="sequences", default=0, desc="Number of sequences", readonly=True,
                     visible=False, optional=True, no_value=0)
 
@@ -35,11 +37,11 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
-                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
                 dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -105,7 +107,7 @@ class Phylip(Text):
         # There may be more lines with the remaining parts of the sequences
         return True
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'

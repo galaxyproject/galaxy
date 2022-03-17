@@ -25,12 +25,12 @@ class BaseField:
 
     def to_dict(self):
         return {
-            'name'      : self.name,
-            'label'     : self.label,
-            'disabled'  : self.disabled,
-            'optional'  : self.optional,
-            'value'     : self.value,
-            'help'      : self.help
+            'name': self.name,
+            'label': self.label,
+            'disabled': self.disabled,
+            'optional': self.optional,
+            'value': self.value,
+            'help': self.help
         }
 
 
@@ -98,7 +98,7 @@ class SelectField(BaseField):
         elif display == "radio":
             assert not(multiple), "Radio display only supported for single select"
         elif display is not None:
-            raise Exception("Unknown display type: %s" % display)
+            raise Exception(f"Unknown display type: {display}")
         self.display = display
 
     def add_option(self, text, value, selected=False):

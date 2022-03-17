@@ -1,7 +1,7 @@
 import os
 
 EXPRESSION_SCRIPT_NAME = "_evaluate_expression_.py"
-EXPRESSION_SCRIPT_CALL = "python %s" % EXPRESSION_SCRIPT_NAME
+EXPRESSION_SCRIPT_CALL = f"python {EXPRESSION_SCRIPT_NAME}"
 
 
 def write_evalute_script(in_directory):

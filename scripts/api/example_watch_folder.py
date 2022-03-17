@@ -66,7 +66,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
                         wf_data['workflow_id'] = workflow['id']
                         wf_data['history'] = "{} - {}".format(fname, workflow['name'])
                         wf_data['ds_map'] = {}
-                        for step_id, ds_in in workflow['inputs'].items():
+                        for step_id in workflow['inputs'].keys():
                             wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
                         res = submit(api_key, api_url + 'workflows', wf_data, return_formatted=False)
                         if res:

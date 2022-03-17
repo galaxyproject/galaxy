@@ -1,0 +1,22 @@
+<tool id="from_work_dir_glob" name="from_work_dir_glob" version="1.0.0">
+    <command><![CDATA[
+echo "hi" > output1.txt
+    ]]></command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="output1" format="txt" from_work_dir="output*" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output1">
+                <assert_contents>
+                    <has_text text="hi" />
+                </assert_contents>
+                <!-- This does not work with the default __copy_if_exists mechanism
+                    <metadata name="created_from_basename" value="output1.txt" />
+                -->
+            </output>
+        </test>
+    </tests>
+</tool>

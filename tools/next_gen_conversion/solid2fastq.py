@@ -8,7 +8,7 @@ import tempfile
 try:
     maketrans = str.maketrans
 except AttributeError:
-    from string import maketrans
+    from string import maketrans  # type: ignore[attr-defined,no-redef]
 
 
 def stop_err(msg):

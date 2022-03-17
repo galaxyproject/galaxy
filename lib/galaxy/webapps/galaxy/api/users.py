@@ -23,12 +23,15 @@ from galaxy.managers import (
     api_keys,
     users
 )
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import User, UserAddress
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
     validate_publicname
 )
-from galaxy.tools.toolbox.filters import FilterFactory
+from galaxy.security.vault import UserVaultWrapper
+from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
     listify
@@ -39,27 +42,24 @@ from galaxy.web import (
 )
 from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     BaseUIController,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
-
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.user_manager = users.UserManager(app)
-        self.user_serializer = users.UserSerializer(app)
-        self.user_deserializer = users.UserDeserializer(app)
-        self.api_key_manager = api_keys.ApiKeyManager(app)
+class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
+    user_manager: users.UserManager = depends(users.UserManager)
+    user_serializer: users.UserSerializer = depends(users.UserSerializer)
+    user_deserializer: users.UserDeserializer = depends(users.UserDeserializer)
+    api_key_manager: api_keys.ApiKeyManager = depends(api_keys.ApiKeyManager)
 
     @expose_api
-    def index(self, trans, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
+    def index(self, trans: ProvidesUserContext, deleted='False', f_email=None, f_name=None, f_any=None, **kwd):
         """
         GET /api/users
         GET /api/users/deleted
@@ -85,37 +85,37 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         :type  f_any: str
         """
         rval = []
-        query = trans.sa_session.query(trans.app.model.User)
+        query = trans.sa_session.query(User)
         deleted = util.string_as_bool(deleted)
 
         if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
+            query = query.filter(User.email.like(f"%{f_email}%"))
 
         if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_name))
+            query = query.filter(User.username.like(f"%{f_name}%"))
 
         if f_any:
             if trans.user_is_admin:
                 query = query.filter(or_(
-                    trans.app.model.User.email.like("%%%s%%" % f_any),
-                    trans.app.model.User.username.like("%%%s%%" % f_any)
+                    User.email.like(f"%{f_any}%"),
+                    User.username.like(f"%{f_any}%")
                 ))
             else:
                 if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
                     query = query.filter(or_(
-                        trans.app.model.User.email.like("%%%s%%" % f_any),
-                        trans.app.model.User.username.like("%%%s%%" % f_any)
+                        User.email.like(f"%{f_any}%"),
+                        User.username.like(f"%{f_any}%")
                     ))
                 elif trans.app.config.expose_user_email:
-                    query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_any))
+                    query = query.filter(User.email.like(f"%{f_any}%"))
                 elif trans.app.config.expose_user_name:
-                    query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_any))
+                    query = query.filter(User.username.like(f"%{f_any}%"))
 
         if deleted:
             # only admins can see deleted users
             if not trans.user_is_admin:
                 return []
-            query = query.filter(trans.app.model.User.table.c.deleted == true())
+            query = query.filter(User.table.c.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -123,7 +123,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
-            query = query.filter(trans.app.model.User.table.c.deleted == false())
+            query = query.filter(User.table.c.deleted == false())
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
@@ -145,7 +145,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return rval
 
     @expose_api_anonymous
-    def show(self, trans, id, deleted='False', **kwd):
+    def show(self, trans: ProvidesUserContext, id, deleted='False', **kwd):
         """
         GET /api/users/{encoded_id}
         GET /api/users/deleted/{encoded_id}
@@ -177,7 +177,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwd):
         """
         POST /api/users
         Creates a new Galaxy user.
@@ -204,7 +204,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         return item
 
     @expose_api
-    def update(self, trans, id, payload, **kwd):
+    def update(self, trans: ProvidesUserContext, id: str, payload: dict, **kwd):
         """
         update( self, trans, id, payload, **kwd )
         * PUT /api/users/{id}
@@ -276,6 +276,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
     # TODO: move to more basal, common resource than this
     def anon_user_api_value(self, trans):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
+        if not trans.user and not trans.history:
+            # Can't return info about this user, may not have a history yet.
+            return {}
         usage = trans.app.quota_agent.get_usage(trans)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {'total_disk_usage': int(usage),
@@ -289,7 +292,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         """
         return trans.app.config.user_preferences_extra['preferences']
 
-    def _build_extra_user_pref_inputs(self, preferences, user):
+    def _build_extra_user_pref_inputs(self, trans, preferences, user):
         """
         Build extra user preferences inputs list.
         Add values to the fields if present
@@ -298,6 +301,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             return []
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
+        user_vault = UserVaultWrapper(trans.app.vault, user)
         for item, value in preferences.items():
             if value is not None:
                 input_fields = copy.deepcopy(value["inputs"])
@@ -308,10 +312,19 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
                         input['help'] = f"{help} {required}"
                     else:
                         input['help'] = required
-                    field = item + '|' + input['name']
-                    for data_item in user.extra_preferences:
-                        if field in data_item:
-                            input['value'] = user.extra_preferences[data_item]
+                    if input.get('store') == 'vault':
+                        field = f"{item}/{input['name']}"
+                        input['value'] = user_vault.read_secret(f'preferences/{field}')
+                    else:
+                        field = f"{item}|{input['name']}"
+                        for data_item in user.extra_preferences:
+                            if field in data_item:
+                                input['value'] = user.extra_preferences[data_item]
+                    # regardless of the store, do not send secret type values to client
+                    if input.get('type') == 'secret':
+                        input['value'] = "__SECRET_PLACEHOLDER__"
+                        # let the client treat it as a password field
+                        input['type'] = "password"
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': input_fields})
         return extra_pref_inputs
 
@@ -383,7 +396,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             inputs.append(address_repeat)
 
             # Build input sections for extra user preferences
-            extra_user_pref = self._build_extra_user_pref_inputs(self._get_extra_user_preferences(trans), user)
+            extra_user_pref = self._build_extra_user_pref_inputs(trans, self._get_extra_user_preferences(trans), user)
             for item in extra_user_pref:
                 inputs.append(item)
         else:
@@ -422,7 +435,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
                 # Update user email and user's private role name which must match
                 private_role = trans.app.security_agent.get_private_user_role(user)
                 private_role.name = email
-                private_role.description = 'Private role for ' + email
+                private_role.description = f"Private role for {email}"
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
@@ -435,7 +448,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
                     else:
                         message = 'Unable to send activation email, please contact your local Galaxy administrator.'
                         if trans.app.config.error_email_to is not None:
-                            message += ' Contact: %s' % trans.app.config.error_email_to
+                            message += f' Contact: {trans.app.config.error_email_to}'
                         raise exceptions.InternalServerError(message)
         # Update public name
         if 'username' in payload:
@@ -461,20 +474,26 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         # Update values for extra user preference items
         extra_user_pref_data = dict()
         extra_pref_keys = self._get_extra_user_preferences(trans)
+        user_vault = UserVaultWrapper(trans.app.vault, user)
         if extra_pref_keys is not None:
             for key in extra_pref_keys:
-                key_prefix = key + '|'
+                key_prefix = f"{key}|"
                 for item in payload:
                     if item.startswith(key_prefix):
-                        # Show error message if the required field is empty
-                        if payload[item] == "":
-                            # Raise an exception when a required field is empty while saving the form
-                            keys = item.split("|")
-                            section = extra_pref_keys[keys[0]]
-                            for input in section['inputs']:
-                                if input['name'] == keys[1] and input['required']:
-                                    raise exceptions.ObjectAttributeMissingException("Please fill the required field")
-                        extra_user_pref_data[item] = payload[item]
+                        keys = item.split("|")
+                        section = extra_pref_keys[keys[0]]
+                        matching_input = [input for input in section['inputs'] if input['name'] == keys[1]]
+                        if matching_input:
+                            input = matching_input[0]
+                            if input.get('required') and payload[item] == "":
+                                raise exceptions.ObjectAttributeMissingException("Please fill the required field")
+                            if not (input.get('type') == 'secret' and payload[item] == "__SECRET_PLACEHOLDER__"):
+                                if input.get('store') == 'vault':
+                                    user_vault.write_secret(f'preferences/{keys[0]}/{keys[1]}', str(payload[item]))
+                                else:
+                                    extra_user_pref_data[item] = payload[item]
+                        else:
+                            extra_user_pref_data[item] = payload[item]
             user.preferences["extra_user_preferences"] = json.dumps(extra_user_pref_data)
 
         # Update user addresses
@@ -494,15 +513,15 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             d = address_dicts[index]
             if d.get('id'):
                 try:
-                    user_address = trans.sa_session.query(trans.app.model.UserAddress).get(trans.security.decode_id(d['id']))
+                    user_address = trans.sa_session.query(UserAddress).get(trans.security.decode_id(d['id']))
                 except Exception as e:
-                    raise exceptions.ObjectNotFound('Failed to access user address ({}). {}'.format(d['id'], e))
+                    raise exceptions.ObjectNotFound(f"Failed to access user address ({d['id']}). {e}")
             else:
-                user_address = trans.model.UserAddress()
+                user_address = UserAddress()
                 trans.log_event('User address added')
             for field in AddressField.fields():
                 if str(field[2]).lower() == 'required' and not d.get(field[0]):
-                    raise exceptions.ObjectAttributeMissingException('Address {}: {} ({}) required.'.format(index + 1, field[1], field[0]))
+                    raise exceptions.ObjectAttributeMissingException(f'Address {index + 1}: {field[1]} ({field[0]}) required.')
                 setattr(user_address, field[0], str(d.get(field[0], '')))
             user_address.user = user
             user.addresses.append(user_address)
@@ -532,9 +551,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             tool_id = payload.get('object_id')
             tool = self.app.toolbox.get_tool(tool_id)
             if not tool:
-                raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % tool_id)
+                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
             if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed("Access denied for tool with id '%s'." % tool_id)
+                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
             if 'tools' in favorites:
                 favorite_tools = favorites['tools']
             else:
@@ -578,7 +597,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         if object_type in ['tools']:
             pass
         else:
-            raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
+            raise exceptions.ObjectAttributeInvalidException(f"This type is not supported. Given object_type: {object_type}")
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
@@ -670,9 +689,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
         for filter_type in filter_types:
             new_filters = []
             for prefixed_name in payload:
-                if payload.get(prefixed_name) == 'true' and prefixed_name.startswith(filter_type):
-                    prefix = filter_type + '|'
-                    new_filters.append(prefixed_name[len(prefix):])
+                if prefixed_name.startswith(filter_type):
+                    filter_selection = payload.get(prefixed_name)
+                    if type(filter_selection) != bool:
+                        raise exceptions.RequestParameterInvalidException('Please specify the filter selection as boolean value.')
+                    if filter_selection:
+                        prefix = f"{filter_type}|"
+                        new_filters.append(prefixed_name[len(prefix):])
             user.preferences[filter_type] = ','.join(new_filters)
         trans.sa_session.add(user)
         trans.sa_session.flush()
@@ -696,14 +719,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
                 if len(split) > 1:
                     description = split[1]
             else:
-                log.warning('No description specified in the __doc__ string for %s.' % filter_name)
+                log.warning(f'No description specified in the __doc__ string for {filter_name}.')
 
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
                 'label': short_description or filter_name,
                 'help': description or 'No description available.',
-                'value': 'true' if filter_name in filter_values else 'false'
+                'value': True if filter_name in filter_values else False
             })
         if filter_inputs:
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
@@ -896,14 +919,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, BaseUIController, Uses
             del dbkeys[key]
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
-            return {'message': 'Deleted %s.' % key}
+            return {'message': f'Deleted {key}.'}
         else:
-            raise exceptions.ObjectNotFound('Could not find and delete build (%s).' % key)
+            raise exceptions.ObjectNotFound(f'Could not find and delete build ({key}).')
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)
         if not user:
-            raise exceptions.RequestParameterInvalidException('Invalid user (%s).' % id)
+            raise exceptions.RequestParameterInvalidException(f'Invalid user ({id}).')
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException('Access denied.')
         return user

@@ -25,6 +25,7 @@ import re
 import shutil
 import tempfile
 import unittest
+from typing import Dict, TextIO, Union
 
 from galaxy_test.base.api_util import (
     TEST_USER,
@@ -56,15 +57,15 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
-    def fetch_target(self, target, assert_ok=False, attach_test_file=False):
-        payload = {
+    def fetch_target(self, target, assert_ok=False, attach_test_file=False, wait=False):
+        payload: Dict[str, Union[str, Dict[str, TextIO]]] = {
             "history_id": self.history_id,
             "targets": json.dumps([target]),
         }
         if attach_test_file:
             payload["__files"] = {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))}
 
-        response = self.dataset_populator.fetch(payload, assert_ok=assert_ok)
+        response = self.dataset_populator.fetch(payload, assert_ok=assert_ok, wait=wait)
         return response
 
     def _write_file(self, dir_path, content, filename="test"):
@@ -215,8 +216,8 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         payload, files = self.library_populator.create_dataset_request(library, upload_option="upload_paths", paths=path, link_data=True)
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 200
-        assert os.path.exists(path)
-        self.library_populator.wait_on_library_dataset(library, response.json()[0])
+        dataset = response.json()[0]
+        self.library_populator.wait_on_library_dataset(library["id"], dataset["id"])
         # We should probably verify the linking, but this was enough for now to exhibit
         # https://github.com/galaxyproject/galaxy/issues/8756
 
@@ -434,8 +435,7 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
             "collection_type": "list",
             "name": "cool collection",
         }
-        response = self.fetch_target(target)
-        self._assert_status_code_is(response, 200)
+        response = self.fetch_target(target, assert_ok=True, wait=True)
         response_object = response.json()
         assert "output_collections" in response_object
         output_collections = response_object["output_collections"]
@@ -530,8 +530,8 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
             "elements": elements,
             "collection_type": "list:list",
         }
-        self.fetch_target(target, assert_ok=True)
-        hdca = self.dataset_populator.get_history_collection_details(self.history_id, hid=1)
+        self.fetch_target(target, assert_ok=True, wait=True)
+        hdca = self.dataset_populator.get_history_collection_details(self.history_id, history_content_type='dataset_collection')
         assert len(hdca["elements"]) == 2, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "subdirel1"
@@ -693,7 +693,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
 
         assert library_dataset["file_size"] == 12, library_dataset
 
-    def link_data_only(self):
+    def test_link_data_only(self):
         content = "hello world\n"
         dir_path = os.path.join(self.server_dir(), "lib1")
         file_path = self._write_file(dir_path, content)
@@ -703,7 +703,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 200, response.json()
         dataset = response.json()[0]
-        ok_dataset = self.library_populator.wait_on_library_dataset(library, dataset)
+        ok_dataset = self.library_populator.wait_on_library_dataset(library["id"], dataset["id"])
         assert ok_dataset["file_size"] == 12, ok_dataset
         assert ok_dataset["file_name"] == file_path, ok_dataset
 
@@ -876,7 +876,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         }
         self.dataset_populator.fetch(payload)
         libraries = self.library_populator.get_libraries()
-        matching = [l for l in libraries if l["name"] == "My Cool Library"]
+        matching = [library for library in libraries if library["name"] == "My Cool Library"]
         assert len(matching) == 1
         library = matching[0]
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")

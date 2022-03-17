@@ -154,7 +154,7 @@ class CustomDatatypeLoader:
         Load proprietary datatypes and return information needed for loading custom
         datatypes converters and display applications later.
         """
-        metadata = repository.metadata
+        metadata = repository.metadata_
         repository_dict = None
         datatypes_config = get_config_from_disk(DATATYPES_CONFIG_FILENAME, relative_install_dir)
         if datatypes_config:

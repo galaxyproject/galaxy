@@ -9,11 +9,11 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
 )
 from galaxy_test.driver import integration_util
-from .test_job_environments import RunsEnvironmentJobs
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.xml")
-SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.xml")
+DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.yml")
+SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.yml")
 EXTENDED_TIMEOUT = 120
 
 
@@ -62,9 +62,8 @@ def skip_if_container_type_unavailable(cls):
         raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
 
 
-class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
+class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
-    framework_tool_and_types = True
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
     build_mulled_resolver = 'build_mulled'
     container_type = 'docker'
@@ -83,7 +82,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
 
     def setUp(self):
         super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     def test_container_job_environment(self):
@@ -155,8 +153,8 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
-        containers_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
-        with open(containers_resolvers_config_path, "w") as f:
+        container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
+        with open(container_resolvers_config_path, "w") as f:
             f.write("""
 - type: mapping
   mappings:
@@ -164,7 +162,7 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
 """)
-        config["containers_resolvers_config_file"] = containers_resolvers_config_path
+        config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod
     def setUpClass(cls):
@@ -178,6 +176,55 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
 
     def test_explicit_mapping(self):
         self.dataset_populator.run_tool("mulled_example_broken_no_requirements", {}, self.history_id)
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+        assert "0.7.15-r1140" in output
+
+
+class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = cls.job_config_file
+        disable_dependency_resolution(config)
+        container_resolvers_config = [{
+            'type': 'mapping',
+            'mappings': [{
+                'container_type': 'docker',
+                'tool_id': 'mulled_example_broken_no_requirements',
+                'identifier': 'quay.io/biocontainers/bwa:0.7.15--0',
+            }],
+        }]
+        config["container_resolvers"] = container_resolvers_config
+
+
+class InlineJobEnvironmentContainerResolverTestCase(integration_util.IntegrationTestCase):
+
+    framework_tool_and_types = True
+    container_type = 'docker'
+    job_config_file = DOCKERIZED_JOB_CONFIG_FILE
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        cls.jobs_directory = cls._test_driver.mkdtemp()
+        config["jobs_directory"] = cls.jobs_directory
+        config["job_config_file"] = cls.job_config_file
+        disable_dependency_resolution(config)
+
+    @classmethod
+    def setUpClass(cls):
+        skip_if_container_type_unavailable(cls)
+        super().setUpClass()
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.history_id = self.dataset_populator.new_history()
+
+    def test_inline_environment_container_resolver_configuration(self):
+        self.dataset_populator.run_tool("mulled_example_broken_no_requirements_fallback", {}, self.history_id)
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
         output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output

@@ -7,39 +7,147 @@ may change often.
 import json
 import logging
 
+from fastapi import (
+    Body,
+    Path,
+    Response,
+    status,
+)
 
 from galaxy import (
     exceptions,
     util,
     web
 )
-from galaxy.managers.visualizations import (
-    VisualizationManager,
-    VisualizationSerializer
-)
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import SetSlugPayload, ShareWithPayload, ShareWithStatus, SharingStatus
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    SharableMixin,
     UsesVisualizationMixin
+)
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=['visualizations'])
 
-class VisualizationsController(BaseAPIController, UsesVisualizationMixin, SharableMixin, UsesAnnotations):
+VisualizationIdPathParam: EncodedDatabaseIdField = Path(
+    ...,
+    title="Visualization ID",
+    description="The encoded database identifier of the Visualization."
+)
+
+
+@router.cbv
+class FastAPIVisualizations:
+    service: VisualizationsService = depends(VisualizationsService)
+
+    @router.get(
+        '/api/visualizations/{id}/sharing',
+        summary="Get the current sharing status of the given Page.",
+    )
+    def sharing(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Return the sharing status of the item."""
+        return self.service.shareable_service.sharing(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/enable_link_access',
+        summary="Makes this item accessible by a URL link.",
+    )
+    def enable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item accessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/disable_link_access',
+        summary="Makes this item inaccessible by a URL link.",
+    )
+    def disable_link_access(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item inaccessible by a URL link and return the current sharing status."""
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/publish',
+        summary="Makes this item public and accessible by a URL link.",
+    )
+    def publish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Makes this item publicly available by a URL link and return the current sharing status."""
+        return self.service.shareable_service.publish(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/unpublish',
+        summary="Removes this item from the published list.",
+    )
+    def unpublish(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+    ) -> SharingStatus:
+        """Removes this item from the published list and return the current sharing status."""
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @router.put(
+        '/api/visualizations/{id}/share_with_users',
+        summary="Share this item with specific users.",
+    )
+    def share_with_users(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: ShareWithPayload = Body(...)
+    ) -> ShareWithStatus:
+        """Shares this item with specific users and return the current sharing status."""
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @router.put(
+        '/api/visualizations/{id}/slug',
+        summary="Set a new slug for this shared item.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def set_slug(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: EncodedDatabaseIdField = VisualizationIdPathParam,
+        payload: SetSlugPayload = Body(...),
+    ):
+        """Sets a new slug to access this item by URL. The new slug must be unique."""
+        self.service.shareable_service.set_slug(trans, id, payload)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):
     """
     RESTful controller for interactions with visualizations.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.manager = VisualizationManager(app)
-        self.serializer = VisualizationSerializer(app)
+    service: VisualizationsService = depends(VisualizationsService)
 
     @expose_api
-    def index(self, trans, **kwargs):
+    def index(self, trans: GalaxyWebTransaction, **kwargs):
         """
         GET /api/visualizations:
         """
@@ -65,7 +173,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return rval
 
     @expose_api
-    def show(self, trans, id, **kwargs):
+    def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):
         """
         GET /api/visualizations/{viz_id}
         """
@@ -90,7 +198,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         return dictionary
 
     @expose_api
-    def create(self, trans, payload, **kwargs):
+    def create(self, trans: GalaxyWebTransaction, payload: dict, **kwargs):
         """
         POST /api/visualizations
         creates a new visualization using the given payload
@@ -101,7 +209,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         rval = None
 
         if 'import_id' in payload:
-            import_id = payload('import_id')
+            import_id = payload['import_id']
             visualization = self.import_visualization(trans, import_id, user=trans.user)
 
         else:
@@ -118,12 +226,12 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             except ValueError as val_err:
                 raise exceptions.RequestParameterMissingException(str(val_err))
 
-        rval = {'id' : trans.security.encode_id(visualization.id)}
+        rval = {'id': trans.security.encode_id(visualization.id)}
 
         return rval
 
     @expose_api
-    def update(self, trans, id, payload, **kwargs):
+    def update(self, trans: GalaxyWebTransaction, id: str, payload: dict, **kwargs):
         """
         PUT /api/visualizations/{encoded_visualization_id}
         """
@@ -145,17 +253,68 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         config = payload.get('config', visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
-        if((title != visualization.latest_revision.title) or
-                (dbkey != visualization.latest_revision.dbkey) or
-                (json.dumps(config) != json.dumps(latest_config))):
+        if((title != visualization.latest_revision.title)
+                or (dbkey != visualization.latest_revision.dbkey)
+                or (json.dumps(config) != json.dumps(latest_config))):
             revision = self.add_visualization_revision(trans, visualization, config, title, dbkey)
-            rval = {'id' : id, 'revision' : revision.id}
+            rval = {'id': id, 'revision': revision.id}
 
         # allow updating vis title
         visualization.title = title
         trans.sa_session.flush()
 
         return rval
+
+    @expose_api
+    def sharing(self, trans, id, **kwd):
+        """
+        * GET /api/visualizations/{id}/sharing
+        """
+        return self.service.shareable_service.sharing(trans, id)
+
+    @expose_api
+    def enable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/enable_link_access
+        """
+        return self.service.shareable_service.enable_link_access(trans, id)
+
+    @expose_api
+    def disable_link_access(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/disable_link_access
+        """
+        return self.service.shareable_service.disable_link_access(trans, id)
+
+    @expose_api
+    def publish(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/publish
+        """
+        return self.service.shareable_service.publish(trans, id)
+
+    @expose_api
+    def unpublish(self, trans, id, **kwd):
+        """
+        * PUT /api/visualizations/{id}/unpublish
+        """
+        return self.service.shareable_service.unpublish(trans, id)
+
+    @expose_api
+    def share_with_users(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/visualizations/{id}/share_with_users
+        """
+        payload = ShareWithPayload(**payload)
+        return self.service.shareable_service.share_with_users(trans, id, payload)
+
+    @expose_api
+    def set_slug(self, trans, id, payload, **kwd):
+        """
+        * PUT /api/visualizations/{id}/slug
+        """
+        payload = SetSlugPayload(**payload)
+        self.service.shareable_service.set_slug(trans, id, payload)
 
     def _validate_and_parse_payload(self, payload):
         """
@@ -183,30 +342,30 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             # TODO: validate types in VALID_TYPES/registry names at the mixin/model level?
             if key == 'type':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
                 if not isinstance(val, dict):
-                    raise ValidationError('{} must be a dictionary: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a dictionary: {str(type(val))}')
 
             elif key == 'annotation':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
                 if not isinstance(val, str):
-                    raise ValidationError('{} must be a string or unicode: {}'.format(key, str(type(val))))
+                    raise ValidationError(f'{key} must be a string or unicode: {str(type(val))}')
                 val = util.sanitize_html.sanitize_html(val)
 
             elif key not in valid_but_uneditable_keys:

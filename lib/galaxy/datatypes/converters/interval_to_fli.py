@@ -97,9 +97,9 @@ def main():
 
     # Write padded entries.
     with open(out_fname, 'w') as out:
-        out.write(str(max_len + 1).ljust(max_len) + '\n')
+        out.write(f"{str(max_len + 1).ljust(max_len)}\n")
         for entry in entries:
-            out.write(entry.ljust(max_len) + '\n')
+            out.write(f"{entry.ljust(max_len)}\n")
 
 
 if __name__ == '__main__':

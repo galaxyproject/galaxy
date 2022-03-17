@@ -12,11 +12,10 @@ from paste import httpexceptions
 from routes.middleware import RoutesMiddleware
 
 import galaxy.webapps.base.webapp
-import tool_shed.webapp.model
-import tool_shed.webapp.model.mapping
 from galaxy import util
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
@@ -37,7 +36,7 @@ def add_ui_controllers(webapp, app):
     for fname in os.listdir(controller_dir):
         if not fname.startswith("_") and fname.endswith(".py"):
             name = fname[:-3]
-            module_name = "tool_shed.webapp.controllers." + name
+            module_name = f"tool_shed.webapp.controllers.{name}"
             module = __import__(module_name)
             for comp in module_name.split(".")[1:]:
                 module = getattr(module, comp)
@@ -193,15 +192,9 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     if kwargs.get('middleware', True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
+        webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map,
                                  args=(global_conf,),
                                  kwargs=kwargs)
-    # Close any pooled database connections before forking
-    try:
-        tool_shed.webapp.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled tool_shed model database connections.")
-    # Return
     return webapp
 
 
@@ -248,8 +241,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # TODO sentry config is duplicated between tool_shed/galaxy, refactor this.
     sentry_dsn = conf.get('sentry_dsn', None)
     if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn,))
+        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
@@ -269,11 +262,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     import galaxy.web.framework.middleware.error
     app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     return app
-
-
-def wrap_in_static(app, global_conf, **local_conf):
-    urlmap, _ = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap
 
 
 def _map_redirects(mapper):

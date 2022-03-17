@@ -92,7 +92,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                     return rval
 
             direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats)
-            assert direct_match or target_ext is not None, "No conversion path found for data param: %s" % self.name
+            assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
         return data
 
@@ -123,7 +123,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                     trans.sa_session.add(assoc)
                     trans.sa_session.flush()
                 elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
-                    raise Exception("Dataset conversion failed for data parameter: %s" % self.name)
+                    raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)
 
     def is_preparing(self, other_values):
@@ -138,7 +138,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             if value.state == value.states.OK:
                 return True
             elif value.state == value.states.ERROR:
-                raise Exception('A data display parameter is in the error state: %s' % (self.name))
+                raise Exception(f'A data display parameter is in the error state: {self.name}')
         return False
 
 
@@ -192,7 +192,7 @@ class DisplayParameterValueWrapper:
     def url(self):
         base_url = self.trans.request.base
         if self.parameter.strip_https and base_url[: 5].lower() == 'https':
-            base_url = "http%s" % base_url[5:]
+            base_url = f"http{base_url[5:]}"
         return "{}{}".format(base_url,
                              self.trans.app.url_for(controller='dataset',
                                                     action="display_application",

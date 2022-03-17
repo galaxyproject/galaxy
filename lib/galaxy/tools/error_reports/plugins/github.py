@@ -1,13 +1,7 @@
 """The module describes the ``github`` error plugin plugin."""
 
 import logging
-import sys
-if sys.version_info[0] < 3:
-    import urllib as urllib
-    import urlparse as urlparse
-else:
-    import urllib.parse as urllib
-    urlparse = urllib
+from urllib.parse import urlparse
 
 from galaxy.util import string_as_bool, unicodify
 from .base_git import BaseGitPlugin
@@ -70,13 +64,13 @@ class GithubPlugin(BaseGitPlugin):
             ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
             # Determine the GitLab project URL and the issue cache key
-            github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
+            github_projecturl = urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
                 else "/".join((self.git_default_repo_owner, self.git_default_repo_name))
             issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
             # Connect to the repo
             if github_projecturl not in self.git_project_cache:
-                self.git_project_cache[github_projecturl] = self.github.get_repo('%s' % github_projecturl)
+                self.git_project_cache[github_projecturl] = self.github.get_repo(f'{github_projecturl}')
             gh_project = self.git_project_cache[github_projecturl]
 
             # Make sure we keep a cache of the issues, per tool in this case
@@ -84,7 +78,7 @@ class GithubPlugin(BaseGitPlugin):
                 self._fill_issue_cache(gh_project, issue_cache_key)
 
             # Retrieve label
-            label = self.get_label('{}/{}'.format(unicodify(job.tool_id), unicodify(job.tool_version)), gh_project, issue_cache_key)
+            label = self.get_label(f'{unicodify(job.tool_id)}/{unicodify(job.tool_version)}', gh_project, issue_cache_key)
 
             # Generate information for the tool
             error_title = self._generate_error_title(job)

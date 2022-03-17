@@ -141,7 +141,7 @@ class ErrorReporter:
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
                 hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
-        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError("Bad value provided for HDA (%s)." % (hda))
+        assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job
         self.job = hda.creating_job
@@ -163,7 +163,7 @@ class ErrorReporter:
         history_id_encoded = self.app.security.encode_id(hda.history_id)
         history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(controller="dataset", action="show_params", dataset_id=hda_id_encoded, qualified=True)
+        hda_show_params_link = web.url_for(controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True)
         # Build the email message
         if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
@@ -181,12 +181,12 @@ class ErrorReporter:
             # user.)
             email_str = 'redacted'
             if user:
-                email_str += ' (user: %s)' % user.id
+                email_str += f' (user: {user.id})'
         else:
             if user:
-                email_str = "'%s'" % user.email
+                email_str = f"'{user.email}'"
                 if email and user.email != email:
-                    email_str += " (providing preferred contact email '%s')" % email
+                    email_str += f" (providing preferred contact email '{email}')"
             else:
                 email_str = "'%s'" % (email or 'anonymous')
 
@@ -244,8 +244,8 @@ class EmailErrorReporter(ErrorReporter):
         frm = self.app.config.email_from
         error_msg = validate_email_str(email)
         if not error_msg and self._can_access_dataset(user):
-            to += ', ' + email.strip()
-        subject = "Galaxy tool error report from %s" % email
+            to += f", {email.strip()}"
+        subject = f"Galaxy tool error report from {email}"
         try:
             subject = "{} ({})".format(
                 subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id)

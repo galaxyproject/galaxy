@@ -95,7 +95,7 @@ def upgrade(migrate_engine):
     WorkflowUUID_column = Column("uuid", UUIDType, nullable=True)
     add_column(History_column, "workflow_invocation", metadata)
     add_column(State_column, "workflow_invocation", metadata)
-    add_column(SchedulerId_column, "workflow_invocation", metadata, index_nane="id_workflow_invocation_scheduler")
+    add_column(SchedulerId_column, "workflow_invocation", metadata, index_name="id_workflow_invocation_scheduler")
     add_column(HandlerId_column, "workflow_invocation", metadata, index_name="id_workflow_invocation_handler")
     add_column(WorkflowUUID_column, "workflow_invocation", metadata)
 

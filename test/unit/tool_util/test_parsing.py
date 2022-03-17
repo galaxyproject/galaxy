@@ -4,13 +4,14 @@ import shutil
 import tempfile
 import unittest
 from math import isinf
+from typing import Optional
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.util import galaxy_directory
 
 
 TOOL_XML_1 = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <xrefs>
         <xref type="bio.tools">bwa</xref>
@@ -194,6 +195,8 @@ outputs:
 
 
 class BaseLoaderTestCase(unittest.TestCase):
+    source_file_name: Optional[str] = None
+    source_contents: Optional[str] = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
@@ -262,9 +265,6 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_name(self):
         assert self._tool_source.parse_name() == "BWA Mapper"
-
-    def test_is_multi_byte(self):
-        assert self._tool_source.parse_is_multi_byte()
 
     def test_display_interface(self):
         assert self._tool_source.parse_display_interface(False)
@@ -393,7 +393,7 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert '@' not in command
 
     def test_recursive_token(self):
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "^Token '@NESTED_TOKEN@' cannot contain itself$"):
             self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
     def test_creator(self):
@@ -425,9 +425,6 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
     def test_name(self):
         assert self._tool_source.parse_name() == "Bowtie Mapper"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_display_interface(self):
         assert not self._tool_source.parse_display_interface(False)
@@ -493,7 +490,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = list(page_source.parse_input_sources())
+        input_sources = page_source.parse_input_sources()
         assert len(input_sources) == 2
 
     def test_tests(self):
@@ -661,9 +658,6 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[0] == "galaxy.tools"
         assert tool_module[1] == "ExportHistoryTool"
         assert self._tool_source.parse_tool_type() == "export_history"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_version_command(self):
         assert self._tool_source.parse_version_command() is None

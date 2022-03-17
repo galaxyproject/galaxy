@@ -19,10 +19,14 @@ import ClickToEdit from "./common/ClickToEdit.vue";
 import _l from "utils/localization";
 export default {
     components: { ClickToEdit },
+    created: function () {
+        this.name = this.pair.name;
+    },
     data: function () {
         return {
             unpairButtonTitle: _l("Unpair"),
             titlePairName: _l("Click to rename"),
+            name: "",
         };
     },
     props: {
@@ -32,10 +36,6 @@ export default {
         unlinkFn: {
             required: true,
             type: Function,
-        },
-        name: {
-            required: true,
-            type: String,
         },
     },
     methods: {

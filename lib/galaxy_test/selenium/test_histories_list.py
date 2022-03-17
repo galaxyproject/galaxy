@@ -286,8 +286,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.history_panel_create_new_with_name(name)
 
     def select_filter(self, filter_key, filter_value):
-        filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
-            (filter_key, filter_value)
+        filter_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
         self.wait_for_and_click_selector(filter_selector)
 
     def get_history_tags_cell(self, history_name):
@@ -300,7 +299,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
                 break
 
         if tags_cell is None:
-            raise AssertionError('Failed to find history with name [%s]' % history_name)
+            raise AssertionError(f'Failed to find history with name [{history_name}]')
 
         return tags_cell
 

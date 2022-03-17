@@ -118,7 +118,7 @@ class ShedToolDataTableManager:
 
     def install_tool_data_tables(self, tool_shed_repository, tool_index_sample_files):
         TOOL_DATA_TABLE_FILE_NAME = 'tool_data_table_conf.xml'
-        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = '%s.sample' % (TOOL_DATA_TABLE_FILE_NAME)
+        TOOL_DATA_TABLE_FILE_SAMPLE_NAME = f'{TOOL_DATA_TABLE_FILE_NAME}.sample'
         SAMPLE_SUFFIX = '.sample'
         SAMPLE_SUFFIX_OFFSET = -len(SAMPLE_SUFFIX)
         target_dir, tool_path, relative_target_dir = self.get_target_install_dir(tool_shed_repository)

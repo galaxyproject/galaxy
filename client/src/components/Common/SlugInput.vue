@@ -5,8 +5,7 @@
         @keydown.enter="onChange"
         @keydown.esc="onCancel"
         class="d-inline w-auto h-auto px-1 py-0"
-        ref="input"
-    />
+        ref="input" />
 </template>
 <script>
 import Vue from "vue";

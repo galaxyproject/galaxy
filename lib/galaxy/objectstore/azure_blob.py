@@ -23,7 +23,8 @@ from galaxy.exceptions import (
 )
 from galaxy.util import (
     directory_hash_id,
-    umask_fix_perms
+    umask_fix_perms,
+    unlink,
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
@@ -192,7 +193,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         # rel_path = '%s/' % rel_path # assume for now we don't need this in Azure blob storage.
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
 
         return rel_path
 
@@ -389,7 +390,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
 
@@ -397,7 +398,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound('objectstore.empty, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+            raise ObjectNotFound(f'objectstore.empty, object does not exist: {str(obj)}, kwargs: {str(kwargs)}')
 
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -428,7 +429,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual blob in Azure and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 blobs = self.service.list_blobs(self.container_name, prefix=rel_path)
                 for blob in blobs:
                     log.debug("Deleting from Azure: %s", blob)
@@ -436,7 +437,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._in_azure(rel_path):
                     log.debug("Deleting from Azure: %s", rel_path)
@@ -493,7 +494,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound('objectstore.get_filename, no cache_path: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+        raise ObjectNotFound(f'objectstore.get_filename, no cache_path: {str(obj)}, kwargs: {str(kwargs)}')
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
         if create is True:
@@ -518,7 +519,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             self._push_to_os(rel_path, source_file)
 
         else:
-            raise ObjectNotFound('objectstore.update_from_file, object does not exist: {}, kwargs: {}'.format(str(obj), str(kwargs)))
+            raise ObjectNotFound(f'objectstore.update_from_file, object does not exist: {str(obj)}, kwargs: {str(kwargs)}')
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

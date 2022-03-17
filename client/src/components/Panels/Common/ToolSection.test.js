@@ -44,8 +44,8 @@ describe("ToolSection", () => {
         await wrapper.vm.$nextTick();
         const $names = wrapper.findAll(".name");
         expect($names.at(1).text()).toBe("name");
-        const $label = wrapper.find(".tool-panel-label");
-        expect($label.text()).toBe("text");
+        const $label = wrapper.find(".title-link");
+        expect($label.text()).toBe("tool_section");
         $sectionName.trigger("click");
         await wrapper.vm.$nextTick();
         expect(wrapper.findAll(".name").length).toBe(1);

@@ -72,7 +72,7 @@ input1: "hello world"
 
     def test_outputs(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        workflow = self._get(f"workflows/{workflow_id}/download").json()
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
         workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
@@ -135,7 +135,7 @@ steps:
         assert subworkflow_connection["input_subworkflow_step_id"] == 0
 
         workflow_reupload_id = self.import_workflow(workflow)["id"]
-        workflow_reupload = self._get("workflows/%s/download" % workflow_reupload_id).json()
+        workflow_reupload = self._get(f"workflows/{workflow_reupload_id}/download").json()
         by_label = self._steps_by_label(workflow_reupload)
         subworkflow_step = by_label["nested_workflow"]
         assert subworkflow_step["type"] == "subworkflow"

@@ -12,6 +12,7 @@ A multi-hour long video playlist covering these slides can be found at
   :maxdepth: 1
 
   schema
+  api_guidelines
   interactive_environments
   build_a_job_runner
   finding_and_improving_slow_code
@@ -21,5 +22,7 @@ A multi-hour long video playlist covering these slides can be found at
   writing_tests
   debugging_tests
   debugging_galaxy
+  debugging_galaxy_slurm
   starting_galaxy
   file_upload
+  translating

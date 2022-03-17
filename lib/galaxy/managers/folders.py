@@ -8,6 +8,7 @@ from sqlalchemy.orm.exc import (
     NoResultFound
 )
 
+from galaxy import util
 from galaxy.exceptions import (
     AuthenticationRequired,
     InconsistentDatabase,
@@ -15,9 +16,8 @@ from galaxy.exceptions import (
     InternalServerError,
     ItemAccessibilityException,
     MalformedId,
-    RequestParameterInvalidException
+    RequestParameterInvalidException,
 )
-from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class FolderManager:
         except NoResultFound:
             raise RequestParameterInvalidException('No folder found with the id provided.')
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + unicodify(e))
+            raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 
@@ -132,10 +132,10 @@ class FolderManager:
         """
         folder_dict = folder.to_dict(view='element')
         folder_dict = trans.security.encode_all_ids(folder_dict, True)
-        folder_dict['id'] = 'F' + folder_dict['id']
+        folder_dict['id'] = f"F{folder_dict['id']}"
         if folder_dict['parent_id'] is not None:
-            folder_dict['parent_id'] = 'F' + folder_dict['parent_id']
-        folder_dict['update_time'] = folder.update_time.strftime("%Y-%m-%d %I:%M %p")
+            folder_dict['parent_id'] = f"F{folder_dict['parent_id']}"
+        folder_dict['update_time'] = folder.update_time
         return folder_dict
 
     def create(self, trans, parent_folder_id, new_folder_name, new_folder_description=''):
@@ -277,7 +277,7 @@ class FolderManager:
         if ((len(encoded_folder_id) % 16 == 1) and encoded_folder_id.startswith('F')):
             cut_id = encoded_folder_id[1:]
         else:
-            raise MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
+            raise MalformedId(f'Malformed folder id ( {str(encoded_folder_id)} ) specified, unable to decode.')
         return cut_id
 
     def decode_folder_id(self, trans, encoded_folder_id):
@@ -292,11 +292,7 @@ class FolderManager:
 
         :raises: MalformedId
         """
-        try:
-            decoded_id = trans.security.decode_id(encoded_folder_id)
-        except ValueError:
-            raise MalformedId("Malformed folder id ( %s ) specified, unable to decode" % (str(encoded_folder_id)))
-        return decoded_id
+        return trans.security.decode_id(encoded_folder_id, object_name="folder")
 
     def cut_and_decode(self, trans, encoded_folder_id):
         """

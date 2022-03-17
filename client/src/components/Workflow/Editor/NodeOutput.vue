@@ -5,8 +5,7 @@
             :class="['callout-terminal', output.name]"
             @click="onToggle"
             v-b-tooltip
-            title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
-        >
+            title="Unchecked outputs will be hidden and are not available as subworkflow outputs.">
             <i :class="['mark-terminal', activeClass]" />
         </div>
         {{ label }}
@@ -51,14 +50,11 @@ export default {
             if (Array.isArray(extensions)) {
                 extensions = extensions.join(", ");
             }
-            const activeLabel = this.activeOutput?.activeLabel || this.output.label || this.output.name;
+            const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
             return `${activeLabel} (${extensions})`;
         },
-        activeOutput() {
-            return this.getNode().activeOutputs.outputsIndex[this.output.name];
-        },
         activeClass() {
-            return this.activeOutput?.activeOutput && "mark-terminal-active";
+            return this.output.activeOutput && "mark-terminal-active";
         },
         showCallout() {
             const node = this.getNode();
@@ -73,7 +69,13 @@ export default {
         },
     },
     watch: {
-        output: function (newOutput) {
+        label() {
+            // See discussion at: https://github.com/vuejs/vue/issues/8030
+            this.$nextTick(() => {
+                this.$emit("onChange");
+            });
+        },
+        output(newOutput) {
             const oldTerminal = this.terminal;
             if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
                 oldTerminal.update(newOutput);
@@ -81,18 +83,17 @@ export default {
             } else {
                 // create new terminal, connect like old terminal, destroy old terminal
                 this.$emit("onRemove", this.output);
-                const newTerminal = this.createTerminal(newOutput);
-                newTerminal.connectors = this.terminal.connectors.map((c) => {
-                    return new Connector(this.getManager(), newTerminal, c.inputHandle);
+                this.createTerminal(newOutput);
+                this.terminal.connectors = oldTerminal.connectors.map((c) => {
+                    return new Connector(this.getManager(), this.terminal, c.inputHandle);
                 });
-                newTerminal.destroyInvalidConnections();
-                this.terminal = newTerminal;
+                this.terminal.destroyInvalidConnections();
                 oldTerminal.destroy();
             }
         },
     },
     mounted() {
-        this.terminal = this.createTerminal(this.output);
+        this.createTerminal(this.output);
     },
     methods: {
         terminalClassForOutput(output) {
@@ -105,7 +106,6 @@ export default {
             return terminalClass;
         },
         createTerminal(output) {
-            let terminal;
             const terminalClass = this.terminalClassForOutput(output);
             const parameters = {
                 node: this.getNode(),
@@ -116,33 +116,33 @@ export default {
             if (output.collection) {
                 const collection_type = output.collection_type;
                 const collection_type_source = output.collection_type_source;
-                terminal = new terminalClass({
+                this.terminal = new terminalClass({
                     ...parameters,
                     collection_type: collection_type,
                     collection_type_source: collection_type_source,
                     datatypes: output.extensions,
                 });
             } else if (output.parameter) {
-                terminal = new terminalClass({
+                this.terminal = new terminalClass({
                     ...parameters,
                     type: output.type,
                 });
             } else {
-                terminal = new terminalClass({
+                this.terminal = new terminalClass({
                     ...parameters,
                     datatypes: output.extensions,
                 });
             }
-            terminal.on("change", this.onChange.bind(this));
             new OutputDragging(this.getManager(), {
                 el: this.$refs.terminal,
-                terminal: terminal,
+                terminal: this.terminal,
             });
-            this.$emit("onAdd", this.output, terminal);
-            return terminal;
+            this.terminal.on("change", this.onChange.bind(this));
+            this.terminal.emit("change");
+            this.$emit("onAdd", this.output, this.terminal);
         },
         onChange() {
-            this.isMultiple = this.terminal.mapOver && this.terminal.mapOver.isCollection;
+            this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
         },
         onToggle() {

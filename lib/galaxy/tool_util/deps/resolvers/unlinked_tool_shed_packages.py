@@ -37,7 +37,7 @@ from .galaxy_packages import BaseGalaxyPackageDependencyResolver
 log = logging.getLogger(__name__)
 
 MANUAL = "manual"
-PREFERRED_OWNERS = MANUAL + ",iuc,devteam"
+PREFERRED_OWNERS = f"{MANUAL},iuc,devteam"
 
 
 class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResolver):
@@ -84,7 +84,7 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 for owner in listdir(path):
                     owner_path = join(path, owner)
                     for package_name in listdir(owner_path):
-                        if package_name.lower().startswith("package_" + name.lower()):
+                        if package_name.lower().startswith(f"package_{name.lower()}"):
                             package_path = join(owner_path, package_name)
                             for revision in listdir(package_path):
                                 revision_path = join(package_path, revision)
@@ -119,26 +119,6 @@ class UnlinkedToolShedPackageDependencyResolver(BaseGalaxyPackageDependencyResol
                 latest_modified = modified
         log.debug("Picking dependency at '%s' as it was the last modified", latest_candidate.path)
         return latest_candidate
-
-    """
-    #Currently no need has been found for expand the verionsless method
-    #This is an example of how it could be done
-    def _find_dep_default( self, name, type='package', **kwds ):
-        try:
-            possibles = TODO
-            if len(possibles) == 0:
-                log.debug("Unable to find dependency,'%s' default '%s'", name, type)
-                return NullDependency(version=None, name=name)
-            elif len(possibles) == 1:
-                #Only one candidate found so ignore any preference rules
-                return possibles[0].dependency
-            else:
-                #Pick the preferred one
-                return self._select_preferred_dependency(possibles, by_owner=False).dependency
-        except Exception:
-            log.exception("Unexpected error hunting for dependency '%s' default '%s'", name, type)
-            return NullDependency(version=None, name=name)
-    """
 
 
 class CandidateDependency(Dependency):

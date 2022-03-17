@@ -51,12 +51,6 @@ class CondorJobRunner(AsynchronousJobRunner):
     """
     runner_name = "CondorRunner"
 
-    def __init__(self, app, nworkers):
-        """Initialize this job runner and start the monitor thread"""
-        super().__init__(app, nworkers)
-        self._init_monitor_thread()
-        self._init_worker_threads()
-
     def queue_job(self, job_wrapper):
         """Create job script and submit it to the DRM"""
 
@@ -83,7 +77,7 @@ class CondorJobRunner(AsynchronousJobRunner):
 
         galaxy_slots = query_params.get('request_cpus', None)
         if galaxy_slots:
-            galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;' % galaxy_slots
+            galaxy_slots_statement = f'GALAXY_SLOTS="{galaxy_slots}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
             galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
@@ -93,9 +87,9 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_wrapper=job_wrapper
         )
 
-        cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
+        cjs.user_log = os.path.join(job_wrapper.working_directory, f'galaxy_{galaxy_id_tag}.condor.log')
         cjs.register_cleanup_file_attribute('user_log')
-        submit_file = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.desc' % galaxy_id_tag)
+        submit_file = os.path.join(job_wrapper.working_directory, f'galaxy_{galaxy_id_tag}.condor.desc')
         executable = cjs.job_file
 
         build_submit_params = dict(
@@ -114,10 +108,10 @@ class CondorJobRunner(AsynchronousJobRunner):
             shell=job_wrapper.shell,
         )
         try:
-            self.write_executable_script(executable, script)
+            self.write_executable_script(executable, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure preparing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure preparing job script")
             return
 
         cleanup_job = job_wrapper.cleanup_job
@@ -128,7 +122,7 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.cleanup()
                 # job_wrapper.fail() calls job_wrapper.cleanup()
             job_wrapper.fail("failure preparing submit file", exception=True)
-            log.exception("(%s) failure preparing submit file" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure preparing submit file")
             return
 
         # job was deleted while we were preparing it
@@ -274,7 +268,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join(job_wrapper.working_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
+        cjs.user_log = os.path.join(job_wrapper.working_directory, f'galaxy_{galaxy_id_tag}.condor.log')
         cjs.register_cleanup_file_attribute('user_log')
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue")

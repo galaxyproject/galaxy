@@ -15,6 +15,7 @@ from galaxy.managers import (
     datasets,
 )
 from galaxy.model import tags
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
     model_class = model.LibraryDatasetDatasetAssociation
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.tag_handler = tags.GalaxyTagHandler(app.model.context)
 
@@ -43,7 +44,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         try:
             ld = trans.sa_session.query(trans.app.model.LibraryDataset).filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id).one()
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + util.unicodify(e))
+            raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         ld = self.secure(trans, ld, check_accessible)
         return ld
 
@@ -132,7 +133,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             if key in ('file_ext'):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
                 if datatype is None and val not in ("auto",):
-                    raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s' % (val))
+                    raise RequestParameterInvalidException(f'This Galaxy does not recognize the datatype of: {val}')
                 validated_payload[key] = val
             if key in ('genome_build'):
                 if len(val) < MINIMUM_STRING_LENGTH:
@@ -232,7 +233,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         if ldda.dataset.uuid:
             rval['uuid'] = str(ldda.dataset.uuid)
         rval['deleted'] = ld.deleted
-        rval['folder_id'] = 'F' + rval['folder_id']
+        rval['folder_id'] = f"F{rval['folder_id']}"
         rval['full_path'] = full_path
         rval['file_size'] = util.nice_size(int(ldda.get_size()))
         rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
@@ -259,10 +260,10 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         path_to_root = []
         if folder.parent_id is None:
             # We are almost in root
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
+            path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
         else:
             # We add the current folder and traverse up one folder.
-            path_to_root.append(('F' + trans.security.encode_id(folder.id), folder.name))
+            path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
             upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root

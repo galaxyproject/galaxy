@@ -27,7 +27,7 @@ class SetMetadataToolAction(ToolAction):
                                           history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
-        trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        trans.log_event(f"Added set external metadata job to the job queue, id: {str(job.id)}", tool_id=job.tool_id)
         return job, odict
 
     def execute_via_app(self, tool, app, session_id, history_id, user=None,
@@ -103,6 +103,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
+                                                                     max_discovered_files=app.config.max_discovered_files,
                                                                      validate_outputs=validate_outputs,
                                                                      job=job,
                                                                      kwds={'overwrite': overwrite})
@@ -119,11 +120,6 @@ class SetMetadataToolAction(ToolAction):
         dataset._state = dataset.states.SETTING_METADATA
         job.state = start_job_state  # job inputs have been configured, restore initial job state
         sa_session.flush()
-
-        # Queue the job for execution
-        app.job_manager.enqueue(job, tool=tool)
-        # FIXME: need to add event logging to app and log events there rather than trans.
-        # trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)

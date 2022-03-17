@@ -30,13 +30,13 @@ def upgrade(migrate_engine):
     c = Column("uninstalled", Boolean, default=False)
     add_column(c, ToolShedRepository_table, metadata)
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET uninstalled=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET uninstalled={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'uninstalled' of table 'tool_shed_repository' failed.")
     c = Column("dist_to_shed", Boolean, default=False)
     add_column(c, ToolShedRepository_table, metadata)
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET dist_to_shed=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET dist_to_shed={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'dist_to_shed' of table 'tool_shed_repository' failed.")
 

@@ -26,7 +26,7 @@ def __main__():
 
     blocks_kept = 0
     i = 0
-    for i, m in enumerate(maf_reader):
+    for i, m in enumerate(maf_reader):  # noqa: B007
         if min_size <= m.text_size <= max_size:
             maf_writer.write(m)
             blocks_kept += 1

@@ -119,8 +119,6 @@ def job_config(template_str, jobs_directory):
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
 class BaseKubernetesStagingTest(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-    # Test leverages $UWSGI_PORT in job code, need to set this up.
-    require_uwsgi = True
 
     def setUp(self):
         super().setUp()
@@ -208,7 +206,7 @@ class KubernetesDependencyResolutionIntegrationTestCase(BaseKubernetesStagingTes
 
 
 def set_infrastucture_url(config):
-    infrastructure_url = "http://%s:$UWSGI_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
+    infrastructure_url = "http://%s:$GALAXY_WEB_PORT" % GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST
     config["galaxy_infrastructure_url"] = infrastructure_url
 
 

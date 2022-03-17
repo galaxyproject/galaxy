@@ -50,9 +50,6 @@ class CloudManager(sharable.SharableModelManager):
     # setting this property.
     model_class = model.History
 
-    def __init__(self, app, *args, **kwargs):
-        super().__init__(app, *args, **kwargs)
-
     @staticmethod
     def configure_provider(provider, credentials):
         """
@@ -250,14 +247,14 @@ class CloudManager(sharable.SharableModelManager):
             if bucket is None:
                 raise RequestParameterInvalidException(f"The bucket `{bucket_name}` not found.")
         except Exception as e:
-            raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket_name, util.unicodify(e)))
+            raise ItemAccessibilityException(f"Could not get the bucket `{bucket_name}`: {util.unicodify(e)}")
 
         datasets = []
         for obj in objects:
             try:
                 key = bucket.objects.get(obj)
             except Exception as e:
-                raise MessageException("The following error occurred while getting the object {}: {}".format(obj, util.unicodify(e)))
+                raise MessageException(f"The following error occurred while getting the object {obj}: {util.unicodify(e)}")
             if key is None:
                 log.exception(
                     "Could not get object `{}` for user `{}`. Object may not exist, or the provided credentials are "
@@ -270,7 +267,7 @@ class CloudManager(sharable.SharableModelManager):
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
             if not history:
-                raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
+                raise ObjectNotFound(f"History with ID `{trans.app.security.encode_id(history_id)}` not found.")
             output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
             job_errors = output.get('job_errors', [])
@@ -332,7 +329,7 @@ class CloudManager(sharable.SharableModelManager):
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         if not history:
-            raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
+            raise ObjectNotFound(f"History with ID `{trans.app.security.encode_id(history_id)}` not found.")
 
         sent = []
         failed = []
@@ -369,7 +366,7 @@ class CloudManager(sharable.SharableModelManager):
                             "job_id": trans.app.security.encode_id(job.id)
                         }))
                 except Exception as e:
-                    err_msg = "maybe invalid or unauthorized credentials. {}".format(util.unicodify(e))
+                    err_msg = f"maybe invalid or unauthorized credentials. {util.unicodify(e)}"
                     log.debug("Failed to send the dataset `{}` per user `{}` request to cloud, {}".format(
                         object_label, trans.user.id, err_msg))
                     failed.append(json.dumps(

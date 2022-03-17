@@ -39,8 +39,8 @@ def upgrade(migrate_engine):
     update_count = 0
     for row in tool_shed_repositories:
         cmd = "UPDATE tool_shed_repository " \
-            + "SET installed_changeset_revision = '%s' " % row.changeset_revision \
-            + "WHERE changeset_revision = '%s';" % row.changeset_revision
+            + f"SET installed_changeset_revision = '{row.changeset_revision}' " \
+            + f"WHERE changeset_revision = '{row.changeset_revision}';"
         migrate_engine.execute(cmd)
         update_count += 1
     print("Updated the installed_changeset_revision column for ", update_count, " rows in the tool_shed_repository table.")

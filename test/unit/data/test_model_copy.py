@@ -5,9 +5,17 @@ import threading
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.objectstore.unittest_utils import (
+    Config as TestConfig,
+    DISK_TEST_CONFIG,
+)
 from galaxy.util import ExecutionTimer
-from ..unittest_utils.objectstore_helpers import DISK_TEST_CONFIG, TestConfig
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -34,7 +42,7 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
         print("history copied %s" % history_copy_timer)
         assert new_history.name == "HistoryCopyHistory1"
         assert new_history.user == old_history.user
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             if include_metadata_file:
                 _check_metadata_file(hda)
@@ -84,7 +92,7 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
         new_history = old_history.copy(target_user=old_history.user)
         print("history copied %s" % history_copy_timer)
 
-        for i, hda in enumerate(new_history.active_datasets):
+        for hda in new_history.active_datasets:
             assert hda.get_size() == 3
             annotation_str = hda.get_item_annotation_str(model.context, old_history.user, hda)
             assert annotation_str == "annotation #%d" % hda.hid, annotation_str
@@ -101,15 +109,15 @@ def _setup_mapping_and_user():
         # Start the database and connect the mapping
         model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store, slow_query_log_threshold=SLOW_QUERY_LOG_THRESHOLD, thread_local_log=THREAD_LOCAL_LOG)
 
-        u = model.User(email="historycopy@example.com", password="password")
-        h1 = model.History(name="HistoryCopyHistory1", user=u)
+        u = User(email="historycopy@example.com", password="password")
+        h1 = History(name="HistoryCopyHistory1", user=u)
         model.context.add_all([u, h1])
         model.context.flush()
         yield test_config, object_store, model, h1
 
 
 def _create_hda(model, object_store, history, path, visible=True, include_metadata_file=False):
-    hda = model.HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
     hda.visible = visible
     model.context.add(hda)
     model.context.flush([hda])

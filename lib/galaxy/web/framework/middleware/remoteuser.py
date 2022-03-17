@@ -82,7 +82,7 @@ class RemoteUser:
             if self.normalize_remote_user_email:
                 environ[self.remote_user_header] = environ[self.remote_user_header].lower()
             if self.maildomain and '@' not in environ[self.remote_user_header]:
-                environ[self.remote_user_header] = "{}@{}".format(environ[self.remote_user_header], self.maildomain)
+                environ[self.remote_user_header] = f"{environ[self.remote_user_header]}@{self.maildomain}"
 
         path_info = environ.get('PATH_INFO', '')
 
@@ -134,7 +134,7 @@ class RemoteUser:
         if environ.get(self.remote_user_header, None):
             if not environ[self.remote_user_header].count('@'):
                 if self.maildomain is not None:
-                    environ[self.remote_user_header] += '@' + self.maildomain
+                    environ[self.remote_user_header] += f"@{self.maildomain}"
                 else:
                     title = "Access to Galaxy is denied"
                     message = """
@@ -172,10 +172,10 @@ class RemoteUser:
                 # requests.
                 pass
             elif environ[self.remote_user_header] in self.admin_users and \
-                    any([path_info.startswith(prefix) for prefix in admin_accessible_paths]):
+                    any(path_info.startswith(prefix) for prefix in admin_accessible_paths):
                 # If the user is an admin user, and any of the admin accessible paths match..., allow them to execute that action.
                 pass
-            elif any([path_info.startswith(prefix) for prefix in user_accessible_paths]):
+            elif any(path_info.startswith(prefix) for prefix in user_accessible_paths):
                 # If the user is allowed to access the path, pass
                 pass
             elif path_info == '/user' or path_info == '/user/':
@@ -190,7 +190,7 @@ class RemoteUser:
                 return self.error(start_response, title, message)
             return self.app(environ, start_response)
         else:
-            log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
+            log.debug(f"Unable to identify user.  {self.remote_user_header} not found")
             for k, v in environ.items():
                 log.debug("%s = %s", k, v)
 

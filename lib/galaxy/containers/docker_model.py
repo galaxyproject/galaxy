@@ -24,8 +24,8 @@ from galaxy.util import (
 
 CPUS_LABEL = '_galaxy_cpus'
 IMAGE_LABEL = '_galaxy_image'
-CPUS_CONSTRAINT = 'node.labels.' + CPUS_LABEL
-IMAGE_CONSTRAINT = 'node.labels.' + IMAGE_LABEL
+CPUS_CONSTRAINT = f"node.labels.{CPUS_LABEL}"
+IMAGE_CONSTRAINT = f"node.labels.{IMAGE_LABEL}"
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class DockerAttributeContainer:
         return not self.__eq__(other)
 
     def __hash__(self):
-        return hash(tuple(sorted([repr(x) for x in self._members])))
+        return hash(tuple(sorted(repr(x) for x in self._members)))
 
     def __str__(self):
         return ', '.join(str(x) for x in self._members) or 'None'
@@ -85,7 +85,7 @@ class DockerVolume(ContainerVolume):
         Docker volume syntax.
         """
         if not as_str:
-            raise ValueError("Failed to parse Docker volume from %s" % as_str)
+            raise ValueError(f"Failed to parse Docker volume from {as_str}")
         parts = as_str.split(":", 2)
         kwds = dict(host_path=parts[0])
         if len(parts) == 1:
@@ -109,7 +109,7 @@ class DockerVolume(ContainerVolume):
             volume_for_cmd_line = shlex.quote(volume_str)
         else:
             # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
-            volume_for_cmd_line = '"%s"' % volume_str
+            volume_for_cmd_line = f'"{volume_str}"'
         return volume_for_cmd_line
 
     def to_native(self):
@@ -406,7 +406,7 @@ class DockerServiceConstraint:
             if len(t[0]) < len(constraint[0]):
                 constraint = t
         if constraint[0] == constraint_str:
-            raise Exception('Unable to parse constraint string: %s' % constraint_str)
+            raise Exception(f'Unable to parse constraint string: {constraint_str}')
         return [x.strip() for x in constraint]
 
     @classmethod
@@ -676,7 +676,7 @@ class DockerTask:
         service = service or interface.service(id=t.get('ServiceID'))
         node = node or interface.node(id=t.get('NodeID'))
         if service:
-            name = service.name + '.' + str(t['Slot'])
+            name = f"{service.name}.{str(t['Slot'])}"
         else:
             name = t['ID']
         image = t['Spec']['ContainerSpec']['Image'].split('@', 1)[0],  # remove pin

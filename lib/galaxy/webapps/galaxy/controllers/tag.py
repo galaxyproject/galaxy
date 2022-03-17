@@ -109,7 +109,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count('*')]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
-        where_clause = and_(trans.app.model.Tag.table.c.name.like(q + "%"),
+        where_clause = and_(trans.app.model.Tag.table.c.name.like(f"{q}%"),
                             item_tag_assoc_class.table.c.user_id == user.id)
         order_by = [func.count("*").desc()]
         group_by = item_tag_assoc_class.table.c.tag_id
@@ -131,7 +131,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
             tag_names = self._get_usernames_for_tag(trans, trans.user, tag, item_class, item_tag_assoc_class)
-            ac_data += tag_names[0] + "|" + tag_names[0] + "\n"
+            ac_data += f"{tag_names[0]}|{tag_names[0]}\n"
         return ac_data
 
     def _get_tag_autocomplete_values(self, trans, q, limit, timestamp, user=None, item=None, item_class=None):
@@ -157,7 +157,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
         where_clause = and_(item_tag_assoc_class.table.c.user_id == user.id,
                             trans.app.model.Tag.table.c.id == tag.id,
-                            item_tag_assoc_class.table.c.value.like(tag_value + "%"))
+                            item_tag_assoc_class.table.c.value.like(f"{tag_value}%"))
         order_by = [func.count("*").desc(), item_tag_assoc_class.table.c.value]
         group_by = item_tag_assoc_class.table.c.value
         # Do query and get result set.
@@ -169,10 +169,10 @@ class TagsController(BaseUIController, UsesTagsMixin):
                        limit=limit)
         result_set = trans.sa_session.execute(query)
         # Create and return autocomplete data.
-        ac_data = "#Header|Your Values for '%s'\n" % (tag_name)
+        ac_data = f"#Header|Your Values for '{tag_name}'\n"
         tag_uname = self._get_usernames_for_tag(trans, trans.user, tag, item_class, item_tag_assoc_class)[0]
         for row in result_set:
-            ac_data += tag_uname + ":" + row[0] + "|" + row[0] + "\n"
+            ac_data += f"{tag_uname}:{row[0]}|{row[0]}\n"
         return ac_data
 
     def _get_usernames_for_tag(self, trans, user, tag, item_class, item_tag_assoc_class):

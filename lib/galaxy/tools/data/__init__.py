@@ -8,6 +8,7 @@ to modify the tool configurations.
 
 import errno
 import hashlib
+import json
 import logging
 import os
 import os.path
@@ -22,8 +23,10 @@ import refgenconf
 import requests
 
 from galaxy import util
+from galaxy.exceptions import MessageException
 from galaxy.util import RW_R__R__
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.filelock import FileLock
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.template import fill_template
 
@@ -66,7 +69,7 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
-class ToolDataTableManager:
+class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 
     def __init__(self, tool_data_path, config_filename=None, tool_data_table_config_path_set=None, other_config_dict=None):
@@ -102,6 +105,19 @@ class ToolDataTableManager:
 
     def get_tables(self):
         return self.data_tables
+
+    def to_dict(self):
+        return {name: data_table.to_dict(view='export') for name, data_table in self.data_tables.items()}
+
+    def to_json(self, path):
+        with open(path, 'w') as out:
+            out.write(json.dumps(self.to_dict()))
+
+    @classmethod
+    def from_dict(cls, d):
+        tdtm = cls.__new__(cls)
+        tdtm.data_tables = {name: ToolDataTable.from_dict(data) for name, data in d.items()}
+        return tdtm
 
     def load_from_config_file(self, config_filename, tool_data_path, from_shed_config=False):
         """
@@ -159,7 +175,7 @@ class ToolDataTableManager:
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file {}: {}'.format(str(os.path.split(config_filename)[1]), util.unicodify(e))
+            error_message = f'Error attempting to parse file {str(os.path.split(config_filename)[1])}: {util.unicodify(e)}'
             log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
@@ -245,8 +261,18 @@ class ToolDataTable:
     @classmethod
     def from_elem(cls, table_elem, tool_data_path, from_shed_config, filename, tool_data_path_files, other_config_dict=None):
         table_type = table_elem.get('type', 'tabular')
-        assert table_type in tool_data_table_types, "Unknown data table type '%s'" % table_type
+        assert table_type in tool_data_table_types, f"Unknown data table type '{table_type}'"
         return tool_data_table_types[table_type](table_elem, tool_data_path, from_shed_config=from_shed_config, filename=filename, tool_data_path_files=tool_data_path_files, other_config_dict=other_config_dict)
+
+    @classmethod
+    def from_dict(cls, d):
+        data_table_class = globals()[d['model_class']]
+        data_table = data_table_class.__new__(data_table_class)
+        for attr, val in d.items():
+            if not attr == 'model_class':
+                setattr(data_table, attr, val)
+        data_table._loaded_content_version = 1
+        return data_table
 
     def __init__(self, config_element, tool_data_path, from_shed_config=False, filename=None, tool_data_path_files=None, other_config_dict=None):
         self.name = config_element.get('name')
@@ -263,7 +289,7 @@ class ToolDataTable:
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
-        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict})
+        self._load_info = ([config_element, tool_data_path], {'from_shed_config': from_shed_config, 'tool_data_path_files': self.tool_data_path_files, 'other_config_dict': other_config_dict, 'filename': filename})
         self._merged_load_info = []
 
     def _update_version(self, version=None):
@@ -276,16 +302,19 @@ class ToolDataTable:
     def get_empty_field_by_name(self, name):
         return self.empty_field_values.get(name, self.empty_field_value)
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         raise NotImplementedError("Abstract method")
 
-    def add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
-        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+    def add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+        self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
         return self._update_version()
 
-    def add_entries(self, entries, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def add_entries(self, entries, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         for entry in entries:
-            self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+            try:
+                self.add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
+            except Exception as e:
+                log.error(str(e))
         return self._loaded_content_version
 
     def _remove_entry(self, values):
@@ -298,7 +327,7 @@ class ToolDataTable:
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         raise NotImplementedError("Abstract method")
 
     def reload_from_files(self):
@@ -326,6 +355,8 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
+    dict_export_visible_keys = ['name', 'data', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'tabular'
 
@@ -359,7 +390,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 # Handle URLs as files
                 filename = file_element.get('url', None)
                 if filename:
-                    tmp_file = NamedTemporaryFile(prefix='TTDT_URL_%s-' % self.name, mode='w')
+                    tmp_file = NamedTemporaryFile(prefix=f'TTDT_URL_{self.name}-', mode='w')
                     try:
                         tmp_file.write(requests.get(filename, timeout=url_timeout).text)
                     except Exception as e:
@@ -405,9 +436,9 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     if self.tool_data_path_files.exists(corrected_filename):
                         filename = corrected_filename
                         found = True
-                    elif not from_shed_config and self.tool_data_path_files.exists("%s.sample" % corrected_filename):
-                        log.info("Could not find tool data %s, reading sample" % corrected_filename)
-                        filename = "%s.sample" % corrected_filename
+                    elif not from_shed_config and self.tool_data_path_files.exists(f"{corrected_filename}.sample"):
+                        log.info(f"Could not find tool data {corrected_filename}, reading sample")
+                        filename = f"{corrected_filename}.sample"
                         found = True
 
             errors = []
@@ -433,7 +464,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             if tmp_file is not None:
                 tmp_file.close()
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         assert self.columns == other_table.columns, f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
         # merge filename info
         for filename, info in other_table.filenames.items():
@@ -447,7 +478,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             self.allow_duplicate_entries = False
             self._deduplicate_data()
         # add data entries and return current data table version
-        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, persist_on_error=persist_on_error, entry_source=entry_source, **kwd)
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -615,7 +646,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 break
         return filename
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, persist_on_error=False, entry_source=None, **kwd):
+    def _add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
         # accepts dict or list of columns
         if isinstance(entry, dict):
             fields = []
@@ -628,42 +659,40 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 fields.append(field_value)
         else:
             fields = entry
-        is_error = False
         if self.largest_index < len(fields):
             fields = self._replace_field_separators(fields)
             if (allow_duplicates and self.allow_duplicate_entries) or fields not in self.get_fields():
                 self.data.append(fields)
             else:
-                log.debug("Attempted to add fields (%s) to data table '%s', but this entry already exists and allow_duplicates is False.", fields, self.name)
-                is_error = True
+                raise MessageException(f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.")
         else:
-            log.error("Attempted to add fields (%s) to data table '%s', but there were not enough fields specified ( %i < %i ).", fields, self.name, len(fields), self.largest_index + 1)
-            is_error = True
+            raise MessageException(f"Attempted to add fields ({fields}) to data table '{self.name}', but there were not enough fields specified ( {len(fields)} < {self.largest_index + 1} ).")
         filename = None
 
-        if persist and (not is_error or persist_on_error):
+        if persist:
             filename = self.get_filename_for_source(entry_source)
             if filename is None:
-                # should we default to using any filename here instead?
-                log.error("Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields)
-                is_error = True
+                # If we reach this point, there is no data table with a corresponding .loc file.
+                raise MessageException(f"Unable to determine filename for persisting data table '{self.name}' values: '{self.fields}'.")
             else:
-                # FIXME: Need to lock these files for editing
                 log.debug("Persisting changes to file: %s", filename)
-                try:
-                    data_table_fh = open(filename, 'r+b')
-                except OSError as e:
-                    log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
-                    data_table_fh = open(filename, 'wb')
-                if os.stat(filename).st_size != 0:
-                    # ensure last existing line ends with new line
-                    data_table_fh.seek(-1, 2)  # last char in file
-                    last_char = data_table_fh.read(1)
-                    if last_char not in [b'\n', b'\r']:
-                        data_table_fh.write(b'\n')
-                fields = "%s\n" % self.separator.join(fields)
+                with FileLock(filename):
+                    try:
+                        if os.path.exists(filename):
+                            data_table_fh = open(filename, 'r+b')
+                            if os.stat(filename).st_size > 0:
+                                # ensure last existing line ends with new line
+                                data_table_fh.seek(-1, 2)  # last char in file
+                                last_char = data_table_fh.read(1)
+                                if last_char not in [b'\n', b'\r']:
+                                    data_table_fh.write(b'\n')
+                        else:
+                            data_table_fh = open(filename, 'wb')
+                    except OSError as e:
+                        log.exception('Error opening data table file (%s): %s', filename, e)
+                        raise
+                fields = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields.encode('utf-8'))
-        return not is_error
 
     def _remove_entry(self, values):
 
@@ -737,7 +766,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return util.xml_to_string(self.config_element)
 
     def to_dict(self, view='collection'):
-        rval = super().to_dict()
+        rval = super().to_dict(view=view)
         if view == 'element':
             rval['columns'] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval['fields'] = self.get_fields()
@@ -764,10 +793,10 @@ class TabularToolDataField(Dictifiable):
         return path
 
     def clean_base_dir(self, path):
-        return re.sub("^" + self.get_base_dir() + r"/*", "", path)
+        return re.sub(f"^{self.get_base_dir()}/*", "", path)
 
     def get_files(self):
-        return glob(self.get_base_path() + "*")
+        return glob(f"{self.get_base_path()}*")
 
     def get_filesize_map(self, rm_base_dir=False):
         out = {}
@@ -811,6 +840,8 @@ class RefgenieToolDataTable(TabularToolDataTable):
         </table>
     """
     dict_collection_visible_keys = ['name']
+    dict_element_visible_keys = ['name', 'fields']
+    dict_export_visible_keys = ['name', 'data', 'rg_asset', 'largest_index', 'columns', 'missing_index_file']
 
     type_key = 'refgenie'
 
@@ -851,11 +882,17 @@ class RefgenieToolDataTable(TabularToolDataTable):
             self.columns['name'] = self.columns['value']
 
     def parse_file_fields(self, filename, errors=None, here="__HERE__"):
-        rgc = refgenconf.RefGenConf(filename)
+        try:
+            rgc = refgenconf.RefGenConf(filename, writable=False, skip_read_lock=True)
+        except refgenconf.exceptions.RefgenconfError as e:
+            log.error('Unable to load refgenie config file "%s": %s', filename, e)
+            if errors is not None:
+                errors.append(e)
+            return []
         rval = []
         for genome in rgc.list_genomes_by_asset(self.rg_asset):
             genome_attributes = rgc.get_genome_attributes(genome)
-            description = genome_attributes.get('description', None)
+            genome_description = genome_attributes.get('genome_description', None)
             asset_list = rgc.list(genome, include_tags=True)[genome]
             for tagged_asset in asset_list:
                 asset, tag = tagged_asset.rsplit(':', 1)
@@ -863,7 +900,10 @@ class RefgenieToolDataTable(TabularToolDataTable):
                     continue
                 digest = rgc.id(genome, asset, tag=tag)
                 uuid = f'refgenie:{genome}/{self.rg_asset}:{tag}@{digest}'
-                display_name = description or f'{genome}/{tagged_asset}'
+                if genome_description:
+                    display_name = f'{genome_description} (refgenie: {genome}@{digest})'
+                else:
+                    display_name = f'{genome}/{tagged_asset}@{digest}'
 
                 def _seek_key(key):
                     return rgc.seek(genome, asset, tag_name=tag, seek_key=key)

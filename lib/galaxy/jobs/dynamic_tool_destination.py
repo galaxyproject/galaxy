@@ -3,6 +3,7 @@ import collections
 import copy
 import json
 import logging
+import math
 import os
 import re
 import sys
@@ -352,9 +353,9 @@ class RuleValidator:
 
         if "nice_value" in rule:
             if rule["nice_value"] < -20 or rule["nice_value"] > 20:
-                error = "nice_value goes from -20 to 20; rule " + str(counter)
-                error += " in '" + str(tool) + "' has a nice_value of '"
-                error += str(rule["nice_value"]) + "'."
+                error = f"nice_value goes from -20 to 20; rule {str(counter)}"
+                error += f" in '{str(tool)}' has a nice_value of '"
+                error += f"{str(rule['nice_value'])}'."
                 if not return_bool:
                     error += " Setting nice_value to 0."
                     rule["nice_value"] = 0
@@ -364,8 +365,8 @@ class RuleValidator:
                 valid_rule = False
 
         else:
-            error = "No nice_value found for rule " + str(counter) + " in '"
-            error += str(tool) + "'."
+            error = f"No nice_value found for rule {str(counter)} in '"
+            error += f"{str(tool)}'."
             if not return_bool:
                 error += " Setting nice_value to 0."
                 rule["nice_value"] = 0
@@ -394,8 +395,8 @@ class RuleValidator:
 
         if "fail_message" in rule:
             if "destination" not in rule or rule['destination'] != "fail":
-                error = "Found a fail_message for rule " + str(counter)
-                error += " in '" + str(tool) + "', but destination is not 'fail'!"
+                error = f"Found a fail_message for rule {str(counter)}"
+                error += f" in '{str(tool)}', but destination is not 'fail'!"
                 if not return_bool:
                     error += " Setting destination to 'fail'."
                 if verbose:
@@ -409,12 +410,12 @@ class RuleValidator:
             suggestion = None
             if isinstance(rule["destination"], str):
                 if rule["destination"] == "fail" and "fail_message" not in rule:
-                    error = "Missing a fail_message for rule " + str(counter)
-                    error += " in '" + str(tool) + "'."
+                    error = f"Missing a fail_message for rule {str(counter)}"
+                    error += f" in '{str(tool)}'."
                     if not return_bool:
                         error += " Adding generic fail_message."
-                        message = "Invalid parameters for rule " + str(counter)
-                        message += " in '" + str(tool) + "'."
+                        message = f"Invalid parameters for rule {str(counter)}"
+                        message += f" in '{str(tool)}'."
                         rule["fail_message"] = message
                     if verbose:
                         log.debug(error)
@@ -432,12 +433,12 @@ class RuleValidator:
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
                             error = "Invalid priority '"
-                            error += str(priority) + "' for rule "
-                            error += str(counter) + " in '" + str(tool) + "'."
+                            error += f"{str(priority)}' for rule "
+                            error += f"{str(counter)} in '{str(tool)}'."
                             suggestion = get_typo_correction(priority,
                                          priority_list, max_edit_dist)
                             if suggestion:
-                                error += " Did you mean '" + str(suggestion) + "'?"
+                                error += f" Did you mean '{str(suggestion)}'?"
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -447,8 +448,8 @@ class RuleValidator:
                         elif not isinstance(rule["destination"]["priority"][priority], str):
                             error = "Cannot parse tool destination '"
                             error += str(rule["destination"]["priority"][priority])
-                            error += "' for rule " + str(counter)
-                            error += " in '" + str(tool) + "'."
+                            error += f"' for rule {str(counter)}"
+                            error += f" in '{str(tool)}'."
                             if not return_bool:
                                 error += " Ignoring..."
                             if verbose:
@@ -463,24 +464,24 @@ class RuleValidator:
                             if not is_valid:
                                 valid_rule = False
                 else:
-                    error = "No destination specified for rule " + str(counter)
-                    error += " in '" + str(tool) + "'."
+                    error = f"No destination specified for rule {str(counter)}"
+                    error += f" in '{str(tool)}'."
                     if not return_bool:
                         error += " Ignoring..."
                     if verbose:
                         log.debug(error)
                     valid_rule = False
             else:
-                error = "No destination specified for rule " + str(counter)
-                error += " in '" + str(tool) + "'."
+                error = f"No destination specified for rule {str(counter)}"
+                error += f" in '{str(tool)}'."
                 if not return_bool:
                     error += " Ignoring..."
                 if verbose:
                     log.debug(error)
                 valid_rule = False
         else:
-            error = "No destination specified for rule " + str(counter)
-            error += " in '" + str(tool) + "'."
+            error = f"No destination specified for rule {str(counter)}"
+            error += f" in '{str(tool)}'."
             if not return_bool:
                 error += " Ignoring..."
             if verbose:
@@ -532,7 +533,7 @@ class RuleValidator:
                     lower_bound = 0
                     rule["lower_bound"] = 0
                 else:
-                    lower_bound = float('inf')
+                    lower_bound = math.inf
                 if verbose:
                     log.debug(error)
                 valid_rule = False
@@ -542,8 +543,8 @@ class RuleValidator:
 
             if upper_bound != -1 and lower_bound > upper_bound:
 
-                error = "lower_bound exceeds upper_bound for rule " + str(counter)
-                error += " in '" + str(tool) + "'."
+                error = f"lower_bound exceeds upper_bound for rule {str(counter)}"
+                error += f" in '{str(tool)}'."
                 if not return_bool:
                     error += " Reversing bounds."
                     temp_upper_bound = rule["upper_bound"]
@@ -555,8 +556,8 @@ class RuleValidator:
                 valid_rule = False
 
         else:
-            error = "Missing bounds for rule " + str(counter)
-            error += " in '" + str(tool) + "'."
+            error = f"Missing bounds for rule {str(counter)}"
+            error += f" in '{str(tool)}'."
             if not return_bool:
                 error += " Ignoring rule."
                 rule = None
@@ -594,8 +595,8 @@ class RuleValidator:
         """
 
         if "arguments" not in rule or not isinstance(rule["arguments"], dict):
-            error = "No arguments found for rule " + str(counter) + " in '"
-            error += str(tool) + "' despite being of type arguments."
+            error = f"No arguments found for rule {str(counter)} in '"
+            error += f"{str(tool)}' despite being of type arguments."
             if not return_bool:
                 error += " Ignoring rule."
                 rule = None
@@ -638,9 +639,9 @@ class RuleValidator:
             if isinstance(rule["users"], list):
                 for user in reversed(rule["users"]):
                     if not isinstance(user, str):
-                        error = "Entry '" + str(user) + "' in users for rule "
-                        error += str(counter) + " in tool '" + str(tool)
-                        error += "' is in an " + "invalid format!"
+                        error = f"Entry '{str(user)}' in users for rule "
+                        error += f"{str(counter)} in tool '{str(tool)}"
+                        error += "' is in an invalid format!"
                         if not return_bool:
                             error += " Ignoring entry."
                         if verbose:
@@ -650,9 +651,9 @@ class RuleValidator:
 
                     else:
                         if re.match(emailregex, user) is None:
-                            error = "Supplied email '" + str(user)
-                            error += "' for rule " + str(counter) + " in tool '"
-                            error += str(tool) + "' is in " + "an invalid format!"
+                            error = f"Supplied email '{str(user)}"
+                            error += f"' for rule {str(counter)} in tool '"
+                            error += f"{str(tool)}' is in an invalid format!"
                             if not return_bool:
                                 error += " Ignoring email."
                             if verbose:
@@ -672,8 +673,8 @@ class RuleValidator:
             # post-processing checking to make sure we didn't just remove all the users
             # if we did, we should ignore the rule
             if rule is not None and rule["users"] is not None and len(rule["users"]) == 0:
-                error = "No valid user emails were specified for rule " + str(counter)
-                error += " in tool '" + str(tool) + "'!"
+                error = f"No valid user emails were specified for rule {str(counter)}"
+                error += f" in tool '{str(tool)}'!"
                 if not return_bool:
                     error += " Ignoring rule."
                     rule = None
@@ -786,7 +787,7 @@ def validate_destination(app, destination: str, err_message: str, err_message_co
     if not valid_destination:
         error = err_message % err_message_contents
         if suggestion:
-            error += " Did you mean '" + suggestion + "'?"
+            error += f" Did you mean '{suggestion}'?"
         if not return_bool:
             error += " Ignoring..."
         if verbose:
@@ -828,7 +829,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
     else:
         valid_config = False
         if obj:
-            log.debug("Verbose value '" + str(obj['verbose']) + "' is not True or False! Falling back to verbose...")
+            log.debug(f"Verbose value '{str(obj['verbose'])}' is not True or False! Falling back to verbose...")
             verbose = True
 
     if not return_bool and verbose:
@@ -891,7 +892,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                     suggestion = get_typo_correction(obj['default_priority'],
                                                  priority_list, max_edit_dist)
                                     if suggestion:
-                                        error += " Did you mean '" + str(suggestion) + "'?"
+                                        error += f" Did you mean '{str(suggestion)}'?"
                                     if verbose:
                                         log.debug(error)
                             else:
@@ -946,17 +947,17 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                 suggestion = get_typo_correction(curr['priority'],
                                              priority_list, max_edit_dist)
                                 if suggestion:
-                                    error += " Did you mean '" + str(suggestion) + "'?"
+                                    error += f" Did you mean '{str(suggestion)}'?"
                                 if verbose:
                                     log.debug(error)
                                 valid_config = False
                         else:
-                            error = "User '" + user + "' is missing a priority!"
+                            error = f"User '{user}' is missing a priority!"
                             if verbose:
                                 log.debug(error)
                             valid_config = False
                     else:
-                        error = "User '" + user + "' is missing a priority!"
+                        error = f"User '{user}' is missing a priority!"
                         if verbose:
                             log.debug(error)
                         valid_config = False
@@ -1027,13 +1028,13 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                             suggestion = get_typo_correction(priority,
                                                          priority_list, max_edit_dist)
                                             if suggestion:
-                                                error += " Did you mean '" + str(suggestion) + "'?"
+                                                error += f" Did you mean '{str(suggestion)}'?"
                                             if verbose:
                                                 log.debug(error)
                                             valid_config = False
                                 else:
                                     error = "No default priority destinations specified"
-                                    error += " for " + str(tool) + " in config!"
+                                    error += f" for {str(tool)} in config!"
                                     if verbose:
                                         log.debug(error)
                                     valid_config = False
@@ -1081,8 +1082,8 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                     # if rule['rule_type'] in available_rule_types
                                     else:
                                         error = "Unrecognized rule_type '"
-                                        error += rule['rule_type'] + "' "
-                                        error += "found in '" + str(tool) + "'. "
+                                        error += f"{rule['rule_type']}' "
+                                        error += f"found in '{str(tool)}'. "
                                         if not return_bool:
                                             error += "Ignoring..."
                                         if verbose:
@@ -1094,7 +1095,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                     counter += 1
                                     error = "No rule_type found for rule "
                                     error += str(counter)
-                                    error += " in '" + str(tool) + "'."
+                                    error += f" in '{str(tool)}'."
                                     if verbose:
                                         log.debug(error)
                                     valid_config = False
@@ -1102,7 +1103,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                         # if "rules" in curr and isinstance(curr['rules'], list):
                         elif not tool_has_default:
                             valid_config = False
-                            error = "Tool '" + str(tool) + "' does not have"
+                            error = f"Tool '{str(tool)}' does not have"
                             error += " rules nor a default_destination!"
                             if verbose:
                                 log.debug(error)
@@ -1110,7 +1111,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                     # if obj['tools'][tool] is not None:
                     else:
                         valid_config = False
-                        error = "Config section for tool '" + str(tool) + "' is blank!"
+                        error = f"Config section for tool '{str(tool)}' is blank!"
                         if verbose:
                             log.debug(error)
 
@@ -1128,7 +1129,7 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
         # quickly run through categories to detect unrecognized types
         for category in obj.keys():
             if category not in valid_categories:
-                error = "Unrecognized category '" + category
+                error = f"Unrecognized category '{category}"
                 error += "' found in config file!"
                 if verbose:
                     log.debug(error)
@@ -1187,9 +1188,9 @@ def bytes_to_str(size, unit="YB"):
         i = 0
 
     try:
-        return_str = "{:.2f} {}".format(size_changer, units[i])
+        return_str = f"{size_changer:.2f} {units[i]}"
     except (ValueError, TypeError):
-        return_str = "%s" % (size_changer)
+        return_str = f"{size_changer}"
 
     return return_str
 
@@ -1225,7 +1226,7 @@ def str_to_bytes(size):
                 try:
                     curr_size = float(curr_size)
                 except ValueError:
-                    error = "Unable to convert size " + str(size)
+                    error = f"Unable to convert size {str(size)}"
                     raise MalformedYMLException(error)
 
             # Get the unit and convert to bytes
@@ -1234,7 +1235,7 @@ def str_to_bytes(size):
                 for _ in range(pos, 1, -1):
                     curr_size *= 1024
             except ValueError:
-                error = "Unable to convert size " + str(size)
+                error = f"Unable to convert size {str(size)}"
                 raise MalformedYMLException(error)
             except NameError:
                 pass
@@ -1343,7 +1344,7 @@ def map_tool_to_destination(
                 if inp_data[da] is not None and os.path.isfile(inp_data[da].file_name):
                     num_input_datasets += 1
                     if verbose:
-                        message = "Loading file: " + str(da)
+                        message = f"Loading file: {str(da)}"
                         message += str(inp_data[da].file_name)
                         log.debug(message)
 
@@ -1367,15 +1368,15 @@ def map_tool_to_destination(
             except AttributeError:
                 # Otherwise, say that input isn't a file
                 if verbose:
-                    log.debug("Not a file: " + str(inp_data[da]))
+                    log.debug(f"Not a file: {str(inp_data[da])}")
 
         if verbose:
             if filesize_rule_present:
-                log.debug("Total size: " + bytes_to_str(file_size))
+                log.debug(f"Total size: {bytes_to_str(file_size)}")
             if records_rule_present:
-                log.debug("Total amount of records: " + str(records))
+                log.debug(f"Total amount of records: {str(records)}")
             if num_input_datasets_rule_present:
-                log.debug("Total number of files: " + str(num_input_datasets))
+                log.debug(f"Total number of files: {str(num_input_datasets)}")
 
     matched_rule = None
     user_authorized = None
@@ -1516,7 +1517,7 @@ def map_tool_to_destination(
                                     except KeyError:
                                         matched = False
                                         if verbose:
-                                            error = "Argument '" + str(arg)
+                                            error = f"Argument '{str(arg)}"
                                             error += "' not recognized!"
                                             log.debug(error)
 
@@ -1528,15 +1529,15 @@ def map_tool_to_destination(
                         # if user_authorized
                         else:
                             if verbose:
-                                error = "User email '" + str(user_email) + "' not "
+                                error = f"User email '{str(user_email)}' not "
                                 error += "specified in list of authorized users for "
-                                error += "rule " + str(rule_counter) + " in tool '"
-                                error += str(tool.old_id) + "'! Ignoring rule."
+                                error += f"rule {str(rule_counter)} in tool '"
+                                error += f"{str(tool.old_id)}'! Ignoring rule."
                                 log.debug(error)
 
             # if str(tool.old_id) in config
             else:
-                error = "Tool '" + str(tool.old_id) + "' not specified in config. "
+                error = f"Tool '{str(tool.old_id)}' not specified in config. "
                 error += "Using default destination."
                 if verbose:
                     log.debug(error)
@@ -1565,7 +1566,7 @@ def map_tool_to_destination(
         # if "default_destination" in config
         else:
             destination = "fail"
-            fail_message = "Job '" + str(tool.old_id) + "' failed; "
+            fail_message = f"Job '{str(tool.old_id)}' failed; "
             fail_message += "no global default destination specified in config!"
 
     # if fail_message is not None
@@ -1582,11 +1583,11 @@ def map_tool_to_destination(
 
     if config is not None:
         if destination == "fail":
-            output = "An error occurred: " + fail_message
+            output = f"An error occurred: {fail_message}"
             log.debug(output)
         else:
-            output = "Running '" + str(tool.old_id) + "' with '"
-            output += destination + "'."
+            output = f"Running '{str(tool.old_id)}' with '"
+            output += f"{destination}'."
             log.debug(output)
 
     return destination
@@ -1632,7 +1633,7 @@ def get_destination_list_from_job_config(job_config_location) -> set:
             possible_job_conf_path = os.path.join(config_location, f)
             if os.path.isfile(possible_job_conf_path):
                 job_config_location = possible_job_conf_path
-                message += "using '%s'. *" % f
+                message += f"using '{f}'. *"
                 break
         else:
             message += ("and no default job configs in 'config/'. "
@@ -1650,7 +1651,7 @@ def get_destination_list_from_job_config(job_config_location) -> set:
                 destination_list.add(destination.get("id"))
 
             else:
-                error = "Destination ID '" + str(destination)
+                error = f"Destination ID '{str(destination)}"
                 error += "' in job configuration file cannot be"
                 error += " parsed. Things may not work as expected!"
                 log.debug(error)
@@ -1783,7 +1784,7 @@ if __name__ == '__main__':
         '-j', '--job-config', dest='job_config')
 
     parser.add_argument(
-        '-V', '--version', action='version', version="%(prog)s " + __version__)
+        '-V', '--version', action='version', version=f"%(prog)s {__version__}")
 
     args = parser.parse_args()
 

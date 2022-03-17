@@ -49,7 +49,7 @@ class ManageInformationTestCase(SeleniumTestCase):
         new_email = self._get_random_email()
         # new email should be different from initially registered
         self.assertTrue(email != new_email)
-        email_input_field = self.driver.find_element_by_css_selector("[tour_id='email'] input")
+        email_input_field = self.driver.find_element_by_css_selector("input[id='email']")
 
         self.clear_input_field_and_write(email_input_field, new_email)
         self.components.change_user_email.submit.wait_for_and_click()
@@ -63,7 +63,7 @@ class ManageInformationTestCase(SeleniumTestCase):
     @selenium_test
     def test_public_name(self):
         def get_name_input_field():
-            return self.driver.find_element_by_css_selector("[tour_id='username'] input")
+            return self.driver.find_element_by_css_selector("input[id='username']")
 
         def assert_public_name(expected_name):
             self.assertTrue(expected_name == get_name_input_field().get_attribute('value'))
@@ -127,4 +127,21 @@ class ManageInformationTestCase(SeleniumTestCase):
         element.send_keys(new_input_text)
 
     def get_address_input_field(self, address_form, input_field_label):
-        return address_form.find_element_by_css_selector("[data-label='" + input_field_label + "'] > input")
+        return address_form.find_element_by_css_selector(f"[data-label='{input_field_label}'] > input")
+
+
+class DeleteCurrentAccountTestCase(SeleniumTestCase):
+
+    @selenium_test
+    def test_delete_account(self):
+        email = self._get_random_email()
+        self.register(email)
+        self.navigate_to_user_preferences()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.preferences.delete_account.wait_for_and_click()
+        delete_confirmation_field = self.components.preferences.delete_account_input.wait_for_visible()
+        delete_confirmation_field.send_keys(email)
+        self.components.preferences.delete_account_ok_btn.wait_for_and_click()
+        self.submit_login(email=email, assert_valid=False)
+        self.assert_error_message(contains='This account has been marked deleted, contact your local Galaxy'
+                                           ' administrator to restore the account.')

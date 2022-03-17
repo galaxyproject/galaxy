@@ -231,7 +231,7 @@ class CondaContext(installable.InstallableContext):
         try:
             if stdout_path:
                 kwds['stdout'] = open(stdout_path, 'w')
-                cmd_string += " > '%s'" % stdout_path
+                cmd_string += f" > '{stdout_path}'"
             conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
             log.debug("Executing command: %s", cmd_string)
             return self.shell_exec(cmd, env=env, **kwds)
@@ -360,26 +360,26 @@ class CondaTarget:
 
     def __init__(self, package, version=None, channel=None):
         if SHELL_UNSAFE_PATTERN.search(package) is not None:
-            raise ValueError("Invalid package [%s] encountered." % package)
+            raise ValueError(f"Invalid package [{package}] encountered.")
         self.package = package
         if version and SHELL_UNSAFE_PATTERN.search(version) is not None:
-            raise ValueError("Invalid version [%s] encountered." % version)
+            raise ValueError(f"Invalid version [{version}] encountered.")
         self.version = version
         if channel and SHELL_UNSAFE_PATTERN.search(channel) is not None:
-            raise ValueError("Invalid version [%s] encountered." % channel)
+            raise ValueError(f"Invalid version [{channel}] encountered.")
         self.channel = channel
 
     def __str__(self):
-        attributes = "package=%s" % self.package
+        attributes = f"package={self.package}"
         if self.version is not None:
             attributes = f"{self.package},version={self.version}"
         else:
-            attributes = "%s,unversioned" % self.package
+            attributes = f"{self.package},unversioned"
 
         if self.channel:
             attributes = "%s,channel=%s" % self.channel
 
-        return "CondaTarget[%s]" % attributes
+        return f"CondaTarget[{attributes}]"
 
     __repr__ = __str__
 
@@ -401,7 +401,7 @@ class CondaTarget:
         if self.version:
             return f"__{self.package}@{self.version}"
         else:
-            return "__%s@_uv_" % (self.package)
+            return f"__{self.package}@_uv_"
 
     def __hash__(self):
         return hash((self.package, self.version, self.channel))
@@ -433,10 +433,10 @@ def install_conda(conda_context, force_conda_build=False):
     download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
     package_targets = [
-        "conda=%s" % CONDA_VERSION,
+        f"conda={CONDA_VERSION}",
     ]
     if force_conda_build or conda_context.use_local:
-        package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
+        package_targets.append(f"conda-build={CONDA_BUILD_VERSION}")
     log.info("Installing conda, this may take several minutes.")
     try:
         exit_code = conda_context.shell_exec(download_cmd)

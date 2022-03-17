@@ -9,12 +9,11 @@
         :no-close-on-backdrop="!error"
         :hide-footer="!error"
         ok-only
-        @hidden="onHidden"
-    >
+        @hidden="onHidden">
         <div class="workflow-message-modal">
             <div v-if="message == 'progress'">
                 <div class="progress progress-striped active">
-                    <div class="progress-bar" style="width: 100%;"></div>
+                    <div class="progress-bar" style="width: 100%"></div>
                 </div>
             </div>
             <div v-else>

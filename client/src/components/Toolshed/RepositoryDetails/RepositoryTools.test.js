@@ -1,5 +1,8 @@
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import RepositoryTools from "./RepositoryTools";
+
+const localVue = getLocalVue();
 
 describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {
@@ -13,6 +16,7 @@ describe("RepositoryTools", () => {
                     },
                 ],
             },
+            localVue,
         });
         const $el = wrapper.findAll("td");
         const $first = $el.at(0);

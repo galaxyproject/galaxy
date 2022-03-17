@@ -5,6 +5,7 @@ import tempfile
 from six.moves.urllib.request import urlopen
 
 from galaxy import datatypes
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 
 
 def exec_before_job(app, inp_data, out_data, param_dict, tool=None):
@@ -31,7 +32,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool=None, stdout=No
     MAX_SIZE = CHUNK_SIZE * 100
 
     try:
-        page = urlopen(URL)
+        page = urlopen(URL, timeout=DEFAULT_SOCKET_TIMEOUT)
     except Exception as exc:
         raise Exception('Problems connecting to %s (%s)' % (URL, exc))
 

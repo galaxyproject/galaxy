@@ -1,5 +1,18 @@
 name: Database indexes
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: database-${{ github.ref }}
+  cancel-in-progress: true
 defaults:
   run:
     working-directory: 'galaxy root'
@@ -9,11 +22,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: ['3.7']
         db: ['postgresql', 'sqlite']
+        postgresql-version: ['13']
+        include:
+          - db: postgresql
+            postgresql-version: '9.6'
     services:
       postgres:
-        image: postgres:11
+        image: postgres:${{ matrix.postgresql-version }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -27,18 +44,27 @@ jobs:
     - uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Get full Python version
+      id: full-python-version
+      shell: bash
+      run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
     - name: Cache pip dir
       uses: actions/cache@v1
       id: pip-cache
       with:
         path: ~/.cache/pip
         key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+    - name: Cache tox env
+      uses: actions/cache@v2
+      with:
+        path: .tox
+        key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-check-indexes
     - name: Install tox
       run: pip install tox
     - name: Check indexes on postgresql
       if: matrix.db == 'postgresql'
       env:
-        GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION: 'postgres://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
+        GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
       run: tox -e check_indexes
     - name: Check indexes on sqlite
       if: matrix.db == 'sqlite'

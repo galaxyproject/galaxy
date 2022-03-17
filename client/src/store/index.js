@@ -5,6 +5,9 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
+import VuexPersistence from "vuex-persist";
+import localForage from "localforage";
+
 import config from "config";
 
 import { gridSearchStore } from "./gridSearchStore";
@@ -20,6 +23,10 @@ import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
+import { collectionAttributesStore } from "./collectionAttributesStore";
+import { genomeStore } from "./genomeStore";
+import { datatypeStore } from "./datatypeStore";
+import { panelStore } from "./panelStore";
 
 // beta features
 import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
@@ -29,14 +36,28 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
+const galaxyStorage = localForage.createInstance({});
+galaxyStorage.config({
+    driver: [localForage.INDEXEDDB, localForage.LOCALSTORAGE],
+    name: "galaxyIndexedDB",
+    version: 1.0,
+    storeName: "galaxyStore",
+});
+
+const panelsPersistence = new VuexPersistence({
+    storage: galaxyStorage,
+    asyncStorage: true,
+    modules: ["panels"],
+});
+
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache()],
+        plugins: [createCache(), panelsPersistence.plugin],
         modules: {
             user: userStore,
             config: configStore,
             betaHistory: betaHistoryStore,
-
+            panels: panelStore,
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,
             histories: historyStore,
@@ -49,6 +70,9 @@ export function createStore() {
             workflows: workflowStore,
             informationStore: jobStore,
             tools: toolStore,
+            collectionAttributesStore: collectionAttributesStore,
+            genomeStore: genomeStore,
+            datatypeStore: datatypeStore,
         },
     };
 

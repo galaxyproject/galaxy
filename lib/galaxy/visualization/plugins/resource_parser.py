@@ -5,6 +5,7 @@ a dictionary of string data/ids (often from a query string).
 import json
 import logging
 import weakref
+from typing import Callable, Dict, Optional, Union
 
 import galaxy.exceptions
 import galaxy.util
@@ -12,9 +13,14 @@ from galaxy.managers import (
     hdas as hda_manager,
     visualizations as visualization_manager
 )
+from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization
 from galaxy.util import bunch
 
 log = logging.getLogger(__name__)
+
+
+ParameterPrimitiveType = Union[int, float, str]
+ParameterType = Union[ParameterPrimitiveType, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization]
 
 
 class ResourceParser:
@@ -28,13 +34,13 @@ class ResourceParser:
     The keys used to store the new values can optionally be re-mapped to
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
-    primitive_parsers = {
-        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html(param),
-        'bool'  : lambda param: galaxy.util.string_as_bool(param),
-        'int'   : int,
-        'float' : float,
+    primitive_parsers: Dict[str, Callable[[str], ParameterPrimitiveType]] = {
+        'str': lambda param: galaxy.util.sanitize_html.sanitize_html(param),
+        'bool': lambda param: galaxy.util.string_as_bool(param),
+        'int': int,
+        'float': float,
         # 'date'  : lambda param: ,
-        'json'  : (lambda param: json.loads(
+        'json': (lambda param: json.loads(
             galaxy.util.sanitize_html.sanitize_html(param))),
     }
 
@@ -44,8 +50,8 @@ class ResourceParser:
 
     def _init_managers(self, app):
         return bunch.Bunch(
-            visualization=visualization_manager.VisualizationManager(app),
-            hda=hda_manager.HDAManager(app)
+            visualization=app[visualization_manager.VisualizationManager],
+            hda=app[hda_manager.HDAManager],
         )
 
     def parse_parameter_dictionary(self, trans, param_config_dict, query_params, param_modifiers=None):
@@ -88,7 +94,7 @@ class ResourceParser:
             #   so: error if required, otherwise get a default (which itself defaults to None)
             if resource is None:
                 if param_config['required']:
-                    raise KeyError('required param %s not found in URL' % (param_name))
+                    raise KeyError(f'required param {param_name} not found in URL')
                 resource = self.parse_parameter_default(trans, param_config)
 
             resources[var_name_in_template] = resource
@@ -111,8 +117,8 @@ class ResourceParser:
                     config_val = self.parse_parameter(trans, param_config, config_val)
 
                 except Exception as exception:
-                    log.warning('Exception parsing visualization param from query: ' +
-                              '{}, {}, ({}) {}'.format(param_name, config_val, str(type(exception)), str(exception)))
+                    log.warning('Exception parsing visualization param from query: '
+                              + f'{param_name}, {config_val}, ({str(type(exception))}) {str(exception)}')
                     config_val = None
 
             # here - we've either had no value in the query_params or there was a failure to parse
@@ -127,20 +133,21 @@ class ResourceParser:
         return config
 
     # TODO: I would LOVE to rip modifiers out completely
-    def parse_parameter_modifiers(self, trans, param_modifiers, query_params):
+    def parse_parameter_modifiers(self, trans, param_modifiers, query_params) -> Dict[str, Dict[str, Optional[ParameterType]]]:
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
         """
         # only one level of modification - down that road lies madness
         # parse the modifiers out of query_params first since they modify the other params coming next
-        parsed_modifiers = {}
+        parsed_modifiers: Dict[str, Dict[str, Optional[ParameterType]]] = {}
         if not param_modifiers:
             return parsed_modifiers
         # precondition: expects a two level dictionary
         # { target_param_name -> { param_modifier_name -> { param_modifier_data }}}
         for target_param_name, modifier_dict in param_modifiers.items():
-            parsed_modifiers[target_param_name] = target_modifiers = {}
+            target_modifiers: Dict[str, Optional[ParameterType]] = {}
+            parsed_modifiers[target_param_name] = target_modifiers
 
             for modifier_name, modifier_config in modifier_dict.items():
                 query_val = query_params.get(modifier_name, None)
@@ -153,7 +160,7 @@ class ResourceParser:
 
         return parsed_modifiers
 
-    def parse_parameter_default(self, trans, param_config):
+    def parse_parameter_default(self, trans, param_config) -> Optional[ParameterType]:
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -175,18 +182,7 @@ class ResourceParser:
         a resource usable directly by a template.
         """
         param_type = expected_param_data.get('type')
-        # constrain_to = expected_param_data.get( 'constrain_to' )
-        csv = expected_param_data.get('csv')
-
-        parsed_param = None
-
-        # handle recursion for csv values
-        if csv and recurse:
-            parsed_param = []
-            query_param_list = galaxy.util.listify(query_param)
-            for query_param in query_param_list:
-                parsed_param.append(self._parse_param(trans, expected_param_data, query_param, recurse=False))
-            return parsed_param
+        parsed_param: Optional[ParameterType] = None
 
         if param_type in self.primitive_parsers:
             # TODO: what about param modifiers on primitives?
@@ -197,11 +193,11 @@ class ResourceParser:
         # db models
         elif param_type == 'visualization':
             # ?: is this even used anymore/anywhere?
-            decoded_visualization_id = self._decode_id(query_param)
+            decoded_visualization_id = trans.security.decode_id(query_param, object_name=param_type)
             parsed_param = self.managers.visualization.get_accessible(decoded_visualization_id, trans.user)
 
         elif param_type == 'dataset':
-            decoded_dataset_id = self._decode_id(query_param)
+            decoded_dataset_id = trans.security.decode_id(query_param, object_name=param_type)
             parsed_param = self.managers.hda.get_accessible(decoded_dataset_id, trans.user)
 
         elif param_type == 'hda_or_ldda':
@@ -209,7 +205,7 @@ class ResourceParser:
             # needs info from another param...
             hda_ldda = param_modifiers.get('hda_ldda')
             if hda_ldda == 'hda':
-                decoded_dataset_id = self._decode_id(encoded_dataset_id)
+                decoded_dataset_id = trans.security.decode_id(query_param, object_name="dataset")
                 parsed_param = self.managers.hda.get_accessible(decoded_dataset_id, trans.user)
             else:
                 parsed_param = self.managers.ldda.get(trans, encoded_dataset_id)
@@ -220,12 +216,3 @@ class ResourceParser:
             parsed_param = galaxy.util.sanitize_html.sanitize_html(dbkey)
 
         return parsed_param
-
-    def _decode_id(self, id):
-        try:
-            return self.app().security.decode_id(str(id))
-        except (ValueError, TypeError):
-            raise galaxy.exceptions.MalformedId(
-                "Malformed id ( %s ) specified, unable to decode" % (str(id)),
-                id=str(id)
-            )

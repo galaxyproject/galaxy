@@ -1,4 +1,4 @@
-import { bulkCacheContent } from "../caching";
+import { bulkCacheContent } from "components/providers/History/caching";
 import { bulkContentUpdate, getAllContentByFilter } from "./queries";
 
 /**
@@ -8,7 +8,9 @@ import { bulkContentUpdate, getAllContentByFilter } from "./queries";
 export const updateSelectedContent = (updates) => async (history, type_ids) => {
     // single ajax call with wierd syntax because.... reasons
     const changes = await bulkContentUpdate(history, type_ids, updates);
-    await bulkCacheContent(changes);
+    const cacheResult = await bulkCacheContent(changes, true);
+    console.log("cacheResult", changes, cacheResult);
+    return cacheResult;
 };
 
 export const hideSelectedContent = updateSelectedContent({

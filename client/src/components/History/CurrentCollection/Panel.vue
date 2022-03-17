@@ -1,23 +1,24 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <DscProvider :is-root="isRoot" :collection="selectedCollection" v-slot="{ dsc }">
-        <CollectionContentProvider
-            v-if="dsc"
-            :parent="dsc"
-            v-slot="{
-                payload: { contents = [], startKey = null, topRows = 0, bottomRows = 0 },
-                handlers: { setScrollPos },
-            }"
-        >
+    <DscProvider :is-root="isRoot" :debounce-period="500" :collection="selectedCollection" v-slot="{ dsc }">
+        <CollectionContentProvider v-if="dsc" :parent="dsc" :debug="false" v-slot="{ loading, payload, setScrollPos }">
             <ExpandedItems
                 :scope-key="selectedCollection.id"
                 :get-item-key="(item) => item.type_id"
-                v-slot="{ isExpanded, setExpanded }"
-            >
-                <Layout>
-                    <template v-slot:nav>
+                v-slot="{ isExpanded, setExpanded }">
+                <Layout class="dataset-collection-panel">
+                    <template v-slot:globalNav>
                         <TopNav :history="history" :selected-collections="selectedCollections" v-on="$listeners" />
+                    </template>
+
+                    <template v-slot:localNav>
+                        <!-- Empty -->
+                        <div />
+                    </template>
+
+                    <template v-slot:listcontrols>
+                        <CollectionOperations :collection="selectedCollection" :is-root="isRoot" />
                     </template>
 
                     <template v-slot:details>
@@ -25,26 +26,26 @@
                     </template>
 
                     <template v-slot:listing>
-                        <VirtualScroller
+                        <Scroller
                             key-field="element_index"
-                            :item-height="36"
-                            :items="contents"
-                            :scroll-to="startKey"
-                            :top-placeholders="topRows"
-                            :bottom-placeholders="bottomRows"
+                            :class="{ loadingBackground: loading }"
+                            v-bind="payload"
                             @scroll="setScrollPos"
-                        >
-                            <template v-slot="{ item, index }">
+                            :debug="false">
+                            <template v-slot="{ item, index, rowKey }">
                                 <CollectionContentItem
                                     :item="item"
                                     :index="index"
+                                    :row-key="rowKey"
                                     :expanded="isExpanded(item)"
-                                    :writable="writable"
+                                    :writable="false"
+                                    :selectable="false"
                                     @update:expanded="setExpanded(item, $event)"
                                     @viewCollection="$emit('viewCollection', item)"
-                                />
+                                    :data-index="index"
+                                    :data-row-key="rowKey" />
                             </template>
-                        </VirtualScroller>
+                        </Scroller>
                     </template>
                 </Layout>
             </ExpandedItems>
@@ -55,25 +56,33 @@
 <script>
 import { History } from "../model";
 import { updateContentFields } from "../model/queries";
-import { cacheContent } from "../caching";
+import { cacheContent } from "components/providers/History/caching";
 
-import { DscProvider, CollectionContentProvider, ExpandedItems } from "../providers";
+import { DscProvider, CollectionContentProvider } from "components/providers/History";
+import ExpandedItems from "../ExpandedItems";
 import Layout from "../Layout";
 import TopNav from "./TopNav";
+import CollectionOperations from "./CollectionOperations.vue";
 import Details from "./Details";
-import VirtualScroller from "../../VirtualScroller";
+import Scroller from "../Scroller";
 import { CollectionContentItem } from "../ContentItem";
 
+import { reportPayload } from "components/providers/History/ContentProvider/helpers";
+
 export default {
+    filters: {
+        reportPayload,
+    },
     components: {
         DscProvider,
         CollectionContentProvider,
         Layout,
         TopNav,
         Details,
-        VirtualScroller,
+        Scroller,
         CollectionContentItem,
         ExpandedItems,
+        CollectionOperations,
     },
     props: {
         history: { type: History, required: true },
@@ -86,19 +95,27 @@ export default {
             return selected;
         },
         isRoot() {
-            return this.selectedCollection == this.selectedCollections[0];
+            return this.selectedCollection == this.rootCollection;
         },
         writable() {
             return this.isRoot;
+        },
+        rootCollection() {
+            return this.selectedCollections[0];
+        },
+        downloadCollectionUrl() {
+            let url = "";
+            if (this.rootCollection) {
+                url = `${this.rootCollection.url}/download`;
+            }
+            return url;
         },
     },
     methods: {
         // change the data of the root collection, anything past the root
         // collection is part of the dataset collection, which i believe is supposed to
         // be immutable, so only edit name, tags, blah of top-level selected collection,
-
         async updateDsc(collection, fields) {
-            // console.log("updateDsc", this.writable, collection, fields);
             if (this.writable) {
                 const ajaxResult = await updateContentFields(collection, fields);
                 await cacheContent({ ...collection, ...ajaxResult });

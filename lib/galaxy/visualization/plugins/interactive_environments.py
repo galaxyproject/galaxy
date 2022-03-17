@@ -51,7 +51,7 @@ class InteractiveEnvironmentRequest:
         self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
-        self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.app_root = f"{self.attr.root}static/plugins/interactive_environments/{self.attr.viz_id}/static/"
         self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
@@ -82,7 +82,7 @@ class InteractiveEnvironmentRequest:
             try:
                 os.chmod(self.temp_dir, os.stat(self.temp_dir).st_mode | stat.S_IXOTH)
             except Exception:
-                log.error("Could not change permissions of tmpdir %s" % self.temp_dir)
+                log.error(f"Could not change permissions of tmpdir {self.temp_dir}")
                 # continue anyway
 
         # This duplicates the logic in the proxy manager
@@ -101,7 +101,7 @@ class InteractiveEnvironmentRequest:
         # multiple leading '/' characters, which will cause the client to
         # request resources from http://dynamic_proxy_prefix
         if self.attr.proxy_prefix.startswith('/'):
-            self.attr.proxy_prefix = '/' + self.attr.proxy_prefix.lstrip('/')
+            self.attr.proxy_prefix = f"/{self.attr.proxy_prefix.lstrip('/')}"
 
         assert not self.attr.container_interface \
             or not self.attr.container_interface.publish_port_list_required \
@@ -127,7 +127,7 @@ class InteractiveEnvironmentRequest:
             self.allowed_images = [x['image'] for x in yaml.safe_load(handle)]
 
             if len(self.allowed_images) == 0:
-                raise Exception("No allowed images specified for " + self.attr.viz_id)
+                raise Exception(f"No allowed images specified for {self.attr.viz_id}")
 
             self.default_image = self.allowed_images[0]
 
@@ -146,9 +146,9 @@ class InteractiveEnvironmentRequest:
             'docker_connect_port': None,
         }
         viz_config = configparser.ConfigParser(default_dict)
-        conf_path = os.path.join(self.attr.our_config_dir, self.attr.viz_id + ".ini")
+        conf_path = os.path.join(self.attr.our_config_dir, f"{self.attr.viz_id}.ini")
         if not os.path.exists(conf_path):
-            conf_path = "%s.sample" % conf_path
+            conf_path = f"{conf_path}.sample"
         viz_config.read(conf_path)
         self.attr.viz_config = viz_config
 
@@ -203,9 +203,9 @@ class InteractiveEnvironmentRequest:
         if self.attr.viz_config.has_option("docker", "galaxy_url"):
             conf_file['galaxy_url'] = self.attr.viz_config.get("docker", "galaxy_url")
         elif self.attr.galaxy_config.galaxy_infrastructure_url_set:
-            conf_file['galaxy_url'] = self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/') + '/'
+            conf_file['galaxy_url'] = f"{self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/')}/"
         else:
-            conf_file['galaxy_url'] = request.application_url.rstrip('/') + '/'
+            conf_file['galaxy_url'] = f"{request.application_url.rstrip('/')}/"
             # Galaxy paster port is deprecated
             conf_file['galaxy_paster_port'] = conf_file['galaxy_web_port']
 
@@ -313,7 +313,7 @@ class InteractiveEnvironmentRequest:
         command_inject = _check_uid_and_gid(command_inject)
 
         # --name should really not be set, but we'll try to honor it anyway
-        name = ['--name=%s' % self._get_name_for_run()] if '--name' not in command_inject else []
+        name = [f'--name={self._get_name_for_run()}'] if '--name' not in command_inject else []
         env = self._get_env_for_run(env_override)
         import_volume_def = self._get_import_volume_for_run()
         if volumes is None:
@@ -322,13 +322,13 @@ class InteractiveEnvironmentRequest:
             volumes.insert(0, import_volume_def)
 
         return (
-            self.base_docker_cmd('run') +
-            shlex.split(command_inject) +
-            name +
-            _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
-            ['-d', '-P'] +
-            _flag_opts('-v', map(str, volumes)) +
-            [image]
+            self.base_docker_cmd('run')
+            + shlex.split(command_inject)
+            + name
+            + _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()])
+            + ['-d', '-P']
+            + _flag_opts('-v', map(str, volumes))
+            + [image]
         )
 
     @property
@@ -441,7 +441,7 @@ class InteractiveEnvironmentRequest:
             return None
         else:
             container_id = stdout.strip()
-            log.debug("Container id: %s" % container_id)
+            log.debug(f"Container id: {container_id}")
             inspect_data = self.inspect_container(container_id)
             port_mappings = self.get_container_port_mapping(inspect_data)
             self.attr.docker_hostname = self.get_container_host(inspect_data)

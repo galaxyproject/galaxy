@@ -10,22 +10,25 @@
                 <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
                 </b-alert>
-                <tool-section :category="historySection" @onClick="onClick" :expanded="true" />
+                <tool-section
+                    v-if="isWorkflow"
+                    :category="historyInEditorSection"
+                    @onClick="onClick"
+                    :expanded="true" />
+                <tool-section v-else :category="historySection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="jobSection" @onClick="onClick" :expanded="true" />
                 <tool-section
                     v-if="isWorkflow"
                     :category="workflowInEditorSection"
                     @onClick="onClick"
-                    :expanded="true"
-                />
+                    :expanded="true" />
                 <tool-section v-else :category="workflowSection" @onClick="onClick" :expanded="true" />
                 <tool-section :category="otherSection" @onClick="onClick" :expanded="true" />
                 <tool-section
                     v-if="hasVisualizations"
                     :category="visualizationSection"
                     @onClick="onClick"
-                    :expanded="true"
-                />
+                    :expanded="true" />
             </div>
         </div>
         <MarkdownDialog
@@ -36,8 +39,7 @@
             :labels="selectedLabels"
             :use-labels="isWorkflow"
             @onInsert="onInsert"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
     </div>
 </template>
 
@@ -52,14 +54,67 @@ import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
 
+const historySharedElements = [
+    {
+        id: "history_dataset_display",
+        name: "Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_collection_display",
+        name: "Collection",
+        emitter: "onHistoryCollectionId",
+    },
+    {
+        id: "history_dataset_as_image",
+        name: "Image",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_index",
+        name: "Dataset Index",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_embedded",
+        name: "Embedded Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_type",
+        name: "Dataset Type",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_link",
+        name: "Link to Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_name",
+        name: "Name of Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_peek",
+        name: "Peek into Dataset",
+        emitter: "onHistoryDatasetId",
+    },
+    {
+        id: "history_dataset_info",
+        name: "Dataset Details",
+        emitter: "onHistoryDatasetId",
+    },
+];
+
 export default {
     components: {
         MarkdownDialog,
         ToolSection,
     },
     props: {
-        nodes: {
-            type: Object,
+        getManager: {
+            type: Function,
             default: null,
         },
     },
@@ -69,61 +124,29 @@ export default {
             selectedType: null,
             selectedLabels: null,
             selectedShow: false,
+            selectedPayload: null,
             visualizationIndex: {},
             error: null,
             historySection: {
                 title: "History",
                 name: "history",
                 elems: [
+                    ...historySharedElements,
                     {
-                        id: "history_dataset_display",
-                        name: "Dataset",
+                        id: "history_link",
+                        name: "Link to Import",
                         emitter: "onHistoryId",
                     },
+                ],
+            },
+            historyInEditorSection: {
+                title: "History",
+                name: "history",
+                elems: [
+                    ...historySharedElements,
                     {
-                        id: "history_dataset_collection_display",
-                        name: "Collection",
-                        emitter: "onHistoryCollectionId",
-                    },
-                    {
-                        id: "history_dataset_as_image",
-                        name: "Image",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_index",
-                        name: "Dataset Index",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_embedded",
-                        name: "Embedded Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_type",
-                        name: "Dataset Type",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_link",
-                        name: "Link to Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_name",
-                        name: "Name of Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_peek",
-                        name: "Peek into Dataset",
-                        emitter: "onHistoryId",
-                    },
-                    {
-                        id: "history_dataset_info",
-                        name: "Dataset Details",
-                        emitter: "onHistoryId",
+                        id: "history_link",
+                        name: "Link to Import",
                     },
                 ],
             },
@@ -227,6 +250,9 @@ export default {
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
         },
+        nodes() {
+            return this.getManager && this.getManager().nodes;
+        },
     },
     created() {
         this.getVisualizations();
@@ -246,9 +272,9 @@ export default {
             const outputLabels = [];
             this.nodes &&
                 Object.values(this.nodes).forEach((node) => {
-                    node.outputs.forEach((output) => {
-                        if (output.activeLabel) {
-                            outputLabels.push(output.activeLabel);
+                    node.activeOutputs.getAll().forEach((output) => {
+                        if (output.label) {
+                            outputLabels.push(output.label);
                         }
                     });
                 });
@@ -264,6 +290,9 @@ export default {
         },
         onClick(item) {
             switch (item.emitter) {
+                case "onHistoryDatasetId":
+                    this.onHistoryDatasetId(item.id);
+                    break;
                 case "onHistoryId":
                     this.onHistoryId(item.id);
                     break;
@@ -304,6 +333,11 @@ export default {
             this.selectedShow = true;
         },
         onHistoryId(argumentName) {
+            this.selectedArgumentName = argumentName;
+            this.selectedType = "history_id";
+            this.selectedShow = true;
+        },
+        onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
             this.selectedLabels = this.getOutputs();

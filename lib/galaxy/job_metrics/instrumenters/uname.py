@@ -20,7 +20,7 @@ class UnamePlugin(InstrumentPlugin):
         self.uname_args = kwargs.get("args", "-a")
 
     def pre_execute_instrument(self, job_directory):
-        return "uname {} > '{}'".format(self.uname_args, self.__instrument_uname_path(job_directory))
+        return f"uname {self.uname_args} > '{self.__instrument_uname_path(job_directory)}'"
 
     def job_properties(self, job_id, job_directory):
         properties = {}

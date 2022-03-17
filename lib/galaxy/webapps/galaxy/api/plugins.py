@@ -7,20 +7,17 @@ from galaxy import exceptions
 from galaxy.managers import hdas, histories
 from galaxy.util import asbool
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 
 
-class PluginsController(BaseAPIController):
+class PluginsController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with plugins.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
 
     @expose_api
     def index(self, trans, **kwargs):

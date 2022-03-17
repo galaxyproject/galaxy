@@ -136,9 +136,7 @@ class CanvasManager {
     init_drag() {
         var self = this;
         // Dragging within canvas background
-        this.cc.each(function () {
-            this.scroll_panel = new ScrollPanel(this);
-        });
+        this.scrollPanel = new ScrollPanel(this.cc);
         var x_adjust;
         var y_adjust;
         this.cv
@@ -220,12 +218,17 @@ class CanvasManager {
     }
     init_copy_paste() {
         /*
-            Both of these copy/paste event bindings check the active element
+            The copy/paste event bindings check the active element
             and, if it's one of the text inputs, skip the workflow copy/paste
             logic so we don't interfere with standard copy/paste functionality.
+            The copy binding also skips the node copy if text is currently highlighted.
         */
         document.addEventListener("copy", (e) => {
-            if (document.activeElement && !inputElementTypes.includes(document.activeElement.type)) {
+            if (
+                document.activeElement &&
+                !inputElementTypes.includes(document.activeElement.type) &&
+                !document.getSelection().toString()
+            ) {
                 if (this.app.activeNode && this.app.activeNode.type !== "subworkflow") {
                     e.clipboardData.setData(
                         "application/json",
@@ -233,8 +236,8 @@ class CanvasManager {
                             nodeId: this.app.activeNode.id,
                         })
                     );
+                    e.preventDefault();
                 }
-                e.preventDefault();
             }
         });
         document.addEventListener("paste", (e) => {

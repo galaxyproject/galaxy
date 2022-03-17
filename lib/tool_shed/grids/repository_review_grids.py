@@ -86,8 +86,8 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             rval = ''
             if repository.reviewers:
                 for user in repository.reviewers:
-                    rval += '<a class="view-info" href="repository_reviews_by_user?id=%s">' % trans.security.encode_id(user.id)
-                    rval += '%s</a> | ' % user.username
+                    rval += f'<a class="view-info" href="repository_reviews_by_user?id={trans.security.encode_id(user.id)}">'
+                    rval += f'{user.username}</a> | '
                 if rval[-3:] == ' | ':
                     rval = rval[:-3]
             return rval
@@ -100,11 +100,11 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
                 if review.rating:
                     for index in range(1, 6):
                         rval += '<input '
-                        rval += 'name="star1-%s" ' % trans.security.encode_id(review.id)
+                        rval += f'name="star1-{trans.security.encode_id(review.id)}" '
                         rval += 'type="radio" '
                         rval += 'class="community_rating_star star" '
                         rval += 'disabled="disabled" '
-                        rval += 'value="%s" ' % str(review.rating)
+                        rval += f'value="{str(review.rating)}" '
                         if review.rating > (index - 0.5) and review.rating < (index + 0.5):
                             rval += 'checked="checked" '
                         rval += '/>'
@@ -117,7 +117,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             rval = ''
             for review in repository.reviews:
                 if review.approved:
-                    rval += '%s<br/>' % review.approved
+                    rval += f'{review.approved}<br/>'
             return rval
 
     title = "All reviewed repositories"
@@ -305,11 +305,11 @@ class RepositoryReviewsByUserGrid(grids.Grid):
             if review.rating:
                 for index in range(1, 6):
                     rval = '<input '
-                    rval += 'name="star1-%s" ' % trans.security.encode_id(review.id)
+                    rval += f'name="star1-{trans.security.encode_id(review.id)}" '
                     rval += 'type="radio" '
                     rval += 'class="community_rating_star star" '
                     rval += 'disabled="disabled" '
-                    rval += 'value="%s" ' % str(review.rating)
+                    rval += f'value="{str(review.rating)}" '
                     if review.rating > (index - 0.5) and review.rating < (index + 0.5):
                         rval += 'checked="checked" '
                     rval += '/>'

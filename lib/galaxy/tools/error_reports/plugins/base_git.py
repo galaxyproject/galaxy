@@ -3,7 +3,6 @@
 
 
 import logging
-import sys
 from abc import (
     ABCMeta,
     abstractmethod
@@ -11,15 +10,12 @@ from abc import (
 from typing import Dict
 
 import requests
-if sys.version_info[0] < 3:
-    import urllib as urllib
-    import urlparse as urlparse
-else:
-    import urllib.parse as urllib
-    urlparse = urllib
 
 from galaxy.tools.errors import EmailErrorReporter
-from galaxy.util import unicodify
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    unicodify,
+)
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
@@ -45,7 +41,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             return None
         try:
             if tool.tool_shed not in self.ts_urls:
-                ts_url_request = requests.get(f"http://{tool.tool_shed}")
+                ts_url_request = requests.get(f"http://{tool.tool_shed}", timeout=DEFAULT_SOCKET_TIMEOUT)
                 self.ts_urls[tool.tool_shed] = ts_url_request.url
             return self.ts_urls[tool.tool_shed]
         except Exception:
@@ -56,7 +52,7 @@ class BaseGitPlugin(ErrorPlugin, metaclass=ABCMeta):
             return None
         try:
             if job.tool_id not in self.ts_repo_cache:
-                ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
+                ts_repo_request_data = requests.get(f"{ts_url}/api/repositories?tool_ids={str(job.tool_id)}", timeout=DEFAULT_SOCKET_TIMEOUT).json()
 
                 for repoinfo in ts_repo_request_data.values():
                     if isinstance(repoinfo, dict):

@@ -12,10 +12,9 @@
                 <div
                     v-for="(input, key) in invocation.inputs"
                     :key="input.id"
-                    :data-label="dataInputStepLabel(key, input)"
-                >
+                    :data-label="dataInputStepLabel(key, input)">
                     <b>{{ dataInputStepLabel(key, input) }}</b>
-                    <workflow-invocation-data-contents :data_item="input" />
+                    <generic-history-content :data_item="input" />
                 </div>
             </details>
         </div>
@@ -24,7 +23,7 @@
                 <summary><b>Outputs</b></summary>
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
-                    <workflow-invocation-data-contents :data_item="output" />
+                    <generic-history-content :data_item="output" />
                 </div>
             </details>
         </div>
@@ -33,7 +32,7 @@
                 <summary><b>Output Collections</b></summary>
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
-                    <workflow-invocation-data-contents :data_item="output" />
+                    <generic-history-content :data_item="output" />
                 </div>
             </details>
         </div>
@@ -43,27 +42,26 @@
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"
                     :invocation="invocation"
-                    :orderedSteps="orderedSteps"
+                    :ordered-steps="orderedSteps"
                     :key="step.id"
                     :workflow="workflow"
-                    :workflowStep="step"
-                />
+                    :workflow-step="step" />
             </details>
         </div>
     </div>
 </template>
 <script>
 import ParameterStep from "./ParameterStep.vue";
-import WorkflowInvocationDataContents from "./WorkflowInvocationDataContents";
+import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
-import { monitorHistoryUntilTrue } from "./providers/monitors";
+import { monitorHistoryUntilTrue } from "components/providers/monitors";
 
 import { mapGetters } from "vuex";
 import { mapCacheActions } from "vuex-cache";
 
 export default {
     components: {
-        WorkflowInvocationDataContents,
+        GenericHistoryContent,
         WorkflowInvocationStep,
         ParameterStep,
     },
@@ -114,7 +112,7 @@ export default {
                     complete: () => console.log("Invocation finished, stopping history dataset monitor"),
                 });
             }
-        }
+        },
     },
 };
 </script>

@@ -4,9 +4,11 @@ Utility functions used systemwide.
 """
 
 import binascii
+import codecs
 import collections
 import errno
 import importlib
+import itertools
 import json
 import os
 import random
@@ -20,12 +22,12 @@ import tempfile
 import textwrap
 import threading
 import time
+import typing
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from functools import partial
 from hashlib import md5
 from os.path import relpath
 from urllib.parse import (
@@ -40,7 +42,7 @@ try:
     import grp
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
-    grp = None  # type: ignore
+    grp = None  # type: ignore[assignment]
 from boltons.iterutils import (
     default_enter,
     remap,
@@ -48,9 +50,11 @@ from boltons.iterutils import (
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    Element = etree._Element
 except ImportError:
     LXML_AVAILABLE = False
-    import xml.etree.ElementTree as etree  # type: ignore
+    import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
+    Element = etree.Element
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -58,8 +62,8 @@ try:
     import docutils.core as docutils_core
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
-    docutils_core = None
-    docutils_html4css1 = None
+    docutils_core = None  # type: ignore[assignment]
+    docutils_html4css1 = None  # type: ignore[assignment]
 
 try:
     import uwsgi
@@ -82,6 +86,8 @@ CHUNK_SIZE = 65536  # 64k
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
+DEFAULT_SOCKET_TIMEOUT = 600
+
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
@@ -96,6 +102,17 @@ RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 XML = etree.XML
 
 defaultdict = collections.defaultdict
+
+
+def str_removeprefix(s: str, prefix: str):
+    """
+    str.removeprefix() equivalent for Python < 3.9
+    """
+    if sys.version_info >= (3, 9):
+        return s.removeprefix(prefix)
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
 
 
 def remove_protocol_from_url(url):
@@ -159,13 +176,13 @@ def directory_hash_id(id):
     ['1', '3', '5']
     """
     s = str(id)
-    l = len(s)
+    len_s = len(s)
     # Shortcut -- ids 0-999 go under ../000/
-    if l < 4:
+    if len_s < 4:
         return ["000"]
     if not is_uuid(s):
         # Pad with zeros until a multiple of three
-        padded = ((3 - len(s) % 3) * "0") + s
+        padded = ((3 - len_s % 3) * "0") + s
         # Drop the last three digits -- 1000 files per directory
         padded = padded[:-3]
         # Break into chunks of three
@@ -196,20 +213,39 @@ def synchronized(func):
 
 
 def iter_start_of_line(fh, chunk_size=None):
-    """
-    Iterate over fh and call readline(chunk_size)
-    """
-    yield from iter(partial(fh.readline, chunk_size), "")
+    """Iterate over fh and call readline(chunk_size)."""
+    while True:
+        data = fh.readline(chunk_size)
+        if not data:
+            break
+        if not data.endswith("\n"):
+            # Discard the rest of the line
+            fh.readline()
+        yield data
 
 
 def file_reader(fp, chunk_size=CHUNK_SIZE):
-    """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
-    while 1:
+    """This generator yields the open file object in chunks (default 64k)."""
+    while True:
         data = fp.read(chunk_size)
         if not data:
             break
         yield data
-    fp.close()
+
+
+def chunk_iterable(it: typing.Iterable, size: int = 1000):
+    """
+    Break an iterable into chunks of ``size`` elements.
+
+    >>> list(chunk_iterable([1, 2, 3, 4, 5, 6, 7], 3))
+    [(1, 2, 3), (4, 5, 6), (7,)]
+    """
+    it = iter(it)
+    while True:
+        p = tuple(itertools.islice(it, size))
+        if not p:
+            break
+        yield p
 
 
 def unique_id(KEY_SIZE=128):
@@ -268,6 +304,10 @@ def parse_xml_string(xml_string, strip_whitespace=True):
     return tree
 
 
+def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
+    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
+
+
 def xml_to_string(elem, pretty=False):
     """
     Returns a string from an xml tree.
@@ -280,7 +320,7 @@ def xml_to_string(elem, pretty=False):
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % elem.text
+            return f"<!-- {elem.text} -->\n"
         else:
             raise e
     if xml_str and pretty:
@@ -323,7 +363,7 @@ def xml_element_to_dict(elem):
                 rval[elem.tag][key] = value
     if elem.attrib:
         for key, value in elem.attrib.items():
-            rval[elem.tag]["@%s" % key] = value
+            rval[elem.tag][f"@{key}"] = value
 
     if elem.text:
         text = elem.text.strip()
@@ -443,7 +483,7 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
                 left_index += 1
             else:
                 right_index += 1
-        value = "{}{}{}".format(value[:left_index], join_by, value[-right_index:])
+        value = f"{value[:left_index]}{join_by}{value[-right_index:]}"
     return value
 
 
@@ -595,7 +635,7 @@ def sanitize_param(value, valid_characters=valid_chars, character_map=mapped_cha
     elif isinstance(value, list):
         return [sanitize_text(x, valid_characters=valid_characters, character_map=character_map, invalid_character=invalid_character) for x in value]
     else:
-        raise Exception('Unknown parameter type (%s)' % (type(value)))
+        raise Exception(f'Unknown parameter type ({type(value)})')
 
 
 valid_filename_chars = set(string.ascii_letters + string.digits + '_.')
@@ -667,7 +707,7 @@ def mask_password_from_url(url):
             # This can manipulate the input other than just masking password,
             # so the previous string replace method is preferred when the
             # password doesn't appear twice in the url
-            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", '%s:********' % split.username))
+            split = split._replace(netloc=split.netloc.replace(f"{split.username}:{split.password}", f'{split.username}:********'))
             url = urlunsplit(split)
     return url
 
@@ -730,7 +770,7 @@ def in_directory(file, directory, local_path_module=os.path):
     False
     """
     if local_path_module != os.path:
-        _safe_contains = importlib.import_module('galaxy.util.path.%s' % local_path_module.__name__).safe_contains
+        _safe_contains = importlib.import_module(f'galaxy.util.path.{local_path_module.__name__}').safe_contains
     else:
         directory = os.path.realpath(directory)
         _safe_contains = safe_contains
@@ -820,7 +860,7 @@ class Params:
                 # changed to not require this and NEVER_SANITIZE should be
                 # removed.
                 if (value is not None and key not in self.NEVER_SANITIZE
-                        and True not in [key.endswith("|%s" % nonsanitize_parameter) for
+                        and True not in [key.endswith(f"|{nonsanitize_parameter}") for
                                          nonsanitize_parameter in self.NEVER_SANITIZE]):
                     self.__dict__[key] = sanitize_param(value)
                 else:
@@ -849,7 +889,7 @@ class Params:
         return self.__dict__.get(key, default)
 
     def __str__(self):
-        return '%s' % self.__dict__
+        return f'{self.__dict__}'
 
     def __len__(self):
         return len(self.__dict__)
@@ -935,11 +975,11 @@ def asbool(obj):
         elif obj in falsy:
             return False
         else:
-            raise ValueError("String is not true/false: %r" % obj)
+            raise ValueError(f"String is not true/false: {obj!r}")
     return bool(obj)
 
 
-def string_as_bool(string):
+def string_as_bool(string: str) -> bool:
     if str(string).lower() in ('true', 'yes', 'on', '1'):
         return True
     else:
@@ -965,7 +1005,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False):
+def listify(item, do_strip=False) -> typing.List[typing.Any]:
     """
     Make a single item a single item list.
 
@@ -1043,12 +1083,31 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
             value = str(value, encoding, error)
     except Exception as e:
         if log_exception:
-            msg = "Value '{}' could not be coerced to Unicode: {}('{}')".format(repr(value), type(e).__name__, e)
+            msg = f"Value '{repr(value)}' could not be coerced to Unicode: {type(e).__name__}('{e}')"
             log.exception(msg)
         raise
     if strip_null:
         return value.replace('\0', '')
     return value
+
+
+def filesystem_safe_string(s, max_len=255, truncation_chars='..', strip_leading_dot=True, invalid_chars=('/',), replacement_char='_'):
+    """
+    Strip unicode null chars, truncate at 255 characters.
+    Optionally replace additional ``invalid_chars`` with `replacement_char` .
+
+    Defaults are probably only safe on linux / osx.
+    Needs further escaping if used in shell commands
+    """
+    sanitized_string = unicodify(s, strip_null=True)
+    if strip_leading_dot:
+        sanitized_string = sanitized_string.lstrip('.')
+    for invalid_char in invalid_chars:
+        sanitized_string = sanitized_string.replace(invalid_char, replacement_char)
+    if len(sanitized_string) > max_len:
+        sanitized_string = sanitized_string[:max_len - len(truncation_chars)]
+        sanitized_string = f"{sanitized_string}{truncation_chars}"
+    return sanitized_string
 
 
 def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict'):
@@ -1351,7 +1410,7 @@ def size_to_bytes(size):
     size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
-        raise ValueError("Could not parse string '%s'" % size)
+        raise ValueError(f"Could not parse string '{size}'")
     number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
@@ -1464,6 +1523,17 @@ def force_symlink(source, link_name):
             raise e
 
 
+def unlink(path_or_fd, ignore_errors=False):
+    """Calls os.unlink on `path_or_fd`, and ignore FileNoteFoundError if ignore_errors is True."""
+    try:
+        os.unlink(path_or_fd)
+    except FileNotFoundError:
+        if ignore_errors:
+            pass
+        else:
+            raise
+
+
 def move_merge(source, target):
     # when using shutil and moving a directory, if the target exists,
     # then the directory is placed inside of it
@@ -1488,8 +1558,9 @@ def safe_str_cmp(a, b):
     return rv == 0
 
 
-galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore
-galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore
+#  Don't use these two directly, prefer method version that "works" with packaged Galaxy.
+galaxy_root_path = os.path.join(__path__[0], os.pardir, os.pardir, os.pardir)  # type: ignore[name-defined]
+galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')  # type: ignore[name-defined]
 
 
 def galaxy_directory():
@@ -1500,7 +1571,7 @@ def galaxy_directory():
 
 
 def galaxy_samples_directory():
-    return os.path.abspath(galaxy_samples_path)
+    return os.path.join(galaxy_directory(), 'lib', 'galaxy', 'config', 'sample')
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1584,19 +1655,19 @@ def build_url(base_url, port=80, scheme='http', pathspec=None, params=None, dose
     parsed_url = urlparse(base_url)
     if scheme != 'http':
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    assert parsed_url.scheme in ('http', 'https', 'ftp'), f'Invalid URL scheme: {scheme}'
     if port != 80:
         url = '%s://%s:%d/%s' % (parsed_url.scheme, parsed_url.netloc.rstrip('/'), int(port), parsed_url.path)
     else:
-        url = '{}://{}/{}'.format(parsed_url.scheme, parsed_url.netloc.rstrip('/'), parsed_url.path.lstrip('/'))
+        url = f"{parsed_url.scheme}://{parsed_url.netloc.rstrip('/')}/{parsed_url.path.lstrip('/')}"
     if len(pathspec) > 0:
-        url = '{}/{}'.format(url.rstrip('/'), '/'.join(pathspec))
+        url = f"{url.rstrip('/')}/{'/'.join(pathspec)}"
     if parsed_url.query:
         for query_parameter in parsed_url.query.split('&'):
             key, value = query_parameter.split('=')
             params[key] = value
     if params:
-        url += '?%s' % urlencode(params, doseq=doseq)
+        url += f'?{urlencode(params, doseq=doseq)}'
     return url
 
 
@@ -1611,12 +1682,63 @@ def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, back
     return response.text
 
 
+def is_url(uri, allow_list=None):
+    """
+    Check if uri is (most likely) an URL, more precisely the function checks
+    if uri starts with a scheme from the allow list (defaults to "http://",
+    "https://", "ftp://")
+    >>> is_url('https://zenodo.org/record/4104428/files/UCSC-hg38-chr22-Coding-Exons.bed')
+    True
+    >>> is_url('file:///some/path')
+    False
+    >>> is_url('/some/path')
+    False
+    """
+    if allow_list is None:
+        allow_list = ("http://", "https://", "ftp://")
+    return any(uri.startswith(scheme) for scheme in allow_list)
+
+
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
     """Download a URL to a file in chunks."""
     with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, 'wb') as f:
         for chunk in r.iter_content(chunk_size):
             if chunk:
                 f.write(chunk)
+
+
+def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source_error='strict', target_encoding=None, target_error='strict'):
+    """Writes a stream to the provided file descriptor, returns the file name. Closes file descriptor"""
+    # signature and behavor is somewhat odd, due to backwards compatibility, but this can/should be done better
+    CHUNK_SIZE = 1048576
+    try:
+        codecs.lookup(target_encoding)
+    except Exception:
+        target_encoding = DEFAULT_ENCODING  # utf-8
+    use_source_encoding = source_encoding is not None
+    try:
+        while True:
+            chunk = stream.read(CHUNK_SIZE)
+            if not chunk:
+                break
+            if use_source_encoding:
+                # If a source encoding is given we use it to convert to the target encoding
+                try:
+                    if not isinstance(chunk, str):
+                        chunk = chunk.decode(source_encoding, source_error)
+                    os.write(fd, chunk.encode(target_encoding, target_error))
+                except UnicodeDecodeError:
+                    use_source_encoding = False
+                    os.write(fd, chunk)
+            else:
+                # Compressed files must be encoded after they are uncompressed in the upload utility,
+                # while binary files should not be encoded at all.
+                if isinstance(chunk, str):
+                    chunk = chunk.encode(target_encoding, target_error)
+                os.write(fd, chunk)
+    finally:
+        os.close(fd)
+    return filename
 
 
 class classproperty:
@@ -1628,33 +1750,13 @@ class classproperty:
         return self.f(owner)
 
 
-def get_executable():
-    exe = sys.executable
-    if exe.endswith('uwsgi'):
-        virtualenv = None
-        if uwsgi is not None:
-            for name in ('home', 'virtualenv', 'venv', 'pyhome'):
-                if name in uwsgi.opt:
-                    virtualenv = unicodify(uwsgi.opt[name])
-                    break
-        if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
-            virtualenv = os.environ['VIRTUAL_ENV']
-        if virtualenv is not None:
-            exe = os.path.join(virtualenv, 'bin', 'python')
-        else:
-            exe = os.path.join(os.path.dirname(exe), 'python')
-            if not os.path.exists(exe):
-                exe = 'python'
-    return exe
-
-
 class ExecutionTimer:
 
     def __init__(self):
         self.begin = time.time()
 
     def __str__(self):
-        return "(%0.3f ms)" % (self.elapsed * 1000)
+        return f"({self.elapsed * 1000:0.3f} ms)"
 
     @property
     def elapsed(self):
@@ -1677,7 +1779,7 @@ class StructuredExecutionTimer:
             message = string.Template(self.template).safe_substitute(kwd)
         else:
             message = self.template
-        log_message = message + " (%0.3f ms)" % (self.elapsed * 1000)
+        log_message = message + f" ({self.elapsed * 1000:0.3f} ms)"
         return log_message
 
     @property

@@ -17,6 +17,7 @@ from galaxy.util import (
     directory_hash_id,
     safe_relpath,
     umask_fix_perms,
+    unlink,
 )
 from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
@@ -56,7 +57,8 @@ class CloudConfigMixin:
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
-            }
+            },
+            'enable_cache_monitor': False,
         }
 
 
@@ -75,6 +77,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict['bucket']
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
+        self.enable_cache_monitor = config_dict.get('enable_cache_monitor', True)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -99,8 +102,17 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
+        self.start_cache_monitor()
+        # Test if 'axel' is available for parallel download and pull the key into cache
+        try:
+            subprocess.call('axel')
+            self.use_axel = True
+        except OSError:
+            self.use_axel = False
+
+    def start_cache_monitor(self):
         # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1:
+        if self.cache_size != -1 and self.enable_cache_monitor:
             # Convert GBs to bytes for comparison
             self.cache_size = self.cache_size * 1073741824
             # Helper for interruptable sleep
@@ -108,12 +120,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
-        # Test if 'axel' is available for parallel download and pull the key into cache
-        try:
-            subprocess.call('axel')
-            self.use_axel = True
-        except OSError:
-            self.use_axel = False
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -185,11 +191,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             missing_config = []
             if provider == "aws":
                 akey = auth_element.get("access_key")
-                if akey is None:
-                    missing_config.append("access_key")
                 skey = auth_element.get("secret_key")
-                if skey is None:
-                    missing_config.append("secret_key")
 
                 config["auth"] = {
                     "access_key": akey,
@@ -366,10 +368,10 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         # S3 folders are marked by having trailing '/' so add it now
-        rel_path = '%s/' % rel_path
+        rel_path = f'{rel_path}/'
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -403,8 +405,6 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         except Exception:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
-        if rel_path[0] == '/':
-            raise
         return exists
 
     def _in_cache(self, rel_path):
@@ -445,7 +445,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             else:
                 log.debug("Pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 self.transfer_progress = 0  # Reset transfer progress counter
-                with open(self._get_cache_path(rel_path), "w+") as downloaded_file_handle:
+                with open(self._get_cache_path(rel_path), "wb+") as downloaded_file_handle:
                     key.save_content(downloaded_file_handle)
                 return True
         except Exception:
@@ -568,7 +568,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 os.makedirs(cache_dir)
 
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), 'w').close()
                 self._push_to_os(rel_path, from_string='')
 
@@ -608,7 +608,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 results = self.bucket.objects.list(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
@@ -616,7 +616,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
                     key = self.bucket.objects.get(rel_path)
@@ -715,3 +715,11 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
     def _get_store_usage_percent(self):
         return 0.0
+
+    def shutdown(self):
+        self.running = False
+        thread = getattr(self, 'cache_monitor_thread', None)
+        if thread:
+            log.debug("Shutting down thread")
+            self.sleeper.wake()
+            thread.join(5)

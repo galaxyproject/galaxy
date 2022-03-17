@@ -6,7 +6,6 @@ import shutil
 from galaxy import model
 from galaxy.model import store
 from galaxy.util.path import external_chown
-from galaxy.version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
@@ -23,11 +22,20 @@ class JobImportHistoryArchiveWrapper:
         self.sa_session = self.app.model.context
 
     def setup_job(self, jiha, archive_source, archive_type):
-        if archive_type != "url":
-            external_chown(archive_source, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
-                           self.app.config.external_chown_script, "history import archive")
-        external_chown(jiha.archive_dir, jiha.job.user.system_user_pwent(self.app.config.real_system_username),
-                       self.app.config.external_chown_script, "history import archive directory")
+        if self.app.config.external_chown_script:
+            if archive_type != "url":
+                external_chown(
+                    archive_source,
+                    jiha.job.user.system_user_pwent(self.app.config.real_system_username),
+                    self.app.config.external_chown_script,
+                    "history import archive"
+                )
+            external_chown(
+                jiha.archive_dir,
+                jiha.job.user.system_user_pwent(self.app.config.real_system_username),
+                self.app.config.external_chown_script,
+                "history import archive directory"
+            )
 
     def cleanup_after_job(self):
         """ Set history, datasets, collections and jobs' attributes
@@ -46,9 +54,14 @@ class JobImportHistoryArchiveWrapper:
         new_history = None
         try:
             archive_dir = jiha.archive_dir
-            external_chown(archive_dir, jiha.job.user.system_user_pwent(getpass.getuser()),
-                           self.app.config.external_chown_script, "history import archive directory")
-            model_store = store.get_import_model_store_for_directory(archive_dir, app=self.app, user=user)
+            if self.app.config.external_chown_script:
+                external_chown(
+                    archive_dir,
+                    jiha.job.user.system_user_pwent(getpass.getuser()),
+                    self.app.config.external_chown_script,
+                    "history import archive directory"
+                )
+            model_store = store.get_import_model_store_for_directory(archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session())
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
 
@@ -60,7 +73,7 @@ class JobImportHistoryArchiveWrapper:
                     shutil.rmtree(archive_dir)
 
         except Exception as e:
-            jiha.job.tool_stderr += "Error cleaning up history import job: %s" % e
+            jiha.job.tool_stderr += f"Error cleaning up history import job: {e}"
             self.sa_session.flush()
             raise
 
@@ -79,23 +92,14 @@ class JobExportHistoryArchiveWrapper:
         self.sa_session = self.app.model.context
 
     def setup_job(self, history, store_directory, include_hidden=False, include_deleted=False, compressed=True):
-        """Perform setup for job to export a history into an archive.
-
-        Method generates attribute files for export, sets the corresponding attributes
-        in the jeha object, and returns a command line for running the job. The command
-        line includes the command, inputs, and options; it does not include the output
-        file because it must be set at runtime.
+        """
+        Perform setup for job to export a history into an archive.
         """
         app = self.app
 
-        # symlink files on export, on worker files will tarred up in a dereferenced manner.
-        with store.DirectoryModelExportStore(store_directory, app=app, export_files="symlink") as export_store:
-            export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-
-        #
-        # Create and return command line for running tool.
-        #
-        options = f"--galaxy-version '{VERSION_MAJOR}'"
-        if compressed:
-            options += " -G"
-        return f"{options} {store_directory}"
+        from galaxy.celery.tasks import export_history
+        if app.config.enable_celery_tasks:
+            # symlink files on export, on worker files will tarred up in a dereferenced manner.
+            export_history.delay(store_directory=store_directory, history_id=history.id, job_id=self.job_id, include_hidden=include_hidden, include_deleted=include_deleted)
+        else:
+            export_history(store_directory=store_directory, history_id=history.id, job_id=self.job_id, include_hidden=include_hidden, include_deleted=include_deleted)

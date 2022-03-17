@@ -59,7 +59,7 @@ class UninitializedTree(BaseTree):
         return UninitializedTree(new_collection_type)
 
     def __str__(self):
-        return "UninitializedTree[collection_type=%s]" % self.collection_type_description
+        return f"UninitializedTree[collection_type={self.collection_type_description}]"
 
 
 class Tree(BaseTree):
@@ -119,7 +119,7 @@ class Tree(BaseTree):
         return True
 
     def __len__(self):
-        return sum([len(c[1]) for c in self.children])
+        return sum(len(c[1]) for c in self.children)
 
     def multiply(self, other_structure):
         if other_structure.is_leaf:
@@ -137,7 +137,7 @@ class Tree(BaseTree):
         return Tree(cloned_children, self.collection_type_description)
 
     def __str__(self):
-        return "Tree[collection_type={},children={}]".format(self.collection_type_description, ",".join(map(lambda identifier_and_element: "{}={}".format(identifier_and_element[0], identifier_and_element[1]), self.children)))
+        return f"Tree[collection_type={self.collection_type_description},children={','.join(map(lambda identifier_and_element: '{}={}'.format(identifier_and_element[0], identifier_and_element[1]), self.children))}]"
 
 
 def tool_output_to_structure(get_sliced_input_collection_structure, tool_output, collections_manager):
@@ -161,7 +161,7 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
                 collection_type = get_sliced_input_collection_structure(tool_output.structure.collection_type_source).collection_type_description.collection_type
 
             if not collection_type:
-                raise Exception("Failed to determine collection type for mapping over output %s" % tool_output.name)
+                raise Exception(f"Failed to determine collection type for mapping over output {tool_output.name}")
 
             tree = UninitializedTree(collection_type_descriptions.for_collection_type(collection_type))
 

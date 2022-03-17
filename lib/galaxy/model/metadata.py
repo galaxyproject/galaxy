@@ -13,10 +13,14 @@ import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
 from os.path import abspath
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Union
 
 from sqlalchemy.orm import object_session
+from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
     form_builder,
     listify,
@@ -25,7 +29,11 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.json import safe_dumps
-from galaxy.util.object_wrapper import sanitize_lists_to_string
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+    from galaxy.model.none_like import NoneDataset
+    from galaxy.model.store import SessionlessContext
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +73,9 @@ class MetadataCollection(Mapping):
     retrieved, returning default values in cases when metadata is not set.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent: Union["DatasetInstance", "NoneDataset"], session: Optional[Union[galaxy_scoped_session, 'SessionlessContext']] = None) -> None:
         self.parent = parent
+        self._session = session
         # initialize dict if needed
         if self.parent._metadata is None:
             self.parent._metadata = {}
@@ -87,7 +96,10 @@ class MetadataCollection(Mapping):
     def spec(self):
         return self.parent.datatype.metadata_spec
 
-    def __iter__(self):
+    def _object_session(self, item):
+        return self._session if self._session else object_session(item)
+
+    def __iter__(self) -> Iterator[Any]:
         yield from self.spec.keys()
 
     def __getitem__(self, key):
@@ -118,8 +130,8 @@ class MetadataCollection(Mapping):
     def __getattr__(self, name):
         if name in self.spec:
             if name in self.parent._metadata:
-                return self.spec[name].wrap(self.parent._metadata[name], object_session(self.parent))
-            return self.spec[name].wrap(self.spec[name].default, object_session(self.parent))
+                return self.spec[name].wrap(self.parent._metadata[name], self._object_session(self.parent))
+            return self.spec[name].wrap(self.spec[name].default, self._object_session(self.parent))
         if name in self.parent._metadata:
             return self.parent._metadata[name]
         # Instead of raising an AttributeError for non-existing metadata, we return None
@@ -128,19 +140,22 @@ class MetadataCollection(Mapping):
     def __setattr__(self, name, value):
         if name == "parent":
             return self.set_parent(value)
+        elif name == '_session':
+            super().__setattr__(name, value)
         else:
             if name in self.spec:
                 self.parent._metadata[name] = self.spec[name].unwrap(value)
             else:
                 self.parent._metadata[name] = value
+            flag_modified(self.parent, '_metadata')
 
     def remove_key(self, name):
         if name in self.parent._metadata:
             del self.parent._metadata[name]
         else:
-            log.info("Attempted to delete invalid key '%s' from MetadataCollection" % name)
+            log.info(f"Attempted to delete invalid key '{name}' from MetadataCollection")
 
-    def element_is_set(self, name):
+    def element_is_set(self, name) -> bool:
         """
         check if the meta data with the given name is set, i.e.
 
@@ -151,13 +166,12 @@ class MetadataCollection(Mapping):
         :returns: True if the value differes from the no_value
                   False if its equal of if no metadata with the name is specified
         """
+        meta_val = self[name]
         try:
-            meta_val = self.parent._metadata[name]
+            meta_spec = self.parent.metadata.spec[name]
         except KeyError:
-            log.debug("no metadata with name %s found" % (name))
+            log.debug(f"No metadata element with name '{name}' found")
             return False
-
-        meta_spec = self.parent.metadata.spec[name]
         return meta_val != meta_spec.no_value
 
     def get_metadata_parameter(self, name, **kwd):
@@ -195,7 +209,7 @@ class MetadataCollection(Mapping):
             elif isinstance(json_dict, dict):
                 JSONified_dict = json_dict
             else:
-                raise ValueError("json_dict must be either a dictionary or a string, got %s." % (type(json_dict)))
+                raise ValueError(f"json_dict must be either a dictionary or a string, got {type(json_dict)}.")
         else:
             raise ValueError("You must provide either a filename or a json_dict")
 
@@ -226,6 +240,7 @@ class MetadataCollection(Mapping):
             dataset.validated_state = JSONified_dict['__validated_state__']
         if '__validated_state_message__' in JSONified_dict:
             dataset.validated_state_message = JSONified_dict['__validated_state_message__']
+        flag_modified(dataset, '_metadata')
 
     def to_JSON_dict(self, filename=None):
         meta_dict = {}
@@ -293,7 +308,7 @@ class MetadataParameter:
     def to_safe_string(self, value):
         return sanitize_lists_to_string(self.to_string(value))
 
-    def make_copy(self, value, target_context=None, source_context=None):
+    def make_copy(self, value, target_context: MetadataCollection, source_context):
         return copy.deepcopy(value)
 
     @classmethod
@@ -357,6 +372,11 @@ class MetadataElementSpec:
         self.param = param(self)
         # add spec element to the spec
         datatype.metadata_spec.append(self)
+        # Should we validate that non-optional elements have been set ?
+        # (The answer is yes, but not all datatypes control optionality appropriately at this point.)
+        # This allows us to check that inherited MetadataElement instances from datatypes that set
+        # check_required_metadata have been reviewed and considered really required.
+        self.check_required_metadata = datatype.__dict__.get('check_required_metadata', False)
 
     def get(self, name, default=None):
         return self.__dict__.get(name, default)
@@ -561,19 +581,20 @@ class FileParameter(MetadataParameter):
         else:
             return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
 
-    def make_copy(self, value, target_context, source_context):
-        value = self.wrap(value, object_session(target_context.parent))
+    def make_copy(self, value, target_context: MetadataCollection, source_context):
+        session = target_context._object_session(target_context.parent)
+        value = self.wrap(value, session=session)
         target_dataset = target_context.parent.dataset
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,
             # so this would ultimately get overwritten anyway.
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
-            object_session(target_context.parent).add(new_value)
+            session.add(new_value)
             try:
                 shutil.copy(value.file_name, new_value.file_name)
             except AssertionError:
-                object_session(target_context.parent).flush()
+                session(target_context.parent).flush()
                 shutil.copy(value.file_name, new_value.file_name)
             return self.unwrap(new_value)
         return None

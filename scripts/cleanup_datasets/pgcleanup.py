@@ -12,6 +12,8 @@ import logging
 import os
 import string
 import sys
+import time
+import uuid
 from collections import namedtuple
 from functools import partial
 
@@ -105,6 +107,7 @@ class Action:
         self._debug = app.args.debug
         self._update_time = app.args.update_time
         self._force_retry = app.args.force_retry
+        self._epoch_time = str(int(time.time()))
         self._days = app.args.days
         self._config = app.config
         self._update = app._update
@@ -136,12 +139,12 @@ class Action:
             h = set_log_handler(filename=logf)
         h.setLevel(logging.DEBUG if self._debug else logging.INFO)
         h.setFormatter(LevelFormatter())
-        l = logging.getLogger(self.name)
-        l.addHandler(h)
-        l.propagate = False
+        self.__log = logging.getLogger(self.name)
+        self.__log.addHandler(h)
+        self.__log.propagate = False
         m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-        l.info(m)
-        self.__log = l
+        self.__log.info(m)
+        self.__log.info(f'Epoch time for this action: {self._epoch_time}')
 
     def __close_log(self):
         m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
@@ -189,6 +192,7 @@ class Action:
         return self._action_sql.format(
             update_time_sql=self._update_time_sql,
             force_retry_sql=self._force_retry_sql,
+            epoch_time=self._epoch_time,
         )
 
     @property
@@ -215,7 +219,7 @@ class Action:
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
                     secondaries = ', '.join('%s: %s' % x for x in zip(causal[1:], r[1:]))
-                    self.log.info('{} {} caused {}'.format(causal[0], r[0], secondaries))
+                    self.log.info(f'{causal[0]} {r[0]} caused {secondaries}')
 
     def handle_results(self, cur):
         results = {}
@@ -253,8 +257,11 @@ class RemovesObjects:
 
     def collect_removed_object_info(self, row):
         object_id = getattr(row, self.id_column, None)
+        object_uuid = getattr(row, self.uuid_column, None)
+        if object_uuid:
+            object_uuid = str(uuid.UUID(object_uuid))
         if object_id:
-            self.objects_to_remove.add(self.object_class(object_id, row.object_store_id))
+            self.objects_to_remove.add(self.object_class(object_id, row.object_store_id, object_uuid))
 
     def remove_objects(self):
         for object_to_remove in sorted(self.objects_to_remove):
@@ -274,9 +281,9 @@ class RemovesObjects:
                 if not self._dry_run:
                     self.object_store.delete(object_to_remove, entire_dir=entire_dir, **object_store_kwargs)
         except ObjectNotFound as e:
-            [l.warning('object store failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.warning('object store failure: %s: %s', object_to_remove, e) for log_ in loggers]
         except Exception as e:
-            [l.error('delete failure: %s: %s', object_to_remove, e) for l in loggers]
+            [log_.error('delete failure: %s: %s', object_to_remove, e) for log_ in loggers]
 
     def remove_object(self, object_to_remove):
         raise NotImplementedError()
@@ -300,6 +307,7 @@ class PurgesHDAs:
                     WHERE purged_hda_ids.id = metadata_file.hda_id
                 RETURNING metadata_file.hda_id AS hda_id,
                           metadata_file.id AS id,
+                          metadata_file.uuid AS uuid,
                           metadata_file.object_store_id AS object_store_id),
              deleted_icda_ids
           AS (     UPDATE implicitly_converted_dataset_association
@@ -335,11 +343,13 @@ class PurgesHDAs:
         _purge_hda_dependencies_sql = self._purge_hda_dependencies_sql.format(
             update_time_sql=self._update_time_sql,
             force_retry_sql=self._force_retry_sql,
+            epoch_time=self._epoch_time,
         )
         return self._action_sql.format(
             purge_hda_dependencies_sql=_purge_hda_dependencies_sql,
             update_time_sql=self._update_time_sql,
             force_retry_sql=self._force_retry_sql,
+            epoch_time=self._epoch_time,
         )
 
 
@@ -397,35 +407,48 @@ class RequiresDiskUsageRecalculation:
 class RemovesMetadataFiles(RemovesObjects):
     """Causes MetadataFiles to be removed from the object store.
 
-    To use, ensure your query returns ``deleted_metadata_file_id`` and ``object_store_id`` columns.
+    To use, ensure your query returns ``deleted_metadata_file_id``, ``object_store_id``, and
+    ``deleted_metadata_file_uuid`` columns.
     """
-    object_class = namedtuple('MetadataFile', ['id', 'object_store_id'])
+    object_class = namedtuple('MetadataFile', ['id', 'object_store_id', 'uuid'])
     id_column = 'deleted_metadata_file_id'
+    uuid_column = 'deleted_metadata_file_uuid'
 
     def remove_object(self, metadata_file):
+        store_by = self.object_store.get_store_by(metadata_file)
+        if store_by == 'uuid':
+            alt_name = f"metadata_{metadata_file.uuid}.dat"
+        else:
+            alt_name = f"metadata_{metadata_file.id}.dat"
         self.remove_from_object_store(
             metadata_file,
             dict(
                 extra_dir='_metadata_files',
                 extra_dir_at_root=True,
-                alt_name="metadata_%d.dat" % metadata_file.id))
+                alt_name=alt_name))
 
 
 class RemovesDatasets(RemovesObjects):
     """Causes Datasets to be removed from the object store.
 
-    To use, ensure your query returns ``purged_dataset_id`` and ``object_store_id`` columns.
+    To use, ensure your query returns ``purged_dataset_id``, ``object_store_id``, and ``purged_dataset_uuid`` columns.
     """
-    object_class = namedtuple('Dataset', ['id', 'object_store_id'])
+    object_class = namedtuple('Dataset', ['id', 'object_store_id', 'uuid'])
     id_column = 'purged_dataset_id'
+    uuid_column = 'purged_dataset_uuid'
 
     def remove_object(self, dataset):
+        store_by = self.object_store.get_store_by(dataset)
+        if store_by == 'uuid':
+            extra_dir = f"dataset_{dataset.uuid}_files"
+        else:
+            extra_dir = f"dataset_{dataset.id}_files"
         self.remove_from_object_store(dataset, dict())
         self.remove_from_object_store(
             dataset,
             dict(
                 dir_only=True,
-                extra_dir="dataset_%d_files" % dataset.id),
+                extra_dir=extra_dir),
             entire_dir=True,
             check_exists=True)
 
@@ -526,6 +549,7 @@ class DeleteInactiveUsers(Action):
 class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
     """
     - Mark purged all users that are older than the specified number of days.
+    - Set User.disk_usage = 0 for all users purged in this step.
     - Mark purged all Histories whose user_ids are purged in this step.
     - Mark purged all HistoryDatasetAssociations whose history_ids are purged in this step.
     - Delete all UserGroupAssociations whose user_ids are purged in this step.
@@ -599,6 +623,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
              purged_history_ids.id AS purged_history_id,
              purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id,
@@ -656,6 +681,122 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         self.log.info('zero_disk_usage user_ids: %s', ' '.join(str(i) for i in user_ids))
 
 
+class PurgeDeletedUsersGDPR(PurgesHDAs, RemovesMetadataFiles, Action):
+    """
+    - Perform all steps in the PurgeDeletedUsers/purge_deleted_users action
+    - Obfuscate User.email and User.username for all users purged in this step.
+
+    NOTE: Your database must have the pgcrypto extension installed e.g. with:
+      CREATE EXTENSION IF NOT EXISTS pgcrypto;
+    """
+    _action_sql = """
+        WITH purged_user_ids
+          AS (     UPDATE galaxy_user
+                      SET purged = true,
+                          disk_usage = 0,
+                          email = encode(digest(email || '{epoch_time}', 'sha1'), 'hex'),
+                          username = encode(digest(username || '{epoch_time}', 'sha1'), 'hex'){update_time_sql}
+                    WHERE deleted{force_retry_sql}
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                RETURNING id),
+             deleted_uga_ids
+          AS (DELETE FROM user_group_association
+                    USING purged_user_ids
+                    WHERE user_group_association.user_id = purged_user_ids.id
+                RETURNING user_group_association.user_id AS user_id,
+                          user_group_association.id AS id),
+             deleted_ura_ids
+          AS (DELETE FROM user_role_association
+                    USING role
+                    WHERE role.id = user_role_association.role_id
+                          AND role.type != 'private'
+                          AND user_role_association.user_id IN
+                            (SELECT id
+                               FROM purged_user_ids)
+                RETURNING user_role_association.user_id AS user_id,
+                          user_role_association.id AS id),
+             deleted_ua_ids
+          AS (DELETE FROM user_address
+                    USING purged_user_ids
+                    WHERE user_address.user_id = purged_user_ids.id
+                RETURNING user_address.user_id AS user_id,
+                          user_address.id AS id),
+             user_events
+          AS (INSERT INTO cleanup_event_user_association
+                          (create_time, cleanup_event_id, user_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_user_ids),
+             purged_history_ids
+          AS (     UPDATE history
+                      SET purged = true{update_time_sql}
+                     FROM purged_user_ids
+                    WHERE purged_user_ids.id = history.user_id
+                          AND NOT history.purged
+                RETURNING history.user_id AS user_id,
+                          history.id AS id),
+             history_events
+          AS (INSERT INTO cleanup_event_history_association
+                          (create_time, cleanup_event_id, history_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_history_ids),
+             purged_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true, deleted = true{update_time_sql}
+                     FROM purged_history_ids
+                    WHERE purged_history_ids.id = history_dataset_association.history_id
+                          AND NOT history_dataset_association.purged
+                RETURNING history_dataset_association.history_id AS history_id,
+                          history_dataset_association.id AS id),
+             hda_events
+          AS (INSERT INTO cleanup_event_hda_association
+                          (create_time, cleanup_event_id, hda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
+      SELECT purged_user_ids.id AS purged_user_id,
+             purged_user_ids.id AS zero_disk_usage_user_id,
+             purged_history_ids.id AS purged_history_id,
+             purged_hda_ids.id AS purged_hda_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id,
+             deleted_uga_ids.id AS deleted_uga_id,
+             deleted_ura_ids.id AS deleted_ura_id,
+             deleted_ua_ids.id AS deleted_ua_id
+        FROM purged_user_ids
+             LEFT OUTER JOIN purged_history_ids
+                             ON purged_user_ids.id = purged_history_ids.user_id
+             LEFT OUTER JOIN purged_hda_ids
+                             ON purged_history_ids.id = purged_hda_ids.history_id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_uga_ids
+                             ON purged_user_ids.id = deleted_uga_ids.user_id
+             LEFT OUTER JOIN deleted_ura_ids
+                             ON purged_user_ids.id = deleted_ura_ids.user_id
+             LEFT OUTER JOIN deleted_ua_ids
+                             ON purged_user_ids.id = deleted_ua_ids.user_id
+    ORDER BY purged_user_ids.id
+    """
+    causals = (
+        ('purged_user_id', 'purged_history_id'),
+        ('purged_history_id', 'purged_hda_id'),
+        ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
+        ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
+        ('purged_user_id', 'deleted_uga_id'),
+        ('purged_user_id', 'deleted_ura_id'),
+        ('purged_user_id', 'deleted_ua_id'),
+    )
+
+    @classmethod
+    def name_c(cls):
+        return 'purge_deleted_users_gdpr'
+
+
 class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
     """
     - Mark purged all HistoryDatasetAssociations currently marked deleted that are older than the
@@ -683,6 +824,7 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -720,6 +862,7 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -761,6 +904,7 @@ class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalcul
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -804,6 +948,7 @@ class PurgeHDAsOfPurgedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Act
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -855,6 +1000,7 @@ class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
              purged_history_ids.user_id AS recalculate_disk_usage_user_id,
              purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
@@ -946,6 +1092,7 @@ class PurgeDatasets(RemovesDatasets, Action):
                     WHERE deleted{force_retry_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
+                          uuid,
                           object_store_id),
              dataset_events
           AS (INSERT INTO cleanup_event_dataset_association
@@ -953,6 +1100,7 @@ class PurgeDatasets(RemovesDatasets, Action):
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_dataset_ids)
       SELECT id AS purged_dataset_id,
+             uuid AS purged_dataset_uuid,
              object_store_id AS object_store_id
         FROM purged_dataset_ids
     ORDER BY id
@@ -991,8 +1139,8 @@ class Cleanup:
     @property
     def conn(self):
         if self.__conn is None:
-            url = make_url(galaxy.config.get_database_url(self.config))
-            log.info('Connecting to database with URL: %s' % url)
+            url = make_url(self.config.database_connection)
+            log.info(f'Connecting to database with URL: {url}')
             args = url.translate_connect_args(username='user')
             args.update(url.query)
             assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'
@@ -1104,7 +1252,8 @@ class Cleanup:
 
     def _execute(self, sql, args):
         cur = self.conn.cursor()
-        log.debug("SQL is: %s", cur.mogrify(sql, args))
+        sql_str = cur.mogrify(sql, args).decode('utf-8')
+        log.debug(f"SQL is: {sql_str}")
         log.info("Executing SQL")
         cur.execute(sql, args)
         log.info('Database status: %s', cur.statusmessage)

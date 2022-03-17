@@ -1,10 +1,16 @@
 import logging
 import os
 from json import dumps, loads
+from typing import Any, cast, Dict, Optional
 
-from galaxy import exceptions, managers, util, web
+from galaxy import exceptions, util, web
+from galaxy.datatypes.data import get_params_and_input_name
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
-from galaxy.tools import global_tool_errors
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
+from galaxy.model import PostJobAction
+from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
     expose_api,
@@ -12,8 +18,10 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.web.framework.decorators import expose_api_raw
 from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from . import BaseGalaxyAPIController, depends
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
@@ -25,18 +33,16 @@ PROTECTED_TOOLS = ["__DATA_FETCH__"]
 SEARCH_RESERVED_TERMS_FAVORITES = ['#favs', '#favorites', '#favourites']
 
 
-class ToolsController(BaseAPIController, UsesVisualizationMixin):
+class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     RESTful controller for interactions with tools.
     """
-
-    def __init__(self, app):
-        super().__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+    history_manager: HistoryManager = depends(HistoryManager)
+    hda_manager: HDAManager = depends(HDAManager)
+    hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
 
     @expose_api_anonymous_and_sessionless
-    def index(self, trans, **kwds):
+    def index(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/tools
 
@@ -44,6 +50,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         :param in_panel: if true, tools are returned in panel structure,
                          including sections and labels
+        :param view: ToolBox view to apply (default is 'default')
         :param trackster: if true, only tools that are compatible with
                           Trackster are returned
         :param q: if present search on the given query will be performed
@@ -57,6 +64,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         q = kwds.get('q', '')
         tool_id = kwds.get('tool_id', '')
         tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
+        view = kwds.get("view", None)
 
         # Find whether to search.
         if q:
@@ -67,7 +75,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 else:
                     hits = None
             else:
-                hits = self._search(q)
+                hits = self._search(q, view)
             results = []
             if hits:
                 for hit in hits:
@@ -88,12 +96,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help)
+            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
+        except exceptions.MessageException:
+            raise
         except Exception:
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
     @expose_api_anonymous_and_sessionless
-    def show(self, trans, id, **kwd):
+    def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}
 
@@ -112,13 +122,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
-    def build(self, trans, id, **kwd):
+    def build(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/build
         Returns a tool model including dynamic parameters and updated values, repeats block etc.
         """
-        if 'payload' in kwd:
-            kwd = kwd.get('payload')
+        kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get('tool_version')
         history_id = kwd.pop('history_id', None)
         history = None
@@ -129,13 +138,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def test_data_path(self, trans, id, **kwd):
+    def test_data_path(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
         """
-        # TODO: eliminate copy and paste with above code.
-        if 'payload' in kwd:
-            kwd = kwd.get('payload')
+        kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         path = tool.test_data_path(kwd.get("filename"))
@@ -145,7 +152,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_raw_anonymous_and_sessionless
-    def test_data_download(self, trans, id, **kwd):
+    def test_data_download(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
         """
@@ -172,7 +179,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless
-    def tests_summary(self, trans, **kwd):
+    def tests_summary(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/tools/tests_summary
 
@@ -182,7 +189,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
         """
-        test_counts_by_tool = {}
+        test_counts_by_tool: Dict[str, Dict] = {}
         for _id, tool in self.app.toolbox.tools():
             if not tool.is_datatype_converter:
                 tests = tool.tests
@@ -197,7 +204,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans, id, **kwd):
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -210,14 +217,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         If tool version is not passed, it is assumed to be latest. Tool version can be
         set as '*' to get tests for all configured versions.
         """
-        if 'payload' in kwd:
-            kwd = kwd.get('payload')
+        kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get('tool_version', None)
         if tool_version == "*":
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
                 if not tool.allow_user_access(trans.user):
-                    raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+                    raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         else:
             tools = [self._get_tool(id, tool_version=tool_version, user=trans.user)]
 
@@ -228,7 +234,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def reload(self, trans, id, **kwd):
+    def reload(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
@@ -241,7 +247,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def all_requirements(self, trans, **kwds):
+    def all_requirements(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
@@ -251,7 +257,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def requirements(self, trans, id, **kwds):
+    def requirements(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         GET /api/tools/{tool_id}/requirements
         Return the resolver status for a specific tool id.
@@ -262,7 +268,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def install_dependencies(self, trans, id, **kwds):
+    def install_dependencies(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         POST /api/tools/{tool_id}/dependencies
 
@@ -290,7 +296,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def uninstall_dependencies(self, trans, id, **kwds):
+    def uninstall_dependencies(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         DELETE /api/tools/{tool_id}/dependencies
 
@@ -312,7 +318,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def build_dependency_cache(self, trans, id, **kwds):
+    def build_dependency_cache(self, trans: GalaxyWebTransaction, id, **kwds):
         """
         POST /api/tools/{tool_id}/build_dependency_cache
         Attempts to cache installed dependencies.
@@ -327,7 +333,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def diagnostics(self, trans, id, **kwd):
+    def diagnostics(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}/diagnostics
         Return diagnostic information to help debug panel
@@ -343,10 +349,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         else:
             lineage_dict = None
         tool_shed_dependencies = tool.installed_tool_dependencies
+        tool_shed_dependencies_dict: Optional[list] = None
         if tool_shed_dependencies:
             tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
-        else:
-            tool_shed_dependencies_dict = None
         return {
             "tool_id": tool.id,
             "tool_version": tool.version,
@@ -362,7 +367,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             "guid": tool.guid,
         }
 
-    def _detect(self, trans, tool_id):
+    def _detect(self, trans: GalaxyWebTransaction, tool_id):
         """
         Detect whether the tool with the given id is installed.
 
@@ -380,7 +385,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                     detected_versions.append(tool.version)
         return detected_versions
 
-    def _search(self, q):
+    def _search(self, q, view):
         """
         Perform the search on the given query.
         Boosts and numer of results are configurable in galaxy.ini file.
@@ -391,6 +396,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         :return:      Dictionary containing the tools' ids of the best hits.
         :return type: dict
         """
+        panel_view = view or self.app.config.default_panel_view
         tool_name_boost = self.app.config.get('tool_name_boost', 9)
         tool_id_boost = self.app.config.get('tool_id_boost', 9)
         tool_section_boost = self.app.config.get('tool_section_boost', 3)
@@ -404,6 +410,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
 
         results = self.app.toolbox_search.search(q=q,
+                                                 panel_view=panel_view,
                                                  tool_name_boost=tool_name_boost,
                                                  tool_id_boost=tool_id_boost,
                                                  tool_section_boost=tool_section_boost,
@@ -418,29 +425,83 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return results
 
     @expose_api_anonymous_and_sessionless
-    def citations(self, trans, id, **kwds):
+    def citations(self, trans: GalaxyWebTransaction, id, **kwds):
         tool = self._get_tool(id, user=trans.user)
         rval = []
         for citation in tool.citations:
             rval.append(citation.to_dict('bibtex'))
         return rval
 
+    @expose_api
+    def conversion(self, trans: GalaxyWebTransaction, tool_id, payload, **kwd):
+        converter = self._get_tool(tool_id, user=trans.user)
+        target_type = payload.get("target_type")
+        source_type = payload.get("source_type")
+        input_src = payload.get("src")
+        input_id = payload.get("id")
+        # List of string of dependencies
+        try:
+            deps = trans.app.datatypes_registry.converter_deps[source_type][target_type]
+        except KeyError:
+            deps = {}
+        # Generate parameter dictionary
+        params, input_name = get_params_and_input_name(converter, deps)
+        params = {}
+        # determine input parameter name and add to params
+
+        params[input_name] = {
+            "values": [
+                {
+                    "id": input_id,
+                    "src": input_src,
+                }
+            ],
+            "batch": input_src == "hdca",
+        }
+        history_id = payload.get('history_id')
+        if history_id:
+            decoded_id = self.decode_id(history_id)
+            target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+        else:
+            if input_src == "hdca":
+                target_history = self.hdca_manager.get_dataset_collection_instance(trans, instance_type='history', id=input_id).history
+            elif input_src == "hda":
+                decoded_id = trans.app.security.decode_id(input_id)
+                target_history = self.hda_manager.get_accessible(decoded_id, trans.user).history
+                self.history_manager.error_unless_owner(target_history, trans.user, current_history=trans.history)
+            else:
+                raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
+
+        # Make the target datatype available to the converter
+        params['__target_datatype__'] = target_type
+        vars = converter.handle_input(trans, params, history=target_history)
+        return self._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
+
     @expose_api_anonymous_and_sessionless
-    def xrefs(self, trans, id, **kwds):
+    def xrefs(self, trans: GalaxyWebTransaction, id, **kwds):
         tool = self._get_tool(id, user=trans.user)
         return tool.xrefs
 
     @web.require_admin
     @web.legacy_expose_api_raw
-    def download(self, trans, id, **kwds):
+    def download(self, trans: GalaxyWebTransaction, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
         trans.response.set_content_type('application/x-gzip')
         download_file = open(tool_tarball, "rb")
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.tgz"' % (id)
+        trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
 
+    @expose_api_raw
+    def raw_tool_source(self, trans: GalaxyWebTransaction, id, **kwds):
+        """Returns tool source. ``language`` is included in the response header."""
+        if not trans.app.config.enable_tool_source_display and not trans.user_is_admin:
+            raise exceptions.InsufficientPermissionsException("Only administrators may display tool sources on this Galaxy server.")
+        tool = self._get_tool(id, user=trans.user, tool_version=kwds.get('tool_version'))
+        trans.response.headers['language'] = tool.tool_source.language
+        return tool.tool_source.to_string()
+
     @expose_api_anonymous
-    def fetch(self, trans, payload, **kwd):
+    def fetch(self, trans: GalaxyWebTransaction, payload, **kwd):
         """Adapt clean API to tool-constrained API.
         """
         request_version = '1'
@@ -473,7 +534,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
     @web.require_admin
     @expose_api
-    def error_stack(self, trans, **kwd):
+    def error_stack(self, trans: GalaxyWebTransaction, **kwd):
         """
         GET /api/tools/error_stack
         Returns global tool error stack
@@ -481,7 +542,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return global_tool_errors.error_stack
 
     @expose_api_anonymous
-    def create(self, trans, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/tools
         Execute tool with a given parameter payload
@@ -496,12 +557,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
+            raise exceptions.RequestParameterInvalidException(f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint.")
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
 
-    def _create(self, trans, payload, **kwd):
+    def _create(self, trans: GalaxyWebTransaction, payload, **kwd):
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get('action')
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
@@ -528,7 +591,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
             elif not trans.user.active:
-                log.warning("User \"%s\" attempts to execute tool, but account activation is turned on and user account is not active." % trans.user.email)
+                log.warning(f"User \"{trans.user.email}\" attempts to execute tool, but account activation is turned on and user account is not active.")
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -543,7 +606,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # Set up inputs.
         inputs = payload.get('inputs', {})
         if not isinstance(inputs, dict):
-            raise exceptions.RequestParameterInvalidException("inputs invalid %s" % inputs)
+            raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
@@ -567,9 +630,27 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
 
+        new_pja_flush = False
+        for job in vars.get('jobs', []):
+            if inputs.get('send_email_notification', False):
+                # Unless an anonymous user is invoking this via the API it
+                # should never be an option, but check and enforce that here
+                if trans.user is None:
+                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
+                else:
+                    job_email_action = PostJobAction('EmailAction')
+                    job.add_post_job_action(job_email_action)
+                    new_pja_flush = True
+
+        if new_pja_flush:
+            trans.sa_session.flush()
+
+        return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
+
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
-        rval = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
+        rval: Dict[str, Any] = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
         rval['produces_entry_points'] = tool.produces_entry_points
         job_errors = vars.get('job_errors', [])
         if job_errors:
@@ -586,39 +667,30 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        new_pja_flush = False
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
-            if inputs.get('send_email_notification', False):
-                # Unless an anonymous user is invoking this via the API it
-                # should never be an option, but check and enforce that here
-                if trans.user is None:
-                    raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
-                else:
-                    job_email_action = trans.model.PostJobAction('EmailAction')
-                    job.add_post_job_action(job_email_action)
-                    new_pja_flush = True
-
-        if new_pja_flush:
-            trans.sa_session.flush()
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['output_collections'].append(output_dict)
 
         for output_name, collection_instance in vars.get('implicit_collections', {}).items():
             history = target_history or trans.history
-            output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
+            output_dict = dictify_dataset_collection_instance(
+                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+            )
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
 
         return rval
 
-    def _patch_library_inputs(self, trans, inputs, target_history):
+    def _patch_library_inputs(self, trans: GalaxyWebTransaction, inputs, target_history):
         """
-        Transform inputs from the data libaray to history items.
+        Transform inputs from the data library to history items.
         """
         for k, v in inputs.items():
             new_value = self._patch_library_dataset(trans, v, target_history)
@@ -631,7 +703,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                         v['values'][index] = patched
             inputs[k] = v
 
-    def _patch_library_dataset(self, trans, v, target_history):
+    def _patch_library_dataset(self, trans: GalaxyWebTransaction, v, target_history):
         if isinstance(v, dict) and 'id' in v and v.get('src') == 'ldda':
             ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
             if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
@@ -643,7 +715,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def _get_tool(self, id, tool_version=None, user=None):
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{id}'.")
         if not tool.allow_user_access(user):
-            raise exceptions.AuthenticationFailed("Access denied, please login for tool with id '%s'." % id)
+            raise exceptions.AuthenticationFailed(f"Access denied, please login for tool with id '{id}'.")
         return tool
+
+
+def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
+    if 'payload' in kwd:
+        kwd = cast(Dict[str, Any], kwd.get('payload'))
+    return kwd

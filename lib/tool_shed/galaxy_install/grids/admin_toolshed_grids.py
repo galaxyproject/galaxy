@@ -14,7 +14,7 @@ def generate_deprecated_repository_img_str(include_mouse_over=False):
         deprecated_tip_str = 'class="icon-button" title="This repository is deprecated in the Tool Shed"'
     else:
         deprecated_tip_str = ''
-    return '<img src="{}/images/icon_error_sml.gif" {}/>'.format(url_for('/static'), deprecated_tip_str)
+    return f"<img src=\"{url_for('/static')}/images/icon_error_sml.gif\" {deprecated_tip_str}/>"
 
 
 def generate_includes_workflows_img_str(include_mouse_over=False):
@@ -22,7 +22,7 @@ def generate_includes_workflows_img_str(include_mouse_over=False):
         deprecated_tip_str = 'class="icon-button" title="This repository contains exported workflows"'
     else:
         deprecated_tip_str = ''
-    return '<img src="{}/images/fugue/gear.png" {}/>'.format(url_for('/static'), deprecated_tip_str)
+    return f"<img src=\"{url_for('/static')}/images/fugue/gear.png\" {deprecated_tip_str}/>"
 
 
 def generate_latest_revision_img_str(include_mouse_over=False):
@@ -30,7 +30,7 @@ def generate_latest_revision_img_str(include_mouse_over=False):
         latest_revision_tip_str = 'class="icon-button" title="This is the latest installable revision of this repository"'
     else:
         latest_revision_tip_str = ''
-    return '<img src="{}/style/ok_small.png" {}/>'.format(url_for('/static'), latest_revision_tip_str)
+    return f"<img src=\"{url_for('/static')}/style/ok_small.png\" {latest_revision_tip_str}/>"
 
 
 def generate_revision_updates_img_str(include_mouse_over=False):
@@ -38,7 +38,7 @@ def generate_revision_updates_img_str(include_mouse_over=False):
         revision_updates_tip_str = 'class="icon-button" title="Updates are available in the Tool Shed for this revision"'
     else:
         revision_updates_tip_str = ''
-    return '<img src="{}/images/icon_warning_sml.gif" {}/>'.format(url_for('/static'), revision_updates_tip_str)
+    return f"<img src=\"{url_for('/static')}/images/icon_warning_sml.gif\" {revision_updates_tip_str}/>"
 
 
 def generate_revision_upgrades_img_str(include_mouse_over=False):
@@ -46,7 +46,7 @@ def generate_revision_upgrades_img_str(include_mouse_over=False):
         revision_upgrades_tip_str = 'class="icon-button" title="A newer installable revision is available for this repository"'
     else:
         revision_upgrades_tip_str = ''
-    return '<img src="{}/images/up.gif" {}/>'.format(url_for('/static'), revision_upgrades_tip_str)
+    return f"<img src=\"{url_for('/static')}/images/up.gif\" {revision_upgrades_tip_str}/>"
 
 
 def generate_unknown_img_str(include_mouse_over=False):
@@ -54,7 +54,7 @@ def generate_unknown_img_str(include_mouse_over=False):
         unknown_tip_str = 'class="icon-button" title="Unable to get information from the Tool Shed"'
     else:
         unknown_tip_str = ''
-    return '<img src="{}/style/question-octagon-frame.png" {}/>'.format(url_for('/static'), unknown_tip_str)
+    return f"<img src=\"{url_for('/static')}/style/question-octagon-frame.png\" {unknown_tip_str}/>"
 
 
 class InstalledRepositoryGrid(grids.Grid):
@@ -154,9 +154,9 @@ class InstalledRepositoryGrid(grids.Grid):
                                       allow_multiple=False),
                   grids.GridOperation(label="Get updates",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.revision_update_available and
-                                                 item.status not in [
+                                                 not item.deleted
+                                                 and item.revision_update_available
+                                                 and item.status not in [
                                                      tool_shed_install.ToolShedRepository.installation_status.ERROR,
                                                      tool_shed_install.ToolShedRepository.installation_status.NEW]),
                                       allow_multiple=False,
@@ -171,8 +171,8 @@ class InstalledRepositoryGrid(grids.Grid):
                                                     action='install_latest_repository_revision')),
                   grids.GridOperation(label="Install",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.status == tool_shed_install.ToolShedRepository.installation_status.NEW),
+                                                 not item.deleted
+                                                 and item.status == tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=False,
                                       target='center',
                                       url_args=dict(controller='admin_toolshed',
@@ -180,8 +180,8 @@ class InstalledRepositoryGrid(grids.Grid):
                                                     operation='install')),
                   grids.GridOperation(label="Deactivate or uninstall",
                                       condition=(lambda item:
-                                                 not item.deleted and
-                                                 item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
+                                                 not item.deleted
+                                                 and item.status != tool_shed_install.ToolShedRepository.installation_status.NEW),
                                       allow_multiple=True,
                                       target="center",
                                       url_args=dict(controller='admin_toolshed',
@@ -211,10 +211,10 @@ class InstalledRepositoryGrid(grids.Grid):
 
     @property
     def legend(self):
-        legend_str = '%s&nbsp;&nbsp;Updates are available in the Tool Shed for this revision<br/>' % generate_revision_updates_img_str()
-        legend_str += '%s&nbsp;&nbsp;A newer installable revision is available for this repository<br/>' % generate_revision_upgrades_img_str()
-        legend_str += '%s&nbsp;&nbsp;This is the latest installable revision of this repository<br/>' % generate_latest_revision_img_str()
-        legend_str += '%s&nbsp;&nbsp;This repository is deprecated in the Tool Shed<br/>' % generate_deprecated_repository_img_str()
-        legend_str += '%s&nbsp;&nbsp;This repository contains exported workflows<br/>' % generate_includes_workflows_img_str()
-        legend_str += '%s&nbsp;&nbsp;Unable to get information from the Tool Shed<br/>' % generate_unknown_img_str()
+        legend_str = f'{generate_revision_updates_img_str()}&nbsp;&nbsp;Updates are available in the Tool Shed for this revision<br/>'
+        legend_str += f'{generate_revision_upgrades_img_str()}&nbsp;&nbsp;A newer installable revision is available for this repository<br/>'
+        legend_str += f'{generate_latest_revision_img_str()}&nbsp;&nbsp;This is the latest installable revision of this repository<br/>'
+        legend_str += f'{generate_deprecated_repository_img_str()}&nbsp;&nbsp;This repository is deprecated in the Tool Shed<br/>'
+        legend_str += f'{generate_includes_workflows_img_str()}&nbsp;&nbsp;This repository contains exported workflows<br/>'
+        legend_str += f'{generate_unknown_img_str()}&nbsp;&nbsp;Unable to get information from the Tool Shed<br/>'
         return legend_str

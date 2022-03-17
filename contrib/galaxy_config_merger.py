@@ -69,7 +69,7 @@ def main():
                         config_sample.set(section, name, value)
                 else:
                     if not config_sample.get(section, name) == value:
-                        logging.info("- diff - section [{}] option '{}' has different value ('{}':'{}'). It will be modified.".format(section, name, config_sample.get(section, name), value))
+                        logging.info(f"- diff - section [{section}] option '{name}' has different value ('{config_sample.get(section, name)}':'{value}'). It will be modified.")
                         config_sample.set(section, name, value)
     logging.info("---------- DIFFERENCE ANALYSIS END   ----------")
 

@@ -33,7 +33,7 @@ class BowtieIndex(Html):
         """
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
+        rval = [f'<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>']
         for fname in flist:
             sfname = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{sfname}">{sfname}</a>')
@@ -42,10 +42,10 @@ class BowtieIndex(Html):
             f.write("\n".join(rval))
             f.write('\n')
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = "Bowtie index file (%s)" % (dataset.metadata.sequence_space)
-            dataset.blurb = "%s space" % (dataset.metadata.sequence_space)
+            dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
+            dataset.blurb = f"{dataset.metadata.sequence_space} space"
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'

@@ -26,7 +26,7 @@ class RegistrationTestCase(SeleniumTestCase):
         self.logout_if_needed()
         assert not self.is_logged_in()
         self.home()
-        self.components.masthead.user_email.assert_absent_or_hidden()
+        self.components.masthead.username.assert_absent_or_hidden()
 
     @selenium_test
     def test_reregister_email_fails(self):

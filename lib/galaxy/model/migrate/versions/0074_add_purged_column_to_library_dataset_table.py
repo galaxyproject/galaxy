@@ -20,15 +20,15 @@ def upgrade(migrate_engine):
     c = Column('purged', Boolean, index=True, default=False)
     add_column(c, 'library_dataset', metadata, index_name='ix_library_dataset_purged')
     # Update the purged flag to the default False
-    cmd = "UPDATE library_dataset SET purged = %s;" % engine_false(migrate_engine)
+    cmd = f"UPDATE library_dataset SET purged = {engine_false(migrate_engine)};"
     try:
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Setting default data for library_dataset.purged column failed.")
 
-    # Update the purged flag for those LibaryDatasets whose purged flag should be True.  This happens
+    # Update the purged flag for those LibraryDatasets whose purged flag should be True.  This happens
     # when the LibraryDataset has no active LibraryDatasetDatasetAssociations.
-    cmd = "SELECT * FROM library_dataset WHERE deleted = %s;" % engine_true(migrate_engine)
+    cmd = f"SELECT * FROM library_dataset WHERE deleted = {engine_true(migrate_engine)};"
     deleted_lds = migrate_engine.execute(cmd).fetchall()
     for row in deleted_lds:
         cmd = "SELECT * FROM library_dataset_dataset_association WHERE library_dataset_id = %d AND library_dataset_dataset_association.deleted = %s;" % (int(row.id), engine_false(migrate_engine))

@@ -2,6 +2,7 @@
 Determine what optional dependencies are needed.
 """
 
+import os
 import sys
 from os.path import dirname, exists, join
 
@@ -32,6 +33,7 @@ class ConditionalDependencies:
         self.container_interface_types = []
         self.job_rule_modules = []
         self.error_report_modules = []
+        self.vault_type = None
         if config is None:
             self.config = load_app_properties(config_file=self.config_file)
         else:
@@ -42,15 +44,12 @@ class ConditionalDependencies:
     def parse_configs(self):
 
         def load_job_config_dict(job_conf_dict):
-            for runner in job_conf_dict.get("runners"):
+            runners = job_conf_dict.get("runners", {})
+            for runner in runners.values():
                 if "load" in runner:
                     self.job_runners.append(runner.get("load"))
                 if "rules_module" in runner:
-                    self.job_rule_modules.append(plugin.text)
-                if "params" in runner:
-                    runner_params = runner["params"]
-                    if "rules_module" in runner_params:
-                        self.job_rule_modules.append(plugin.text)
+                    self.job_rule_modules.append(runner.get("rules_module"))
 
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
@@ -75,7 +74,7 @@ class ConditionalDependencies:
                     pass
             else:
                 try:
-                    with open("job_conf_path") as f:
+                    with open(job_conf_path) as f:
                         job_conf_dict = yaml.safe_load(f)
                     load_job_config_dict(job_conf_dict)
                 except OSError:
@@ -153,6 +152,17 @@ class ConditionalDependencies:
             file_sources_conf = []
         self.file_sources = [c.get('type', None) for c in file_sources_conf]
 
+        # Parse vault config
+        vault_conf_yml = self.config.get(
+            "vault_config_file",
+            join(dirname(self.config_file), 'vault_conf.yml'))
+        if exists(vault_conf_yml):
+            with open(vault_conf_yml) as f:
+                vault_conf = yaml.safe_load(f)
+        else:
+            vault_conf = {}
+        self.vault_type = vault_conf.get('type', '').lower()
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
         for req in pkg_resources.parse_requirements(open(crfile).readlines()):
@@ -161,7 +171,7 @@ class ConditionalDependencies:
     def check(self, name):
         try:
             name = name.replace('-', '_').replace('.', '_')
-            return getattr(self, 'check_' + name)()
+            return getattr(self, f"check_{name}")()
         except Exception:
             return False
 
@@ -172,9 +182,9 @@ class ConditionalDependencies:
         return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
-        return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners)
+        return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners
+                or "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners
+                or "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners)
 
     def check_galaxycloudrunner(self):
         return ("galaxycloudrunner.rules" in self.job_rule_modules)
@@ -191,15 +201,15 @@ class ConditionalDependencies:
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
 
-    def check_raven(self):
+    def check_sentry_sdk(self):
         return self.config.get("sentry_dsn", None) is not None
 
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
 
     def check_python_ldap(self):
-        return ('ldap' in self.authenticators or
-                'activedirectory' in self.authenticators)
+        return ('ldap' in self.authenticators
+                or 'activedirectory' in self.authenticators)
 
     def check_python_pam(self):
         return 'PAM' in self.authenticators
@@ -227,19 +237,34 @@ class ConditionalDependencies:
         # pyfilesystem plugin access to terra on anvil
         return 'anvil' in self.file_sources
 
+    def check_fs_sshfs(self):
+        return 'ssh' in self.file_sources
+
     def check_s3fs(self):
         # use s3fs directly (skipping pyfilesystem) for direct access to more options
         return 's3fs' in self.file_sources
 
+    def check_fs_googledrivefs(self):
+        return 'googledrive' in self.file_sources
+
+    def check_fs_gcsfs(self):
+        return 'googlecloudstorage' in self.file_sources
+
+    def check_fs_onedatafs(self):
+        return 'onedata' in self.file_sources
+
+    def check_fs_basespace(self):
+        return 'basespace' in self.file_sources
+
     def check_watchdog(self):
         install_set = {'auto', 'True', 'true', 'polling', True}
-        return (self.config['watch_tools'] in install_set or
-                self.config['watch_tool_data_dir'] in install_set)
+        return (self.config['watch_tools'] in install_set
+                or self.config['watch_tool_data_dir'] in install_set)
 
     def check_docker(self):
-        return (self.config.get("enable_beta_containers_interface", False) and
-                ('docker' in self.container_interface_types or
-                 'docker_swarm' in self.container_interface_types))
+        return (self.config.get("enable_beta_containers_interface", False)
+                and ('docker' in self.container_interface_types
+                     or 'docker_swarm' in self.container_interface_types))
 
     def check_python_gitlab(self):
         return 'gitlab' in self.error_report_modules
@@ -255,6 +280,16 @@ class ConditionalDependencies:
 
     def check_tensorflow(self):
         return asbool(self.config["enable_tool_recommendations"])
+
+    def check_weasyprint(self):
+        # See notes in ./conditional-requirements.txt for more information.
+        return os.environ.get("GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT") == "1"
+
+    def check_custos_sdk(self):
+        return 'custos' == self.vault_type
+
+    def check_hvac(self):
+        return 'hashicorp' == self.vault_type
 
 
 def optional(config_file=None):

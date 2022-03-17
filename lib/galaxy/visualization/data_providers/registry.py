@@ -1,4 +1,8 @@
-from galaxy.datatypes.data import Newick, Nexus
+from typing import Dict, Optional, Type, Union
+
+from typing_extensions import Literal
+
+from galaxy.datatypes.data import Data, Newick, Nexus
 from galaxy.datatypes.interval import (
     Bed,
     ChromatinInteractions,
@@ -11,8 +15,13 @@ from galaxy.datatypes.tabular import Tabular, Vcf
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
-from galaxy.visualization.data_providers.basic import ColumnDataProvider
+from galaxy.visualization.data_providers.basic import BaseDataProvider, ColumnDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
+
+
+# a dict keyed on datatype with a 'default' string key.
+PROVIDER_BY_DATATYPE_CLASS_DICT = Dict[Union[Literal["default"], Type[Data]], Type[BaseDataProvider]]
+DATA_PROVIDER_BY_TYPE_NAME_DICT = Dict[str, Union[Type[BaseDataProvider], PROVIDER_BY_DATATYPE_CLASS_DICT]]
 
 
 class DataProviderRegistry:
@@ -24,7 +33,7 @@ class DataProviderRegistry:
         # Mapping from dataset type name to a class that can fetch data from a file of that
         # type. First key is converted dataset type; if result is another dict, second key
         # is original dataset type.
-        self.dataset_type_name_to_data_provider = {
+        self.dataset_type_name_to_data_provider: DATA_PROVIDER_BY_TYPE_NAME_DICT = {
             "tabix": {
                 Vcf: genome.VcfTabixDataProvider,
                 Bed: genome.BedTabixDataProvider,
@@ -39,7 +48,6 @@ class DataProviderRegistry:
             "bam": genome.SamDataProvider,
             "bigwig": genome.BigWigDataProvider,
             "bigbed": genome.BigBedDataProvider,
-
             "column_with_stats": ColumnDataProvider
         }
 
@@ -49,7 +57,11 @@ class DataProviderRegistry:
         sources, source parameter is ignored.
         """
 
-        data_provider = None
+        data_provider: Optional[BaseDataProvider]
+        data_provider_class: Type[BaseDataProvider]
+
+        # any datatype class that is a subclass of another needs to be
+        # checked before the parent in this conditional.
         if raw:
             # Working with raw data.
             if isinstance(original_dataset.datatype, Gff):
@@ -72,9 +84,12 @@ class DataProviderRegistry:
                 # Provider requested by name; get from mappings.
                 value = self.dataset_type_name_to_data_provider[name]
                 if isinstance(value, dict):
+                    # value is a PROVIDER_BY_DATATYPE_CLASS_DICT
                     # Get converter by dataset extension; if there is no data provider,
                     # get the default.
-                    data_provider_class = value.get(original_dataset.datatype.__class__, value.get("default"))
+                    default_type = value.get("default")
+                    assert default_type
+                    data_provider_class = value.get(original_dataset.datatype.__class__, default_type)
                 else:
                     data_provider_class = value
 

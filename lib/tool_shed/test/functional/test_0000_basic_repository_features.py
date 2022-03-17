@@ -16,15 +16,15 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_repository_without_categories(self):
@@ -91,7 +91,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.check_for_valid_tools(repository, strings_displayed=['Filter1'])
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=1)
         tip = self.get_repository_tip(repository)
-        tool_guid = '%s/repos/user1/filtering_0000/Filter1/1.1.0' % self.url.replace('http://', '').rstrip('/')
+        tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/filtering_0000/Filter1/1.1.0"
         tool_metadata_strings_displayed = [tool_guid,
                                            '1.1.0',  # The tool version.
                                            'Filter1',  # The tool ID.
@@ -103,7 +103,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
                                                            tool_metadata_strings_displayed=tool_metadata_strings_displayed,
                                                            tool_page_strings_displayed=tool_page_strings_displayed)
         self.check_repository_metadata(repository, tip_only=False)
-        self.browse_repository(repository, strings_displayed=["Repository '%s' revision" % repository.name, '(repository tip)'])
+        self.browse_repository(repository, strings_displayed=[f"Repository '{repository.name}' revision", '(repository tip)'])
         self.display_repository_clone_page(common.test_user_1_name,
                                            repository_name,
                                            strings_displayed=['Uploaded filtering 1.1.0', latest_changeset_revision])
@@ -195,7 +195,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         strings_displayed = ['Select a revision']
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
-        tool_guid = '%s/repos/user1/filtering_0000/Filter1/2.2.0' % self.url.replace('http://', '').rstrip('/')
+        tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/filtering_0000/Filter1/2.2.0"
         tool_metadata_strings_displayed = [tool_guid,
                                            '2.2.0',  # The tool version.
                                            'Filter1',  # The tool ID.
@@ -265,8 +265,8 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):
-        '''Fill out and submit the form to contact the owner of a repository.'''
-        '''
+        '''Fill out and submit the form to contact the owner of a repository.
+
         This test should not actually send the email, since functional tests are designed to function without
         any external network connection. The embedded tool shed server these tests are running against has been configured
         with an SMTP server address that will not and should not resolve correctly. However, since the successful sending of
@@ -362,5 +362,5 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         encoded_repository_id = self.security.encode_id(repository.id)
         strings_displayed = ['Invalid+changeset+revision']
-        self.visit_url('/repository/view_repository?id={}&changeset_revision={}'.format(encoded_repository_id, 'nonsensical_changeset'))
+        self.visit_url(f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset")
         self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])

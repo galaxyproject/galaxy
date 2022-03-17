@@ -1,0 +1,7 @@
+<display id="avivator" version="1.0.0" name="display at">
+    <link id="main" name="Avivator">
+        <url>http://avivator.gehlenborglab.org/?image_url=${qp($tiff_file.url)}</url>
+        <param type="data" name="tiff_file" url="galaxy_${DATASET_HASH}.ome.tiff" allow_cors="true"/>
+        <param type="data" name="offsets_file" url="galaxy_${DATASET_HASH}.offsets.json" metadata="offsets" allow_cors="true"/>
+    </link>
+</display>

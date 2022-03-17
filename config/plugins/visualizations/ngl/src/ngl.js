@@ -1,10 +1,15 @@
 import * as ngl from "./viewer";
 
+/** Get boolean as string */
+function asBoolean (value) {
+    return String(value).toLowerCase() == "true";
+}
+
 window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var dataset = options.dataset,
         settings = options.chart.settings,
-        stage = new ngl.Stage(options.targets[0], { backgroundColor: settings.get("backcolor") }),
+        stage = new ngl.Stage(options.target, { backgroundColor: settings.get("backcolor") }),
         representation_parameters = {},
         stage_parameters = {};
     representation_parameters = {
@@ -25,11 +30,12 @@ window.bundleEntries.load = function (options) {
         options.process.resolve();
     }
     stage.setQuality(settings.get("quality"));
-    if (settings.get("spin") === true || settings.get("spin") === "true") {
+    const spin = String(settings.get("spin")).toLowerCase() == "true";
+    if (spin) {
         stage.setSpin([0, 1, 0], 0.01);
     }
     // Re-renders the molecule view when window is resized
     window.onresize = function () {
-        viewer.fitParent();
+        stage.handleResize();
     };
 };

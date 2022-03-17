@@ -21,8 +21,7 @@
                 container-class="upload-footer-extension"
                 ref="footerExtension"
                 v-model="extension"
-                :enabled="!running"
-            >
+                :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
             <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
@@ -34,7 +33,12 @@
             </select2>
         </template>
         <template v-slot:buttons>
-            <b-button ref="btnClose" class="ui-button-default" id="btn-close" @click="$emit('dismiss')">
+            <b-button
+                ref="btnClose"
+                class="ui-button-default"
+                id="btn-close"
+                :title="btnCloseTitle"
+                @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
             </b-button>
             <b-button
@@ -42,8 +46,8 @@
                 class="ui-button-default"
                 id="btn-reset"
                 @click="_eventReset"
-                :disabled="!enableReset"
-            >
+                :title="btnResetTitle"
+                :disabled="!enableReset">
                 {{ btnResetTitle }}
             </b-button>
             <b-button
@@ -51,8 +55,8 @@
                 class="ui-button-default"
                 id="btn-stop"
                 @click="_eventStop"
-                :disabled="counterRunning == 0"
-            >
+                :title="btnStopTitle"
+                :disabled="counterRunning == 0">
                 {{ btnStopTitle }}
             </b-button>
             <b-button
@@ -62,8 +66,8 @@
                 @click="_eventSelect"
                 v-if="selectable"
                 :disabled="!enableBuild"
-                :variant="enableBuild ? 'primary' : ''"
-            >
+                :title="btnSelectTitle"
+                :variant="enableBuild ? 'primary' : ''">
                 {{ btnSelectTitle }}
             </b-button>
             <b-button
@@ -72,17 +76,17 @@
                 id="btn-start"
                 @click="_eventStart"
                 :disabled="!enableStart"
-                :variant="enableStart ? 'primary' : ''"
-            >
+                :title="btnStartTitle"
+                :variant="enableStart ? 'primary' : ''">
                 {{ btnStartTitle }}
             </b-button>
             <b-button
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate"
-                :disabled="!enableSources"
-            >
+                @click="_eventCreate(true)"
+                :title="btnCreateTitle"
+                :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
             </b-button>
             <b-button
@@ -91,8 +95,7 @@
                 id="btn-ftp"
                 @click="_eventRemoteFiles"
                 :disabled="!enableSources"
-                v-if="remoteFiles"
-            >
+                v-if="remoteFiles">
                 <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
             </b-button>
             <b-button
@@ -101,8 +104,7 @@
                 id="btn-local"
                 :title="btnLocalTitle"
                 @click="uploadSelect"
-                :disabled="!enableSources"
-            >
+                :disabled="!enableSources">
                 <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
             </b-button>
         </template>
@@ -112,9 +114,9 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import { getGalaxyInstance } from "app";
 import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
+import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
 
 export default {
@@ -128,6 +130,7 @@ export default {
     },
     data() {
         return {
+            uploadUrl: null,
             topInfo: "",
             highlightBox: false,
             showHelper: true,
@@ -164,13 +167,18 @@ export default {
         this.initFtpPopover();
         // file upload
         this.initUploadbox({
-            url: this.app.uploadPath,
+            initUrl: (index) => {
+                if (!this.uploadUrl) {
+                    this.uploadUrl = this.getRequestUrl([this.collection.get(index)], this.history_id);
+                }
+                return this.uploadUrl;
+            },
             multiple: this.multiple,
             announce: (index, file) => {
                 this._eventAnnounce(index, file);
             },
             initialize: (index) => {
-                return this.app.toData([this.collection.get(index)], this.history_id);
+                return uploadModelsToPayload([this.collection.get(index)], this.history_id);
             },
             progress: (index, percentage) => {
                 this._eventProgress(index, percentage);
@@ -193,6 +201,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
+            chunkSize: this.app.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);
@@ -206,13 +215,6 @@ export default {
         },
         appModel() {
             return this.app.model;
-        },
-        history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
-            if (storeId) {
-                return storeId;
-            }
-            return this.app.currentHistoryId;
         },
     },
     watch: {
@@ -243,6 +245,7 @@ export default {
                 file_size: file.size,
                 file_mode: file.mode || "local",
                 file_path: file.path,
+                file_uri: file.uri,
                 file_data: file,
             };
         },
@@ -253,35 +256,6 @@ export default {
             var it = this.collection.get(index);
             it.set({ percentage: 100, status: "success", hids: hids });
             this._updateStateForSuccess(it);
-        },
-
-        /** Start upload process */
-        _eventStart: function () {
-            if (this.counterAnnounce !== 0 && this.counterRunning === 0) {
-                // prepare upload process
-                this.uploadSize = 0;
-                this.uploadCompleted = 0;
-                this.collection.each((model) => {
-                    if (model.get("status") == "init") {
-                        model.set("status", "queued");
-                        this.uploadSize += model.get("file_size");
-                    }
-                });
-
-                this.appModel.set({ percentage: 0, status: "success" });
-                this.counterRunning = this.counterAnnounce;
-
-                // package ftp files separately, and remove them from queue
-                this._uploadFtp();
-
-                // queue remaining files
-                const Galaxy = getGalaxyInstance();
-                this.uploadbox.start({
-                    id: Galaxy.user.id,
-                    chunk_upload_size: this.app.chunkUploadSize,
-                });
-                this._updateStateForCounters();
-            }
         },
 
         /** Remove all */

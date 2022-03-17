@@ -84,6 +84,12 @@
 
         <h4>Tool Management</h4>
         <ul>
+            <li>
+                <strong>
+                    <a @click.prevent="useRouter" :href="adminSanitizeAllowUrl">Manage Allowlist</a>
+                </strong>
+                - Manage HTML rendering for installed tools' output datasets.
+            </li>
             <li v-if="isToolShedInstalled">
                 <strong>
                     <a @click.prevent="useRouter" :href="adminToolshedUrl">Install and Uninstall</a>
@@ -104,12 +110,6 @@
                     <a @click.prevent="useRouter" :href="adminToolVersionsUrl">View Lineage</a>
                 </strong>
                 - A view of a version lineages for all installed tools. Useful for debugging.
-            </li>
-            <li>
-                <strong>
-                    <a :href="migrationStagesUrl">View Migration Stages</a>
-                </strong>
-                - See the list of migration stages that moved sets of tools from the distribution to the Tool Shed.
             </li>
         </ul>
     </div>
@@ -139,7 +139,6 @@ export default {
         },
     },
     computed: {
-        migrationStagesUrl: () => `${root}admin/review_tool_migration_stages`, // NOT ROUTER
         adminDataTypesUrl: () => `${root}admin/data_types`,
         adminDataTablesUrl: () => `${root}admin/data_tables`,
         adminDisplayApplicationsUrl: () => `${root}admin/display_applications`,
@@ -150,6 +149,7 @@ export default {
         adminQuotasUrl: () => `${root}admin/quotas`,
         adminGroupsUrl: () => `${root}admin/groups`,
         adminRolesUrl: () => `${root}admin/roles`,
+        adminSanitizeAllowUrl: () => `${root}admin/sanitize_allow`,
         adminFormsUrl: () => `${root}admin/forms`,
         adminToolshedUrl: () => `${root}admin/toolshed`,
         adminToolVersionsUrl: () => `${root}admin/tool_versions`,

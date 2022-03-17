@@ -5,12 +5,10 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import ItemGrabber
-from galaxy.util import (
-    parse_xml,
-    plugin_config,
-)
+from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
 from galaxy.web_stack.message import WorkflowSchedulingMessage
 
@@ -157,7 +155,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         try:
             self._assign_handler(workflow_invocation, flush=flush)
         except HandlerAssignmentError:
-            raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
+            raise RuntimeError(f"Unable to set a handler for workflow invocation '{workflow_invocation.id}'")
 
         return workflow_invocation
 
@@ -181,19 +179,22 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info("No workflow schedulers plugin config file defined, using default scheduler.")
             use_default_scheduler = True
         elif not os.path.exists(config_file):
-            log.info("Cannot find workflow schedulers plugin config file '%s', using default scheduler." % config_file)
+            log.info(f"Cannot find workflow schedulers plugin config file '{config_file}', using default scheduler.")
             use_default_scheduler = True
 
         if use_default_scheduler:
             self.__init_default_scheduler()
         else:
-            plugins_element = parse_xml(config_file).getroot()
+            self.DEFAULT_BASE_HANDLER_POOLS = ('workflow-schedulers',)
+            plugins_element = load(config_file).getroot()
             self.__init_schedulers_for_element(plugins_element)
 
         if not self.__handlers_configured and self.__stack_has_pool:
             # Stack has a pool for us so override inherited config and use the pool
             self.__init_handlers()
             self.__handlers_configured = True
+        elif use_default_scheduler:
+            self._set_default_handler_assignment_methods()
 
     def __init_default_scheduler(self):
         self.default_scheduler_id = DEFAULT_SCHEDULER_ID

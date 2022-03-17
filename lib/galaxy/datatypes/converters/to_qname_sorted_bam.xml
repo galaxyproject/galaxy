@@ -20,8 +20,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="sam" value="bfast_out1.sam"/>
-            <output name="output" format="qname_sorted.bam" value="bfast_out1.qname_sorted.bam"/>
+            <param name="input" ftype="sam" value="bfast_out1.sam"/>
+            <output name="output" ftype="qname_sorted.bam" value="bfast_out1.qname_sorted.bam"/>
         </test>
     </tests>
     <help>

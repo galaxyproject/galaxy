@@ -28,12 +28,11 @@ class Configuration:
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
         # Where dataset files are stored
-        self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
+        self.file_path = resolve_path(kwargs.get("file_path", "database/objects"), self.root)
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False"))
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
-        self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache_path = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/reports"), self.root)
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
@@ -66,9 +65,9 @@ class Configuration:
 
     def check(self):
         # Check that required directories exist
-        for path in self.root, self.template_path:
+        for path in (self.root, ):
             if not os.path.isdir(path):
-                raise ConfigurationError("Directory does not exist: %s" % path)
+                raise ConfigurationError(f"Directory does not exist: {path}")
 
     @property
     def sentry_dsn_public(self):

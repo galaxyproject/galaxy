@@ -28,7 +28,7 @@ def build_tool_dependencies_select_field(app, tool_shed_repository, name, multip
             if tool_dependency.status in [app.install_model.ToolDependency.installation_status.NEVER_INSTALLED,
                                           app.install_model.ToolDependency.installation_status.UNINSTALLED]:
                 continue
-        option_label = '{} version {}'.format(str(tool_dependency.name), str(tool_dependency.version))
+        option_label = f'{str(tool_dependency.name)} version {str(tool_dependency.version)}'
         option_value = app.security.encode_id(tool_dependency.id)
         tool_dependencies_select_field.add_option(option_label, option_value)
     return tool_dependencies_select_field
@@ -53,7 +53,7 @@ def create_or_update_tool_dependency(app, tool_shed_repository, name, version, t
         # Create a new tool_dependency record for the tool_shed_repository.
         debug_msg = 'Creating a new record for version %s of tool dependency %s for revision %s of repository %s.  ' % \
             (str(version), str(name), str(tool_shed_repository.changeset_revision), str(tool_shed_repository.name))
-        debug_msg += 'The status is being set to %s.' % str(status)
+        debug_msg += f'The status is being set to {str(status)}.'
         log.debug(debug_msg)
         tool_dependency = app.install_model.ToolDependency(tool_shed_repository.id, name, version, type, status)
         context.add(tool_dependency)
@@ -362,10 +362,10 @@ def remove_tool_dependency_installation_directory(dependency_install_dir):
             shutil.rmtree(dependency_install_dir)
             removed = True
             error_message = ''
-            log.debug("Removed tool dependency installation directory: %s" % str(dependency_install_dir))
+            log.debug(f"Removed tool dependency installation directory: {str(dependency_install_dir)}")
         except Exception as e:
             removed = False
-            error_message = "Error removing tool dependency installation directory {}: {}".format(str(dependency_install_dir), str(e))
+            error_message = f"Error removing tool dependency installation directory {str(dependency_install_dir)}: {str(e)}"
             log.warning(error_message)
     else:
         removed = True
@@ -383,10 +383,9 @@ def set_tool_dependency_attributes(app, tool_dependency, status, error_message=N
         tool_shed_repository = tool_dependency.tool_shed_repository
         debug_msg = 'Updating an existing record for version %s of tool dependency %s for revision %s of repository %s ' % \
             (str(tool_dependency.version), str(tool_dependency.name), str(tool_shed_repository.changeset_revision), str(tool_shed_repository.name))
-        debug_msg += 'by updating the status from {} to {}.'.format(str(tool_dependency.status), str(status))
+        debug_msg += f'by updating the status from {str(tool_dependency.status)} to {str(status)}.'
         log.debug(debug_msg)
     tool_dependency.status = status
     sa_session.add(tool_dependency)
     sa_session.flush()
-    app.tool_shed_repository_cache.rebuild()
     return tool_dependency

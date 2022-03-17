@@ -11,6 +11,7 @@ from io import StringIO
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    MetadataFile,
     User
 )
 from galaxy.tools.wrappers import (
@@ -189,10 +190,10 @@ class DataMetaFilter(Filter):
         try:
             ref = _get_ref_data(other_values, self.ref_name)
         except KeyError:  # no such dataset
-            log.warning("could not filter by metadata: %s unknown" % self.ref_name)
+            log.warning(f"could not filter by metadata: {self.ref_name} unknown")
             return []
         except ValueError:  # not a valid dataset
-            log.warning("could not filter by metadata: %s not a data or collection parameter" % self.ref_name)
+            log.warning(f"could not filter by metadata: {self.ref_name} not a data or collection parameter")
             return []
         # get the metadata value.
         # - for lists: (of data sets) and collections the meta data values of all
@@ -270,14 +271,31 @@ class ParamValueFilter(Filter):
         if trans is not None and trans.workflow_building_mode:
             return []
         ref = other_values.get(self.ref_name, None)
-        for ref_attribute in self.ref_attribute:
-            if not hasattr(ref, ref_attribute):
-                return []  # ref does not have attribute, so we cannot filter, return empty list
-            ref = getattr(ref, ref_attribute)
-        ref = str(ref)
+        if ref is None:
+            ref = []
+
+        # - for HDCAs the list of contained HDAs is extracted
+        # - single values are transformed in a single eleent list
+        # - remaining cases are already lists (select and data parameters with multiple=true)
+        if isinstance(ref, HistoryDatasetCollectionAssociation):
+            ref = ref.to_hda_representative(multiple=True)
+        elif not isinstance(ref, list):
+            ref = [ref]
+
+        ref_values = []
+        for r in ref:
+            for ref_attribute in self.ref_attribute:
+                # ref does not have attribute, so we cannot filter,
+                # but other refs might have it
+                if not hasattr(r, ref_attribute):
+                    break
+                r = getattr(r, ref_attribute)
+            ref_values.append(r)
+        ref_values = [str(_) for _ in ref_values]
+
         rval = []
         for fields in options:
-            if self.keep == (fields[self.column] == ref):
+            if self.keep == (fields[self.column] in ref_values):
                 rval.append(fields)
         return rval
 
@@ -563,6 +581,7 @@ class DynamicOptions:
                     else:
                         self.missing_index_file = data_file
             elif dataset_file is not None:
+                self.meta_file_key = elem.get('meta_file_key', None)
                 self.dataset_ref_name = dataset_file
                 self.has_dataset_dependencies = True
                 self.converter_safe = False
@@ -584,6 +603,9 @@ class DynamicOptions:
     @property
     def tool_data_table(self):
         if self.tool_data_table_name:
+            # this is needed for the validator unit tests and should not happen in real life
+            if self.tool_param.tool is None:
+                return None
             tool_data_table = self.tool_param.tool.app.tool_data_tables.get(self.tool_data_table_name, None)
             if tool_data_table:
                 # Column definitions are optional, but if provided override those from the table
@@ -601,7 +623,7 @@ class DynamicOptions:
     @property
     def missing_tool_data_table_name(self):
         if not self.tool_data_table:
-            log.warning("Data table named '%s' is required by tool but not configured" % self.tool_data_table_name)
+            log.warning(f"Data table named '{self.tool_data_table_name}' is required by tool but not configured")
             return self.tool_data_table_name
         return None
 
@@ -661,14 +683,23 @@ class DynamicOptions:
             try:
                 datasets = _get_ref_data(other_values, self.dataset_ref_name)
             except KeyError:  # no such dataset
-                log.warning("could not create dynamic options from_dataset: %s unknown" % self.dataset_ref_name)
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} unknown")
                 return []
             except ValueError:  # not a valid dataset
-                log.warning("could not create dynamic options from_dataset: %s not a data or collection parameter" % self.dataset_ref_name)
+                log.warning(f"Parameter {self.tool_param.name}: could not create dynamic options from_dataset: {self.dataset_ref_name} not a data or collection parameter")
                 return []
 
             options = []
+            meta_file_key = self.meta_file_key
             for dataset in datasets:
+                if meta_file_key:
+                    dataset = getattr(dataset.metadata, meta_file_key, None)
+                    if not isinstance(dataset, MetadataFile):
+                        log.warning(f"The meta_file_key `{meta_file_key}` was invalid or the referred object was not a valid file type metadata!")
+                        continue
+                    if getattr(dataset, 'purged', False) or getattr(dataset, 'deleted', False):
+                        log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
+                        continue
                 if not hasattr(dataset, 'file_name'):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
@@ -711,7 +742,7 @@ class DynamicOptions:
         if isinstance(field_name, int):
             field_index = field_name
         else:
-            assert field_name in self.columns, "Requested '%s' column missing from column def" % field_name
+            assert field_name in self.columns, f"Requested '{field_name}' column missing from column def"
             field_index = self.columns[field_name]
         if not isinstance(value, list):
             value = [value]

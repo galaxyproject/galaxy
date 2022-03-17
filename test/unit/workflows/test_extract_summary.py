@@ -58,6 +58,26 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         datasets = next(iter(job_dict.values()))
         assert datasets == [(None, hda)]
 
+    def test_fake_job_hda_name_guess(self):
+        hda_from_history = MockHda(job=UNDEFINED_JOB)
+        hda_from_history.copied_from_history_dataset_association = MockHda(job=UNDEFINED_JOB)
+        self.history.active_datasets.append(hda_from_history)
+        job_dict, warnings = extract.summarize(trans=self.trans)
+        assert not warnings
+        assert len(job_dict) == 1
+        fake_job = next(iter(job_dict.keys()))
+        assert "History" in fake_job.name
+        self.history.active_datasets.remove(hda_from_history)
+
+        hda_from_library = MockHda(job=UNDEFINED_JOB)
+        hda_from_library.copied_from_library_dataset_dataset_association = MockHda(job=UNDEFINED_JOB)
+        self.history.active_datasets.append(hda_from_library)
+        job_dict, warnings = extract.summarize(trans=self.trans)
+        assert not warnings
+        assert len(job_dict) == 1
+        fake_job = next(iter(job_dict.keys()))
+        assert "Library" in fake_job.name
+
     def test_fake_job_hdca(self):
         hdca = MockHdca()
         self.history.active_datasets.append(hdca)
@@ -88,6 +108,14 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         assert len(job_dict) == 0
 
 
+class MockJobToOutputDatasetAssociation:
+    job = None
+
+    def __init__(self, name, dataset):
+        self.name = name
+        self.dataset = dataset
+
+
 class MockHistory:
 
     def __init__(self):
@@ -114,12 +142,13 @@ class MockHda:
         self.id = 123
         self.state = state
         self.copied_from_history_dataset_association = None
+        self.copied_from_library_dataset_dataset_association = None
         self.history_content_type = "dataset"
         if job is not UNDEFINED_JOB:
             if not job:
                 job = model.Job()
             self.job = job
-            assoc = model.JobToOutputDatasetAssociation(output_name, self)
+            assoc = MockJobToOutputDatasetAssociation(output_name, self)
             assoc.job = job
             self.creating_job_associations = [assoc]
         else:

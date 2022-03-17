@@ -1,8 +1,8 @@
 <tool id="__MERGE_COLLECTION__"
-      name="Merge Collections"
+      name="Merge collections"
       version="1.0.0"
       tool_type="merge_collection">
-  <description>into single list of datasets</description>
+  <description></description>
   <type class="MergeCollectionTool" module="galaxy.tools" />
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
@@ -59,7 +59,7 @@
     <section name="advanced" title="Advanced Options">
         <conditional name="conflict">
           <param name="duplicate_options" type="select" label="How should conflicts (or potential conflicts) be handled?"
-                 help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured.">
+                 help="Collection elements must have unique element identifiers, when appending how should unique identifiers be assured. See Help section below for examples.">
             <option value="suffix_conflict">Append suffix to conflicted element identifers</option>
             <option value="suffix_conflict_rest">Append suffix to conflicted element identifers after first one encountered</option>
             <option value="suffix_every">Append suffix to every element identifer</option>
@@ -275,7 +275,148 @@
   </tests>
   <help><![CDATA[
 
-This tool takes two lists and creates a single unified list.
+========
+Synopsis
+========
+
+Takes two or more collections and creates a single collection from them. 
+
+===========
+Description
+===========
+
+By default the tool assumes that collections that are being merged have unique dataset names. If it not the case only one (the first) of the datasets with a repeated name will be included in the merged collection. For example, suppose you have two collections. Each has two datasets named "A" and "B"::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Merging them will produce a single collection with only two datasets::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+This behavior can be changed by clicking on "*Advanced Options*" link. The following options are available:
+
+**Keep first instance (Default behavior)**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+Here if two collection have identical dataset names, a dataset is chosen from the *first* collection.
+
+-----
+
+**Keep first instance**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B] 
+                    [Dataset X] 
+                    [Dataset Y]
+
+Here if two collection have identical dataset names, a dataset is chosen from the *last* collection.
+
+-----
+
+**Append suffix to conflicted element identifiers**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A_1] 
+                    [Dataset B_1]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X] 
+                    [Dataset Y]
+
+----
+
+**Append suffix to conflicted element identifiers after first on encountered**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A] 
+                    [Dataset B]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X] 
+                    [Dataset Y]
+
+------
+
+**Append suffix to every element identifier**
+
+Input::
+
+ Collection 1: [Dataset A] 
+               [Dataset B] 
+               [Dataset X]
+ Collection 2: [Dataset A] 
+               [Dataset B] 
+               [Dataset Y]
+
+Output::
+
+ Merged Collection: [Dataset A_1] 
+                    [Dataset B_2]
+                    [Dataset A_2] 
+                    [Dataset B_2]  
+                    [Dataset X_1] 
+                    [Dataset Y_2]
+
+-----
+
+**Fail collection creation**
+
+This option will simply trigger an error.
+
+------
 
 .. class:: infomark
 

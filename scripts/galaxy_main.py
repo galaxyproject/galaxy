@@ -57,14 +57,17 @@ else:
     except Exception:
         log.exception("Failed to add Galaxy to sys.path")
         raise
+from galaxy.main_config import (
+    absolute_config_path,
+    config_is_ini,
+    DEFAULT_CONFIG_SECTION,
+    DEFAULT_INI_APP,
+    find_config,
+)
 from galaxy.util import unicodify
 from galaxy.web_stack import get_app_kwds
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
-
-DEFAULT_INI_APP = "main"
-DEFAULT_CONFIG_SECTION = "galaxy"
-DEFAULT_INIS = ["config/galaxy.yml", "config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.yml.sample"]
 
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
@@ -126,7 +129,7 @@ def handle_signal(signum, frame):
 
 def register_signals():
     for name in ('TERM', 'INT', 'HUP'):
-        sig = getattr(signal, 'SIG%s' % name)
+        sig = getattr(signal, f'SIG{name}')
         signal.signal(sig, handle_signal)
 
 
@@ -156,29 +159,6 @@ def app_loop(args, log):
         raise
 
 
-def absolute_config_path(path, galaxy_root):
-    if path and not os.path.isabs(path):
-        path = os.path.join(galaxy_root, path)
-    return path
-
-
-def find_config(supplied_config, galaxy_root):
-    if supplied_config:
-        return supplied_config
-
-    if galaxy_root is None:
-        return os.path.abspath('galaxy.yml')
-
-    # If not explicitly supplied an config, check galaxy.ini and then
-    # just resort to sample if that has not been configured.
-    for guess in DEFAULT_INIS:
-        config_path = os.path.join(galaxy_root, guess)
-        if os.path.exists(config_path):
-            return config_path
-
-    return guess
-
-
 class GalaxyConfigBuilder:
     """ Generate paste-like configuration from supplied command-line arguments.
     """
@@ -199,7 +179,7 @@ class GalaxyConfigBuilder:
         self.config_file = unicodify(config_file)
         # FIXME: this won't work for non-Paste ini configs
         if self.config_is_ini:
-            self.config_section = "app:%s" % unicodify(kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
+            self.config_section = f"app:{unicodify(kwds.get('app') or args and args.app or DEFAULT_INI_APP)}"
         else:
             self.config_section = self.app_name
         self.log_file = (args and args.log_file)
@@ -212,13 +192,13 @@ class GalaxyConfigBuilder:
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonize process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
-        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
+        arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help=f"pid file (default is {DEFAULT_PID})")
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
         arg_parser.add_argument("--attach-to-pool", action="append", default=None, help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
 
     @property
     def config_is_ini(self):
-        return self.config_file.endswith('.ini') or self.config_file.endswith('.ini.sample')
+        return config_is_ini(self.config_file)
 
     def app_kwds(self):
         kwds = get_app_kwds(self.app_name, app_name=self.app_name)

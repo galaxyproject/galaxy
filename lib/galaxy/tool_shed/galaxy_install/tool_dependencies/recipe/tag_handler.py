@@ -21,7 +21,7 @@ class RecipeTag:
     """Abstract class that defines a standard format for handling recipe tags when installing packages."""
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         raise Exception("Unimplemented Method")
 
 
@@ -115,7 +115,7 @@ class Install(RecipeTag, SyncDatabase):
         self.tag = 'install'
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         # <install version="1.0">
         # Get the installation directory for tool dependencies that will be installed for the received tool_shed_repository.
         actions_elem_tuples = []
@@ -129,27 +129,17 @@ class Install(RecipeTag, SyncDatabase):
                                                                  tool_dependency_name=package_name,
                                                                  tool_dependency_version=package_version)
         if os.path.exists(install_dir):
-            # The tool_migration_manager handles tool migration stages and the sync_database_with_file_system()
-            # method handles two scenarios: (1) where a Galaxy file system environment related to installed
-            # Tool Shed repositories and tool dependencies has somehow gotten out of sync with the Galaxy
-            # database tables associated with these installed items, and (2) the Tool Shed's install and test
-            # framework which installs repositories in 2 stages, those of type tool_dependency_definition
-            # followed by those containing valid tools and tool functional test components.  Neither of these
-            # scenarios apply when the install manager is running.
-            if from_tool_migration_manager:
-                proceed_with_install = True
-            else:
-                # Notice that we'll throw away the following tool_dependency if it can be installed.
-                tool_dependency, proceed_with_install = self.sync_database_with_file_system(self.app,
-                                                                                            tool_shed_repository,
-                                                                                            package_name,
-                                                                                            package_version,
-                                                                                            install_dir,
-                                                                                            tool_dependency_type='package')
-                if not proceed_with_install:
-                    log.debug("Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." %
-                        (str(tool_dependency.name), str(tool_dependency.version)))
-                    return tool_dependency, proceed_with_install, actions_elem_tuples
+            # Notice that we'll throw away the following tool_dependency if it can be installed.
+            tool_dependency, proceed_with_install = self.sync_database_with_file_system(self.app,
+                                                                                        tool_shed_repository,
+                                                                                        package_name,
+                                                                                        package_version,
+                                                                                        install_dir,
+                                                                                        tool_dependency_type='package')
+            if not proceed_with_install:
+                log.debug("Tool dependency %s version %s cannot be installed (it was probably previously installed), so returning it." %
+                    (str(tool_dependency.name), str(tool_dependency.version)))
+                return tool_dependency, proceed_with_install, actions_elem_tuples
         else:
             proceed_with_install = True
         if proceed_with_install:
@@ -173,7 +163,7 @@ class Install(RecipeTag, SyncDatabase):
                                                                               include_after_install_actions=True)
                 if not actions_elem_tuples:
                     proceed_with_install = False
-                    error_message = 'Version {} of the {} package cannot be installed because '.format(str(package_version), str(package_name))
+                    error_message = f'Version {str(package_version)} of the {str(package_name)} package cannot be installed because '
                     error_message += 'the recipe for installing the package is missing either an &lt;actions&gt; tag set or an &lt;actions_group&gt; '
                     error_message += 'tag set.'
                     # Since there was an installation error, update the tool dependency status to Error.
@@ -194,7 +184,7 @@ class Package(RecipeTag):
         self.tag = 'package'
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         action_elem_tuples = []
         proceed_with_install = False
         # Only install the tool_dependency if it is not already installed and it is associated with a database
@@ -225,7 +215,7 @@ class ReadMe(RecipeTag):
         self.tag = 'readme'
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         # Nothing to be done.
         action_elem_tuples = []
         proceed_with_install = False
@@ -262,7 +252,7 @@ class Repository(RecipeTag, SyncDatabase):
             return tmp_filename
         else:
             message = "Unable to retrieve required tool_dependencies.xml file from the Tool Shed for revision "
-            message += "{} of installed repository {} owned by {}.".format(str(changeset_revision), str(name), str(owner))
+            message += f"{str(changeset_revision)} of installed repository {str(name)} owned by {str(owner)}."
             raise Exception(message)
 
     def create_tool_dependency_with_initialized_env_sh_file(self, dependent_install_dir, tool_shed_repository,
@@ -358,8 +348,7 @@ class Repository(RecipeTag, SyncDatabase):
         env_sh_file_path = os.path.join(env_sh_file_dir, 'env.sh')
         return env_sh_file_path
 
-    def handle_complex_repository_dependency_for_package(self, elem, package_name, package_version, tool_shed_repository,
-                                                         from_tool_migration_manager=False):
+    def handle_complex_repository_dependency_for_package(self, elem, package_name, package_version, tool_shed_repository):
         """
         Inspect the repository defined by a complex repository dependency definition and take certain steps to
         enable installation of the received package name and version to proceed.  The received elem is the
@@ -400,28 +389,18 @@ class Repository(RecipeTag, SyncDatabase):
                                                                      tool_dependency_name=package_name,
                                                                      tool_dependency_version=package_version)
             if os.path.exists(dependent_install_dir):
-                # The install manager handles tool migration stages and the sync_database_with_file_system()
-                # method handles two scenarios: (1) where a Galaxy file system environment related to installed
-                # Tool Shed repositories and tool dependencies has somehow gotten out of sync with the Galaxy
-                # database tables associated with these installed items, and (2) the Tool Shed's install and test
-                # framework which installs repositories in 2 stages, those of type tool_dependency_definition
-                # followed by those containing valid tools and tool functional test components.  Neither of these
-                # scenarios apply when the install manager is running.
-                if from_tool_migration_manager:
-                    can_install_tool_dependency = True
-                else:
-                    # Notice that we'll throw away the following tool_dependency if it can be installed.
-                    tool_dependency, can_install_tool_dependency = self.sync_database_with_file_system(self.app,
-                                                                                                       tool_shed_repository,
-                                                                                                       package_name,
-                                                                                                       package_version,
-                                                                                                       dependent_install_dir,
-                                                                                                       tool_dependency_type='package')
-                    if not can_install_tool_dependency:
-                        log.debug("Tool dependency %s version %s cannot be installed (it was probably previously installed), "
-                                  "so appending it to the list of handled tool dependencies.",
-                                  str(tool_dependency.name), str(tool_dependency.version))
-                        handled_tool_dependencies.append(tool_dependency)
+                # Notice that we'll throw away the following tool_dependency if it can be installed.
+                tool_dependency, can_install_tool_dependency = self.sync_database_with_file_system(self.app,
+                                                                                                   tool_shed_repository,
+                                                                                                   package_name,
+                                                                                                   package_version,
+                                                                                                   dependent_install_dir,
+                                                                                                   tool_dependency_type='package')
+                if not can_install_tool_dependency:
+                    log.debug("Tool dependency %s version %s cannot be installed (it was probably previously installed), "
+                              "so appending it to the list of handled tool dependencies.",
+                              str(tool_dependency.name), str(tool_dependency.version))
+                    handled_tool_dependencies.append(tool_dependency)
             else:
                 can_install_tool_dependency = True
             if can_install_tool_dependency:
@@ -430,7 +409,7 @@ class Repository(RecipeTag, SyncDatabase):
                 # required_repository.
                 if required_repository.is_deactivated_or_installed:
                     if not os.path.exists(required_repository_package_install_dir):
-                        log.error('Missing required tool dependency directory %s' % str(required_repository_package_install_dir))
+                        log.error(f'Missing required tool dependency directory {str(required_repository_package_install_dir)}')
                     repo_files_dir = required_repository.repo_files_directory(self.app)
                     if not repo_files_dir:
                         message = "Unable to locate the repository directory for revision %s of installed repository %s owned by %s." % \
@@ -476,19 +455,18 @@ class Repository(RecipeTag, SyncDatabase):
         return handled_tool_dependencies
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         # We have a complex repository dependency definition.
         action_elem_tuples = []
         proceed_with_install = False
         rd_tool_dependencies = self.handle_complex_repository_dependency_for_package(package_elem,
                                                                                      package_name,
                                                                                      package_version,
-                                                                                     tool_shed_repository,
-                                                                                     from_tool_migration_manager=from_tool_migration_manager)
+                                                                                     tool_shed_repository)
         for rd_tool_dependency in rd_tool_dependencies:
             if rd_tool_dependency.status == self.app.install_model.ToolDependency.installation_status.ERROR:
                 # We'll log the error here, but continue installing packages since some may not require this dependency.
-                log.error("Error installing tool dependency for required repository: %s" % str(rd_tool_dependency.error_message))
+                log.error(f"Error installing tool dependency for required repository: {str(rd_tool_dependency.error_message)}")
         return tool_dependency, proceed_with_install, action_elem_tuples
 
     def remove_file(self, file_name):
@@ -508,7 +486,7 @@ class SetEnvironment(RecipeTag):
         self.tag = 'set_environment'
 
     def process_tag_set(self, tool_shed_repository, tool_dependency, package_elem, package_name, package_version,
-                        from_tool_migration_manager=False, tool_dependency_db_records=None):
+                        tool_dependency_db_records=None):
         # We need to handle two tag sets for package_elem here, this:
         # <set_environment version="1.0">
         #    <environment_variable name="R_SCRIPT_PATH"action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
@@ -524,7 +502,7 @@ class SetEnvironment(RecipeTag):
         try:
             self.set_environment(package_elem, tool_shed_repository, attr_tups_of_dependencies_for_install)
         except Exception as e:
-            error_message = "Error setting environment for tool dependency: %s" % str(e)
+            error_message = f"Error setting environment for tool dependency: {str(e)}"
             log.debug(error_message)
         return tool_dependency, proceed_with_install, action_elem_tuples
 

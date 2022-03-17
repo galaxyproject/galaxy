@@ -14,10 +14,6 @@ DEFAULT_CONFIG = [
         'verbose': True,
         'user_submission': True,
     },
-    {
-        'type': 'sentry',
-        'user_submission': False,
-    },
 ]
 DEFAULT_PLUGINS_SOURCE = plugin_config.PluginConfigSource('dict', DEFAULT_CONFIG)
 

@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 try:
     import pip
 except ImportError:
-    pip = None  # type: ignore
+    pip = None  # type: ignore[assignment]
 
 
 CONFIGURE_URL = "https://docs.galaxyproject.org/en/master/admin/"
@@ -90,7 +90,7 @@ def main(argv=None):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    print("Bootstrapping Galaxy configuration into directory %s" % relative_config_dir)
+    print(f"Bootstrapping Galaxy configuration into directory {relative_config_dir}")
     _handle_galaxy_yml(args, config_dir, data_dir)
     _handle_install(args, dependencies)
     _print_config_summary(args, mode, relative_config_dir)
@@ -104,7 +104,7 @@ def _print_config_summary(args, mode, relative_config_dir):
 
 def _print_galaxy_yml_info(args, mode):
     print(" - galaxy.yml created, update to configure Galaxy.")
-    print("   * Target web server %s" % mode)
+    print(f"   * Target web server {mode}")
     if args.host == DEFAULT_HOST:
         print("   * Binding to host localhost, remote clients will not be able to connect.")
     elif _determine_host(args) == "0.0.0.0":
@@ -117,7 +117,7 @@ def _print_galaxy_run(mode):
     if mode.startswith("uwsgi"):
         print("    uwsgi --yaml galaxy.yml")
     else:
-        raise Exception("Unknown mode: %s" % mode)
+        raise Exception(f"Unknown mode: {mode}")
 
 
 def _determine_mode(args):
@@ -154,7 +154,8 @@ def _handle_galaxy_yml(args, config_dir, data_dir):
 
     galaxy_config_template = []
     with open(GALAXY_CONFIG_TEMPLATE_FILE) as fh:
-        for line in [l.rstrip('\n') for l in fh.readlines()]:
+        for line in fh:
+            line = line.rstrip('\n')
             for k, v in GALAXY_CONFIG_SUBSTITUTIONS.items():
                 if line == k:
                     line = v
@@ -177,7 +178,7 @@ def _handle_install(args, dependencies):
 
 def _check_file(path, force):
     if os.path.exists(path) and not force:
-        print("File %s exists, exiting. Run with --force to replace configuration." % path, file=sys.stderr)
+        print(f"File {path} exists, exiting. Run with --force to replace configuration.", file=sys.stderr)
         sys.exit(1)
 
 

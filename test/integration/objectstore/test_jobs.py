@@ -35,6 +35,10 @@ TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
 class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    # setup by _configure_object_store
+    files1_path: str
+    files2_path: str
+    files3_path: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -52,7 +56,6 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
                 "create_10",
                 create_10_inputs,
                 history_id,
-                assert_ok=True,
             )
             self.dataset_populator.wait_for_history(history_id)
 

@@ -3,11 +3,15 @@
 For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
+
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
     'description',
     'macros',
+    'edam_topics',
+    'edam_operations',
+    'xrefs',
     'parallelism',
     'requirements',
     'code',
@@ -44,22 +48,20 @@ def lint_xml_order(tool_xml, lint_ctx):
     tool_root = tool_xml.getroot()
 
     if tool_root.attrib.get('tool_type', '') == 'data_source':
-        _validate_for_tags(tool_root, lint_ctx, DATASOURCE_TAG_ORDER)
+        tag_ordering = DATASOURCE_TAG_ORDER
     else:
-        _validate_for_tags(tool_root, lint_ctx, TAG_ORDER)
+        tag_ordering = TAG_ORDER
 
-
-def _validate_for_tags(root, lint_ctx, tag_ordering):
     last_tag = None
     last_key = None
-    for elem in root:
+    for elem in tool_root:
         tag = elem.tag
         if tag in tag_ordering:
             key = tag_ordering.index(tag)
             if last_key:
                 if last_key > key:
-                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]")
+                    lint_ctx.warn(f"Best practice violation [{tag}] elements should come before [{last_tag}]", node=elem)
             last_tag = tag
             last_key = key
         else:
-            lint_ctx.info("Unknown tag [%s] encountered, this may result in a warning in the future." % tag)
+            lint_ctx.info(f"Unknown tag [{tag}] encountered, this may result in a warning in the future.", node=elem)

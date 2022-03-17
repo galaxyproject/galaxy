@@ -37,6 +37,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~
+``cache_dir``
+~~~~~~~~~~~~~
+
+:Description:
+    Top level cache directory. Any other cache directories
+    (tool_cache_data_dir, template_cache_path, etc.) should be
+    subdirectories.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``cache``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -232,6 +246,17 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_table_prune_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between attempts to remove old rows from the
+    history_audit database table. Set to 0 to disable pruning.
+:Default: ``3600``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~
@@ -260,6 +285,18 @@
     <data_dir>.
 :Default: ``tmp``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``maximum_upload_file_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum size of uploadable files, specified in bytes (default:
+    100GB). This value is ignored if an external upload server is
+    configured.
+:Default: ``107374182400``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~
@@ -299,31 +336,15 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``check_migrate_tools``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable / disable checking if any tools defined in the above
-    non-shed tool_config_files (i.e., tool_conf.xml) have been
-    migrated from the Galaxy code distribution to the Tool Shed. This
-    functionality is largely untested in modern Galaxy releases and
-    has serious issues such as #7273 and the possibility of slowing
-    down Galaxy startup, so the default and recommended value is
-    false.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``migrated_tools_config``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Tool config maintained by tool migration scripts.  If you use the
-    migration scripts to install tools that have been migrated to the
-    tool shed upon a new release, they will be added to this tool
-    config file.
+    This option is deprecated. In previous releases this file was
+    maintained by tool migration scripts that are no longer part of
+    the code base. The option remains as a placeholder for deployments
+    where these scripts were previously run and such a file exists.
     The value of this option will be resolved with respect to
     <managed_config_dir>.
 :Default: ``migrated_tools_conf.xml``
@@ -382,13 +403,10 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    The dependency resolvers config file specifies an ordering and
-    options for how Galaxy resolves tool dependencies (requirement
-    tags in Tool XML). The default ordering is to the use the Tool
-    Shed for tools installed that way, use local Galaxy packages, and
-    then use Conda if available. See
-    https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
-    for more information on these options.
+    Specifies the path to the standalone dependency resolvers
+    configuration file. This configuration can now be specified
+    directly in the Galaxy configuration, see the description of the
+    'dependency_resolvers' option for details.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``dependency_resolvers_conf.xml``
@@ -574,6 +592,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``load_tool_shed_datatypes``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option controls whether legacy datatypes are loaded from
+    installed tool shed repositories. We're are in the process of
+    disabling Tool Shed datatypes. This option with a default of true
+    will be added in 22.01, we will disable the datatypes on the big
+    public servers during that release. This option will be switched
+    to False by default in 22.05 and this broken functionality will be
+    removed all together during some future release.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -657,17 +691,32 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_resolvers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Container resolvers configuration (beta). Set up a file describing
+    Container resolvers configuration. Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
-    If this is set to None, the default containers loaded is
-    determined by enable_mulled_containers.
+    If this is set to None, the default container resolvers loaded is
+    determined by enable_mulled_containers. For available options see
+    config/container_resolvers_conf.xml.sample.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``container_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a container_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    container_resolvers_config_file is used. Takes the same options
+    that can be set in container_resolvers_config_file.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~
@@ -995,7 +1044,7 @@
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``compiled_templates``
 :Type: str
 
@@ -1074,7 +1123,7 @@
     configured in (``shed_``)tool_conf.xml files using the
     tool_cache_data_dir attribute.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``tool_cache``
 :Type: str
 
@@ -1102,6 +1151,66 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_content_directory``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Point Galaxy at a repository consisting of a copy of the bio.tools
+    database (e.g. https://github.com/bio-tools/content/) to resolve
+    bio.tools data for tool metadata.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``biotools_use_api``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to attempt to resolve bio.tools metadata for
+    tools for tool not resovled via biotools_content_directory.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_type``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The type of beaker
+    cache used.
+:Default: ``file``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_data_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The data directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/data``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_lock_dir``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    bio.tools web service request related caching. The lock directory
+    to point beaker cache at.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``biotools/locks``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1125,7 +1234,7 @@
     the following parameters can be used to control the caching used
     to store this information.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``citations/data``
 :Type: str
 
@@ -1140,7 +1249,7 @@
     the following parameters can be used to control the caching used
     to store this information.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``citations/locks``
 :Type: str
 
@@ -1165,7 +1274,7 @@
     Data directory used by beaker for caching mulled resolution
     requests.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``mulled/data``
 :Type: str
 
@@ -1178,7 +1287,7 @@
     Lock directory used by beaker for caching mulled resolution
     requests.
     The value of this option will be resolved with respect to
-    <data_dir>.
+    <cache_dir>.
 :Default: ``mulled/locks``
 :Type: str
 
@@ -1272,8 +1381,30 @@
     list. This is the address used to subscribe to the list. Uncomment
     and leave empty if you want to remove this option from the user
     registration form.
-    Example value 'galaxy-announce-join@bx.psu.edu'
+    Example value 'galaxy-announce-join@lists.galaxyproject.org'
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_subject``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The subject of the email sent to the mailing list join address.
+    See the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``mailing_join_body``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The body of the email sent to the mailing list join address. See
+    the `mailing_join_addr` option for more information.
+:Default: ``Join Mailing List``
 :Type: str
 
 
@@ -1431,6 +1562,17 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_account_interface``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Allow users to manage their account data, change passwords or
+    delete their accounts.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``session_duration``
 ~~~~~~~~~~~~~~~~~~~~
@@ -1450,6 +1592,51 @@
 :Description:
     You can enter tracking code here to track visitor's behavior
     through your Google Analytics account.  Example: UA-XXXXXXXX-Y
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``plausible_server``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Plausible server (including https) so
+    this can be used for tracking with Plausible
+    (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``plausible_domain``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Galaxy server so this can be used for
+    tracking with Plausible (https://plausible.io/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``matomo_server``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the URL for the Matomo server (including https) so
+    this can be used for tracking with Matomo (https://matomo.org/).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``matomo_site_id``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Please enter the site ID for the Matomo server so this can be used
+    for tracking with Matomo (https://matomo.org/).
 :Default: ``None``
 :Type: str
 
@@ -1520,14 +1707,37 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_upstream_proxy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to false to redirect users of Interactive tools directly
+    to the Interactive tools proxy. `interactivetools_upstream_proxy`
+    should only be set to false in development.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_proxy_host``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Proxy host - assumed to just be hosted on the same hostname and
-    port as Galaxy by default.
+    Hostname and port of Interactive tools proxy. It is assumed to be
+    hosted on the same hostname and port as Galaxy by default.
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_base_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Base path for interactive tools running at a subpath without a
+    subdomain. Defaults to "/".
+:Default: ``/``
 :Type: str
 
 
@@ -1541,6 +1751,29 @@
     <data_dir>.
 :Default: ``interactivetools_map.sqlite``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_prefix``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Prefix to use in the formation of the subdomain or path for
+    interactive tools
+:Default: ``interactivetool``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_shorten_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Shorten the uuid portion of the subdomain or path for interactive
+    tools. Especially useful for avoiding the need for wildcard
+    certificates by keeping subdomain under 63 chars
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1680,19 +1913,29 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``galaxy_url_prefix``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL prefix for Galaxy application. If Galaxy should be served
+    under a prefix set this to the desired prefix value.
+:Default: ``/``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``galaxy_infrastructure_url``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     URL (with schema http/https) of the Galaxy instance as accessible
-    within your local network - if specified used as a default by
-    pulsar file staging and Jupyter Docker container for communicating
+    within your local network. This URL is used as a default by pulsar
+    file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
-    If you are attempting to set up GIEs on Mac OS X with Docker
-    Desktop for Mac and your Galaxy instance runs on port 8080 this
-    should be 'http://host.docker.internal:8080'.  For more details
-    see https://docs.docker.com/docker-for-mac/networking/
+    If you plan to run Interactive Tools make sure the docker
+    container can reach this URL. For more details see
+    `job_conf.xml.interactivetools`.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -2110,6 +2353,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~
+``tus_upload_store``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The upload store is a temporary directory in which files uploaded
+    by the tus middleware or server will be placed. Defaults to
+    new_file_path if not set.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``chunk_upload_size``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -2117,8 +2372,8 @@
 :Description:
     Galaxy can upload user files in chunks without using nginx. Enable
     the chunk uploader by specifying a chunk size larger than 0. The
-    chunk size is specified in bytes (default: 100MB).
-:Default: ``104857600``
+    chunk size is specified in bytes (default: 10MB).
+:Default: ``10485760``
 :Type: int
 
 
@@ -2578,18 +2833,16 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``sentry_sloreq_threshold``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+``sentry_event_level``
+~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sentry slow request logging.  Requests slower than the threshold
-    indicated below will be sent as events to the configured Sentry
-    server (above, sentry_dsn).  A value of '0' is disabled.  For
-    example, you would set this to .005 to log all queries taking
-    longer than 5 milliseconds.
-:Default: ``0.0``
-:Type: float
+    Determines the minimum log level that will be sent as an event to
+    Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or
+    CRITICAL.
+:Default: ``ERROR``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~
@@ -2646,6 +2899,17 @@
     sending them to InfluxDB, Galaxy can provide more nicely tagged
     metrics. Instead of sending prefix + dot-separated-path, Galaxy
     will send prefix with a tag path set to the page url
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``statsd_mock_calls``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Mock out statsd client calls - only used by testing infrastructure
+    really. Do not set this in production environments.
 :Default: ``false``
 :Type: bool
 
@@ -2747,20 +3011,6 @@
     Available formats are currently 'zip', 'gz', and 'bz2'.
 :Default: ``None``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~
-``transfer_manager_port``
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Some sequencer integration features in beta allow you to
-    automatically transfer datasets.  This is done using a lightweight
-    transfer manager which runs outside of Galaxy (but is spawned by
-    it automatically).  Galaxy will communicate with this manager over
-    the port specified here.
-:Default: ``8163``
-:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~
@@ -3242,26 +3492,68 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_edam_toolbox``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+``edam_panel_views``
+~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable beta EDAM organised toolbox which ignores admin managed
-    sections in lieu of EDAM topics only.
-:Default: ``false``
-:Type: bool
+    Comma-separated list of the EDAM panel views to load - choose from
+    merged, operations, topics. Set to empty string to disable EDAM
+    all together. Set default_panel_view to 'ontology:edam_topics' to
+    override default tool panel to use an EDAM view.
+:Default: ``operations,topics``
+:Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``beta_edam_toolbox_ontology_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``edam_toolbox_ontology_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Sets the path to EDAM ontology file.
+    Sets the path to EDAM ontology file - if the path doesn't exist
+    PyPI package data will be loaded.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``EDAM.tsv``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``panel_views_dir``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Directory to check out for toolbox tool panel views. The path is
+    relative to the Galaxy root dir.  To use an absolute path begin
+    the path with '/'.  This is a comma-separated list.
+:Default: ``config/plugins/activities``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``panel_views``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Definitions of static toolbox panel views embedded directly in the
+    config instead of reading YAML from directory with
+    panel_views_dir.
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``default_panel_view``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default tool panel view for the current Galaxy configuration. This
+    should refer to an id of a panel view defined using the
+    panel_views or panel_views_dir configuration options or an EDAM
+    panel view. The default panel view is simply called `default` and
+    refers to the tool panel state defined by the integrated tool
+    panel.
+:Default: ``default``
 :Type: str
 
 
@@ -3274,49 +3566,6 @@
     'ga' or 'format2'.
 :Default: ``ga``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_min_steps``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling.
-:Default: ``250``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``force_beta_workflow_scheduled_for_collections``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Following options only apply to workflows scheduled using the
-    legacy workflow run API (running workflows via a POST to
-    /api/workflows). Force usage of Galaxy's beta workflow scheduler
-    under certain circumstances - this workflow scheduling forces
-    Galaxy to schedule workflows in the background so initial
-    submission of the workflows is significantly sped up. This does
-    however force the user to refresh their history manually to see
-    newly scheduled steps (for "normal" workflows - steps are still
-    scheduled far in advance of them being queued and scheduling here
-    doesn't refer to actual cluster job scheduling). Workflows
-    containing more than the specified number of steps will always use
-    the Galaxy's beta workflow scheduling. Switch to using Galaxy's
-    beta workflow scheduling for all workflows involving collections.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3359,6 +3608,35 @@
     alchemy session between workflow invocation scheduling iterations.
     Set to -1 to disable any such maximum.
 :Default: ``1000``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``flush_per_n_datasets``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of datasets to create before flushing created
+    datasets to database. This affects tools that create many output
+    datasets. Higher values will lead to fewer database flushes and
+    faster execution, but require more memory. Set to -1 to disable
+    creating datasets in batches.
+:Default: ``1000``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``max_discovered_files``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to a positive integer value to limit the number of
+    datasets that can be discovered by a single job. This prevents
+    accidentally creating large numbers of datasets when running tools
+    that create a potentially unlimited number of output datasets,
+    such as tools that split a file into a collection of datasets for
+    each line in an input dataset.
+:Default: ``10000``
 :Type: int
 
 
@@ -3446,28 +3724,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable access to post-authentication options via OpenID.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``openid_consumer_cache``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_tags``
 ~~~~~~~~~~~~~~~~~~~~
@@ -3548,28 +3804,29 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``ftp_upload_dir``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable Galaxy's "Upload via FTP" interface.  You'll need to
-    install and configure an FTP server (we've used ProFTPd since it
-    can use Galaxy's database for authentication) and set the
-    following two options. This should point to a directory containing
-    subdirectories matching users' identifier (defaults to e-mail),
-    where Galaxy will look for files.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    This should be the hostname of your FTP server, which will be
-    provided to users in the help text.
+    Enable Galaxy's "Upload via FTP" interface.  You'll need to
+    install and configure an FTP server (we've used ProFTPd since it
+    can use Galaxy's database for authentication) and set the
+    following two options. This will be provided to users in the help
+    text as 'log in to the FTP server at '. Thus, it should be the
+    hostname of your FTP server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``ftp_upload_dir``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This should point to a directory containing subdirectories
+    matching users' identifier (defaults to e-mail), where Galaxy will
+    look for files.
 :Default: ``None``
 :Type: str
 
@@ -3630,6 +3887,20 @@
     "View Details" option in the history. This option also exposes the
     command line to non-administrative users. Administrators can
     always see dataset paths.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_source_display``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This option allows users to view the tool wrapper source code.
+    This is safe to enable if you have not hardcoded any secrets in
+    any of the tool wrappers installed on this Galaxy server. If you
+    have only installed tool wrappers from  public tool sheds and
+    tools shipped with Galaxy there you can enable this option.
 :Default: ``false``
 :Type: bool
 
@@ -3757,6 +4028,9 @@
     definition of the resolvers to enable can be embedded into
     Galaxy's config with this option. This has no effect if a
     dependency_resolvers_config_file is used.
+    The syntax, available resolvers, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 :Default: ``None``
 :Type: seq
 
@@ -3833,17 +4107,35 @@
 :Type: int
 
 
-~~~~~~~~~~~~~~~~~~~~~~~
-``enable_job_recovery``
-~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_handler_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable job recovery (if Galaxy is restarted while cluster jobs are
-    running, it can "recover" them when it starts).  This is not safe
-    to use if you are running more than one Galaxy server using the
-    same database.
-:Default: ``true``
-:Type: bool
+    Each Galaxy job handler process runs one thread responsible for
+    discovering jobs and dispatching them to runners. This thread
+    operates in a loop and sleeps for the given number of seconds at
+    the end of each iteration. This can be decreased if extremely high
+    job throughput is necessary, but doing so can increase CPU usage
+    of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``job_runner_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy job handler process runs one thread per job runner
+    plugin responsible for checking the state of queued and running
+    jobs.  This thread operates in a loop and sleeps for the given
+    number of seconds at the end of each iteration. This can be
+    decreased if extremely high job throughput is necessary, but doing
+    so can increase CPU usage of handler processes. Float values are
+    allowed.
+:Default: ``1.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -3922,6 +4214,24 @@
     -actimeo=0 (Solaris).
 :Default: ``0``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_evaluation_strategy``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Determines which process will evaluate the tool command line. If
+    set to "local" the tool command line, configuration files and
+    other dynamic values will be templated in the job handler process.
+    If set to ``remote`` the tool command line will be built as part
+    of the submitted job. Note that ``remote`` is a beta setting that
+    will be useful for materializing deferred datasets as part of the
+    submitted job. Note also that you have to set
+    ``metadata_strategy`` to ``extended`` if you set this option to
+    ``remote``.
+:Default: ``local``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4322,7 +4632,7 @@
     filtering
     (https://galaxyproject.org/user-defined-toolbox-filters/)
     functions.
-:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
+:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters``
 :Type: str
 
 
@@ -4344,6 +4654,18 @@
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``enable_celery_tasks``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Offload long-running tasks to a Celery task queue. Activate this
+    only if you have setup a Celery worker for Galaxy. For details,
+    see https://docs.galaxyproject.org/en/master/admin/production.html
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~
@@ -4488,6 +4810,30 @@
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``tool_destinations.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``welcome_directory``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of New User Welcome data, a single directory containing
+    the images and JSON of Topics/Subtopics/Slides as export. This
+    location is relative to galaxy/static
+:Default: ``plugins/welcome_page/new_user/static/topics/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``vault_config_file``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Vault config file.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``vault_conf.yml``
 :Type: str
 
 

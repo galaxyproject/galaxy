@@ -1,17 +1,18 @@
 from unittest import TestCase
+from unittest.mock import Mock
+
 
 from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
 from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
     ToolStdioRegex,
 )
-from galaxy.util.bunch import Bunch
 
 
 class OutputCheckerTestCase(TestCase):
 
     def setUp(self):
-        self.tool = Bunch(
+        self.tool = Mock(
             stdio_regexes=[],
             stdio_exit_codes=[],
         )
@@ -27,26 +28,26 @@ class OutputCheckerTestCase(TestCase):
         self.__assertNotSuccessful()
 
     def test_exit_code_error(self):
-        mock_exit_code = Bunch(range_start=1, range_end=1, error_level=StdioErrorLevel.FATAL, desc=None)
+        mock_exit_code = Mock(range_start=1, range_end=1, error_level=StdioErrorLevel.FATAL, desc=None)
         self.tool.stdio_exit_codes.append(mock_exit_code)
         self.tool_exit_code = 1
         self.__assertNotSuccessful()
 
     def test_exit_code_success(self):
-        mock_exit_code = Bunch(range_start=1, range_end=1, error_level=StdioErrorLevel.FATAL, desc=None)
+        mock_exit_code = Mock(range_start=1, range_end=1, error_level=StdioErrorLevel.FATAL, desc=None)
         self.tool.stdio_exit_codes.append(mock_exit_code)
         self.tool_exit_code = 0
         self.__assertSuccessful()
 
     def test_problematic_strings_matching(self):
         problematic_str = '\x80abc'
-        self.__add_regex(Bunch(match=r'.abc', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
+        self.__add_regex(Mock(match=r'.abc', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
         self.stderr = problematic_str
         self.__assertNotSuccessful()
 
     def test_problematic_strings_not_matching(self):
         problematic_str = '\x80abc'
-        self.__add_regex(Bunch(match=r'.abcd', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
+        self.__add_regex(Mock(match=r'.abcd', stdout_match=False, stderr_match=True, error_level=StdioErrorLevel.FATAL, desc=None))
         self.stderr = problematic_str
         self.__assertSuccessful()
 

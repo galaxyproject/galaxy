@@ -4,10 +4,9 @@
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
-                style="margin-top: 15px;"
+                style="margin-top: 15px"
                 header="History import job ended in error"
-                :job="jobError"
-            />
+                :job="jobError" />
         </b-alert>
         <div v-if="initializing">
             <loading-span message="Loading server configuration." />
@@ -28,8 +27,7 @@
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
-                        stacked
-                    >
+                        stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
                             <font-awesome-icon icon="external-link-alt" />

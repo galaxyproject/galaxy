@@ -43,10 +43,10 @@ def _fetch_repo_data(args):
         platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
         subprocess.check_call([
             'wget', '--quiet', f'https://conda.anaconda.org/{channel}/{platform_tag}/repodata.json.bz2',
-            '-O', '%s.bz2' % repo_data
+            '-O', f'{repo_data}.bz2'
         ])
         subprocess.check_call([
-            'bzip2', '-d', '%s.bz2' % repo_data
+            'bzip2', '-d', f'{repo_data}.bz2'
         ])
     return repo_data
 

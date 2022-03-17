@@ -22,6 +22,7 @@ from galaxy.managers import (
     library_datasets,
     roles
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -36,16 +37,16 @@ from galaxy.web import (
     expose_api_anonymous,
 )
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     UsesVisualizationMixin,
 )
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, LibraryActions):
+class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin, LibraryActions):
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.app = app
         self.folder_manager = folders.FolderManager()
@@ -93,7 +94,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         try:
             ldda = self.get_library_dataset_dataset_association(trans, id=encoded_ldda_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            raise exceptions.ObjectNotFound('Requested version of library dataset was not found.' + util.unicodify(e))
+            raise exceptions.ObjectNotFound(f"Requested version of library dataset was not found.{util.unicodify(e)}")
 
         if ldda not in library_dataset.expired_datasets:
             raise exceptions.ObjectNotFound('Given library dataset does not have the requested version.')
@@ -267,7 +268,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                     else:
                         invalid_access_roles_ids.append(role_id)
                 if len(invalid_access_roles_ids) > 0:
-                    log.warning("The following roles could not be added to the dataset access permission: " + str(invalid_access_roles_ids))
+                    log.warning(f"The following roles could not be added to the dataset access permission: {str(invalid_access_roles_ids)}")
 
                 access_permission = dict(access=valid_access_roles)
                 trans.app.security_agent.set_dataset_permission(dataset, access_permission)
@@ -283,7 +284,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 else:
                     invalid_manage_roles_ids.append(role_id)
             if len(invalid_manage_roles_ids) > 0:
-                log.warning("The following roles could not be added to the dataset manage permission: " + str(invalid_manage_roles_ids))
+                log.warning(f"The following roles could not be added to the dataset manage permission: {str(invalid_manage_roles_ids)}")
             manage_permission = {trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: valid_manage_roles}
             trans.app.security_agent.set_dataset_permission(dataset, manage_permission)
 
@@ -298,7 +299,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 else:
                     invalid_modify_roles_ids.append(role_id)
             if len(invalid_modify_roles_ids) > 0:
-                log.warning("The following roles could not be added to the dataset modify permission: " + str(invalid_modify_roles_ids))
+                log.warning(f"The following roles could not be added to the dataset modify permission: {str(invalid_modify_roles_ids)}")
             modify_permission = {trans.app.security_agent.permitted_actions.LIBRARY_MODIFY: valid_modify_roles}
             trans.app.security_agent.set_library_item_permission(library_dataset, modify_permission)
         return self._get_current_roles(trans, library_dataset)
@@ -338,7 +339,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         rval['file_size'] = nice_size
         rval['update_time'] = library_dataset.update_time.strftime("%Y-%m-%d %I:%M %p")
         rval['deleted'] = library_dataset.deleted
-        rval['folder_id'] = 'F' + rval['folder_id']
+        rval['folder_id'] = f"F{rval['folder_id']}"
         return rval
 
     @expose_api
@@ -436,7 +437,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(import_base_dir, path)
         elif source in ['userdir_file', 'userdir_folder']:
-            unsafe = None
             username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
             user_login = trans.user.email
             user_base_dir = trans.app.config.user_library_import_dir
@@ -454,14 +454,14 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         '%s -> %s and cannot be read by them.', path, os.path.realpath(path))
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             path = os.path.join(full_dir, path)
-            for unsafe in unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
+            if unsafe_walk(path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username):
                 # the path is a dir and contains files that symlink outside the user dir
-                error = 'User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', \
-                        path, os.path.realpath(path)
+                error = 'User attempted to import a path that resolves to a path outside of their import dir: {} -> {}'.format(
+                    path, os.path.realpath(path)
+                )
                 if trans.app.config.user_library_import_check_permissions:
                     error += ' or is not readable for them.'
                 log.error(error)
-            if unsafe:
                 raise exceptions.RequestParameterInvalidException('The given path is invalid.')
             if not os.path.exists(path):
                 raise exceptions.RequestParameterInvalidException('Given path does not exist on the host.')
@@ -520,8 +520,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         job_params['link_data_only'] = dumps(kwd.get('link_data_only', 'copy_files'))
         job_params['uuid'] = dumps(kwd.get('uuid', None))
         job, output = upload_common.create_job(trans, tool_params, tool, json_file_path, data_list, folder=folder, job_params=job_params)
-        trans.sa_session.add(job)
-        trans.sa_session.flush()
+        trans.app.job_manager.enqueue(job, tool=tool)
         job_dict = job.to_dict()
         job_dict['id'] = trans.security.encode_id(job_dict['id'])
         return job_dict
@@ -566,7 +565,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 except HTTPInternalServerError:
                     raise exceptions.InternalServerError('Internal error.')
                 except Exception as e:
-                    raise exceptions.InternalServerError('Unknown error.' + util.unicodify(e))
+                    raise exceptions.InternalServerError(f"Unknown error.{util.unicodify(e)}")
 
         folders_to_download = kwd.get('folder_ids%5B%5D', None)
         if folders_to_download is None:
@@ -634,7 +633,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 if is_composite:
                     # need to add all the components from the extra_files_path to the zip
                     if zpathext == '':
-                        zpath = '%s.html' % zpath  # fake the real nature of the html file
+                        zpath = f'{zpath}.html'  # fake the real nature of the html file
                     try:
                         if archive_format == 'zip':
                             archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
@@ -648,7 +647,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
-                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + util.unicodify(e))
+                        raise exceptions.InternalServerError(f"Unable to add composite parent to temporary library download archive. {util.unicodify(e)}")
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
                     for fpath in flist:
@@ -665,7 +664,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             raise exceptions.ObjectNotFound("Requested dataset not found.")
                         except Exception as e:
                             log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
-                            raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
+                            raise exceptions.InternalServerError(f"Unable to add dataset to temporary library download archive . {util.unicodify(e)}")
                 else:
                     try:
                         archive.write(ldda.dataset.file_name, path)
@@ -677,7 +676,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
                         log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
-                        raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
+                        raise exceptions.InternalServerError(f"Unknown error. {util.unicodify(e)}")
             trans.response.headers.update(archive.get_headers())
             return archive.response()
         elif archive_format == 'uncompressed':
@@ -692,7 +691,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 trans.response.headers['Content-Length'] = str(fStat.st_size)
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
+                trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
                 try:
                     return open(dataset.file_name, 'rb')
                 except Exception:

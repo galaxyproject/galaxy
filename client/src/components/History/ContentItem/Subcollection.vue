@@ -2,43 +2,27 @@
     inside of other collections -->
 
 <template>
-    <div
-        v-bind="$attrs"
-        v-on="$listeners"
-        class="collapsed"
-        :data-state="state"
-        @keydown.arrow-right.self.stop.prevent="$emit('viewCollection')"
-        @click.stop="$emit('viewCollection')"
-    >
-        <nav class="content-top-menu d-flex align-items-center justify-content-between p-1">
-            <h5 class="flex-grow-1 overflow-hidden mr-auto text-nowrap text-truncate">
-                <span class="name">{{ dsc.name }}</span>
-                <span class="description">
-                    ({{ dsc.collectionType | localize }} {{ dsc.collectionCountDescription | localize }})
-                </span>
-            </h5>
-        </nav>
-    </div>
+    <DscUI v-if="dsc" v-bind="$attrs" v-on="$listeners" class="dataset-collection history-content" :dsc="dsc" />
 </template>
 
 <script>
 import { DatasetCollection } from "../model/DatasetCollection";
 import { STATES } from "../model";
+import DscUI from "./DatasetCollection/DscUI";
 
 export default {
+    components: {
+        DscUI,
+    },
     props: {
         item: { type: Object, required: true },
-        index: { type: Number, required: true },
     },
     computed: {
         dsc() {
-            return new DatasetCollection(this.item);
-        },
-        state() {
-            // TODO: see if there are situations where this rule won't work
-            // subcollection doesn't have as much information as the collection
-            // did, but it's probably ok
-            return this.dsc.state || STATES.OK;
+            // TODO: I'm sure this is not the right way to set the state, but the collection api
+            // doesn't return any kind of state value at because the api is inconsistent
+            // /api/dataset_collections/d071e794759ab192/contents/e144222fed44799a
+            return new DatasetCollection({ ...this.item, populated_state: STATES.OK });
         },
     },
 };

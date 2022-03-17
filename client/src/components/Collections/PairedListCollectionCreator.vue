@@ -1,6 +1,6 @@
 <template>
     <div class="paired-list-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -89,7 +89,7 @@
                         {{ allInvalidElementsPartTwo }}
                     </b-alert>
                 </div>
-                <div v-if="(state == 'duplicates')">
+                <div v-if="state == 'duplicates'">
                     <b-alert show variant="danger">
                         {{ l("Collections cannot have duplicated names. The following list names are duplicated: ") }}
                         <ul>
@@ -100,13 +100,11 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
                     @remove-extensions-toggle="removeExtensionsToggle"
-                    :renderExtensionsToggle="true"
-                    :creationFn="creationFn"
-                >
+                    :render-extensions-toggle="true">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -187,8 +185,7 @@
                                 {{ l("Entering regular expressions to match dataset names. See:") }}
                                 <a
                                     href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions"
-                                    target="_blank"
-                                >
+                                    target="_blank">
                                     {{ l("MDN's JavaScript Regular Expression Tutorial") }}</a
                                 >
                                 {{ l("Note: forward slashes (\\) are not needed.") }}
@@ -251,22 +248,25 @@
                                         </span>
                                     </div>
                                     <div
-                                        class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group"
-                                    >
+                                        class="
+                                            unpaired-filter
+                                            forward-unpaired-filter
+                                            float-left
+                                            search-input search-query
+                                            input-group
+                                        ">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="forwardFilter"
-                                            title="filterTextTitle"
-                                        />
+                                            title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
                                                 class="btn btn-outline-secondary dropdown-toggle"
                                                 type="button"
                                                 data-toggle="dropdown"
                                                 aria-haspopup="true"
-                                                aria-expanded="false"
-                                            ></button>
+                                                aria-expanded="false"></button>
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_1</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R1</a>
@@ -282,8 +282,7 @@
                                         class="clear-filters-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="clickClearFilters"
-                                    >
+                                        @click="clickClearFilters">
                                         {{ l("Clear Filters") }}
                                     </a>
                                     <br />
@@ -291,8 +290,7 @@
                                         class="autopair-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="clickAutopair"
-                                    >
+                                        @click="clickAutopair">
                                         {{ l("Auto-pair") }}
                                     </a>
                                 </div>
@@ -309,22 +307,25 @@
                                         >
                                     </div>
                                     <div
-                                        class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group"
-                                    >
+                                        class="
+                                            unpaired-filter
+                                            reverse-unpaired-filter
+                                            float-left
+                                            search-input search-query
+                                            input-group
+                                        ">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
                                             v-model="reverseFilter"
-                                            title="filterTextTitle"
-                                        />
+                                            title="filterTextTitle" />
                                         <div class="input-group-append" :title="chooseFilterTitle">
                                             <button
                                                 class="btn btn-outline-secondary dropdown-toggle"
                                                 type="button"
                                                 data-toggle="dropdown"
                                                 aria-haspopup="true"
-                                                aria-expanded="false"
-                                            ></button>
+                                                aria-expanded="false"></button>
                                             <div class="dropdown-menu">
                                                 <a class="dropdown-item" @click="changeFilters('illumina')">_2</a>
                                                 <a class="dropdown-item" @click="changeFilters('Rs')">_R2</a>
@@ -335,7 +336,7 @@
                                 </div>
                             </div>
                         </div>
-                        <splitpanes horizontal style="height: 400px;">
+                        <splitpanes horizontal style="height: 400px">
                             <pane>
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">
@@ -354,8 +355,7 @@
                                                         selectedForwardElement &&
                                                         element.id == selectedForwardElement.id,
                                                 }"
-                                                :element="element"
-                                            />
+                                                :element="element" />
                                         </ol>
                                     </div>
                                     <div class="paired-column flex-column no-flex column truncate">
@@ -364,8 +364,7 @@
                                                 v-for="(pairableElement, index) in pairableElements"
                                                 :key="index"
                                                 @click="_pair(pairableElement.forward, pairableElement.reverse)"
-                                                class="dataset"
-                                            >
+                                                class="dataset">
                                                 {{ l("Pair these datasets") }}
                                             </li>
                                         </ol>
@@ -381,8 +380,7 @@
                                                         selectedReverseElement &&
                                                         element.id == selectedReverseElement.id,
                                                 }"
-                                                :element="element"
-                                            />
+                                                :element="element" />
                                         </ol>
                                     </div>
                                 </div>
@@ -396,8 +394,7 @@
                                         class="unpair-all-link"
                                         href="javascript:void(0);"
                                         role="button"
-                                        @click="unpairAll"
-                                    >
+                                        @click="unpairAll">
                                         {{ l("Unpair all") }}
                                     </a>
                                 </div>
@@ -408,10 +405,8 @@
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
-                                                :name="pair.name"
-                                                :unlinkFn="clickUnpair(pair)"
-                                                @onPairRename="(name) => (pair.name = name)"
-                                            />
+                                                :unlink-fn="clickUnpair(pair)"
+                                                @onPairRename="(name) => (pair.name = name)" />
                                         </draggable>
                                     </ol>
                                 </div>
@@ -442,7 +437,10 @@ export default {
     mixins: [mixin],
     created() {
         this.strategy = this.autopairLCS;
-        this.filters = this.commonFilters[this.filters] || this.commonFilters[this.DEFAULT_FILTERS];
+        //TODO convert to Fwd/Rev
+        // Setup inital filters and shallow copy the items
+        this.forwardFilter = this.commonFilters[this.DEFAULT_FILTERS][0];
+        this.reverseFilter = this.commonFilters[this.DEFAULT_FILTERS][1];
         this._elementsSetUp();
     },
     components: {
@@ -467,15 +465,15 @@ export default {
                 dot12s: [".1.fastq", ".2.fastq"],
             },
             DEFAULT_FILTERS: "illumina",
-            filters: this.DEFAULT_FILTERS,
+            forwardFilter: "",
+            reverseFilter: "",
             automaticallyPair: true,
             initialPairsPossible: true,
-            matchPercentage: 0.9,
+            matchPercentage: 0.99,
             twoPassAutoPairing: true,
             removeExtensions: true,
             workingElements: [],
-            forwardFilter: "",
-            reverseFilter: "",
+
             selectedForwardElement: null,
             selectedReverseElement: null,
             /** autopair by exact match */
@@ -569,7 +567,7 @@ export default {
             this.selectedDatasetElems = [];
             this.initialFiltersSet();
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
             this._sortInitialList();
@@ -714,39 +712,10 @@ export default {
                     revName = revName.replace(extension, "");
                 }
             }
+            if (lcs.endsWith(".") || lcs.endsWith("_")) {
+                lcs = lcs.substring(0, lcs.length - 1);
+            }
             return lcs || `${fwdName} & ${revName}`;
-        },
-        /** return the concat'd longest common prefix and suffix from two strings */
-        _naiveStartingAndEndingLCS: function (s1, s2) {
-            var fwdLCS = "";
-            var revLCS = "";
-            var i = 0;
-            var j = 0;
-            while (i < s1.length && i < s2.length) {
-                if (s1[i] !== s2[i]) {
-                    break;
-                }
-                fwdLCS += s1[i];
-                i += 1;
-            }
-            if (i === s1.length) {
-                return s1;
-            }
-            if (i === s2.length) {
-                return s2;
-            }
-
-            i = s1.length - 1;
-            j = s2.length - 1;
-            while (i >= 0 && j >= 0) {
-                if (s1[i] !== s2[j]) {
-                    break;
-                }
-                revLCS = [s1[i], revLCS].join("");
-                i -= 1;
-                j -= 1;
-            }
-            return fwdLCS + revLCS;
         },
         clickAutopair: function () {
             // Unselect any selected elements
@@ -871,7 +840,7 @@ export default {
             var _regexps = [];
             function getRegExps() {
                 if (!_regexps.length) {
-                    _regexps = [new RegExp(this.filters[0]), new RegExp(this.filters[1])];
+                    _regexps = [new RegExp(this.forwardFilter), new RegExp(this.reverseFilter)];
                 }
                 return _regexps;
             }
@@ -964,7 +933,6 @@ export default {
         },
         clickedCreate: function (collectionName) {
             this.checkForDuplicates();
-            console.log(this.state, " = state");
             if (this.state == "build") {
                 this.$emit("clicked-create", this.workingElements, this.collectionName, this.hideSourceItems);
                 return this.creationFn(this.pairedElements, collectionName, this.hideSourceItems)
@@ -978,16 +946,13 @@ export default {
             var existingPairNames = {};
             this.duplicatePairNames = [];
             var valid = true;
-            console.log("in check for dupes");
             this.pairedElements.forEach((pair) => {
                 if (Object.prototype.hasOwnProperty.call(existingPairNames, pair.name)) {
                     valid = false;
-                    console.log("found a dupe");
                     this.duplicatePairNames.push(pair.name);
                 }
                 existingPairNames[pair.name] = true;
             });
-            console.log("valid = false, right? :", valid);
             this.state = valid ? "build" : "duplicates";
         },
         stripExtension(name) {
@@ -1064,9 +1029,9 @@ export default {
 <style lang="scss">
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/solid";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/fontawesome";
-@import "../../../node_modules/@fortawesome/fontawesome-free/scss/brands";
+@import "~@fortawesome/fontawesome-free/scss/solid";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";
+@import "~@fortawesome/fontawesome-free/scss/brands";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority

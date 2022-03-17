@@ -1,46 +1,46 @@
 <template>
-    <div>
-        <b-dropdown v-if="breadCrumbOptions.length" class="mr-auto" size="sm" text="Go to..." boundary="viewport">
-            <b-dropdown-item @click="close"> History: {{ history.name }} </b-dropdown-item>
-            <b-dropdown-item v-for="option in breadCrumbOptions" :key="option.key" @click="reselect(option.value)">
-                {{ option.text }}
-            </b-dropdown-item>
-        </b-dropdown>
+    <b-dropdown
+        v-if="breadCrumbOptions.length"
+        size="sm"
+        text="Return to..."
+        boundary="viewport"
+        data-description="collection breadcrumbs menu"
+        no-caret>
+        <template v-slot:button-content>
+            <Icon icon="arrow-up" class="mr-1" />
+            <b class="text-nowrap" v-localize>Return to...</b>
+        </template>
 
-        <b-button v-else size="sm" class="mr-auto" @click="close"> Back to: {{ history.name }} </b-button>
+        <b-dropdown-item @click="close" data-description="back to history">
+            <span>History: {{ history.name }}</span>
+        </b-dropdown-item>
 
-        <PriorityMenu :starting-height="27">
-            <PriorityMenuItem
-                key="download-collection"
-                title="Download Collection"
-                icon="fas fa-file-download"
-                tag="a"
-                download
-                :href="downloadCollectionUrl"
-            />
-            <PriorityMenuItem key="back-up" title="Back One" icon="fas fa-level-up-alt" @click="back" />
-        </PriorityMenu>
-    </div>
+        <b-dropdown-item v-for="option in breadCrumbOptions" :key="option.key" @click="reselect(option.value)">
+            <span>{{ option.text }}</span>
+        </b-dropdown-item>
+    </b-dropdown>
+
+    <b-button
+        v-else
+        class="back"
+        size="sm"
+        title="`Return to: ${history.name}`"
+        @click="close"
+        data-description="back to history">
+        <Icon icon="arrow-up" class="mr-1" />
+        <b class="text-nowrap">Return to: {{ history.name }}</b>
+    </b-button>
 </template>
 
 <script>
 import { History } from "../model";
-import { PriorityMenuItem, PriorityMenu } from "components/PriorityMenu";
 
 export default {
-    components: {
-        PriorityMenuItem,
-        PriorityMenu,
-    },
     props: {
         history: { type: History, required: true },
         selectedCollections: { type: Array, required: true, validate: (val) => val.length > 0 },
     },
     computed: {
-        rootCollection() {
-            return this.selectedCollections[0];
-        },
-
         // List for the dropdown. Should be the history and every parent
         // collection excepting the current one.
         breadCrumbOptions() {
@@ -53,14 +53,6 @@ export default {
                 };
             });
             return options;
-        },
-
-        downloadCollectionUrl() {
-            let url = "";
-            if (this.rootCollection) {
-                url = `${this.rootCollection.url}/download`;
-            }
-            return url;
         },
     },
     methods: {

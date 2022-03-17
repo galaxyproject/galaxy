@@ -17,8 +17,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="len" value="chr_m.len"/>
-            <output name="output" format="linecount" value="chr_m.linecount"/>
+            <param name="input" ftype="len" value="chr_m.len"/>
+            <output name="output" ftype="linecount" value="chr_m.linecount"/>
         </test>
     </tests>
     <help>

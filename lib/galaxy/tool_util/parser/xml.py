@@ -1,8 +1,9 @@
 import json
 import logging
+import math
 import re
 import uuid
-from math import isinf
+from typing import Optional
 
 import packaging.version
 
@@ -20,6 +21,7 @@ from .interface import (
     InputSource,
     PageSource,
     PagesSource,
+    RequiredFiles,
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
@@ -47,6 +49,8 @@ log = logging.getLogger(__name__)
 class XmlToolSource(ToolSource):
     """ Responsible for parsing a tool from classic Galaxy representation.
     """
+
+    language = 'xml'
 
     def __init__(self, xml_tree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
@@ -113,9 +117,6 @@ class XmlToolSource(ToolSource):
     def parse_description(self):
         return xml_text(self.root, "description")
 
-    def parse_is_multi_byte(self):
-        return self._get_attribute_as_bool("is_multi_byte", self.default_is_multi_byte)
-
     def parse_display_interface(self, default):
         return self._get_attribute_as_bool("display_interface", default)
 
@@ -136,7 +137,7 @@ class XmlToolSource(ToolSource):
         if expression_el is not None:
             expression_type = expression_el.get("type")
             if expression_type != "ecma5.1":
-                raise Exception("Unknown expression type [%s] encountered" % expression_type)
+                raise Exception(f"Unknown expression type [{expression_type}] encountered")
             return expression_el.text
         return None
 
@@ -261,6 +262,26 @@ class XmlToolSource(ToolSource):
             elem = self.root
         return string_as_bool(elem.get(attribute, default))
 
+    def parse_required_files(self) -> Optional[RequiredFiles]:
+        required_files = self.root.find("required_files")
+        if required_files is None:
+            return None
+
+        def parse_include_exclude_list(tag_name):
+            as_list = []
+            for ref in required_files.findall(tag_name):
+                path = ref.get("path")
+                assert path is not None, f'"path" must be specified in {tag_name}'
+                path_type = ref.get("type", "literal")
+                as_list.append({"path": path, "path_type": path_type})
+            return as_list
+
+        as_dict = {}
+        as_dict["extend_default_excludes"] = self._get_attribute_as_bool("extend_default_excludes", True, elem=required_files)
+        as_dict["includes"] = parse_include_exclude_list("include")
+        as_dict["excludes"] = parse_include_exclude_list("exclude")
+        return RequiredFiles.from_dict(as_dict)
+
     def parse_requirements_and_containers(self):
         return requirements.parse_requirements_from_xml(self.root)
 
@@ -382,7 +403,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning(f"Unknown output tag encountered [{out_child.tag}]")
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
@@ -416,6 +437,11 @@ class XmlToolSource(ToolSource):
         output.filters = data_elem.findall('filter')
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
+        if output.from_work_dir and getattr(tool, 'profile', 0) < 21.09:
+            # We started quoting from_work_dir outputs in 21.09.
+            # Prior to quoting, trailing spaces had no effect.
+            # This ensures that old tools continue to work.
+            output.from_work_dir = output.from_work_dir.strip()
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
         output.actions = ToolOutputActionGroup(output, data_elem.find('actions'))
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(data_elem, legacy=self.legacy_defaults)
@@ -470,7 +496,7 @@ class XmlToolSource(ToolSource):
             elif detect_errors == "aggressive":
                 exit_codes, regexes = aggressive_error_checks()
             else:
-                raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
+                raise ValueError(f"Unknown detect_errors value encountered [{detect_errors}]")
         elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
             exit_codes, regexes = error_on_exit_code()
         else:
@@ -571,6 +597,7 @@ def _test_elem_to_dict(test_elem, i, profile=None):
         stderr=__parse_assert_list_from_elem(test_elem.find("assert_stderr")),
         expect_exit_code=test_elem.get("expect_exit_code"),
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
+        expect_test_failure=string_as_bool(test_elem.get("expect_test_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
     )
     _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
@@ -727,7 +754,7 @@ def __parse_extra_files_elem(extra):
     extra_type = attrib.pop('type', 'file')
     extra_name = attrib.pop('name', None)
     assert extra_type == 'directory' or extra_name is not None, \
-        'extra_files type (%s) requires a name attribute' % extra_type
+        f'extra_files type ({extra_type}) requires a name attribute'
     extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
     return {
         "value": extra_value,
@@ -887,9 +914,9 @@ class StdioParser:
                 # Parse the error level:
                 exit_code.error_level = (
                     self.parse_error_level(exit_code_elem.get("level")))
-                code_range = exit_code_elem.get("range", "")
+                code_range = exit_code_elem.get("range")
                 if code_range is None:
-                    code_range = exit_code_elem.get("value", "")
+                    code_range = exit_code_elem.get("value")
                 if code_range is None:
                     log.warning("Tool stdio exit codes must have a range or value")
                     continue
@@ -905,17 +932,16 @@ class StdioParser:
                 code_ranges = re.split(r":", code_range)
                 if (len(code_ranges) == 2):
                     if (code_ranges[0] is None or '' == code_ranges[0]):
-                        exit_code.range_start = float("-inf")
+                        exit_code.range_start = -math.inf
                     else:
                         exit_code.range_start = int(code_ranges[0])
                     if (code_ranges[1] is None or '' == code_ranges[1]):
-                        exit_code.range_end = float("inf")
+                        exit_code.range_end = math.inf
                     else:
                         exit_code.range_end = int(code_ranges[1])
                 # If we got more than one colon, then ignore the exit code.
                 elif (len(code_ranges) > 2):
-                    log.warning("Invalid tool exit_code range %s - ignored"
-                                % code_range)
+                    log.warning(f"Invalid tool exit_code range {code_range} - ignored")
                     continue
                 # Else we have a singular value. If it's not an integer, then
                 # we'll just write a log message and skip this exit_code.
@@ -924,7 +950,7 @@ class StdioParser:
                         exit_code.range_start = int(code_range)
                     except Exception:
                         log.error(code_range)
-                        log.warning("Invalid range start for tool's exit_code %s: exit_code ignored" % code_range)
+                        log.warning(f"Invalid range start for tool's exit_code {code_range}: exit_code ignored")
                         continue
                     exit_code.range_end = exit_code.range_start
                 # TODO: Check if we got ">", ">=", "<", or "<=":
@@ -932,8 +958,8 @@ class StdioParser:
                 # isn't bogus. If we have two infinite values, then
                 # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if isinf(exit_code.range_start) and isinf(exit_code.range_end):
-                    log.warning("Tool exit_code range %s will match on all exit codes" % code_range)
+                if math.isinf(exit_code.range_start) and math.isinf(exit_code.range_end):
+                    log.warning(f"Tool exit_code range {code_range} will match on all exit codes")
                 self.stdio_exit_codes.append(exit_code)
         except Exception:
             log.exception("Exception in parse_stdio_exit_codes!")
@@ -959,10 +985,9 @@ class StdioParser:
                 # Parse the error level
                 regex.error_level = (
                     self.parse_error_level(regex_elem.get("level")))
-                regex.match = regex_elem.get("match", "")
+                regex.match = regex_elem.get("match")
                 if regex.match is None:
-                    # TODO: Convert the offending XML element to a string
-                    log.warning("Ignoring tool's stdio regex element %s - "
+                    log.warning(f"Ignoring tool's stdio regex element with attributes {regex_elem.attrib} - "
                                 "the 'match' attribute must exist")
                     continue
                 # Parse the output sources. We look for the "src", "source",
@@ -1058,7 +1083,7 @@ class XmlPageSource(PageSource):
         return display
 
     def parse_input_sources(self):
-        return map(XmlInputSource, self.parent_elem)
+        return list(map(XmlInputSource, self.parent_elem))
 
 
 class XmlInputSource(InputSource):
@@ -1099,12 +1124,31 @@ class XmlInputSource(InputSource):
         return options_elem
 
     def parse_static_options(self):
+        """
+        >>> from galaxy.util import parse_xml_string_to_etree
+        >>> xml = '<param><option value="a">A</option><option value="b">B</option></param>'
+        >>> xis = XmlInputSource(parse_xml_string_to_etree(xml).getroot())
+        >>> xis.parse_static_options()
+        [('A', 'a', False), ('B', 'b', False)]
+        >>> xml = '<param><option value="a"/><option value="b"/><option value="a" selected="true"/></param>'
+        >>> xis = XmlInputSource(parse_xml_string_to_etree(xml).getroot())
+        >>> xis.parse_static_options()
+        [('a', 'a', True), ('b', 'b', False)]
+        """
         static_options = list()
         elem = self.input_elem
         for option in elem.findall("option"):
             value = option.get("value")
+            text = option.text or value
             selected = string_as_bool(option.get("selected", False))
-            static_options.append((option.text or value, value, selected))
+            present = False
+            for i, o in enumerate(static_options):
+                if o[1] == value:
+                    present = True
+                    static_options[i] = (text, value, selected)
+                    break
+            if not present:
+                static_options.append((text, value, selected))
         return static_options
 
     def parse_optional(self, default=None):

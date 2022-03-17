@@ -15,7 +15,7 @@ class CpuInfoFormatter(formatting.JobMetricFormatter):
 
     def format(self, key, value):
         if key == "processor_count":
-            return "Processor Count", "%s" % int(value)
+            return "Processor Count", f"{int(value)}"
         else:
             return key, value
 
@@ -31,7 +31,7 @@ class CpuInfoPlugin(InstrumentPlugin):
         self.verbose = util.asbool(kwargs.get("verbose", False))
 
     def pre_execute_instrument(self, job_directory):
-        return "cat /proc/cpuinfo > '%s'" % self.__instrument_cpuinfo_path(job_directory)
+        return f"cat /proc/cpuinfo > '{self.__instrument_cpuinfo_path(job_directory)}'"
 
     def job_properties(self, job_id, job_directory):
         properties = {}

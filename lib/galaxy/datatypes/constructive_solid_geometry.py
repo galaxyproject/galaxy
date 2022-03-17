@@ -1,11 +1,11 @@
 # TODO: revisit ignoring type and write some tests for this, the multi-inheritance in this
 # this file is challenging, it should be broken into true mixins.
-# type: ignore
 """
 Constructive Solid Geometry file formats.
 """
 
 import abc
+from typing import List
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -13,7 +13,11 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
+from galaxy.datatypes.tabular import Tabular
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -31,11 +35,11 @@ class Ply:
     subtype = ''
     # Add metadata elements.
     MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="vertex", default=None, desc="Vertex",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="face", default=None, desc="Face",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="other_elements", default=[], desc="Other elements",
                     readonly=True, optional=True, visible=True, no_value=[])
 
@@ -43,12 +47,12 @@ class Ply:
     def __init__(self, **kwd):
         raise NotImplementedError
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
         """
-        if not self._is_ply_header(file_prefix.string_io(), self.subtype):
+        if not self._is_ply_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return False
         return True
 
@@ -67,8 +71,8 @@ class Ply:
         if line.find(subtype) < 0:
             return False
         stop_index = 0
-        while True:
-            line = get_next_line(fh)
+        for line in util.iter_start_of_line(fh, MAX_LINE_LEN):
+            line = line.strip()
             stop_index += 1
             if line == 'end_header':
                 return True
@@ -83,7 +87,7 @@ class Ply:
 
     def set_meta(self, dataset, **kwd):
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for line in fh:
                     line = line.strip()
                     if not line:
@@ -104,10 +108,10 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "Faces: {}, Vertices: {}".format(str(dataset.metadata.face), str(dataset.metadata.vertex))
+            dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
         else:
             dataset.peek = 'File does not exist'
             dataset.blurb = 'File purged from disc'
@@ -116,10 +120,19 @@ class Ply:
         try:
             return dataset.peek
         except Exception:
-            return "Ply file (%s)" % (nice_size(dataset.get_size()))
+            return f"Ply file ({nice_size(dataset.get_size())})"
 
 
-class PlyAscii(Ply, data.Text):
+class PlyAscii(Ply, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.plyascii')
+    >>> PlyAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> PlyAscii().sniff(fname)
+    False
+    """
     file_ext = "plyascii"
     subtype = 'ascii'
 
@@ -127,7 +140,7 @@ class PlyAscii(Ply, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class PlyBinary(Ply, Binary):
+class PlyBinary(Ply, Binary):  # type: ignore[misc]
     file_ext = "plybinary"
     subtype = 'binary'
 
@@ -163,11 +176,11 @@ class Vtk:
     subtype = ''
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="file_format", default=None, desc="File format",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="dataset_type", default=None, desc="Dataset type",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # STRUCTURED_GRID data_type.
     MetadataElement(name="dimensions", default=[], desc="Dimensions",
@@ -179,19 +192,19 @@ class Vtk:
 
     # POLYDATA data_type (Points element is also a component of UNSTRUCTURED_GRID..
     MetadataElement(name="points", default=None, desc="Points",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="vertices", default=None, desc="Vertices",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="lines", default=None, desc="Lines",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="polygons", default=None, desc="Polygons",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
     MetadataElement(name="triangle_strips", default=None, desc="Triangle strips",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # UNSTRUCTURED_GRID data_type.
     MetadataElement(name="cells", default=None, desc="Cells",
-                    readonly=True, optional=True, visible=True, no_value=None)
+                    readonly=True, optional=True, visible=True)
 
     # Additional elements not categorized by data_type.
     MetadataElement(name="field_names", default=[], desc="Field names",
@@ -205,13 +218,13 @@ class Vtk:
     def __init__(self, **kwd):
         raise NotImplementedError
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         VTK files can be either ASCII or binary, with two different
         styles of file formats: legacy or XML.  We'll assume if the
         file contains a valid VTK header, then it is a valid VTK file.
         """
-        if self._is_vtk_header(file_prefix.string_io(), self.subtype):
+        if self._is_vtk_header(file_prefix.text_io(errors='ignore'), self.subtype):
             return True
         return False
 
@@ -223,8 +236,7 @@ class Vtk:
         data_kind) or the 4th line consists of the data_kind (in
         which case the 5th line is blank).
         """
-
-        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID']
+        data_kinds = ['STRUCTURED_GRID', 'POLYDATA', 'UNSTRUCTURED_GRID', 'STRUCTURED_POINTS', 'RECTILINEAR_GRID']
 
         def check_data_kind(line):
             for data_kind in data_kinds:
@@ -260,7 +272,7 @@ class Vtk:
             field_components = {}
             dataset_structure_complete = False
             processing_field_section = False
-            with open(dataset.file_name) as fh:
+            with open(dataset.file_name, errors='ignore') as fh:
                 for i, line in enumerate(fh):
                     line = line.strip()
                     if not line:
@@ -310,7 +322,7 @@ class Vtk:
                                 # FIELD FieldData 2
                                 processing_field_section = True
                                 num_fields = int(items[-1])
-                                fields_processed = []
+                                fields_processed: List[str] = []
                             elif processing_field_section:
                                 if len(fields_processed) == num_fields:
                                     processing_field_section = False
@@ -420,14 +432,14 @@ class Vtk:
     def get_blurb(self, dataset):
         blurb = ""
         if dataset.metadata.vtk_version is not None:
-            blurb += 'VTK Version %s' % str(dataset.metadata.vtk_version)
+            blurb += f'VTK Version {str(dataset.metadata.vtk_version)}'
         if dataset.metadata.dataset_type is not None:
             if blurb:
                 blurb += ' '
             blurb += str(dataset.metadata.dataset_type)
         return blurb or 'VTK data'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
@@ -439,10 +451,19 @@ class Vtk:
         try:
             return dataset.peek
         except Exception:
-            return "Vtk file (%s)" % (nice_size(dataset.get_size()))
+            return f"Vtk file ({nice_size(dataset.get_size())})"
 
 
-class VtkAscii(Vtk, data.Text):
+class VtkAscii(Vtk, data.Text):  # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkAscii().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkAscii().sniff(fname)
+    False
+    """
     file_ext = "vtkascii"
     subtype = 'ASCII'
 
@@ -450,7 +471,17 @@ class VtkAscii(Vtk, data.Text):
         data.Text.__init__(self, **kwd)
 
 
-class VtkBinary(Vtk, Binary):
+class VtkBinary(Vtk, Binary):   # type: ignore[misc]
+    """
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.vtkbinary')
+    >>> VtkBinary().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.vtkascii')
+    >>> VtkBinary().sniff(fname)
+    False
+    """
+
     file_ext = "vtkbinary"
     subtype = 'BINARY'
 
@@ -462,7 +493,281 @@ class STL(data.Data):
     file_ext = "stl"
 
 
+@build_sniff_from_prefix
+class NeperTess(data.Text):
+    """
+    Neper Tessellation File
+    ***tess
+      **format
+        format
+      **general
+        dim type
+      **cell
+        number_of_cells
+    """
+    file_ext = "neper.tess"
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True)
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper tess format startswith:***tess
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.neper.tess')
+        >>> NeperTess().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> NeperTess().sniff(fname)
+        False
+        """
+        return file_prefix.text_io(errors='ignore').readline(10).startswith('***tess')
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 6:
+                        break
+                    if i == 0 and not line.startswith('***tess'):
+                        break
+                    if i == 2:
+                        dataset.metadata.format = line
+                    if i == 4:
+                        dataset.metadata.dimension = int(line.split()[0])
+                    if i == 6:
+                        dataset.metadata.cells = int(line)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=7)
+            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+@build_sniff_from_prefix
+class NeperTesr(Binary):
+    """
+    Neper Raster Tessellation File
+    ***tesr
+      **format
+        format
+      **general
+        dimension
+        size_x size_y [size_z]
+        voxsize_x voxsize_y [voxsize_z]
+       [*origin
+        origin_x origin_y [origin_z]]
+       [*hasvoid has_void]
+      [**cell
+        number_of_cells
+    """
+    file_ext = "neper.tesr"
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
+    MetadataElement(name="size", default=[], desc="size", readonly=True, visible=True)
+    MetadataElement(name="voxsize", default=[], desc="voxsize", readonly=True, visible=True)
+    MetadataElement(name="origin", default=[], desc="origin", readonly=True, visible=True)
+    MetadataElement(name="cells", default=None, desc="cells", readonly=True, visible=True)
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Neper tesr format startswith:***tesr
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> NeperTesr().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tess')
+        >>> NeperTesr().sniff(fname)
+        False
+        """
+        return file_prefix.text_io(errors='ignore').readline(10).startswith('***tesr')
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                field = ''
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 12:
+                        break
+                    if i == 0 and not line.startswith('***tesr'):
+                        break
+                    if line.startswith('*'):
+                        field = line
+                        continue
+                    if i == 2:
+                        dataset.metadata.format = line.split()[0]
+                        continue
+                    if i == 4:
+                        dataset.metadata.dimension = line.split()[0]
+                        continue
+                    if i == 5:
+                        dataset.metadata.size = line.split()
+                        continue
+                    if i == 6:
+                        dataset.metadata.voxsize = line.split()
+                        continue
+                    if field.startswith('*origin'):
+                        dataset.metadata.origin = line.split()
+                        continue
+                    if field.startswith('**cell'):
+                        dataset.metadata.cells = int(line)
+                        break
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=9)
+            dataset.blurb = f'format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+class NeperPoints(data.Text):
+    """
+    Neper Position File
+    Neper position format has 1 - 3 floats per line separated by white space.
+    """
+    file_ext = "neper.points"
+    MetadataElement(name="dimension", default=None, desc="dimension", readonly=True, visible=True)
+
+    def __init__(self, **kwd):
+        data.Text.__init__(self, **kwd)
+
+    def set_meta(self, dataset, **kwd):
+        data.Text.set_meta(self, dataset, **kwd)
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                dataset.metadata.dimension = self._get_dimension(fh)
+
+    def _get_dimension(self, fh, maxlines=100, sep=None):
+        dim = None
+        try:
+            for i, line in enumerate(fh):
+                if not line:
+                    break
+                pts = len([float(x) for x in line.strip().split(sep=sep)])
+                if dim is not None and pts != dim:
+                    return None
+                elif 1 <= pts <= 3:
+                    dim = pts
+                else:
+                    return None
+                if i > maxlines:
+                    break
+        except Exception:
+            return None
+        return dim
+
+    def set_peek(self, dataset):
+        data.Text.set_peek(self, dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb += f' dim: {str(dataset.metadata.dimension)}'
+
+
+class NeperPointsTabular(NeperPoints, Tabular):
+    """
+    Neper Position File
+    Neper position format has 1 - 3 floats per line separated by TABs.
+    """
+    file_ext = "neper.points.tsv"
+
+    def __init__(self, **kwd):
+        Tabular.__init__(self, **kwd)
+
+    def set_meta(self, dataset, **kwd):
+        Tabular.set_meta(self, dataset, **kwd)
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                dataset.metadata.dimension = self._get_dimension(fh)
+
+    def set_peek(self, dataset):
+        Tabular.set_peek(self, dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb += f' dim: {str(dataset.metadata.dimension)}'
+
+
+class NeperMultiScaleCell(data.Text):
+    """
+    Neper Multiscale Cell File
+    """
+    file_ext = "neper.mscell"
+
+
+@build_sniff_from_prefix
+class GmshMsh(Binary):
+    """Gmsh Mesh File"""
+    file_ext = "gmsh.msh"
+    MetadataElement(name="version", default=None, desc="version", readonly=True, visible=True)
+    MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Gmsh msh format startswith:$MeshFormat
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.gmsh.msh')
+        >>> GmshMsh().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.neper.tesr')
+        >>> GmshMsh().sniff(fname)
+        False
+        """
+        return file_prefix.text_io(errors='ignore').readline().startswith('$MeshFormat')
+
+    def set_meta(self, dataset, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name, errors='ignore') as fh:
+                for i, line in enumerate(fh):
+                    line = line.strip()
+                    if not line or i > 1:
+                        break
+                    if i == 0 and not line.startswith('$MeshFormat'):
+                        break
+                    if i == 1:
+                        fields = line.split()
+                        if len(fields) > 0:
+                            dataset.metadata.version = fields[0]
+                        if len(fields) > 1:
+                            dataset.metadata.format = 'ASCII' if fields[1] == '0' else 'binary'
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, LINE_COUNT=3)
+            dataset.blurb = f'Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}'
+        else:
+            dataset.peek = 'File does not exist'
+            dataset.blurb = 'File purged from disc'
+
+
+class GmshGeo(data.Text):
+    """Gmsh geometry File"""
+    file_ext = "gmsh.geo"
+
+
+class ZsetGeof(data.Text):
+    """
+    Z-set geof File
+    """
+    file_ext = "zset.geof"
+
+
 # Utility functions
 def get_next_line(fh):
     line = fh.readline(MAX_LINE_LEN)
+    if not line.endswith("\n"):
+        # Discard the rest of the line
+        fh.readline()
     return line.strip()

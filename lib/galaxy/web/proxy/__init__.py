@@ -59,7 +59,7 @@ class ProxyManager:
     def setup_proxy(self, trans, host=DEFAULT_PROXY_TO_HOST, port=None, proxy_prefix="", route_name="", container_ids=None, container_interface=None):
         if self.manage_dynamic_proxy:
             log.info("Attempting to start dynamic proxy process")
-            log.debug("Cmd: " + ' '.join(self.lazy_process.command_and_args))
+            log.debug(f"Cmd: {' '.join(self.lazy_process.command_and_args)}")
             self.lazy_process.start_process()
 
         if container_ids is None:
@@ -70,7 +70,7 @@ class ProxyManager:
         self.proxy_ipc.handle_requests(
             authentication,
             proxy_requests,
-            '/%s' % route_name,
+            f'/{route_name}',
             container_ids,
             container_interface,
         )
@@ -94,7 +94,7 @@ class ProxyManager:
         authentication = AuthenticationToken(trans)
         for k in kwargs.keys():
             if k not in self.valid_update_keys:
-                raise Exception("Invalid proxy request update key: %s" % k)
+                raise Exception(f"Invalid proxy request update key: {k}")
         return self.proxy_ipc.update_requests(authentication, **kwargs)
 
     def query_proxy(self, trans):
@@ -347,7 +347,7 @@ class RestGolangProxyIpc:
         except requests.exceptions.ConnectionError as err:
             log.exception(err)
             if sleep > 5:
-                excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
+                excp = f"Could not contact proxy after {sum(range(sleep + 1))} seconds"
                 raise Exception(excp)
             time.sleep(sleep)
             self.handle_requests(authentication, proxy_requests, route_name, container_ids, container_interface, sleep=sleep + 1)

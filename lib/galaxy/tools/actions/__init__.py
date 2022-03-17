@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import re
+from abc import abstractmethod
 from json import dumps
-
+from typing import Any, cast, Dict, List, Set, Union
 
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
-from galaxy.jobs.actions.post import ActionBox
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
@@ -51,12 +52,12 @@ class ToolAction:
     been converted and validated).
     """
 
-    def execute(self, tool, trans, incoming=None, set_output_hid=True):
-        incoming = incoming or {}
-        raise TypeError("Abstract method")
+    @abstractmethod
+    def execute(self, tool, trans, incoming=None, set_output_hid=True, **kwargs):
+        pass
 
 
-class DefaultToolAction:
+class DefaultToolAction(ToolAction):
     """Default tool action is to run an external command"""
     produces_real_jobs = True
 
@@ -69,7 +70,7 @@ class DefaultToolAction:
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = {}
-        all_permissions = {}
+        all_permissions: Dict[str, Set[str]] = {}
 
         def record_permission(action, role_id):
             if action not in all_permissions:
@@ -84,8 +85,6 @@ class DefaultToolAction:
                 if formats is None:
                     formats = input.formats
 
-                # Need to refresh in case this conversion just took place, i.e. input above in tool performed the same conversion
-                trans.sa_session.refresh(data)
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
@@ -104,7 +103,7 @@ class DefaultToolAction:
                         record_permission(action, role_id)
                 else:
                     if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise ItemAccessibilityException("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                        raise ItemAccessibilityException(f"User does not have permission to use a dataset ({data.id}) provided for input.")
                     permissions = trans.app.security_agent.get_permissions(data.dataset)
                     for action, roles in permissions.items():
                         for role in roles:
@@ -127,7 +126,7 @@ class DefaultToolAction:
                                 input_datasets[prefix + conversion_name + str(i + 1)] = new_data
                                 conversions.append((conversion_name, new_data))
                             else:
-                                raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name + str(i + 1)].extension, conversion_extensions))
+                                raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name + str(i + 1)].extension} --/--> {conversion_extensions}')
                         if parent:
                             parent[input.name][i] = input_datasets[prefix + input.name + str(i + 1)]
                             for conversion_name, conversion_data in conversions:
@@ -147,7 +146,7 @@ class DefaultToolAction:
                             input_datasets[prefix + conversion_name] = new_data
                             conversions.append((conversion_name, new_data))
                         else:
-                            raise Exception('A path for explicit datatype conversion has not been found: {} --/--> {}'.format(input_datasets[prefix + input.name].extension, conversion_extensions))
+                            raise Exception(f'A path for explicit datatype conversion has not been found: {input_datasets[prefix + input.name].extension} --/--> {conversion_extensions}')
                     target_dict = parent
                     if not target_dict:
                         target_dict = param_values
@@ -192,7 +191,7 @@ class DefaultToolAction:
                             processed_dataset_dict[v] = processed_dataset
                     input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
                 if conversion_required:
-                    collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
+                    collection_type_description = trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(collection.collection_type)
                     collection_builder = CollectionBuilder(collection_type_description)
                     collection_builder.replace_elements_in_collection(
                         template_collection=collection,
@@ -213,7 +212,7 @@ class DefaultToolAction:
                 the_dict[key] = []
             the_dict[key].append(value)
 
-        input_dataset_collections = dict()
+        input_dataset_collections: Dict[str, str] = {}
 
         def visitor(input, value, prefix, parent=None, prefixed_name=None, **kwargs):
             if isinstance(input, DataToolParameter):
@@ -230,7 +229,7 @@ class DefaultToolAction:
                         # collection with individual datasets. Database will still
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
-                        if hasattr(value, 'child_collection'):
+                        if isinstance(value, model.DatasetCollectionElement):
                             # if we are mapping a collection over a tool, we only require the child_collection
                             dataset_instances = value.child_collection.dataset_instances
                         else:
@@ -246,7 +245,7 @@ class DefaultToolAction:
         return input_dataset_collections
 
     def _check_access(self, tool, trans):
-        assert tool.allow_user_access(trans.user), "User (%s) is not allowed to access this tool." % (trans.user)
+        assert tool.allow_user_access(trans.user), f"User ({trans.user}) is not allowed to access this tool."
 
     def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
@@ -260,23 +259,24 @@ class DefaultToolAction:
         # Collect any input datasets from the incoming parameters
         inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles, collection_info=collection_info)
 
-        # grap tags from incoming HDAs
         preserved_tags = {}
+        preserved_hdca_tags = {}
+        # grab tags from incoming HDAs
         for data in inp_data.values():
             if not data:
                 continue
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
-
-        # grap tags from incoming HDCAs
+        # grab tags from incoming HDCAs
         for collection_pairs in inp_dataset_collections.values():
             for collection, _ in collection_pairs:
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
                     for tag in collection.auto_propagated_tags:
-                        preserved_tags[tag.value] = tag
-        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
+                        preserved_hdca_tags[tag.value] = tag
+        preserved_tags.update(preserved_hdca_tags)
+        return history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions
 
     def execute(self,
                 tool,
@@ -306,7 +306,7 @@ class DefaultToolAction:
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -333,7 +333,7 @@ class DefaultToolAction:
 
             identifier = getattr(data, "element_identifier", None)
             if identifier is not None:
-                incoming["%s|__identifier__" % name] = identifier
+                incoming[f"{name}|__identifier__"] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
         (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
@@ -370,6 +370,7 @@ class DefaultToolAction:
             params=wrapped_params.params,
             job_params=job_params,
             tags=preserved_tags,
+            hdca_tags=preserved_hdca_tags,
         )
 
         # Keep track of parent / child relationships, we'll create all the
@@ -466,14 +467,17 @@ class DefaultToolAction:
             return data
 
         for name, output in tool.outputs.items():
-            if not filter_output(output, incoming):
+            if not filter_output(tool, output, incoming):
                 handle_output_timer = ExecutionTimer()
                 if output.collection:
                     if completed_job and dataset_collection_elements and name in dataset_collection_elements:
                         # Output collection is mapped over and has already been copied from original job
                         continue
-                    collections_manager = app.dataset_collections_service
-                    element_identifiers = []
+                    collections_manager = app.dataset_collection_manager
+                    element_identifiers: List[
+                        Dict[str, Union[str, List[Dict[str, Union[str, List[Any]]]]]]
+                    ] = []
+                    # mypy doesn't yet support recursive type definitions
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
@@ -497,7 +501,19 @@ class DefaultToolAction:
                                     ))
                                 else:
                                     index = name_to_index[parent_id]
-                            current_element_identifiers = current_element_identifiers[index]["element_identifiers"]
+                            current_element_identifiers = cast(
+                                List[
+                                    Dict[
+                                        str,
+                                        Union[
+                                            str, List[Dict[str, Union[str, List[Any]]]]
+                                        ],
+                                    ]
+                                ],
+                                current_element_identifiers[index][
+                                    "element_identifiers"
+                                ],
+                            )
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
@@ -537,6 +553,7 @@ class DefaultToolAction:
         for name, data in out_data.items():
             if name not in child_dataset_names and name not in incoming:  # don't add children; or already existing datasets, i.e. async created
                 history.stage_addition(data)
+        history.add_pending_items(set_output_hid=set_output_hid)
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
@@ -558,13 +575,16 @@ class DefaultToolAction:
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
-        # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
+        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
         if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # We need a flush here and get hids in order to rewrite jobs parameter,
-            # but remapping jobs should only affect single jobs anyway, so this is not too costly.
-            history.add_pending_items(set_output_hid=set_output_hid)
-            trans.sa_session.flush()
+            # Need to flush here so that referencing outputs by id works
+            session = trans.sa_session()
+            try:
+                session.expire_on_commit = False
+                session.flush()
+            finally:
+                session.expire_on_commit = True
             self._remap_job_on_rerun(trans=trans,
                                      galaxy_session=galaxy_session,
                                      rerun_remap_job_id=rerun_remap_job_id,
@@ -585,24 +605,20 @@ class DefaultToolAction:
             # to send back to the current Galaxy instance
             GALAXY_URL = incoming.get('GALAXY_URL', None)
             assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
-            redirect_url += "&GALAXY_URL=%s" % GALAXY_URL
+            redirect_url += f"&GALAXY_URL={GALAXY_URL}"
             # Job should not be queued, so set state to ok
             job.set_state(app.model.Job.states.OK)
-            job.info = "Redirected to: %s" % redirect_url
+            job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
             if flush_job:
                 # Set HID and add to history.
-                history.add_pending_items(set_output_hid=set_output_hid)
                 job_flush_timer = ExecutionTimer()
                 trans.sa_session.flush()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
-                # Dispatch to a job handler. enqueue() is responsible for flushing the job
-                app.job_manager.enqueue(job, tool=tool)
-                trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
@@ -623,6 +639,8 @@ class DefaultToolAction:
                 assert old_job.session_id == galaxy_session.id, f'({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})'
             else:
                 raise Exception(f'({old_job.id}/{current_job.id}): Remapping via the API is not (yet) supported')
+            # Start by hiding current job outputs before taking over the old job's (implicit) outputs.
+            current_job.hide_outputs(flush=False)
             # Duplicate PJAs before remap.
             for pjaa in old_job.post_job_actions:
                 current_job.add_post_job_action(pjaa.post_job_action)
@@ -658,6 +676,9 @@ class DefaultToolAction:
                     for job in hdca.implicit_collection_jobs.jobs:
                         if job.job_id == old_job.id:
                             job.job_id = current_job.id
+                hdca.update()
+            for jtoidca in old_job.output_dataset_collections:
+                jtoidca.dataset_collection.replace_failed_elements(remapped_hdas)
         except Exception:
             log.exception('Cannot remap rerun dependencies.')
 
@@ -670,12 +691,13 @@ class DefaultToolAction:
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters}
+        input_values = {p.name: json.loads(p.value) for p in job_to_remap.parameters if p.value is not None}
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id
         input_values = update_dataset_ids(input_values, {old_dataset_id: new_dataset_id}, src='hda')
         for p in job_to_remap.parameters:
-            p.value = json.dumps(input_values[p.name])
+            if p.name in input_values:
+                p.value = json.dumps(input_values[p.name])
         jtid.dataset = out_data[jtod.name]
         jtid.dataset.hid = jtod.dataset.hid
         log.info(f'Job {job_to_remap.id} input HDA {jtod.dataset.id} remapped to new HDA {jtid.dataset.id}')
@@ -688,7 +710,7 @@ class DefaultToolAction:
         input_names = []
         for data in reversed(list(inp_data.values())):
             if getattr(data, "hid", None):
-                input_names.append('data %s' % data.hid)
+                input_names.append(f'data {data.hid}')
 
         return on_text_for_names(input_names)
 
@@ -719,7 +741,7 @@ class DefaultToolAction:
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
-        reductions = {}
+        reductions: Dict[str, List[str]] = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
             for (dataset_collection, reduced) in dataset_collection_info_pairs:
                 if reduced:
@@ -772,7 +794,7 @@ class DefaultToolAction:
             # TODO: figure out why can't pass dataset_id here.
             job.add_input_dataset(name, dataset=dataset)
 
-    def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
+    def get_output_name(self, output, dataset=None, tool=None, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None):
         if output.label:
             params['tool'] = tool
             params['on_string'] = on_text
@@ -801,7 +823,7 @@ class DefaultToolAction:
     def _get_default_data_name(self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd):
         name = tool.name
         if on_text:
-            name += (" on " + on_text)
+            name += f" on {on_text}"
         return name
 
 
@@ -813,8 +835,9 @@ class OutputCollections:
     parameter).
     """
 
-    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags):
+    def __init__(self, trans, history, tool, tool_action, input_collections, dataset_collection_elements, on_text, incoming, params, job_params, tags, hdca_tags):
         self.trans = trans
+        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
@@ -826,11 +849,12 @@ class OutputCollections:
         self.job_params = job_params
         self.out_collections = {}
         self.out_collection_instances = {}
-        self.tags = tags
+        self.tags = tags  # all inherited tags
+        self.hdca_tags = hdca_tags  # only tags inherited from input HDCAs
 
-    def create_collection(self, output, name, collection_type=None, completed_job=None, **element_kwds):
+    def create_collection(self, output, name, collection_type=None, completed_job=None, propagate_hda_tags=True, **element_kwds):
         input_collections = self.input_collections
-        collections_manager = self.trans.app.dataset_collections_service
+        collections_manager = self.trans.app.dataset_collection_manager
         collection_type = collection_type or output.structure.collection_type
         if collection_type is None:
             collection_type_source = output.structure.collection_type_source
@@ -839,7 +863,7 @@ class OutputCollections:
                 # sooner.
                 raise Exception("Could not determine collection type to create.")
             if collection_type_source not in input_collections:
-                raise Exception("Could not find collection type source with name [%s]." % collection_type_source)
+                raise Exception(f"Could not find collection type source with name [{collection_type_source}].")
 
             # Using the collection_type_source string we get the DataCollectionToolParameter
             data_param = self.tool.inputs
@@ -906,7 +930,7 @@ class OutputCollections:
                 name=hdca_name,
                 collection_type=collection_type,
                 trusted_identifiers=True,
-                tags=self.tags,
+                tags=self.tags if propagate_hda_tags else self.hdca_tags,
                 set_hid=False,
                 flush=False,
                 completed_job=completed_job,
@@ -943,13 +967,13 @@ def on_text_for_names(input_names):
     return on_text
 
 
-def filter_output(output, incoming):
+def filter_output(tool, output, incoming):
     for filter in output.filters:
         try:
             if not eval(filter.text.strip(), globals(), incoming):
                 return True  # do not create this dataset
         except Exception as e:
-            log.debug('Dataset output filter failed: %s' % e)
+            log.debug(f'Tool {tool.id} output {output.name}: dataset output filter ({filter.text}) failed: {e}')
     return False
 
 

@@ -1,30 +1,32 @@
 """This module contains a linting functions for tool outputs."""
+from galaxy.util import string_as_bool
 from ._util import is_valid_cheetah_placeholder
+from ..parser.output_collection_def import NAMED_PATTERNS
 
 
 def lint_output(tool_xml, lint_ctx):
     """Check output elements, ensure there is at least one and check attributes."""
     outputs = tool_xml.findall("./outputs")
+    # determine node to report for general problems with outputs
+    tool_node = tool_xml.find("./outputs")
+    if tool_node is None:
+        tool_node = tool_xml.getroot()
     if len(outputs) == 0:
-        lint_ctx.warn("Tool contains no outputs section, most tools should produce outputs.")
-    if len(outputs) > 1:
-        lint_ctx.warn("Tool contains multiple output sections, behavior undefined.")
-
-    num_outputs = 0
-    if len(outputs) == 0:
-        lint_ctx.warn("No outputs found")
+        lint_ctx.warn("Tool contains no outputs section, most tools should produce outputs.", node=tool_node)
         return
-
+    if len(outputs) > 1:
+        lint_ctx.warn("Tool contains multiple output sections, behavior undefined.", node=outputs[1])
+    num_outputs = 0
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
-            lint_ctx.warn("Unknown element found in outputs [%s]" % output.tag)
+            lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]", node=output)
             continue
         num_outputs += 1
         if "name" not in output.attrib:
-            lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.")
-        else:
-            if not is_valid_cheetah_placeholder(output.attrib["name"]):
-                lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output.attrib["name"])
+            lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.", node=output)
+            # TODO make this an error if there is no discover_datasets / from_work_dir (is this then still a problem)
+        elif not is_valid_cheetah_placeholder(output.attrib["name"]):
+            lint_ctx.warn(f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', node=output)
 
         format_set = False
         if __check_format(output, lint_ctx):
@@ -35,11 +37,9 @@ def lint_output(tool_xml, lint_ctx):
 
         elif output.tag == "collection":
             if "type" not in output.attrib:
-                lint_ctx.warn("Collection output with undefined 'type' found.")
+                lint_ctx.warn("Collection output with undefined 'type' found.", node=output)
             if "structured_like" in output.attrib and "inherit_format" in output.attrib:
                 format_set = True
-        if "format_source" in output.attrib:
-            format_set = True
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
@@ -47,37 +47,47 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn("Tool {} output {} doesn't define an output format.".format(output.tag, output.attrib.get("name", "with missing name")))
+            lint_ctx.warn(f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.", node=output)
 
-    lint_ctx.info("%d outputs found.", num_outputs)
+    # TODO: check for different labels in case of multiple outputs
+    lint_ctx.info(f"{num_outputs} outputs found.", node=outputs[0])
 
 
 def __check_format(node, lint_ctx, allow_ext=False):
     """
-    check if format/ext attribute is set in a given node
+    check if format/ext/format_source attribute is set in a given node
     issue a warning if the value is input
     return true (node defines format/ext) / false (else)
     """
-    fmt = None
+    if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
+        lint_ctx.warn(f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext", node=node)
+    if "format_source" in node.attrib:
+        return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
+    fmt = None
     if allow_ext:
         fmt = node.attrib.get("ext")
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn("Using format='input' on %s, format_source attribute is less ambiguous and should be used instead." % node.tag)
+        lint_ctx.warn(f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.", node=node)
     return fmt is not None
 
 
 def __check_pattern(node):
     """
-    check if pattern attribute is set and defines the extension
+    check if
+    - pattern attribute is set and defines the extension or
+    - from_tool_provided_metadata is true
     """
     if node.tag != "discover_datasets":
         return False
+    if "from_tool_provided_metadata" in node.attrib and string_as_bool(node.attrib.get("from_tool_provided_metadata", "false")):
+        return True
     if "pattern" not in node.attrib:
         return False
-    if node.attrib["pattern"] == "__default__":
-        return True
-    if "ext" in node.attrib["pattern"] and node.attrib["pattern"].startswith("__") and node.attrib["pattern"].endswith("__"):
+    pattern = node.attrib["pattern"]
+    regex_pattern = NAMED_PATTERNS.get(pattern, pattern)
+    # TODO error on wrong pattern or non-regexp
+    if "(?P<ext>" in regex_pattern:
         return True

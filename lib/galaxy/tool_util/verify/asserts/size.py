@@ -1,4 +1,12 @@
-def assert_has_size(output_bytes, value, delta=0):
-    """Asserts the specified output has a size of the specified value"""
+from ._util import _assert_number
+
+
+def assert_has_size(output_bytes, value: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False):
+    """
+    Asserts the specified output has a size of the specified value,
+    allowing for absolute (delta) and relative (delta_frac) difference.
+    """
     output_size = len(output_bytes)
-    assert abs(output_size - int(value)) <= int(delta), f"Expected file size was {value}, actual file size was {output_size} (difference of {delta} accepted)"
+    _assert_number(output_size, value, delta, min, max, negate,
+        "{expected} file size of {n}+-{delta}",
+        "{expected} file size to be in [{min}:{max}]")

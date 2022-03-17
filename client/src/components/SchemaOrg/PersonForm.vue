@@ -7,14 +7,12 @@
                 v-b-tooltip.hover
                 title="Hide Attribute"
                 icon="eye-slash"
-                @click="onHide(attribute.key)"
-            />
+                @click="onHide(attribute.key)" />
             <b-form-input
                 :id="attribute.key"
                 v-model="currentValues[attribute.key]"
                 :placeholder="'Enter ' + attribute.placeholder + '.'"
-                :type="attribute.type"
-            >
+                :type="attribute.type">
             </b-form-input>
         </div>
         <div role="group" class="form-group">

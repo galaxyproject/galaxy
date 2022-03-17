@@ -1,5 +1,16 @@
 name: Build docs
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -50,7 +61,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          pip install awscli
           case "$TARGET_BRANCH" in
               release_[[:digit:]][[:digit:]].[[:digit:]][[:digit:]]|master)
                   UPLOAD_DIR=$TARGET_BRANCH
@@ -63,4 +73,5 @@ jobs:
                   exit 0
                   ;;
           esac
+          pip install awscli
           aws s3 sync doc/build/html/ "s3://galaxy-docs/en/$UPLOAD_DIR" --region us-east-2 --size-only --delete

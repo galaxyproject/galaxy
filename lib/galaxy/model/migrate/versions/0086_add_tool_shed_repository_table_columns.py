@@ -33,13 +33,13 @@ def upgrade(migrate_engine):
     c = Column("includes_datatypes", Boolean, index=True, default=False)
     add_column(c, ToolShedRepository_table, metadata, index_name="ix_tool_shed_repository_includes_datatypes")
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET includes_datatypes=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET includes_datatypes={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'includes_datatypes' of table 'tool_shed_repository' failed.")
     c = Column("update_available", Boolean, default=False)
     add_column(c, ToolShedRepository_table, metadata)
     try:
-        migrate_engine.execute("UPDATE tool_shed_repository SET update_available=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE tool_shed_repository SET update_available={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Updating column 'update_available' of table 'tool_shed_repository' failed.")
 

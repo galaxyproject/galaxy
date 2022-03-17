@@ -3,7 +3,7 @@ import os
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.util import parse_xml
 from tool_shed.tools import tool_version_manager
-from ..tools.test_toolbox import (
+from ..app.tools.test_toolbox import (
     BaseToolBoxTestCase,
     SimplifiedToolBox
 )
@@ -135,15 +135,10 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         all_versions = new_toolbox.get_tool("test_tool", get_all_versions=True)
         assert not all_versions
 
-        # Check that tool panel has reverted to old value...
-        section = new_toolbox._tool_panel["tid"]
-        assert len(section.elems) == 0
-
     def _setup_two_versions_remove_one(self, section, uninstall):
         self._init_tool()
-        self._setup_two_versions_in_config(section=True)
+        self._setup_two_versions_in_config(section=section)
         self._setup_two_versions()
-        self.toolbox
         self._remove_repository_contents("github.com/galaxyproject/example/test_tool/0.2", uninstall=uninstall)
 
     def _verify_version_2_removed_from_panel(self, section=True):
@@ -161,7 +156,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
 
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel["tid"].elems
         else:
-            next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
+            assert next(iter(new_toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
 
     def _remove_repository_contents(self, guid, uninstall, shed_tool_conf="tool_conf.xml"):

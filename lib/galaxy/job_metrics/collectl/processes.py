@@ -96,9 +96,9 @@ def parse_process_statistics(statistics):
     # Check for validity...
     for statistic in statistics:
         if statistic[0] not in STATISTIC_TYPES:
-            raise Exception("Unknown statistic type encountered %s" % statistic[0])
+            raise Exception(f"Unknown statistic type encountered {statistic[0]}")
         if statistic[1] not in PROCESS_COLUMNS:
-            raise Exception("Unknown process column encountered %s" % statistic[1])
+            raise Exception(f"Unknown process column encountered {statistic[1]}")
     return statistics
 
 
@@ -119,7 +119,7 @@ def _read_process_statistics(tsv_file, pid, statistics):
         if current_interval is None:
             for header, expected_header in zip(row, PROCESS_COLUMNS):
                 if header.lower() != expected_header.lower():
-                    raise Exception("Unknown header value encountered while processing collectl playback - %s" % header)
+                    raise Exception(f"Unknown header value encountered while processing collectl playback - {header}")
 
             # First row, check contains correct header.
             current_interval = CollectlProcessInterval()

@@ -8,9 +8,9 @@ from json import loads
 
 from galaxy.util import (
     galaxy_directory,
+    sanitize_lists_to_string,
     unicodify,
 )
-from galaxy.util.object_wrapper import sanitize_lists_to_string
 
 log = logging.getLogger(__name__)
 
@@ -58,8 +58,6 @@ def read_dbnames(filename):
             ucsc_builds[db_base].reverse()
             ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
             db_names = list(db_names + ucsc_builds[db_base])
-        if len(db_names) > 1 and len(man_builds) > 0:
-            db_names.append((GenomeBuilds.default_value, '----- Additional Species Are Below -----'))
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
         db_names = list(db_names + man_builds)
@@ -101,7 +99,7 @@ class GenomeBuilds:
             if user and hasattr(user, 'preferences') and 'dbkeys' in user.preferences:
                 user_keys = loads(user.preferences['dbkeys'])
                 for key, chrom_dict in user_keys.items():
-                    rval.append((key, "{} ({}) [Custom]".format(chrom_dict['name'], key)))
+                    rval.append((key, f"{chrom_dict['name']} ({key}) [Custom]"))
         # Load old builds.txt static keys
         rval.extend(self._static_dbkeys)
         # load dbkeys from dbkey data table
@@ -146,6 +144,6 @@ class GenomeBuilds:
         if not chrom_info:
             # Default to built-in build.
             # Since we are using an unverified dbkey, we will sanitize the dbkey before use
-            chrom_info = os.path.join(self._static_chrom_info_path, "%s.len" % sanitize_lists_to_string(dbkey))
+            chrom_info = os.path.join(self._static_chrom_info_path, f"{sanitize_lists_to_string(dbkey)}.len")
         chrom_info = os.path.abspath(chrom_info)
         return (chrom_info, db_dataset)

@@ -21,6 +21,9 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     defaultdict,
     ExecutionTimer,
@@ -55,11 +58,11 @@ def get_path_key(path_tuple):
 
 class JobManager:
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def job_lock(self):
+    def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)
 
     def update_job_lock(self, job_lock: JobLock):
@@ -84,7 +87,7 @@ class JobManager:
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            self.app.model.context.current.flush()
+            self.app.model.session.flush()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
@@ -93,13 +96,19 @@ class JobManager:
 
 class JobSearch:
     """Search for jobs using tool inputs or other jobs"""
-    def __init__(self, app):
-        self.app = app
-        self.sa_session = app.model.context
-        self.hda_manager = HDAManager(app)
-        self.dataset_collection_manager = DatasetCollectionManager(app)
-        self.ldda_manager = LDDAManager(app)
-        self.decode_id = self.app.security.decode_id
+    def __init__(
+        self,
+        sa_session: galaxy_scoped_session,
+        hda_manager: HDAManager,
+        dataset_collection_manager: DatasetCollectionManager,
+        ldda_manager: LDDAManager,
+        id_encoding_helper: IdEncodingHelper,
+    ):
+        self.sa_session = sa_session
+        self.hda_manager = hda_manager
+        self.dataset_collection_manager = dataset_collection_manager
+        self.ldda_manager = ldda_manager
+        self.decode_id = id_encoding_helper.decode_id
 
     def by_tool_input(self, trans, tool_id, tool_version, param=None, param_dump=None, job_state='ok'):
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
@@ -244,7 +253,7 @@ class JobSearch:
                     name_condition = []
                     if identifier:
                         data_conditions.append(and_(model.Job.id == d.job_id,
-                                             d.name.in_({"%s|__identifier__" % _ for _ in k}),
+                                             d.name.in_({f"{_}|__identifier__" for _ in k}),
                                              d.value == json.dumps(identifier)))
                     else:
                         stmt = stmt.where(e.name == c.name)
@@ -397,15 +406,12 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
             job_stderr=job.job_stderr,
             stderr=job.stderr,
             stdout=job.stdout,
-            job_messages=job.job_messages
+            job_messages=job.job_messages,
+            dependencies=job.dependencies
         ))
 
         if is_admin:
-            if job.user:
-                job_dict['user_email'] = job.user.email
-            else:
-                job_dict['user_email'] = None
-
+            job_dict['user_email'] = job.get_user_email()
             job_dict['job_metrics'] = summarize_job_metrics(trans, job)
     return job_dict
 
@@ -453,7 +459,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
                     implicit_collection_job_ids.add(invocation_step_source_id)
             workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
-            raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
+            raise RequestParameterInvalidException(f"Invalid job source type {job_source_type} found.")
 
     job_summaries = {}
     implicit_collection_jobs_summaries = {}
@@ -652,16 +658,20 @@ def summarize_job_parameters(trans, job):
                     else:
                         rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
                 elif input.type == "upload_dataset":
-                    rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                    rval.append(dict(text=input.group_title(param_values), depth=depth, value=f"{len(param_values[input.name])} uploaded datasets"))
                 elif input.type == "data":
                     value = []
                     for element in listify(param_values[input.name]):
-                        if element.history_content_type == "dataset":
+                        encoded_id = trans.security.encode_id(element.id)
+                        if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            encoded_id = trans.security.encode_id(hda.id)
                             value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                        elif isinstance(element, model.DatasetCollectionElement):
+                            value.append({'src': "dce", "id": encoded_id, "name": element.element_identifier})
+                        elif isinstance(element, model.HistoryDatasetCollectionAssociation):
+                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
                         else:
-                            value.append({"hid": element.hid, "name": element.name})
+                            raise Exception(f"Unhandled data input parameter type encountered {element.__class__.__name__}")
                     rval.append(dict(text=input.label, depth=depth, value=value))
                 elif input.visible:
                     if hasattr(input, "label") and input.label:
@@ -687,22 +697,55 @@ def summarize_job_parameters(trans, job):
     app = trans.app
     toolbox = app.toolbox
     tool = toolbox.get_tool(job.tool_id, job.tool_version)
-    assert tool is not None, 'Requested tool has not been loaded.'
 
     params_objects = None
+    parameters = []
     upgrade_messages = {}
     has_parameter_errors = False
 
     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
-    try:
-        params_objects = job.get_param_values(app, ignore_errors=False)
-    except Exception:
-        params_objects = job.get_param_values(app, ignore_errors=True)
-        # use different param_objects in the following line, since we want to display original values as much as possible
-        upgrade_messages = tool.check_and_update_param_values(job.get_param_values(app, ignore_errors=True),
-                                                              trans,
-                                                              update_values=False)
+    if tool:
+        try:
+            params_objects = job.get_param_values(app, ignore_errors=False)
+        except Exception:
+            params_objects = job.get_param_values(app, ignore_errors=True)
+            # use different param_objects in the following line, since we want to display original values as much as possible
+            upgrade_messages = tool.check_and_update_param_values(job.get_param_values(app, ignore_errors=True),
+                                                                  trans,
+                                                                  update_values=False)
+            has_parameter_errors = True
+        parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
+    else:
         has_parameter_errors = True
 
-    parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
-    return {"parameters": parameters, "has_parameter_errors": has_parameter_errors}
+    return {"parameters": parameters, "has_parameter_errors": has_parameter_errors, 'outputs': summarize_job_outputs(job=job, tool=tool, params=params_objects, security=trans.security)}
+
+
+def get_output_name(tool, output, params):
+    try:
+        return tool.tool_action.get_output_name(
+            output,
+            tool=tool,
+            params=params,
+        )
+    except Exception:
+        pass
+
+
+def summarize_job_outputs(job: model.Job, tool, params, security):
+    outputs = defaultdict(list)
+    output_labels = {}
+    possible_outputs = (
+        ('hda', 'dataset_id', job.output_datasets),
+        ('ldda', 'ldda_id', job.output_library_datasets),
+        ('hdca', 'dataset_collection_id', job.output_dataset_collection_instances),
+    )
+    for src, attribute, output_associations in possible_outputs:
+        for output_association in output_associations:
+            output_name = output_association.name
+            if output_name not in output_labels and tool:
+                tool_output = tool.output_collections if src == 'hdca' else tool.outputs
+                output_labels[output_name] = get_output_name(tool=tool, output=tool_output.get(output_name), params=params)
+            label = output_labels.get(output_name)
+            outputs[output_name].append({'label': label, 'value': {'src': src, 'id': security.encode_id(getattr(output_association, attribute))}})
+    return outputs

@@ -5,8 +5,7 @@
             triggers="click blur"
             :placement="hoverPlacement"
             :target="this.$refs['button'] || 'works-lazily'"
-            title="Person"
-        >
+            title="Person">
             <b-table striped :items="items"> </b-table>
         </b-popover>
         <span v-if="name">
@@ -34,8 +33,7 @@
             v-for="attribute in explicitMetaAttributes"
             :key="attribute.attribute"
             :itemprop="attribute.attribute"
-            :content="attribute.value"
-        />
+            :content="attribute.value" />
         <slot name="buttons"></slot>
     </span>
 </template>

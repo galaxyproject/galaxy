@@ -1,20 +1,30 @@
 <template>
-    <div ref="form"></div>
+    <div>
+        <div class="h4 clearfix mb-3">
+            <b>Workflow: {{ model.name }}</b>
+            <ButtonSpinner class="float-right" title="Run Workflow" id="run-workflow" @onClick="onExecute" />
+        </div>
+        <FormDisplay :inputs="formInputs" @onChange="onChange" />
+        <!-- Options to default one way or the other, disable if admins want, etc.. -->
+        <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
+    </div>
 </template>
 
 <script>
-import Form from "mvc/form/form-view";
+import FormDisplay from "components/Form/FormDisplay";
+import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
+import { errorMessageAsString } from "utils/simple-error";
 
 export default {
+    components: {
+        ButtonSpinner,
+        FormDisplay,
+    },
     props: {
         model: {
             type: Object,
-            required: true,
-        },
-        setRunButtonStatus: {
-            type: Function,
             required: true,
         },
         targetHistory: {
@@ -28,22 +38,13 @@ export default {
     },
     data() {
         return {
-            form: null,
+            formData: {},
             inputTypes: {},
         };
     },
-    computed: {},
-    created() {
-        this.form = new Form(this.formDefinition());
-        this.$nextTick(() => {
-            const el = this.$refs["form"];
-            el.appendChild(this.form.$el[0]);
-        });
-    },
-    methods: {
-        formDefinition() {
+    computed: {
+        formInputs() {
             const inputs = [];
-
             // Add workflow parameters.
             Object.values(this.model.wpInputs).forEach((input) => {
                 const inputCopy = Object.assign({}, input);
@@ -52,7 +53,6 @@ export default {
                 inputs.push(inputCopy);
                 this.inputTypes[inputCopy.name] = "replacement_parameter";
             });
-
             // Add actual input modules.
             this.model.steps.forEach((step, i) => {
                 if (!isWorkflowInput(step.step_type)) {
@@ -68,18 +68,18 @@ export default {
                 inputs.push(stepAsInput);
                 this.inputTypes[stepName] = step.step_type;
             });
-
-            const def = {
-                inputs: inputs,
-            };
-            return def;
+            return inputs;
         },
-        execute() {
+    },
+    methods: {
+        onChange(data) {
+            this.formData = data;
+        },
+        onExecute() {
             const replacementParams = {};
             const inputs = {};
-            const formData = this.form.data.create();
-            for (const inputName in formData) {
-                const value = formData[inputName];
+            for (const inputName in this.formData) {
+                const value = this.formData[inputName];
                 const inputType = this.inputTypes[inputName];
                 if (inputType == "replacement_parameter") {
                     replacementParams[inputName] = value;
@@ -93,6 +93,7 @@ export default {
                 inputs_by: "step_index",
                 batch: true,
                 use_cached_job: this.useJobCache,
+                require_exact_tool_versions: false,
             };
             if (this.targetHistory == "current") {
                 data.history_id = this.model.historyId;
@@ -104,7 +105,7 @@ export default {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
-                    console.log(error);
+                    this.$emit("submissionError", errorMessageAsString(error));
                 });
         },
     },

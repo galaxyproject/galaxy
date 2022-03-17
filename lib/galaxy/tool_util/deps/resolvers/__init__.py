@@ -319,7 +319,7 @@ class NullDependency(Dependency):
         """
         Return a message describing this dependency
         """
-        return "Dependency %s not found." % self.name
+        return f"Dependency {self.name} not found."
 
     def shell_commands(self):
         return None

@@ -6,10 +6,12 @@ import uuid
 from collections import deque
 from itertools import chain
 from sys import getsizeof
+from typing import Optional
 
 import numpy
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
+from sqlalchemy.inspection import inspect
 from sqlalchemy.types import (
     CHAR,
     LargeBinary,
@@ -42,7 +44,7 @@ json_encoder = SafeJsonEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
 
 # Galaxy app will set this if configured to avoid circular dependency
-MAX_METADATA_VALUE_SIZE = None
+MAX_METADATA_VALUE_SIZE: Optional[int] = None
 
 
 def _sniffnfix_pg9_hex(value):
@@ -77,7 +79,7 @@ class GalaxyLargeBinary(LargeBinary):
         return process
 
 
-class JSONType(sqlalchemy.types.TypeDecorator):
+class JSONType(TypeDecorator):
     """
     Represents an immutable structure as a json-encoded string.
 
@@ -89,6 +91,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
     # something like sqlalchemy.String, or even better, when applicable, native
     # sqlalchemy.dialects.postgresql.JSON
     impl = GalaxyLargeBinary
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is not None:
@@ -111,6 +114,10 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def compare_values(self, x, y):
         return (x == y)
+
+
+class MutableJSONType(JSONType):
+    """Associated with MutationObj"""
 
 
 class MutationObj(Mutable):
@@ -152,15 +159,15 @@ class MutationObj(Mutable):
                 val = cls.coerce(key, val)
                 state.dict[key] = val
             if isinstance(val, cls):
-                val._parents[state.obj()] = key
+                val._parents[state] = key
 
         def set(target, value, oldvalue, initiator):
             if not isinstance(value, cls):
                 value = cls.coerce(key, value)
             if isinstance(value, cls):
-                value._parents[target.obj()] = key
+                value._parents[target] = key
             if isinstance(oldvalue, cls):
-                oldvalue._parents.pop(target.obj(), None)
+                oldvalue._parents.pop(inspect(target), None)
             return value
 
         def pickle(state, state_dict):
@@ -173,7 +180,7 @@ class MutationObj(Mutable):
         def unpickle(state, state_dict):
             if 'ext.mutable.values' in state_dict:
                 for val in state_dict['ext.mutable.values']:
-                    val._parents[state.obj()] = key
+                    val._parents[state] = key
 
         sqlalchemy.event.listen(parent_cls, 'load', load, raw=True, propagate=True)
         sqlalchemy.event.listen(parent_cls, 'refresh', load, raw=True, propagate=True)
@@ -269,7 +276,8 @@ class MutationList(MutationObj, list):
         self.changed()
 
 
-MutationObj.associate_with(JSONType)
+MutationObj.associate_with(MutableJSONType)
+
 
 metadata_pickler = AliasPickleModule({
     ("cookbook.patterns", "Bunch"): ("galaxy.util.bunch", "Bunch")
@@ -361,6 +369,7 @@ class UUIDType(TypeDecorator):
     CHAR(32), storing as stringified hex values.
     """
     impl = CHAR
+    cache_ok = True
 
     def load_dialect_impl(self, dialect):
         return dialect.type_descriptor(CHAR(32))
@@ -382,6 +391,7 @@ class UUIDType(TypeDecorator):
 
 class TrimmedString(TypeDecorator):
     impl = String
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         """Automatically truncate string values"""

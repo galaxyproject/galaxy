@@ -1,6 +1,6 @@
 <template>
     <div class="pair-collection-creator">
-        <div v-if="(state == 'error')">
+        <div v-if="state == 'error'">
             <b-alert show variant="danger">
                 {{ errorText }}
             </b-alert>
@@ -78,11 +78,11 @@
                 </div>
                 <collection-creator
                     :oncancel="oncancel"
-                    :hideSourceItems="hideSourceItems"
+                    :hide-source-items="hideSourceItems"
                     @onUpdateHideSourceItems="onUpdateHideSourceItems"
                     @clicked-create="clickedCreate"
-                    :creationFn="creationFn"
-                >
+                    @remove-extensions-toggle="removeExtensionsToggle"
+                    :suggested-name="initialSuggestedName">
                     <template v-slot:help-content>
                         <p>
                             {{
@@ -129,8 +129,7 @@
                                 class="swap"
                                 href="javascript:void(0);"
                                 title="l('Swap forward and reverse datasets')"
-                                @click="swapButton"
-                            >
+                                @click="swapButton">
                                 {{ l("Swap") }}
                             </a>
                         </div>
@@ -138,8 +137,7 @@
                             <div
                                 v-for="(element, index) in workingElements"
                                 :key="element.id"
-                                class="collection-element"
-                            >
+                                class="collection-element">
                                 {{ index == 0 ? l("forward") : l("reverse") }}: {{ element.name }}
                             </div>
                         </div>
@@ -162,6 +160,11 @@ export default {
     mixins: [mixin],
     created() {
         this._elementsSetUp();
+        this.initialSuggestedName = this._guessNameForPair(
+            this.workingElements[0],
+            this.workingElements[1],
+            this.removeExtensions
+        );
     },
     data: function () {
         return {
@@ -177,6 +180,8 @@ export default {
             minElements: 2,
             workingElements: [],
             invalidElements: [],
+            removeExtensions: true,
+            initialSuggestedName: "",
         };
     },
     computed: {
@@ -208,7 +213,7 @@ export default {
             /** data for list in progress */
             this.workingElements = [];
             // copy initial list, sort, add ids if needed
-            this.workingElements = this.initialElements.slice(0);
+            this.workingElements = JSON.parse(JSON.stringify(this.initialElements.slice(0)));
             this._ensureElementIds();
             this._validateElements();
         },
@@ -262,6 +267,41 @@ export default {
         /** string rep */
         toString: function () {
             return "PairCollectionCreator";
+        },
+        removeExtensionsToggle: function () {
+            this.removeExtensions = !this.removeExtensions;
+            this.initialSuggestedName = this._guessNameForPair(
+                this.workingElements[0],
+                this.workingElements[1],
+                this.removeExtensions
+            );
+        },
+        _guessNameForPair: function (fwd, rev, removeExtensions) {
+            removeExtensions = removeExtensions ? removeExtensions : this.removeExtensions;
+            var fwdName = fwd.name;
+            var revName = rev.name;
+
+            var lcs = this._naiveStartingAndEndingLCS(fwdName, revName);
+
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
+            if (removeExtensions) {
+                var lastDotIndex = lcs.lastIndexOf(".");
+                if (lastDotIndex > 0) {
+                    var extension = lcs.slice(lastDotIndex, lcs.length);
+                    lcs = lcs.replace(extension, "");
+                    fwdName = fwdName.replace(extension, "");
+                    revName = revName.replace(extension, "");
+                }
+            }
+            return lcs || `${fwdName} & ${revName}`;
         },
     },
 };

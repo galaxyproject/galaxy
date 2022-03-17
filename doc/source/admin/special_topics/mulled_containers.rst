@@ -44,8 +44,8 @@ Automatic build of Linux containers
 We utilize mulled_ with involucro_ to automatically convert all packages in Bioconda_ into Linux containers images 
 (Docker and rkt at the moment) and make them available at the `BioContainers Quay.io account`_.
 
-We have developed small utilities around this technology stack, which is currently included in galaxy-lib_.
-Here is a short introduction:
+We have developed small utilities around this technology stack, which is currently included in the ``galaxy-tool-util``
+package, which can be installed simply using ``pip install galaxy-tool-util``. Here is a short introduction:
 
 Search for containers
 ^^^^^^^^^^^^^^^^^^^^^
@@ -59,6 +59,19 @@ This will search for Docker containers (in the biocontainers organisation on qua
 The user can specify the location(s) for a search using the ``--destination`` option. The search term is specified using ``--search``. Multiple search terms can be specified simultaneously; in this case, the search will also encompass multi-package containers. For example, ``--search samtools bamtools``, will return ``mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0``, in addition to all individual samtools and bamtools results.
 
 If the user wishes to specify a quay.io organization or Conda channel for the search, this may be done using the ``--organization`` and ``--channel`` options respectively, e.g. ``--channel conda-forge``. Enabling ``--json`` causes results to be returned in JSON format.
+
+
+Calculate a mulled hash
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Each mulled container is identified with a hash such as ``mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e``. You can calculate this hash using the ``mulled-hash`` command, submitting a comma-separated list of package names:
+
+.. code-block:: bash
+
+   $ mulled-hash samtools=1.3.1,bedtools=2.22
+   mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:d52e471b5bfa168ac813d54fc5dfe7f96ade56e6
+
+The user can specify whether to generate hashes for either version 1 or version 2 containers with ``--hash``; version 2 is the default.
 
 
 Build all packages from bioconda from the last 24h
@@ -123,7 +136,8 @@ you could do something along these lines.
 
 Build Singularity containers from Docker containers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Singularity containers can be built from Docker containers using the mulled-update-singularity-containers command.
+
+Singularity containers can be built from Docker containers using the ``mulled-update-singularity-containers`` command.
 
 To generate a single container:
 
@@ -166,4 +180,3 @@ Containers, once generated, should be tested. This can be achieved by affixing `
 .. _involucro: https://github.com/involucro/involucro
 .. _Bioconda: https://bioconda.github.io/
 .. _BioContainers Quay.io account: https://quay.io/organization/biocontainers
-.. _galaxy-lib: https://github.com/galaxyproject/galaxy-lib

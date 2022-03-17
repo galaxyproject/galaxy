@@ -28,7 +28,7 @@ def __main__():
         sys.exit()
     try:
         count = 0
-        for count, maf in enumerate(bx.align.maf.Reader(open(input_file))):
+        for count, maf in enumerate(bx.align.maf.Reader(open(input_file))):  # noqa: B007
             maf = maf.reverse_complement()
             if species:
                 maf = maf.limit_to_species(species)

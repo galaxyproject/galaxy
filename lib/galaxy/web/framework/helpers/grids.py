@@ -76,10 +76,13 @@ class GridColumn:
         """Sort query using this column."""
         if column_name is None:
             column_name = self.key
+        column = getattr(self.model_class, column_name)
+        if column is None:
+            column = self.model_class.table.c.get(column_name)
         if ascending:
-            query = query.order_by(self.model_class.table.c.get(column_name).asc())
+            query = query.order_by(column.asc())
         else:
-            query = query.order_by(self.model_class.table.c.get(column_name).desc())
+            query = query.order_by(column.desc())
         return query
 
 
@@ -123,7 +126,7 @@ class TextColumn(GridColumn):
         else:
             a_key = self.key
         model_class_key_field = getattr(self.model_class, a_key)
-        return func.lower(model_class_key_field).like("%" + a_filter.lower() + "%")
+        return func.lower(model_class_key_field).like(f"%{a_filter.lower()}%")
 
     def sort(self, trans, query, ascending, column_name=None):
         """Sort column using case-insensitive alphabetical sorting."""
@@ -203,7 +206,7 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
 
     def sort(self, trans, query, ascending, column_name=None):
         # Get the columns that connect item's table and item's rating association table.
-        item_rating_assoc_class = getattr(trans.model, '%sRatingAssociation' % self.model_class.__name__)
+        item_rating_assoc_class = getattr(trans.model, f'{self.model_class.__name__}RatingAssociation')
         foreign_key = get_foreign_key(item_rating_assoc_class, self.model_class)
         fk_col = foreign_key.parent
         referent_col = foreign_key.get_referent(self.model_class.table)
@@ -245,7 +248,7 @@ class OwnerAnnotationColumn(TextColumn, UsesAnnotations):
     def get_single_filter(self, user, a_filter):
         """ Filter by annotation and annotation owner. """
         return self.model_class.annotations.any(
-            and_(func.lower(self.model_annotation_association_class.annotation).like("%" + a_filter.lower() + "%"),
+            and_(func.lower(self.model_annotation_association_class.annotation).like(f"%{a_filter.lower()}%"),
                # TODO: not sure why, to filter by owner's annotations, we have to do this rather than
                # 'self.model_class.user==self.model_annotation_association_class.user'
                self.model_annotation_association_class.table.c.user_id == self.model_class.table.c.user_id))
@@ -282,10 +285,10 @@ class CommunityTagsColumn(TextColumn):
         for name, value in raw_tags:
             if name:
                 # Filter by all tags.
-                clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%")))
+                clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_tname).like(f"%{name.lower()}%")))
                 if value:
                     # Filter by all values.
-                    clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%")))
+                    clause_list.append(self.model_class.tags.any(func.lower(self.model_tag_association_class.user_value).like(f"%{value.lower()}%")))
         return and_(*clause_list)
 
 
@@ -311,10 +314,10 @@ class IndividualTagsColumn(CommunityTagsColumn):
         for name, value in raw_tags:
             if name:
                 # Filter by individual's tag names.
-                clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_tname).like("%" + name.lower() + "%"), self.model_tag_association_class.user == user)))
+                clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_tname).like(f"%{name.lower()}%"), self.model_tag_association_class.user == user)))
                 if value:
                     # Filter by individual's tag values.
-                    clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_value).like("%" + value.lower() + "%"), self.model_tag_association_class.user == user)))
+                    clause_list.append(self.model_class.tags.any(and_(func.lower(self.model_tag_association_class.user_value).like(f"%{value.lower()}%"), self.model_tag_association_class.user == user)))
         return and_(*clause_list)
 
 
@@ -564,7 +567,7 @@ class GridColumnFilter:
     def get_url_args(self):
         rval = {}
         for k, v in self.args.items():
-            rval["f-" + k] = v
+            rval[f"f-{k}"] = v
         return rval
 
 
@@ -639,12 +642,12 @@ class Grid:
                 if use_default_filter:
                     if self.default_filter:
                         column_filter = self.default_filter.get(column.key)
-                elif "f-" + column.model_class.__name__ + ".%s" % column.key in kwargs:
+                elif f"f-{column.model_class.__name__}.{column.key}" in kwargs:
                     # Queries that include table joins cannot guarantee unique column names.  This problem is
                     # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get("f-" + column.model_class.__name__ + ".%s" % column.key)
-                elif "f-" + column.key in kwargs:
-                    column_filter = kwargs.get("f-" + column.key)
+                    column_filter = kwargs.get(f"f-{column.model_class.__name__}.{column.key}")
+                elif f"f-{column.key}" in kwargs:
+                    column_filter = kwargs.get(f"f-{column.key}")
                 elif column.key in base_filter:
                     column_filter = base_filter.get(column.key)
 
@@ -697,10 +700,10 @@ class Grid:
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance(column_filter, list):
                         # Filter is a list; process each item.
-                        extra_url_args["f-" + column.key] = dumps(column_filter)
+                        extra_url_args[f"f-{column.key}"] = dumps(column_filter)
                     else:
                         # Process singleton filter.
-                        extra_url_args["f-" + column.key] = column_filter
+                        extra_url_args[f"f-{column.key}"] = column_filter
         # Process sort arguments.
         sort_key = None
         if 'sort' in kwargs:
@@ -800,32 +803,32 @@ class Grid:
         # results via a controller method, which is require substantial changes. Hence, for now, return grid
         # as str.
         grid_config = {
-            'title'                         : self.title,
-            'title_id'                      : getattr(self, "title_id", None),
-            'url_base'                      : trans.request.path_url,
-            'async_ops'                     : [],
-            'categorical_filters'           : {},
-            'filters'                       : cur_filter_dict,
-            'sort_key'                      : sort_key,
-            'show_item_checkboxes'          : self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
-            'cur_page_num'                  : page_num,
-            'num_page_links'                : self.num_page_links,
-            'status'                        : status,
-            'message'                       : restore_text(message),
-            'global_actions'                : [],
-            'operations'                    : [],
-            'items'                         : [],
-            'columns'                       : [],
-            'model_class'                   : str(self.model_class),
-            'use_paging'                    : self.use_paging,
-            'legend'                        : self.legend,
-            'current_item_id'               : False,
-            'use_hide_message'              : self.use_hide_message,
-            'default_filter_dict'           : self.default_filter,
-            'advanced_search'               : self.advanced_search,
-            'info_text'                     : self.info_text,
-            'url'                           : url(dict()),
-            'refresh_frames'                : kwargs.get('refresh_frames', [])
+            'title': self.title,
+            'title_id': getattr(self, "title_id", None),
+            'url_base': trans.request.path_url,
+            'async_ops': [],
+            'categorical_filters': {},
+            'filters': cur_filter_dict,
+            'sort_key': sort_key,
+            'show_item_checkboxes': self.show_item_checkboxes or kwargs.get('show_item_checkboxes', '') in ['True', 'true'],
+            'cur_page_num': page_num,
+            'num_page_links': self.num_page_links,
+            'status': status,
+            'message': restore_text(message),
+            'global_actions': [],
+            'operations': [],
+            'items': [],
+            'columns': [],
+            'model_class': str(self.model_class),
+            'use_paging': self.use_paging,
+            'legend': self.legend,
+            'current_item_id': False,
+            'use_hide_message': self.use_hide_message,
+            'default_filter_dict': self.default_filter,
+            'advanced_search': self.advanced_search,
+            'info_text': self.info_text,
+            'url': url(dict()),
+            'refresh_frames': kwargs.get('refresh_frames', [])
         }
         if current_item:
             grid_config['current_item_id'] = current_item.id

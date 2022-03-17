@@ -27,20 +27,20 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+import { BCard, BTabs, BTab } from "bootstrap-vue";
 import ToLink from "./ToLink.vue";
 import ToRemoteFile from "./ToRemoteFile.vue";
 import { Services } from "components/FilesDialog/services";
 import LoadingSpan from "components/LoadingSpan";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
         LoadingSpan,
         ToLink,
         ToRemoteFile,
+        BCard,
+        BTabs,
+        BTab,
     },
     props: {
         historyId: {
@@ -61,7 +61,6 @@ export default {
         async initialize() {
             const fileSources = await new Services().getFileSources();
             this.hasWritableFileSources = fileSources.some((fs) => fs.writable);
-            console.log(fileSources);
             this.initializing = false;
         },
     },

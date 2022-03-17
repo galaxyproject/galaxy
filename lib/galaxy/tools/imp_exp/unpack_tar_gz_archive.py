@@ -21,7 +21,7 @@ MAX_SIZE = 100 * math.pow(2, 30)
 
 
 def get_file_sources(file_sources_path):
-    assert os.path.exists(file_sources_path), "file sources path [%s] does not exist" % file_sources_path
+    assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
     from galaxy.files import ConfiguredFileSources
     with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
@@ -41,7 +41,7 @@ def check_archive(archive_file, dest_dir):
                     dest_dir,
                     arc_path
                 )).startswith(dest_dir.rstrip(os.sep) + os.sep), \
-                "Archive member would extract outside target directory: %s" % arc_path
+                f"Archive member would extract outside target directory: {arc_path}"
     return True
 
 

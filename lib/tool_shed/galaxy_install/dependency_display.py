@@ -70,7 +70,7 @@ class DependencyDisplayer:
                             only_if_compiling_contained_td, error = \
                             common_util.parse_repository_dependency_tuple(repository_dependency_tup, contains_error=True)
                         if error:
-                            message += '%s  ' % str(error)
+                            message += f'{str(error)}  '
             else:
                 # The complete dependency hierarchy could not be determined for a repository being installed into
                 # Galaxy.  This is likely due to invalid repository dependency definitions, so we'll get them from
@@ -113,7 +113,7 @@ class DependencyDisplayer:
                 for requirement_dict in invalid_tool_dependencies.values():
                     error = requirement_dict.get('error', None)
                     if error:
-                        message = '%s  ' % str(error)
+                        message = f'{str(error)}  '
         return message
 
     def generate_message_for_orphan_tool_dependencies(self, repository, metadata_dict):
@@ -322,7 +322,7 @@ class DependencyDisplayer:
                     tool_dependencies_root_folder.folders.append(tool_dependencies_folder)
                     new_containers_dict['tool_dependencies'] = tool_dependencies_root_folder
             except Exception as e:
-                log.debug("Exception in merge_containers_dicts_for_new_install: %s" % str(e))
+                log.debug(f"Exception in merge_containers_dicts_for_new_install: {str(e)}")
             finally:
                 lock.release()
         return new_containers_dict
@@ -441,7 +441,7 @@ class DependencyDisplayer:
         when displaying repository dependencies for installed repositories and when displaying
         them for uninstalled repositories that are being reinstalled.
         """
-        metadata = repository.metadata
+        metadata = repository.metadata_
         if metadata:
             # Handle proprietary datatypes.
             datatypes = metadata.get('datatypes', None)
@@ -464,7 +464,7 @@ class DependencyDisplayer:
                     readme_files_dict = readme_util.build_readme_files_dict(self.app,
                                                                             repository,
                                                                             repository.changeset_revision,
-                                                                            repository.metadata, tool_path)
+                                                                            repository.metadata_, tool_path)
             else:
                 readme_files_dict = None
             # Handle repository dependencies.

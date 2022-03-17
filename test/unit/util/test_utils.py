@@ -1,9 +1,12 @@
 import errno
 import tempfile
+from io import StringIO
+from typing import Dict
 
 import pytest
 
 from galaxy import util
+from galaxy.util.json import safe_loads
 
 SECTION_XML = """<?xml version="1.0" ?>
 <section id="fasta_fastq_manipulation" name="Fasta Fastq Manipulation" version="">
@@ -78,3 +81,18 @@ def test_clean_multiline_string():
         c
 """)
     assert x == "a\nb\nc\n"
+
+
+def test_iter_start_of_lines():
+    assert list(util.iter_start_of_line(StringIO("\n1\n\n12\n123\n1234\n"), 1)) == ["\n", "1", "\n", "1", "1", "1"]
+
+
+def test_safe_loads():
+    d: Dict[str, str] = {}
+    rval = safe_loads(d)
+    assert rval == d
+    assert rval is not d
+    rval['foo'] = 'bar'
+    assert 'foo' not in d
+    s = '{"foo": "bar"}'
+    assert safe_loads(s) == {"foo": "bar"}

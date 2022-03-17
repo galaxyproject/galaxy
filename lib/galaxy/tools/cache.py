@@ -7,15 +7,17 @@ import tempfile
 import zlib
 from collections import defaultdict
 from threading import Lock
+from typing import Dict, List, Tuple
 
-from sqlalchemy.orm import (
-    defer,
-    joinedload,
-)
+from sqlalchemy.orm import defer
 from sqlitedict import SqliteDict
 
+from galaxy.model.scoped_session import install_model_scoped_session
+from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
+
 
 log = logging.getLogger(__name__)
 
@@ -189,7 +191,7 @@ class ToolCache:
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
         if removed_tool_ids:
-            log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
+            log.debug(f"Removed the following tools from cache: {removed_tool_ids}")
         return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
@@ -277,35 +279,32 @@ class ToolShedRepositoryCache:
     """
     Cache installed ToolShedRepository objects.
     """
+    local_repositories: List[ToolConfRepository]
+    repositories: List[ToolShedRepository]
+    repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
 
-    def __init__(self, app):
-        self.app = app
+    def __init__(self, session: install_model_scoped_session):
+        self.session = session()
         # Contains ToolConfRepository objects created from shed_tool_conf.xml entries
         self.local_repositories = []
         # Repositories loaded from database
         self.repositories = []
         self.repos_by_tuple = defaultdict(list)
-        self.rebuild()
+        self._build()
+        self.session.close()
 
     def add_local_repository(self, repository):
         self.local_repositories.append(repository)
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
-    def rebuild(self):
-        try:
-            session = self.app.install_model.context.current.session_factory()
-            self.repositories = session.query(self.app.install_model.ToolShedRepository).options(
-                defer(self.app.install_model.ToolShedRepository.metadata),
-                joinedload('tool_dependencies').subqueryload('tool_shed_repository').options(
-                    defer(self.app.install_model.ToolShedRepository.metadata)
-                ),
-            ).all()
-            repos_by_tuple = defaultdict(list)
-            for repository in self.repositories + self.local_repositories:
-                repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
-            self.repos_by_tuple = repos_by_tuple
-        finally:
-            session.close()
+    def _build(self):
+        self.repositories = self.session.query(ToolShedRepository).options(
+            defer(ToolShedRepository.metadata_)
+        ).all()
+        repos_by_tuple = defaultdict(list)
+        for repository in self.repositories + self.local_repositories:
+            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+        self.repos_by_tuple = repos_by_tuple
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         if repository_id:

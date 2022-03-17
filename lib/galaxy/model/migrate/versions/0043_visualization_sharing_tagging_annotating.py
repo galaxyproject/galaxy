@@ -78,7 +78,7 @@ def upgrade(migrate_engine):
     add_column(deleted_column, Visualization_table, metadata, index_name="ix_visualization_deleted")
     try:
         # Fill column with default value.
-        cmd = "UPDATE visualization SET deleted = %s" % engine_false(migrate_engine)
+        cmd = f"UPDATE visualization SET deleted = {engine_false(migrate_engine)}"
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Updating column 'deleted' of table 'visualization' failed.")
@@ -87,7 +87,7 @@ def upgrade(migrate_engine):
     add_column(importable_column, Visualization_table, metadata, index_name='ix_visualization_importable')
     try:
         # Fill column with default value.
-        cmd = "UPDATE visualization SET importable = %s" % engine_false(migrate_engine)
+        cmd = f"UPDATE visualization SET importable = {engine_false(migrate_engine)}"
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Updating column 'importable' of table 'visualization' failed.")
@@ -102,7 +102,7 @@ def upgrade(migrate_engine):
     add_column(published_column, Visualization_table, metadata, index_name='ix_visualization_published')
     try:
         # Fill column with default value.
-        cmd = "UPDATE visualization SET published = %s" % engine_false(migrate_engine)
+        cmd = f"UPDATE visualization SET published = {engine_false(migrate_engine)}"
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Updating column 'published' of table 'visualization' failed.")

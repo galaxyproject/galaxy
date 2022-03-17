@@ -28,7 +28,7 @@ while have_none:
 available_files = {}
 try:
     filename = sys.argv[-1]
-    for i, line in enumerate(open(filename)):
+    for line in open(filename):
         if not line or line[0:1] == "#":
             continue
         fields = line.split('\t')

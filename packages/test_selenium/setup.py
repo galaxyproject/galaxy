@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy_test',
     'galaxy_test.selenium',
+    'galaxy_test.selenium.jupyter',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
@@ -87,10 +88,10 @@ setup(
         'Topic :: Software Development :: Testing',
         'Natural Language :: English',
         "Programming Language :: Python :: 3",
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
     ],
     test_suite=TEST_DIR,
     tests_require=test_requirements

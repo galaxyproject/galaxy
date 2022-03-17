@@ -222,24 +222,33 @@ This test file shows a fairly typical API test. It demonstrates the basic
 structure of a test, how to ``GET`` and ``POST`` against the API, and how to use
 both typical user and admin user-only functionality.
 
-### Populating Test Data with ``lib/galaxy_test/base/populators.py``
+### Common Code for Populating Fixture Data
 
-The ``test_roles.py`` example above also creates a ``DatasetPopulator``
+The [``galaxy_test.base.populators``](../lib/galaxy_test.base.html#module-galaxy_test.base.populators) module contains detailed docstrings
+describing the concept and implementation of "Populators" that can be used
+for this purposes.
+
+The ``test_roles.py`` example creates a ``DatasetPopulator``
 object that it uses to get some common information from the configured
-Galaxy server under test. Populators are used extensively throughout
-API tests as well as integration and Selenium tests to both populate
-data to test (histories, workflows, collections, libraries, etc..)
-as well as access information from the Galaxy server (e.g. fetch
-information from datasets, users, Galaxy's configuration, etc.).
+Galaxy server under test.
+
+Populators are used extensively throughout API tests as well as integration
+and Selenium tests to both populate data to test (histories, workflows,
+collections, libraries, etc..) as well as access information from the
+Galaxy server (e.g. fetch information from datasets, users, Galaxy's
+configuration, etc.).
 
 Populators and API tests in general make heavy use of the [requests
 library](https://requests.readthedocs.io/en/master/) for Python.
 
 ### API Test Assertions
 
-There is a module with common assertions ``galaxy_test.base.api_asserts``
-used to check API request status codes, dictionary content, and Galaxy
-specific error messages.
+The ``galaxy_test.base.api_asserts`` module contains common
+assertion functions used to check API request status codes, dictionary
+content, and Galaxy specific error messages.
+
+See [``galaxy_test.base.api_asserts`` documentation](../lib/galaxy_test.base.html#module-galaxy_test.base.api_asserts)
+for details on each function and information on verifying Galaxy API error codes.
 
 ### Continuous Integration
 
@@ -339,6 +348,12 @@ GitHub actions workflow definition for these tests is located in
 
 These are full stack tests meant to test the Galaxy UI with real
 browsers and are located in ``lib/galaxy_test/selenium``.
+
+### Jupyter + Selenium
+
+Jupyter can leveraged to develop Selenium test cases interactively,
+checkout out the [``galaxy_test.selenium.jupyter``](../lib/galaxy_test.selenium.jupyter)
+for more a full discussion of this.
 
 ### Continuous Integration
 

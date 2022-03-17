@@ -1,5 +1,7 @@
 import functools
+import logging
 import os
+from typing import Any, Dict, List
 
 try:
     import s3fs
@@ -11,6 +13,8 @@ from ..sources import BaseFilesSource
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
 
+log = logging.getLogger(__name__)
+
 
 class S3FsFilesSource(BaseFilesSource):
     plugin_type = 's3fs'
@@ -19,14 +23,15 @@ class S3FsFilesSource(BaseFilesSource):
         if s3fs is None:
             raise Exception("Package s3fs unavailable but required for this file source plugin.")
         props = self._parse_common_config_opts(kwd)
-        self._bucket = props.pop("bucket")
-        assert self._bucket
+        self._bucket = props.pop("bucket", '')
+        self._endpoint_url = props.pop('endpoint_url', None)
+        assert self._endpoint_url or self._bucket
         self._props = props
 
-    def list(self, path="/", recursive=True, user_context=None):
+    def _list(self, path="/", recursive=True, user_context=None):
         fs = self._open_fs(user_context=user_context)
         if recursive:
-            res = []
+            res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(path)
             for p, dirs, files in fs.walk(bucket_path, detail=True):
                 to_dict = functools.partial(self._resource_info_to_dict, p)
@@ -39,7 +44,7 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res))
 
-    def realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None):
         bucket_path = self._bucket_path(source_path)
         self._open_fs(user_context=user_context).download(bucket_path, native_path)
 
@@ -52,6 +57,8 @@ class S3FsFilesSource(BaseFilesSource):
         return f"{self._bucket}{path}"
 
     def _open_fs(self, user_context=None):
+        if self._endpoint_url:
+            self._props.update({'client_kwargs': {'endpoint_url': self._endpoint_url}})
         fs = s3fs.S3FileSystem(**self._props)
         return fs
 

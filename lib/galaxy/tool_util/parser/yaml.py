@@ -1,3 +1,5 @@
+import json
+
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
@@ -23,6 +25,8 @@ from .util import is_dict
 
 class YamlToolSource(ToolSource):
 
+    language = 'yaml'
+
     def __init__(self, root_dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
@@ -32,11 +36,14 @@ class YamlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
+    def parse_tool_type(self):
+        return self.root_dict.get("tool_type")
+
     def parse_id(self):
         return self.root_dict.get("id")
 
     def parse_version(self):
-        return self.root_dict.get("version")
+        return str(self.root_dict.get("version"))
 
     def parse_name(self):
         return self.root_dict.get("name")
@@ -53,9 +60,6 @@ class YamlToolSource(ToolSource):
     def parse_xrefs(self):
         xrefs = self.root_dict.get("xrefs", [])
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
-
-    def parse_is_multi_byte(self):
-        return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
 
     def parse_sanitize(self):
         return self.root_dict.get("sanitize", True)
@@ -113,7 +117,7 @@ class YamlToolSource(ToolSource):
             elif output_type == "collection":
                 output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
-                message = "Unknown output_type [%s] encountered." % output_type
+                message = f"Unknown output_type [{output_type}] encountered."
                 raise Exception(message)
         outputs = {}
         for output in output_defs:
@@ -190,6 +194,10 @@ class YamlToolSource(ToolSource):
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
 
+    def to_string(self):
+        # TODO: Unit test for dumping/restoring
+        return json.dumps(self.root_dict)
+
 
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
@@ -249,6 +257,7 @@ def _parse_test(i, test_dict):
     test_dict["stderr"] = __to_test_assert_list(test_dict.get("stderr", []))
     test_dict["expect_exit_code"] = test_dict.get("expect_exit_code", None)
     test_dict["expect_failure"] = test_dict.get("expect_failure", False)
+    test_dict["expect_test_failure"] = test_dict.get("expect_test_failure", False)
     return test_dict
 
 
@@ -286,7 +295,7 @@ class YamlPageSource(PageSource):
         self.inputs_list = inputs_list
 
     def parse_input_sources(self):
-        return map(YamlInputSource, self.inputs_list)
+        return list(map(YamlInputSource, self.inputs_list))
 
 
 class YamlInputSource(InputSource):

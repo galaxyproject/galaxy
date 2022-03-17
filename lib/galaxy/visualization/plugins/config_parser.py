@@ -1,5 +1,5 @@
 import logging
-
+from typing import Any, Dict, List
 
 import galaxy.model
 from galaxy.util import asbool
@@ -108,7 +108,7 @@ class VisualizationsConfigParser:
         # param modifiers provide extra information for other params (e.g. hda_ldda='hda' -> dataset_id is an hda id)
         # store these modifiers in a 2-level dictionary { target_param: { param_modifier_key: { param_mod_data }
         # ugh - wish we didn't need these
-        param_modifiers = {}
+        param_modifiers: Dict[str, Any] = {}
         param_modifier_elements = param_confs.findall('param_modifier') if param_confs is not None else []
         for param_modifier_conf in param_modifier_elements:
             param_modifier = self.param_modifier_parser.parse(param_modifier_conf)
@@ -137,8 +137,8 @@ class VisualizationsConfigParser:
         # render_target: where in the browser to open the rendered visualization
         # defaults to: galaxy_main
         render_target = xml_tree.find('render_target')
-        if((render_target is not None and render_target.text) and
-                (render_target.text in self.VALID_RENDER_TARGETS)):
+        if((render_target is not None and render_target.text)
+                and (render_target.text in self.VALID_RENDER_TARGETS)):
             returned['render_target'] = render_target.text
         else:
             returned['render_target'] = 'galaxy_main'
@@ -172,9 +172,9 @@ class VisualizationsConfigParser:
         if template is not None and template.text:
             log.info('template syntax is deprecated: use entry_point instead')
             return {
-                'type' : 'mako',
-                'file' : template.text,
-                'attr' : {}
+                'type': 'mako',
+                'file': template.text,
+                'attr': {}
             }
 
         # need one of the two: (the deprecated) template or entry_point
@@ -186,11 +186,11 @@ class VisualizationsConfigParser:
         entry_point_attrib = dict(entry_point.attrib)
         entry_point_type = entry_point_attrib.pop('entry_point_type', 'mako')
         if entry_point_type not in self.ALLOWED_ENTRY_POINT_TYPES:
-            raise ParsingException('Unknown entry_point type: ' + entry_point_type)
+            raise ParsingException(f"Unknown entry_point type: {entry_point_type}")
         return {
-            'type' : entry_point_type,
-            'file' : entry_point.text,
-            'attr' : entry_point_attrib
+            'type': entry_point_type,
+            'file': entry_point.text,
+            'attr': entry_point_attrib
         }
 
 
@@ -255,7 +255,7 @@ class DataSourceParser:
 
         if xml_tree.text not in self.ALLOWED_MODEL_CLASSES:
             # log.debug( 'available data_source model_classes: %s' %( str( self.ALLOWED_MODEL_CLASSES ) ) )
-            raise ParsingException('Invalid data_source model_class: %s' % (xml_tree.text))
+            raise ParsingException(f'Invalid data_source model_class: {xml_tree.text}')
 
         # look up the model from the model module returning an empty data_source if not found
         model_class = getattr(galaxy.model, xml_tree.text, None)
@@ -287,7 +287,7 @@ class DataSourceParser:
         # tests should NOT include expensive operations: reading file data, running jobs, etc.
         # do as much here as possible to reduce the overhead of seeing if a visualization is applicable
         # currently tests are or'd only (could be and'd or made into compound boolean tests)
-        tests = []
+        tests: List[Dict[str, Any]] = []
         if not xml_tree_list:
             return tests
 
@@ -295,8 +295,8 @@ class DataSourceParser:
             test_type = test_elem.get('type', 'eq')
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
-                log.warning('Skipping test. Needs both type attribute and text node to be parsed: ' +
-                          f'{test_type}, {test_elem.text}')
+                log.warning('Skipping test. Needs both type attribute and text node to be parsed: '
+                          + f'{test_type}, {test_elem.text}')
                 continue
             test_result = test_result.strip()
 
@@ -322,8 +322,8 @@ class DataSourceParser:
             elif test_type == 'has_dataprovider':
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
                 def test_fn(o, result):
-                    return (hasattr(getter(o), 'has_dataprovider') and
-                            getter(o).has_dataprovider(result))
+                    return (hasattr(getter(o), 'has_dataprovider')
+                            and getter(o).has_dataprovider(result))
 
             elif test_type == 'has_attribute':
                 # does the object itself have attr in 'result' (no equivalence checking)
@@ -340,10 +340,10 @@ class DataSourceParser:
                     return str(getter(o)) == result
 
             tests.append({
-                'type'          : test_type,
-                'result'        : test_result,
-                'result_type'   : test_result_type,
-                'fn'            : test_fn
+                'type': test_type,
+                'result': test_result,
+                'result_type': test_result_type,
+                'fn': test_fn
             })
 
         return tests
@@ -354,7 +354,7 @@ class DataSourceParser:
         the registry to convert the data_source into one or more appropriate
         params for the visualization.
         """
-        to_param_dict = {}
+        to_param_dict: Dict[str, Any] = {}
         if not xml_tree_list:
             return to_param_dict
 
@@ -419,13 +419,15 @@ class DictParser(dict):
             self.update(dict(parent_element.items()))
         for element in parent_element:
             if len(element) > 0:
+                asJson: Any
                 if element.tag == element[0].tag:
-                    aDict = ListParser(element)
+                    asJson = ListParser(element)
                 else:
                     aDict = DictParser(element)
-                if element.items():
-                    aDict.update(dict(element.items()))
-                self.update({element.tag: aDict})
+                    if element.items():
+                        aDict.update(dict(element.items()))
+                    asJson = aDict
+                self.update({element.tag: asJson})
             elif element.items():
                 self.update({element.tag: dict(element.items())})
             else:

@@ -1,3 +1,7 @@
 galaxy-util>=20.1.0.dev0
 galaxy-containers
 lxml
+pydantic
+pyyaml
+sortedcontainers
+typing-extensions

@@ -8,11 +8,17 @@ import json
 import os
 import tarfile
 import tempfile
+import urllib.parse
 from collections import namedtuple
+from typing import Any, List, Optional
 
 import yaml
+from typing_extensions import TypedDict
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    str_removeprefix,
+    unicodify,
+)
 
 STORE_SECONDARY_FILES_WITH_BASENAME = True
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"
@@ -25,15 +31,38 @@ def set_basename_and_derived_properties(properties, basename):
     return properties
 
 
-def output_properties(path=None, content=None, basename=None, pseduo_location=False):
+OutputPropertiesType = TypedDict(
+    "OutputPropertiesType",
+    {
+        "class": str,
+        "location": Optional[str],
+        "path": Optional[str],
+        "listing": Optional[List[Any]],
+        "basename": Optional[str],
+        "nameroot": Optional[str],
+        "nameext": Optional[str],
+        "secondaryFiles": List[Any],
+        "checksum": str,
+        "size": int,
+    },
+    total=False,
+)
+
+
+def output_properties(
+    path: Optional[str] = None,
+    content: Optional[bytes] = None,
+    basename=None,
+    pseduo_location=False,
+) -> OutputPropertiesType:
     checksum = hashlib.sha1()
-    properties = {
-        "class": "File",
-    }
+    properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
     if path is not None:
         properties["path"] = path
         f = open(path, "rb")
     else:
+        if content is None:
+            raise Exception("If no 'path', must provide 'content'.")
         f = io.BytesIO(content)
 
     try:
@@ -45,7 +74,7 @@ def output_properties(path=None, content=None, basename=None, pseduo_location=Fa
             contents = f.read(1024 * 1024)
     finally:
         f.close()
-    properties["checksum"] = "sha1$%s" % checksum.hexdigest()
+    properties["checksum"] = f"sha1${checksum.hexdigest()}"
     properties["size"] = filesize
     set_basename_and_derived_properties(properties, basename)
     _handle_pseudo_location(properties, pseduo_location)
@@ -61,9 +90,9 @@ def abs_path_or_uri(path_or_uri, relative_to):
     """Return an absolute path if this isn't a URI, otherwise keep the URI the same.
     """
     is_uri = "://" in path_or_uri
-    if not is_uri and not os.path.isabs(path_or_uri):
-        path_or_uri = os.path.join(relative_to, path_or_uri)
     if not is_uri:
+        if not os.path.isabs(path_or_uri):
+            path_or_uri = os.path.abspath(os.path.join(relative_to, path_or_uri))
         _ensure_file_exists(path_or_uri)
     return path_or_uri
 
@@ -78,7 +107,7 @@ def abs_path(path_or_uri, relative_to):
 
 def path_or_uri_to_uri(path_or_uri):
     if "://" not in path_or_uri:
-        return "file://%s" % path_or_uri
+        return f"file://{path_or_uri}"
     else:
         return path_or_uri
 
@@ -206,13 +235,13 @@ def galactic_job_json(
         if secondary_files:
             tmp = tempfile.NamedTemporaryFile(delete=False)
             tf = tarfile.open(fileobj=tmp, mode='w:')
-            order = []
+            order: List[str] = []
             index_contents = {
                 "order": order
             }
             for secondary_file in secondary_files:
                 secondary_file_path = secondary_file.get("location", None) or secondary_file.get("path", None)
-                assert secondary_file_path, "Invalid secondaryFile entry found [%s]" % secondary_file
+                assert secondary_file_path, f"Invalid secondaryFile entry found [{secondary_file}]"
                 full_secondary_file_path = os.path.join(test_data_directory, secondary_file_path)
                 basename = secondary_file.get("basename") or os.path.basename(secondary_file_path)
                 order.append(unicodify(basename))
@@ -371,7 +400,7 @@ class DirectoryUploadTarget:
         self.tar_path = tar_path
 
     def __str__(self):
-        return "DirectoryUploadTarget[tar_path=%s]" % self.tar_path
+        return f"DirectoryUploadTarget[tar_path={self.tar_path}]"
 
 
 GalaxyOutput = namedtuple("GalaxyOutput", ["history_id", "history_content_type", "history_content_id", "metadata"])
@@ -386,7 +415,7 @@ def tool_response_to_output(tool_response, history_id, output_id):
         if output_collection["output_name"] == output_id:
             return GalaxyOutput(history_id, "dataset_collection", output_collection["id"], None)
 
-    raise Exception("Failed to find output with label [%s]" % output_id)
+    raise Exception(f"Failed to find output with label [{output_id}]")
 
 
 def invocation_to_output(invocation, history_id, output_id):
@@ -438,13 +467,12 @@ def output_to_cwl_json(
             return json.loads(dataset_dict["content"])
         else:
             with open(dataset_dict["path"]) as f:
-                return json.safe_load(f)
+                return json.load(f)
 
     if galaxy_output.history_content_type == "raw_value":
         return galaxy_output.history_content_id
     elif output_metadata["history_content_type"] == "dataset":
         ext = output_metadata["file_ext"]
-        assert output_metadata["state"] == "ok"
         if ext == "expression.json":
             dataset_dict = get_dataset(output_metadata)
             return dataset_dict_to_json_content(dataset_dict)
@@ -494,7 +522,9 @@ def output_to_cwl_json(
                     for basename in index["order"]:
                         for extra_file in extra_files:
                             path = extra_file["path"]
-                            if path != os.path.join(SECONDARY_FILES_EXTRA_PREFIX, basename):
+                            if path != os.path.join(
+                                SECONDARY_FILES_EXTRA_PREFIX, basename or ""
+                            ):
                                 continue
 
                             extra_file_class = extra_file["class"]
@@ -523,7 +553,7 @@ def output_to_cwl_json(
                 if not basename:
                     basename = output_metadata.get("name")
 
-                listing = []
+                listing: List[OutputPropertiesType] = []
                 properties = {
                     "class": "Directory",
                     "basename": basename,
@@ -544,17 +574,18 @@ def output_to_cwl_json(
             return properties
 
     elif output_metadata["history_content_type"] == "dataset_collection":
-        rval = None
         collection_type = output_metadata["collection_type"].split(":", 1)[0]
         if collection_type in ["list", "paired"]:
-            rval = []
+            rval_l = []
             for element in output_metadata["elements"]:
-                rval.append(element_to_cwl_json(element))
+                rval_l.append(element_to_cwl_json(element))
+            return rval_l
         elif collection_type == "record":
-            rval = {}
+            rval_d = {}
             for element in output_metadata["elements"]:
-                rval[element["element_identifier"]] = element_to_cwl_json(element)
-        return rval
+                rval_d[element["element_identifier"]] = element_to_cwl_json(element)
+            return rval_d
+        return None
     else:
         raise NotImplementedError("Unknown history content type encountered")
 
@@ -567,15 +598,28 @@ def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, o
 
 
 def guess_artifact_type(path):
-    # TODO: Handle IDs within files.
     tool_or_workflow = "workflow"
-    try:
-        with open(path) as f:
-            artifact = yaml.safe_load(f)
+    path, object_id = urllib.parse.urldefrag(path)
+    with open(path) as f:
+        document = yaml.safe_load(f)
 
-        tool_or_workflow = "tool" if artifact["class"] != "Workflow" else "workflow"
+    if '$graph' in document:
+        # Packed document without a process object at the root
+        objects = document['$graph']
+        if not object_id:
+            object_id = 'main'  # default object id
 
-    except Exception as e:
-        print(e)
+        # Have to use str_removeprefix() instead of rstrip() because only the
+        # first '#' should be removed from the object id
+        matching_objects = [o for o in objects if str_removeprefix(o['id'], '#') == object_id]
+        if len(matching_objects) == 0:
+            raise Exception(f"No process object with id [{object_id}]")
+        if len(matching_objects) > 1:
+            raise Exception(f"Multiple process objects with id [{object_id}]")
+        object_ = matching_objects[0]
+    else:
+        object_ = document
+
+    tool_or_workflow = "tool" if object_["class"] != "Workflow" else "workflow"
 
     return tool_or_workflow

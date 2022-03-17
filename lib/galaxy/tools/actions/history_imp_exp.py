@@ -67,11 +67,6 @@ class ImportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-
-        # Queue the job for execution
-        trans.app.job_manager.enqueue(job, tool=tool)
-        trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-
         return job, {}
 
 
@@ -109,7 +104,6 @@ class ExportHistoryToolAction(ToolAction):
         if trans.user:
             # If this is an actual user, run the job as that individual.  Otherwise we're running as guest.
             job.user_id = trans.user.id
-        start_job_state = job.state  # should be job.states.NEW
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
 
@@ -135,10 +129,10 @@ class ExportHistoryToolAction(ToolAction):
         #
         # Setup job and job wrapper.
         #
-        job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job)
-        cmd_line = job_wrapper.setup_job(history, store_directory, include_hidden=incoming['include_hidden'],
-                                         include_deleted=incoming['include_deleted'],
-                                         compressed=compressed)
+        cmd_line = f"--galaxy-version '{job.galaxy_version}'"
+        if compressed:
+            cmd_line += " -G"
+        cmd_line = f"{cmd_line} {store_directory}"
 
         #
         # Add parameters to job_parameter table.
@@ -165,11 +159,14 @@ class ExportHistoryToolAction(ToolAction):
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
+        trans.sa_session.flush()
 
-        job.state = start_job_state  # job inputs have been configured, restore initial job state
-
-        # Queue the job for execution
-        trans.app.job_manager.enqueue(job, tool=tool)
-        trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+        job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job.id)
+        job_wrapper.setup_job(
+            history,
+            store_directory,
+            include_hidden=incoming['include_hidden'],
+            include_deleted=incoming['include_deleted'],
+            compressed=compressed)
 
         return job, {}

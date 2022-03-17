@@ -33,8 +33,6 @@ class ShellJobRunner(AsynchronousJobRunner):
         super().__init__(app, nworkers)
 
         self.cli_interface = CliInterface()
-        self._init_monitor_thread()
-        self._init_worker_threads()
 
     def get_cli_plugins(self, shell_params, job_params):
         return self.cli_interface.get_plugins(shell_params, job_params)
@@ -43,8 +41,8 @@ class ShellJobRunner(AsynchronousJobRunner):
         params = {}
         shell_params, job_params = url.split('/')[2:4]
         # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = {'shell_' + k: v for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]}
-        job_params = {'job_' + k: v for k, v in [kv.split('=', 1) for kv in job_params.split('&')]}
+        shell_params = {f"shell_{k}": v for k, v in [kv.split('=', 1) for kv in shell_params.split('&')]}
+        job_params = {f"job_{k}": v for k, v in [kv.split('=', 1) for kv in job_params.split('&')]}
         params.update(shell_params)
         params.update(job_params)
         log.debug(f"Converted URL '{url}' to destination runner=cli, params={params}")
@@ -81,9 +79,9 @@ class ShellJobRunner(AsynchronousJobRunner):
         )
 
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
-            log.exception("(%s) failure writing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure writing job script")
             job_wrapper.fail("failure preparing job script", exception=True)
             return
 
@@ -104,7 +102,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         # Strip and split to get job ID.
         external_job_id = stdout.strip().split()[-1]
         if not external_job_id:
-            log.error('(%s) submission did not return a job identifier, failing job' % galaxy_id_tag)
+            log.error(f'({galaxy_id_tag}) submission did not return a job identifier, failing job')
             job_wrapper.fail("failure submitting job")
             return
 
@@ -171,15 +169,16 @@ class ShellJobRunner(AsynchronousJobRunner):
             job_state = ajs.job_wrapper.get_state()
             if state != old_state:
                 log.debug(f"({id_tag}/{external_job_id}) state change: from {old_state} to {state}")
-                if not state == model.Job.states.OK:
-                    # No need to change_state when the state is OK, this will be handled by `self.finish_job`
-                    ajs.job_wrapper.change_state(state)
                 if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
-                    # Try to find out the reason for exiting
+                    # Try to find out the reason for exiting - this needs to happen before change_state
+                    # otherwise jobs depending on resubmission outputs see that job as failed and pause.
                     self.__handle_out_of_memory(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
                     # Don't add the job to the watched items once it fails, deals with https://github.com/galaxyproject/galaxy/issues/7820
                     continue
+                if not state == model.Job.states.OK:
+                    # No need to change_state when the state is OK, this will be handled by `self.finish_job`
+                    ajs.job_wrapper.change_state(state)
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state

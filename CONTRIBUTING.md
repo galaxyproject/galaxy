@@ -41,7 +41,10 @@ Git](https://swcarpentry.github.io/git-novice/) tutorial is a good place to
 start.  More learning resources are listed at
 https://help.github.com/en/github/getting-started-with-github/git-and-github-learning-resources
 
-1. Make sure you have a free [GitHub](https://github.com/) account.
+1. Make sure you have a free [GitHub](https://github.com/) account. To increase
+   the security of your account, we strongly recommend that you configure
+   [two-factor authentication](https://docs.github.com/en/github/authenticating-to-github/securing-your-account-with-two-factor-authentication-2fa).
+   Additionally, you may want to [sign your commits](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification).
 
 2. Fork the [galaxy repository](https://github.com/galaxyproject/galaxy) on
    GitHub to make your changes.  To keep your copy up to date with respect to

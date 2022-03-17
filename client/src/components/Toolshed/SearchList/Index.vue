@@ -5,8 +5,7 @@
             :toolshed-urls="toolshedUrls"
             :total="total"
             :loading="loading"
-            @onToolshed="setToolshed"
-        />
+            @onToolshed="setToolshed" />
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <Repositories
@@ -14,8 +13,7 @@
                 :scrolled="scrolled"
                 :toolshed-url="toolshedUrl"
                 @onError="setError"
-                v-if="!queryEmpty"
-            />
+                v-if="!queryEmpty" />
             <Categories
                 :toolshed-url="toolshedUrl"
                 :loading="loading"
@@ -23,8 +21,7 @@
                 @onTotal="setTotal"
                 @onError="setError"
                 @onLoading="setLoading"
-                v-show="queryEmpty"
-            />
+                v-show="queryEmpty" />
         </div>
     </div>
 </template>
@@ -34,7 +31,16 @@ import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
 import ServerSelection from "./ServerSelection.vue";
 export default {
-    props: ["query", "scrolled"],
+    props: {
+        query: {
+            type: String,
+            default: null,
+        },
+        scrolled: {
+            type: Boolean,
+            required: true,
+        },
+    },
     components: {
         Categories,
         Repositories,

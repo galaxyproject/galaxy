@@ -19,7 +19,7 @@ IndexTuple = namedtuple('IndexTuple', 'table column_names')
 
 
 def tuple_from_index(index):
-    columns = tuple([getattr(index.columns, c).name for c in dir(index.columns) if not c.startswith('__')])
+    columns = tuple(index.columns[key].name for key in index.columns.keys())
     if len(columns) == 1:
         columns = columns[0]
     return IndexTuple(index.table.name, columns)

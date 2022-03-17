@@ -25,7 +25,7 @@ def artifact_class(trans, as_dict):
         else:
             for item in graph:
                 found_id = item.get("id")
-                if found_id == object_id or found_id == "#" + object_id:
+                if found_id == object_id or found_id == f"#{object_id}":
                     target_object = item
 
         if target_object and target_object.get("class"):

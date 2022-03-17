@@ -24,7 +24,7 @@ class UsesItemRatings:
             webapp_model = galaxy.model
         item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise Exception("Item does not have ratings: %s" % item.__class__.__name__)
+            raise Exception(f"Item does not have ratings: {item.__class__.__name__}")
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
         ave_rating = db_session.query(func.avg(item_rating_assoc_class.rating)).filter(item_id_filter).scalar()
         # Convert ave_rating to float; note: if there are no item ratings, ave rating is None.
@@ -43,10 +43,7 @@ class UsesItemRatings:
         if not item_rating:
             # User has not yet rated item; create rating.
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
-            item_rating = item_rating_assoc_class()
-            item_rating.user = user
-            item_rating.set_item(item)
-            item_rating.rating = rating
+            item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
             db_session.flush()
         elif item_rating.rating != rating:
@@ -61,7 +58,7 @@ class UsesItemRatings:
             webapp_model = galaxy.model
         item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise Exception("Item does not have ratings: %s" % item.__class__.__name__)
+            raise Exception(f"Item does not have ratings: {item.__class__.__name__}")
 
         # Query rating table by user and item id.
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
@@ -71,7 +68,7 @@ class UsesItemRatings:
         """ Returns an item's item-rating association class. """
         if webapp_model is None:
             webapp_model = galaxy.model
-        item_rating_assoc_class = '%sRatingAssociation' % item.__class__.__name__
+        item_rating_assoc_class = f'{item.__class__.__name__}RatingAssociation'
         return getattr(webapp_model, item_rating_assoc_class, None)
 
     def _get_item_id_filter_str(self, item, item_rating_assoc_class):
@@ -170,7 +167,7 @@ def add_item_annotation(db_session, user, item, annotation):
 
 def _get_annotation_assoc_class(item):
     """ Returns an item's item-annotation association class. """
-    class_name = '%sAnnotationAssociation' % item.__class__.__name__
+    class_name = f'{item.__class__.__name__}AnnotationAssociation'
     return getattr(galaxy.model, class_name, None)
 
 

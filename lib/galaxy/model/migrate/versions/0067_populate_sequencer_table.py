@@ -30,12 +30,12 @@ metadata = MetaData()
 
 
 def get_latest_id(migrate_engine, table):
-    result = migrate_engine.execute("select id from %s order by id desc" % table)
+    result = migrate_engine.execute(f"select id from {table} order by id desc")
     row = result.fetchone()
     if row:
         return row[0]
     else:
-        raise Exception('Unable to get the latest id in the %s table.' % table)
+        raise Exception(f'Unable to get the latest id in the {table} table.')
 
 
 def create_sequencer_form_definition(migrate_engine):

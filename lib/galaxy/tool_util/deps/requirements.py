@@ -140,7 +140,7 @@ class ToolRequirements:
         return len(self.tool_requirements)
 
     def __hash__(self):
-        return sum([r.__hash__() for r in self.tool_requirements])
+        return sum(r.__hash__() for r in self.tool_requirements)
 
     def to_dict(self):
         return [r.to_dict() for r in self.tool_requirements]

@@ -67,9 +67,9 @@ def has_dataproviders(cls):
     #       where it's possible to override a super's provider with a sub's
     for attr_key, attr_value in cls.__dict__.items():
         # can't use isinstance( attr_value, MethodType ) bc of wrapping
-        if((callable(attr_value)) and
-                (not attr_key.startswith("__")) and
-                (getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None))):
+        if((callable(attr_value))
+                and (not attr_key.startswith("__"))
+                and (getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY, None))):
             name = getattr(attr_value, _DATAPROVIDER_METHOD_NAME_KEY)
             dataproviders[name] = attr_value
     return cls
@@ -125,12 +125,12 @@ def _parse_query_string_settings(query_kwargs, settings=None):
         return s.split(',')
 
     parsers = {
-        'int'   : int,
-        'float' : float,
-        'bool'  : bool,
-        'list:str'      : lambda s: list_from_query_string(s),
-        'list:escaped'  : lambda s: [unquote(e) for e in list_from_query_string(s)],
-        'list:int'      : lambda s: [int(i) for i in list_from_query_string(s)],
+        'int': int,
+        'float': float,
+        'bool': bool,
+        'list:str': lambda s: list_from_query_string(s),
+        'list:escaped': lambda s: [unquote(e) for e in list_from_query_string(s)],
+        'list:int': lambda s: [int(i) for i in list_from_query_string(s)],
     }
     settings = settings or {}
     # yay! yet another set of query string parsers! <-- sarcasm

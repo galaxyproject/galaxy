@@ -62,7 +62,7 @@ class FormDefinitionFactory:
         if fields_elem is not None:
             for field_elem in fields_elem.findall('field'):
                 field_type = field_elem.get('type')
-                assert field_type in self.field_type_factories, 'Invalid form field type ( %s ).' % field_type
+                assert field_type in self.field_type_factories, f'Invalid form field type ( {field_type} ).'
                 fields.append(self.field_type_factories[field_type].from_elem(field_elem, layout))
         # create and return new form
         return self.new(form_type, name, description=description, fields=fields, layout=layout, form_definition_current=form_definition_current)

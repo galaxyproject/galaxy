@@ -1,7 +1,12 @@
 <template>
     <b-input-group v-if="params">
         <DebouncedInput v-model.trim="filterText" v-slot="{ value, input }">
-            <b-form-input size="sm" :value="value" @input="input" :placeholder="'Search Filter' | localize" />
+            <b-form-input
+                size="sm"
+                :value="value"
+                @input="input"
+                :placeholder="'Search Filter' | localize"
+                data-description="filter text input" />
         </DebouncedInput>
 
         <b-input-group-append>
@@ -10,7 +15,7 @@
                 :pressed="showDeleted"
                 :variant="showDeleted ? 'info' : 'secondary'"
                 @click="showDeleted = !showDeleted"
-            >
+                data-description="show deleted filter toggle">
                 {{ "Deleted" | localize }}
             </b-button>
             <b-button
@@ -18,7 +23,7 @@
                 :pressed="showHidden"
                 :variant="showHidden ? 'info' : 'secondary'"
                 @click="showHidden = !showHidden"
-            >
+                data-description="show hidden filter toggle">
                 {{ "Hidden" | localize }}
             </b-button>
         </b-input-group-append>
@@ -26,7 +31,7 @@
 </template>
 
 <script>
-import { SearchParams } from "./model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import DebouncedInput from "components/DebouncedInput";
 
 export default {

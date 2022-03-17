@@ -11,20 +11,17 @@ from galaxy.config import (
     BaseAppConfiguration,
     CommonConfigurationMixin,
     get_database_engine_options,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
+from galaxy.config import expand_pretty_datetime_format
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
-from galaxy.version import VERSION, VERSION_MAJOR
-from galaxy.web.formatting import expand_pretty_datetime_format
+from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
 
-ts_webapp_path = os.path.abspath(os.path.dirname(__file__))
-templates_path = os.path.join(ts_webapp_path, 'templates')
-
-TOOLSHED_APP_NAME = 'tool_shed'
-TOOLSHED_CONFIG_SCHEMA_PATH = 'lib/tool_shed/webapp/config_schema.yml'
+TOOLSHED_APP_NAME = "tool_shed"
 
 
 class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
@@ -33,7 +30,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {'datatypes_config_file'}
 
     def _load_schema(self):
-        return AppSchema(TOOLSHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
+        return AppSchema(TOOL_SHED_CONFIG_SCHEMA_PATH, TOOLSHED_APP_NAME)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -48,7 +45,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         paths_to_check = [
             self.file_path,
             self.hgweb_config_dir,
-            self.template_path,
             self.tool_data_path,
             self.template_cache_path,
             os.path.join(self.tool_data_path, 'shared', 'jars'),
@@ -57,7 +53,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self._ensure_directory(path)
         # Check that required files exist.
         if not os.path.isfile(self.datatypes_config):
-            raise ConfigurationError('File not found: %s' % self.datatypes_config)
+            raise ConfigurationError(f'File not found: {self.datatypes_config}')
 
     def _process_config(self, kwargs):
         # Backwards compatibility for names used in too many places to fix
@@ -67,10 +63,11 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         os.umask(self.umask)  # can't get w/o set, so set it back
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
         self.version_major = VERSION_MAJOR
+        self.version_minor = VERSION_MINOR
         self.version = VERSION
         # Database related configuration
         if not self.database_connection:  # Provide default if not supplied by user
-            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % self._in_data_dir('community.sqlite')
+            self.database_connection = f"sqlite:///{self._in_data_dir('community.sqlite')}?isolation_level=IMMEDIATE"
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
         # Where dataset files are stored
@@ -94,7 +91,6 @@ class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.registration_warning_message = kwargs.get('registration_warning_message')
         self.email_domain_blocklist_content = None
         self.email_domain_allowlist_content = None
-        self.template_path = templates_path
         self.template_cache_path = self._in_root_dir(kwargs.get('template_cache_path', 'database/compiled_templates/community'))
         self.error_email_to = kwargs.get('error_email_to')
         self.pretty_datetime_format = expand_pretty_datetime_format(self.pretty_datetime_format)

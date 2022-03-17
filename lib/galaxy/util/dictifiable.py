@@ -50,9 +50,9 @@ class Dictifiable:
 
         # Fill item dict with visible keys.
         try:
-            visible_keys = self.__getattribute__('dict_' + view + '_visible_keys')
+            visible_keys = self.__getattribute__(f"dict_{view}_visible_keys")
         except AttributeError:
-            raise Exception('Unknown Dictifiable view: %s' % view)
+            raise Exception(f'Unknown Dictifiable view: {view}')
         for key in visible_keys:
             try:
                 item = self.__getattribute__(key)

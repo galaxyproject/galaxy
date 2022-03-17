@@ -123,17 +123,17 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     def callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix, context=None, error=None):
         value = input_values.get(input.name)
         args = {
-            'input'             : input,
-            'parent'            : input_values,
-            'value'             : value,
-            'prefixed_name'     : f'{name_prefix}{input.name}',
-            'prefixed_label'    : '{}{}'.format(label_prefix, input.label or input.name),
-            'prefix'            : parent_prefix,
-            'context'           : context,
-            'error'             : error
+            'input': input,
+            'parent': input_values,
+            'value': value,
+            'prefixed_name': f'{name_prefix}{input.name}',
+            'prefixed_label': f'{label_prefix}{input.label or input.name}',
+            'prefix': parent_prefix,
+            'context': context,
+            'error': error
         }
         if input.name not in input_values:
-            args['error'] = 'No value found for \'%s\'.' % args.get('prefixed_label')
+            args['error'] = f"No value found for '{args.get('prefixed_label')}'."
         new_value = callback(**args)
         if no_replacement_value is REPLACE_ON_TRUTHY:
             replace = bool(new_value)
@@ -162,7 +162,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 visit_input_values(input.inputs, d, callback, new_name_prefix, new_label_prefix, parent_prefix=new_name_prefix, **payload)
         elif isinstance(input, Conditional):
             values = input_values[input.name] = input_values.get(input.name, {})
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             case_error = None if get_current_case(input, values) >= 0 else 'The selected case is unavailable/invalid.'
             callback_helper(input.test_param, values, new_name_prefix, label_prefix, parent_prefix=name_prefix, context=context, error=case_error)
             values['__current_case__'] = get_current_case(input, values)
@@ -170,7 +170,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
                 visit_input_values(input.cases[values['__current_case__']].inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         elif isinstance(input, Section):
             values = input_values[input.name] = input_values.get(input.name, {})
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             visit_input_values(input.inputs, values, callback, new_name_prefix, label_prefix, parent_prefix=name_prefix, **payload)
         else:
             callback_helper(input, input_values, name_prefix, label_prefix, parent_prefix=parent_prefix, context=context)
@@ -212,7 +212,7 @@ def params_to_strings(params, param_values, app, nested=False, use_security=Fals
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app, use_security=use_security)
-        rval[key] = value if nested else str(dumps(value, sort_keys=True))
+        rval[key] = value if nested or value is None else str(dumps(value, sort_keys=True))
     return rval
 
 
@@ -226,10 +226,18 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = safe_loads(value)
-        if key in params:
+        param = params.get(key)
+        if not param or not (param.type == 'text' and value == 'null'):
+            # safe_loads attempts to handle some, but not all divergent handling
+            # between JSON types and python types. TODO: We should let the
+            # parameters handle all conversion, since they know what is an
+            # appropriate coercion between types. e.g 'false' should be a string
+            # in a text parameter, while it should be a boolean in a boolean parameter.
+            # This would resolve a lot of back and forth in the various to/from methods.
+            value = safe_loads(value)
+        if param:
             try:
-                value = params[key].value_from_basic(value, app, ignore_errors)
+                value = param.value_from_basic(value, app, ignore_errors)
             except ParameterValueError:
                 continue
         rval[key] = value
@@ -252,12 +260,12 @@ def params_to_incoming(incoming, inputs, input_values, app, name_prefix=""):
         elif isinstance(input, Conditional):
             values = input_values[input.name]
             current = values['__current_case__']
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             incoming[new_name_prefix + input.test_param.name] = values[input.test_param.name]
             params_to_incoming(incoming, input.cases[current].inputs, values, app, new_name_prefix)
         elif isinstance(input, Section):
             values = input_values[input.name]
-            new_name_prefix = name_prefix + input.name + '|'
+            new_name_prefix = f"{name_prefix + input.name}|"
             params_to_incoming(incoming, input.inputs, values, app, new_name_prefix)
         else:
             value = input_values.get(input.name)
@@ -400,7 +408,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
         state[input.name] = input.get_initial_value(request_context, context)
         key = prefix + input.name
         group_state = state[input.name]
-        group_prefix = '%s|' % (key)
+        group_prefix = f'{key}|'
         if input.type == 'repeat':
             rep_index = 0
             del group_state[:]
@@ -409,9 +417,9 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
                 if not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys()) and rep_index >= input.min:
                     break
                 if rep_index < input.max:
-                    new_state = {'__index__' : rep_index}
+                    new_state = {'__index__': rep_index}
                     group_state.append(new_state)
-                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=rep_prefix + '|', context=context, check=check, simple_errors=simple_errors)
+                    _populate_state_legacy(request_context, input.inputs, incoming, new_state, errors, prefix=f"{rep_prefix}|", context=context, check=check, simple_errors=simple_errors)
                 rep_index += 1
         elif input.type == 'conditional':
             if input.value_ref and not input.value_ref_in_group:
@@ -438,7 +446,7 @@ def _populate_state_legacy(request_context, inputs, incoming, state, errors, pre
             while len(group_state) > file_count:
                 del group_state[-1]
             while file_count > len(group_state):
-                new_state = {'__index__' : len(group_state)}
+                new_state = {'__index__': len(group_state)}
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
@@ -459,11 +467,11 @@ def _get_incoming_value(incoming, key, default):
     Fetch value from incoming dict directly or check special nginx upload
     created variants of this key.
     """
-    if '__' + key + '__is_composite' in incoming:
-        composite_keys = incoming['__' + key + '__keys'].split()
+    if f"__{key}__is_composite" in incoming:
+        composite_keys = incoming[f"__{key}__keys"].split()
         value = dict()
         for composite_key in composite_keys:
-            value[composite_key] = incoming[key + '_' + composite_key]
+            value[composite_key] = incoming[f"{key}_{composite_key}"]
         return value
     else:
         return incoming.get(key, default)

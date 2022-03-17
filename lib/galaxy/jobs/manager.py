@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -18,14 +19,15 @@ class JobManager:
     """
     Highest level interface to job management.
     """
-    def __init__(self, app):
+    job_handler: handler.JobHandlerI
+
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_lock = False
-        if self.app.is_job_handler:
-            log.debug("Initializing job handler")
-            self.job_handler = handler.JobHandler(app)
-        else:
-            self.job_handler = NoopHandler()
+        self.job_handler = NoopHandler()
+
+    def _check_jobs_at_startup(self):
+        if not self.app.is_job_handler:
             self.__check_jobs_at_startup()
 
     def __check_jobs_at_startup(self):
@@ -41,7 +43,10 @@ class JobManager:
                 self.enqueue(job, tool)
 
     def start(self):
-        self.job_handler.start()
+        if self.app.is_job_handler:
+            log.debug("Initializing job handler")
+            self.job_handler = handler.JobHandler(self.app)
+            self.job_handler.start()
 
     def _queue_callback(self, job, tool_id):
         self.job_handler.job_queue.put(job.id, tool_id)
@@ -70,7 +75,7 @@ class JobManager:
             tool_id = tool.id
             configured_handler = tool.get_configured_job_handler(job.params)
             if configured_handler is not None:
-                p = " (with job params: %s)" % str(job.params) if job.params else ""
+                p = f" (with job params: {str(job.params)})" if job.params else ""
                 log.debug("(%s) Configured job handler for tool '%s'%s is: %s", job.log_str(), tool_id, p, configured_handler)
         queue_callback = partial(self._queue_callback, job, tool_id)
         message_callback = partial(self._message_callback, job)
@@ -110,7 +115,7 @@ class NoopManager:
         pass
 
 
-class NoopHandler:
+class NoopHandler(handler.JobHandlerI):
     """
     Implements the JobHandler interface but does nothing
     """

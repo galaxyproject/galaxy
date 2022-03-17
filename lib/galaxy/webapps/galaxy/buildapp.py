@@ -6,8 +6,10 @@ import logging
 import sys
 import threading
 import traceback
+from urllib.parse import urljoin
 
 from paste import httpexceptions
+from tuswsgi import TusMiddleware
 
 import galaxy.app
 import galaxy.datatypes.registry
@@ -23,18 +25,29 @@ from galaxy.web.framework.middleware.batch import BatchMiddleware
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
+from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
 
 
 class GalaxyWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware = True
 
 
-def app_factory(global_conf, load_app_kwds=None, **kwargs):
+def app_factory(*args, **kwargs):
     """
     Return a wsgi application serving the root object
+    """
+    return app_pair(*args, **kwargs)[0]
+
+
+def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
+    """
+    Return a wsgi application serving the root object and the Galaxy application.
+
+    When creating an app for asgi, set wsgi_preflight to False to allow FastAPI
+    middleware to handle CORS options, etc..
     """
     load_app_kwds = load_app_kwds or {}
     kwargs = load_app_properties(
@@ -103,6 +116,15 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # TODO: Refactor above routes into external method to allow testing in
     # isolation as well.
     populate_api_routes(webapp, app)
+    if wsgi_preflight:
+        # API OPTIONS RESPONSE
+        webapp.mapper.connect(
+            'options',
+            '/api/{path_info:.*?}',
+            controller='authenticate',
+            action='options',
+            conditions={'method': ['OPTIONS']},
+        )
 
     # CLIENTSIDE ROUTES
     # The following are routes that are handled completely on the clientside.
@@ -124,6 +146,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
+    webapp.add_client_route('/admin/sanitize_allow', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
     webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
@@ -136,6 +159,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_client_route('/tours/{tour_id}')
     webapp.add_client_route('/user')
     webapp.add_client_route('/user/{form_id}')
+    webapp.add_client_route('/welcome/new')
     webapp.add_client_route('/visualizations')
     webapp.add_client_route('/visualizations/edit')
     webapp.add_client_route('/visualizations/sharing')
@@ -159,7 +183,11 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     webapp.add_client_route('/histories/show_structure')
     webapp.add_client_route('/datasets/list')
     webapp.add_client_route('/datasets/edit')
+    webapp.add_client_route('/collection/edit/{collection_id}')
     webapp.add_client_route('/datasets/error')
+    webapp.add_client_route('/jobs/{job_id}/view')
+    webapp.add_client_route('/datasets/{dataset_id}/details')
+    webapp.add_client_route('/datasets/{dataset_id}/show_params')
     webapp.add_client_route('/workflows/list')
     webapp.add_client_route('/workflows/list_published')
     webapp.add_client_route('/workflows/create')
@@ -172,7 +200,7 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # webapp.add_client_route('/workflows/invocations/view_bco')
     webapp.add_client_route('/custom_builds')
     webapp.add_client_route('/interactivetool_entry_points/list')
-    webapp.add_client_route('/library/folders/{folder_id}')
+    webapp.add_client_route('/libraries{path:.*?}')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -182,28 +210,16 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     if kwargs.get('middleware', True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get('static_enabled', True)):
-        webapp = wrap_if_allowed(webapp, app.application_stack, wrap_in_static,
+        webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map,
                                  args=(global_conf,),
-                                 kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs))
-    # Close any pooled database connections before forking
-    try:
-        galaxy.model.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled galaxy model database connections.")
-    try:
-        # This model may not actually be bound.
-        if galaxy.model.tool_shed_install.mapping.metadata.bind:
-            galaxy.model.tool_shed_install.mapping.metadata.bind.dispose()
-    except Exception:
-        log.exception("Unable to dispose of pooled toolshed install model database connections.")
-
+                                 kwargs=kwargs)
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
         if th.is_alive():
             log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
-    return webapp
+    return webapp, app
 
 
 def uwsgi_app():
@@ -228,6 +244,7 @@ def populate_api_routes(webapp, app):
     ]
 
     # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
+    # and HDCA details via histories/{history_id}/contents/dataset_collections/{hdca_id}
     webapp.mapper.resource("content_typed",
                            "{type:%s}s" % "|".join(valid_history_contents_types),
                            name_prefix="history_",
@@ -276,12 +293,17 @@ def populate_api_routes(webapp, app):
                           controller='datasets',
                           action='show_storage',
                           conditions=dict(method=["GET"]))
-    webapp.mapper.connect("history_contents_metadata_file",
+    webapp.mapper.connect('dataset_inheritance_chain',
+                          '/api/datasets/{dataset_id}/inheritance_chain',
+                          controller='datasets',
+                          action='show_inheritance_chain',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect("get_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
                           action="get_metadata_file",
                           conditions=dict(method=["GET"]))
-    webapp.mapper.connect("/api/histories/{history_id}/contents/near/{hid}/{limit}",
+    webapp.mapper.connect("/api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}",
                           action="contents_near",
                           controller='history_contents',
                           conditions=dict(method=["GET"]))
@@ -353,6 +375,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('form', 'forms', path_prefix='/api')
     webapp.mapper.resource('role', 'roles', path_prefix='/api')
     webapp.mapper.resource('upload', 'uploads', path_prefix='/api')
+    webapp.mapper.connect('/api/upload/resumable_upload/{session_id}', controller="uploads", action="hooks", conditions=dict(method=['PATCH']))
+    webapp.mapper.connect('/api/upload/resumable_upload', controller="uploads", action="hooks")
+    webapp.mapper.connect('/api/upload/hooks', controller="uploads", action="hooks", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/ftp_files', controller='remote_files')
     webapp.mapper.connect('/api/remote_files', action='index', controller='remote_files', conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/remote_files/plugins', action='plugins', controller='remote_files', conditions=dict(method=["GET"]))
@@ -398,8 +423,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
+    webapp.mapper.connect('/api/tools/{tool_id:.+?}/convert', action='conversion', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/raw_tool_source', action='raw_tool_source', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}/dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
@@ -408,6 +435,10 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
+
+    webapp.mapper.connect('/api/sanitize_allow', action='index', controller='sanitize_allow', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='create', controller='sanitize_allow', conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/sanitize_allow', action='delete', controller='sanitize_allow', conditions=dict(method=["DELETE"]))
 
     webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
@@ -444,18 +475,30 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
-    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/visualizations/{id}/enable_link_access', action='enable_link_access', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/disable_link_access', action='disable_link_access', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/publish', action='publish', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/unpublish', action='unpublish', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/share_with_users', action='share_with_users', controller="visualizations", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/visualizations/{id}/slug', action='set_slug', controller="visualizations", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/workflows/menu', action='set_workflow_menu', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.connect('/api/workflows/{id}/refactor', action='refactor', controller="workflows", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
-    webapp.mapper.connect('/api/licenses', controller='licenses', action='index')
-    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get')
+    webapp.mapper.connect('/api/licenses', controller='licenses', action='index', conditions=dict(method="GET"))
+    webapp.mapper.connect('/api/licenses/{id}', controller='licenses', action='get', conditions=dict(method="GET"))
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
-    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/histories/{id}/enable_link_access', action='enable_link_access', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/disable_link_access', action='disable_link_access', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/publish', action='publish', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/unpublish', action='unpublish', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/share_with_users', action='share_with_users', controller="histories", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/histories/{id}/slug', action='set_slug', controller="histories", conditions=dict(method=["PUT"]))
     webapp.mapper.connect(
         'dynamic_tool_confs',
         '/api/configuration/dynamic_tool_confs',
@@ -494,7 +537,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.connect('/api/pages/{id}.pdf', action='show_pdf', controller="pages", conditions=dict(method=["GET"]))
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
-    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
+    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/pages/{id}/enable_link_access', action='enable_link_access', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/disable_link_access', action='disable_link_access', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/publish', action='publish', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/unpublish', action='unpublish', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/share_with_users', action='share_with_users', controller="pages", conditions=dict(method=["PUT"]))
+    webapp.mapper.connect('/api/pages/{id}/slug', action='set_slug', controller="pages", conditions=dict(method=["PUT"]))
     webapp.mapper.resource('revision', 'revisions',
                            path_prefix='/api/pages/{page_id}',
                            controller='page_revisions',
@@ -522,6 +571,22 @@ def populate_api_routes(webapp, app):
                           controller='history_contents',
                           action='download_dataset_collection',
                           conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect("/api/dataset_collections/{id}/copy",
+                          controller='dataset_collections',
+                          action='update',
+                          conditions=dict(method=["POST"]))
+
+    webapp.mapper.connect("/api/dataset_collections/{id}/attributes",
+                          controller='dataset_collections',
+                          action='attributes',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect("api_suitable_converters",
+                          "/api/dataset_collections/{id}/suitable_converters",
+                          controller='dataset_collections',
+                          action='suitable_converters',
+                          conditions=dict(method=['GET']))
 
     webapp.mapper.connect("/api/histories/{history_id}/jobs_summary",
                           action="index_jobs_summary",
@@ -642,14 +707,14 @@ def populate_api_routes(webapp, app):
     for noun, suffix in invoke_names.items():
         name = f"{noun}{suffix}"
         webapp.mapper.connect(
-            'list_workflow_%s' % name,
+            f'list_workflow_{name}',
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='index_invocations',
             conditions=dict(method=['GET'])
         )
         webapp.mapper.connect(
-            'workflow_%s' % name,
+            f'workflow_{name}',
             '/api/workflows/{workflow_id}/%s' % noun,
             controller='workflows',
             action='invoke',
@@ -662,22 +727,22 @@ def populate_api_routes(webapp, app):
         # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
         conditions = conditions or dict(method=['GET'])
         webapp.mapper.connect(
-            'workflow_invocation_%s' % endpoint_name,
-            '/api/workflows/{workflow_id}/invocations/{invocation_id}' + endpoint_suffix,
+            f'workflow_invocation_{endpoint_name}',
+            f"/api/workflows/{{workflow_id}}/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
-            'workflow_usage_%s' % endpoint_name,
-            '/api/workflows/{workflow_id}/usage/{invocation_id}' + endpoint_suffix,
+            f'workflow_usage_{endpoint_name}',
+            f"/api/workflows/{{workflow_id}}/usage/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
         )
         webapp.mapper.connect(
-            'invocation_%s' % endpoint_name,
-            '/api/invocations/{invocation_id}' + endpoint_suffix,
+            f'invocation_{endpoint_name}',
+            f"/api/invocations/{{invocation_id}}{endpoint_suffix}",
             controller='workflows',
             action=action,
             conditions=conditions,
@@ -703,13 +768,6 @@ def populate_api_routes(webapp, app):
                           controller='authenticate',
                           action='get_api_key',
                           conditions=dict(method=["GET"]))
-
-    # API OPTIONS RESPONSE
-    webapp.mapper.connect('options',
-                          '/api/{path_info:.*?}',
-                          controller='authenticate',
-                          action='options',
-                          conditions={'method': ['OPTIONS']})
 
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
@@ -1211,47 +1269,47 @@ def populate_api_routes(webapp, app):
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
     # Not just using map.resources because actions should be based on name not id
-    controller = "%stags" % name_prefix
-    name = "%stag" % name_prefix
-    path = "%s/tags" % path_prefix
+    controller = f"{name_prefix}tags"
+    name = f"{name_prefix}tag"
+    path = f"{path_prefix}/tags"
     map = webapp.mapper
     # Allow view items' tags.
     map.connect(name, path,
                 controller=controller, action="index",
                 conditions=dict(method=["GET"]))
     # Allow remove tag from item
-    map.connect("%s_delete" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_delete", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="delete",
                 conditions=dict(method=["DELETE"]))
     # Allow create a new tag with from name
-    map.connect("%s_create" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_create", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="create",
                 conditions=dict(method=["POST"]))
     # Allow update tag value
-    map.connect("%s_update" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_update", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="update",
                 conditions=dict(method=["PUT"]))
     # Allow show tag by name
-    map.connect("%s_show" % name, "%s/tags/{tag_name}" % path_prefix,
+    map.connect(f"{name}_show", "%s/tags/{tag_name}" % path_prefix,
                 controller=controller, action="show",
                 conditions=dict(method=["GET"]))
 
 
 def _add_item_extended_metadata_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sextended_metadata" % name_prefix
-    name = "%sextended_metadata" % name_prefix
+    controller = f"{name_prefix}extended_metadata"
+    name = f"{name_prefix}extended_metadata"
     webapp.mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
 
 def _add_item_annotation_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sannotations" % name_prefix
-    name = "%sannotation" % name_prefix
+    controller = f"{name_prefix}annotations"
+    name = f"{name_prefix}annotation"
     webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
 
 def _add_item_provenance_controller(webapp, name_prefix, path_prefix, **kwd):
-    controller = "%sprovenance" % name_prefix
-    name = "%sprovenance" % name_prefix
+    controller = f"{name_prefix}provenance"
+    name = f"{name_prefix}provenance"
     webapp.mapper.resource(name, "provenance", path_prefix=path_prefix, controller=controller)
 
 
@@ -1279,8 +1337,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                               args=(statsd_host,
                                     conf.get('statsd_port', 8125),
                                     conf.get('statsd_prefix', 'galaxy'),
-                                    conf.get('statsd_influxdb', False)))
-        log.debug("Enabling 'statsd' middleware")
+                                    conf.get('statsd_influxdb', False),
+                                    conf.get('statsd_mock_calls', False)))
+        log.info("Enabling 'statsd' middleware")
     # If we're using remote_user authentication, add middleware that
     # protects Galaxy from improperly configured authentication in the
     # upstream server
@@ -1305,10 +1364,9 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # If sentry logging is enabled, log here before propogating up to
     # the error middleware
     sentry_dsn = conf.get('sentry_dsn', None)
-    sentry_sloreq = float(conf.get('sentry_sloreq_threshold', 0))
     if sentry_dsn:
-        from galaxy.web.framework.middleware.sentry import Sentry
-        app = wrap_if_allowed(app, stack, Sentry, args=(sentry_dsn, sentry_sloreq))
+        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
+        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -1331,14 +1389,15 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     # Request ID middleware
     app = wrap_if_allowed(app, stack, RequestIDMiddleware)
+    # TUS upload middleware
+    app = wrap_if_allowed(app, stack, TusMiddleware, kwargs={
+        'upload_path': urljoin(f"{application_stack.config.galaxy_url_prefix}/", 'api/upload/resumable_upload'),
+        'tmp_dir': application_stack.config.tus_upload_store or application_stack.config.new_file_path,
+        'max_size': application_stack.config.maximum_upload_file_size
+    })
     # api batch call processing middleware
     app = wrap_if_allowed(app, stack, BatchMiddleware, args=(webapp, {}))
     if asbool(conf.get('enable_per_request_sql_debugging', False)):
         from galaxy.web.framework.middleware.sqldebug import SQLDebugMiddleware
         app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
-
-
-def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap

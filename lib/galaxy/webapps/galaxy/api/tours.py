@@ -3,39 +3,32 @@ API Controller providing Galaxy Tours
 """
 import logging
 
-from fastapi import Depends
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter as APIRouter
-
 from galaxy.tours import (
     TourDetails,
     TourList,
     ToursRegistry,
 )
 from galaxy.web import (
+    expose_api,
     expose_api_anonymous_and_sessionless,
-    legacy_expose_api,
     require_admin
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from . import (
-    get_admin_user,
-    get_app,
+    BaseGalaxyAPIController,
+    depends,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
 
-router = APIRouter(tags=['tours'])
+router = Router(tags=['tours'])
 
 
-def get_tours_registry(app=Depends(get_app)) -> ToursRegistry:
-    return app.tour_registry
-
-
-@cbv(router)
+@router.cbv
 class FastAPITours:
-    registry: ToursRegistry = Depends(get_tours_registry)
+    # ugh - mypy https://github.com/python/mypy/issues/5374
+    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[misc]
 
     @router.get('/api/tours')
     def index(self) -> TourList:
@@ -47,16 +40,14 @@ class FastAPITours:
         """Return a tour definition."""
         return self.registry.tour_contents(tour_id)
 
-    @router.post('/api/tours/{tour_id}', dependencies=[Depends(get_admin_user)])
+    @router.post('/api/tours/{tour_id}', require_admin=True)
     def update_tour(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
         return self.registry.load_tour(tour_id)
 
 
-class ToursController(BaseAPIController):
-
-    def __init__(self, app):
-        super().__init__(app)
+class ToursController(BaseGalaxyAPIController):
+    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[misc]
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -65,7 +56,7 @@ class ToursController(BaseAPIController):
 
         Displays available tours
         """
-        return self.app.tour_registry.get_tours()
+        return self.registry.get_tours()
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, tour_id, **kwd):
@@ -77,12 +68,12 @@ class ToursController(BaseAPIController):
         :returns:   tour definition
         :rtype:     dictionary
         """
-        return self.app.tour_registry.tour_contents(tour_id)
+        return self.registry.tour_contents(tour_id)
 
     @require_admin
-    @legacy_expose_api
+    @expose_api
     def update_tour(self, trans, tour_id, **kwd):
         """This simply reloads tours right now.  It's a quick hack."""
         # TODO: allow creation of new tours (which get written to the
         # filesystem).
-        return self.app.tour_registry.load_tour(tour_id)
+        return self.registry.load_tour(tour_id)

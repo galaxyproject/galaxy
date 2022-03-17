@@ -10,8 +10,8 @@ import sys
 try:
     import requests
 except ImportError:
-    print("Could not import the requests module. See http://docs.python-requests.org/en/latest/" +
-          " or install with 'pip install requests'")
+    print("Could not import the requests module. See http://docs.python-requests.org/en/latest/"
+          + " or install with 'pip install requests'")
     raise
 
 
@@ -19,17 +19,17 @@ def upload_file(base_url, api_key, history_id, filepath, **kwargs):
     full_url = base_url + '/api/tools'
 
     payload = {
-        'key'           : api_key,
-        'tool_id'       : 'upload1',
-        'history_id'    : history_id,
+        'key': api_key,
+        'tool_id': 'upload1',
+        'history_id': history_id,
     }
     inputs = {
-        'files_0|NAME'  : kwargs.get('filename', os.path.basename(filepath)),
-        'files_0|type'  : 'upload_dataset',
+        'files_0|NAME': kwargs.get('filename', os.path.basename(filepath)),
+        'files_0|type': 'upload_dataset',
         # TODO: the following doesn't work with tools.py
-        'dbkey'         : '?',
-        'file_type'     : kwargs.get('file_type', 'auto'),
-        'ajax_upload'   : 'true',
+        'dbkey': '?',
+        'file_type': kwargs.get('file_type', 'auto'),
+        'ajax_upload': 'true',
     }
     payload['inputs'] = json.dumps(inputs)
 
@@ -42,8 +42,8 @@ def upload_file(base_url, api_key, history_id, filepath, **kwargs):
 
 if __name__ == '__main__':
     if len(sys.argv) < 5:
-        print("history_upload.py <api key> <galaxy base url> <history id> <filepath to upload>\n" +
-              "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')")
+        print("history_upload.py <api key> <galaxy base url> <history id> <filepath to upload>\n"
+              + "  (where galaxy base url is just the root url where your Galaxy is served; e.g. 'localhost:8080')")
         sys.exit(1)
 
     api_key, base_url, history_id, filepath = sys.argv[1:5]

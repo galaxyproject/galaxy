@@ -8,12 +8,14 @@ import re
 import shlex
 import shutil
 import signal
+import socket
 import string
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+from typing import Optional
 from urllib.parse import urlparse
 
 import nose.config
@@ -22,20 +24,18 @@ import nose.loader
 import nose.plugins.manager
 import yaml
 from paste import httpserver
-from sqlalchemy_utils import (
-    create_database,
-    database_exists,
-)
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
+from galaxy.app_unittest_utils.celery_helper import rebind_container_to_task
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
-from galaxy.web import buildapp
-from galaxy_test.base.api_util import get_master_api_key, get_user_api_key
+from galaxy.webapps.galaxy import buildapp
+from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
@@ -155,6 +155,8 @@ def setup_galaxy_config(
     conda_auto_init=False,
     conda_auto_install=False,
     use_shared_connection_for_amqp=False,
+    allow_tool_conf_override: bool = True,
+    allow_path_paste=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -165,6 +167,7 @@ def setup_galaxy_config(
     new_file_path = tempfile.mkdtemp(prefix='new_files_path_', dir=tmpdir)
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
 
+    user_library_import_dir: Optional[str]
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
@@ -188,15 +191,18 @@ def setup_galaxy_config(
     data_manager_config_file = 'test/functional/tools/sample_data_manager_conf.xml'
     if default_data_manager_config is not None:
         data_manager_config_file = f"{default_data_manager_config},{data_manager_config_file}"
-    master_api_key = get_master_api_key()
-    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
-                              "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
+    master_api_key = get_admin_api_key()
+    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ
+                              or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
-    tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    if allow_tool_conf_override:
+        tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    else:
+        tool_conf = default_tool_conf
     conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
     conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
     conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
@@ -216,11 +222,11 @@ def setup_galaxy_config(
     config = dict(
         admin_users='test@bx.psu.edu',
         allow_library_path_paste=True,
+        allow_path_paste=allow_path_paste,
         allow_user_creation=True,
         allow_user_deletion=True,
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
-        check_migrate_tools=False,
         chunk_upload_size=100,
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
@@ -243,7 +249,6 @@ def setup_galaxy_config(
         master_api_key=master_api_key,
         running_functional_tests=True,
         template_cache_path=template_cache_path,
-        template_path='templates',
         tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
         tool_parse_help=False,
@@ -261,7 +266,7 @@ def setup_galaxy_config(
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
     if not use_shared_connection_for_amqp:
-        config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
+        config["amqp_internal_connection"] = f"sqlalchemy+sqlite:///{os.path.join(tmpdir, 'control.sqlite')}?isolation_level=IMMEDIATE"
 
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -381,14 +386,14 @@ def copy_database_template(source, db_path):
             # do all migration steps instead of downloading a template.
             log.exception(e)
     else:
-        raise Exception("Failed to copy database template from source %s" % source)
+        raise Exception(f"Failed to copy database template from source {source}")
 
 
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
     check_migrate_databases = True
-    dburi_var = "%s_TEST_DBURI" % prefix
+    dburi_var = f"{prefix}_TEST_DBURI"
     template_name = None
     if dburi_var in os.environ:
         database_connection = os.environ[dburi_var]
@@ -397,8 +402,8 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
         if do_template:
             database_template_parsed = urlparse(database_connection)
             template_name = database_template_parsed.path[1:]  # drop / from /galaxy
-            actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
-            actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
+            actual_db = f"gxtest{''.join(random.choice(string.ascii_uppercase) for _ in range(10))}"
+            actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):
                 # We pass by migrations and instantiate the current table
@@ -407,8 +412,8 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
                 toolshed_mapping.init(database_connection, create_tables=True)
                 check_migrate_databases = False
     else:
-        default_db_filename = "%s.sqlite" % prefix.lower()
-        template_var = "%s_TEST_DB_TEMPLATE" % prefix
+        default_db_filename = f"{prefix.lower()}.sqlite"
+        template_var = f"{prefix}_TEST_DB_TEMPLATE"
         db_path = os.path.join(db_path, default_db_filename)
         if template_var in os.environ:
             # Middle ground between recreating a completely new
@@ -418,7 +423,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             # cases (namely tool shed tests expecting clean database).
             copy_database_template(os.environ[template_var], db_path)
             database_auto_migrate = True
-        database_connection = 'sqlite:///%s' % db_path
+        database_connection = f'sqlite:///{db_path}'
     config = {
         "check_migrate_databases": check_migrate_databases,
         "database_connection": database_connection,
@@ -433,13 +438,14 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
 
 
 def install_database_conf(db_path, default_merged=False):
+    install_galaxy_database_connection: Optional[str]
     if 'GALAXY_TEST_INSTALL_DBURI' in os.environ:
         install_galaxy_database_connection = os.environ['GALAXY_TEST_INSTALL_DBURI']
     elif asbool(os.environ.get('GALAXY_TEST_INSTALL_DB_MERGED', default_merged)):
         install_galaxy_database_connection = None
     else:
         install_galaxy_db_path = os.path.join(db_path, 'install.sqlite')
-        install_galaxy_database_connection = 'sqlite:///%s' % install_galaxy_db_path
+        install_galaxy_database_connection = f'sqlite:///{install_galaxy_db_path}'
     conf = {}
     if install_galaxy_database_connection is not None:
         conf["install_database_connection"] = install_galaxy_database_connection
@@ -452,7 +458,7 @@ def database_files_path(test_tmpdir, prefix="GALAXY"):
     Use prefix to default this if TOOL_SHED_TEST_DBPATH or
     GALAXY_TEST_DBPATH is set in the environment.
     """
-    environ_var = "%s_TEST_DBPATH" % prefix
+    environ_var = f"{prefix}_TEST_DBPATH"
     if environ_var in os.environ:
         db_path = os.environ[environ_var]
     else:
@@ -493,14 +499,17 @@ def get_webapp_global_conf():
     return global_conf
 
 
-def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
+def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=150):
     """Wait for an HTTP server to boot up."""
     # Test if the server is up
+    prefix = prefix or '/'
+    if not prefix.endswith('/'):
+        prefix = f"{prefix}/"
     for _ in range(sleep_tries):
         # directly test the app, not the proxy
         conn = http.client.HTTPConnection(host, port)
         try:
-            conn.request("GET", "/")
+            conn.request("GET", prefix)
             response = conn.getresponse()
             if response.status == 200:
                 break
@@ -514,18 +523,31 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
         raise Exception(message)
 
 
+def attempt_port(port):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(('', port))
+        sock.close()
+        return port
+    except OSError:
+        return None
+
+
 def attempt_ports(port):
     if port is not None:
-        yield port
+        return port
 
-        raise Exception("An existing process seems bound to specified test server port [%s]" % port)
+        raise Exception(f"An existing process seems bound to specified test server port [{port}]")
     else:
         random.seed()
         for _ in range(0, 9):
-            port = str(random.randint(8000, 10000))
-            yield port
+            port = attempt_port(random.randint(8000, 10000))
+            if port:
+                port = str(port)
+                os.environ['GALAXY_WEB_PORT'] = port
+                return port
 
-        raise Exception("Unable to open a port between {} and {} to start Galaxy server".format(8000, 10000))
+        raise Exception(f"Unable to open a port between {8000} and {10000} to start Galaxy server")
 
 
 def serve_webapp(webapp, port=None, host=None):
@@ -534,49 +556,41 @@ def serve_webapp(webapp, port=None, host=None):
     Return the port the webapp is running on.
     """
     server = None
-    for port in attempt_ports(port):
-        try:
-            server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
-            break
-        except OSError as e:
-            if e.errno == 98:
-                continue
-            raise
-
+    port = attempt_ports(port)
+    server = httpserver.serve(webapp, host=host, port=port, start_loop=False)
     t = threading.Thread(target=server.serve_forever)
     t.start()
 
     return server, port
 
 
-def uvicorn_serve(app, port=None, host=None):
+def uvicorn_serve(app, port, host=None):
     """Serve the webapp on a recommend port or a free one.
 
     Return the port the webapp is running on.
     """
     import asyncio
-    server = None
-    for port in attempt_ports(port):
-        try:
-            from uvicorn.server import Server
-            from uvicorn.config import Config
-            config = Config(app, host=host, port=int(port))
-            server = Server(config=config)
-            break
-        except OSError as e:
-            if e.errno == 98:
-                continue
-            raise
+    from uvicorn.server import Server
+    from uvicorn.config import Config
+
+    access_log = False if 'GALAXY_TEST_DISABLE_ACCESS_LOG' in os.environ else True
+    config = Config(app, host=host, port=int(port), access_log=access_log)
+    server = Server(config=config)
 
     def run_in_loop(loop):
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(server.serve())
+        try:
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(server.serve())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(None)
+            log.info("Event loop for uvicorn closed")
 
     loop = asyncio.new_event_loop()
     t = threading.Thread(target=run_in_loop, args=(loop,))
     t.start()
 
-    return server, port
+    return server, port, t
 
 
 def cleanup_directory(tempdir):
@@ -586,7 +600,7 @@ def cleanup_directory(tempdir):
     """
     skip_cleanup = "GALAXY_TEST_NO_CLEANUP" in os.environ or "TOOL_SHED_TEST_NO_CLEANUP" in os.environ
     if skip_cleanup:
-        log.info("GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir)
+        log.info(f"GALAXY_TEST_NO_CLEANUP is on. Temporary files in {tempdir}")
         return
     try:
         if os.path.exists(tempdir) and not skip_cleanup:
@@ -614,7 +628,7 @@ def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_insta
         app.toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
 
 
-def build_galaxy_app(simple_kwargs):
+def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     """Build a Galaxy app object from a simple keyword arguments.
 
     Construct paste style complex dictionary and use load_app_properties so
@@ -629,6 +643,9 @@ def build_galaxy_app(simple_kwargs):
     )
     # Build the Universe Application
     app = GalaxyUniverseApplication(**simple_kwargs)
+    if not simple_kwargs.get("enable_celery_tasks"):
+        rebind_container_to_task(app)
+
     log.info("Embedded Galaxy application started")
 
     global galaxy_context
@@ -667,9 +684,9 @@ def build_shed_app(simple_kwargs):
 
 
 def explicitly_configured_host_and_port(prefix, config_object):
-    host_env_key = "%s_TEST_HOST" % prefix
-    port_env_key = "%s_TEST_PORT" % prefix
-    port_random_env_key = "%s_TEST_PORT_RANDOM" % prefix
+    host_env_key = f"{prefix}_TEST_HOST"
+    port_env_key = f"{prefix}_TEST_PORT"
+    port_random_env_key = f"{prefix}_TEST_PORT_RANDOM"
     default_web_host = getattr(config_object, "default_web_host", DEFAULT_WEB_HOST)
     host = os.environ.get(host_env_key, default_web_host)
 
@@ -684,24 +701,27 @@ def explicitly_configured_host_and_port(prefix, config_object):
     # for new tests.
     if port is None:
         os.environ["GALAXY_TEST_PORT_RANDOM"] = "1"
+    else:
+        os.environ['GALAXY_WEB_PORT'] = port
 
     return host, port
 
 
-def set_and_wait_for_http_target(prefix, host, port, sleep_amount=0.1, sleep_tries=150):
-    host_env_key = "%s_TEST_HOST" % prefix
-    port_env_key = "%s_TEST_PORT" % prefix
+def set_and_wait_for_http_target(prefix, host, port, url_prefix, sleep_amount=0.1, sleep_tries=150):
+    host_env_key = f"{prefix}_TEST_HOST"
+    port_env_key = f"{prefix}_TEST_PORT"
     os.environ[host_env_key] = host
     os.environ[port_env_key] = port
-    wait_for_http_server(host, port, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
+    wait_for_http_server(host, port, url_prefix, sleep_amount=sleep_amount, sleep_tries=sleep_tries)
 
 
 class ServerWrapper:
 
-    def __init__(self, name, host, port):
+    def __init__(self, name, host, port, prefix=""):
         self.name = name
         self.host = host
         self.port = port
+        self.prefix = prefix
 
     @property
     def app(self):
@@ -713,30 +733,40 @@ class ServerWrapper:
 
 class EmbeddedServerWrapper(ServerWrapper):
 
-    def __init__(self, app, server, name, host, port):
-        super().__init__(name, host, port)
+    def __init__(self, app, server, name, host, port, prefix="", thread=None):
+        super().__init__(name, host, port, prefix)
         self._app = app
         self._server = server
+        self._thread = thread
 
     @property
     def app(self):
         return self._app
 
     def stop(self):
+        log.info(f"{threading.active_count()} threads were active before stopping embedded server")
+
         if self._server is not None and hasattr(self._server, "server_close"):
-            log.info("Shutting down embedded %s Paste server" % self.name)
+            log.info(f"Shutting down embedded {self.name} Paste server")
             self._server.server_close()
-            log.info("Embedded web server %s stopped" % self.name)
+            log.info(f"Embedded web server {self.name} stopped")
 
         if self._server is not None and hasattr(self._server, "shutdown"):
-            log.info("Shutting down embedded %s uvicorn server" % self.name)
+            log.info(f"Shutting down embedded {self.name} uvicorn server")
             self._server.should_exit = True
-            log.info("Embedded web server %s stopped" % self.name)
+            log.info(f"Embedded web server {self.name} stopped")
+
+        if self._thread is not None:
+            log.info("Stopping embedded server thread")
+            self._thread.join()
+            log.info("Embedded server thread stopped")
 
         if self._app is not None:
-            log.info("Stopping application %s" % self.name)
+            log.info(f"Stopping application {self.name}")
             self._app.shutdown()
-            log.info("Application %s stopped." % self.name)
+            log.info(f"Application {self.name} stopped.")
+
+        log.info(f"{threading.active_count()} active after stopping embedded server")
 
 
 class UwsgiServerWrapper(ServerWrapper):
@@ -814,9 +844,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
-        for p in sys.path:
+        for path in sys.path:
             uwsgi_command.append('--pythonpath')
-            uwsgi_command.append(p)
+            uwsgi_command.append(path)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
@@ -835,46 +865,37 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             p, name, host, port
         )
 
-    for port in attempt_ports(port):
-        server_wrapper = attempt_port_bind(port)
-        try:
-            set_and_wait_for_http_target(prefix, host, port, sleep_tries=50)
-            log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
-            return server_wrapper
-        except Exception:
-            server_wrapper.stop()
+    port = attempt_ports(port)
+    server_wrapper = attempt_port_bind(port)
+    try:
+        set_and_wait_for_http_target(prefix, host, port, url_prefix="/", sleep_tries=50)
+        log.info(f"Test-managed uwsgi web server for {name} started at {host}:{port}")
+        return server_wrapper
+    except Exception:
+        server_wrapper.stop()
 
 
-def launch_uvicorn_multi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
-    host, port = explicitly_configured_host_and_port(prefix, config_object)
-
-    config = {}
-    config["galaxy"] = kwargs.copy()
-
-    yaml_config_path = os.path.join(tempdir, "galaxy.yml")
-    with open(yaml_config_path, "w") as f:
-        yaml.dump(config, f)
-
-
-def launch_uvicorn(gx_app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, config_object=None):
+def launch_uvicorn(webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, galaxy_config=None, config_object=None):
     name = prefix.lower()
 
     host, port = explicitly_configured_host_and_port(prefix, config_object)
+    port = attempt_ports(port)
+    gx_app = build_galaxy_app(galaxy_config)
 
-    gx = webapp_factory(
-        kwargs['global_conf'],
+    gx_wsgi_webapp = webapp_factory(
+        galaxy_config['global_conf'],
         app=gx_app,
         use_translogger=False,
         static_enabled=True,
         register_shutdown_at_exit=False
     )
     from galaxy.webapps.galaxy.fast_app import initialize_fast_app
-    app = initialize_fast_app(gx)
-    server, port = uvicorn_serve(app, host=host, port=port)
-    set_and_wait_for_http_target(prefix, host, port)
-    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}")
+    app = initialize_fast_app(gx_wsgi_webapp, gx_app)
+    server, port, thread = uvicorn_serve(app, host=host, port=port)
+    set_and_wait_for_http_target(prefix, host, port, url_prefix=gx_app.config.galaxy_url_prefix)
+    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{gx_app.config.galaxy_url_prefix}")
     return EmbeddedServerWrapper(
-        gx_app, server, name, host, port
+        gx_app, server, name, host, port, thread=thread, prefix=gx_app.config.galaxy_url_prefix
     )
 
 
@@ -900,7 +921,7 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         webapp,
         host=host, port=port
     )
-    set_and_wait_for_http_target(prefix, host, port)
+    set_and_wait_for_http_target(prefix, host, port, url_prefix="/")
     log.info(f"Embedded paste web server for {name} started at {host}:{port}")
     return EmbeddedServerWrapper(
         app, server, name, host, port
@@ -914,6 +935,7 @@ class TestDriver:
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self):
         """Setup tracked resources."""
@@ -975,11 +997,16 @@ class GalaxyTestDriver(TestDriver):
 
         # Allow a particular test to force uwsgi or any test to use uwsgi with
         # the GALAXY_TEST_UWSGI environment variable.
-        use_uwsgi = os.environ.get('GALAXY_TEST_UWSGI', None)
+        use_uwsgi = bool(os.environ.get('GALAXY_TEST_UWSGI', None))
         if not use_uwsgi:
             if getattr(config_object, "require_uwsgi", None):
                 use_uwsgi = True
         self.use_uwsgi = use_uwsgi
+
+        if getattr(config_object, "use_uvicorn", USE_UVICORN):
+            self.else_use_uvicorn = True
+        else:
+            self.else_use_uvicorn = False
 
         # Allow controlling the log format
         log_format = os.environ.get('GALAXY_TEST_LOG_FORMAT', None)
@@ -1001,7 +1028,8 @@ class GalaxyTestDriver(TestDriver):
         else:
             default_tool_conf = getattr(config_object, "default_tool_conf", None)
             datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
-
+        allow_tool_conf_override = getattr(config_object, "allow_tool_conf_override", True)
+        self.allow_tool_conf_override = allow_tool_conf_override
         self.default_tool_conf = default_tool_conf
         self.datatypes_conf_override = datatypes_conf_override
 
@@ -1038,6 +1066,7 @@ class GalaxyTestDriver(TestDriver):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
                     setup_galaxy_config_kwds = dict(
+                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
                         use_test_file_dir=not self.testing_shed_tools,
                         default_install_db_merged=True,
                         default_tool_conf=self.default_tool_conf,
@@ -1046,7 +1075,8 @@ class GalaxyTestDriver(TestDriver):
                         log_format=self.log_format,
                         conda_auto_init=getattr(config_object, "conda_auto_init", False),
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
-                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False)
+                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False),
+                        allow_tool_conf_override=self.allow_tool_conf_override,
                     )
                     galaxy_config = setup_galaxy_config(
                         galaxy_db_path,
@@ -1072,14 +1102,13 @@ class GalaxyTestDriver(TestDriver):
                     tempdir=tempdir,
                     config_object=config_object,
                 )
-            elif USE_UVICORN:
-                self.app = build_galaxy_app(galaxy_config)
+            elif self.else_use_uvicorn:
                 server_wrapper = launch_uvicorn(
-                    self.app,
-                    buildapp.app_factory,
-                    galaxy_config,
+                    lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
+                    galaxy_config=galaxy_config,
                     config_object=config_object,
                 )
+                self.app = server_wrapper.app
             else:
                 # ---- Build Application --------------------------------------------------
                 self.app = build_galaxy_app(galaxy_config)
@@ -1092,7 +1121,7 @@ class GalaxyTestDriver(TestDriver):
                 log.info(f"Functional tests will be run against external Galaxy server {server_wrapper.host}:{server_wrapper.port}")
             self.server_wrappers.append(server_wrapper)
         else:
-            log.info("Functional tests will be run against test managed Galaxy server %s" % self.external_galaxy)
+            log.info(f"Functional tests will be run against test managed Galaxy server {self.external_galaxy}")
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
@@ -1126,7 +1155,7 @@ class GalaxyTestDriver(TestDriver):
         test_classes = functional.test_toolbox.build_tests(
             app=self.app,
             testing_shed_tools=testing_shed_tools,
-            master_api_key=get_master_api_key(),
+            master_api_key=get_admin_api_key(),
             user_api_key=get_user_api_key(),
         )
         if return_test_classes:
@@ -1139,7 +1168,7 @@ class GalaxyTestDriver(TestDriver):
         host, port, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,
-            "master_api_key": get_master_api_key(),
+            "master_api_key": get_admin_api_key(),
             "api_key": get_user_api_key(),
             "keep_outputs_dir": None,
         }

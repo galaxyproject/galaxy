@@ -2,13 +2,18 @@
 Manager and Serializer for libraries.
 """
 import logging
+from typing import (
+    Optional,
+)
 
 from sqlalchemy import and_, false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
-from galaxy import exceptions
-from galaxy.managers import folders
+from galaxy import (
+    exceptions,
+)
+from galaxy.managers.folders import FolderManager
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -22,9 +27,6 @@ class LibraryManager:
     """
     Interface/service object for interacting with libraries.
     """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_library_id, check_accessible=True):
         """
@@ -45,7 +47,7 @@ class LibraryManager:
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + unicodify(e))
+            raise exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
         library = self.secure(trans, library, check_accessible)
         return library
 
@@ -69,14 +71,18 @@ class LibraryManager:
         """
         changed = False
         if not trans.user_is_admin:
-            raise exceptions.ItemAccessibilityException('Only administrators can update libraries.')
+            current_user_roles = trans.get_current_user_roles()
+            library_modify_roles = self.get_modify_roles(trans, library)
+            user_can_modify = any(role in library_modify_roles for role in current_user_roles)
+            if not user_can_modify:
+                raise exceptions.ItemAccessibilityException("You don't have permission update libraries.")
         if library.deleted:
             raise exceptions.RequestParameterInvalidException('You cannot modify a deleted library. Undelete it first.')
         if name is not None:
             library.name = name
             changed = True
             #  When library is renamed the root folder has to be renamed too.
-            folder_manager = folders.FolderManager()
+            folder_manager = FolderManager()
             folder_manager.update(trans, library.root_folder, name=name)
         if description is not None:
             library.description = description
@@ -103,7 +109,7 @@ class LibraryManager:
         trans.sa_session.flush()
         return library
 
-    def list(self, trans, deleted=False):
+    def list(self, trans, deleted: Optional[bool] = False):
         """
         Return a list of libraries from the DB.
 
@@ -136,32 +142,35 @@ class LibraryManager:
                 query = query.filter(trans.app.model.Library.table.c.deleted == false())
         else:
             #  Nonadmins can't see deleted libraries
-            query = query.filter(trans.app.model.Library.table.c.deleted == false())
-            current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
-            all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
-            library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
-            library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
-            library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
-            accessible_restricted_library_ids = set()
-            allowed_library_add_ids = set()
-            allowed_library_modify_ids = set()
-            allowed_library_manage_ids = set()
-            for action in all_actions:
-                if action.action == library_access_action:
-                    accessible_restricted_library_ids.add(action.library_id)
-                if action.action == library_add_action:
-                    allowed_library_add_ids.add(action.library_id)
-                if action.action == library_modify_action:
-                    allowed_library_modify_ids.add(action.library_id)
-                if action.action == library_manage_action:
-                    allowed_library_manage_ids.add(action.library_id)
-            query = query.filter(or_(
-                not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
-                trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
-            ))
-            prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
-            prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
-            prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
+            if deleted:
+                raise exceptions.AdminRequiredException()
+            else:
+                query = query.filter(trans.app.model.Library.table.c.deleted == false())
+                current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
+                all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
+                library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
+                library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
+                library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
+                accessible_restricted_library_ids = set()
+                allowed_library_add_ids = set()
+                allowed_library_modify_ids = set()
+                allowed_library_manage_ids = set()
+                for action in all_actions:
+                    if action.action == library_access_action:
+                        accessible_restricted_library_ids.add(action.library_id)
+                    if action.action == library_add_action:
+                        allowed_library_add_ids.add(action.library_id)
+                    if action.action == library_modify_action:
+                        allowed_library_modify_ids.add(action.library_id)
+                    if action.action == library_manage_action:
+                        allowed_library_manage_ids.add(action.library_id)
+                query = query.filter(or_(
+                    not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
+                    trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
+                ))
+                prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
+                prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
+                prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
         return query, prefetched_ids
 
     def secure(self, trans, library, check_accessible=True):

@@ -19,7 +19,7 @@ def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
     encoder = app.security.encode_id
     value_mapper = {'repository_id': encoder, 'id': encoder, 'user_id': encoder}
     metadata = metadata_entry.to_dict(value_mapper=value_mapper, view='element')
-    db = app.model.context.current
+    db = app.model.session
     returned_dependencies = []
     required_metadata = get_dependencies_for_metadata_revision(app, metadata)
     if required_metadata is None:
@@ -102,7 +102,7 @@ def get_latest_downloadable_changeset_revision(app, repository):
 
 def get_latest_repository_metadata(app, decoded_repository_id, downloadable=False):
     """Get last metadata defined for a specified repository from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     repository = sa_session.query(app.model.Repository).get(decoded_repository_id)
     if downloadable:
         changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
@@ -117,7 +117,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     """
     Return a list of changesets for the provided repository.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
     else:
@@ -225,7 +225,7 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     all_metadata_records = sa_session.query(app.model.RepositoryMetadata) \
                                      .filter(and_(app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
                                                   app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
@@ -243,7 +243,7 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
 
 def get_repository_metadata_by_id(app, id):
     """Get repository metadata from the database"""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryMetadata).get(app.security.decode_id(id))
 
 

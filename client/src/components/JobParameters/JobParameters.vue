@@ -39,6 +39,8 @@
                 {{ singleParam }}
             </td>
         </div>
+        <br />
+        <job-outputs :job-outputs="this.outputs" :title="`Job Outputs`" />
     </div>
 </template>
 
@@ -48,6 +50,7 @@ import axios from "axios";
 
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import JobOutputs from "../JobInformation/JobOutputs";
 import JobParametersArrayValue from "./JobParametersArrayValue";
 
 Vue.use(BootstrapVue);
@@ -76,11 +79,13 @@ export default {
         },
     },
     components: {
+        JobOutputs,
         JobParametersArrayValue,
     },
     data() {
         return {
             parameters: [],
+            outputs: {},
             hasParameterErrors: false,
             isSingleParam: false,
         };
@@ -104,7 +109,9 @@ export default {
             return hasNotes;
         },
         singleParam: function () {
-            if (!this.isSingleParam) return;
+            if (!this.isSingleParam) {
+                return;
+            }
             const parameter = this.parameters.find((parameter) => {
                 return parameter.text === this.param;
             });
@@ -122,6 +129,7 @@ export default {
                 .then((data) => {
                     this.hasParameterErrors = data.has_parameter_errors;
                     this.parameters = data.parameters;
+                    this.outputs = data.outputs;
                 })
                 .catch((e) => {
                     console.error(e);

@@ -1,5 +1,6 @@
 import logging
 from functools import wraps
+from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
 
@@ -17,7 +18,6 @@ from galaxy.util import (
     parse_non_hex_float,
     unicodify
 )
-from galaxy.util.getargspec import getfullargspec
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 
@@ -75,16 +75,22 @@ def json_pretty(func):
     return json(func, pretty=True)
 
 
-def require_login(verb="perform this action", use_panels=False, webapp='galaxy'):
+def require_login(verb="perform this action", use_panels=False):
     def argcatcher(func):
         @wraps(func)
         def decorator(self, trans, *args, **kwargs):
             if trans.get_user():
                 return func(self, trans, *args, **kwargs)
             else:
+                redirect_url = url_for(controller=trans.controller, action=trans.action)
+                query_string = trans.environ.get('QUERY_STRING', '')
+                if query_string:
+                    redirect_url = f"{redirect_url}?{query_string}"
+                href = url_for(controller='login', redirect=redirect_url)
                 return trans.show_error_message(
-                    'You must be <a target="galaxy_main" href="%s">logged in</a> to %s.'
-                    % (url_for(controller='user', action='login', webapp=webapp), verb), use_panels=use_panels)
+                    f'You must be <a target="galaxy_main" href="{href}">logged in</a> to {verb}.',
+                    use_panels=use_panels
+                )
         return decorator
     return argcatcher
 
@@ -95,8 +101,12 @@ def require_admin(func):
         if not trans.user_is_admin:
             msg = require_admin_message(trans.app.config, trans.get_user())
             trans.response.status = 403
-            if trans.response.get_content_type() == 'application/json':
-                return msg
+            content_type = trans.response.get_content_type()
+            # content_type for instance may be... application/json; charset=UTF-8
+            if 'application/json' in content_type:
+                return __api_error_dict(
+                    trans, status_code=403, err_code=error_codes.ADMIN_REQUIRED, err_msg=msg
+                )
             else:
                 return trans.show_error_message(msg)
         return func(self, trans, *args, **kwargs)
@@ -169,7 +179,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
                 decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
             except TypeError:
                 trans.response.status = 400
-                return "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
+                return f"Malformed user id ( {str(kwargs['payload']['run_as'])} ) specified, unable to decode."
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
                 trans.set_user(user)
@@ -212,11 +222,16 @@ def __extract_payload_from_request(trans, func, kwargs):
                 except Exception:
                     # may not actually be json, just continue
                     pass
+    elif content_type == 'application/offset+octet-stream':
+        return unicodify(trans.request.body)
     else:
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
+    run_as = trans.request.headers.get('run-as')
+    if run_as:
+        payload['run_as'] = run_as
     return payload
 
 
@@ -291,7 +306,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
             try:
                 decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
             except (TypeError, ValueError):
-                error_message = "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
+                error_message = f"Malformed user id ( {str(kwargs['payload']['run_as'])} ) specified, unable to decode."
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)
             try:
@@ -340,7 +355,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     if isinstance(rval, BaseModel):
-        json = rval.json()
+        json = rval.json(**dumps_kwargs)
     else:
         json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
@@ -393,7 +408,7 @@ def api_error_message(trans, **kwds):
     return error_response
 
 
-def __api_error_response(trans, **kwds):
+def __api_error_dict(trans, **kwds):
     error_dict = api_error_message(trans, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
@@ -410,6 +425,11 @@ def __api_error_response(trans, **kwds):
         # non-success (i.e. not 200 or 201) has been set, do not override
         # underlying controller.
         response.status = status_code
+    return error_dict
+
+
+def __api_error_response(trans, **kwds):
+    error_dict = __api_error_dict(trans, **kwds)
     return safe_dumps(error_dict)
 
 

@@ -130,7 +130,7 @@ def create_repository_admin_role(app, repository):
     Create a new role with name-spaced name based on the repository name and its owner's public user
     name.  This will ensure that the tole name is unique.
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     name = get_repository_admin_role_name(str(repository.name), str(repository.user.username))
     description = 'A user or group member with this role can administer this repository.'
     role = app.model.Role(name=name, description=description, type=app.model.Role.types.SYSTEM)
@@ -148,7 +148,7 @@ def create_repository_admin_role(app, repository):
 def create_repository(app, name, type, description, long_description, user_id, category_ids=None, remote_repository_url=None, homepage_url=None):
     """Create a new ToolShed repository"""
     category_ids = category_ids or []
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     # Add the repository record to the database.
     repository = app.model.Repository(name=name,
                                       type=type,
@@ -192,7 +192,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
         sa_session.flush()
     # Update the repository registry.
     app.repository_registry.add_entry(repository)
-    message = "Repository <b>%s</b> has been created." % escape(str(repository.name))
+    message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 
 
@@ -201,7 +201,7 @@ def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_rev
     base_url = web.url_for('/', qualified=True).rstrip('/')
     sharable_url = f'{base_url}/view/{repository.user.username}/{repository.name}'
     if changeset_revision:
-        sharable_url += '/%s' % changeset_revision
+        sharable_url += f'/{changeset_revision}'
     return sharable_url
 
 
@@ -263,7 +263,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
 
 
 def get_repositories_by_category(app, category_id, installable=False, sort_order='asc', sort_key='name', page=None, per_page=25):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     query = sa_session.query(app.model.Repository) \
                       .join(app.model.RepositoryCategoryAssociation, app.model.Repository.id == app.model.RepositoryCategoryAssociation.repository_id) \
                       .join(app.model.User, app.model.User.id == app.model.Repository.user_id) \
@@ -330,14 +330,14 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES)
             elif tool_shed_repository.missing_repository_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, missing repository dependencies' % status_label
+                status_label = f'{status_label}, missing repository dependencies'
             elif tool_shed_repository.tool_dependencies_being_installed:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
                 status_label = '{}, {}'.format(status_label,
                                            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
             elif tool_shed_repository.missing_tool_dependencies:
                 bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = '%s, missing tool dependencies' % status_label
+                status_label = f'{status_label}, missing tool dependencies'
             else:
                 bgcolor = app.install_model.ToolShedRepository.states.OK
         else:
@@ -349,7 +349,7 @@ def get_tool_shed_repository_status_label(app, tool_shed_repository=None, name=N
 
 
 def handle_role_associations(app, role, repository, **kwd):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     message = escape(kwd.get('message', ''))
     status = kwd.get('status', 'done')
     repository_owner = repository.user
@@ -415,13 +415,13 @@ def update_repository(app, trans, id, **kwds):
     """Update an existing ToolShed repository"""
     message = None
     flush_needed = False
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     repository = sa_session.query(app.model.Repository).get(app.security.decode_id(id))
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin or
-            trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
+    if not (trans.user_is_admin
+            or trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message
 
@@ -463,7 +463,7 @@ def update_repository(app, trans, id, **kwds):
         repo_dir = repository.repo_path(app)
         # Change the entry in the hgweb.config file for the repository.
         old_lhs = f"repos/{repository.user.username}/{repository.name}"
-        new_lhs = "repos/{}/{}".format(repository.user.username, kwds['name'])
+        new_lhs = f"repos/{repository.user.username}/{kwds['name']}"
         trans.app.hgweb_config_manager.change_entry(old_lhs, new_lhs, repo_dir)
 
         # Change the entry in the repository's hgrc file.
@@ -495,13 +495,13 @@ def validate_repository_name(app, name, user):
     if name in ['None', None, '']:
         return 'Enter the required repository name.'
     if name in ['repos']:
-        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
+        return f"The term '{name}' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
     check_existing = get_repository_by_name_and_owner(app, name, user.username)
     if check_existing is not None:
         if check_existing.deleted:
-            return 'You own a deleted repository named <b>%s</b>, please choose a different name.' % escape(name)
+            return f'You own a deleted repository named <b>{escape(name)}</b>, please choose a different name.'
         else:
-            return "You already own a repository named <b>%s</b>, please choose a different name." % escape(name)
+            return f"You already own a repository named <b>{escape(name)}</b>, please choose a different name."
     if len(name) < 2:
         return "Repository names must be at least 2 characters in length."
     if len(name) > 80:

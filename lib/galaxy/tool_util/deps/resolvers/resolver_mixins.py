@@ -79,4 +79,4 @@ class HomebrewDependency(Dependency):
         return raw_commands
 
     def __repr__(self):
-        return "PlatformBrewDependency[commands=%s]" % self.commands
+        return f"PlatformBrewDependency[commands={self.commands}]"

@@ -86,6 +86,9 @@ class ConfiguresHandlers:
             max_grab_str = config_element.attrib.get('max_grab', None)
             if max_grab_str:
                 handling_config_dict["max_grab"] = int(max_grab_str)
+            ready_window_size_str = config_element.attrib.get("ready_window_size", None)
+            if ready_window_size_str:
+                handling_config_dict["ready_window_size"] = int(ready_window_size_str)
 
         return handling_config_dict
 
@@ -121,7 +124,7 @@ class ConfiguresHandlers:
                 method = method.lower()
                 assert HANDLER_ASSIGNMENT_METHODS.has_value(method), \
                     "Invalid job handler assignment method '{}', must be one of: {}".format(
-                        method, ', '.join([h.value for h in HANDLER_ASSIGNMENT_METHODS]))
+                        method, ', '.join(h.value for h in HANDLER_ASSIGNMENT_METHODS))
                 try:
                     self.handler_assignment_methods.append(method)
                 except AttributeError:
@@ -142,13 +145,8 @@ class ConfiguresHandlers:
                             " handler assignment method in the job handler configuration",
                             HANDLER_ASSIGNMENT_METHODS.MEM_SELF)
                 self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]
-            elif not self.handlers:
-                # No handlers defined, default is for processes to handle the jobs they create
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
             else:
-                # Handlers are defined, default is the value if the default attribute, or any untagged handler if
-                # default attribute is unset
-                self.handler_assignment_methods = [HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN]
+                self.handler_assignment_methods = [self.app.application_stack.get_preferred_handler_assignment_method()]
             # If the stack has handler pools it can override these defaults
             self.app.application_stack.init_job_handling(self)
             log.info("%s: No job handler assignment method is set, defaulting to '%s', set the `assign_with` attribute"
@@ -193,10 +191,10 @@ class ConfiguresHandlers:
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if required and rval not in names:
-                raise Exception("default attribute '%s' does not match a defined id or tag in a child element" % (rval))
-            log.debug("default set to child with id or tag '%s'" % (rval))
+                raise Exception(f"default attribute '{rval}' does not match a defined id or tag in a child element")
+            log.debug(f"default set to child with id or tag '{rval}'")
         elif auto and len(names) == 1:
-            log.info("Setting default to child with id '%s'" % (names[0]))
+            log.info(f"Setting default to child with id '{names[0]}'")
             rval = names[0]
         elif required:
             raise Exception("No default specified, please specify a valid id or tag with the 'default' attribute")
@@ -253,6 +251,10 @@ class ConfiguresHandlers:
         for collection in self.handlers.values():
             if self.app.config.server_name in collection:
                 return True
+        if not self.handlers and not self.handler_assignment_methods_configured \
+                and (HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION in self.handler_assignment_methods
+                or HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED in self.handler_assignment_methods):
+            return True
         return False
 
     def _set_is_handler(self, value):
@@ -281,7 +283,7 @@ class ConfiguresHandlers:
     def self_handler_tags(self):
         """Get an iterable of the current process's configured handler tags.
         """
-        return filter(lambda k: self.app.config.server_name in self.handlers[k], self.handler_tags)
+        return [k for k in self.handler_tags if self.app.config.server_name in self.handlers[k]] or [self.DEFAULT_HANDLER_TAG]
 
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
@@ -320,7 +322,7 @@ class ConfiguresHandlers:
         :returns: str -- This process's server name (handler ID).
         """
         assert queue_callback is not None, \
-            "Cannot perform '%s' handler assignment: `queue_callback` is None" % HANDLER_ASSIGNMENT_METHODS.MEM_SELF
+            f"Cannot perform '{HANDLER_ASSIGNMENT_METHODS.MEM_SELF}' handler assignment: `queue_callback` is None"
         if configured:
             log.warning("(%s) Ignoring handler assignment to '%s' because configured handler assignment method"
                         " '' overrides per-tool handler assignment", obj.log_str(),

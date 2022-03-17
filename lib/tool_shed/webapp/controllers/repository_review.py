@@ -23,6 +23,7 @@ from tool_shed.util import (
 )
 from tool_shed.util.container_util import STRSEP
 from tool_shed.util.web_util import escape
+from tool_shed.webapp.framework.decorators import require_login
 from tool_shed.webapp.util import ratings_util
 
 log = logging.getLogger(__name__)
@@ -40,7 +41,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
     repositories_with_no_tool_tests_grid = repository_review_grids.RepositoriesWithNoToolTestsGrid()
 
     @web.expose
-    @web.require_login("approve repository review")
+    @require_login("approve repository review")
     def approve_repository_review(self, trans, **kwd):
         # The value of the received id is the encoded review id.
         message = escape(kwd.get('message', ''))
@@ -53,7 +54,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
             review.approved = approved_select_field_value
             trans.sa_session.add(review)
             trans.sa_session.flush()
-            message = 'Approved value <b>%s</b> saved for this revision.' % escape(approved_select_field_value)
+            message = f'Approved value <b>{escape(approved_select_field_value)}</b> saved for this revision.'
         repository_id = trans.security.encode_id(review.repository_id)
         changeset_revision = review.changeset_revision
         return trans.response.send_redirect(web.url_for(controller='repository_review',
@@ -64,7 +65,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                         status=status))
 
     @web.expose
-    @web.require_login("browse components")
+    @require_login("browse components")
     def browse_components(self, trans, **kwd):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -75,7 +76,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.component_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("browse review")
+    @require_login("browse review")
     def browse_review(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -106,7 +107,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         trans.sa_session.flush()
 
     @web.expose
-    @web.require_login("create component")
+    @require_login("create component")
     def create_component(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -123,7 +124,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component = trans.app.model.Component(name=name, description=description)
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "Component '%s' has been created" % escape(component.name)
+                message = f"Component '{escape(component.name)}' has been created"
                 status = 'done'
                 trans.response.send_redirect(web.url_for(controller='repository_review',
                                                          action='manage_components',
@@ -136,7 +137,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("create review")
+    @require_login("create review")
     def create_review(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         message = escape(kwd.get('message', ''))
@@ -153,7 +154,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                                       repository_id=repository_id,
                                                                                       changeset_revision=changeset_revision,
                                                                                       user_id=trans.security.encode_id(trans.user.id)):
-                    message = "You have already created a review for revision <b>{}</b> of repository <b>{}</b>.".format(changeset_revision, escape(repository.name))
+                    message = f"You have already created a review for revision <b>{changeset_revision}</b> of repository <b>{escape(repository.name)}</b>."
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
@@ -202,7 +203,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                         **kwd))
 
     @web.expose
-    @web.require_login("edit component")
+    @require_login("edit component")
     def edit_component(self, trans, **kwd):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
@@ -220,7 +221,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 component.description = new_description
                 trans.sa_session.add(component)
                 trans.sa_session.flush()
-                message = "The information has been saved for the component named <b>%s</b>" % escape(component.name)
+                message = f"The information has been saved for the component named <b>{escape(component.name)}</b>"
                 status = 'done'
                 return trans.response.send_redirect(web.url_for(controller='repository_review',
                                                                 action='manage_components',
@@ -232,7 +233,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("edit review")
+    @require_login("edit review")
     def edit_review(self, trans, **kwd):
         # The value of the received id is the encoded review id.
         message = escape(kwd.get('message', ''))
@@ -339,9 +340,9 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                         component_review_dict['component_review'] = component_review
                         components_dict[component_name] = component_review_dict
             if revision_approved_setting_changed:
-                message += 'Approved value <b>%s</b> saved for this revision.<br/>' % review.approved
+                message += f'Approved value <b>{review.approved}</b> saved for this revision.<br/>'
             if saved_component_names:
-                message += 'Reviews were saved for components: %s' % ', '.join(saved_component_names)
+                message += f"Reviews were saved for components: {', '.join(saved_component_names)}"
             if not revision_approved_setting_changed and not saved_component_names:
                 message += 'No changes were made to this review, so nothing was saved.'
         if review and review.approved:
@@ -363,7 +364,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("manage components")
+    @require_login("manage components")
     def manage_components(self, trans, **kwd):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -384,7 +385,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.component_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repositories ready for review")
+    @require_login("manage repositories ready for review")
     def manage_repositories_ready_for_review(self, trans, **kwd):
         """
         A repository is ready to be reviewed if one of the following conditions is met:
@@ -410,7 +411,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.repositories_ready_for_review_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repositories reviewed by me")
+    @require_login("manage repositories reviewed by me")
     def manage_repositories_reviewed_by_me(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
@@ -422,7 +423,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.repositories_reviewed_by_me_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repositories with invalid tests")
+    @require_login("manage repositories with invalid tests")
     def manage_repositories_with_invalid_tests(self, trans, **kwd):
         """
         Display a list of repositories that contain tools, have not yet been reviewed, and have invalid functional tests.  Tests are defined as
@@ -444,7 +445,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.repositories_with_no_tool_tests_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repositories with reviews")
+    @require_login("manage repositories with reviews")
     def manage_repositories_with_reviews(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
@@ -460,7 +461,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.repositories_with_reviews_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repositories without reviews")
+    @require_login("manage repositories without reviews")
     def manage_repositories_without_reviews(self, trans, **kwd):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
@@ -475,7 +476,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.repositories_without_reviews_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("manage repository reviews")
+    @require_login("manage repository reviews")
     def manage_repository_reviews(self, trans, mine=False, **kwd):
         # The value of the received id is the encoded repository id.
         message = escape(kwd.get('message', ''))
@@ -523,7 +524,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("manage repository reviews of revision")
+    @require_login("manage repository reviews of revision")
     def manage_repository_reviews_of_revision(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         message = escape(kwd.get('message', ''))
@@ -547,7 +548,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("repository reviews by user")
+    @require_login("repository reviews by user")
     def repository_reviews_by_user(self, trans, **kwd):
 
         if 'operation' in kwd:
@@ -567,11 +568,11 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                                                 **kwd))
         # The user may not be the current user.  The value of the received id is the encoded user id.
         user = suc.get_user(trans.app, kwd['id'])
-        self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
+        self.repository_reviews_by_user_grid.title = f"All repository revision reviews for user '{user.username}'"
         return self.repository_reviews_by_user_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("reviewed repositories i own")
+    @require_login("reviewed repositories i own")
     def reviewed_repositories_i_own(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
@@ -587,7 +588,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
         return self.reviewed_repositories_i_own_grid(trans, **kwd)
 
     @web.expose
-    @web.require_login("select previous review")
+    @require_login("select previous review")
     def select_previous_review(self, trans, **kwd):
         # The value of the received id is the encoded repository id.
         message = escape(kwd.get('message', ''))
@@ -608,7 +609,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                                    status=status)
 
     @web.expose
-    @web.require_login("view or manage repository")
+    @require_login("view or manage repository")
     def view_or_manage_repository(self, trans, **kwd):
         repository = repository_util.get_repository_in_tool_shed(trans.app, kwd['id'])
         if trans.user_is_admin or repository.user == trans.user:

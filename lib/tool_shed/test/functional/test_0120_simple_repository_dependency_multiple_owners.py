@@ -26,27 +26,27 @@ repository_datatypes_count = 0
 class TestRepositoryMultipleOwners(ShedTwillTestCase):
 
     def test_0000_initiate_users(self):
-        """Create necessary user accounts and login as an admin user."""
-        """
+        """Create necessary user accounts and login as an admin user.
+
         Create all the user accounts that are needed for this test script to run independently of other tests.
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
-        """Create and populate the blast_datatypes_0120 repository"""
-        """
+        """Create and populate the blast_datatypes_0120 repository
+
         We are at step 1.
         Create and populate blast_datatypes.
         """
@@ -70,8 +70,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0010_verify_datatypes_repository(self):
-        '''Verify the blast_datatypes_0120 repository.'''
-        '''
+        '''Verify the blast_datatypes_0120 repository.
+
         We are at step 1a.
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
@@ -83,8 +83,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
-        """Create and populate the blastxml_to_top_descr_0120 repository"""
-        """
+        """Create and populate the blastxml_to_top_descr_0120 repository
+
         We are at step 2.
         Create and populate blastxml_to_top_descr_0120.
         """
@@ -108,8 +108,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
                          strings_not_displayed=[])
 
     def test_0020_verify_tool_repository(self):
-        '''Verify the blastxml_to_top_descr_0120 repository.'''
-        '''
+        '''Verify the blastxml_to_top_descr_0120 repository.
+
         We are at step 2a.
         Check for appropriate strings, such as tool name, description, and version.
         '''
@@ -119,8 +119,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):
-        '''Create a repository dependency on blast_datatypes_0120.'''
-        '''
+        '''Create a repository dependency on blast_datatypes_0120.
+
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         '''
@@ -131,8 +131,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         self.create_repository_dependency(repository=tool_repository, repository_tuples=[datatypes_tuple], filepath=dependency_xml_path)
 
     def test_0040_verify_repository_dependency(self):
-        '''Verify the created repository dependency.'''
-        '''
+        '''Verify the created repository dependency.
+
         We are at step 3a.
         Check the newly created repository dependency to ensure that it was defined and displays correctly.
         '''

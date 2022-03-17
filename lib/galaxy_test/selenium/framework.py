@@ -6,16 +6,14 @@ import os
 import traceback
 import unittest
 from functools import partial, wraps
+from typing import Any, Dict, TYPE_CHECKING
 
 import requests
 from gxformat2 import (
     convert_and_import_workflow,
     ImporterGalaxyInterface,
 )
-try:
-    from pyvirtualdisplay import Display
-except ImportError:
-    Display = None
+from requests.models import Response
 
 from galaxy.selenium import (
     driver_factory,
@@ -24,17 +22,23 @@ from galaxy.selenium.context import (
     GalaxySeleniumContext,
 )
 from galaxy.selenium.navigates_galaxy import (
-    retry_during_transitions
+    NavigatesGalaxy,
+    retry_during_transitions,
 )
-from galaxy.util import asbool, classproperty
+from galaxy.util import (
+    asbool,
+    classproperty,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy_test.base import populators
 from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
 from galaxy_test.base.testcase import FunctionalTestCase
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
-    GalaxyTestDriver = None  # type: ignore
+    GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -47,7 +51,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
-# Test browser can be ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
+# Test browser can be ["CHROME", "FIREFOX", "OPERA"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", driver_factory.DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", driver_factory.DEFAULT_SELENIUM_REMOTE)
 GALAXY_TEST_SELENIUM_REMOTE_PORT = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE_PORT", driver_factory.DEFAULT_SELENIUM_REMOTE_PORT)
@@ -61,6 +65,7 @@ GALAXY_TEST_SELENIUM_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_USER_EMAI
 GALAXY_TEST_SELENIUM_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_USER_PASSWORD", None)
 GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL", DEFAULT_ADMIN_USER)
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get("GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD)
+GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -96,7 +101,7 @@ def managed_history(f):
                 try:
                     current_history_id = self.current_history_id()
                     self.dataset_populator.cancel_history_jobs(current_history_id)
-                    self.api_delete("histories/%s" % current_history_id)
+                    self.api_delete(f"histories/{current_history_id}")
                 except Exception:
                     print("Faild to cleanup managed history, selenium connection corrupted somehow?")
     return func_wrapper
@@ -125,15 +130,16 @@ def dump_test_information(self, name_prefix):
             write_file("page_source.txt", self.driver.page_source)
             write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
         except Exception:
-            print("Failed to use test driver to recover debug information from Selenium.")
-            write_file("selenium_exception.txt", traceback.format_exc())
+            formatted_exception = traceback.format_exc()
+            print(f"Failed to use test driver to recover debug information from Selenium: {formatted_exception}")
+            write_file("selenium_exception.txt", formatted_exception)
 
         for log_type in ["browser", "driver"]:
             try:
                 full_log = self.driver.get_log(log_type)
                 trimmed_log = [entry for entry in full_log if entry["level"] not in ["DEBUG", "INFO"]]
-                write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
-                write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
+                write_file(f"{log_type}.log.json", json.dumps(trimmed_log, indent=True))
+                write_file(f"{log_type}.log.verbose.json", json.dumps(full_log, indent=True))
             except Exception:
                 continue
 
@@ -169,6 +175,7 @@ retry_assertion_during_transitions = partial(retry_during_transitions, exception
 
 
 class TestSnapshot:
+    __test__ = False  # Prevent pytest from discovering this class (issue #12071)
 
     def __init__(self, driver, index, description):
         self.screenshot_binary = driver.get_screenshot_as_png()
@@ -179,12 +186,31 @@ class TestSnapshot:
 
     def write_to_error_directory(self, write_file_func):
         prefix = "%d-%s" % (self.index, self.description)
-        write_file_func("%s-screenshot.png" % prefix, self.screenshot_binary, raw=True)
-        write_file_func("%s-traceback.txt" % prefix, self.exc)
-        write_file_func("%s-stack.txt" % prefix, str(self.stack))
+        write_file_func(f"{prefix}-screenshot.png", self.screenshot_binary, raw=True)
+        write_file_func(f"{prefix}-traceback.txt", self.exc)
+        write_file_func(f"{prefix}-stack.txt", str(self.stack))
 
 
-class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
+class GalaxyTestSeleniumContext(GalaxySeleniumContext):
+    """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
+
+    @property
+    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+        """A dataset populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetPopulator(self)
+
+    @property
+    def dataset_collection_populator(self) -> populators.BaseDatasetCollectionPopulator:
+        """A dataset collection populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionDatasetCollectionPopulator(self)
+
+    @property
+    def workflow_populator(self) -> populators.BaseWorkflowPopulator:
+        """A workflow populator connected to the Galaxy session described by Selenium context."""
+        return SeleniumSessionWorkflowPopulator(self)
+
+
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -194,6 +220,8 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
+
+    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
 
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
@@ -223,7 +251,7 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         try:
             self.setup_with_driver()
         except Exception:
-            dump_test_information(self, self.__class__.__name__ + "_setup")
+            dump_test_information(self, f"{self.__class__.__name__}_setup")
             raise
 
     def setup_with_driver(self):
@@ -234,6 +262,8 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         """
         if self.ensure_registered:
             self.login()
+            if self.ensure_beta_history:
+                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -280,6 +310,7 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
+        self.target_url_from_selenium = self._target_url_from_selenium()
         self.setup_driver_and_session()
         self._try_setup_with_driver()
 
@@ -310,7 +341,7 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
             self.driver.close()
         except Exception as e:
             if "cannot kill Chrome" in str(e):
-                print("Ignoring likely harmless error in Selenium shutdown %s" % e)
+                print(f"Ignoring likely harmless error in Selenium shutdown {e}")
             else:
                 exception = e
 
@@ -341,6 +372,7 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         initial_size_str = self.components.history_panel.new_size.text
         size_selector = self.components.history_panel.size
         size_text = size_selector.wait_for_text()
+
         assert initial_size_str in size_text, f"{initial_size_str} not in {size_text}"
 
         self.components.history_panel.empty_message.wait_for_visible()
@@ -353,18 +385,21 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         )
         with self.main_panel():
             self.assert_no_error_message()
+        return GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL
 
-    @property
-    def dataset_populator(self):
-        return SeleniumSessionDatasetPopulator(self)
+    @retry_assertion_during_transitions
+    def assert_workflow_has_changes_and_save(self):
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
-    @property
-    def dataset_collection_populator(self):
-        return SeleniumSessionDatasetCollectionPopulator(self)
-
-    @property
-    def workflow_populator(self):
-        return SeleniumSessionWorkflowPopulator(self)
+    @retry_assertion_during_transitions
+    def assert_modal_has_text(self, expected_text):
+        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
+        text = modal_element.text
+        assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
 
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator
@@ -379,7 +414,7 @@ class TestWithSeleniumMixin(GalaxySeleniumContext, UsesApiTestCaseMixin):
         """
         visualization_names = self.history_panel_item_available_visualizations(hid)
         if visualization_name not in visualization_names:
-            raise unittest.SkipTest("Skipping test, visualization [%s] doesn't appear to be configured." % visualization_name)
+            raise unittest.SkipTest(f"Skipping test, visualization [{visualization_name}] doesn't appear to be configured.")
 
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
@@ -388,6 +423,7 @@ class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
     def setUp(self):
         super().setUp()
         self.setup_selenium()
+        self.admin_api_key = get_admin_api_key()
 
     def tearDown(self):
         exception = None
@@ -436,7 +472,24 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions:
+if TYPE_CHECKING:
+    NavigatesGalaxyMixin = NavigatesGalaxy
+else:
+    NavigatesGalaxyMixin = object
+
+
+class UsesLibraryAssertions(NavigatesGalaxyMixin):
+
+    @retry_assertion_during_transitions
+    def assert_num_displayed_items_is(self, n):
+        num_displayed = self.num_displayed_items()
+        assert n == num_displayed, f"Expected number of displayed items is {n} but actual was {num_displayed}"
+
+    def num_displayed_items(self) -> int:
+        return len(self.libraries_table_elements())
+
+
+class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -519,15 +572,25 @@ def use_virtual_display():
 
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
+    selenium_context: GalaxySeleniumContext
 
-    def _get(self, route, data=None):
+    @property
+    def _mixin_admin_api_key(self) -> str:
+        return getattr(self, "admin_api_key", get_admin_api_key())
+
+    def _get(self, route, data=None, headers=None, admin=False) -> Response:
         data = data or {}
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        response = requests.get(full_url, params=data, cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
         return response
 
-    def _post(self, route, data=None, files=None):
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
+    def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
         if data is None:
             data = {}
 
@@ -536,61 +599,90 @@ class SeleniumSessionGetPostMixin:
             if files is not None:
                 del data["__files"]
 
-        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT, files=files), data, as_json=json)
+        response = requests.post(full_url, **request_kwd)
         return response
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
         data = data or {}
-        full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.delete(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.delete(full_url, **request_kwd)
         return response
 
-    def __url(self, route):
-        return self._gi.url + "/" + route
+    def _put(self, route, data=None, headers=None, admin=False, json: bool = False) -> Response:
+        data = data or {}
+        full_url = self.selenium_context.build_url(f"api/{route}", for_selenium=False)
+        cookies = None
+        if admin:
+            full_url = f"{full_url}?key={self._mixin_admin_api_key}"
+        else:
+            cookies = self.selenium_context.selenium_to_requests_cookies()
+        request_kwd = self._prepare_request_data(dict(cookies=cookies, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT), data, as_json=json)
+        response = requests.put(full_url, **request_kwd)
+        return response
+
+    def _prepare_request_data(self, request_kwd: Dict[str, Any], data: Dict[str, Any], as_json: bool = False):
+        if as_json:
+            request_kwd['json'] = data
+        else:
+            request_kwd['data'] = data
+        return request_kwd
 
 
-class SeleniumSessionDatasetPopulator(populators.BaseDatasetPopulator, SeleniumSessionGetPostMixin):
+class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
 
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
+        self.selenium_context = selenium_context
 
 
-class SeleniumSessionDatasetCollectionPopulator(populators.BaseDatasetCollectionPopulator, SeleniumSessionGetPostMixin):
+class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
 
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset collection populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
-        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+        self.selenium_context = selenium_context
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
 
-    def _create_collection(self, payload):
-        create_response = self._post("dataset_collections", data=payload)
+    def _create_collection(self, payload: dict) -> Response:
+        create_response = self._post("dataset_collections", data=payload, json=True)
         return create_response
 
 
-class SeleniumSessionWorkflowPopulator(populators.BaseWorkflowPopulator, SeleniumSessionGetPostMixin, ImporterGalaxyInterface):
+class SeleniumSessionWorkflowPopulator(SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface):
 
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
-    def __init__(self, selenium_test_case):
+    def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a workflow populator from a bioblend GalaxyInstance."""
-        self.selenium_test_case = selenium_test_case
-        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_test_case)
+        self.selenium_context = selenium_context
+        self.dataset_populator = SeleniumSessionDatasetPopulator(selenium_context)
+        self.dataset_collection_populator = SeleniumSessionDatasetCollectionPopulator(selenium_context)
 
-    def import_workflow(self, workflow, **kwds):
+    def import_workflow(self, workflow: dict, **kwds) -> dict:
         workflow_str = json.dumps(workflow, indent=4)
         data = {
             'workflow': workflow_str,
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200
+        upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds):
+    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
         return workflow["id"]

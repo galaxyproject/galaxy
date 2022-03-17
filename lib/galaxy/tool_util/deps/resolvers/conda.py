@@ -160,9 +160,9 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         final_return_code = 0
         for env, return_code in zip(environments, return_codes):
             if return_code == 0:
-                log.debug("Conda environment '%s' successfully removed." % env)
+                log.debug(f"Conda environment '{env}' successfully removed.")
             else:
-                log.debug("Conda environment '%s' could not be removed." % env)
+                log.debug(f"Conda environment '{env}' could not be removed.")
                 final_return_code = return_code
         return final_return_code
 
@@ -179,7 +179,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             is_installed = self.conda_context.has_env(env)
 
         if not is_installed:
-            log.debug("Removing failed conda install of {}".format(str(conda_targets)))
+            log.debug(f"Removing failed conda install of {str(conda_targets)}")
             cleanup_failed_install_of_environment(env, conda_context=self.conda_context)
 
         return is_installed
@@ -251,7 +251,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
     def merged_environment_name(self, conda_targets):
         if len(conda_targets) > 1:
             # For continuity with mulled containers this is kind of nice.
-            return "mulled-v1-%s" % hash_conda_packages(conda_targets)
+            return f"mulled-v1-{hash_conda_packages(conda_targets)}"
         else:
             assert len(conda_targets) == 1
             return conda_targets[0].install_environment
@@ -344,7 +344,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         assert not self.read_only
 
         if type != "package":
-            log.warning("Cannot install dependencies of type '%s'" % type)
+            log.warning(f"Cannot install dependencies of type '{type}'")
             return False
 
         if self.versionless:
@@ -410,9 +410,7 @@ class MergedCondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'{}/bin' """.format(
-                self.environment_path,
-            )
+            return f"""export PATH=$PATH:'{self.environment_path}/bin' """
         else:
             return CONDA_SOURCE_CMD.format(
                 activate_path=self.activate,
@@ -479,9 +477,7 @@ class CondaDependency(Dependency):
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
             # variables in the future.
-            return """export PATH=$PATH:'{}/bin' """.format(
-                self.environment_path,
-            )
+            return f"""export PATH=$PATH:'{self.environment_path}/bin' """
         else:
             return CONDA_SOURCE_CMD.format(
                 activate_path=self.activate,

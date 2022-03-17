@@ -22,10 +22,23 @@ def pull_mulled_singularity_command(docker_image_identifier,
     )
     save_path = docker_image_identifier
     if namespace:
-        prefix = "docker://quay.io/%s/" % namespace
+        prefix = f"docker://quay.io/{namespace}/"
         if docker_image_identifier.startswith(prefix):
             save_path = docker_image_identifier[len(prefix):]
     command_parts.extend(["build", os.path.join(cache_directory, save_path), docker_image_identifier])
+    return command_parts
+
+
+def pull_singularity_command(image_identifier: str,
+                             cache_path: str,
+                             singularity_cmd: str = DEFAULT_SINGULARITY_COMMAND,
+                             sudo: bool = DEFAULT_SUDO,
+                             sudo_cmd: str = DEFAULT_SUDO_COMMAND):
+    # Make sure cache dir exists
+    dirname = os.path.dirname(os.path.normpath(cache_path))
+    os.makedirs(dirname, exist_ok=True)
+    command_parts = _singularity_prefix(singularity_cmd, sudo, sudo_cmd)
+    command_parts.extend(["build", cache_path, image_identifier])
     return command_parts
 
 
@@ -84,4 +97,5 @@ def _singularity_prefix(
     return command_parts
 
 
-__all__ = ("build_singularity_run_command", "pull_mulled_singularity_command")
+__all__ = ("build_singularity_run_command", "pull_mulled_singularity_command",
+           "pull_singularity_command")

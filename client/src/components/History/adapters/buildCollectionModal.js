@@ -15,7 +15,7 @@ import LIST_OF_PAIRS_COLLECTION_CREATOR from "../../Collections/PairedListCollec
 import RULE_BASED_COLLECTION_CREATOR from "../../Collections/RuleBasedCollectionCreatorModal";
 
 // stand-in for buildCollection from history-view-edit.js
-export async function buildCollectionModal(collectionType, history_id, selectedContent, hideSourceItems = false) {
+export async function buildCollectionModal(collectionType, history_id, selectedContent, hideSourceItems = true) {
     // select legacy function
     let createFunc;
     if (collectionType == "list") {

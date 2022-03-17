@@ -11,8 +11,7 @@
                                     @click.prevent="$emit('save', credential)"
                                     v-b-tooltip.hover
                                     aria-label="Save Key"
-                                    title="Save Key"
-                                >
+                                    title="Save Key">
                                     <span>Save Key</span>
                                 </a>
                             </li>
@@ -22,8 +21,7 @@
                                 @click.prevent="$emit('delete', credential)"
                                 v-b-tooltip.hover
                                 aria-label="Delete Key"
-                                title="Delete Key"
-                            >
+                                title="Delete Key">
                                 <span>Delete Key</span>
                             </a>
                         </li>
@@ -32,8 +30,7 @@
                                 @click.prevent="expand()"
                                 v-b-tooltip.hover
                                 aria-label="Show Details"
-                                title="Show Details"
-                            >
+                                title="Show Details">
                                 <span>Details</span>
                             </a>
                         </li>
@@ -41,15 +38,16 @@
                 </nav>
             </hgroup>
         </header>
-
+        <!-- TODO: Restructure credential handling so we're not mutating the prop -->
+        <!-- eslint-disable vue/no-mutating-props-->
         <credential-form
             v-if="expanded"
             class="border-top"
             v-model="credential"
             @click.self="expand()"
             @save="$emit('save', credential)"
-            @delete="$emit('delete', credential)"
-        />
+            @delete="$emit('delete', credential)" />
+        <!-- eslint-enable vue/no-mutating-props-->
     </b-list-group-item>
 </template>
 

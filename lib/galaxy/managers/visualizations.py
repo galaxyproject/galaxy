@@ -8,6 +8,7 @@ import logging
 
 from galaxy import model
 from galaxy.managers import sharable
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -27,11 +28,6 @@ class VisualizationManager(sharable.SharableModelManager):
     annotation_assoc = model.VisualizationAnnotationAssociation
     rating_assoc = model.VisualizationRatingAssociation
 
-    def __init__(self, app, *args, **kwargs):
-        """
-        """
-        super().__init__(app, *args, **kwargs)
-
     # def copy( self, trans, visualization, user, **kwargs ):
     #    """
     #    """
@@ -45,7 +41,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
     model_manager_class = VisualizationManager
     SINGLE_CHAR_ABBR = 'v'
 
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         super().__init__(app)
         self.visualization_manager = self.manager
 

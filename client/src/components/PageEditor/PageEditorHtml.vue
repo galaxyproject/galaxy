@@ -9,8 +9,7 @@
                         variant="link"
                         role="button"
                         v-b-tooltip.hover.bottom
-                        @click="saveContent(false)"
-                    >
+                        @click="saveContent(false)">
                         <span class="fa fa-save" />
                     </b-button>
                     <b-button
@@ -19,8 +18,7 @@
                         variant="link"
                         role="button"
                         v-b-tooltip.hover.bottom
-                        @click="saveContent(true)"
-                    >
+                        @click="saveContent(true)">
                         <span class="fa fa-eye" />
                     </b-button>
                 </div>
@@ -166,7 +164,9 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
             // Set input elt class, value.
             var attribute_input = $(".wym_href");
             attribute_input.addClass("wym_id").removeClass("wym_href");
-            if (selected) attribute_input.val($(selected).attr("id"));
+            if (selected) {
+                attribute_input.val($(selected).attr("id"));
+            }
 
             // Remove link.
             $(this).remove();
@@ -188,9 +188,13 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
         var curTitle;
         if (selected) {
             curURL = $(selected).attr("href");
-            if (curURL == undefined) curURL = "";
+            if (curURL == undefined) {
+                curURL = "";
+            }
             curTitle = $(selected).attr("title");
-            if (curTitle == undefined) curTitle = "";
+            if (curTitle == undefined) {
+                curTitle = "";
+            }
         }
         show_modal(
             "Create Link",
@@ -322,8 +326,11 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
 
                         //append the table after the selected container
                         var node = $(wym.findUp(wym.container(), WYMeditor.MAIN_CONTAINERS)).get(0);
-                        if (!node || !node.parentNode) $(wym._doc.body).append(table);
-                        else $(node).after(table);
+                        if (!node || !node.parentNode) {
+                            $(wym._doc.body).append(table);
+                        } else {
+                            $(node).after(table);
+                        }
                     }
                     hide_modal();
                 },
@@ -383,14 +390,18 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                 Insert: function () {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null) make_importable = true;
+                    if ($("#make-importable:checked").val() != null) {
+                        make_importable = true;
+                    }
 
                     // Insert links to history for each checked item.
                     grid.$("input[name=id]:checked").each(function () {
                         var item_id = $(this).val();
 
                         // Make item importable?
-                        if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
+                        if (make_importable) {
+                            make_item_importable(item_info.controller, item_id, item_info.singular);
+                        }
 
                         // Insert link(s) to item(s). This is done by getting item info and then manipulating wym.
                         var url_template = configs.get_name_and_link_url + item_id;
@@ -475,7 +486,9 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                 Embed: function () {
                     // Make selected items accessible (importable) ?
                     var make_importable = false;
-                    if ($("#make-importable:checked").val() != null) make_importable = true;
+                    if ($("#make-importable:checked").val() != null) {
+                        make_importable = true;
+                    }
 
                     grid.$("input[name=id]:checked").each(function () {
                         var elt = $(this);
@@ -484,7 +497,9 @@ WYMeditor.editor.prototype.dialog = function (dialogType, dialogFeatures, bodyHt
                         // Use ':first' because there are many labels in table; the first one is the item name.
                         var item_name = elt.closest("td").next("td").find("label").text();
 
-                        if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
+                        if (make_importable) {
+                            make_item_importable(item_info.controller, item_id, item_info.singular);
+                        }
 
                         // Embedded item HTML; item class is embedded in div container classes; this is necessary because the editor strips
                         // all non-standard attributes when it returns its content (e.g. it will not return an element attribute of the form
@@ -700,7 +715,7 @@ export default {
             save(this.pageId, editor.xhtml(), !showResult)
                 .then(() => {
                     if (showResult) {
-                        window.location = `${getAppRoot()}${this.publicUrl}`;
+                        window.location = this.publicUrl;
                     }
                 })
                 .catch((error) => {

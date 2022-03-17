@@ -10,6 +10,7 @@ from os import (
 from shutil import rmtree
 from stat import S_IXUSR
 from subprocess import PIPE, Popen
+from typing import Any, Dict
 
 from galaxy.tool_util.deps import build_dependency_manager, DependencyManager
 from galaxy.tool_util.deps.requirements import (
@@ -20,6 +21,7 @@ from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDependency
 from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from .util import modify_environ
 
@@ -456,7 +458,7 @@ def __assert_foo_exported(commands):
     command = ["bash", "-c", "%s; echo \"$FOO\"" % "".join(commands)]
     process = Popen(command, stdout=PIPE)
     output = process.communicate()[0].strip()
-    assert output == b'bar', f"Command {command} exports FOO as {output}, not bar"
+    assert output == b'bar', f"Command {command} exports FOO as {unicodify(output)}, not bar"
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):
@@ -638,22 +640,23 @@ def test_dependency_manager_config_options_global():
 
 
 def test_dependency_manager_config_options_embedded_config():
+    dependency_config: Dict[str, Any] = {
+        "default_base_path": "/tmp",
+        "cache_dir": "/tmp",
+    }
     app_config = {
-        "dependency_resolution": {
-            "default_base_path": "/tmp",
-            "cache_dir": "/tmp",
-        },
+        "dependency_resolution": dependency_config,
         "conda_auto_init": False,
     }
     dm = __dependency_manager_for_config(app_config.copy())
     assert not dm.to_dict()["cache"]
 
-    app_config["dependency_resolution"]["cache"] = True
+    dependency_config["cache"] = True
     dm = __dependency_manager_for_config(app_config.copy())
     assert dm.to_dict()["cache"]
     assert dm.to_dict()["precache"]
 
-    app_config["dependency_resolution"]["precache"] = False
+    dependency_config["precache"] = False
     dm = __dependency_manager_for_config(app_config.copy())
     assert not dm.to_dict()["precache"]
 
@@ -670,7 +673,7 @@ def test_dependency_manager_config_options_resolution_config():
     app_config = {
         "conda_auto_init": False,
     }
-    resolution_config = {
+    resolution_config: Dict[str, Any] = {
         "default_base_path": "/tmp",
         "cache_dir": "/tmp",
     }

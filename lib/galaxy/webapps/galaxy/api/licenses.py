@@ -1,20 +1,21 @@
 from typing import List
 
 from fastapi import (
-    Depends,
     Path
 )
-from fastapi.routing import APIRouter
-from fastapi_utils.cbv import cbv
 
 from galaxy.managers.licenses import (
     LicenseMetadataModel,
     LicensesManager
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    Router,
+)
 
-router = APIRouter(tags=['licenses'])
+router = Router(tags=['licenses'])
 
 LicenseIdPath: str = Path(
     ...,  # Mark this Path parameter as required
@@ -24,17 +25,12 @@ LicenseIdPath: str = Path(
 )
 
 
-def get_licenses_manager() -> LicensesManager:
-    return LicensesManager()
-
-
-@cbv(router)
+@router.cbv
 class FastAPILicenses:
-    licenses_manager: LicensesManager = Depends(get_licenses_manager)
+    licenses_manager: LicensesManager = depends(LicensesManager)
 
     @router.get('/api/licenses',
         summary="Lists all available SPDX licenses",
-        response_model=List[LicenseMetadataModel],
         response_description="List of SPDX licenses")
     async def index(self) -> List[LicenseMetadataModel]:
         """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
@@ -42,7 +38,6 @@ class FastAPILicenses:
 
     @router.get('/api/licenses/{id}',
         summary="Gets the SPDX license metadata associated with the short identifier",
-        response_model=LicenseMetadataModel,
         response_description="SPDX license metadata")
     async def get(self, id=LicenseIdPath) -> LicenseMetadataModel:
         """Returns the license metadata associated with the given
@@ -50,10 +45,8 @@ class FastAPILicenses:
         return self.licenses_manager.get_license_by_id(id)
 
 
-class LicensesController(BaseAPIController):
-
-    def __init__(self, app):
-        self.licenses_manager = LicensesManager()
+class LicensesController(BaseGalaxyAPIController):
+    licenses_manager: LicensesManager = depends(LicensesManager)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):

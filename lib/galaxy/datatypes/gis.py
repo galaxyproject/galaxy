@@ -40,13 +40,13 @@ class Shapefile(Binary):
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="application/binary">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"application/binary\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>\n')
         return "\n".join(rval)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "Shapefile data"

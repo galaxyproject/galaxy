@@ -298,7 +298,7 @@ class Admin:
             role.deleted = True
             trans.sa_session.add(role)
             trans.sa_session.flush()
-            message += " %s " % role.name
+            message += f" {role.name} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='roles',
                                                  message=util.sanitize_text(message),
@@ -320,7 +320,7 @@ class Admin:
         for role_id in ids:
             role = get_role(trans, role_id)
             if not role.deleted:
-                message = "Role '%s' has not been deleted, so it cannot be undeleted." % role.name
+                message = f"Role '{role.name}' has not been deleted, so it cannot be undeleted."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='roles',
                                                          message=util.sanitize_text(message),
@@ -329,7 +329,7 @@ class Admin:
             trans.sa_session.add(role)
             trans.sa_session.flush()
             count += 1
-            undeleted_roles += " %s" % role.name
+            undeleted_roles += f" {role.name}"
         message = "Undeleted %d roles: %s" % (count, undeleted_roles)
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='roles',
@@ -358,7 +358,7 @@ class Admin:
         for role_id in ids:
             role = get_role(trans, role_id)
             if not role.deleted:
-                message = "Role '%s' has not been deleted, so it cannot be purged." % role.name
+                message = f"Role '{role.name}' has not been deleted, so it cannot be purged."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='roles',
                                                          message=util.sanitize_text(message),
@@ -383,7 +383,7 @@ class Admin:
             for dp in role.dataset_actions:
                 trans.sa_session.delete(dp)
             trans.sa_session.flush()
-            message += " %s " % role.name
+            message += f" {role.name} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='roles',
                                                  message=util.sanitize_text(message),
@@ -534,7 +534,7 @@ class Admin:
                     trans.sa_session.add(gra)
                 if create_role_for_group_checked:
                     # Create the role
-                    role = trans.app.model.Role(name=name, description='Role for group %s' % name)
+                    role = trans.app.model.Role(name=name, description=f'Role for group {name}')
                     trans.sa_session.add(role)
                     # Associate the role with the group
                     gra = trans.model.GroupRoleAssociation(group, role)
@@ -588,7 +588,7 @@ class Admin:
             group.deleted = True
             trans.sa_session.add(group)
             trans.sa_session.flush()
-            message += " %s " % group.name
+            message += f" {group.name} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='groups',
                                                  message=util.sanitize_text(message),
@@ -610,7 +610,7 @@ class Admin:
         for group_id in ids:
             group = get_group(trans, group_id)
             if not group.deleted:
-                message = "Group '%s' has not been deleted, so it cannot be undeleted." % group.name
+                message = f"Group '{group.name}' has not been deleted, so it cannot be undeleted."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='groups',
                                                          message=util.sanitize_text(message),
@@ -619,7 +619,7 @@ class Admin:
             trans.sa_session.add(group)
             trans.sa_session.flush()
             count += 1
-            undeleted_groups += " %s" % group.name
+            undeleted_groups += f" {group.name}"
         message = "Undeleted %d groups: %s" % (count, undeleted_groups)
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='groups',
@@ -644,7 +644,7 @@ class Admin:
             group = get_group(trans, group_id)
             if not group.deleted:
                 # We should never reach here, but just in case there is a bug somewhere...
-                message = "Group '%s' has not been deleted, so it cannot be purged." % group.name
+                message = f"Group '{group.name}' has not been deleted, so it cannot be purged."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='groups',
                                                          message=util.sanitize_text(message),
@@ -656,7 +656,7 @@ class Admin:
             for gra in group.roles:
                 trans.sa_session.delete(gra)
             trans.sa_session.flush()
-            message += " %s " % group.name
+            message += f" {group.name} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='groups',
                                                  message=util.sanitize_text(message),
@@ -727,7 +727,7 @@ class Admin:
             user = get_user(trans, user_id)
             user.deleted = True
 
-            compliance_log.info('delete-user-event: %s' % user_id)
+            compliance_log.info(f'delete-user-event: {user_id}')
             # See lib/galaxy/webapps/tool_shed/controllers/admin.py
             pseudorandom_value = str(int(time.time()))
             email_hash = new_secure_hash(user.email + pseudorandom_value)
@@ -749,7 +749,7 @@ class Admin:
 
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            message += " %s " % user.email
+            message += f" {user.email} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='users',
                                                  message=util.sanitize_text(message),
@@ -771,7 +771,7 @@ class Admin:
         for user_id in ids:
             user = get_user(trans, user_id)
             if not user.deleted:
-                message = "User '%s' has not been deleted, so it cannot be undeleted." % user.email
+                message = f"User '{user.email}' has not been deleted, so it cannot be undeleted."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='users',
                                                          message=util.sanitize_text(message),
@@ -780,7 +780,7 @@ class Admin:
             trans.sa_session.add(user)
             trans.sa_session.flush()
             count += 1
-            undeleted_users += " %s" % user.email
+            undeleted_users += f" {user.email}"
         message = "Undeleted %d users: %s" % (count, undeleted_users)
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='users',
@@ -815,7 +815,7 @@ class Admin:
             user = get_user(trans, user_id)
             if not user.deleted:
                 # We should never reach here, but just in case there is a bug somewhere...
-                message = "User '%s' has not been deleted, so it cannot be purged." % user.email
+                message = f"User '{user.email}' has not been deleted, so it cannot be purged."
                 trans.response.send_redirect(web.url_for(controller='admin',
                                                          action='users',
                                                          message=util.sanitize_text(message),
@@ -849,7 +849,7 @@ class Admin:
             user.purged = True
             trans.sa_session.add(user)
             trans.sa_session.flush()
-            message += "%s " % user.email
+            message += f"{user.email} "
         trans.response.send_redirect(web.url_for(controller='admin',
                                                  action='users',
                                                  message=util.sanitize_text(message),
@@ -890,8 +890,8 @@ class Admin:
     def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
         """Return autocomplete data for user emails"""
         ac_data = ""
-        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(q.lower() + "%")):
-            ac_data = ac_data + user.email + "\n"
+        for user in trans.sa_session.query(trans.app.model.User).filter_by(deleted=False).filter(func.lower(trans.app.model.User.email).like(f"{q.lower()}%")):
+            ac_data = f"{ac_data + user.email}\n"
         return ac_data
 
     @web.expose
@@ -901,7 +901,7 @@ class Admin:
         message = ''
         status = ''
         if not user_id:
-            message += "Invalid user id (%s) received" % str(user_id)
+            message += f"Invalid user id ({str(user_id)}) received"
             trans.response.send_redirect(web.url_for(controller='admin',
                                                      action='users',
                                                      message=util.sanitize_text(message),
@@ -975,7 +975,7 @@ def get_user(trans, user_id):
     """Get a User from the database by id."""
     user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
     if not user:
-        return trans.show_error_message("User not found for id (%s)" % str(user_id))
+        return trans.show_error_message(f"User not found for id ({str(user_id)})")
     return user
 
 
@@ -985,7 +985,7 @@ def get_role(trans, id):
     id = trans.security.decode_id(id)
     role = trans.sa_session.query(trans.model.Role).get(id)
     if not role:
-        return trans.show_error_message("Role not found for id (%s)" % str(id))
+        return trans.show_error_message(f"Role not found for id ({str(id)})")
     return role
 
 
@@ -995,5 +995,5 @@ def get_group(trans, id):
     id = trans.security.decode_id(id)
     group = trans.sa_session.query(trans.model.Group).get(id)
     if not group:
-        return trans.show_error_message("Group not found for id (%s)" % str(id))
+        return trans.show_error_message(f"Group not found for id ({str(id)})")
     return group

@@ -1,24 +1,26 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "jest/helpers";
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
 import flushPromises from "flush-promises";
 import moment from "moment";
 
-jest.mock("../History/caching");
 const HDA_ID = "FOO_HDA_ID";
 
 const mockDatasetProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
-            item: datasetResponse,
+            result: datasetResponse,
         });
     },
 };
 
-describe("DatasetInformation/DatasetInformation.vue", () => {
+const localVue = getLocalVue();
+
+describe("DatasetInformation/DatasetInformation", () => {
     let wrapper;
     let datasetInfoTable;
     let axiosMock;
@@ -42,6 +44,7 @@ describe("DatasetInformation/DatasetInformation.vue", () => {
             stubs: {
                 DatasetProvider: mockDatasetProvider,
             },
+            localVue,
         });
         datasetInfoTable = wrapper.find("#dataset-details");
         await flushPromises();

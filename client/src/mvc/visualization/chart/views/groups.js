@@ -5,9 +5,10 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Form from "mvc/form/form-view";
-import Repeat from "mvc/form/form-repeat";
-import FormData from "mvc/form/form-data";
+import Repeat from "./repeat";
+import { visitInputs } from "components/Form/utilities";
+import FormDisplay from "components/Form/FormDisplay";
+import { appendVueComponent } from "utils/mountVueComponent";
 
 var GroupView = Backbone.View.extend({
     initialize: function (app, options) {
@@ -33,7 +34,7 @@ var GroupView = Backbone.View.extend({
                     cache: true,
                     success: function (dataset) {
                         var data_columns = {};
-                        FormData.visitInputs(inputs, function (input, prefixed) {
+                        visitInputs(inputs, function (input, prefixed) {
                             if (input.type == "data_column") {
                                 data_columns[prefixed] = Utils.clone(input);
                                 var columns = [];
@@ -53,6 +54,9 @@ var GroupView = Backbone.View.extend({
                                     }
                                 }
                                 input.data = columns;
+                                if (columns.length > 0) {
+                                    input.value = columns[0].value;
+                                }
                             }
                             var model_value = self.group.get(prefixed);
                             if (model_value !== undefined && !input.hidden) {
@@ -66,22 +70,27 @@ var GroupView = Backbone.View.extend({
                             value: data_columns,
                         });
                         self.chart.state("ok", "Metadata initialized...");
-                        self.form = new Form({
-                            inputs: inputs,
-                            onchange: function () {
-                                self.group.set(self.form.data.create());
-                                self.chart.set("modified", true);
-                                self.chart.trigger("redraw");
-                            },
+                        const params = {};
+                        visitInputs(inputs, (input, name) => {
+                            params[name] = input.value;
                         });
-                        self.group.set(self.form.data.create());
-                        self.$el.empty().append(self.form.$el);
+                        self.redraw(params);
+                        const instance = appendVueComponent(self.$el, FormDisplay, {
+                            inputs: inputs,
+                        });
+                        instance.$on("onChange", (data) => {
+                            self.redraw(data);
+                        });
                         process.resolve();
-                        self.chart.trigger("redraw");
                     },
                 });
             });
         }
+    },
+    redraw(data) {
+        this.group.set(data);
+        this.chart.set("modified", true);
+        this.chart.trigger("redraw");
     },
 });
 

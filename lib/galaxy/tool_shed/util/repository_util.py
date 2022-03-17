@@ -36,7 +36,7 @@ def check_for_updates(app, model, repository_id=None):
             if ok:
                 success_count += 1
             else:
-                repository_names_not_updated.append('<b>%s</b>' % escape(str(repository.name)))
+                repository_names_not_updated.append(f'<b>{escape(str(repository.name))}</b>')
             if updated:
                 updated_count += 1
         message = "Checked the status in the tool shed for %d repositories.  " % success_count
@@ -50,11 +50,11 @@ def check_for_updates(app, model, repository_id=None):
             check_or_update_tool_shed_status_for_installed_repository(app, repository)
         if ok:
             if updated:
-                message = "The tool shed status for repository <b>%s</b> has been updated." % escape(str(repository.name))
+                message = f"The tool shed status for repository <b>{escape(str(repository.name))}</b> has been updated."
             else:
-                message = "The status has not changed in the tool shed for repository <b>%s</b>." % escape(str(repository.name))
+                message = f"The status has not changed in the tool shed for repository <b>{escape(str(repository.name))}</b>."
         else:
-            message = "Unable to retrieve status from the tool shed for repository <b>%s</b>." % escape(str(repository.name))
+            message = f"Unable to retrieve status from the tool shed for repository <b>{escape(str(repository.name))}</b>."
             status = 'error'
     return message, status
 
@@ -106,13 +106,13 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
         deleted = False
         uninstalled = False
     tool_shed_repository = \
-        get_installed_repository(app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision, refresh=True)
+        get_installed_repository(app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=installed_changeset_revision)
     if tool_shed_repository:
         log.debug("Updating an existing row for repository '%s' in the tool_shed_repository table, status set to '%s'.", name, status)
         tool_shed_repository.description = description
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
-        tool_shed_repository.metadata = metadata_dict
+        tool_shed_repository.metadata_ = metadata_dict
         tool_shed_repository.includes_datatypes = includes_datatypes
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
@@ -127,7 +127,7 @@ def create_or_update_tool_shed_repository(app, name, description, installed_chan
                                                  installed_changeset_revision=installed_changeset_revision,
                                                  changeset_revision=current_changeset_revision,
                                                  ctx_rev=ctx_rev,
-                                                 metadata=metadata_dict,
+                                                 metadata_=metadata_dict,
                                                  includes_datatypes=includes_datatypes,
                                                  dist_to_shed=dist_to_shed,
                                                  deleted=deleted,
@@ -201,22 +201,24 @@ def get_ids_of_tool_shed_repositories_being_installed(app, as_string=False):
     return installing_repository_ids
 
 
-def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, refresh=False, from_cache=False):
+def get_installed_repository(app, tool_shed=None, name=None, owner=None, changeset_revision=None, installed_changeset_revision=None, repository_id=None, from_cache=False):
     """
     Return a tool shed repository database record defined by the combination of a toolshed, repository name,
     repository owner and either current or originally installed changeset_revision.
     """
     # We store the port, if one exists, in the database.
     tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
-    if from_cache and hasattr(app, 'tool_shed_repository_cache'):
-        if refresh:
-            app.tool_shed_repository_cache.rebuild()
-        return app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed,
-                                                                       name=name,
-                                                                       owner=owner,
-                                                                       installed_changeset_revision=installed_changeset_revision,
-                                                                       changeset_revision=changeset_revision,
-                                                                       repository_id=repository_id)
+    if from_cache:
+        tsr_cache = getattr(app, 'tool_shed_repository_cache', None)
+        if tsr_cache:
+            return app.tool_shed_repository_cache.get_installed_repository(
+                tool_shed=tool_shed,
+                name=name,
+                owner=owner,
+                installed_changeset_revision=installed_changeset_revision,
+                changeset_revision=changeset_revision,
+                repository_id=repository_id
+            )
     query = app.install_model.context.query(app.install_model.ToolShedRepository)
     if repository_id:
         clause_list = [app.install_model.ToolShedRepository.table.c.id == repository_id]
@@ -239,8 +241,6 @@ def get_installed_tool_shed_repository(app, id):
     else:
         id = [id]
         return_list = False
-    if hasattr(app, 'tool_shed_repository_cache'):
-        app.tool_shed_repository_cache.rebuild()
     repository_ids = [app.security.decode_id(i) for i in id]
     rval = [get_installed_repository(app=app, repository_id=repo_id, from_cache=False) for repo_id in repository_ids]
     if return_list:
@@ -284,7 +284,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
 
 
 def get_repository_admin_role_name(repository_name, repository_owner):
-    return '{}_{}_admin'.format(str(repository_name), str(repository_owner))
+    return f'{str(repository_name)}_{str(repository_owner)}_admin'
 
 
 def get_repository_and_repository_dependencies_from_repo_info_dict(app, repo_info_dict):
@@ -308,7 +308,7 @@ def get_repository_by_id(app, id):
     if is_tool_shed_client(app):
         return app.install_model.context.query(app.install_model.ToolShedRepository).get(app.security.decode_id(id))
     else:
-        sa_session = app.model.context.current
+        sa_session = app.model.session
         return sa_session.query(app.model.Repository).get(app.security.decode_id(id))
 
 
@@ -377,7 +377,6 @@ def get_repository_for_dependency_relationship(app, tool_shed, name, owner, chan
         message += "required parameters is None: tool_shed: %s, name: %s, owner: %s, changeset_revision: %s " % \
             (str(tool_shed), str(name), str(owner), str(changeset_revision))
         raise Exception(message)
-    app.tool_shed_repository_cache.rebuild()
     repository = get_installed_repository(app=app,
                                           tool_shed=tool_shed,
                                           name=name,
@@ -495,7 +494,7 @@ def get_repository_query(app):
 
 def get_role_by_id(app, role_id):
     """Get a Role from the database by id."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Role).get(app.security.decode_id(role_id))
 
 

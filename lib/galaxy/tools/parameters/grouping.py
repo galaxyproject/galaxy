@@ -5,8 +5,9 @@ import io
 import logging
 import os
 import unicodedata
+from typing import Any, Callable, Dict, List, Mapping, Optional, TYPE_CHECKING
 
-from galaxy.datatypes import sniff
+from galaxy.datatypes import data, sniff
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
@@ -21,8 +22,12 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 
+if TYPE_CHECKING:
+    from galaxy.tools.parameter.basic import ToolParameter
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
-URI_PREFIXES = ["%s://" % x for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
+URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
 
 
 class Group(Dictifiable):
@@ -88,9 +93,11 @@ class Repeat(Group):
         return inflector.pluralize(self.title)
 
     def label(self):
-        return "Repeat (%s)" % self.title
+        return f"Repeat ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
             rval_dict = {}
@@ -104,6 +111,8 @@ class Repeat(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         try:
             for i, d in enumerate(value):
@@ -127,6 +136,8 @@ class Repeat(Group):
         return rval
 
     def get_initial_value(self, trans, context):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i in range(self.default):
             rval_dict = {'__index__': i}
@@ -136,6 +147,8 @@ class Repeat(Group):
         return rval
 
     def to_dict(self, trans):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         repeat_dict = super().to_dict(trans)
 
         def input_to_dict(input):
@@ -162,9 +175,11 @@ class Section(Group):
         return inflector.pluralize(self.title)
 
     def label(self):
-        return "Section (%s)" % self.title
+        return f"Section ({self.title})"
 
     def value_to_basic(self, value, app, use_security=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         for input in self.inputs.values():
             if input.name in value:  # parameter might be absent in unverified workflow
@@ -172,6 +187,8 @@ class Section(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = {}
         try:
             for input in self.inputs.values():
@@ -183,13 +200,17 @@ class Section(Group):
         return rval
 
     def get_initial_value(self, trans, context):
-        rval = {}
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
+        rval: Dict[str, Any] = {}
         child_context = ExpressionContext(rval, context)
         for child_input in self.inputs.values():
             rval[child_input.name] = child_input.get_initial_value(trans, child_context)
         return rval
 
     def to_dict(self, trans):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         section_dict = super().to_dict(trans)
 
         def input_to_dict(input):
@@ -197,6 +218,25 @@ class Section(Group):
 
         section_dict["inputs"] = list(map(input_to_dict, self.inputs.values()))
         return section_dict
+
+
+class Dataset(Bunch):
+    type: str
+    file_type: str
+    dbkey: str
+    datatype: data.Data
+    warnings: List[str]
+    metadata: Dict[str, str]
+    composite_files: Dict[str, Optional[str]]
+    uuid: Optional[str]
+    tag_using_filenames: Optional[str]
+    tags: Optional[str]
+    name: str
+    primary_file: str
+    to_posix_lines: bool
+    auto_decompress: bool
+    ext: str
+    space_to_tab: bool
 
 
 class UploadDataset(Group):
@@ -228,7 +268,7 @@ class UploadDataset(Group):
                     filenames.append(composite_file.get('ftp_files', [])[0])
             dataset_name = os.path.commonprefix(filenames).rstrip('.') or None
         if dataset_name is None:
-            dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type(context)
+            dataset_name = f'Uploaded Composite Dataset ({self.get_file_type(context)})'
         return dataset_name
 
     def get_file_base_name(self, context):
@@ -266,7 +306,7 @@ class UploadDataset(Group):
         return inflector.pluralize(self.title)
 
     def group_title(self, context):
-        return "{} ({})".format(self.title, context.get(self.file_type_name, self.default_file_type))
+        return f"{self.title} ({context.get(self.file_type_name, self.default_file_type)})"
 
     def title_by_index(self, trans, index, context):
         d_type = self.get_datatype(trans, context)
@@ -276,13 +316,15 @@ class UploadDataset(Group):
                 if composite_file.description:
                     rval = f"{rval} ({composite_file.description})"
                 if composite_file.optional:
-                    rval = "%s [optional]" % rval
+                    rval = f"{rval} [optional]"
                 return rval
         if index < self.get_file_count(trans, context):
             return "Extra primary file"
         return None
 
     def value_to_basic(self, value, app, use_security=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for d in value:
             rval_dict = {}
@@ -296,6 +338,8 @@ class UploadDataset(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         rval = []
         for i, d in enumerate(value):
             try:
@@ -324,6 +368,8 @@ class UploadDataset(Group):
             return int(file_count)
 
     def get_initial_value(self, trans, context):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         file_count = self.get_file_count(trans, context)
         rval = []
         for i in range(file_count):
@@ -367,8 +413,7 @@ class UploadDataset(Group):
                     return looks_like_url
 
                 if start_of_url(url_paste):
-                    url_paste = url_paste.replace('\r', '').split('\n')
-                    for line in url_paste:
+                    for line in url_paste.replace("\r", "").split("\n"):
                         line = line.strip()
                         if line:
                             if not start_of_url(line):
@@ -433,8 +478,8 @@ class UploadDataset(Group):
                             if ftp_filename == filename:
                                 path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
                                 if not os.path.islink(os.path.join(dirpath, filename)):
-                                    ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, path)),
-                                                     'filename' : os.path.basename(path)}
+                                    ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, path)),
+                                                     'filename': os.path.basename(path)}
                                     purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                                     file_bunch = get_data_file_filename(
                                         ftp_data_file,
@@ -507,7 +552,7 @@ class UploadDataset(Group):
                 # This allows for comparison when the filesystem uses a different encoding than the browser.
                 ftp_files = [unicodedata.normalize('NFC', f) for f in ftp_files if isinstance(f, str)]
                 if trans.user is None:
-                    log.warning('Anonymous user passed values in ftp_files: %s' % ftp_files)
+                    log.warning(f'Anonymous user passed values in ftp_files: {ftp_files}')
                     ftp_files = []
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
@@ -527,11 +572,11 @@ class UploadDataset(Group):
                 ftp_files = []
             for ftp_file in ftp_files:
                 if ftp_file not in valid_files:
-                    log.warning('User passed an invalid file path in ftp_files: %s' % ftp_file)
+                    log.warning(f'User passed an invalid file path in ftp_files: {ftp_file}')
                     continue
                     # TODO: warning to the user (could happen if file is already imported)
-                ftp_data_file = {'local_filename' : os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
-                                 'filename' : os.path.basename(ftp_file)}
+                ftp_data_file = {'local_filename': os.path.abspath(os.path.join(user_ftp_dir, ftp_file)),
+                                 'filename': os.path.basename(ftp_file)}
                 purge = getattr(trans.app.config, 'ftp_upload_purge', True)
                 file_bunch = get_data_file_filename(ftp_data_file, override_name=name, override_info=info, purge=purge)
                 if file_bunch.path:
@@ -560,7 +605,7 @@ class UploadDataset(Group):
         if d_type.composite_type is not None or force_composite:
             # handle uploading of composite datatypes
             # Only one Dataset can be created
-            dataset = Bunch()
+            dataset = Dataset()
             dataset.type = 'composite'
             dataset.file_type = file_type
             dataset.dbkey = dbkey
@@ -610,7 +655,7 @@ class UploadDataset(Group):
             for i, group_incoming in enumerate(groups_incoming[writable_files_offset:]):
                 key = keys[i + writable_files_offset]
                 if not force_composite and group_incoming is None and not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
-                    dataset.warnings.append("A required composite file (%s) was not specified." % (key))
+                    dataset.warnings.append(f"A required composite file ({key}) was not specified.")
                     dataset.composite_files[key] = None
                 else:
                     file_bunch, warnings = get_one_filename(group_incoming)
@@ -622,7 +667,7 @@ class UploadDataset(Group):
                     elif not force_composite:
                         dataset.composite_files[key] = None
                         if not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
-                            dataset.warnings.append("A required composite file (%s) was not specified." % (key))
+                            dataset.warnings.append(f"A required composite file ({key}) was not specified.")
             return [dataset]
         else:
             rval = []
@@ -643,19 +688,24 @@ class UploadDataset(Group):
 
 class Conditional(Group):
     type = "conditional"
+    value_from: Callable[
+        ["Conditional", ExpressionContext, "Conditional", "Tool"], Mapping[str, str]
+    ]
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param = None
+        self.test_param: Optional["ToolParameter"] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
 
     @property
     def label(self):
-        return "Conditional (%s)" % self.name
+        return f"Conditional ({self.name})"
 
     def get_current_case(self, value):
+        if self.test_param is None:
+            raise Exception("Must set 'test_param' attribute to use.")
         # Convert value to user representation
         str_value = self.test_param.to_param_dict_string(value)
         # Find the matching case
@@ -665,6 +715,8 @@ class Conditional(Group):
         raise ValueError("No case matched value:", self.name, str_value)
 
     def value_to_basic(self, value, app, use_security=False):
+        if self.test_param is None:
+            raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval['__current_case__'] = self.get_current_case(value[self.test_param.name])
@@ -674,6 +726,8 @@ class Conditional(Group):
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
+        if self.test_param is None:
+            raise Exception("Must set 'test_param' attribute to use.")
         rval = dict()
         try:
             rval[self.test_param.name] = self.test_param.value_from_basic(value.get(self.test_param.name), app, ignore_errors)
@@ -691,6 +745,8 @@ class Conditional(Group):
         return rval
 
     def get_initial_value(self, trans, context):
+        if self.test_param is None:
+            raise Exception("Must set 'test_param' attribute to use.")
         # State for a conditional is a plain dictionary.
         rval = {}
         # Get the default value for the 'test element' and use it
@@ -708,6 +764,8 @@ class Conditional(Group):
         return rval
 
     def to_dict(self, trans):
+        if self.test_param is None:
+            raise Exception("Must set 'test_param' attribute to use.")
         cond_dict = super().to_dict(trans)
 
         def nested_to_dict(input):
@@ -726,6 +784,8 @@ class ConditionalWhen(Dictifiable):
         self.inputs = None
 
     def to_dict(self, trans):
+        if self.inputs is None:
+            raise Exception("Must set 'inputs' attribute to use.")
         when_dict = super().to_dict()
 
         def input_to_dict(input):

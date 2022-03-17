@@ -85,7 +85,7 @@ def load_app_properties(
         properties.update(kwds)
 
     # update from env
-    override_prefix = "%sOVERRIDE_" % config_prefix
+    override_prefix = f"{config_prefix}OVERRIDE_"
     for key in os.environ:
         if key.startswith(override_prefix):
             config_key = key[len(override_prefix):].lower()
@@ -116,7 +116,7 @@ def read_properties_from_file(config_file, config_section=None):
         else:
             properties.update(parser.defaults())
     else:
-        raise InvalidFileFormatError("File '%s' doesn't have a supported extension" % config_file)
+        raise InvalidFileFormatError(f"File '{config_file}' doesn't have a supported extension")
     return properties
 
 

@@ -33,7 +33,7 @@ def nextval(migrate_engine, table, col='id'):
     elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         return "null"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def localtimestamp(migrate_engine):
@@ -42,7 +42,7 @@ def localtimestamp(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return "current_date || ' ' || current_time"
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 def boolean_false(migrate_engine):
@@ -51,7 +51,7 @@ def boolean_false(migrate_engine):
     elif migrate_engine.name == 'sqlite':
         return 0
     else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
+        raise Exception(f'Unable to convert data for unknown database type: {migrate_engine.name}')
 
 
 RepositoryReview_table = Table("repository_review", metadata,
@@ -111,20 +111,20 @@ def upgrade(migrate_engine):
     for tup in zip(names, descriptions):
         name, description = tup
         cmd = "INSERT INTO component VALUES ("
-        cmd += "%s, " % nextval(migrate_engine, 'component')
-        cmd += "'%s', " % name
-        cmd += "'%s' " % description
+        cmd += f"{nextval(migrate_engine, 'component')}, "
+        cmd += f"'{name}', "
+        cmd += f"'{description}' "
         cmd += ");"
         migrate_engine.execute(cmd)
     # Insert a REVIEWER role into the role table.
     cmd = "INSERT INTO role VALUES ("
-    cmd += "%s, " % nextval(migrate_engine, 'role')
-    cmd += "%s, " % localtimestamp(migrate_engine)
-    cmd += "%s, " % localtimestamp(migrate_engine)
-    cmd += "'%s', " % REVIEWER
+    cmd += f"{nextval(migrate_engine, 'role')}, "
+    cmd += f"{localtimestamp(migrate_engine)}, "
+    cmd += f"{localtimestamp(migrate_engine)}, "
+    cmd += f"'{REVIEWER}', "
     cmd += "'A user or group member with this role can review repositories.', "
-    cmd += "'%s', " % ROLE_TYPE
-    cmd += "%s" % boolean_false(migrate_engine)
+    cmd += f"'{ROLE_TYPE}', "
+    cmd += f"{boolean_false(migrate_engine)}"
     cmd += ");"
     migrate_engine.execute(cmd)
     # Get the id of the REVIEWER role.
@@ -136,15 +136,15 @@ def upgrade(migrate_engine):
         role_id = None
     # Insert an IUC group into the galaxy_group table.
     cmd = "INSERT INTO galaxy_group VALUES ("
-    cmd += "%s, " % nextval(migrate_engine, 'galaxy_group')
-    cmd += "%s, " % localtimestamp(migrate_engine)
-    cmd += "%s, " % localtimestamp(migrate_engine)
-    cmd += "'%s', " % IUC
-    cmd += "%s" % boolean_false(migrate_engine)
+    cmd += f"{nextval(migrate_engine, 'galaxy_group')}, "
+    cmd += f"{localtimestamp(migrate_engine)}, "
+    cmd += f"{localtimestamp(migrate_engine)}, "
+    cmd += f"'{IUC}', "
+    cmd += f"{boolean_false(migrate_engine)}"
     cmd += ");"
     migrate_engine.execute(cmd)
     # Get the id of the IUC group.
-    cmd = "SELECT id FROM galaxy_group WHERE name = '%s';" % (IUC)
+    cmd = f"SELECT id FROM galaxy_group WHERE name = '{IUC}';"
     row = migrate_engine.execute(cmd).fetchone()
     if row:
         group_id = row[0]
@@ -153,11 +153,11 @@ def upgrade(migrate_engine):
     if group_id and role_id:
         # Insert a group_role_association for the IUC group and the REVIEWER role.
         cmd = "INSERT INTO group_role_association VALUES ("
-        cmd += "%s, " % nextval(migrate_engine, 'group_role_association')
+        cmd += f"{nextval(migrate_engine, 'group_role_association')}, "
         cmd += "%d, " % int(group_id)
         cmd += "%d, " % int(role_id)
-        cmd += "%s, " % localtimestamp(migrate_engine)
-        cmd += "%s " % localtimestamp(migrate_engine)
+        cmd += f"{localtimestamp(migrate_engine)}, "
+        cmd += f"{localtimestamp(migrate_engine)} "
         cmd += ");"
         migrate_engine.execute(cmd)
 
@@ -179,7 +179,7 @@ def downgrade(migrate_engine):
     except Exception:
         log.exception("Dropping component table failed.")
     # Get the id of the REVIEWER group.
-    cmd = "SELECT id FROM galaxy_group WHERE name = '%s';" % (IUC)
+    cmd = f"SELECT id FROM galaxy_group WHERE name = '{IUC}';"
     row = migrate_engine.execute(cmd).fetchone()
     if row:
         group_id = row[0]

@@ -45,8 +45,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         runner_param_specs = {
             'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
-            runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
-            runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
+            runner_param_specs[f"{retry_exception}_state"] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
+            runner_param_specs[f"{retry_exception}_retries"] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -95,8 +95,6 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
         self.userid = None
 
-        self._init_monitor_thread()
-        self._init_worker_threads()
         self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
 
     def url_to_destination(self, url):
@@ -109,7 +107,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
             return JobDestination(runner='drmaa', params=params)
         else:
-            log.debug("Converted URL '%s' to destination runner=drmaa" % url)
+            log.debug(f"Converted URL '{url}' to destination runner=drmaa")
             return JobDestination(runner='drmaa')
 
     def get_native_spec(self, url):
@@ -144,8 +142,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             remoteCommand=ajs.job_file,
             jobName=ajs.job_name,
             workingDirectory=job_wrapper.working_directory,
-            outputPath=":%s" % ajs.output_file,
-            errorPath=":%s" % ajs.error_file
+            outputPath=f":{ajs.output_file}",
+            errorPath=f":{ajs.error_file}"
         )
 
         # Avoid a jt.exitCodePath for now - it's only used when finishing.
@@ -158,10 +156,10 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # fill in the DRM's job run template
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
-            self.write_executable_script(ajs.job_file, script)
+            self.write_executable_script(ajs.job_file, script, job_io=job_wrapper.job_io)
         except Exception:
             job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("(%s) failure writing job script" % galaxy_id_tag)
+            log.exception(f"({galaxy_id_tag}) failure writing job script")
             return
 
         # job was deleted while we were preparing it
@@ -195,7 +193,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     log.exception('(%s) drmaa.Session.runJob() failed unconditionally', galaxy_id_tag)
                     trynum = 5
             else:
-                log.error("(%s) All attempts to submit job failed" % galaxy_id_tag)
+                log.error(f"({galaxy_id_tag}) All attempts to submit job failed")
                 if not fail_msg:
                     fail_msg = DEFAULT_JOB_PUT_FAILURE_MESSAGE
                 job_wrapper.fail(fail_msg)
@@ -207,16 +205,16 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             pwent = job_wrapper.user_system_pwent
             if pwent is None:
                 if not allow_guests:
-                    fail_msg = "User %s is not mapped to any real user, and not permitted to start jobs." % job_wrapper.user
+                    fail_msg = f"User {job_wrapper.user} is not mapped to any real user, and not permitted to start jobs."
                     job_wrapper.fail(fail_msg)
                     return
                 pwent = job_wrapper.galaxy_system_pwent
-            log.debug('({}) submitting with credentials: {} [uid: {}]'.format(galaxy_id_tag, pwent[0], pwent[2]))
+            log.debug(f'({galaxy_id_tag}) submitting with credentials: {pwent[0]} [uid: {pwent[2]}]')
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
             external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2])
             if external_job_id is None:
-                job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
+                job_wrapper.fail(f"({galaxy_id_tag}) could not queue job")
                 return
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
@@ -283,11 +281,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             state = self.ds.job_status(external_job_id)
             # Reset exception retries
             for retry_exception in RETRY_EXCEPTIONS_LOWER:
-                setattr(ajs, retry_exception + '_retries', 0)
+                setattr(ajs, f"{retry_exception}_retries", 0)
         except (drmaa.InternalException, drmaa.InvalidJobException) as e:
             ecn = type(e).__name__
-            retry_param = ecn.lower() + '_retries'
-            state_param = ecn.lower() + '_state'
+            retry_param = f"{ecn.lower()}_retries"
+            state_param = f"{ecn.lower()}_state"
             retries = getattr(ajs, retry_param, 0)
             log.warning("(%s/%s) unable to check job status because of %s exception for %d consecutive tries: %s", galaxy_id_tag, external_job_id, ecn, retries + 1, e)
             if self.runner_params[retry_param] > 0:
@@ -332,7 +330,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if state is None:
                 continue
             if state != old_state:
-                log.debug("({}/{}) state change: {}".format(galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state]))
+                log.debug(f"({galaxy_id_tag}/{external_job_id}) state change: {self.drmaa_job_state_strings[state]}")
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -370,7 +368,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except drmaa.InvalidJobException:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except commands.CommandLineException as e:
-            log.error("({}/{}) User killed running job, but command execution failed: {}".format(job.id, ext_id, unicodify(e)))
+            log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
         except Exception:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue")
 
@@ -413,7 +411,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """
         cmd = shlex.split(external_runjob_script)
         cmd.extend([str(username), jobtemplate_filename])
-        log.info("Running command %s" % cmd)
+        log.info(f"Running command: {' '.join(cmd)}")
         try:
             stdoutdata = commands.execute(cmd).strip()
         except commands.CommandLineException:
@@ -431,12 +429,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         galaxy_id_tag = job_wrapper.get_id_tag()
 
         # define job attributes
-        job_name = 'g%s' % galaxy_id_tag
+        job_name = f'g{galaxy_id_tag}'
         if job_wrapper.tool.old_id:
-            job_name += '_%s' % job_wrapper.tool.old_id
+            job_name += f'_{job_wrapper.tool.old_id}'
         if not self.redact_email_in_job_name and external_runjob_script is None:
-            job_name += '_%s' % job_wrapper.user
-        job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
+            job_name += f'_{job_wrapper.user}'
+        job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
         if self.restrict_job_name_length:
             job_name = job_name[:self.restrict_job_name_length]
         return job_name

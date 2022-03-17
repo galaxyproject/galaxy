@@ -19,7 +19,7 @@ def __main__():
     outfile = sys.argv[2]
 
     if not os.path.isfile(infile):
-        sys.stderr.write("Input file %r not found\n" % infile)
+        sys.stderr.write(f"Input file {infile!r} not found\n")
         sys.exit(1)
 
     with open(infile) as inp:
@@ -45,5 +45,5 @@ def __main__():
                 out.write("".join(sequence.split()) + '\n')
 
 
-if __name__ == "__main__" :
+if __name__ == "__main__":
     __main__()

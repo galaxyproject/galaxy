@@ -28,7 +28,7 @@ class AnvioComposite(Html):
         cannot rename the datasets here - they come with the default unfortunately
         """
         defined_files = self.get_composite_files(dataset=dataset).items()
-        rval = ["<html><head><title>Files for Anvi'o Composite Dataset (%s)</title></head>" % (self.file_ext)]
+        rval = [f"<html><head><title>Files for Anvi'o Composite Dataset ({self.file_ext})</title></head>"]
         if defined_files:
             rval.append("<p/>This composite dataset is composed of the following defined files:<p/><ul>")
             for composite_name, composite_file in defined_files:
@@ -61,7 +61,7 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return 'text/html'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'Anvio database (multiple files)'
@@ -101,7 +101,7 @@ class AnvioDB(AnvioComposite):
             if found:
                 break
             if basename is not None and not os.path.exists(os.path.join(dataset.extra_files_path, basename)):
-                for name in glob.glob(os.path.join(dataset.extra_files_path, "*%s" % (basename))):
+                for name in glob.glob(os.path.join(dataset.extra_files_path, f"*{basename}")):
                     dataset.metadata.anvio_basename = os.path.basename(name)
                     found = True
                     break

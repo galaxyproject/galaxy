@@ -39,14 +39,14 @@ def __import_submodules_impl(module, recursive=False):
         module = importlib.import_module(module)
     submodules = []
     for _, name, is_pkg in pkgutil.walk_packages(module.__path__):
-        full_name = module.__name__ + '.' + name
+        full_name = f"{module.__name__}.{name}"
         try:
             submodule = importlib.import_module(full_name)
             submodules.append(submodule)
             if recursive and is_pkg:
                 submodules.update(__import_submodules_impl(submodule, recursive=True))
         except BaseException:
-            message = "%s dynamic module could not be loaded (traceback follows):" % (full_name)
+            message = f"{full_name} dynamic module could not be loaded (traceback follows):"
             log.exception(message)
             continue
     return submodules

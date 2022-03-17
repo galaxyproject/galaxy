@@ -39,7 +39,7 @@ def _dump_option(option, current_section_desc):
         print((" " * 6) + line)
     if "=" not in option:
         print(option)
-    key, default = [s.strip() for s in option.split("=", 1)]
+    key, default = (s.strip() for s in option.split("=", 1))
     key = key[1:]  # strip #
     if default.strip().lower() in ["true", "false"]:
         default = default.lower()

@@ -57,14 +57,14 @@ class ToolValidator:
                         sample_found = False
                         for sample_file in sample_files:
                             sample_file_name = basic_util.strip_path(sample_file)
-                            if sample_file_name == '%s.sample' % index_file_name:
+                            if sample_file_name == f'{index_file_name}.sample':
                                 options.index_file = index_file_name
                                 if options.tool_data_table:
                                     options.tool_data_table.missing_index_file = None
                                 sample_found = True
                                 break
                         if not sample_found:
-                            correction_msg = "This file refers to a file named <b>%s</b>.  " % str(index_file_name)
+                            correction_msg = f"This file refers to a file named <b>{str(index_file_name)}</b>.  "
                             correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % \
                                 str(index_file_name)
                             invalid_files_and_errors_tups.append((tool_config_name, correction_msg))
@@ -84,7 +84,7 @@ class ToolValidator:
         except KeyError as e:
             tool = None
             valid = False
-            error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str(e)
+            error_message = f'This file requires an entry for "{str(e)}" in the tool_data_table_conf.xml file.  Upload a file '
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
             log.exception(error_message)

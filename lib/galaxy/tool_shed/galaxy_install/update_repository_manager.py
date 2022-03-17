@@ -62,7 +62,7 @@ class UpdateRepositoryManager:
             changeset_revision_dict['changeset_revision'] = changeset_revision
             changeset_revision_dict['ctx_rev'] = ctx_rev
         except Exception as e:
-            log.debug("Error getting change set revision for update from the tool shed for repository '{}': {}".format(repository.name, str(e)))
+            log.debug(f"Error getting change set revision for update from the tool shed for repository '{repository.name}': {str(e)}")
             changeset_revision_dict['includes_data_managers'] = False
             changeset_revision_dict['includes_datatypes'] = False
             changeset_revision_dict['includes_tools'] = False
@@ -109,7 +109,7 @@ class UpdateRepositoryManager:
         Update a tool_shed_repository database record with new information retrieved from the
         Tool Shed.  This happens when updating an installed repository to a new changeset revision.
         """
-        repository.metadata = updated_metadata_dict
+        repository.metadata_ = updated_metadata_dict
         tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, repository.tool_shed)
         clean_dependency_relationships(self.app, updated_metadata_dict, repository, tool_shed_url)
         # Update the repository.changeset_revision column in the database.

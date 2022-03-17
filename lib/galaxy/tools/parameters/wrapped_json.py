@@ -1,4 +1,5 @@
 import logging
+from typing import Any, Dict, List, Sequence
 
 import packaging.version
 
@@ -22,14 +23,45 @@ def json_wrap(inputs, input_values, profile, as_dict=None, handle_files="skip"):
     return as_dict
 
 
+def data_input_to_path(v):
+    path = _cast_if_not_none(v, str)
+    if path == "None":
+        path = None
+    return path
+
+
+def data_collection_input_to_path(v):
+    return v.all_paths
+
+
+def data_collection_input_to_staging_path_and_source_path(
+    v, invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
+) -> List[Dict[str, Any]]:
+    staging_paths = v.get_all_staging_paths(
+        invalid_chars=invalid_chars, include_collection_name=include_collection_name
+    )
+    source_paths = v.all_paths
+    metadata_files = v.all_metadata_files
+    return [
+        {'staging_path': staging_path,
+         'source_path': source_path,
+         'metadata_files': [{'staging_path': f"{staging_path}.{mf[0]}", 'source_path': mf[1]} for mf in metadata_files]
+         } for staging_path, source_path, metadata_files in zip(staging_paths, source_paths, metadata_files)]
+
+
+def data_input_to_staging_path_and_source_path(
+    v, invalid_chars: Sequence[str] = ("/",)
+) -> Dict[str, Any]:
+    staging_path = v.get_staging_path(invalid_chars=invalid_chars)
+    return {
+        'staging_path': staging_path,
+        'source_path': data_input_to_path(v),
+        'metadata_files': [{'staging_path': f"{staging_path}.{mf[0]}", 'source_path': mf[1]} for mf in v.all_metadata_files]
+    }
+
+
 def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
     input_type = input.type
-
-    def _data_input_to_path(v):
-        path = _cast_if_not_none(v, str)
-        if path == "None":
-            path = None
-        return path
 
     if input_type == "repeat":
         repeat_job_value = []
@@ -58,14 +90,18 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         json_value = section_job_value
     elif input_type == "data" and input.multiple:
         if handle_files == "paths":
-            json_value = list(map(_data_input_to_path, value_wrapper))
+            json_value = [data_input_to_path(v) for v in value_wrapper]
+        elif handle_files == 'staging_path_and_source_path':
+            json_value = [data_input_to_staging_path_and_source_path(v) for v in value_wrapper]
         elif handle_files == "skip":
             return SKIP_INPUT
         else:
             raise NotImplementedError()
     elif input_type == "data":
         if handle_files == "paths":
-            json_value = _data_input_to_path(value_wrapper)
+            json_value = data_input_to_path(value_wrapper)
+        elif handle_files == 'staging_path_and_source_path':
+            json_value = data_input_to_staging_path_and_source_path(value_wrapper)
         elif handle_files == "skip":
             return SKIP_INPUT
         elif handle_files == "OBJECT":
@@ -84,6 +120,10 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
     elif input_type == "data_collection":
         if handle_files == "skip":
             return SKIP_INPUT
+        elif handle_files == "paths":
+            return data_collection_input_to_path(value_wrapper)
+        elif handle_files == "staging_path_and_source_path":
+            return data_collection_input_to_staging_path_and_source_path(value_wrapper)
         raise NotImplementedError()
     elif input_type in ["text", "color", "hidden"]:
         if getattr(input, "optional", False) and value_wrapper is not None and value_wrapper.value is None:
@@ -113,8 +153,10 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             json_value = [int(_) for _ in _cast_if_not_none(value_wrapper.value, list)]
         else:
             json_value = [_cast_if_not_none(value_wrapper.value, int)]
+    elif input_type == "directory_uri":
+        json_value = _cast_if_not_none(value_wrapper, str)
     else:
-        raise NotImplementedError("input_type [%s] not implemented" % input_type)
+        raise NotImplementedError(f"input_type [{input_type}] not implemented")
 
     return json_value
 

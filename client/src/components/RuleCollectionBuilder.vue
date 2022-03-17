@@ -23,17 +23,25 @@
             <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
             structures. Specify a column to serve as "collection name" to group datasets into multiple collections.
         </rule-modal-header>
+        <b-alert class="alert-area" v-if="validityErrorMessages.length != 0" show variant="warning" dismissible>
+            {{ validityErrorHeader }}
+            <ul>
+                <li v-for="error in validityErrorMessages" :key="error">
+                    {{ error }}
+                </li>
+            </ul>
+        </b-alert>
         <rule-modal-middle v-if="ruleView == 'source'">
             <p class="errormessagelarge" v-if="ruleSourceError">{{ ruleSourceError }}</p>
             <textarea class="rule-source" v-model="ruleSource"></textarea>
         </rule-modal-middle>
+
         <rule-modal-middle v-else>
             <!-- column-headers -->
             <div
                 class="rule-builder-body vertically-spaced"
                 :class="{ 'flex-column-container': vertical }"
-                v-if="ruleView == 'normal'"
-            >
+                v-if="ruleView == 'normal'">
                 <!-- width: 30%; -->
                 <div class="rule-column" :class="orientation">
                     <div
@@ -42,9 +50,8 @@
                             'rules-container-vertical': initialElements && vertical,
                             'rules-container-horizontal': initialElements && horizontal,
                             'rules-container-full': initialElements == null,
-                        }"
-                    >
-                        <rule-component rule-type="sort" :display-rule-type="displayRuleType" :builder="this">
+                        }">
+                        <rule-component rule-type="sort" :display-rule-type.sync="displayRuleType" :builder="this">
                             <column-selector :target.sync="addSortingTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleNumericSort">
                                 <input type="checkbox" v-model="addSortingNumeric" />
@@ -53,19 +60,16 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_basename"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="addColumnBasenameTarget"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                         </rule-component>
                         <rule-component
                             rule-type="add_column_rownum"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <label>
                                 {{ l("Starting from") }}
                                 <input type="number" v-model="addColumnRownumStart" min="0" />
@@ -73,9 +77,8 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_metadata"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <label>
                                 {{ l("For") }}
                                 <select v-model="addColumnMetadataValue">
@@ -86,9 +89,8 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_group_tag_value"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <label>
                                 {{ l("Value") }}
                                 <input type="text" v-model="addColumnGroupTagValueValue" />
@@ -100,9 +102,8 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_regex"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <input type="radio" v-model="addColumnRegexType" value="global" />Create column matching
@@ -131,23 +132,19 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_concatenate"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="addColumnConcatenateTarget0"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                             <column-selector
                                 :target.sync="addColumnConcatenateTarget1"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                         </rule-component>
                         <rule-component
                             rule-type="add_column_substr"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector :target.sync="addColumnSubstrTarget" :col-headers="activeRuleColHeaders" />
                             <label>
                                 <select v-model="addColumnSubstrType">
@@ -164,52 +161,54 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_column_value"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <label>
                                 {{ l("Value") }}
                                 <input type="text" v-model="addColumnValue" />
                             </label>
                         </rule-component>
-                        <rule-component rule-type="remove_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="remove_columns"
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="removeColumnTargets"
                                 :col-headers="activeRuleColHeaders"
-                                :multiple="true"
-                            />
+                                :multiple="true" />
                         </rule-component>
-                        <rule-component rule-type="split_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="split_columns"
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="splitColumnsTargets0"
                                 label="Odd Row Column(s)"
                                 :col-headers="activeRuleColHeaders"
-                                :multiple="true"
-                            />
+                                :multiple="true" />
                             <column-selector
                                 :target.sync="splitColumnsTargets1"
                                 label="Even Row Column(s)"
                                 :col-headers="activeRuleColHeaders"
-                                :multiple="true"
-                            />
+                                :multiple="true" />
                         </rule-component>
-                        <rule-component rule-type="swap_columns" :display-rule-type="displayRuleType" :builder="this">
+                        <rule-component
+                            rule-type="swap_columns"
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="swapColumnsTarget0"
                                 label="Swap Column"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                             <column-selector
                                 :target.sync="swapColumnsTarget1"
                                 label="With Column"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_regex"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector :target.sync="addFilterRegexTarget" :col-headers="activeRuleColHeaders" />
                             <regular-expression-input :target.sync="addFilterRegexExpression" />
                             <label v-b-tooltip.hover :title="titleInvertFilterRegex">
@@ -219,13 +218,11 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_matches"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="addFilterMatchesTarget"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                             <input type="text" v-model="addFilterMatchesValue" />
                             <label v-b-tooltip.hover :title="titleInvertFilterMatches">
                                 <input type="checkbox" v-model="addFilterMatchesInvert" />
@@ -234,13 +231,11 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_compare"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector
                                 :target.sync="addFilterCompareTarget"
-                                :col-headers="activeRuleColHeaders"
-                            />
+                                :col-headers="activeRuleColHeaders" />
                             <label>
                                 Filter out rows
                                 <select v-model="addFilterCompareType">
@@ -254,9 +249,8 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_count"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <label>
                                 Filter which rows?
                                 <select v-model="addFilterCountWhich">
@@ -275,9 +269,8 @@
                         </rule-component>
                         <rule-component
                             rule-type="add_filter_empty"
-                            :display-rule-type="displayRuleType"
-                            :builder="this"
-                        >
+                            :display-rule-type.sync="displayRuleType"
+                            :builder="this">
                             <column-selector :target.sync="addFilterEmptyTarget" :col-headers="activeRuleColHeaders" />
                             <label v-b-tooltip.hover :title="titleInvertFilterEmpty">
                                 <input type="checkbox" v-model="addFilterEmptyInvert" />
@@ -295,14 +288,12 @@
                                     :col-headers="colHeaders"
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
-                                    :value-as-list="true"
-                                >
+                                    :value-as-list="true">
                                     <span
                                         v-b-tooltip.hover
                                         :title="titleRemoveMapping"
                                         class="fa fa-times"
-                                        @click="removeMapping(index)"
-                                    ></span>
+                                        @click="removeMapping(index)"></span>
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
@@ -310,8 +301,7 @@
                                     type="button"
                                     class="dropdown-toggle btn btn-primary mr-1"
                                     data-toggle="dropdown"
-                                    v-if="unmappedTargets.length > 0"
-                                >
+                                    v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span>
                                     {{ "Add Definition" }}
                                     <span class="caret"></span>
@@ -345,13 +335,11 @@
                                     v-b-tooltip.hover
                                     class="fa fa-wrench rule-builder-view-source"
                                     :title="titleViewSource"
-                                    @click="viewSource"
-                                ></span>
+                                    @click="viewSource"></span>
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
                                     @update-rules="restoreRules"
-                                    :savedRules="this.savedRules"
-                                />
+                                    :saved-rules="this.savedRules" />
                             </span>
                             <div v-if="jaggedData" class="rule-warning">
                                 Rows contain differing numbers of columns, there was likely a problem parsing your data.
@@ -365,8 +353,7 @@
                                     :key="index"
                                     @edit="editRule(rule, index)"
                                     @remove="removeRule(index)"
-                                    :col-headers="colHeadersPerRule[index]"
-                                />
+                                    :col-headers="colHeadersPerRule[index]" />
                                 <identifier-display
                                     v-for="(map, index) in mapping"
                                     v-bind="map"
@@ -376,8 +363,7 @@
                                     @edit="displayRuleType = 'mapping'"
                                     @mouseover.native="map.columns.forEach((col) => highlightColumn(col))"
                                     @mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))"
-                                    :col-headers="colHeaders"
-                                />
+                                    :col-headers="colHeaders" />
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
@@ -392,8 +378,7 @@
                                         v-b-tooltip.hover.bottom
                                         :title="titleRulesMenu"
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
-                                        data-toggle="dropdown"
-                                    >
+                                        data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
                                         {{ l("Rules") }}
                                         <span class="caret"></span>
@@ -417,8 +402,7 @@
                                         v-b-tooltip.hover.bottom
                                         :title="titleFilterMenu"
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
-                                        data-toggle="dropdown"
-                                    >
+                                        data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
                                         {{ l("Filter") }}
                                         <span class="caret"></span>
@@ -437,8 +421,7 @@
                                         v-b-tooltip.hover.bottom
                                         :title="titleColumMenu"
                                         class="rule-menu-column-button primary-button dropdown-toggle"
-                                        data-toggle="dropdown"
-                                    >
+                                        data-toggle="dropdown">
                                         <span class="fa fa-plus"></span>
                                         {{ l("Column") }}
                                         <span class="caret"></span>
@@ -448,13 +431,11 @@
                                         <rule-target-component
                                             :builder="this"
                                             rule-type="add_column_metadata"
-                                            v-if="metadataOptions"
-                                        />
+                                            v-if="metadataOptions" />
                                         <rule-target-component
                                             :builder="this"
                                             rule-type="add_column_group_tag_value"
-                                            v-if="hasTagsMetadata"
-                                        />
+                                            v-if="hasTagsMetadata" />
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -468,15 +449,14 @@
                 </div>
                 <!--  flex-column column -->
                 <!--  style="width: 70%;" -->
-                <div class="table-column" :class="orientation" style="width: 100%;" v-if="initialElements !== null">
+                <div class="table-column" :class="orientation" style="width: 100%" v-if="initialElements !== null">
                     <hot-table
                         id="hot-table"
                         ref="hotTable"
                         :data="hotData.data"
                         :col-headers="colHeadersDisplay"
                         :read-only="true"
-                        stretch-h="all"
-                    ></hot-table>
+                        stretch-h="all"></hot-table>
                 </div>
             </div>
         </rule-modal-middle>
@@ -518,8 +498,7 @@
                             :placeholder="namePlaceholder"
                             :title="namePlaceholder"
                             v-b-tooltip.hover
-                            v-model="collectionName"
-                        />
+                            v-model="collectionName" />
                         <label>{{ l("Name") }}:</label>
                     </div>
                 </div>
@@ -590,7 +569,6 @@ import $ from "jquery";
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
 import HotTable from "@handsontable/vue";
@@ -618,6 +596,14 @@ Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
+
+// convert deferred backbone nonsense into a promise
+const deferredToPromise = (d) => {
+    return new Promise((resolve, reject) => {
+        d.done((_, result) => resolve(result));
+        d.fail((err) => reject(err));
+    });
+};
 
 export default {
     data: function () {
@@ -701,7 +687,7 @@ export default {
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
-            titleInvertFilterMatches: _l("Remove rows not matching supplied value"),
+            titleInvertFilterMatches: _l("Remove rows matching supplied value"),
             titleViewSource: _l(
                 "Advanced Option: View and or edit the JSON representation of the rules to apply to this tabular data"
             ),
@@ -762,6 +748,7 @@ export default {
             hideSourceItems: this.defaultHideSourceItems,
             addNameTag: false,
             orientation: orientation,
+            validityErrorHeader: _l("These issues must be resolved to proceed:"),
         };
     },
     props: {
@@ -815,6 +802,9 @@ export default {
         },
     },
     computed: {
+        returnValidityErrorMessages: function () {
+            return this.validityErrorMessages;
+        },
         exisistingDatasets() {
             const elementsType = this.elementsType;
             return (
@@ -840,7 +830,9 @@ export default {
             return this.importType == "collections" && this.elementsType != "collection_contents";
         },
         titleFinish() {
-            if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
+            if (this.validityErrorMessages.length != 0) {
+                return _l("Button is disabled due to validation errors. Please see alerts above.");
+            } else if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 return _l("Create new collection from specified rules and datasets");
             } else if (this.elementsType == "collection_contents") {
                 return _l("Save rules and return to tool form");
@@ -1001,38 +993,81 @@ export default {
             }
             return collectionType;
         },
-        validInput() {
-            const identifierColumns = this.identifierColumns();
-            const mappingAsDict = this.mappingAsDict;
+        validName() {
+            let valid = true;
             const buildingCollection = this.importType == "collections";
+            const mappingAsDict = this.mappingAsDict;
             const requiresName =
                 buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
-
-            let valid = true;
             if (requiresName) {
                 valid = this.collectionName.length > 0;
             }
-
-            if (mappingAsDict.ftp_path && mappingAsDict.url) {
-                // Can only specify one of these.
-                valid = false;
-            }
-
-            const requiresSourceColumn =
-                this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
-            if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
-                valid = false;
-            }
+            return valid;
+        },
+        validRules() {
+            let valid = true;
             for (const rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
             }
-
+            return valid;
+        },
+        validOnlyOnePath() {
+            let valid = true;
+            const mappingAsDict = this.mappingAsDict;
+            if (mappingAsDict.ftp_path && mappingAsDict.url) {
+                // Can only specify one of these.
+                valid = false;
+            }
+            return valid;
+        },
+        validSourceColumn() {
+            let valid = true;
+            const mappingAsDict = this.mappingAsDict;
+            const requiresSourceColumn =
+                this.elementsType == "ftp" || this.elementsType == "raw" || this.elementsType == "remote_files";
+            if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
+                valid = false;
+            }
+            return valid;
+        },
+        validIdentifierColumns() {
+            let valid = true;
+            const identifierColumns = this.identifierColumns();
+            const buildingCollection = this.importType == "collections";
             if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
+        },
+        validInput() {
+            return (
+                this.validName &&
+                this.validRules &&
+                this.validOnlyOnePath &&
+                this.validSourceColumn &&
+                this.validIdentifierColumns
+            );
+        },
+        validityErrorMessages() {
+            const messages = [];
+            if (!this.validName) {
+                messages.push("Name the collection.");
+            }
+            if (!this.validRules) {
+                messages.push("There is an error with one of your rules.");
+            }
+            if (!this.validOnlyOnePath) {
+                messages.push("Only specify either an FTP Path or a URL.");
+            }
+            if (!this.validSourceColumn) {
+                messages.push("Specify a source column (either FTP Path or URL).");
+            }
+            if (!this.validIdentifierColumns) {
+                messages.push("Specify a column as a list identifier.");
+            }
+            return messages;
         },
         hotData() {
             let data;
@@ -1283,21 +1318,19 @@ export default {
             }
             this.saveSession(JSON.stringify(asJson));
             this.state = "wait";
-            const name = this.collectionName;
-            const collectionType = this.collectionType;
+            const { collectionName: name, collectionType, hideSourceItems } = this;
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
                 const elements = this.creationElementsFromDatasets();
                 if (this.state !== "error") {
-                    new AjaxQueue.AjaxQueue(
-                        _.map(elements, (elements, name) => {
-                            return () => {
-                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                                return response;
-                            };
-                        })
-                    )
-                        .done(this.oncreate)
-                        .fail(this.renderFetchError);
+                    const deferreds = Object.entries(elements).map(([name, els]) => {
+                        // This looks like a promise but it is not one because creationFn and
+                        // oncreate are references to function from the backbone models which means
+                        // they are expecting their arguments in a different order. So, looks like,
+                        // jQuery.Deferred and therefore jQuery are still dependencies
+                        return this.creationFn(els, collectionType, name, hideSourceItems).then(this.oncreate);
+                    });
+                    const promises = deferreds.map(deferredToPromise);
+                    return Promise.all(promises).catch((err) => this.renderFetchError(err));
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
@@ -1560,6 +1593,7 @@ export default {
             if (mappingAsDict.url) {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
+                url = url.trim();
                 if (url.indexOf("://") == -1) {
                     // special case columns containing SRA links. EBI serves these a lot
                     // faster over FTP.
@@ -1759,6 +1793,7 @@ export default {
 .rules {
     flex-grow: 1;
     overflow-y: scroll;
+    padding: 0px;
 }
 .rule-source {
     height: 400px;
@@ -1852,5 +1887,9 @@ export default {
 }
 .menu-option {
     padding-left: 5px;
+}
+.alert-area li {
+    list-style: circle;
+    margin-left: 32px;
 }
 </style>

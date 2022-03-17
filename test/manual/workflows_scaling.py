@@ -51,7 +51,7 @@ def main(argv=None):
     uuid = str(uuid4())
     workflow_struct = _workflow_struct(args, uuid)
 
-    has_input = any([s.get("type", "tool") == "input_collection" for s in workflow_struct])
+    has_input = any(s.get("type", "tool") == "input_collection" for s in workflow_struct)
     if not has_input:
         uuid = None
 
@@ -63,7 +63,7 @@ def main(argv=None):
 
     target = functools.partial(_run, args, gi, workflow_id, uuid)
     threads = []
-    for i in range(args.workflow_count):
+    for _ in range(args.workflow_count):
         t = Thread(target=target)
         t.daemon = True
         t.start()

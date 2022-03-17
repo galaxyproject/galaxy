@@ -17,7 +17,7 @@ class ModelOperationToolAction(DefaultToolAction):
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, _, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, _, _, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
@@ -29,7 +29,7 @@ class ModelOperationToolAction(DefaultToolAction):
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
+        history, inp_data, inp_dataset_collections, preserved_tags, preserved_hdca_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
@@ -51,13 +51,14 @@ class ModelOperationToolAction(DefaultToolAction):
             params=wrapped_params.params,
             job_params=job_params,
             tags=preserved_tags,
+            hdca_tags=preserved_hdca_tags,
         )
 
         #
         # Create job.
         #
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._produce_outputs(trans, tool, out_data, output_collections, incoming=incoming, history=history, tags=preserved_tags)
+        self._produce_outputs(trans, tool, out_data, output_collections, incoming=incoming, history=history, tags=preserved_tags, hdca_tags=preserved_hdca_tags)
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         if job_callback:
@@ -68,12 +69,12 @@ class ModelOperationToolAction(DefaultToolAction):
         # Queue the job for execution
         # trans.app.job_manager.job_queue.put( job.id, tool.id )
         # trans.log_event( "Added database job action to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
-        log.info("Calling produce_outputs, tool is %s" % tool)
+        log.info(f"Calling produce_outputs, tool is {tool}")
         return job, out_data, history
 
-    def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags):
+    def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags, hdca_tags):
         tag_handler = trans.app.tag_handler.create_tag_handler_session()
-        tool.produce_outputs(trans, out_data, output_collections, incoming, history=history, tags=tags, tag_handler=tag_handler)
+        tool.produce_outputs(trans, out_data, output_collections, incoming, history=history, tags=tags, hdca_tags=hdca_tags, tag_handler=tag_handler)
         mapped_over_elements = output_collections.dataset_collection_elements
         if mapped_over_elements:
             for name, value in out_data.items():

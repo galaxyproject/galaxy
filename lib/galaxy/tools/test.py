@@ -1,7 +1,7 @@
 import logging
 import os
 import os.path
-
+from typing import List, Tuple
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
@@ -36,9 +36,9 @@ def parse_tests(tool, tests_source):
 
 
 def description_from_tool_object(tool, test_index, raw_test_dict):
-    required_files = []
-    required_data_tables = []
-    required_loc_files = []
+    required_files: List[Tuple[str, dict]] = []
+    required_data_tables: List[str] = []
+    required_loc_files: List[str] = []
 
     num_outputs = raw_test_dict.get('expect_num_outputs', None)
     if num_outputs:
@@ -57,6 +57,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "stderr": raw_test_dict.get("stderr", None),
             "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
             "expect_failure": raw_test_dict.get("expect_failure", False),
+            "expect_test_failure": raw_test_dict.get("expect_test_failure", False),
             "required_files": required_files,
             "required_data_tables": required_data_tables,
             "required_loc_files": required_loc_files,
@@ -90,6 +91,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
     for value in tool_inputs.values():
         if isinstance(value, galaxy.tools.parameters.grouping.Conditional):
             cond_context = ParamContext(name=value.name, parent_context=parent_context)
+            assert value.test_param
             case_context = ParamContext(name=value.test_param.name, parent_context=cond_context)
             raw_input_dict = case_context.extract_value(raw_inputs)
             case_value = raw_input_dict["value"] if raw_input_dict else None
@@ -112,6 +114,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                     expanded_inputs[case_context.for_state()] = processed_value
         elif isinstance(value, galaxy.tools.parameters.grouping.Section):
             context = ParamContext(name=value.name, parent_context=parent_context)
+            assert value.inputs
             for r_value in value.inputs.values():
                 expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                 if expanded_input:
@@ -121,6 +124,7 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
             while True:
                 context = ParamContext(name=value.name, index=repeat_index, parent_context=parent_context)
                 updated = False
+                assert value.inputs
                 for r_value in value.inputs.values():
                     expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
                     if expanded_input:
@@ -233,7 +237,7 @@ def _matching_case_for_value(tool, cond, declared_value):
             # No explicit value for this param and cannot determine a
             # default - give up. Previously this would just result in a key
             # error exception.
-            msg = "Failed to find test parameter value specification required for conditional %s" % cond.name
+            msg = f"Failed to find test parameter value specification required for conditional {cond.name}"
             raise Exception(msg)
 
     # Check the tool's defined cases against predicate to determine
@@ -249,7 +253,7 @@ def _matching_case_for_value(tool, cond, declared_value):
 
 def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
     if value is None:
-        assert input_parameter.optional, '%s is not optional. You must provide a valid filename.' % name
+        assert input_parameter.optional, f'{name} is not optional. You must provide a valid filename.'
         return value
     return require_file(name, value, extra, required_files)
 
@@ -311,7 +315,7 @@ class ParamContext:
             return name
 
     def __str__(self):
-        return "Context[for_state=%s]" % self.for_state()
+        return f"Context[for_state={self.for_state()}]"
 
     def param_names(self):
         for parent_context_param in self.parent_context.param_names():

@@ -52,7 +52,7 @@ class UsersController(BaseAPIController):
             user = self.__create_user(trans, email, username, password)
             user_dict = user.to_dict(view='element',
                                      value_mapper=self.__get_value_mapper(trans))
-            user_dict['message'] = "User '%s' has been created." % str(user.username)
+            user_dict['message'] = f"User '{str(user.username)}' has been created."
             user_dict['url'] = web.url_for(controller='users',
                                            action='show',
                                            id=trans.security.encode_id(user.id))
@@ -72,7 +72,7 @@ class UsersController(BaseAPIController):
         return user
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id}
         return value_mapper
 
     @web.legacy_expose_api_anonymous
@@ -108,7 +108,7 @@ class UsersController(BaseAPIController):
         # user is requesting data about themselves
         user = trans.user if id == 'current' else suc.get_user(trans.app, id)
         if user is None:
-            user_dict = dict(message='Unable to locate user record for id %s.' % (str(id)),
+            user_dict = dict(message=f'Unable to locate user record for id {str(id)}.',
                              status='error')
             return user_dict
         user_dict = user.to_dict(view='element',
@@ -120,7 +120,7 @@ class UsersController(BaseAPIController):
 
     def __validate(self, trans, email, password, confirm, username):
         if username in ['repos']:
-            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+            return f"The term '{username}' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
         message = "\n".join((validate_email(trans, email),
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username))).rstrip()

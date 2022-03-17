@@ -1,126 +1,159 @@
 <template>
     <section>
-        <header class="d-flex align-items-center justify-content-between">
-            <h6 class="text-nowrap mr-3">
-                <span v-localize>Matches</span>
-                <a href="#" @click="showFilter = !showFilter">
-                    <span>{{ totalMatches }}</span>
-                </a>
-            </h6>
-
-            <PriorityMenu style="max-width: 50%;" :starting-height="27">
-                <PriorityMenuItem
-                    key="filter"
+        <nav class="content-operations-menu d-flex justify-content-between bg-secondary">
+            <b-button-group>
+                <IconButton
+                    :title="hasSelection ? 'Select All Contents' : 'Unselect All Contents'"
+                    icon="check-square"
+                    :disabled="!totalMatches"
+                    :pressed="hasSelection"
+                    @click="toggleSelectAll" />
+                <IconButton
                     title="Filter History Content"
-                    icon="fa fa-filter"
-                    @click="showFilter = !showFilter"
+                    icon="filter"
+                    :disabled="!totalMatches"
                     :pressed="showFilter"
-                />
+                    @click="showFilter = !showFilter"
+                    data-description="content filter toggle" />
+                <IconButton
+                    title="Collapse Expanded Items"
+                    icon="compress"
+                    :disabled="!expandedCount"
+                    @click="$emit('collapseAllContent')" />
+            </b-button-group>
 
-                <PriorityMenuItem
-                    key="selection"
-                    title="Operations on multiple datasets"
-                    icon="fas fa-check-square"
-                    @click="$emit('update:show-selection', !showSelection)"
-                    :pressed="showSelection"
-                />
+            <b-button-group>
+                <b-dropdown
+                    class="history-contents-list-action-menu-btn"
+                    size="sm"
+                    text="Selection"
+                    :disabled="!hasSelection"
+                    data-description="selected content menu">
+                    <b-dropdown-text id="history-op-selected-content">
+                        <span v-localize v-if="hasSelection">With {{ numSelected }} selected items...</span>
+                        <span v-localize v-else>You don't have any selected content.</span>
+                    </b-dropdown-text>
 
-                <PriorityMenuItem
-                    key="copy-datasets"
-                    title="Copy Datasets"
-                    icon="fas fa-copy"
-                    @click="iframeRedirect('/dataset/copy_datasets')"
-                />
-
-                <PriorityMenuItem
-                    key="collapse-expanded"
-                    title="Collapse Expanded Datasets"
-                    icon="fas fa-compress-alt"
-                    @click="emit('collapseAllContent')"
-                />
-
-                <PriorityMenuItem
-                    key="show-hidden-datasets"
-                    title="Unhide All Hidden Datasets"
-                    icon="fas fa-eye"
-                    @click="$bvModal.show('show-hidden-content')"
-                />
-
-                <PriorityMenuItem
-                    key="delete-hidden"
-                    title="Delete Hidden Datasets"
-                    icon="fas fa-trash"
-                    @click="$bvModal.show('delete-hidden-content')"
-                />
-
-                <PriorityMenuItem
-                    key="purge-hidden"
-                    title="Purge Hidden Datasets"
-                    icon="fas fa-burn"
-                    @click="$bvModal.show('purge-deleted-content')"
-                />
-            </PriorityMenu>
-        </header>
-
-        <transition name="shutterfade">
-            <content-filters v-if="showContentFilters" class="content-filters mt-1" :params.sync="localParams" />
-        </transition>
-
-        <transition name="shutterfade">
-            <b-button-toolbar v-if="showSelection" class="content-selection justify-content-between mt-1">
-                <b-button-group>
-                    <b-button size="sm" @click="$emit('selectAllContent')">
-                        {{ "Select All" | localize }}
-                    </b-button>
-                    <b-button size="sm" @click="$emit('resetSelection')">
-                        {{ "Unselect All" | localize }}
-                    </b-button>
-                </b-button-group>
-
-                <b-dropdown class="ml-auto" size="sm" text="With Selected" :disabled="!hasSelection">
-                    <b-dropdown-item @click="hideSelected">
-                        {{ "Hide Datasets" | localize }}
+                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:hide-selected-content>
+                        <span v-localize>Hide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="unhideSelected">
-                        {{ "Unhide Datasets" | localize }}
+
+                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:show-selected-content>
+                        <span v-localize>Unhide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="deleteSelected">
-                        {{ "Delete Datasets" | localize }}
+
+                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:delete-selected-content>
+                        <span v-localize>Delete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="undeleteSelected">
-                        {{ "Undelete Datasets" | localize }}
+
+                    <b-dropdown-item aria-describedby="history-op-selected-content" v-b-modal:restore-selected-content>
+                        <span v-localize>Undelete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="purgeSelected">
-                        {{ "Permanently Delete Datasets" | localize }}
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        v-b-modal:purge-selected-content
+                        :disabled="!hasSelection">
+                        <span v-localize>Permanently Delete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="buildDatasetList">
-                        {{ "Build Dataset List" | localize }}
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildDatasetList"
+                        data-description="build list">
+                        <span v-localize>Build Dataset List</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="buildDatasetPair">
-                        {{ "Build Dataset Pair" | localize }}
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildDatasetPair"
+                        data-description="build pair">
+                        <span v-localize>Build Dataset Pair</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="buildListOfPairs">
-                        {{ "Build List of Dataset Pairs" | localize }}
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildListOfPairs"
+                        data-description="build list of pairs">
+                        <span v-localize>Build List of Dataset Pairs</span>
                     </b-dropdown-item>
-                    <b-dropdown-item @click="buildCollectionFromRules">
-                        {{ "Build Collection from Rules" | localize }}
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-selected-content"
+                        @click="buildCollectionFromRules"
+                        data-description="build collection from rules">
+                        <span v-localize>Build Collection from Rules</span>
                     </b-dropdown-item>
                 </b-dropdown>
-            </b-button-toolbar>
+
+                <b-dropdown
+                    class="history-contents-list-action-menu-btn"
+                    size="sm"
+                    text="History"
+                    :disabled="!totalMatches"
+                    data-description="history action menu">
+                    <b-dropdown-text id="history-op-all-content">
+                        <span v-localize>With entire history...</span>
+                    </b-dropdown-text>
+
+                    <b-dropdown-item
+                        aria-describedby="history-op-all-content"
+                        @click="iframeRedirect('/dataset/copy_datasets')"
+                        data-description="copy datasets">
+                        <span v-localize>Copy Datasets</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:show-all-hidden-content aria-describedby="history-op-all-content">
+                        <span v-localize>Unhide All Hidden Content</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:delete-all-hidden-content aria-describedby="history-op-all-content">
+                        <span v-localize>Delete All Hidden Content</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item v-b-modal:purge-all-deleted-content aria-describedby="history-op-all-content">
+                        <span v-localize>Purge All Hidden Content</span>
+                    </b-dropdown-item>
+                </b-dropdown>
+            </b-button-group>
+        </nav>
+
+        <transition name="shutterfade">
+            <content-filters v-if="showContentFilters" class="content-filters p-2" :params.sync="localParams" />
         </transition>
 
         <!-- #region Menus and popovers -->
 
-        <b-modal id="show-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
-            <p>{{ "Really unhide all hidden datasets?" | localize }}</p>
+        <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
+            <p v-localize>Really hide {{ numSelected }} content items?</p>
         </b-modal>
 
-        <b-modal id="delete-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
-            <p>{{ "Really delete all hidden datasets?" | localize }}</p>
+        <b-modal id="show-selected-content" title="Show Selected Content?" title-tag="h2" @ok="unhideSelected">
+            <p v-localize>Really show {{ numSelected }} content items?</p>
         </b-modal>
 
-        <b-modal id="purge-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
-            <p>{{ "Really delete all deleted datasets permanently? This cannot be undone." | localize }}</p>
+        <b-modal id="delete-selected-content" title="Delete Selected Content?" title-tag="h2" @ok="deleteSelected">
+            <p v-localize>Really delete {{ numSelected }} content items?</p>
+        </b-modal>
+
+        <b-modal id="restore-selected-content" title="Restore Selected Content?" title-tag="h2" @ok="undeleteSelected">
+            <p v-localize>Really restore {{ numSelected }} content items?</p>
+        </b-modal>
+
+        <b-modal id="purge-selected-content" title="Purge Selected Content?" title-tag="h2" @ok="purgeSelected">
+            <p v-localize>Permanently delete {{ numSelected }} content items? This cannot be undone.</p>
+        </b-modal>
+
+        <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
+            <p v-localize>Really unhide all hidden datasets?</p>
+        </b-modal>
+
+        <b-modal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
+            <p v-localize>Really delete all hidden datasets?</p>
+        </b-modal>
+
+        <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
+            <p v-localize>"Really delete all deleted datasets permanently? This cannot be undone.</p>
         </b-modal>
 
         <!-- #endregion -->
@@ -128,7 +161,7 @@
 </template>
 
 <script>
-import { SearchParams } from "./model/SearchParams";
+import { SearchParams } from "components/providers/History/SearchParams";
 import { History } from "./model/History";
 import {
     hideSelectedContent,
@@ -141,19 +174,17 @@ import {
     purgeAllDeletedContent,
 } from "./model";
 import { createDatasetCollection } from "./model/queries";
-import { cacheContent } from "./caching";
-
+import { cacheContent } from "components/providers/History/caching";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import ContentFilters from "./ContentFilters";
-import { PriorityMenu, PriorityMenuItem } from "components/PriorityMenu";
 import { buildCollectionModal } from "./adapters/buildCollectionModal";
+import ContentFilters from "./ContentFilters";
+import IconButton from "components/IconButton";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
         ContentFilters,
-        PriorityMenu,
-        PriorityMenuItem,
+        IconButton,
     },
     props: {
         history: { type: History, required: true },
@@ -161,6 +192,8 @@ export default {
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
         totalMatches: { type: Number, required: true },
+        expandedCount: { type: Number, required: false, default: 0 },
+        debug: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -168,13 +201,11 @@ export default {
         };
     },
     computed: {
-        // pop it open if anything is selected
         showContentFilters() {
             const { showHidden, showDeleted, filterText } = this.params;
             return this.showFilter || showHidden || showDeleted || filterText;
         },
 
-        // pass-through
         localParams: {
             get() {
                 return this.params;
@@ -184,8 +215,12 @@ export default {
             },
         },
 
+        numSelected() {
+            return this.contentSelection.size || 0;
+        },
+
         hasSelection() {
-            return this.contentSelection.size > 0;
+            return this.numSelected > 0;
         },
 
         countHidden() {
@@ -193,22 +228,29 @@ export default {
         },
     },
     methods: {
+        toggleSelectAll() {
+            if (this.hasSelection) {
+                this.$emit("resetSelection");
+                this.$emit("update:show-selection", false);
+            } else {
+                this.$emit("selectAllContent");
+                this.$emit("update:show-selection", true);
+            }
+        },
+
         // #region history-wide bulk updates, does server query first to determine "selection"
 
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
             this.$emit("manualReload");
-            evt.vueTarget.hide();
         },
         async deleteAllHidden(evt) {
             await deleteAllHiddenContent(this.history);
             this.$emit("manualReload");
-            evt.vueTarget.hide();
         },
         async purgeAllDeleted(evt) {
             await purgeAllDeletedContent(this.history);
             this.$emit("manualReload");
-            evt.vueTarget.hide();
         },
 
         // #endregion
@@ -233,7 +275,10 @@ export default {
         async runOnSelection(fn) {
             const items = Array.from(this.contentSelection.values());
             const type_ids = items.map((o) => o.type_id);
-            await fn(this.history, type_ids);
+            const results = await fn(this.history, type_ids);
+            if (this.debug) {
+                console.log("operation results", results);
+            }
             this.$emit("resetSelection");
             this.$emit("manualReload");
         },
@@ -257,8 +302,19 @@ export default {
         async buildNewCollection(collectionTypeCode) {
             const modalResult = await buildCollectionModal(collectionTypeCode, this.history.id, this.contentSelection);
             const newCollection = await createDatasetCollection(this.history, modalResult);
+
+            // cache the collection
             await cacheContent(newCollection);
-            this.$emit("manualReload");
+
+            // have to hide the source items if that was requested
+            if (modalResult.hide_source_items) {
+                this.contentSelection.forEach(async (dataset) => {
+                    await cacheContent({ ...dataset, visible: false }, true);
+                });
+                this.$emit("resetSelection");
+            }
+
+            // this.$emit("manualReload");
         },
 
         // #endregion
@@ -272,3 +328,10 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+// remove borders around buttons in menu
+.content-operations-menu .btn-group .btn {
+    border-color: transparent !important;
+}
+</style>

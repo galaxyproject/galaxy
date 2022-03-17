@@ -6,7 +6,10 @@ import re
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.util import generic_util
 from galaxy.util import (
     nice_size,
@@ -28,19 +31,19 @@ class InfernalCM(Text):
     MetadataElement(name="cm_version", default="1/a", desc="Infernal Covariance Model version",
                     readonly=True, visible=True, optional=True, no_value=0)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
-                dataset.blurb = "%s models" % dataset.metadata.number_of_models
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+                dataset.blurb = f"{dataset.metadata.number_of_models} models"
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'infernal_model.cm' )
@@ -68,7 +71,7 @@ class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
@@ -80,7 +83,7 @@ class Hmmer(Text):
         try:
             return dataset.peek
         except Exception:
-            return "HMMER database (%s)" % (nice_size(dataset.get_size()))
+            return f"HMMER database ({nice_size(dataset.get_size())})"
 
     @abc.abstractmethod
     def sniff_prefix(self, filename):
@@ -91,7 +94,7 @@ class Hmmer2(Hmmer):
     edam_format = "format_3328"
     file_ext = "hmm2"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """HMMER2 files start with HMMER2.0
         """
         return file_prefix.startswith('HMMER2.0')
@@ -101,7 +104,7 @@ class Hmmer3(Hmmer):
     edam_format = "format_3329"
     file_ext = "hmm3"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """HMMER3 files start with HMMER3/f
         """
         return file_prefix.startswith('HMMER3/f')
@@ -112,7 +115,7 @@ class HmmerPress(Binary):
     file_ext = 'hmmpress'
     composite_type = 'basic'
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "HMMER Binary database"
@@ -148,18 +151,18 @@ class Stockholm_1_0(Text):
 
     MetadataElement(name="number_of_models", default=0, desc="Number of multiple alignments", readonly=True, visible=True, optional=True, no_value=0)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
+                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
     def set_meta(self, dataset, **kwd):
@@ -184,11 +187,11 @@ class Stockholm_1_0(Text):
 
         chunk_size = None
         if split_params['split_mode'] == 'number_of_parts':
-            raise Exception('Split mode "%s" is currently not implemented for STOCKHOLM-files.' % split_params['split_mode'])
+            raise Exception(f"Split mode \"{split_params['split_mode']}\" is currently not implemented for STOCKHOLM-files.")
         elif split_params['split_mode'] == 'to_size':
             chunk_size = int(split_params['split_size'])
         else:
-            raise Exception('Unsupported split mode %s' % split_params['split_mode'])
+            raise Exception(f"Unsupported split mode {split_params['split_mode']}")
 
         def _read_stockholm_records(filename):
             lines = []
@@ -227,18 +230,18 @@ class MauveXmfa(Text):
 
     MetadataElement(name="number_of_models", default=0, desc="Number of alignmened sequences", readonly=True, visible=True, optional=True, no_value=0)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             if (dataset.metadata.number_of_models == 1):
                 dataset.blurb = "1 alignment"
             else:
-                dataset.blurb = "%s alignments" % dataset.metadata.number_of_models
+                dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         return file_prefix.startswith('#FormatVersion Mauve1')
 
     def set_meta(self, dataset, **kwd):

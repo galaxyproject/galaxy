@@ -1,5 +1,4 @@
-"""Web Application Stack worker messaging
-"""
+"""Web Application Stack worker messaging."""
 
 import json
 import logging
@@ -47,12 +46,11 @@ class ApplicationStackMessageDispatcher:
 
 
 class ApplicationStackMessage(dict):
-    target: Optional[str] = None  # type: ignore
     default_handler = None
     _validate_kwargs = ('target',)
 
     def __init__(self, target=None, **kwargs):
-        self['target'] = target or self.__class__.target
+        self['target'] = target
         self._merge_class_tuples()
 
     def _merge_class_tuples(self):
@@ -90,16 +88,16 @@ class ApplicationStackMessage(dict):
 
         This could also be implemented as a mixin class.
         """
-        assert self.default_handler is not None, '%s has no default handler method, cannot bind' % self.__class__.__name__
+        assert self.default_handler is not None, f'{self.__class__.__name__} has no default handler method, cannot bind'
         setattr(obj, name, types.MethodType(self.default_handler, obj))
         log.debug("Bound default message handler '%s.%s' to %s", self.__class__.__name__, self.default_handler.__name__,
                   getattr(obj, name))
 
-    @property  # type: ignore
-    def target(self):
+    @property
+    def target(self) -> Optional[str]:
         return self['target']
 
-    @target.setter  # type: ignore
+    @target.setter  # type: ignore[attr-defined]
     def set_target(self, target):
         self['target'] = target
 
@@ -144,7 +142,7 @@ class TaskMessage(ParamMessage):
             cls=self.__class__.__name__,
             task=msg.task,
             msg=msg)
-        getattr(self, '_handle_%s_msg' % msg.task)(**msg.params)
+        getattr(self, f'_handle_{msg.task}_msg')(**msg.params)
 
     @property
     def task(self):

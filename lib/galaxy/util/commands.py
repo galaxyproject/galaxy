@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import sys as _sys
+import tempfile
 
 from galaxy.util import (
     unicodify,
@@ -158,11 +159,30 @@ class CommandLineException(Exception):
         return self.message
 
 
+def new_clean_env():
+    """
+    Returns a minimal environment to use when invoking a subprocess
+    """
+    env = {}
+    for k in ("HOME", "PATH", "TMPDIR"):
+        if k in os.environ:
+            env[k] = os.environ[k]
+    if "TMPDIR" not in env:
+        env["TMPDIR"] = os.path.abspath(tempfile.gettempdir())
+    # Set LC_CTYPE environment variable to enforce UTF-8 file encoding.
+    # This is needed e.g. for Python < 3.7 where
+    # `locale.getpreferredencoding()` (also used by open() to determine the
+    # default file encoding) would return `ANSI_X3.4-1968` without this.
+    env["LC_CTYPE"] = "C.UTF-8"
+    return env
+
+
 __all__ = (
     'argv_to_str',
     'CommandLineException',
     'download_command',
     'execute',
+    'new_clean_env',
     'redirect_aware_commmunicate',
     'redirecting_io',
     'shell',

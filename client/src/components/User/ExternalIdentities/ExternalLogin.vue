@@ -13,8 +13,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
                     </b-form-group>
 
@@ -49,8 +48,7 @@
                             v-model="selected"
                             :options="cilogon_idps"
                             label="DisplayName"
-                            track-by="EntityID"
-                        >
+                            track-by="EntityID">
                         </multiselect>
 
                         <b-button
@@ -169,7 +167,9 @@ export default {
         },
         submitCILogon(idp) {
             const rootUrl = getAppRoot();
-            if (this.login_page) this.setIdpPreference();
+            if (this.login_page) {
+                this.setIdpPreference();
+            }
             axios
                 .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
                 .then((response) => {

@@ -30,15 +30,12 @@
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
-                @keyup="$emit('update:annotationCurrent', annotationCurrent)"
-            />
-            <div class="form-text text-muted">
-                These notes will be visible when this workflow is viewed.
-            </div>
+                @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
+            <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
         </div>
         <div id="workflow-license-area" class="mt-2">
             <b>License</b>
-            <LicenseSelector :inputLicense="license" @onLicense="onLicense" />
+            <LicenseSelector :input-license="license" @onLicense="onLicense" />
         </div>
         <div id="workflow-creator-area" class="mt-2">
             <b>Creator</b>

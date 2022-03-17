@@ -1,4 +1,10 @@
 <tool id="mapper" name="Mapper" version="0.1.0">
+    <edam_topics>
+        <edam_topic>topic_0102</edam_topic><!-- CompBio -> SeqAnalysis -> Mapping  -->
+    </edam_topics>
+    <edam_operations>
+        <edam_operation>operation_3198</edam_operation> <!-- Analysis -> SeqAnalysis -> Nucleic acid sequence analysis -> Sequence read processing -> Read Mapping -->
+    </edam_operations>
     <command><![CDATA[
 cp '$__tool_directory__/1.bam' '$out_file1'
     ]]></command>

@@ -4,11 +4,13 @@ from collections import (
     defaultdict,
     namedtuple,
 )
+from typing import Set
 
 from galaxy import exceptions
 from galaxy.util import (
     plugin_config
 )
+from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +20,7 @@ FileSourcePath = namedtuple('FileSourcePath', ['file_source', 'path'])
 class ConfiguredFileSources:
     """Load plugins and resolve Galaxy URIs to FileSource objects."""
 
-    def __init__(self, file_sources_config, conf_file=None, conf_dict=None, load_stock_plugins=False):
+    def __init__(self, file_sources_config: 'ConfiguredFileSourcesConfig', conf_file=None, conf_dict=None, load_stock_plugins=False):
         self._file_sources_config = file_sources_config
         self._plugin_classes = self._file_source_plugins_dict()
         file_sources = []
@@ -77,10 +79,10 @@ class ConfiguredFileSources:
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
-            raise exceptions.RequestParameterInvalidException("Invalid uri [%s]" % uri)
+            raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
         scheme, rest = uri.split("://", 1)
         if scheme not in self.get_schemes():
-            raise exceptions.RequestParameterInvalidException("Unsupported URI scheme [%s]" % scheme)
+            raise exceptions.RequestParameterInvalidException(f"Unsupported URI scheme [{scheme}]")
 
         if scheme != "gxfiles":
             # prefix unused
@@ -132,7 +134,7 @@ class ConfiguredFileSources:
         # is this string a URI this object understands how to realize
         if path_or_uri.startswith("gx") and "://" in path_or_uri:
             for scheme in self.get_schemes():
-                if path_or_uri.startswith("%s://" % scheme):
+                if path_or_uri.startswith(f"{scheme}://"):
                     return True
 
         return False
@@ -146,6 +148,8 @@ class ConfiguredFileSources:
     def plugins_to_dict(self, for_serialization=False, user_context=None):
         rval = []
         for file_source in self._file_sources:
+            if not file_source.user_has_access(user_context):
+                continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
         return rval
@@ -218,7 +222,25 @@ class ConfiguredFileSourcesConfig:
         )
 
 
-class ProvidesUserFileSourcesUserContext:
+class FileSourceDictifiable(Dictifiable):
+    dict_collection_visible_keys = ('email', 'username', 'ftp_dir', 'preferences', 'is_admin')
+
+    def to_dict(self, view='collection', value_mapper=None):
+        rval = super().to_dict(view=view, value_mapper=value_mapper)
+        rval['role_names'] = list(self.role_names)
+        rval['group_names'] = list(self.group_names)
+        return rval
+
+    @property
+    def role_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def group_names(sefl) -> Set[str]:
+        raise NotImplementedError
+
+
+class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
     def __init__(self, trans):
@@ -243,8 +265,37 @@ class ProvidesUserFileSourcesUserContext:
         user = self.trans.user
         return user and user.extra_preferences or defaultdict(lambda: None)
 
+    @property
+    def role_names(self) -> Set[str]:
+        """The set of role names of this user."""
+        user = self.trans.user
+        return {ura.role.name for ura in user.roles} if user else set()
 
-class DictFileSourcesUserContext:
+    @property
+    def group_names(self) -> Set[str]:
+        """The set of group names to which this user belongs."""
+        user = self.trans.user
+        return {ugr.group.name for ugr in user.groups} if user else set()
+
+    @property
+    def is_admin(self):
+        """Whether this user is an administrator."""
+        return self.trans.user_is_admin
+
+    @property
+    def user_vault(self):
+        """User vault namespace"""
+        user_vault = self.trans.user_vault
+        return user_vault or defaultdict(lambda: None)
+
+    @property
+    def app_vault(self):
+        """App vault namespace"""
+        vault = self.trans.app.vault
+        return vault or defaultdict(lambda: None)
+
+
+class DictFileSourcesUserContext(FileSourceDictifiable):
 
     def __init__(self, **kwd):
         self._kwd = kwd
@@ -264,3 +315,23 @@ class DictFileSourcesUserContext:
     @property
     def preferences(self):
         return self._kwd.get("preferences")
+
+    @property
+    def role_names(self):
+        return set(self._kwd.get("role_names", []))
+
+    @property
+    def group_names(self):
+        return set(self._kwd.get("group_names", []))
+
+    @property
+    def is_admin(self):
+        return self._kwd.get("is_admin")
+
+    @property
+    def user_vault(self):
+        return self._kwd.get("user_vault")
+
+    @property
+    def app_vault(self):
+        return self._kwd.get("app_vault")

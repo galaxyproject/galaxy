@@ -18,6 +18,7 @@ import galaxy.jobs
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -36,7 +37,6 @@ from galaxy.util import (
     shrink_stream_by_size,
     unicodify,
 )
-from galaxy.util.bunch import Bunch
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
@@ -67,6 +67,8 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
+
+    start_methods = ['_init_monitor_thread', '_init_worker_threads']
     DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
@@ -83,6 +85,11 @@ class BaseJobRunner:
             log.debug('Loading %s with params: %s', self.runner_name, kwargs)
         self.runner_params = RunnerParams(specs=runner_param_specs, params=kwargs)
         self.runner_state_handlers = build_state_handlers()
+        self._should_stop = False
+
+    def start(self):
+        for start_method in self.start_methods:
+            getattr(self, start_method, lambda: None)()
 
     def _init_worker_threads(self):
         """Start ``nworkers`` worker threads.
@@ -93,7 +100,7 @@ class BaseJobRunner:
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
-            self.app.application_stack.register_postfork_function(worker.start)
+            worker.start()
             self.work_threads.append(worker)
 
     def _alive_worker_threads(self, cycle=False):
@@ -110,8 +117,11 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
         """
-        while True:
-            (method, arg) = self.work_queue.get()
+        while self._should_stop is False:
+            try:
+                (method, arg) = self.work_queue.get(timeout=1)
+            except Empty:
+                continue
             if method is STOP_SIGNAL:
                 return
             # id and name are collected first so that the call of method() is the last exception.
@@ -130,7 +140,7 @@ class BaseJobRunner:
             try:
                 action_str = f'galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}'
                 action_timer = self.app.execution_timer_factory.get_timer(
-                    'internals.%s' % action_str,
+                    f'internals.{action_str}',
                     'job runner action %s for job ${job_id} executed' % (action_str)
                 )
                 method(arg)
@@ -161,6 +171,7 @@ class BaseJobRunner:
         """Attempts to gracefully shut down the worker threads
         """
         log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
+        self._should_stop = True
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
@@ -301,7 +312,7 @@ class BaseJobRunner:
         # Set up dict of dataset id --> output path; output path can be real or
         # false depending on outputs_to_working_directory
         output_paths = {}
-        for dataset_path in job_wrapper.get_output_fnames():
+        for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
             if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
                 path = dataset_path.false_path
@@ -345,14 +356,14 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.output_paths:
+        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED] and job_wrapper.job_io.output_paths:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
-            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.get_output_fnames(),
+            external_metadata_script = job_wrapper.setup_external_metadata(output_fnames=job_wrapper.job_io.get_output_fnames(),
                                                                            set_extension=True,
                                                                            tmp_dir=job_wrapper.working_directory,
                                                                            # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                                                                           kwds={'overwrite' : False})
+                                                                           kwds={'overwrite': False})
             external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
             if resolve_requirements:
                 dependency_shell_commands = self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(job_directory=job_wrapper.working_directory)
@@ -401,8 +412,8 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path, contents):
-        write_script(path, contents, self.app.config)
+    def write_executable_script(self, path, contents, job_io):
+        write_script(path, contents, job_io)
 
     def _find_container(
         self,
@@ -540,7 +551,7 @@ class BaseJobRunner:
 
             job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
         except Exception:
-            log.exception("({}/{}) Job wrapper finish method failed".format(job_id or '', external_job_id or ''))
+            log.exception(f"({job_id or ''}/{external_job_id or ''}) Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
 
@@ -548,15 +559,7 @@ class JobState:
     """
     Encapsulate state of jobs.
     """
-    runner_states = Bunch(
-        WALLTIME_REACHED='walltime_reached',
-        MEMORY_LIMIT_REACHED='memory_limit_reached',
-        JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
-        UNKNOWN_ERROR='unknown_error',
-        GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit',
-        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
-    )
+    runner_states = runner_states
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False
@@ -574,19 +577,19 @@ class JobState:
             id_tag = self.job_wrapper.get_id_tag()
             if files_dir is not None:
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
-                self.output_file = os.path.join(files_dir, 'galaxy_%s.o' % id_tag)
-                self.error_file = os.path.join(files_dir, 'galaxy_%s.e' % id_tag)
+                self.output_file = os.path.join(files_dir, f'galaxy_{id_tag}.o')
+                self.error_file = os.path.join(files_dir, f'galaxy_{id_tag}.e')
                 self.exit_code_file = default_exit_code_file(files_dir, id_tag)
-            job_name = 'g%s' % id_tag
+            job_name = f'g{id_tag}'
             if self.job_wrapper.tool.old_id:
-                job_name += '_%s' % self.job_wrapper.tool.old_id
+                job_name += f'_{self.job_wrapper.tool.old_id}'
             if not self.redact_email_in_job_name and self.job_wrapper.user:
-                job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
+                job_name += f'_{self.job_wrapper.user}'
+            self.job_name = ''.join(x if x in (f"{string.ascii_letters + string.digits}_") else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):
-        return os.path.join(files_dir, 'galaxy_%s.sh' % id_tag)
+        return os.path.join(files_dir, f'galaxy_{id_tag}.sh')
 
     def read_exit_code(self):
         return read_exit_code_from(self.exit_code_file, self.job_wrapper.get_id_tag())
@@ -599,10 +602,10 @@ class JobState:
                 # TODO: Move this prefix stuff to a method so we don't have dispatch on attributes we may or may
                 # not have.
                 if not hasattr(self, "job_id"):
-                    prefix = "(%s)" % self.job_wrapper.get_id_tag()
+                    prefix = f"({self.job_wrapper.get_id_tag()})"
                 else:
                     prefix = f"({self.job_wrapper.get_id_tag()}/{self.job_id})"
-                log.debug("{} Unable to cleanup {}: {}".format(prefix, file, unicodify(e)))
+                log.debug(f"{prefix} Unable to cleanup {file}: {unicodify(e)}")
 
 
 class AsynchronousJobState(JobState):
@@ -680,7 +683,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.monitor_queue = Queue()
 
     def _init_monitor_thread(self):
-        name = "%s.monitor_thread" % self.runner_name
+        name = f"{self.runner_name}.monitor_thread"
         super()._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
 
     def handle_stop(self):
@@ -710,14 +713,14 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
-            time.sleep(1)
+            time.sleep(self.app.config.job_runner_monitor_sleep)
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)
 
     def shutdown(self):
         """Attempts to gracefully shut down the monitor thread"""
-        log.info("%s: Sending stop signal to monitor thread" % self.runner_name)
+        log.info(f"{self.runner_name}: Sending stop signal to monitor thread")
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
         self.shutdown_monitor()

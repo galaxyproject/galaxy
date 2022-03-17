@@ -24,10 +24,9 @@
                 <Citation
                     class="formatted-reference"
                     :citation="citation"
-                    :outputFormat="outputFormat"
+                    :output-format="outputFormat"
                     v-for="(citation, index) in citations"
-                    :key="index"
-                />
+                    :key="index" />
             </div>
         </b-card>
         <div v-else-if="citations.length">
@@ -38,16 +37,14 @@
                 @show="$emit('show')"
                 @shown="$emit('shown')"
                 @hide="$emit('hide')"
-                @hidden="$emit('hidden')"
-            >
+                @hidden="$emit('hidden')">
                 <b-card>
                     <Citation
                         class="formatted-reference"
                         :citation="citation"
-                        :outputFormat="outputFormat"
+                        :output-format="outputFormat"
                         v-for="(citation, index) in citations"
-                        :key="index"
-                    />
+                        :key="index" />
                 </b-card>
             </b-collapse>
         </div>

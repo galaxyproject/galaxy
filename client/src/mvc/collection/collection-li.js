@@ -255,6 +255,7 @@ var NestedDCDCEListItemView = DCListItemView.extend(
             DCListItemView.prototype._swapNewRender.call(this, $newRender);
             var state = this.model.get("state") || "ok";
             this.$el.addClass(`state-${state}`);
+            this.$el.attr("data-state", state);
             return this.$el;
         },
 

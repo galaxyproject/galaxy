@@ -1,8 +1,7 @@
-name: "Labels Verifier"
+name: Labels Verifier
 on:
   pull_request_target:
     types: [closed]
-
 jobs:
   onMerged:
     name: "Check Labels on merge"
@@ -12,7 +11,8 @@ jobs:
         if: |
           github.event.pull_request.merged == true &&
           ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/') &&
-          ! contains(github.event.pull_request.labels.*.name, 'merge')
+          ! contains(github.event.pull_request.labels.*.name, 'merge') &&
+          ! contains(github.event.pull_request.labels.*.name, 'minor')
         uses: actions/github-script@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

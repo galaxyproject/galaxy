@@ -4,11 +4,12 @@
  */
 
 import { merge } from "rxjs";
-import { mapTo, delay, share } from "rxjs/operators";
+import { mapTo, debounceTime, distinctUntilChanged, publish } from "rxjs/operators";
 
-export const activity = (cfg = {}) => (source) => {
-    const { period = 500 } = cfg;
-    const on = source.pipe(mapTo(true), share());
-    const off = on.pipe(delay(period), mapTo(false));
-    return merge(on, off);
+export const activity = (period = 500) => {
+    return publish((src) => {
+        const on = src.pipe(mapTo(true));
+        const off = src.pipe(debounceTime(period), mapTo(false));
+        return merge(on, off).pipe(distinctUntilChanged());
+    });
 };

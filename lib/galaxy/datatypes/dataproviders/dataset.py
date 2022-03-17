@@ -79,8 +79,8 @@ class DatasetDataProvider(base.DataProvider):
             Optional: defaults to None (return all types)
         :type indeces: list of ints
         """
-        metadata_column_types = (self.dataset.metadata.column_types or
-                                 getattr(self.dataset.datatype, 'column_types', None) or None)
+        metadata_column_types = (self.dataset.metadata.column_types
+                                 or getattr(self.dataset.datatype, 'column_types', None) or None)
         if not metadata_column_types:
             return metadata_column_types
         if indeces:
@@ -99,8 +99,8 @@ class DatasetDataProvider(base.DataProvider):
             Optional: defaults to None (return all names)
         :type indeces: list of ints
         """
-        metadata_column_names = (self.dataset.metadata.column_names or
-                                 getattr(self.dataset.datatype, 'column_names', None) or None)
+        metadata_column_names = (self.dataset.metadata.column_names
+                                 or getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
             return metadata_column_names
         if indeces:
@@ -122,11 +122,11 @@ class DatasetDataProvider(base.DataProvider):
         :raises KeyError: if column_names are not found
         :raises ValueError: if an entry in list_of_column_names is not in column_names
         """
-        metadata_column_names = (self.dataset.metadata.column_names or
-                                 getattr(self.dataset.datatype, 'column_names', None) or None)
+        metadata_column_names = (self.dataset.metadata.column_names
+                                 or getattr(self.dataset.datatype, 'column_names', None) or None)
         if not metadata_column_names:
-            raise KeyError('No column_names found for ' +
-                           'datatype: {}, dataset: {}'.format(str(self.dataset.datatype), str(self.dataset)))
+            raise KeyError('No column_names found for '
+                           + f'datatype: {str(self.dataset.datatype)}, dataset: {str(self.dataset)}')
         indeces = []  # if indeces and column_names:
         # pull using indeces and re-name with given names - no need to alter (does as super would)
         #    pass
@@ -155,7 +155,7 @@ class DatasetDataProvider(base.DataProvider):
         region_column_names = ('chromCol', 'startCol', 'endCol')
         region_indices = [self.get_metadata_column_index_by_name(name) for name in region_column_names]
         if check and not all(_ is not None for _ in region_indices):
-            raise ValueError("Could not determine proper column indices for chrom, start, end: %s" % (str(region_indices)))
+            raise ValueError(f"Could not determine proper column indices for chrom, start, end: {str(region_indices)}")
         return region_indices
 
 
@@ -270,10 +270,10 @@ class GenomicRegionDataProvider(column.ColumnarDataProvider):
     # dictionary keys when named_columns=True
     COLUMN_NAMES = ['chrom', 'start', 'end']
     settings = {
-        'chrom_column'  : 'int',
-        'start_column'  : 'int',
-        'end_column'    : 'int',
-        'named_columns' : 'bool',
+        'chrom_column': 'int',
+        'start_column': 'int',
+        'end_column': 'int',
+        'named_columns': 'bool',
     }
 
     def __init__(self, dataset, chrom_column=None, start_column=None, end_column=None, named_columns=False, **kwargs):
@@ -304,12 +304,12 @@ class GenomicRegionDataProvider(column.ColumnarDataProvider):
             end_column = dataset_source.get_metadata_column_index_by_name('endCol')
         indeces = [chrom_column, start_column, end_column]
         if not all(_ is not None for _ in indeces):
-            raise ValueError("Could not determine proper column indeces for" +
-                             " chrom, start, end: %s" % (str(indeces)))
-        kwargs.update({'indeces' : indeces})
+            raise ValueError("Could not determine proper column indeces for"
+                             + f" chrom, start, end: {str(indeces)}")
+        kwargs.update({'indeces': indeces})
 
         if not kwargs.get('column_types', None):
-            kwargs.update({'column_types' : dataset_source.get_metadata_column_types(indeces=indeces)})
+            kwargs.update({'column_types': dataset_source.get_metadata_column_types(indeces=indeces)})
 
         self.named_columns = named_columns
         if self.named_columns:
@@ -338,12 +338,12 @@ class IntervalDataProvider(column.ColumnarDataProvider):
     """
     COLUMN_NAMES = ['chrom', 'start', 'end', 'strand', 'name']
     settings = {
-        'chrom_column'  : 'int',
-        'start_column'  : 'int',
-        'end_column'    : 'int',
-        'strand_column' : 'int',
-        'name_column'   : 'int',
-        'named_columns' : 'bool',
+        'chrom_column': 'int',
+        'start_column': 'int',
+        'end_column': 'int',
+        'strand_column': 'int',
+        'name_column': 'int',
+        'named_columns': 'bool',
     }
 
     def __init__(self, dataset, chrom_column=None, start_column=None, end_column=None,
@@ -390,9 +390,9 @@ class IntervalDataProvider(column.ColumnarDataProvider):
                 self.column_names.append('name')
                 indeces.append(name_column)
 
-        kwargs.update({'indeces' : indeces})
+        kwargs.update({'indeces': indeces})
         if not kwargs.get('column_types', None):
-            kwargs.update({'column_types' : dataset_source.get_metadata_column_types(indeces=indeces)})
+            kwargs.update({'column_types': dataset_source.get_metadata_column_types(indeces=indeces)})
 
         self.named_columns = named_columns
 
@@ -419,7 +419,7 @@ class FastaDataProvider(base.FilteredDataProvider):
         }
     """
     settings = {
-        'ids'  : 'list:str',
+        'ids': 'list:str',
     }
 
     def __init__(self, source, ids=None, **kwargs):
@@ -438,8 +438,8 @@ class FastaDataProvider(base.FilteredDataProvider):
         parent_gen = super().__iter__()
         for fasta_record in parent_gen:
             yield {
-                'id'  : fasta_record.name,
-                'seq' : fasta_record.text
+                'id': fasta_record.name,
+                'seq': fasta_record.text
             }
 
 
@@ -453,7 +453,7 @@ class TwoBitFastaDataProvider(DatasetDataProvider):
         }
     """
     settings = {
-        'ids'  : 'list:str',
+        'ids': 'list:str',
     }
 
     def __init__(self, source, ids=None, **kwargs):
@@ -483,8 +483,8 @@ class WiggleDataProvider(base.LimitedOffsetDataProvider):
     """
     COLUMN_NAMES = ['chrom', 'pos', 'value']
     settings = {
-        'named_columns' : 'bool',
-        'column_names'  : 'list:str',
+        'named_columns': 'bool',
+        'column_names': 'list:str',
     }
 
     def __init__(self, source, named_columns=False, column_names=None, **kwargs):
@@ -525,8 +525,8 @@ class BigWigDataProvider(base.LimitedOffsetDataProvider):
     """
     COLUMN_NAMES = ['chrom', 'pos', 'value']
     settings = {
-        'named_columns' : 'bool',
-        'column_names'  : 'list:str',
+        'named_columns': 'bool',
+        'column_names': 'list:str',
     }
 
     def __init__(self, source, chrom, start, end, named_columns=False, column_names=None, **kwargs):
@@ -659,16 +659,16 @@ class SamtoolsDataProvider(line.RegexLineDataProvider):
 
         # if sam add -S
         # TODO: not the best test in the world...
-        if((self.dataset.ext == 'sam') and
-                ('S' not in validated_flag_list)):
+        if((self.dataset.ext == 'sam')
+                and ('S' not in validated_flag_list)):
             validated_flag_list.append('S')
 
         if validated_flag_list:
-            opt_list.append('-' + ''.join(validated_flag_list))
+            opt_list.append(f"-{''.join(validated_flag_list)}")
 
         for flag, arg in options_dict.items():
             if flag in self.FLAGS_W_ARGS:
-                opt_list.extend(['-' + flag, str(arg)])
+                opt_list.extend([f"-{flag}", str(arg)])
 
         return opt_list
 

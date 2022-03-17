@@ -128,7 +128,7 @@ class InstallToolDependencyManager:
             log.exception('Error installing tool dependency %s version %s.', tool_dependency.name, tool_dependency.version)
             # Since there was an installation error, update the tool dependency status to Error. The remove_installation_path option must
             # be left False here.
-            error_message = '{}\n{}'.format(self.format_traceback(), util.unicodify(e))
+            error_message = f'{self.format_traceback()}\n{util.unicodify(e)}'
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(self.app,
                                                                                   tool_dependency=tool_dependency,
                                                                                   status=self.app.install_model.ToolDependency.installation_status.ERROR,
@@ -136,8 +136,7 @@ class InstallToolDependencyManager:
         tool_dependency = self.mark_tool_dependency_installed(tool_dependency)
         return tool_dependency
 
-    def install_specified_tool_dependencies(self, tool_shed_repository, tool_dependencies_config, tool_dependencies,
-                                            from_tool_migration_manager=False):
+    def install_specified_tool_dependencies(self, tool_shed_repository, tool_dependencies_config, tool_dependencies):
         """
         Follow the recipe in the received tool_dependencies_config to install specified packages for
         repository tools.  The received list of tool_dependencies are the database records for those
@@ -152,7 +151,7 @@ class InstallToolDependencyManager:
         # Parse the tool_dependencies.xml config.
         tree, error_message = xml_util.parse_xml(tool_dependencies_config)
         if tree is None:
-            log.debug("The received tool_dependencies.xml file is likely invalid: %s" % str(error_message))
+            log.debug(f"The received tool_dependencies.xml file is likely invalid: {str(error_message)}")
             return installed_packages
         root = tree.getroot()
         elems = []
@@ -191,14 +190,12 @@ class InstallToolDependencyManager:
                                                     elem,
                                                     name,
                                                     version,
-                                                    from_tool_migration_manager=from_tool_migration_manager,
                                                     tool_dependency_db_records=tool_dependencies)
                     if (tool_dependency.type == 'package' and proceed_with_install):
                         try:
                             tool_dependency = self.install_package(elem,
                                                                    tool_shed_repository,
-                                                                   tool_dependencies=tool_dependencies,
-                                                                   from_tool_migration_manager=from_tool_migration_manager)
+                                                                   tool_dependencies=tool_dependencies)
                         except Exception as e:
                             error_message = "Error installing tool dependency %s version %s: %s" % \
                                 (str(name), str(version), str(e))
@@ -273,7 +270,7 @@ class InstallToolDependencyManager:
                                                                         actions_dict)
         return tool_dependency
 
-    def install_package(self, elem, tool_shed_repository, tool_dependencies=None, from_tool_migration_manager=False):
+    def install_package(self, elem, tool_shed_repository, tool_dependencies=None):
         """
         Install a tool dependency package defined by the XML element elem.  The value of tool_dependencies is
         a partial or full list of ToolDependency records associated with the tool_shed_repository.
@@ -296,7 +293,6 @@ class InstallToolDependencyManager:
                                                     package_elem,
                                                     package_name,
                                                     package_version,
-                                                    from_tool_migration_manager=from_tool_migration_manager,
                                                     tool_dependency_db_records=None)
                     if proceed_with_install and actions_elem_tuples:
                         # Get the installation directory for tool dependencies that will be installed for the received
@@ -483,10 +479,10 @@ class InstallRepositoryManager:
         if not repository_revision_dict or not repo_info_dict:
             invalid_parameter_message = "No information is available for the requested repository revision.\n"
             invalid_parameter_message += "One or more of the following parameter values is likely invalid:\n"
-            invalid_parameter_message += "tool_shed_url: %s\n" % tool_shed_url
-            invalid_parameter_message += "name: %s\n" % name
-            invalid_parameter_message += "owner: %s\n" % owner
-            invalid_parameter_message += "changeset_revision: %s\n" % changeset_revision
+            invalid_parameter_message += f"tool_shed_url: {tool_shed_url}\n"
+            invalid_parameter_message += f"name: {name}\n"
+            invalid_parameter_message += f"owner: {owner}\n"
+            invalid_parameter_message += f"changeset_revision: {changeset_revision}\n"
             raise exceptions.RequestParameterInvalidException(invalid_parameter_message)
         repo_info_dicts = [repo_info_dict]
         return repository_revision_dict, repo_info_dicts
@@ -515,7 +511,7 @@ class InstallRepositoryManager:
                                                   persist=True)
         irmm.generate_metadata_for_changeset_revision()
         irmm_metadata_dict = irmm.get_metadata_dict()
-        tool_shed_repository.metadata = irmm_metadata_dict
+        tool_shed_repository.metadata_ = irmm_metadata_dict
         # Update the tool_shed_repository.tool_shed_status column in the database.
         tool_shed_status_dict = repository_util.get_tool_shed_status_for_installed_repository(self.app, tool_shed_repository)
         if tool_shed_status_dict:
@@ -934,7 +930,7 @@ class InstallRepositoryManager:
                                           shed_tool_conf=shed_tool_conf,
                                           reinstalling=reinstalling,
                                           tool_panel_section_mapping=tool_panel_section_mapping)
-        metadata = tool_shed_repository.metadata
+        metadata = tool_shed_repository.metadata_
         if 'tools' in metadata and install_resolver_dependencies:
             self.update_tool_shed_repository_status(tool_shed_repository,
                                                     self.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES)
@@ -955,8 +951,7 @@ class InstallRepositoryManager:
             itdm = InstallToolDependencyManager(self.app)
             itdm.install_specified_tool_dependencies(tool_shed_repository=tool_shed_repository,
                                                      tool_dependencies_config=tool_dependencies_config,
-                                                     tool_dependencies=tool_shed_repository.tool_dependencies,
-                                                     from_tool_migration_manager=False)
+                                                     tool_dependencies=tool_shed_repository.tool_dependencies)
             basic_util.remove_dir(work_dir)
         self.update_tool_shed_repository_status(tool_shed_repository,
                                                 self.install_model.ToolShedRepository.installation_status.INSTALLED)
@@ -964,7 +959,7 @@ class InstallRepositoryManager:
     def update_tool_shed_repository(self, repository, tool_shed_url, latest_ctx_rev, latest_changeset_revision,
                                     install_new_dependencies=True, install_options=None):
         install_options = install_options or {}
-        original_metadata_dict = repository.metadata
+        original_metadata_dict = repository.metadata_
         original_repository_dependencies_dict = original_metadata_dict.get('repository_dependencies', {})
         original_repository_dependencies = original_repository_dependencies_dict.get('repository_dependencies', [])
         original_tool_dependencies_dict = original_metadata_dict.get('tool_dependencies', {})

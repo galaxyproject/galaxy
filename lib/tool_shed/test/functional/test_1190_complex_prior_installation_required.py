@@ -31,16 +31,16 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
+        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
+        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_matplotlib_repository(self):
-        '''Create and populate the package_matplotlib_1_2_0170 repository.'''
-        '''
+        '''Create and populate the package_matplotlib_1_2_0170 repository.
+
         This is step 1 - Create and populate repositories package_matplotlib_1_2_0170 and package_numpy_1_7_0170.
         '''
         global running_standalone
@@ -65,8 +65,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0010_create_numpy_repository(self):
-        '''Create and populate the package_numpy_1_7_0170 repository.'''
-        '''
+        '''Create and populate the package_numpy_1_7_0170 repository.
+
         This is step 1 - Create and populate repositories package_matplotlib_1_2_0170 and package_numpy_1_7_0170.
         '''
         global running_standalone
@@ -90,8 +90,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0015_create_complex_repository_dependency(self):
-        '''Create a dependency on package_numpy_1_7_0170.'''
-        '''
+        '''Create a dependency on package_numpy_1_7_0170.
+
         This is step 2 - Create a complex repository dependency on package_numpy_1_7_0170, and upload this to package_matplotlib_1_2_0170.
         package_matplotlib_1_2_0170 should depend on package_numpy_1_7_0170, with prior_installation_required
         set to True. When matplotlib is selected for installation, the result should be that numpy is compiled
@@ -129,8 +129,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                              strings_not_displayed=[])
 
     def test_0020_verify_generated_dependency(self):
-        '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.'''
-        '''
+        '''Verify that matplotlib now has a package tool dependency and a complex repository dependency.
+
         This is step 3 - Verify that package_matplotlib_1_2_0170 now depends on package_numpy_1_7_0170, and that the inherited tool
                          dependency displays correctly.
         'Inhherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
@@ -143,8 +143,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         self.display_manage_repository_page(matplotlib_repository, strings_displayed=['numpy', '1.7', 'package', changeset_revision])
 
     def test_0025_install_matplotlib_repository(self):
-        '''Install the package_matplotlib_1_2_0170 repository.'''
-        '''
+        '''Install the package_matplotlib_1_2_0170 repository.
+
         This is step 4 - Install package_matplotlib_1_2_0170 with repository dependencies.
         '''
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
@@ -163,8 +163,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                                 includes_tools_for_display_in_tool_panel=False)
 
     def test_0030_verify_installation_order(self):
-        '''Verify that the numpy repository was installed before the matplotlib repository.'''
-        '''
+        '''Verify that the numpy repository was installed before the matplotlib repository.
+
         This is step 5 - Verify that the prior_installation_required attribute resulted in package_numpy_1_7_0170 being installed first.
         In the previous step, package_matplotlib_1_2_0170 was selected for installation, but package_numpy_1_7_0170 had the
         prior_installation_required attribute set. Confirm that this resulted in package_numpy_1_7_0170 being installed before

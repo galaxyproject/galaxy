@@ -88,5 +88,5 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
 else
     echo "Executing: $run_server $server_args"
     # args are properly quoted so use eval
-    eval $run_server $server_args
+    eval GALAXY_ROOT_DIR="." $run_server $server_args
 fi

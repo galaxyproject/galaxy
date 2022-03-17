@@ -39,7 +39,7 @@ class ApplicationStackTransport:
         # Don't unnecessarily start a thread that we don't need.
         if self.can_run and not self.running and not self.dispatcher_thread and self.dispatcher and self.dispatcher.handler_count:
             self.running = True
-            self.dispatcher_thread = threading.Thread(name=self.__class__.__name__ + ".dispatcher_thread", target=self._dispatch_messages)
+            self.dispatcher_thread = threading.Thread(name=f"{self.__class__.__name__}.dispatcher_thread", target=self._dispatch_messages)
             self.dispatcher_thread.start()
             log.info('%s dispatcher started', self.__class__.__name__)
 
@@ -78,7 +78,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         need = len(self.stack._lock_farms)
         if num < need:
             raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
-        self._locks.extend(['RECV_MSG_FARM_' + x for x in sorted(self.stack._lock_farms)])
+        self._locks.extend([f"RECV_MSG_FARM_{x}" for x in sorted(self.stack._lock_farms)])
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
         # if len(self.lock_map) > 1:
         #     uwsgi.set_option('locks', len(self.lock_map))
@@ -100,7 +100,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             uwsgi.unlock(self._locks.index(name_or_id))
 
     def _farm_recv_msg_lock_num(self):
-        return self._locks.index('RECV_MSG_FARM_' + self.stack._farm_name)
+        return self._locks.index(f"RECV_MSG_FARM_{self.stack._farm_name}")
 
     def _dispatch_messages(self):
         # this could be moved to the base class if locking was abstracted and a get_message method was added
@@ -139,7 +139,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
                                    % (uwsgi.mule_id(),
                                       ','.join(map(str, range(1, len([x for x in self.stack._configured_mules if x.endswith('galaxy/main.py')]) + 1)))))
             elif len(self.stack._farms) > 1:
-                raise RuntimeError('Mule %s is in multiple farms! This configuration is not supported due to locking issues' % uwsgi.mule_id())
+                raise RuntimeError(f'Mule {uwsgi.mule_id()} is in multiple farms! This configuration is not supported due to locking issues')
             # only mules receive messages so don't bother starting the dispatcher if we're not a mule (although
             # currently it doesn't have any registered handlers and so wouldn't start anyway)
             super().start()

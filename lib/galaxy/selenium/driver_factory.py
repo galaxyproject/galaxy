@@ -1,3 +1,4 @@
+import logging
 import os
 
 try:
@@ -8,7 +9,10 @@ except ImportError:
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.remote.webdriver import WebDriver
 
+logger = logging.getLogger('selenium.webdriver.remote.remote_connection')
+logger.setLevel(logging.WARNING)
 
 DEFAULT_BROWSER = "auto"
 DEFAULT_DOWNLOAD_PATH = '/tmp/'
@@ -21,10 +25,11 @@ DEFAULT_SELENIUM_REMOTE_PORT = "4444"
 DEFAULT_SELENIUM_REMOTE_HOST = "127.0.0.1"
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 1000
-VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
+VALID_LOCAL_BROWSERS = ["CHROME", "FIREFOX", "OPERA"]
 
 
 class ConfiguredDriver:
+    driver: WebDriver
 
     def __init__(
         self,
@@ -75,7 +80,7 @@ def get_local_browser(browser):
     return browser
 
 
-def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
+def get_local_driver(browser=DEFAULT_BROWSER, headless=False) -> WebDriver:
     browser = get_local_browser(browser)
     if browser not in VALID_LOCAL_BROWSERS:
         raise AssertionError(f"{browser} not in VALID_LOCAL_BROWSERS ({VALID_LOCAL_BROWSERS})")
@@ -83,7 +88,6 @@ def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
         "CHROME": webdriver.Chrome,
         "FIREFOX": webdriver.Firefox,
         "OPERA": webdriver.Opera,
-        "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
     if browser == 'CHROME':
@@ -111,11 +115,11 @@ def get_remote_driver(
     host,
     port,
     browser=DEFAULT_BROWSER
-):
+) -> WebDriver:
     # docker run -d -p 4444:4444 -v /dev/shm:/dev/shm selenium/standalone-chrome:3.0.1-aluminum
     if browser == "auto":
         browser = "CHROME"
-    assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "PHANTOMJS", "SAFARI"]
+    assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
     desired_capabilities["loggingPrefs"] = LOGGING_PREFS
     executor = f'http://{host}:{port}/wd/hub'
@@ -150,13 +154,14 @@ class NoopDisplay:
 def _which(file):
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
-        if os.path.exists(path + "/" + file):
-            return path + "/" + file
+        if os.path.exists(f"{path}/{file}"):
+            return f"{path}/{file}"
 
     return None
 
 
 __all__ = (
+    'ConfiguredDriver',
     'get_local_driver',
     'get_remote_driver',
     'is_virtual_display_available',

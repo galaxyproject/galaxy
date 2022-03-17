@@ -171,7 +171,7 @@ def validate_and_normalize_targets(trans, payload):
                 looks_like_url = True
 
             if not looks_like_url:
-                raise RequestParameterInvalidException("Invalid URL [%s] found in src definition." % url)
+                raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
 
             validate_url(url, trans.app.config.fetch_url_allowlist_ips)
             item["in_place"] = run_as_real_user
@@ -191,13 +191,13 @@ def validate_and_normalize_targets(trans, payload):
 def _handle_invalid_link_data_only_type(item):
     link_data_only = item.get("link_data_only", False)
     if link_data_only:
-        raise RequestParameterInvalidException("link_data_only is invalid for src type [%s]" % item.get("src"))
+        raise RequestParameterInvalidException(f"link_data_only is invalid for src type [{item.get('src')}]")
 
 
 def _handle_invalid_link_data_only_elements_type(item):
     link_data_only = item.get("link_data_only", False)
     if link_data_only and item.get("elements_from", False) in ELEMENTS_FROM_TRANSIENT_TYPES:
-        raise RequestParameterInvalidException("link_data_only is invalid for derived elements from [%s]" % item.get("elements_from"))
+        raise RequestParameterInvalidException(f"link_data_only is invalid for derived elements from [{item.get('elements_from')}]")
 
 
 def _for_each_src(f, obj):

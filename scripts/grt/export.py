@@ -18,6 +18,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy
 import galaxy.app
 import galaxy.config
+from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import (
     hash_util,
@@ -36,7 +37,7 @@ def _init(args):
     if not config.database_connection:
         logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
-    model = galaxy.config.init_models_from_config(config, object_store=object_store)
+    model = init_models_from_config(config, object_store=object_store)
     return (
         model,
         object_store,

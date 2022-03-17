@@ -30,7 +30,7 @@ class EnvPlugin(InstrumentPlugin):
     def pre_execute_instrument(self, job_directory):
         """ Use env to dump all environment variables to a file.
         """
-        return "env > '%s'" % self.__env_file(job_directory)
+        return f"env > '{self.__env_file(job_directory)}'"
 
     def post_execute_instrument(self, job_directory):
         return None

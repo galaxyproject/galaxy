@@ -1,25 +1,45 @@
 name: Python linting
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - '**.py'
+  pull_request:
+    paths:
+      - '**.py'
+concurrency:
+  group: py-lint-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.9]
+        python-version: ['3.7', '3.10']
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Cache pip dir
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
-    - name: Install tox
-      run: pip install tox
-    - name: run tests
-      run: tox -e lint
-    - name: run mypy checks
-      run: tox -e mypy
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+      - name: Cache pip dir
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}
+      - name: Cache tox env
+        uses: actions/cache@v2
+        with:
+          path: .tox
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}-lint
+      - name: Install tox
+        run: pip install tox
+      - name: Run linting
+        run: tox -e lint
+      - name: Run docstring linting
+        run: tox -e lint_docstring_include_list
+      - name: Run mypy checks
+        run: tox -e mypy

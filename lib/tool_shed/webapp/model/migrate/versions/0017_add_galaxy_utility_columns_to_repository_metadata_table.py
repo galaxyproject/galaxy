@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
     try:
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_inc_datatypes")
         assert c is RepositoryMetadata_table.c.includes_datatypes
-        migrate_engine.execute("UPDATE repository_metadata SET includes_datatypes=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET includes_datatypes={default_false}")
     except Exception:
         log.exception("Adding includes_datatypes column to the repository_metadata table failed.")
 
@@ -45,7 +45,7 @@ def upgrade(migrate_engine):
     try:
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_has_repo_deps")
         assert c is RepositoryMetadata_table.c.has_repository_dependencies
-        migrate_engine.execute("UPDATE repository_metadata SET has_repository_dependencies=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET has_repository_dependencies={default_false}")
     except Exception:
         log.exception("Adding has_repository_dependencies column to the repository_metadata table failed.")
 
@@ -54,7 +54,7 @@ def upgrade(migrate_engine):
     try:
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_inc_tools")
         assert c is RepositoryMetadata_table.c.includes_tools
-        migrate_engine.execute("UPDATE repository_metadata SET includes_tools=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET includes_tools={default_false}")
     except Exception:
         log.exception("Adding includes_tools column to the repository_metadata table failed.")
 
@@ -63,7 +63,7 @@ def upgrade(migrate_engine):
     try:
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_inc_tool_deps")
         assert c is RepositoryMetadata_table.c.includes_tool_dependencies
-        migrate_engine.execute("UPDATE repository_metadata SET includes_tool_dependencies=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET includes_tool_dependencies={default_false}")
     except Exception:
         log.exception("Adding includes_tool_dependencies column to the repository_metadata table failed.")
 
@@ -72,7 +72,7 @@ def upgrade(migrate_engine):
     try:
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_inc_workflows")
         assert c is RepositoryMetadata_table.c.includes_workflows
-        migrate_engine.execute("UPDATE repository_metadata SET includes_workflows=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET includes_workflows={default_false}")
     except Exception:
         log.exception("Adding includes_workflows column to the repository_metadata table failed.")
 

@@ -12,7 +12,10 @@ import sys
 from galaxy.datatypes import data
 from galaxy.datatypes import sequence
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
@@ -25,7 +28,7 @@ class Amos(data.Text):
     edam_format = "format_3582"
     file_ext = 'afg'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is an amos assembly file format
         Example::
@@ -66,7 +69,7 @@ class Sequences(sequence.Fasta):
     edam_data = "data_0925"
     file_ext = 'sequences'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced  fasta format
         The id line has 3 fields separated by tabs: sequence_name  sequence_index category::
@@ -77,22 +80,19 @@ class Sequences(sequence.Fasta):
           CGACGAATGACAGGTCACGAATTTGGCGGGGATTA
         """
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if line.startswith('>'):
                     if not re.match(r'>[^\t]+\t\d+\t\d+$', line):
-                        break
+                        return False
                     # The next line.strip() must not be '', nor startwith '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
-                        break
+                        return False
                     return True
                 else:
-                    break  # we found a non-empty line, but it's not a fasta header
+                    return False
         return False
 
 
@@ -102,7 +102,7 @@ class Roadmaps(data.Text):
     edam_format = "format_2561"
     file_ext = 'roadmaps'
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is a velveth produced RoadMap::
           142858  21      1
@@ -112,21 +112,16 @@ class Roadmaps(data.Text):
         """
 
         fh = file_prefix.string_io()
-        while True:
-            line = fh.readline()
-            if not line:
-                break  # EOF
+        for line in fh:
             line = line.strip()
             if line:  # first non-empty line
                 if not re.match(r'\d+\t\d+\t\d+$', line):
-                    break
+                    return False
                 # The next line.strip() should be 'ROADMAP 1'
                 line = fh.readline().strip()
-                if not re.match(r'ROADMAP \d+$', line):
-                    break
-                return True
+                return bool(re.match(r'ROADMAP \d+$', line))
             else:
-                break  # we found a non-empty line, but it's not a fasta header
+                return False  # we found a non-empty line, but it's not a fasta header
         return False
 
 
@@ -145,17 +140,17 @@ class Velvet(Html):
         self.add_composite_file('Log', mimetype='text/html', description='Log', optional='True', substitute_name_with_metadata=None, is_binary=False)
 
     def generate_primary_file(self, dataset=None):
-        log.debug("Velvet log info  {} {}".format('JJ generate_primary_file', dataset))
+        log.debug(f"Velvet log info  JJ generate_primary_file {dataset}")
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  {} {} {}".format('JJ generate_primary_file', fn, composite_file))
+            log.debug(f"Velvet log info  JJ generate_primary_file {fn} {composite_file}")
             opt_text = ''
             if composite_file.optional:
                 opt_text = ' (optional)'
             if composite_file.get('description'):
-                rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')
@@ -165,7 +160,7 @@ class Velvet(Html):
         """
         cannot do this until we are setting metadata
         """
-        log.debug("Velvet log info  %s" % 'JJ regenerate_primary_file')
+        log.debug(f"Velvet log info  {'JJ regenerate_primary_file'}")
         gen_msg = ''
         try:
             efp = dataset.extra_files_path
@@ -173,7 +168,7 @@ class Velvet(Html):
             with open(log_path) as f:
                 log_content = f.read(1000)
             log_msg = re.sub(r'/\S*/', '', log_content)
-            log.debug("Velveth log info  %s" % log_msg)
+            log.debug(f"Velveth log info  {log_msg}")
             paired_end_reads = re.search(r'-(short|long)Paired', log_msg) is not None
             dataset.metadata.paired_end_reads = paired_end_reads
             long_reads = re.search(r'-long', log_msg) is not None
@@ -182,27 +177,27 @@ class Velvet(Html):
             dataset.metadata.short2_reads = short2_reads
             dataset.info = re.sub(r'.*velveth \S+', 'hash_length', re.sub(r'\n', ' ', log_msg))
             if paired_end_reads:
-                gen_msg = gen_msg + ' Paired-End Reads'
+                gen_msg = f"{gen_msg} Paired-End Reads"
             if long_reads:
-                gen_msg = gen_msg + ' Long Reads'
+                gen_msg = f"{gen_msg} Long Reads"
             if len(gen_msg) > 0:
-                gen_msg = 'Uses: ' + gen_msg
+                gen_msg = f"Uses: {gen_msg}"
         except Exception:
-            log.debug("Velveth could not read Log file in %s" % efp)
-        log.debug("Velveth log info  %s" % gen_msg)
+            log.debug(f"Velveth could not read Log file in {efp}")
+        log.debug(f"Velveth log info  {gen_msg}")
         rval = ['<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>']
         # rval.append('<div>Generated:<p/><code> %s </code></div>' %(re.sub('\n','<br>',log_msg)))
-        rval.append('<div>Generated:<p/> %s </div>' % (gen_msg))
+        rval.append(f'<div>Generated:<p/> {gen_msg} </div>')
         rval.append('<div>Velveth dataset:<p/><ul>')
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            log.debug("Velvet log info  {} {} {}".format('JJ regenerate_primary_file', fn, composite_file))
+            log.debug(f"Velvet log info  JJ regenerate_primary_file {fn} {composite_file}")
             if re.search('Log', fn) is None:
                 opt_text = ''
                 if composite_file.optional:
                     opt_text = ' (optional)'
                 if composite_file.get('description'):
-                    rval.append('<li><a href="{}" type="text/plain">{} ({})</a>{}</li>'.format(fn, fn, composite_file.get('description'), opt_text))
+                    rval.append(f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>")
                 else:
                     rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append('</ul></div></html>')

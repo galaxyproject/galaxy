@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 import shutil
 import string
@@ -11,6 +12,10 @@ from typing import Any, List, NamedTuple
 import requests
 import yaml
 from boltons.iterutils import remap
+try:
+    from gravity.util import settings_to_sample
+except ImportError:
+    settings_to_sample = None
 
 try:
     from pykwalify.core import Core
@@ -21,7 +26,12 @@ if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 
-from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
+from galaxy.config import (
+    GALAXY_CONFIG_SCHEMA_PATH,
+    REPORTS_CONFIG_SCHEMA_PATH,
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
+    UWSGI_SCHEMA_PATH,
+)
 from galaxy.config.schema import (
     AppSchema,
     OPTION_DEFAULTS,
@@ -47,7 +57,6 @@ UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for sect
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False)
 RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False, break_on_hyphens=False)
-UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 UWSGI_OPTIONS = dict([
     ('http', {
@@ -201,29 +210,29 @@ class _OptionAction:
 class _DeprecatedAction(_OptionAction):
 
     def lint(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated, this will likely be dropped in future releases of Galaxy." % key)
+        print(f"Option [{key}] has been deprecated, this will likely be dropped in future releases of Galaxy.")
 
 
 class _DeprecatedAndDroppedAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated and dropped. It is not included in converted configuration." % key)
+        print(f"Option [{key}] has been deprecated and dropped. It is not included in converted configuration.")
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
-        print("Option [%s] has been deprecated. Option should be dropped without replacement." % key)
+        print(f"Option [{key}] has been deprecated. Option should be dropped without replacement.")
 
 
 class _PasteAppFactoryAction(_OptionAction):
 
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            raise Exception("Ending convert process - unknown paste factory encountered [%s]" % value)
+            raise Exception(f"Ending convert process - unknown paste factory encountered [{value}]")
         return DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
-            print("Problem - unknown paste app factory encountered [%s]" % value)
+            print(f"Problem - unknown paste app factory encountered [{value}]")
 
 
 class _ProductionUnsafe(_OptionAction):
@@ -290,10 +299,11 @@ OPTION_ACTIONS = {
     'fulltext_max_size': _DeprecatedAndDroppedAction(),
     'fulltext_noindex_filetypes': _DeprecatedAndDroppedAction(),
     'fulltext_url': _DeprecatedAndDroppedAction(),
+    'enable_beta_job_managers': _DeprecatedAndDroppedAction(),
     'enable_legacy_sample_tracking_api': _DeprecatedAction(),
     'enable_new_user_preferences': _DeprecatedAndDroppedAction(),
-    'force_beta_workflow_scheduled_for_collections': _DeprecatedAction(),
-    'force_beta_workflow_scheduled_min_steps': _DeprecatedAction(),
+    'force_beta_workflow_scheduled_for_collections': _DeprecatedAndDroppedAction(),
+    'force_beta_workflow_scheduled_min_steps': _DeprecatedAndDroppedAction(),
     'history_local_serial_workflow_scheduling': _ProductionPerformance(),
     'allow_library_path_paste': _RenameAction("allow_path_paste"),
     'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
@@ -309,6 +319,8 @@ OPTION_ACTIONS = {
     'communication_server_port': _DeprecatedAndDroppedAction(),
     'persistent_communication_rooms': _DeprecatedAndDroppedAction(),
     'legacy_eager_objectstore_initialization': _DeprecatedAndDroppedAction(),
+    'enable_openid': _DeprecatedAndDroppedAction(),
+    'openid_consumer_cache_path': _DeprecatedAndDroppedAction(),
 }
 
 
@@ -344,7 +356,7 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
     "config/galaxy.yml",
-    GALAXY_CONFIG_SCHEMA_PATH,
+    str(GALAXY_CONFIG_SCHEMA_PATH),
     'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
 )
 SHED_APP = App(
@@ -352,16 +364,16 @@ SHED_APP = App(
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    "lib/tool_shed/webapp/config_schema.yml",
-    'tool_shed.webapp.buildapp:uwsgi_app()',
+    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
+    "tool_shed.webapp.buildapp:uwsgi_app()",
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    "lib/galaxy/webapps/reports/config_schema.yml",
-    'galaxy.webapps.reports.buildapp:uwsgi_app()',
+    str(REPORTS_CONFIG_SCHEMA_PATH),
+    "galaxy.webapps.reports.buildapp:uwsgi_app()",
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
@@ -408,7 +420,7 @@ def _to_rst(args, app_desc, heading_level="~"):
 
 
 def _write_option_rst(args, rst, key, heading_level, option_value):
-    title = "``%s``" % key
+    title = f"``{key}``"
     heading = heading_level * len(title)
     rst.write(f"{heading}\n{title}\n{heading}\n\n")
     option, value = _parse_option_value(option_value)
@@ -425,9 +437,9 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
         default = "false"
     elif default == "":
         default = '""'
-    rst.write(":Default: ``%s``\n" % default)
+    rst.write(f":Default: ``{default}``\n")
     if type:
-        rst.write(":Type: %s\n" % type)
+        rst.write(f":Type: {type}\n")
     rst.write("\n\n")
 
 
@@ -463,9 +475,8 @@ def _build_uwsgi_schema(args, app_desc):
         "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
-    path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
     contents = ordered_dump(schema)
-    _write_to_file(args, contents, path)
+    _write_to_file(args, contents, UWSGI_SCHEMA_PATH)
 
 
 def _find_config(args, app_desc):
@@ -512,7 +523,7 @@ def _find_app_options_from_config_parser(p):
 def _lint(args, app_desc):
     path = _find_config(args, app_desc)
     if not os.path.exists(path):
-        raise Exception("Expected configuration file [%s] not found." % path)
+        raise Exception(f"Expected configuration file [{path}] not found.")
     app_items = _find_app_options(app_desc, path)
     for key, value in app_items.items():
         option_action = OPTION_ACTIONS.get(key)
@@ -533,7 +544,7 @@ def _validate(args, app_desc):
         ordered_dump(raw_config, config_p)
 
     def _clean(p, k, v):
-        return k not in ['reloadable', 'path_resolves_to']
+        return k not in ['reloadable', 'path_resolves_to', 'per_host']
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile('w', suffix=".yml") as fp:
@@ -563,7 +574,7 @@ class GzipFilter:
 def _run_conversion(args, app_desc):
     ini_config = _find_config(args, app_desc)
     if ini_config and not _is_ini(ini_config):
-        _warn("Cannot convert YAML file %s, this option is only for ini config files." % ini_config)
+        _warn(f"Cannot convert YAML file {ini_config}, this option is only for ini config files.")
         sys.exit(1)
     elif not ini_config:
         _warn("Failed to find a config to convert - exiting without changes.")
@@ -612,7 +623,7 @@ def _run_conversion(args, app_desc):
                 if value in filters:
                     applied_filters.append(filters[value])
                 else:
-                    _warn("Unknown filter found [%s], exiting..." % value)
+                    _warn(f"Unknown filter found [{value}], exiting...")
                     sys.exit(1)
 
     uwsgi_dict = _server_paste_to_uwsgi(app_desc, server_config, applied_filters)
@@ -655,7 +666,7 @@ def _is_ini(path):
 
 def _replace_file(args, f, app_desc, from_path, to_path):
     _write_to_file(args, f, to_path)
-    backup_path = "%s.backup" % from_path
+    backup_path = f"{from_path}.backup"
     print(f"Moving [{from_path}] to [{backup_path}]")
     if args.dry_run:
         print("... skipping because --dry-run is enabled.")
@@ -685,8 +696,12 @@ def _build_sample_yaml(args, app_desc):
     description = getattr(schema, "description", None)
     if description:
         description = description.lstrip()
-        as_comment = "\n".join("# %s" % l for l in description.split("\n")) + "\n"
+        as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
+    if app_desc.app_name == "galaxy":
+        if settings_to_sample is None:
+            raise Exception("Please install gravity to rebuild the sample config")
+        f.write(settings_to_sample())
     _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
@@ -699,11 +714,11 @@ def _write_to_file(args, f, path):
     else:
         contents = f
     if args.dry_run:
-        contents_indented = "\n".join(" |%s" % l for l in contents.splitlines())
+        contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
         print("... skipping because --dry-run is enabled.")
     else:
-        print("Overwriting %s" % path)
+        print(f"Overwriting {path}")
         safe_makedirs(os.path.dirname(path))
         with open(path, "w") as to_f:
             to_f.write(contents)
@@ -735,7 +750,7 @@ def _write_section(args, f, section_header, section_dict, uwsgi_hack=False):
 
 
 def _write_header(f, section_header):
-    f.write("%s:\n\n" % section_header)
+    f.write(f"{section_header}:\n\n")
 
 
 def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False):
@@ -752,10 +767,10 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
             value = str(value).lower()
         key_val_str = f"{key}: {value}"
     else:
-        key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
+        key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join("  %s" % l for l in lines.split("\n"))
-    f.write("%s\n\n" % lines_idented)
+    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
+    f.write(f"{lines_idented}\n\n")
 
 
 def _parse_option_value(option_value):
@@ -766,6 +781,8 @@ def _parse_option_value(option_value):
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
         elif option.get("type", "str") == "int":
+            if value is None:
+                raise Exception(f"Failed to parse value for {option}, expected int got None")
             value = int(value)
     else:
         value = option_value
@@ -806,7 +823,7 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 
 def _warn(message):
-    print("WARNING: %s" % message)
+    print(f"WARNING: {message}")
 
 
 def _get_option_desc(option):

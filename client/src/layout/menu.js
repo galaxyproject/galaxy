@@ -70,11 +70,10 @@ export function fetchMenu(options = {}) {
     //
     menu.push({
         id: "analysis",
-        title: _l("Analyze Data"),
         url: "",
-        tooltip: _l("Analysis home view"),
+        tooltip: _l("Tools and Current History"),
+        icon: "fa-home",
     });
-
     //
     // Workflow tab.
     //
@@ -91,25 +90,16 @@ export function fetchMenu(options = {}) {
     // Visualization tab.
     //
     if (Galaxy.config.visualizations_visible) {
-        menu.push({
-            id: "visualization",
-            title: _l("Visualize"),
-            url: "javascript:void(0)",
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("Create Visualization"),
-                    url: "visualizations",
-                    target: "__use_router__",
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main",
-                },
-            ],
-        });
+        if (Galaxy.config.visualizations_visible) {
+            menu.push({
+                id: "visualization",
+                title: _l("Visualize"),
+                tooltip: _l("Visualize datasets"),
+                disabled: !Galaxy.user.id,
+                url: "visualizations",
+                target: "__use_router__",
+            });
+        }
     }
 
     //
@@ -121,7 +111,7 @@ export function fetchMenu(options = {}) {
         // hidden though.
         menu.push({
             title: _l("Data Libraries"),
-            url: "library/list",
+            url: "libraries",
             id: "libraries",
         });
     } else {
@@ -133,7 +123,7 @@ export function fetchMenu(options = {}) {
             menu: [
                 {
                     title: _l("Data Libraries"),
-                    url: "library/list",
+                    url: "libraries",
                 },
                 {
                     title: _l("Histories"),
@@ -182,29 +172,40 @@ export function fetchMenu(options = {}) {
         tooltip: _l("Support, contact, and community"),
         menu: [
             {
+                title: _l("Galaxy Help"),
+                url: options.helpsite_url,
+                target: "_blank",
+                hidden: !options.helpsite_url,
+            },
+            {
                 title: _l("Support"),
                 url: options.support_url,
                 target: "_blank",
+                hidden: !options.support_url,
             },
             {
                 title: _l("Search"),
                 url: options.search_url,
                 target: "_blank",
+                hidden: !options.search_url,
             },
             {
                 title: _l("Mailing Lists"),
                 url: options.mailing_lists,
                 target: "_blank",
+                hidden: !options.mailing_lists,
             },
             {
                 title: _l("Videos"),
                 url: options.screencasts_url,
                 target: "_blank",
+                hidden: !options.screencasts_url,
             },
             {
                 title: _l("Wiki"),
                 url: options.wiki_url,
                 target: "_blank",
+                hidden: !options.wiki_url,
             },
             {
                 title: _l("How to Cite Galaxy"),
@@ -216,26 +217,22 @@ export function fetchMenu(options = {}) {
                 url: "tours",
             },
             {
+                title: _l("Introduction to Galaxy"),
+                url: "welcome/new",
+            },
+            {
                 title: _l("Galaxy Version: " + Galaxy.config.version_major),
                 url: versionUserDocumentationUrl,
                 target: "_blank",
             },
+            {
+                title: _l("Terms and Conditions"),
+                url: options.terms_url,
+                target: "_blank",
+                hidden: !options.terms_url,
+            },
         ],
     };
-    if (options.terms_url) {
-        helpTab.menu.push({
-            title: _l("Terms and Conditions"),
-            url: options.terms_url,
-            target: "_blank",
-        });
-    }
-    if (options.helpsite_url) {
-        helpTab.menu.unshift({
-            title: _l("Galaxy Help"),
-            url: options.helpsite_url,
-            target: "_blank",
-        });
-    }
     menu.push(helpTab);
 
     //
@@ -270,7 +267,9 @@ export function fetchMenu(options = {}) {
             tooltip: _l("Account and saved data"),
             menu: [
                 {
-                    title: `${_l("Logged in as")} ${Galaxy.user.get("email")}`,
+                    title: `${_l("Logged in as")} ${
+                        Galaxy.user.get("username") ? Galaxy.user.get("username") : Galaxy.user.get("email")
+                    }`,
                     disabled: true,
                 },
                 {

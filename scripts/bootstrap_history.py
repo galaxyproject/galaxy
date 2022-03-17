@@ -200,14 +200,15 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
 - [X] **Prep**
 
-    - [X] ~~Create this release issue ``make release-issue RELEASE_CURR=${version}``.~~
+    - [X] ~~Create this release issue ``make release-issue``.~~
     - [X] ~~Set freeze date (${freeze_date}).~~
 
 - [ ] **Branch Release (on or around ${freeze_date})**
 
     - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged, delayed, or closed.
 
-          make release-check-blocking-prs RELEASE_CURR=${version}
+          make release-check-blocking-prs
+
     - [ ] Merge the latest release into dev and push upstream.
 
           make release-merge-stable-to-next RELEASE_PREVIOUS=release_${previous_version}
@@ -215,12 +216,13 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Create and push release branch:
 
-          make release-create-rc RELEASE_CURR=${version} RELEASE_NEXT=${next_version}
+          make release-create-rc
 
     - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
-    - [ ] Update ``MILESTONE_NUMBER`` in the [ maintenance bot](https://github.com/galaxyproject/galaxy/blob/dev/.github/workflows/maintenance_bot.yaml) to `${next_version}` so it properly tags new PRs.
+    - [ ] Update ``MILESTONE_NUMBER`` in the [maintenance bot](https://github.com/galaxyproject/galaxy/blob/dev/.github/workflows/maintenance_bot.yaml) to `${next_version}` so it properly tags new PRs.
 
 - [ ] **Issue Review Timeline Notes**
+
     - [ ] Ensure any security fixes will be ready prior to ${freeze_date} + 1 week, to allow time for notification prior to release.
     - [ ] Ensure ownership of outstanding bugfixes and track progress during freeze.
 
@@ -248,6 +250,8 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
           make release-bootstrap-history RELEASE_CURR=${version}
     - [ ] Open newly created files and manually curate major topics and release notes.
+    - [ ] Run python scripts/scripts/release-diff.py release_${previous_version} and add configuration changes to release notes.
+    - [ ] Add new release to doc/source/releases/index.rst
     - [ ] Commit release notes.
 
           git add docs/; git commit -m "Release notes for $version"; git push upstream ${version}_release_notes
@@ -262,14 +266,14 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
           make release-check-blocking-prs RELEASE_CURR=${version}
-    - [ ] Ensure all PRs merged into the pre-release branch during the freeze have [milestones attached](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_{version}+is%3Amerged+no%3Amilestone) and that they are the not [${next_version} milestones](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_{version}+is%3Amerged+milestone%3A{next_version})
+    - [ ] Ensure all PRs merged into the pre-release branch during the freeze have [milestones attached](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_${version}+is%3Amerged+no%3Amilestone) and that they are the not [${next_version} milestones](https://github.com/galaxyproject/galaxy/pulls?q=is%3Apr+is%3Aclosed+base%3Arelease_${version}+is%3Amerged+milestone%3A${next_version})
     - [ ] Ensure release notes include all PRs added during the freeze by re-running the release note bootstrapping:
 
-          make release-bootstrap-history RELEASE_CURR=${version}
+          make release-bootstrap-history
     - [ ] Ensure previous release is merged into current. [GitHub branch comparison](https://github.com/galaxyproject/galaxy/compare/release_${version}...release_${previous_version})
     - [ ] Create and push release tag:
 
-          make release-create RELEASE_CURR=${version}
+          make release-create
 
     - [ ] Add the branch `*/release_{version}` to Jenkins documentation build [configuration matrix](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/configure).
     - [ ] Trigger the [branch documentation build](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/)
@@ -294,7 +298,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 - [ ] **Prepare for next release**
 
     - [ ] Close milestone ``${version}`` and ensure milestone ``${next_version}`` exists.
-    - [ ] Create release issue for next version ``make release-issue RELEASE_CURR=${next_version}``.
+    - [ ] Create release issue for next version ``make release-issue``.
     - [ ] Schedule committer meeting to discuss re-alignment of priorities.
     - [ ] Close this issue.
 """)
@@ -312,21 +316,6 @@ GROUPPED_TAGS = OrderedDict([
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=dev&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/pulls?base=release_15.07&state=closed
 # https://api.github.com/repos/galaxyproject/galaxy/compare/release_15.05...dev
-
-
-def print_next_minor_version():
-    minor_version_str = None
-    with open(GALAXY_VERSION_FILE) as f:
-        for line in f:
-            result = re.match(r'VERSION_MINOR = "(.*)"', line)
-            if result:
-                minor_version_str = result.group(1)
-                break
-    try:
-        minor_version = int(minor_version_str)
-    except (TypeError, ValueError):
-        minor_version = 0
-    print(minor_version + 1)
 
 
 def release_issue(argv):
@@ -432,16 +421,12 @@ def check_blocking_issues(argv):
     release_name = argv[2]
     block = 0
     github = _github_client()
-    issues = github.issues.list_by_repo(
-        user='galaxyproject',
-        repo='galaxy',
-        state="open"
-    )
-    for page in issues:
-        for issue in page:
-            if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
-                print("WARN: Blocking issue| %s" % _issue_to_str(issue))
-                block = 1
+    repo = github.get_repo('galaxyproject/galaxy')
+    issues = repo.get_issues(state='open')
+    for issue in issues:
+        if issue.milestone and issue.milestone.title == release_name and "Publication of Galaxy Release" not in issue.title:
+            print("WARN: Blocking issue| %s" % _issue_to_str(issue))
+            block = 1
 
     sys.exit(block)
 
@@ -507,12 +492,9 @@ def _get_prs(release_name, state="closed"):
         yield pr
 
 
-def main(argv, seen_prs=set()):
+def main(argv, seen_prs=None):
     newest_release = None
-
-    if argv[1] == "--print-next-minor-version":
-        print_next_minor_version()
-        return
+    seen_prs = seen_prs or set()
 
     if argv[1] == "--check-blocking-prs":
         check_blocking_prs(argv)
@@ -665,7 +647,7 @@ def _text_target(pull_request, labels=None):
         try:
             github = _github_client()
             labels = github.issues.labels.list_by_issue(int(pr_number), user=PROJECT_OWNER, repo=PROJECT_NAME)
-            labels = [l.name.lower() for l in labels]
+            labels = [label.name.lower() for label in labels]
         except Exception as e:
             print(e)
     is_bug = is_enhancement = is_feature = is_minor = is_major = is_merge = is_small_enhancement = False
@@ -731,7 +713,7 @@ def _text_target(pull_request, labels=None):
 
 
 def _pr_to_labels(pr):
-    labels = [l.name.lower() for l in pr.labels]
+    labels = [label.name.lower() for label in pr.labels]
     return labels
 
 

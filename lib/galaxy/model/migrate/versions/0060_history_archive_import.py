@@ -38,7 +38,7 @@ def upgrade(migrate_engine):
         assert importing_col is History_table.c.importing
 
         # Initialize column to false.
-        migrate_engine.execute("UPDATE history SET importing=%s" % engine_false(migrate_engine))
+        migrate_engine.execute(f"UPDATE history SET importing={engine_false(migrate_engine)}")
     except Exception:
         log.exception("Adding column 'importing' to history table failed.")
 

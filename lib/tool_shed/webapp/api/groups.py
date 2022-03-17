@@ -29,7 +29,7 @@ class GroupsController(BaseAPIController):
         self.group_manager = groups.GroupManager()
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {'id': trans.security.encode_id}
         return value_mapper
 
     @expose_api_anonymous_and_sessionless
@@ -91,7 +91,7 @@ class GroupsController(BaseAPIController):
         decoded_id = trans.security.decode_id(encoded_id)
         group = self.group_manager.get(trans, decoded_id)
         if group is None:
-            raise ObjectNotFound('Unable to locate group record for id %s.' % (str(encoded_id)))
+            raise ObjectNotFound(f'Unable to locate group record for id {str(encoded_id)}.')
         return self._populate(trans, group)
 
     def _populate(self, trans, group):
@@ -141,7 +141,7 @@ class GroupsController(BaseAPIController):
                                     'description': repo.description,
                                     'approved': approved,
                                     'ratings_mean': ratings_mean,
-                                    'categories' : categories})
+                                    'categories': categories})
                 user_repos_count += 1
             encoded_user_id = trans.app.security.encode_id(user.id)
             user_repos_url = web.url_for(controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id)

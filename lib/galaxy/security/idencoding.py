@@ -1,6 +1,7 @@
 import codecs
 import collections
 import logging
+from typing import Optional
 
 from Crypto.Cipher import Blowfish
 from Crypto.Random import get_random_bytes
@@ -79,9 +80,14 @@ class IdEncodingHelper:
                     rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
-    def decode_id(self, obj_id, kind=None):
-        id_cipher = self.__id_cipher(kind)
-        return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
+    def decode_id(self, obj_id, kind=None, object_name: Optional[str] = None):
+        try:
+            id_cipher = self.__id_cipher(kind)
+            return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
+        except TypeError:
+            raise galaxy.exceptions.MalformedId(f"Malformed {object_name if object_name is not None else ''} id ( {obj_id} ) specified, unable to decode.")
+        except ValueError:
+            raise galaxy.exceptions.MalformedId(f"Wrong {object_name if object_name is not None else ''} id ( {obj_id} ) specified, unable to decode.")
 
     def encode_guid(self, session_key):
         # Session keys are strings
@@ -115,7 +121,7 @@ class _cipher_cache(collections.defaultdict):
 
     def __missing__(self, key):
         assert len(key) < 15, KIND_TOO_LONG_MESSAGE
-        secret = self.secret_base + "__" + key
+        secret = f"{self.secret_base}__{key}"
         return Blowfish.new(_last_bits(secret), mode=Blowfish.MODE_ECB)
 
 

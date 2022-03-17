@@ -37,7 +37,9 @@ export const legacyNavigationMixin = {
         iframeRedirect(path, target = "galaxy_main") {
             try {
                 const targetFrame = window.frames[target];
-                if (!targetFrame) throw new Error(`Requested frame ${target} doesn't exist`);
+                if (!targetFrame) {
+                    throw new Error(`Requested frame ${target} doesn't exist`);
+                }
                 targetFrame.location = prependPath(path);
                 return true;
             } catch (err) {
@@ -49,7 +51,7 @@ export const legacyNavigationMixin = {
         // galaxy router, wrapper for backbone router
         backboneRoute(path, ...args) {
             try {
-                getGalaxyInstance().router.push(prependPath(path), ...args);
+                getGalaxyInstance().router.push(path, ...args);
             } catch (err) {
                 console.warn("Failed galaxy route change", err, ...arguments);
                 throw err;

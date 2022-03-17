@@ -97,7 +97,7 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 
 
 def count_repositories_in_category(app, category_id):
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
                      .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
                      .count()
@@ -105,7 +105,7 @@ def count_repositories_in_category(app, category_id):
 
 def get_categories(app):
     """Get all categories from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category) \
                      .filter(app.model.Category.table.c.deleted == false()) \
                      .order_by(app.model.Category.table.c.name) \
@@ -114,13 +114,13 @@ def get_categories(app):
 
 def get_category(app, id):
     """Get a category from the database."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.Category).get(app.security.decode_id(id))
 
 
 def get_category_by_name(app, name):
     """Get a category from the database via name."""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     try:
         return sa_session.query(app.model.Category).filter_by(name=name).one()
     except sqlalchemy.orm.exc.NoResultFound:
@@ -175,12 +175,12 @@ def get_requirements_from_repository(repository):
     if not repository.includes_tools:
         return {}
     else:
-        return get_requirements_from_tools(repository.metadata.get('tools', []))
+        return get_requirements_from_tools(repository.metadata_.get('tools', []))
 
 
 def get_repository_categories(app, id):
     """Get categories of a repository on the tool shed side from the database via id"""
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     return sa_session.query(app.model.RepositoryCategoryAssociation) \
         .filter(app.model.RepositoryCategoryAssociation.table.c.repository_id == app.security.decode_id(id))
 
@@ -193,7 +193,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return 'Invalid file path'
     # Symlink targets are checked by is_path_browsable
     if os.path.islink(file_path):
-        safe_str = 'link to: ' + basic_util.to_html_string(os.readlink(file_path))
+        safe_str = f"link to: {basic_util.to_html_string(os.readlink(file_path))}"
         return safe_str
     elif checkers.is_gzip(file_path):
         return '<br/>gzip compressed file<br/>'
@@ -205,7 +205,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>Binary file<br/>'
     else:
         for line in open(file_path):
-            safe_str = '{}{}'.format(safe_str, basic_util.to_html_string(line))
+            safe_str = f'{safe_str}{basic_util.to_html_string(line)}'
             # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len(safe_str) > MAX_CONTENT_SIZE:
                 large_str = \
@@ -326,7 +326,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
 
     """
-    sa_session = app.model.context.current
+    sa_session = app.model.session
     repo = repository.hg_repo
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
@@ -335,9 +335,9 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         if app.config.email_from is not None:
             email_from = app.config.email_from
         elif host.split(':')[0] in ['localhost', '127.0.0.1', '0.0.0.0']:
-            email_from = 'galaxy-no-reply@' + socket.getfqdn()
+            email_from = f"galaxy-no-reply@{socket.getfqdn()}"
         else:
-            email_from = 'galaxy-no-reply@' + host.split(':')[0]
+            email_from = f"galaxy-no-reply@{host.split(':')[0]}"
         ctx = repo[repo.changelog.tip()]
         username = unicodify(ctx.user())
         try:
@@ -372,7 +372,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         admin_users = app.config.get("admin_users", "").split(",")
         frm = email_from
         if new_repo_alert:
-            subject = "Galaxy tool shed alert for new repository named %s" % str(repository.name)
+            subject = f"Galaxy tool shed alert for new repository named {str(repository.name)}"
             subject = subject[:80]
             email_alerts = []
             for user in sa_session.query(app.model.User) \
@@ -384,7 +384,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
                 else:
                     email_alerts.append(user.email)
         else:
-            subject = "Galaxy tool shed update alert for repository named %s" % str(repository.name)
+            subject = f"Galaxy tool shed update alert for repository named {str(repository.name)}"
             email_alerts = json.loads(repository.email_alerts)
         for email in email_alerts:
             to = email.strip()
@@ -454,12 +454,12 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         is_link = os.path.islink(full_path)
         path_is_browsable = is_path_browsable(app, full_path, repository_id)
         if is_link and not path_is_browsable:
-            log.warning('Valid folder contains a symlink outside of the repository location. Link found in: ' + str(full_path))
+            log.warning(f"Valid folder contains a symlink outside of the repository location. Link found in: {str(full_path)}")
         if filename:
             if os.path.isdir(full_path) and path_is_browsable:
                 # Append a '/' character so that our jquery dynatree will function properly.
-                filename = '%s/' % filename
-                full_path = '%s/' % full_path
+                filename = f'{filename}/'
+                full_path = f'{full_path}/'
                 is_folder = True
             node = {"title": filename,
                     "isFolder": is_folder,

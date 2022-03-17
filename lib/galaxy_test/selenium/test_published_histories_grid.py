@@ -93,7 +93,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
                 break
 
         if tags is None:
-            raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
+            raise AssertionError(f'Failed to find history with name [{self.history1_name}]')
 
         tag_button_selector = 'div.tag-name'
         tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
@@ -121,7 +121,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     @retry_assertion_during_transitions
     def assert_grid_histories_sorted_by_owner(self):
         histories = self.get_histories()
-        index_1, index_2, index_3 = [histories.index(n) for n in self.all_histories]
+        index_1, index_2, index_3 = (histories.index(n) for n in self.all_histories)
         # 1 and 3 are owned by a owner whose username lexicographically
         # precedes 2. So verify 1 and 3 come before 2.
         assert index_1 < index_2

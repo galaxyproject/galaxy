@@ -58,7 +58,7 @@ class CategoriesController(BaseAPIController):
                 trans.sa_session.flush()
                 category_dict = category.to_dict(view='element',
                                                  value_mapper=self.__get_value_mapper(trans))
-                category_dict['message'] = "Category '%s' has been created" % str(category.name)
+                category_dict['message'] = f"Category '{str(category.name)}' has been created"
                 category_dict['url'] = web.url_for(controller='categories',
                                                    action='show',
                                                    id=trans.security.encode_id(category.id))
@@ -85,7 +85,7 @@ class CategoriesController(BaseAPIController):
         page = kwd.get('page', None)
         category = suc.get_category(self.app, category_id)
         if category is None:
-            category_dict = dict(message='Unable to locate category record for id %s.' % (str(id)),
+            category_dict = dict(message=f'Unable to locate category record for id {str(id)}.',
                                  status='error')
             return category_dict
         category_dict = category.to_dict(view='element',
@@ -141,7 +141,7 @@ class CategoriesController(BaseAPIController):
         """
         category = suc.get_category(self.app, id)
         if category is None:
-            category_dict = dict(message='Unable to locate category record for id %s.' % (str(id)),
+            category_dict = dict(message=f'Unable to locate category record for id {str(id)}.',
                                  status='error')
             return category_dict
         category_dict = category.to_dict(view='element',
