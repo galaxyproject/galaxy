@@ -53,7 +53,7 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.schema import FilterQueryParams
+from galaxy.schema import ValueFilterQueryParams
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -1028,7 +1028,7 @@ class ModelFilterParser(HasAModelManager):
 
     def build_filter_params(
         self,
-        query_params: FilterQueryParams,
+        query_params: ValueFilterQueryParams,
         filter_attr_key: str = "q",
         filter_value_key: str = "qv",
         attr_op_split_char: str = "-",
@@ -1064,8 +1064,8 @@ class ModelFilterParser(HasAModelManager):
         #   (instead of relying on zip to shorten)
         return list(zip(attrs, ops, values))
 
-    def parse_query_filters(self, query_filters: FilterQueryParams):
-        """Convenience function to parse a FilterQueryParams object into a collection of filtering criteria."""
+    def parse_query_filters(self, query_filters: ValueFilterQueryParams):
+        """Convenience function to parse a ValueFilterQueryParams object into a collection of filtering criteria."""
         filter_params = self.build_filter_params(query_filters)
         return self.parse_filters(filter_params)
 
