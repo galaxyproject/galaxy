@@ -277,7 +277,7 @@ class CustosAuthnz(IdentityProvider):
         trans.set_cookie("", name=NONCE_COOKIE_NAME, age=-1)
         nonce_cookie_hash = self._hash_nonce(nonce_cookie)
         if nonce_hash != nonce_cookie_hash:
-            raise Exception("Nonce mismatch!")
+            raise Exception("Nonce mismatch. Check that configured redirect_uri matches the URL you are using.")
 
     def _load_config_for_cilogon(self):
         # Set cilogon endpoints
