@@ -9,9 +9,20 @@ cat '$input1' > '$out_file1'
         <data name="out_file1" format="input" metadata_source="input1"/>
     </outputs>
     <tests>
+        <!-- test that gzipped input is extracted and format detected properly -->
         <test>
-            <param name="input1" value="4.bed.gz" ftype="bed"/>
+            <param name="input1" value="4.bed.gz"/>
             <output name="out_file1" file="4.bed" ftype="bed" />
+        </test>
+        <!-- test that gzipped input (of a dataype with auto_compressed_types) is extracted (here format needs to be set explicitly -->
+        <test>
+            <param name="input1" value="1.fastqsanger.gz" ftype="fastqsanger"/>
+            <output name="out_file1" file="1.fastqsanger" ftype="fastqsanger" />
+        </test>
+        <!-- test that gzipped input is not extracted (if it is really a gzipped datatype) -->
+        <test>
+            <param name="input1" value="test.vcf.gz"/>
+            <output name="out_file1" file="test.vcf.gz" ftype="vcf_bgzip" />
         </test>
     </tests>
     <help>
