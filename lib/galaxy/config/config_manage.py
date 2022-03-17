@@ -393,45 +393,7 @@ def _run_conversion(args, app_desc):
         sys.exit(1)
 
     p = nice_config_parser(ini_config)
-    server_section = None
-    filters = {}
-    for section in p.sections():
-        if section.startswith("server:"):
-            if server_section:
-                _warn(EXTRA_SERVER_MESSAGE % (server_section, section))
-            else:
-                server_section = section
-
-        if section.startswith("filter:"):
-            filter_name = section[len("filter:") :]
-            filter_type = p.get(section, "use")
-            if filter_type is None:
-                MISSING_FILTER_TYPE_MESSAGE
-                message = EXTRA_SERVER_MESSAGE % section
-                _warn(message)
-                continue
-
-            if filter_type == "egg:PasteDeploy#prefix":
-                prefix = p.get(section, "prefix")
-                filters[filter_name] = PrefixFilter(filter_name, prefix)
-            elif filter_type == "egg:Paste#gzip":
-                filters[filter_name] = GzipFilter(filter_name)
-            else:
-                message = UNHANDLED_FILTER_TYPE_MESSAGE % (filter_type, section)
-                _warn(message)
-                continue
-
     app_items = _find_app_options_from_config_parser(p)
-    applied_filters = []
-    if filters:
-        for key, value in app_items.items():
-            if key == "filter-with":
-                if value in filters:
-                    applied_filters.append(filters[value])
-                else:
-                    _warn(f"Unknown filter found [{value}], exiting...")
-                    sys.exit(1)
-
     app_dict = {}
     schema = app_desc.schema
     for key, value in app_items.items():
