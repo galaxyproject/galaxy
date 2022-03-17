@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import (
     Any,
     List,
+    Tuple,
 )
 
 from galaxy.webapps.galaxy.services.history_contents import DirectionOptions
@@ -949,3 +950,85 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
             result = self._get_content(history_id, self.AFTER, hid=7, limit=3)
             assert len(result) == 1
             assert result[0]["hid"] == 8  # hid + 1
+
+
+class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
+    """
+    Test the /api/histories/{history_id}/contents/bulk endpoint.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    def test_explicit_items_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # All items are visible
+            for item in history_contents:
+                assert item["visible"]
+
+            # Hide 2 collections and 3 datasets, 5 in total
+            payload = {
+                "operation": "hide",
+                "items": [
+                    {
+                        "id": datasets_ids[0],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[0],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[1],
+                        "history_content_type": "dataset",
+                    },
+                    {
+                        "id": collection_ids[1],
+                        "history_content_type": "dataset_collection",
+                    },
+                    {
+                        "id": datasets_ids[2],
+                        "history_content_type": "dataset",
+                    },
+                ],
+            }
+            expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
+            expected_hidden_item_count = len(expected_hidden_item_ids)
+            bulk_operation_result = self._put(f"histories/{history_id}/contents/bulk", data=payload, json=True).json()
+            assert bulk_operation_result["success_count"] == expected_hidden_item_count
+            assert not bulk_operation_result["errors"]
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = list(filter(lambda item: item["visible"] is False, history_contents))
+            assert len(hidden_items) == expected_hidden_item_count
+            for item in hidden_items:
+                assert item["id"] in expected_hidden_item_ids
+
+    def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
+        """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
+
+        Returns a tuple with the list of ids for the datasets and the collections and the
+        complete history contents
+        """
+        num_expected_collections = 3
+        num_expected_datasets = num_expected_collections * 2
+        collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
+        history_contents = self._get_history_contents(history_id)
+        datasets = filter(lambda item: item["history_content_type"] == "dataset", history_contents)
+        datasets_ids = list(map(lambda dataset: dataset["id"], datasets))
+        assert len(history_contents) == num_expected_datasets + num_expected_collections
+        assert len(datasets_ids) == num_expected_datasets
+        return datasets_ids, collection_ids, history_contents
+
+    def _create_collection_in_history(self, history_id, num_collections=1) -> List[str]:
+        collection_ids = []
+        for _ in range(num_collections):
+            collection_id = self.dataset_collection_populator.create_pair_in_history(history_id=history_id).json()["id"]
+            collection_ids.append(collection_id)
+        return collection_ids
+
+    def _get_history_contents(self, history_id: str):
+        return self._get(f"histories/{history_id}/contents").json()
