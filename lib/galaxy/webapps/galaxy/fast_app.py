@@ -142,6 +142,5 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
 
 __all__ = (
     "add_galaxy_middleware",
-    "add_request_id_middleware",
     "initialize_fast_app",
 )
