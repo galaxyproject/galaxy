@@ -52,10 +52,11 @@ class TestCommandFactory(TestCase):
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
         self.__assert_command_is(self._surround_command(
-            "{} {}/tool_script.sh > ../outputs/tool_stdout 2> ../outputs/tool_stderr".format(
+            "{} {}/tool_script.sh > ../outputs/tool_stdout 2> ../outputs/tool_stderr{}".format(
                 self.job_wrapper.shell,
                 self.job_wrapper.working_directory,
-            ) + RETURN_CODE_CAPTURE))
+                RETURN_CODE_CAPTURE,
+            )))
         self.__assert_tool_script_is(f"#!/bin/sh\n{dep_commands[0]}; {MOCK_COMMAND_LINE}")
 
     def test_remote_dependency_resolution(self):
@@ -68,13 +69,13 @@ class TestCommandFactory(TestCase):
         self.include_work_dir_outputs = False
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
-        self.__assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}" + RETURN_CODE_CAPTURE),
+        self.__assert_command_is(self._surround_command(f"{dep_commands[0]}; {MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}"),
                                  remote_command_params=dict(dependency_resolution="local"))
 
     def test_task_prepare_inputs(self):
         self.include_work_dir_outputs = False
         self.job_wrapper.prepare_input_files_cmds = ["/opt/split1", "/opt/split2"]
-        self.__assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}" + RETURN_CODE_CAPTURE))
+        self.__assert_command_is(self._surround_command(f"/opt/split1; /opt/split2; {MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}"))
 
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
