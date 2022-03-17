@@ -195,6 +195,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
         self._click_and_wait_for_collection_view(collection_hid)
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         if self.is_beta_history():
             self.history_panel_add_tags(["#moo"])
@@ -202,7 +203,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
             # the space on the end of the parent_selector is important
             self.tagging_add(["#moo"], parent_selector=".dataset-collection-panel .controls ")
 
-        self.sleep_for(WAIT_TYPES.HISTORY_POLL)
+        self.sleep_for(self.wait_types.HISTORY_POLL)
         self.screenshot("history_panel_collection_view_add_nametag")
         self._back_to_history()
         self.sleep_for(self.wait_types.UX_RENDER)

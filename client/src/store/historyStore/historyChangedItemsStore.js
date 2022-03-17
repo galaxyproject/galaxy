@@ -18,8 +18,10 @@ const actions = {
         if (payload && payload.length == limit) {
             console.debug(`Reached limit of monitored changes (limit=${limit}).`);
         }
-        commit("saveHistoryItems", { historyId, payload });
+        // passes changed items to attached stores
         commit("saveDatasets", { payload });
+        commit("saveHistoryItems", { historyId, payload });
+        commit("saveCollectionObjects", { payload });
         if (fetching) {
             setTimeout(() => {
                 dispatch("fetchHistoryChangedItems", { historyId });

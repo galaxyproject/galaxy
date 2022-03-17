@@ -3,6 +3,7 @@
  * to the collection elements provider used in the collection panel.
  */
 
+import Vue from "vue";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeArray } from "./utilities";
@@ -10,9 +11,14 @@ import { mergeArray } from "./utilities";
 const limit = 100;
 const queue = new LastQueue();
 
+const getObjectId = (elementObject) => {
+    return `${elementObject.model_class}-${elementObject.id}`;
+};
+
 const state = {
     items: {},
     itemKey: "element_index",
+    objectIndex: {},
 };
 
 const getters = {
@@ -20,13 +26,18 @@ const getters = {
         (state) =>
         ({ id }) => {
             const itemArray = state.items[id] || [];
-            const filtered = itemArray.filter((item) => {
-                if (!item) {
-                    return false;
+            const filtered = itemArray.filter((item) => !!item);
+            return filtered.map((item) => {
+                const objectId = getObjectId(item.object);
+                const objectData = state.objectIndex[objectId];
+                const objectResult = { ...item.object };
+                if (objectData) {
+                    Object.keys(objectResult).forEach((key) => {
+                        objectResult[key] = objectData[key];
+                    });
                 }
-                return true;
+                return { ...item, object: objectResult };
             });
-            return filtered;
         },
 };
 
@@ -41,7 +52,13 @@ const actions = {
 
 const mutations = {
     saveCollectionElements: (state, { id, payload }) => {
-        mergeArray(id, state.items, state.itemKey, payload);
+        mergeArray(id, payload, state.items, state.itemKey);
+    },
+    saveCollectionObjects: (state, { payload }) => {
+        payload.forEach((item) => {
+            const objectId = getObjectId(item);
+            Vue.set(state.objectIndex, objectId, item);
+        });
     },
 };
 

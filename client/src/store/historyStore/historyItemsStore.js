@@ -57,7 +57,7 @@ const actions = {
 
 const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
-        mergeArray(historyId, state.items, state.itemKey, payload);
+        mergeArray(historyId, payload, state.items, state.itemKey);
     },
 };
 

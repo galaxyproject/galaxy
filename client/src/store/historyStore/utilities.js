@@ -1,7 +1,7 @@
 import Vue from "vue";
 
 /* This function merges the existing data with new incoming data. */
-export function mergeArray(id, items, itemKey, payload) {
+export function mergeArray(id, payload, items, itemKey) {
     if (!items[id]) {
         Vue.set(items, id, []);
     }

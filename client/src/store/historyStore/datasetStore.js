@@ -27,14 +27,20 @@ const mutations = {
     saveDataset: (state, { id, dataset }) => {
         Vue.set(state.items, id, dataset);
     },
+    /**
+     * Updates and adds changed datasets. This is called by the history changed items store.
+     * @param {Array} payload as returned by the history contents api
+     */
     saveDatasets: (state, { payload }) => {
         payload.forEach((item) => {
-            const id = item.id;
-            if (id in state.items) {
-                const localItem = state.items[id];
-                Object.keys(localItem).forEach((key) => {
-                    localItem[key] = item[key];
-                });
+            if (item.history_content_type == "dataset") {
+                const id = item.id;
+                if (state.items[id]) {
+                    const localItem = state.items[id];
+                    Object.keys(localItem).forEach((key) => {
+                        localItem[key] = item[key];
+                    });
+                }
             }
         });
     },
