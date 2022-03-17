@@ -291,6 +291,8 @@ def application_stack_class() -> Type[ApplicationStack]:
     """
     if "gunicorn" in os.environ.get("SERVER_SOFTWARE", ""):
         return GunicornApplicationStack
+    elif os.environ.get("IS_WEBAPP") == "1":
+        return WebApplicationStack
     return WeblessApplicationStack
 
 
