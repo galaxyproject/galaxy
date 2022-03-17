@@ -999,13 +999,38 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
             expected_hidden_item_count = len(expected_hidden_item_ids)
             bulk_operation_result = self._put(f"histories/{history_id}/contents/bulk", data=payload, json=True).json()
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+
             assert bulk_operation_result["success_count"] == expected_hidden_item_count
             assert not bulk_operation_result["errors"]
-            history_contents = self._get_history_contents(history_id)
-            hidden_items = list(filter(lambda item: item["visible"] is False, history_contents))
             assert len(hidden_items) == expected_hidden_item_count
             for item in hidden_items:
                 assert item["id"] in expected_hidden_item_ids
+
+    def test_dynamic_query_selection(self):
+        with self.dataset_populator.test_history() as history_id:
+            _, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            # All items are visible
+            for item in history_contents:
+                assert item["visible"]
+
+            # Hide all collections using query
+            payload = {"operation": "hide"}
+            query = "q=history_content_type-eq&qv=dataset_collection"
+            bulk_operation_result = self._put(
+                f"histories/{history_id}/contents/bulk?{query}",
+                data=payload,
+                json=True,
+            ).json()
+
+            history_contents = self._get_history_contents(history_id)
+            hidden_items = self._get_hidden_items_from_history_contents(history_contents)
+            assert bulk_operation_result["success_count"] == len(collection_ids)
+            assert len(hidden_items) == len(collection_ids)
+            for item in hidden_items:
+                assert item["id"] in collection_ids
 
     def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
         """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
@@ -1032,3 +1057,6 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
 
     def _get_history_contents(self, history_id: str):
         return self._get(f"histories/{history_id}/contents").json()
+
+    def _get_hidden_items_from_history_contents(self, history_contents) -> List[Any]:
+        return list(filter(lambda item: item["visible"] is False, history_contents))
