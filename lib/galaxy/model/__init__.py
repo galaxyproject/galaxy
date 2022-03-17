@@ -1561,11 +1561,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statement = """
+        statement = text(
+            """
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """
+        )
         sa_session = object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(
@@ -1597,7 +1599,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = [
-            """
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1607,8 +1610,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_dataset jtod
                 ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1618,8 +1623,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_library_dataset jtold
                 ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -1629,8 +1636,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_dataset jtod
                 WHERE jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -1640,7 +1649,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_library_dataset jtold
                 WHERE jtold.job_id = :job_id
             );
-        """,
+        """
+            ),
         ]
         sa_session = object_session(self)
         update_time = now()
