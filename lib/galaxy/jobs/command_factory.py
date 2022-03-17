@@ -289,12 +289,9 @@ tee -a stderr.log < "$err" >&2 &""",
         self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'",
                             sep="")
 
-    def capture_return_code(self, exit_code_path=None):
-        if not self.return_code_captured:
-            self.return_code_captured = True
-            self.append_command(CAPTURE_RETURN_CODE)
-            if exit_code_path:
-                self.append_command(f"echo $return_code > {exit_code_path}")
+    def capture_return_code(self, exit_code_path):
+        self.append_command(CAPTURE_RETURN_CODE)
+        self.append_command(f"echo $return_code > {exit_code_path}")
 
     def build(self):
         if self.return_code_captured:
