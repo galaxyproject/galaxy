@@ -6571,8 +6571,26 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     # returns a list of users that workflow is shared with.
     users_shared_with_dot_users = association_proxy("users_shared_with", "user")
 
-    dict_collection_visible_keys = ["id", "name", "create_time", "update_time", "published", "deleted", "hidden"]
-    dict_element_visible_keys = ["id", "name", "create_time", "update_time", "published", "deleted", "hidden"]
+    dict_collection_visible_keys = [
+        "id",
+        "name",
+        "create_time",
+        "update_time",
+        "published",
+        "importable",
+        "deleted",
+        "hidden",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "name",
+        "create_time",
+        "update_time",
+        "published",
+        "importable",
+        "deleted",
+        "hidden",
+    ]
 
     def __init__(
         self,
