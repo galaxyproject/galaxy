@@ -17,7 +17,10 @@ from pydantic import (
     Extra,
     Field,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Protocol,
+)
 
 from galaxy import exceptions
 from galaxy.managers import (
@@ -25,7 +28,6 @@ from galaxy.managers import (
     hdas,
     hdcas,
     histories,
-    history_contents,
 )
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.collections import DatasetCollectionManager
@@ -34,6 +36,10 @@ from galaxy.managers.collections_util import (
     dictify_dataset_collection_instance,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.history_contents import (
+    HistoryContentsFilters,
+    HistoryContentsManager,
+)
 from galaxy.managers.jobs import (
     fetch_job_states,
     summarize_jobs_to_dict,
@@ -62,10 +68,10 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
-    HistoryContentBulkOperation,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentItem,
+    HistoryContentItemOperation,
     HistoryContentsArchiveDryRunResult,
     HistoryContentSource,
     HistoryContentType,
@@ -180,7 +186,7 @@ class HistoriesContentsService(ServiceBase):
         self,
         security: IdEncodingHelper,
         history_manager: histories.HistoryManager,
-        history_contents_manager: history_contents.HistoryContentsManager,
+        history_contents_manager: HistoryContentsManager,
         hda_manager: hdas.HDAManager,
         dataset_collection_manager: DatasetCollectionManager,
         ldda_manager: LibraryDatasetsManager,
@@ -188,7 +194,7 @@ class HistoriesContentsService(ServiceBase):
         hda_serializer: hdas.HDASerializer,
         hda_deserializer: hdas.HDADeserializer,
         hdca_serializer: hdcas.HDCASerializer,
-        history_contents_filters: history_contents.HistoryContentsFilters,
+        history_contents_filters: HistoryContentsFilters,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -201,6 +207,7 @@ class HistoriesContentsService(ServiceBase):
         self.hda_deserializer = hda_deserializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
+        self.item_operator = HistoryItemOperator(self.hda_manager, self.dataset_collection_manager)
 
     def index(
         self,
@@ -1233,26 +1240,22 @@ class HistoriesContentsService(ServiceBase):
     def _apply_bulk_operation(
         self,
         contents: Iterable[HistoryItemModel],
-        operation: HistoryContentBulkOperation,
+        operation: HistoryContentItemOperation,
     ) -> List[BulkOperationItemError]:
         errors: List[BulkOperationItemError] = []
-        if self._is_per_item_operation(operation):
-            for item in contents:
-                error = self._apply_operation_to_item(item, operation)
-                if error:
-                    errors.append(error)
+        for item in contents:
+            error = self._apply_operation_to_item(operation, item)
+            if error:
+                errors.append(error)
         return errors
 
     def _apply_operation_to_item(
         self,
+        operation: HistoryContentItemOperation,
         item: HistoryItemModel,
-        operation: HistoryContentBulkOperation,
     ) -> Optional[BulkOperationItemError]:
         try:
-            if operation == HistoryContentBulkOperation.hide:
-                item.visible = False
-            elif operation == HistoryContentBulkOperation.unhide:
-                item.visible = True
+            self.item_operator.apply(operation, item)
             return None
         except BaseException as exc:
             return BulkOperationItemError.construct(
@@ -1261,17 +1264,6 @@ class HistoriesContentsService(ServiceBase):
                 ),
                 error=str(exc),
             )
-
-    def _is_per_item_operation(self, operation: HistoryContentBulkOperation) -> bool:
-        return operation in set(
-            [
-                HistoryContentBulkOperation.delete,
-                HistoryContentBulkOperation.undelete,
-                HistoryContentBulkOperation.hide,
-                HistoryContentBulkOperation.unhide,
-                HistoryContentBulkOperation.purge,
-            ]
-        )
 
     def _get_contents_by_item_list(
         self, trans, history: History, items: List[HistoryContentItem]
@@ -1293,3 +1285,54 @@ class HistoriesContentsService(ServiceBase):
         ]
         contents.extend(collections)
         return contents
+
+
+class ItemOperation(Protocol):
+    def __call__(self, item: HistoryItemModel) -> None:
+        ...
+
+
+class HistoryItemOperator:
+    """Defines operations on history items."""
+
+    def __init__(
+        self,
+        hda_manager: hdas.HDAManager,
+        dataset_collection_manager: DatasetCollectionManager,
+    ):
+        self.hda_manager = hda_manager
+        self.dataset_collection_manager = dataset_collection_manager
+        self.flush = False
+        self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
+            HistoryContentItemOperation.hide: lambda item: self._hide(item),
+            HistoryContentItemOperation.unhide: lambda item: self._unhide(item),
+            HistoryContentItemOperation.delete: lambda item: self._delete(item),
+            HistoryContentItemOperation.undelete: lambda item: self._undelete(item),
+            HistoryContentItemOperation.purge: lambda item: self._purge(item),
+        }
+
+    def apply(self, operation: HistoryContentItemOperation, item: HistoryItemModel):
+        self._operation_map[operation](item)
+
+    def _get_item_manager(self, item: HistoryItemModel):
+        if isinstance(item, HistoryDatasetAssociation):
+            return self.hda_manager
+        return self.dataset_collection_manager
+
+    def _hide(self, item: HistoryItemModel):
+        item.visible = False
+
+    def _unhide(self, item: HistoryItemModel):
+        item.visible = True
+
+    def _delete(self, item: HistoryItemModel):
+        manager = self._get_item_manager(item)
+        manager.delete(item, flush=self.flush)
+
+    def _undelete(self, item: HistoryItemModel):
+        manager = self._get_item_manager(item)
+        manager.undelete(item, flush=self.flush)
+
+    def _purge(self, item: HistoryItemModel):
+        manager = self._get_item_manager(item)
+        manager.purge(item, flush=self.flush)
