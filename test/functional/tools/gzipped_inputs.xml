@@ -10,8 +10,8 @@ cat '$input1' > '$out_file1'
     </outputs>
     <tests>
         <test>
-            <param name="input1" value="4.bed.gz" />
-            <output name="out_file1" file="4.bed" />
+            <param name="input1" value="4.bed.gz" ftype="bed"/>
+            <output name="out_file1" file="4.bed" ftype="bed" />
         </test>
     </tests>
     <help>

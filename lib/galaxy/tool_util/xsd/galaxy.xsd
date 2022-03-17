@@ -1477,6 +1477,20 @@ discouraged, to use the value specified as `truevalue` or `falsevalue`.
 Data input parameters can be given as a file name. The file should exist in the
 `test-data` folder. Multiple files can be specified as comma separated list.
 
+Note that it is possible to use zipped (gz, bz2) files in the `test-data` folder
+also for unzipped data types which is useful for large test data files.
+Galaxy will unzip these files on upload.
+
+```xml
+<param value="test.bed.gz" ftype="bed">
+```
+
+Unzipping won't be done for zipped data types, e.g.
+
+```xml
+<param value-"test.fastq.gz" ftype="fastq.gz">
+```
+
 #### ``select``
 
 The value of a select parameter should be specified as the value of one of the
