@@ -5034,10 +5034,15 @@ input_c:
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         response = self._show_workflow(workflow_id)
         assert not response["published"]
+        assert not response["importable"]
         published_worklow = self._put(f"workflows/{workflow_id}", data={"published": True}, json=True).json()
         assert published_worklow["published"]
+        importable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": True}, json=True).json()
+        assert importable_worklow["importable"]
         unpublished_worklow = self._put(f"workflows/{workflow_id}", data={"published": False}, json=True).json()
         assert not unpublished_worklow["published"]
+        unimportable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": False}, json=True).json()
+        assert not unimportable_worklow["importable"]
 
     def test_workflow_from_path_requires_admin(self):
         # There are two ways to import workflows from paths, just verify both require an admin.
