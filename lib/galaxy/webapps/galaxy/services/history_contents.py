@@ -49,6 +49,7 @@ from galaxy.model.security import GalaxyRBACAgent
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+    ValueFilterQueryParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -478,7 +479,7 @@ class HistoriesContentsService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         history_id: EncodedDatabaseIdField,
-        filter_query_params: FilterQueryParams,
+        filter_query_params: ValueFilterQueryParams,
         payload: HistoryContentBulkOperationPayload,
     ) -> HistoryContentBulkOperationResult:
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
@@ -494,8 +495,6 @@ class HistoriesContentsService(ServiceBase):
             contents = self.history_contents_manager.contents(
                 history,
                 filters,
-                limit=filter_query_params.limit,
-                offset=filter_query_params.offset,
             )
         errors = self._apply_bulk_operation(contents, payload.operation)
         trans.sa_session.flush()

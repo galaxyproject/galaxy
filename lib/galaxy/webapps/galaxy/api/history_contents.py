@@ -29,6 +29,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+    ValueFilterQueryParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -49,6 +50,7 @@ from galaxy.schema.schema import (
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,
+    get_value_filter_query_params,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.history_contents import (
@@ -525,7 +527,7 @@ class FastAPIHistoryContents:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+        filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
         payload: HistoryContentBulkOperationPayload = Body(...),
     ) -> HistoryContentBulkOperationResult:
         """Executes an operation on a set of items contained in the given History.
