@@ -820,20 +820,16 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
         }
 
 
-class HistoryContentBulkOperation(str, Enum):
+class HistoryContentItemOperation(str, Enum):
     hide = "hide"
     unhide = "unhide"
     delete = "delete"
     undelete = "undelete"
     purge = "purge"
-    build_dataset_list = "build_dataset_list"
-    build_dataset_pair = "build_dataset_pair"
-    build_list_of_pairs = "build_list_of_pairs"
-    build_collection_from_rules = "build_collection_from_rules"
 
 
 class HistoryContentBulkOperationPayload(Model):
-    operation: HistoryContentBulkOperation
+    operation: HistoryContentItemOperation
     items: Optional[List[HistoryContentItem]]
 
 
