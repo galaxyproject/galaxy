@@ -13,6 +13,18 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: 'Repository to fetch code from'
+        default: "galaxyproject/galaxy"
+        required: true
+      ref:
+        description: 'Branch, tag or SHA to checkout'
+        default: ""
+      env_vars:
+        description: 'The environment variables to set'
+        required: false
 env:
   GALAXY_TEST_AMQP_URL: 'amqp://localhost:5672//'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -49,6 +61,9 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+      - if: github.event_name == 'workflow_dispatch'
+        run:
+          echo "${{ github.event.inputs.env_vars }}" | tr " " "\n" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
@@ -64,7 +79,14 @@ jobs:
         run: |
           kubectl get pods
       - uses: actions/checkout@v2
+        if: github.event_name != 'workflow_dispatch'
         with:
+          path: 'galaxy root'
+      - uses: actions/checkout@v2
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
           path: 'galaxy root'
       - uses: actions/setup-python@v1
         with:
