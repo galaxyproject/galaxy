@@ -36,7 +36,7 @@
                                 :expand-dataset="isExpanded(item)"
                                 :is-history-item="false"
                                 @update:expand-dataset="setExpanded(item, $event)"
-                                @view-collection="$emit('view-collection', item)" />
+                                @view-collection="onViewSubCollection" />
                         </template>
                     </Listing>
                 </template>
@@ -89,9 +89,7 @@ export default {
             return this.selectedCollections[0];
         },
         contentsUrl() {
-            // either the observered source is a collection element or the initial history item i.e. root collection
-            const source = this.dsc.object || this.rootCollection;
-            return source.contents_url.substring(1);
+            return this.dsc.contents_url.substring(1);
         },
     },
     methods: {
@@ -104,6 +102,20 @@ export default {
         },
         onScroll(offset) {
             this.offset = offset;
+        },
+        /**
+         * Passes a sub-collection i.e a collection element object containing another collection, into
+         * a populated object for drilldown without the need for a separate data request. This object
+         * is used for breadcrumbs in the navigation component and to render the collection details and
+         * description at the top of the collection panel. Details include the collection name, the
+         * collection type, and the element count.
+         */
+        onViewSubCollection(itemObject, elementIdentifer) {
+            const collectionObject = {
+                name: elementIdentifer,
+                ...itemObject,
+            };
+            this.$emit("view-collection", collectionObject);
         },
     },
 };

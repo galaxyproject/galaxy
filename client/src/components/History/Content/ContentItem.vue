@@ -191,7 +191,7 @@ export default {
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
-                this.$emit("view-collection", this.item);
+                this.$emit("view-collection", this.item, this.name);
             }
         },
     },
