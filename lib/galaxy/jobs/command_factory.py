@@ -93,6 +93,9 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
+    if stdout_file and stderr_file:
+        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
+
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -110,11 +113,9 @@ def build_command(
     if container_monitor_command:
         commands_builder.prepend_command(container_monitor_command)
 
-    if stdout_file and stderr_file:
-        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
-
     working_directory = remote_job_directory or job_wrapper.working_directory
     commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 

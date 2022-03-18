@@ -16,6 +16,12 @@ MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
 TEST_FILES_PATH = "file_path"
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
+CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
+TEE_LOG = """out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
+mkfifo "$out" "$err"
+trap 'rm "$out" "$err"' EXIT
+tee -a stdout.log < "$out" &
+tee -a stderr.log < "$err" >&2 & """
 
 
 class TestCommandFactory(TestCase):
@@ -39,6 +45,26 @@ class TestCommandFactory(TestCase):
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
         self.__assert_command_is(self._surround_command(f"{MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}"))
+
+    def test_stdout_stderr_capture_simple(self):
+        self.include_work_dir_outputs = False
+        stderr_file = "/stderr"
+        stdout_file = "/stdout"
+        self.__assert_command_is(self._surround_command(
+            f"{TEE_LOG}{MOCK_COMMAND_LINE} > '{stdout_file}' 2> '{stderr_file}'{RETURN_CODE_CAPTURE}"),
+            stderr_file=stderr_file,
+            stdout_file=stdout_file
+        )
+
+    def test_stdout_stderr_capture_with_work_dir_outputs(self):
+        self.workdir_outputs = [("foo", "bar")]
+        stderr_file = "/stderr"
+        stdout_file = "/stdout"
+        self.__assert_command_is(self._surround_command(
+            f"{TEE_LOG}{MOCK_COMMAND_LINE} > '{stdout_file}' 2> '{stderr_file}'{RETURN_CODE_CAPTURE}{CP_WORK_DIR_OUTPUTS}"),
+            stderr_file=stderr_file,
+            stdout_file=stdout_file
+        )
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
@@ -80,7 +106,7 @@ class TestCommandFactory(TestCase):
     def test_workdir_outputs(self):
         self.include_work_dir_outputs = True
         self.workdir_outputs = [("foo", "bar")]
-        self.__assert_command_is(self._surround_command(f'{MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'))
+        self.__assert_command_is(self._surround_command(f'{MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}{CP_WORK_DIR_OUTPUTS}'))
 
     def test_workdir_outputs_with_glob(self):
         self.include_work_dir_outputs = True
