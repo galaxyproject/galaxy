@@ -426,7 +426,7 @@ class GalaxySessionlessTagHandler(GalaxyTagHandlerSession):
         return self.created_tags.get(tag_name)
 
     def get_tag_by_name(self, tag_name):
-        self.created_tags.get(tag_name)
+        return self.created_tags.get(tag_name)
 
 
 class CommunityTagHandler(TagHandler):
