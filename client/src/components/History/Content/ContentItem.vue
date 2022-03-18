@@ -1,7 +1,7 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded', clsStatus]"
+        :class="['content-item m-1 p-0 rounded', contentCls]"
         draggable
         :data-hid="id"
         :data-state="state"
@@ -67,7 +67,7 @@
                             @click.stop="$emit('update:selected', false)" />
                         <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
                     </div>
-                    <icon v-if="stateIcon" :icon="stateIcon" />
+                    <icon v-if="hasStateIcon" :icon="contentState.icon" :spin="contentState.spin" />
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
@@ -90,7 +90,7 @@ import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/leg
 import { Nametag } from "components/Nametags";
 import CollectionDescription from "./Collection/CollectionDescription";
 import DatasetDetails from "./Dataset/DatasetDetails";
-import CONTENTSTATE from "./contentState";
+import STATES from "./contentStates";
 
 export default {
     components: {
@@ -112,20 +112,8 @@ export default {
         contentId() {
             return `dataset-${this.item.id}`;
         },
-        state() {
-            if (this.item.job_state_summary) {
-                for (const key of ["error", "failed", "paused", "upload", "running"]) {
-                    if (this.item.job_state_summary[key] > 0) {
-                        return key;
-                    }
-                }
-                return "ok";
-            } else {
-                return this.item.state;
-            }
-        },
-        clsStatus() {
-            const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
+        contentCls() {
+            const status = this.contentState && this.contentState.status;
             if (this.selected) {
                 return "alert-info";
             } else if (!status) {
@@ -133,6 +121,9 @@ export default {
             } else {
                 return `alert-${status}`;
             }
+        },
+        contentState() {
+            return STATES[this.state] && STATES[this.state];
         },
         displayButtonTitle() {
             if (this.item.purged) {
@@ -160,8 +151,20 @@ export default {
                 this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
             );
         },
-        stateIcon() {
-            return CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
+        hasStateIcon() {
+            return this.contentState && this.contentState.icon;
+        },
+        state() {
+            if (this.item.job_state_summary) {
+                for (const key of ["error", "failed", "paused", "upload", "running"]) {
+                    if (this.item.job_state_summary[key] > 0) {
+                        return key;
+                    }
+                }
+                return "ok";
+            } else {
+                return this.item.state;
+            }
         },
     },
     methods: {

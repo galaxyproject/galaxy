@@ -23,6 +23,7 @@ export default {
     /** metadata discovery/setting failed or errored (but otherwise ok) */
     failed_metadata: {
         status: "danger",
+        icon: "exclamation-triangle",
     },
     /** was created without a tool */
     new: {
@@ -50,18 +51,21 @@ export default {
     running: {
         status: "warning",
         text: "This job is currently running.",
-        icon: "clock",
+        icon: "spinner",
+        spin: true,
     },
     /** metadata for the dataset is being discovered/set */
     setting_metadata: {
         status: "warning",
         text: "Metadata is being auto-detected.",
-        icon: "clock",
+        icon: "spinner",
+        spin: true,
     },
     /** is uploading and not ready */
     upload: {
         status: "warning",
         text: "This dataset is currently uploading.",
-        icon: "clock",
+        icon: "spinner",
+        spin: true,
     },
 };

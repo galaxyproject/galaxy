@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import CONTENTSTATE from "components/History/Content/contentState";
+import STATES from "components/History/Content/contentStates";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 
@@ -43,7 +43,7 @@ export default {
     },
     computed: {
         stateText() {
-            return CONTENTSTATE[this.dataset.state] && CONTENTSTATE[this.dataset.state].text;
+            return STATES[this.dataset.state] && STATES[this.dataset.state].text;
         },
     },
 };
