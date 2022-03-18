@@ -18,10 +18,10 @@ TEST_FILES_PATH = "file_path"
 RETURN_CODE_CAPTURE = "; return_code=$?; echo $return_code > galaxy_1.ec"
 CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
 TEE_LOG = """out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
-mkfifo "$out" "$err"
-trap 'rm "$out" "$err"' EXIT
-tee -a stdout.log < "$out" &
-tee -a stderr.log < "$err" >&2 & """
+mkfifo "$__out" "$__err"
+trap 'rm "$__out" "$__err"' EXIT
+tee -a '/stdout' < "$__out" &
+tee -a '/stderr' < "$__err" >&2 & """
 
 
 class TestCommandFactory(TestCase):
@@ -51,7 +51,7 @@ class TestCommandFactory(TestCase):
         stderr_file = "/stderr"
         stdout_file = "/stdout"
         self.__assert_command_is(self._surround_command(
-            f"{TEE_LOG}{MOCK_COMMAND_LINE} > '{stdout_file}' 2> '{stderr_file}'{RETURN_CODE_CAPTURE}"),
+            f'{TEE_LOG}{MOCK_COMMAND_LINE} > "$__out" 2> "$__err"{RETURN_CODE_CAPTURE}'),
             stderr_file=stderr_file,
             stdout_file=stdout_file
         )
@@ -61,7 +61,7 @@ class TestCommandFactory(TestCase):
         stderr_file = "/stderr"
         stdout_file = "/stdout"
         self.__assert_command_is(self._surround_command(
-            f"{TEE_LOG}{MOCK_COMMAND_LINE} > '{stdout_file}' 2> '{stderr_file}'{RETURN_CODE_CAPTURE}{CP_WORK_DIR_OUTPUTS}"),
+            f'{TEE_LOG}{MOCK_COMMAND_LINE} > "$__out" 2> "$__err"{RETURN_CODE_CAPTURE}{CP_WORK_DIR_OUTPUTS}'),
             stderr_file=stderr_file,
             stdout_file=stdout_file
         )

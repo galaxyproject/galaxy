@@ -282,14 +282,14 @@ class CommandsBuilder:
         self.append_command("; ".join(c for c in commands if c))
 
     def capture_stdout_stderr(self, stdout_file, stderr_file):
-        self.prepend_command("""out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
-mkfifo "$out" "$err"
-trap 'rm "$out" "$err"' EXIT
-tee -a stdout.log < "$out" &
-tee -a stderr.log < "$err" >&2 &""",
-                             sep="")
-        self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'",
-                            sep="")
+        self.prepend_command(
+            f"""out="${{TMPDIR:-/tmp}}/out.$$" err="${{TMPDIR:-/tmp}}/err.$$"
+mkfifo "$__out" "$__err"
+trap 'rm "$__out" "$__err"' EXIT
+tee -a '{stdout_file}' < "$__out" &
+tee -a '{stderr_file}' < "$__err" >&2 &""",
+            sep="")
+        self.append_command('> "$__out" 2> "$__err"', sep="")
 
     def capture_return_code(self, exit_code_path):
         self.append_command(CAPTURE_RETURN_CODE)
