@@ -1,6 +1,8 @@
 /**
- * Requests collection elements by reacting to changes of filter props passed
- * to the collection elements provider used in the collection panel.
+ * Requests collection elements by reacting to changes of props passed to the collection elements
+ * provider used in the collection panel e.g. changes of the offset prop when scrolling. This store
+ * attached to the changed history items store, but could also use the getter of the dataset store
+ * instead, particularly after a collection store has been added if required.
  */
 
 import Vue from "vue";

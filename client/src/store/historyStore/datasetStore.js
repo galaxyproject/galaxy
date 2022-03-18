@@ -24,12 +24,16 @@ const actions = {
 };
 
 const mutations = {
+    /**
+     * Adds a new dataset.
+     * @param {Array} dataset as returned by the datasets api (detailed serialization)
+     */
     saveDataset: (state, { id, dataset }) => {
         Vue.set(state.items, id, dataset);
     },
     /**
      * Updates existing datasets. This is called by the history changed items store.
-     * @param {Array} payload as returned by the history contents api
+     * @param {Array} payload as returned by the history contents api (detailed serialization)
      */
     saveDatasets: (state, { payload }) => {
         payload.forEach((item) => {

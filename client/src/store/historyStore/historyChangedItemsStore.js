@@ -1,6 +1,9 @@
 /**
- * Monitors and requests the summary of recently changed history items and
- * commits the result to the history items store.
+ * Monitors and requests the summary of recently changed history items and commits the
+ * results to the history items and other attached stores. The initial update time threshold
+ * corresponds to the module import time. Once the start action is called, continuous requests
+ * are submitted while the threshold is being increased by the throttle period and the request
+ * response time for every consecutive request.
  */
 import { urlData } from "utils/url";
 
