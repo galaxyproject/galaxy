@@ -21,6 +21,7 @@ def test_model_create_context_persist_hdas():
             "dbkey": "hg19",
             "name": "my file",
             "md5": "e5d21b1ea57fc9a31f8ea0110531bf3d",
+            "tags": ["name:value"]
         }],
     }
     app = _mock_app()
@@ -37,6 +38,9 @@ def test_model_create_context_persist_hdas():
     assert imported_hda.metadata.data_lines == 2
     assert len(imported_hda.dataset.hashes) == 1
     assert imported_hda.dataset.hashes[0].hash_value == "e5d21b1ea57fc9a31f8ea0110531bf3d"
+    tags = imported_hda.tags
+    assert len(tags) == 1
+    assert tags[0].value == "value"
 
     with open(imported_hda.file_name) as f:
         assert f.read().startswith("hello world\n")
@@ -228,7 +232,7 @@ def _import_directory_to_history(app, target, work_directory):
     assert len(import_history.datasets) == 0
 
     import_options = store.ImportOptions(allow_dataset_object_edit=True)
-    import_model_store = store.get_import_model_store_for_directory(target, app=app, user=u, import_options=import_options)
+    import_model_store = store.get_import_model_store_for_directory(target, app=app, user=u, import_options=import_options, tag_handler=app.tag_handler.create_tag_handler_session())
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)
 
