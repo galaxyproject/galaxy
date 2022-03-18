@@ -6,6 +6,7 @@ from os.path import (
 )
 
 from galaxy import util
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
     write_script,
@@ -110,7 +111,7 @@ def build_command(
         commands_builder.prepend_command(container_monitor_command)
 
     working_directory = remote_job_directory or job_wrapper.working_directory
-    commands_builder.capture_return_code(join(working_directory, f"galaxy_{job_wrapper.job_id}.ec"))
+    commands_builder.capture_return_code(default_exit_code_file(working_directory, job_wrapper.job_id))
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
