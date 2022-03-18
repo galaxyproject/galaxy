@@ -12,12 +12,12 @@ export default {
     /** has no data */
     empty: {
         status: "success",
-        text: "No data",
+        text: "No data.",
     },
     /** the tool producing this dataset failed */
     error: {
         status: "danger",
-        text: "An error occurred with this dataset",
+        text: "An error occurred with this dataset:",
         icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */

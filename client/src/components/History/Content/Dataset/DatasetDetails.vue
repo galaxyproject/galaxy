@@ -3,7 +3,8 @@
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
-                    <div v-if="result.misc_blurb" class="blurb">
+                    <div v-if="stateText" class="mb-1">{{ stateText }}</div>
+                    <div v-else-if="result.misc_blurb" class="blurb">
                         <span class="value">{{ result.misc_blurb }}</span>
                     </div>
                     <span v-if="result.file_ext" class="datatype">
@@ -28,6 +29,7 @@
 </template>
 
 <script>
+import CONTENTSTATE from "components/History/Content/contentState";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 
@@ -37,11 +39,11 @@ export default {
         DatasetProvider,
     },
     props: {
-        item: { type: Object, required: true },
+        dataset: { type: Object, required: true },
     },
     computed: {
-        dataset() {
-            return this.item.object || this.item;
+        stateText() {
+            return CONTENTSTATE[this.dataset.state] && CONTENTSTATE[this.dataset.state].text;
         },
     },
 };
