@@ -38,7 +38,7 @@ class TestCommandFactory(TestCase):
 
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
-        self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE + RETURN_CODE_CAPTURE))
+        self.__assert_command_is(self._surround_command(f"{MOCK_COMMAND_LINE}{RETURN_CODE_CAPTURE}"))
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
