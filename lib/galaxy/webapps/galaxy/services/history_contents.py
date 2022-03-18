@@ -188,6 +188,7 @@ class HistoriesContentsService(ServiceBase):
         history_manager: histories.HistoryManager,
         history_contents_manager: HistoryContentsManager,
         hda_manager: hdas.HDAManager,
+        hdca_manager: hdcas.HDCAManager,
         dataset_collection_manager: DatasetCollectionManager,
         ldda_manager: LibraryDatasetsManager,
         folder_manager: folders.FolderManager,
@@ -200,6 +201,7 @@ class HistoriesContentsService(ServiceBase):
         self.history_manager = history_manager
         self.history_contents_manager = history_contents_manager
         self.hda_manager = hda_manager
+        self.hdca_manager = hdca_manager
         self.dataset_collection_manager = dataset_collection_manager
         self.ldda_manager = ldda_manager
         self.folder_manager = folder_manager
@@ -207,7 +209,7 @@ class HistoriesContentsService(ServiceBase):
         self.hda_deserializer = hda_deserializer
         self.hdca_serializer = hdca_serializer
         self.history_contents_filters = history_contents_filters
-        self.item_operator = HistoryItemOperator(self.hda_manager, self.dataset_collection_manager)
+        self.item_operator = HistoryItemOperator(self.hda_manager, self.hdca_manager)
 
     def index(
         self,
@@ -1298,10 +1300,10 @@ class HistoryItemOperator:
     def __init__(
         self,
         hda_manager: hdas.HDAManager,
-        dataset_collection_manager: DatasetCollectionManager,
+        hdca_manager: hdcas.HDCAManager,
     ):
         self.hda_manager = hda_manager
-        self.dataset_collection_manager = dataset_collection_manager
+        self.hdca_manager = hdca_manager
         self.flush = False
         self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
             HistoryContentItemOperation.hide: lambda item: self._hide(item),
@@ -1317,7 +1319,7 @@ class HistoryItemOperator:
     def _get_item_manager(self, item: HistoryItemModel):
         if isinstance(item, HistoryDatasetAssociation):
             return self.hda_manager
-        return self.dataset_collection_manager
+        return self.hdca_manager
 
     def _hide(self, item: HistoryItemModel):
         item.visible = False
