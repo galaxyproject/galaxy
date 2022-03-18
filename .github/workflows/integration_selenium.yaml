@@ -66,6 +66,9 @@ jobs:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           path: 'galaxy root'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Get full Python version
