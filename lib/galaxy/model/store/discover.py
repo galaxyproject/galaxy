@@ -134,7 +134,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list, flush=False)
+            job = getattr(self, "job", None)
+            self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
         # designation.
@@ -415,7 +416,6 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         self.object_store = object_store
         self.export_store = export_store
         self.flush_per_n_datasets = None
-
         self.job_working_directory = working_directory  # TODO: rename...
 
     @property
@@ -626,6 +626,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                 ext = fields_match.ext
                 dbkey = fields_match.dbkey
                 info = element.get("info", None)
+                tag_list = element.get("tags")
                 link_data = discovered_file.match.link_data
 
                 # Create new primary dataset
@@ -654,6 +655,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state='ok'):
                     filename=discovered_file.path,
                     extra_files=extra_files,
                     info=info,
+                    tag_list=tag_list,
                     link_data=link_data,
                     primary_data=primary_dataset,
                     sources=sources,
