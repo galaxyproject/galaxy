@@ -310,6 +310,21 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents",
         name="history_contents",
         summary="Returns the contents of the given history.",
+        responses={
+            200: {"model": List[AnyHistoryContentItem]},
+            204: {
+                "description": (
+                    "When using `v=dev&view=count` instead of the contents"
+                    " a header with the `total_matches` of the search is returned"
+                ),
+                "headers": {
+                    "total_matches": {
+                        "description": "The number of items that match the search query",
+                        "schema": {"type": "integer"},
+                    },
+                },
+            },
+        },
     )
     def index(
         self,
@@ -326,9 +341,13 @@ class FastAPIHistoryContents:
         - The contents can be filtered and queried using the appropriate parameters.
         - The amount of information returned for each item can be customized.
 
+        When using the special serialization view `count`, instead of returning the items
+        that match the search, no content (204) is returned and the header value `total_matches`
+        will contain the number of items that match the search query.
+
         **Note**: Anonymous users are allowed to get their current history contents.
         """
-        items = self.service.index(
+        items, total_matches = self.service.index(
             trans,
             history_id,
             index_params,
@@ -336,6 +355,8 @@ class FastAPIHistoryContents:
             serialization_params,
             filter_query_params,
         )
+        if total_matches:
+            return Response(status_code=status.HTTP_204_NO_CONTENT, headers={"total_matches": f"{total_matches}"})
         return items
 
     @router.get(

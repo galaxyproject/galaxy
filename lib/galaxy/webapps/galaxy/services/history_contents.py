@@ -10,6 +10,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 
@@ -219,7 +220,7 @@ class HistoriesContentsService(ServiceBase):
         legacy_params: LegacyHistoryContentsIndexParams,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
         """
         Return a list of contents (HDAs and HDCAs) for the history with the given ``ID``.
 
@@ -906,7 +907,7 @@ class HistoriesContentsService(ServiceBase):
         trans,
         history_id: EncodedDatabaseIdField,
         legacy_params: LegacyHistoryContentsIndexParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
         legacy_params_dict = legacy_params.dict(exclude_defaults=True)
@@ -917,7 +918,7 @@ class HistoriesContentsService(ServiceBase):
         return [
             self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))
             for content in contents
-        ]
+        ], None
 
     def __index_v2(
         self,
@@ -926,16 +927,23 @@ class HistoriesContentsService(ServiceBase):
         params: HistoryContentsIndexParams,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> List[AnyHistoryContentItem]:
+    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
         """
         Latests implementation of the `index` action.
         Allows additional filtering of contents and custom serialization.
         """
         history = self._get_history(trans, history_id)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+
+        if serialization_params.view == "count":
+            total_matches = self.history_contents_manager.contents_count(
+                history,
+                filters=filters,
+            )
+            return [], total_matches
+
         filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
-
         contents = self.history_contents_manager.contents(
             history,
             filters=filters,
@@ -952,7 +960,7 @@ class HistoriesContentsService(ServiceBase):
                 serialization_params=serialization_params,
             )
             for content in contents
-        ]
+        ], None
 
     def _serialize_legacy_content_item(
         self,
