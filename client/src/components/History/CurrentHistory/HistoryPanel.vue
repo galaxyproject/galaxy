@@ -64,7 +64,7 @@
                                 </b-alert>
                             </div>
                         </div>
-                        <Listing v-else :loading="loading" :items="payload" @scroll="onScroll">
+                        <Listing v-else :items="payload" @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
                                     v-if="!invisible[item.hid]"

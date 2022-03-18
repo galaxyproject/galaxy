@@ -28,7 +28,7 @@ const mutations = {
         Vue.set(state.items, id, dataset);
     },
     /**
-     * Updates and adds changed datasets. This is called by the history changed items store.
+     * Updates existing datasets. This is called by the history changed items store.
      * @param {Array} payload as returned by the history contents api
      */
     saveDatasets: (state, { payload }) => {
