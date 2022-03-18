@@ -396,7 +396,6 @@
                    - `mem-self` - In-memory Self Assignment
                    - `db-self`- Database Self Assignment
                    - `db-preassign` - Database Preassignment
-                   - `uwsgi-mule-message` - uWSGI Mule Messaging
                    - `db-transaction-isolation` - Database Transaction Isolation
                    - `db-skip-locked` - Database SKIP LOCKED
 

@@ -118,7 +118,6 @@ class InteractiveToolSqlite:
                 c = conn.cursor()
                 try:
                     # Delete entry
-                    # NB: This does not invalidate in-memory caches used by uwsgi (if any)
                     c.execute(delete, tuple(value_list))
                 except Exception as e:
                     log.debug("Error removing entry (%s): %s", delete, e)

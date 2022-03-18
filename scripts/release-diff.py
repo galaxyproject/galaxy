@@ -146,8 +146,6 @@ def main(old_revision, new_revision=None):
         filename = file
         if "config_schema.yml" in file:
             filename = "config/galaxy.yml.sample:galaxy"
-        elif "uwsgi_schema.yml" in file:
-            filename = "config/galaxy.yml.sample:uwsgi"
 
         real_path = Path(file).resolve().relative_to(Path.cwd())
         try:

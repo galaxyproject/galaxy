@@ -45,7 +45,6 @@ from galaxy.web.framework import (
     helpers,
     url_for,
 )
-from galaxy.web_stack import get_app_kwds
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -1032,16 +1031,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
 def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
-
-
-def build_native_uwsgi_app(paste_factory, config_section):
-    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
-
-    In particular these are useful with --yaml or --json for config."""
-    # TODO: just move this to a classmethod on stack?
-    app_kwds = get_app_kwds(config_section)
-    uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
-    return uwsgi_app
 
 
 def build_url_map(app, global_conf, **local_conf):

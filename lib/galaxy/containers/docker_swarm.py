@@ -125,7 +125,7 @@ class DockerSwarmInterface(DockerInterface):
     def _run_swarm_manager(self):
         if self._conf.managed and self._conf.manager_autostart:
             try:
-                # sys.exectuable would be preferable to using $PATH, but sys.executable is probably uwsgi
+                # sys.executable would be preferable to using $PATH, but sys.executable is probably gunicorn
                 subprocess.check_call(
                     [
                         "python",

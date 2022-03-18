@@ -1,6 +1,5 @@
 type: map
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   tool_shed:
     type: map
     required: true

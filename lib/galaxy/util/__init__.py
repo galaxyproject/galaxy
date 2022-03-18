@@ -50,10 +50,6 @@ try:
 except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None  # type: ignore[assignment]
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 LXML_AVAILABLE = True
 try:
     from lxml import etree

@@ -275,14 +275,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     return webapp, app
 
 
-def uwsgi_app():
-    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
-
-
-# For backwards compatibility
-uwsgi_app_factory = uwsgi_app
-
-
 def postfork_setup():
     from galaxy.app import app
 
