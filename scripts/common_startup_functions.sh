@@ -45,7 +45,7 @@ parse_common_args() {
             --daemon|start)
                 gravity_args="start"
                 paster_args="$paster_args --daemon"
-                gunicorn_args="$gunicorn_args --daemon"
+                gunicorn_args="$gunicorn_args --daemon --capture-output"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
