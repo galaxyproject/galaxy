@@ -954,7 +954,8 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
 
 class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
     """
-    Test the /api/histories/{history_id}/contents/bulk endpoint.
+    Test the `/api/histories/{history_id}/contents/bulk` endpoint and the new
+    `count` special view for `/api/histories/{history_id}/contents?v=dev`
     """
 
     def setUp(self):
@@ -1102,6 +1103,32 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             history_contents = self._get_history_contents(history_id)
             self._assert_bulk_success(bulk_operation_result, expected_purged_count)
 
+    def test_index_returns_expected_total_matches(self):
+        with self.dataset_populator.test_history() as history_id:
+            datasets_ids, collection_ids, history_contents = self._create_test_history_contents(history_id)
+
+            self._test_index_total_matches(history_id, expected_total_matches=len(history_contents))
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset_collection",
+                expected_total_matches=len(collection_ids),
+            )
+
+            self._test_index_total_matches(
+                history_id,
+                search_query="&q=history_content_type-eq&qv=dataset",
+                expected_total_matches=len(datasets_ids),
+            )
+
+    def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
+        search_response = self._get(f"histories/{history_id}/contents?v=dev&view=count{search_query}")
+        self._assert_status_code_is(search_response, 204)
+        self._assert_total_matches_header_is(search_response, expected_total_matches)
+
+    def _assert_total_matches_header_is(self, response, expected_total_matches: int):
+        assert response.headers["total_matches"]
+        assert int(response.headers["total_matches"]) == expected_total_matches
 
     def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
         """Creates 3 collections (pairs) and their corresponding datasets (6 in total)
