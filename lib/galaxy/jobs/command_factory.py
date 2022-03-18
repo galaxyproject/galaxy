@@ -38,8 +38,6 @@ def build_command(
     create_tool_working_directory=True,
     remote_command_params=None,
     remote_job_directory=None,
-    stdout_file=None,
-    stderr_file=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -93,9 +91,6 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
-    if stdout_file and stderr_file:
-        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
-
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -120,7 +115,6 @@ def build_command(
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
     if include_metadata and job_wrapper.requires_setting_metadata:
-        working_directory = remote_job_directory or job_wrapper.working_directory
         commands_builder.append_command(f"cd '{working_directory}'")
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
@@ -169,7 +163,9 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
     else:
-        commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
+        cb = CommandsBuilder(commands)
+        cb.capture_stdout_stderr('../outputs/tool_stdout', '../outputs/tool_stderr')
+        commands = cb.build()
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
@@ -283,7 +279,7 @@ class CommandsBuilder:
 
     def capture_stdout_stderr(self, stdout_file, stderr_file):
         self.prepend_command(
-            f"""out="${{TMPDIR:-/tmp}}/out.$$" err="${{TMPDIR:-/tmp}}/err.$$"
+            f"""__out="${{TMPDIR:-.}}/out.$$" __err="${{TMPDIR:-.}}/err.$$"
 mkfifo "$__out" "$__err"
 trap 'rm "$__out" "$__err"' EXIT
 tee -a '{stdout_file}' < "$__out" &
