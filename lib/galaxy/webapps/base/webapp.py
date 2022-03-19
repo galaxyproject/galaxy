@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import random
+import re
 import socket
 import string
 import time
@@ -106,27 +107,28 @@ class WebApplication(base.WebApplication):
         Traverse all route paths starting with "api" and create an APISpec instance.
         """
         # API specification builder
-        apispec = APISpec(title=self.name,
-                          version="0.0.0-unsupported", # galaxy_app.config.version_major,
-                          openapi_version="3.0.2")
-        import re, sys
-        from apispec import yaml_utils
-        RE_URL = re.compile(r"""
+        apispec = APISpec(
+            title=self.name, version="0.0.0-unsupported", openapi_version="3.0.2"  # galaxy_app.config.version_major,
+        )
+        RE_URL = re.compile(
+            r"""
             (?::\(|{)
                 (\w*)
                 (?::.*)?
-            (?:\)|})""", re.X)
+            (?:\)|})""",
+            re.X,
+        )
         for rule in self.mapper.matchlist:
             if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
                 continue
             # Try to replace routes various ways to encode variables with simple swagger {form}
-            swagger_path = "/%s" % RE_URL.sub(r'{\1}', rule.routepath)
-            controller = rule.defaults.get('controller', '')
-            action = rule.defaults.get('action', '')
+            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            controller = rule.defaults.get("controller", "")
+            action = rule.defaults.get("action", "")
             # Get the list of methods for the route
             methods = []
             if rule.conditions:
-                m = rule.conditions.get('method', [])
+                m = rule.conditions.get("method", [])
                 methods = type(m) is str and [m] or m
             # Find the controller class
             if controller not in self.api_controllers:
@@ -137,12 +139,14 @@ class WebApplication(base.WebApplication):
                 log.warning("No action found for '%s' in class '%s' while building API spec", action, controller_class)
                 continue
             action_method = getattr(controller_class, action)
-            # First try to load method docs from docstring
-            operations = yaml_utils.load_operations_from_docstring(action_method.__doc__)
+            operations = {}
             # Add methods that have routes but are not documents
             for method in methods:
                 if method.lower() not in operations:
-                    operations[method.lower()] = {}
+                    operations[method.lower()] = {
+                        "description": f"This route has not yet been ported to FastAPI. The documentation may not be complete.\n{action_method.__doc__}",
+                        "tags": ["routes"],
+                    }
             # Store the swagger path
             apispec.path(path=swagger_path, operations=operations)
         return apispec

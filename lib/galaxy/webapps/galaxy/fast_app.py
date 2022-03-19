@@ -6,12 +6,14 @@ from fastapi import (
     FastAPI,
     Request,
 )
+from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
     Response,
 )
 
+from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
@@ -121,6 +123,21 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
+def include_legacy_openapi(app, gx_app):
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Galaxy API Documentation",
+        version=VERSION,
+        routes=app.routes,
+    )
+    legacy_openapi = gx_app.api_spec.to_dict()
+    legacy_openapi["paths"].update(openapi_schema["paths"])
+    openapi_schema["paths"] = legacy_openapi["paths"]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = FastAPI(
         title="Galaxy API",
@@ -131,6 +148,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
+    include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount("/", wsgi_handler)
     if gx_app.config.galaxy_url_prefix != "/":
