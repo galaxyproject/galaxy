@@ -14,20 +14,11 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 
 import tool_shed.webapp.model.mapping as tool_shed_model
 from tool_shed.util import xml_util
+from tool_shed.webapp.config import ToolShedAppConfiguration
 
 
-def check_db(config_parser):
-    dburi = None
-
-    if config_parser.has_option("app:main", "database_connection"):
-        dburi = config_parser.get("app:main", "database_connection")
-    elif config_parser.has_option("app:main", "database_file"):
-        db_file = config_parser.get("app:main", "database_file")
-        dburi = "sqlite:///%s?isolation_level=IMMEDIATE" % db_file
-    else:
-        sys.exit(
-            "The database configuration setting is missing from the tool_shed.ini file.  Add this setting before attempting to bootstrap."
-        )
+def check_db(config: ToolShedAppConfiguration):
+    dburi = config.database_connection
 
     sa_session = None
 
@@ -37,9 +28,7 @@ def check_db(config_parser):
     database_exists_message += "Create a new database that has not been migrated before attempting to bootstrap."
 
     try:
-        model = tool_shed_model.init(
-            config_parser.get("app:main", "file_path"), dburi, engine_options={}, create_tables=False
-        )
+        model = tool_shed_model.init(config.file_path, dburi, engine_options={}, create_tables=False)
         sa_session = model.context.current
         sys.exit(database_exists_message)
     except ProgrammingError:
@@ -57,9 +46,9 @@ def check_db(config_parser):
     except ProgrammingError:
         pass
 
-    if config_parser.has_option("app:main", "hgweb_config_dir"):
+    if config.hgweb_config_dir:
         hgweb_config_parser = ConfigParser()
-        hgweb_dir = config_parser.get("app:main", "hgweb_config_dir")
+        hgweb_dir = config.hgweb_config_dir
         hgweb_config_file = os.path.join(hgweb_dir, "hgweb.config")
         if not os.path.exists(hgweb_config_file):
             sys.exit(0)
@@ -72,8 +61,6 @@ def check_db(config_parser):
             sys.exit(message)
         else:
             sys.exit(0)
-    else:
-        sys.exit(0)
 
     sys.exit(0)
 
@@ -87,7 +74,6 @@ def admin_user_info():
     email = None
     password = None
     if tree is None:
-        print("The XML file ", user_info_config, " seems to be invalid, using defaults.")
         email = "admin@test.org"
         password = "testuser"
         username = "admin"
@@ -103,40 +89,22 @@ def admin_user_info():
     return (username, email, password)
 
 
-def get_local_tool_shed_url(config_parser):
-    port = "9009"
-    if config_parser.has_section("server:main"):
-        if config_parser.has_option("server:main", "port"):
-            port = config_parser.get("server:main", "port")
-    host = "127.0.0.1"
-    print(f"http://{host}:{port}")
-    return 0
-
-
 def main(args):
-    config_parser = ConfigParser()
-
-    if os.path.exists(args.config):
-        config_parser.read(args.config)
-    else:
-        return 1
+    config = ToolShedAppConfiguration(config_file=args.config)
 
     if args.method == "check_db":
-        return check_db(config_parser)
+        return check_db(config)
     elif args.method == "admin_user_info":
         (username, email, password) = admin_user_info()
         print(f"{username}__SEP__{email}__SEP__{password}")
         return 0
-    elif args.method == "get_url":
-        return get_local_tool_shed_url(config_parser)
     else:
         return 1
 
 
-parser = optparse.OptionParser()
-parser.add_option("-c", "--config_file", dest="config", action="store", default="config/tool_shed.yml.sample")
-parser.add_option("-e", "--execute", dest="method", action="store", default="check_db")
-(args, options) = parser.parse_args()
-
 if __name__ == "__main__":
+    parser = optparse.OptionParser()
+    parser.add_option("-c", "--config_file", dest="config", action="store", default="config/tool_shed.yml.sample")
+    parser.add_option("-e", "--execute", dest="method", action="store", default="check_db")
+    (args, options) = parser.parse_args()
     sys.exit(main(args))

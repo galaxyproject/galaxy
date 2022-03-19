@@ -31,10 +31,6 @@ import struct
 import subprocess
 import sys
 import tempfile
-from typing import (
-    Dict,
-    List,
-)
 
 __author__ = "Jose Blanca and Bastien Chevreux"
 __copyright__ = "Copyright 2008, Jose Blanca, COMAV, and Bastien Chevreux"
@@ -46,9 +42,9 @@ __status__ = "beta"
 fake_sff_name = "fake_sff_name"
 
 # readname as key: lines with matches from SSAHA, one best match
-ssahapematches: Dict[str, List] = {}
+ssahapematches = {}  # type: ignore
 # linker readname as key: length of linker sequence
-linkerlengths: Dict[str, int] = {}
+linkerlengths = {}  # type: ignore
 
 # set to true if something really fishy is going on with the sequences
 stern_warning = True
