@@ -4,14 +4,16 @@ on:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
   pull_request:
     paths-ignore:
       - 'client/**'
       - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
 env:
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/postgres?client_encoding=utf8'  # using postgres as the db
 concurrency:
-  group: py-unit-${{ github.ref }}
+  group: py-unit-postgres-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -50,7 +52,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .venv
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unitdb
-      - name: Run tests
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit-postgres
+      - name: Run migration tests
         run: ./run_tests.sh -unit test/unit/data/model/migrations/test_migrations.py
         working-directory: 'galaxy root'
