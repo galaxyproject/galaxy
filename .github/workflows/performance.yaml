@@ -57,7 +57,7 @@ jobs:
       - name: Cache galaxy venv
         uses: actions/cache@v2
         with:
-          path: .venv
+          path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-performance
       - name: Run tests
         run: ./run_tests.sh --ci_test_metrics --structured_data_html --structured_data_report_file "test.json" --skip_flakey_fails -api lib/galaxy_test/performance
