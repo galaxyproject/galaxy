@@ -7,8 +7,34 @@
         :data-state="state"
         @dragstart="onDragStart">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
-            <div class="clearfix overflow-hidden">
-                <div class="btn-group float-right">
+            <div class="d-flex justify-content-between">
+                <span class="p-1 font-weight-bold">
+                    <span v-if="selectable" class="selector">
+                        <icon
+                            v-if="selected"
+                            fixed-width
+                            size="lg"
+                            :icon="['far', 'check-square']"
+                            @click.stop="$emit('update:selected', false)" />
+                        <icon
+                            v-else
+                            fixed-width
+                            size="lg"
+                            :icon="['far', 'square']"
+                            @click.stop="$emit('update:selected', true)" />
+                    </span>
+                    <span v-if="hasStateIcon">
+                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                    </span>
+                    <span class="id hid">{{ id }}</span>
+                    <span>:</span>
+                    <span class="content-title name">{{ name }}</span>
+                    <CollectionDescription v-if="!isDataset" :item="item" />
+                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
+                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
+                    </div>
+                </span>
+                <span class="align-self-start btn-group">
                     <b-button
                         v-if="isDataset"
                         :disabled="displayDisabled"
@@ -58,23 +84,6 @@
                         @click.stop="$emit('unhide', item)">
                         <icon icon="unlock" />
                     </b-button>
-                </div>
-                <span class="float-left p-1 w-75 font-weight-bold">
-                    <div v-if="selectable" class="selector float-left mr-2">
-                        <span
-                            v-if="selected"
-                            class="fa fa-lg fa-check-square-o"
-                            @click.stop="$emit('update:selected', false)" />
-                        <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
-                    </div>
-                    <icon v-if="hasStateIcon" :icon="contentState.icon" :spin="contentState.spin" />
-                    <span class="id hid">{{ id }}</span>
-                    <span>:</span>
-                    <span class="content-title name">{{ name }}</span>
-                    <CollectionDescription v-if="!isDataset" :item="item" />
-                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
-                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
-                    </div>
                 </span>
             </div>
         </div>
@@ -211,7 +220,7 @@ export default {
 }
 .detail-animation-wrapper {
     overflow: hidden;
-    transition: max-height 0.5s ease-out;
+    transition: max-height 0.2s ease-out;
     height: auto;
     max-height: 400px;
 }
