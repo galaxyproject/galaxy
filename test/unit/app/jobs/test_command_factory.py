@@ -10,6 +10,7 @@ from galaxy.jobs.command_factory import (
     PREPARE_DIRS,
     SETUP_GALAXY_FOR_METADATA,
 )
+from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 from galaxy.util.bunch import Bunch
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
@@ -47,6 +48,15 @@ class TestCommandFactory(TestCase):
     def test_simplest_command(self):
         self.include_work_dir_outputs = False
         self.__assert_command_is(self._surround_command(MOCK_COMMAND_LINE))
+
+    def test_kill_trap_replaced(self):
+        self.include_work_dir_outputs = False
+        self.job_wrapper.command_line = f"{TRAP_KILL_CONTAINER}{MOCK_COMMAND_LINE}"
+        expected_command_line = self._surround_command(MOCK_COMMAND_LINE).replace(
+            """trap 'rm "$__out" "$__err"' EXIT""",
+            """trap 'rm "$__out" "$__err"; _on_exit' EXIT"""
+        )
+        self.__assert_command_is(expected_command_line)
 
     def test_shell_commands(self):
         self.include_work_dir_outputs = False
