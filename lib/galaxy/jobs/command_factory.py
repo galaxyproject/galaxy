@@ -91,6 +91,10 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
+    for_pulsar = 'script_directory' in remote_command_params
+    if not for_pulsar:
+        commands_builder.capture_stdout_stderr('../outputs/tool_stdout', '../outputs/tool_stderr')
+
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
     if create_tool_working_directory:
@@ -162,10 +166,6 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     for_pulsar = 'script_directory' in remote_command_params
     if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
-    else:
-        cb = CommandsBuilder(commands)
-        cb.capture_stdout_stderr('../outputs/tool_stdout', '../outputs/tool_stderr')
-        commands = cb.build()
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
     return commands
 
