@@ -341,7 +341,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect("/api/upload/resumable_upload", controller="uploads", action="hooks")
     webapp.mapper.connect("/api/upload/hooks", controller="uploads", action="hooks", conditions=dict(method=["POST"]))
     webapp.mapper.resource("group", "groups", path_prefix="/api")
-    webapp.mapper.resource_with_deleted("quota", "quotas", path_prefix="/api")
 
     webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
     webapp.mapper.connect(
