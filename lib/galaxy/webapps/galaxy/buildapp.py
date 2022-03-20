@@ -335,6 +335,13 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.connect("/api/upload/resumable_upload", controller="uploads", action="hooks")
     webapp.mapper.connect("/api/upload/hooks", controller="uploads", action="hooks", conditions=dict(method=["POST"]))
+    webapp.mapper.resource(
+        "revision",
+        "revisions",
+        path_prefix="/api/pages/{page_id}",
+        controller="page_revisions",
+        parent_resources=dict(member_name="page", collection_name="pages"),
+    )
     webapp.mapper.resource("group", "groups", path_prefix="/api")
 
     webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
