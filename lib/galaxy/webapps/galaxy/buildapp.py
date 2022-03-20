@@ -588,7 +588,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
-    webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
