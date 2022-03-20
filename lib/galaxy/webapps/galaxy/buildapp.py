@@ -1328,7 +1328,6 @@ def populate_api_routes(webapp, app):
         "tool_shed_repository",
         "tool_shed_repositories",
         member={
-            "repair_repository_revision": "POST",
             "import_workflow": "POST",
             "import_workflows": "POST",
         },
