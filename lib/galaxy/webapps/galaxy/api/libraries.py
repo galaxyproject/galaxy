@@ -29,7 +29,6 @@ from galaxy.schema.schema import (
     LibrarySummaryList,
     UpdateLibraryPayload,
 )
-
 from galaxy.webapps.galaxy.services.libraries import LibrariesService
 from . import (
     depends,

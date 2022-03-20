@@ -8,7 +8,6 @@ from galaxy.tours import (
     TourList,
     ToursRegistry,
 )
-
 from . import (
     depends,
     Router,

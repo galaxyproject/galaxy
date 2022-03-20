@@ -44,8 +44,6 @@ from galaxy.schema.schema import (
     UpdateHistoryContentsBatchPayload,
     UpdateHistoryContentsPayload,
 )
-
-
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,

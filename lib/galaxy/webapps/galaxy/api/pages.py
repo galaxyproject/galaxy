@@ -25,7 +25,6 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingStatus,
 )
-
 from galaxy.webapps.galaxy.services.pages import PagesService
 from . import (
     depends,

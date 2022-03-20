@@ -49,9 +49,7 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.webapps.galaxy.api.common import (
-    query_serialization_params,
-)
+from galaxy.webapps.galaxy.api.common import query_serialization_params
 from galaxy.webapps.galaxy.services.histories import HistoriesService
 from . import (
     as_form,

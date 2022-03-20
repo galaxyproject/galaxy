@@ -13,7 +13,6 @@ from galaxy.schema.schema import (
     GroupRoleListModel,
     GroupRoleModel,
 )
-
 from . import (
     depends,
     DependsOnTrans,
