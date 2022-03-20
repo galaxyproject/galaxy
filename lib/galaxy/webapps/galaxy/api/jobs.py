@@ -53,7 +53,7 @@ class FastAPIJobs:
     job_search: JobSearch = depends(JobSearch)
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
-    @router.get("/api/job/{id}")
+    @router.get("/api/jobs/{id}")
     def show(
         self,
         id: EncodedDatabaseIdField,
