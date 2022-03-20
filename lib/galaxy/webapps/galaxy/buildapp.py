@@ -677,23 +677,24 @@ def populate_api_routes(webapp, app):
         "trs_consume_get_tool_versions",
         "/api/trs_consume/{trs_server}/tools/{tool_id}/versions",
         controller="trs_consumer",
-        action="get_tool_versions",
+        action="get_versions",
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
         "trs_consume_get_tool_version",
         "/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}",
         controller="trs_consumer",
-        action="get_tool_version",
+        action="get_version",
         conditions=dict(method=["GET"]),
     )
-    webapp.mapper.connect(
-        "trs_consume_import_tool_version",
-        "/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import",
-        controller="trs_consumer",
-        action="import_tool_version",
-        conditions=dict(method=["POST"]),
-    )
+    # Not sure what this is supposed to refer to, import_tool_version does not exist
+    # webapp.mapper.connect(
+    #     "trs_consume_import_tool_version",
+    #     "/api/trs_consume/{trs_server}/tools/{tool_id}/versions/{version_id}/import",
+    #     controller="trs_consumer",
+    #     action="import_tool_version",
+    #     conditions=dict(method=["POST"]),
+    # )
 
     webapp.mapper.connect(
         "list_invocations",
