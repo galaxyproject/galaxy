@@ -297,11 +297,6 @@ def populate_api_routes(webapp, app):
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
     webapp.mapper.connect(
-        "/api/histories/published", action="published", controller="histories", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect("/api/histories/shared_with_me", action="shared_with_me", controller="histories")
-
-    webapp.mapper.connect(
         "cloud_storage", "/api/cloud/storage/", controller="cloud", action="index", conditions=dict(method=["GET"])
     )
     webapp.mapper.connect(
@@ -1106,9 +1101,6 @@ def populate_api_routes(webapp, app):
     )
     # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
     webapp.mapper.connect(
-        "metrics", "/api/jobs/{job_id}/metrics", controller="jobs", action="metrics", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
         "destination_params",
         "/api/jobs/{job_id}/destination_params",
         controller="jobs",
@@ -1317,17 +1309,6 @@ def populate_api_routes(webapp, app):
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
-
-    # metrics logging API
-    # webapp.mapper.connect( "index", "/api/metrics",
-    #    controller="metrics", action="index", conditions=dict( method=["GET"] ) )
-    # webapp.mapper.connect( "show", "/api/metrics/{id}",
-    #    controller="metrics", action="show", conditions=dict( method=["GET"] ) )
-    webapp.mapper.connect(
-        "create", "/api/metrics", controller="metrics", action="create", conditions=dict(method=["POST"])
-    )
-
-    webapp.mapper.connect("docs", "/api/docs", controller="docs", action="index", conditions={"method": "GET"})
 
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
