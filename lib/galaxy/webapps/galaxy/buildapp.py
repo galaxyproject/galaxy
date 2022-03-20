@@ -587,45 +587,6 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.resource_with_deleted("user", "users", path_prefix="/api")
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/sharing",
-        action="sharing",
-        controller="visualizations",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/enable_link_access",
-        action="enable_link_access",
-        controller="visualizations",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/disable_link_access",
-        action="disable_link_access",
-        controller="visualizations",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/publish",
-        action="publish",
-        controller="visualizations",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/unpublish",
-        action="unpublish",
-        controller="visualizations",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/share_with_users",
-        action="share_with_users",
-        controller="visualizations",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/visualizations/{id}/slug", action="set_slug", controller="visualizations", conditions=dict(method=["PUT"])
-    )
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
