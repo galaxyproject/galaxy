@@ -988,35 +988,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
 
-    # =======================
-    # ===== LIBRARY API =====
-    # =======================
-
-    webapp.mapper.connect(
-        "update_library",
-        "/api/libraries/{id}",
-        controller="libraries",
-        action="update",
-        conditions=dict(method=["PATCH", "PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "show_library_permissions",
-        "/api/libraries/{encoded_library_id}/permissions",
-        controller="libraries",
-        action="get_permissions",
-        conditions=dict(method=["GET"]),
-    )
-
-    # POST for legacy reasons, but this should be a PUT.
-    webapp.mapper.connect(
-        "set_library_permissions",
-        "/api/libraries/{encoded_library_id}/permissions",
-        controller="libraries",
-        action="set_permissions",
-        conditions=dict(method=["POST", "PUT"]),
-    )
-
     webapp.mapper.connect(
         "show_ld_item",
         "/api/libraries/datasets/{id}",
