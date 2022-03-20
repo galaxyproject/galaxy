@@ -1041,8 +1041,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST", "GET"]),
     )
 
-    webapp.mapper.resource_with_deleted("library", "libraries", path_prefix="/api")
-
     webapp.mapper.resource(
         "content",
         "contents",
