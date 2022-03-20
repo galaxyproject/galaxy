@@ -1136,14 +1136,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
 
-    # ====================
-    # ===== TAGS API =====
-    # ====================
-
-    webapp.mapper.connect(
-        "update_tags", "/api/tags", controller="tags", action="update", conditions=dict(method=["PUT"])
-    )
-
     # =======================
     # ===== LIBRARY API =====
     # =======================
