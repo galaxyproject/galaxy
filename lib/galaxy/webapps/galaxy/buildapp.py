@@ -602,28 +602,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
     webapp.mapper.connect(
-        "history_exports",
-        "/api/histories/{id}/exports",
-        controller="histories",
-        action="index_exports",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "history_archive_export",
-        "/api/histories/{id}/exports",
-        controller="histories",
-        action="archive_export",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "history_archive_download",
-        "/api/histories/{id}/exports/{jeha_id}",
-        controller="histories",
-        action="archive_download",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "/api/histories/{history_id}/contents/archive", controller="history_contents", action="archive"
     )
     webapp.mapper.connect(
