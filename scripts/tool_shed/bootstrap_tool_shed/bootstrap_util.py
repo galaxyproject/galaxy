@@ -5,6 +5,7 @@ import os
 import sys
 from configparser import ConfigParser
 
+from sqlalchemy import text
 from sqlalchemy.exc import (
     OperationalError,
     ProgrammingError,
@@ -38,7 +39,7 @@ def check_db(config: ToolShedAppConfiguration):
 
     try:
         if sa_session is not None:
-            result = sa_session.execute("SELECT version FROM migrate_version").first()
+            result = sa_session.execute(text("SELECT version FROM migrate_version")).first()
             if result[0] >= 2:
                 sys.exit(database_exists_message)
             else:

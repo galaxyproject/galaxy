@@ -13,7 +13,7 @@ from sqlalchemy import (
     null,
     true,
 )
-from sqlalchemy.orm import eagerload
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     model,
@@ -115,7 +115,7 @@ class System(BaseUIController):
                         model.History.update_time < cutoff_time,
                     )
                 )
-                .options(eagerload("datasets"))
+                .options(joinedload("datasets"))
             )
 
             for history in histories:

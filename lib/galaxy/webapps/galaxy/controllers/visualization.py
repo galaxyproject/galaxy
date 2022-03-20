@@ -16,7 +16,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
-    eagerload,
+    joinedload,
     undefer,
 )
 
@@ -290,7 +290,7 @@ class VisualizationAllPublishedGrid(grids.Grid):
         return (
             trans.sa_session.query(self.model_class)
             .join("user")
-            .options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
+            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
         )
 
     def apply_query_filter(self, trans, query, **kwargs):

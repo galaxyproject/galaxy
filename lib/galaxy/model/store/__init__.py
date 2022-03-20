@@ -1479,7 +1479,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sa_session.query(model.HistoryDatasetAssociation)
             .filter(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
-            .options(joinedload("dataset").joinedload("actions"))
+            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(model.Dataset.actions))
             .order_by(model.HistoryDatasetAssociation.hid)
             .filter(model.Dataset.purged == expression.false())
         )

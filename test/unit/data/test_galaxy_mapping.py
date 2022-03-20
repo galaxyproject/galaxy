@@ -441,9 +441,9 @@ class MappingTests(BaseModelTestCase):
         q = c2._get_nested_collection_attributes(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
-        assert [(r.keys()) for r in q] == [
-            ["element_identifier_0", "element_identifier_1", "extension", "state"],
-            ["element_identifier_0", "element_identifier_1", "extension", "state"],
+        assert [(r._fields) for r in q] == [
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
         assert q.all() == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
         q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))

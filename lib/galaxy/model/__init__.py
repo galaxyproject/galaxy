@@ -676,12 +676,12 @@ class User(Base, Dictifiable, RepresentById):
                 db_session.query(User)
                 .filter_by(id=self.id)  # don't use get, it will use session variant.
                 .options(
-                    joinedload("roles"),
-                    joinedload("roles.role"),
-                    joinedload("groups"),
-                    joinedload("groups.group"),
-                    joinedload("groups.group.roles"),
-                    joinedload("groups.group.roles.role"),
+                    joinedload(User.roles),
+                    joinedload(User.roles.role),
+                    joinedload(User.groups),
+                    joinedload(User.groups.group),
+                    joinedload(User.groups.group.roles),
+                    joinedload(User.groups.group.roles.role),
                 )
                 .one()
             )
@@ -756,7 +756,8 @@ class User(Base, Dictifiable, RepresentById):
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-        sql_calc = """
+        sql_calc = text(
+            """
             WITH per_user_histories AS
             (
                 SELECT id
@@ -776,6 +777,7 @@ class User(Base, Dictifiable, RepresentById):
             WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
+        )
         sa_session = object_session(self)
         usage = sa_session.scalar(sql_calc, {"id": self.id})
         if not dryrun:
@@ -1559,11 +1561,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statement = """
+        statement = text(
+            """
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """
+        )
         sa_session = object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(
@@ -1595,7 +1599,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = [
-            """
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1605,8 +1610,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_dataset jtod
                 ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1616,8 +1623,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_library_dataset jtold
                 ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -1627,8 +1636,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_dataset jtod
                 WHERE jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -1638,7 +1649,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_library_dataset jtold
                 WHERE jtold.job_id = :job_id
             );
-        """,
+        """
+            ),
         ]
         sa_session = object_session(self)
         update_time = now()
