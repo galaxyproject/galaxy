@@ -713,16 +713,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    # route for creating/getting converted datasets
-    webapp.mapper.connect("/api/datasets/{dataset_id}/converted", controller="datasets", action="converted", ext=None)
-    webapp.mapper.connect("/api/datasets/{dataset_id}/converted/{ext}", controller="datasets", action="converted")
-    webapp.mapper.connect(
-        "/api/datasets/{dataset_id}/permissions",
-        controller="datasets",
-        action="update_permissions",
-        conditions=dict(method=["PUT"]),
-    )
-
     webapp.mapper.connect(
         "list_invocations",
         "/api/invocations",
