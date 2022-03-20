@@ -127,9 +127,10 @@ def include_legacy_openapi(app, gx_app):
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Galaxy API Documentation",
+        title="Galaxy API",
         version=VERSION,
         routes=app.routes,
+        tags=api_tags_metadata,
     )
     legacy_openapi = gx_app.api_spec.to_dict()
     legacy_openapi["paths"].update(openapi_schema["paths"])
