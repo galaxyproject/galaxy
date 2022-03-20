@@ -330,7 +330,6 @@ def populate_api_routes(webapp, app):
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
 
-    webapp.mapper.resource("dataset", "datasets", path_prefix="/api")
     webapp.mapper.resource("form", "forms", path_prefix="/api")
     webapp.mapper.resource("upload", "uploads", path_prefix="/api")
     webapp.mapper.connect(
