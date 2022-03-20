@@ -672,8 +672,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
-    webapp.mapper.connect("/api/licenses", controller="licenses", action="index", conditions=dict(method="GET"))
-    webapp.mapper.connect("/api/licenses/{id}", controller="licenses", action="get", conditions=dict(method="GET"))
     webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
     webapp.mapper.connect("/api/histories/{history_id}/citations", action="citations", controller="histories")
     webapp.mapper.connect(
