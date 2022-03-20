@@ -6,6 +6,7 @@ aiofiles==0.8.0; python_version >= "3.6" and python_version < "4.0"
 alembic==1.7.6; python_version >= "3.6"
 amqp==5.1.0; python_version >= "3.7"
 anyio==3.5.0; python_version >= "3.7" and python_full_version >= "3.6.2"
+apispec==5.1.1
 appdirs==1.4.4
 argcomplete==2.0.0; python_version >= "3.6" and python_version < "4"
 asgiref==3.5.0; python_version >= "3.7"
