@@ -964,24 +964,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    # =====================
-    # ===== TOURS API =====
-    # =====================
-
-    webapp.mapper.connect("index", "/api/tours", controller="tours", action="index", conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect(
-        "show", "/api/tours/{tour_id}", controller="tours", action="show", conditions=dict(method=["GET"])
-    )
-
-    webapp.mapper.connect(
-        "update_tour",
-        "/api/tours/{tour_id}",
-        controller="tours",
-        action="update_tour",
-        conditions=dict(method=["POST"]),
-    )
-
     # ================================
     # ===== USERS API =====
     # ================================
