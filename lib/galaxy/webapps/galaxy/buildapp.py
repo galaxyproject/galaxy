@@ -601,14 +601,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
     webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
-    webapp.mapper.connect(
-        "/api/histories/{history_id}/contents/archive", controller="history_contents", action="archive"
-    )
-    webapp.mapper.connect(
-        "/api/histories/{history_id}/contents/archive/{filename}{.format}",
-        controller="history_contents",
-        action="archive",
-    )
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route(
