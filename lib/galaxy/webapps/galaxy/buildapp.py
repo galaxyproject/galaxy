@@ -674,46 +674,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
     webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
     webapp.mapper.resource("search", "search", path_prefix="/api")
-    webapp.mapper.connect("/api/pages/{id}.pdf", action="show_pdf", controller="pages", conditions=dict(method=["GET"]))
-    webapp.mapper.resource("page", "pages", path_prefix="/api")
-    webapp.mapper.connect(
-        "/api/pages/{id}/sharing", action="sharing", controller="pages", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/enable_link_access",
-        action="enable_link_access",
-        controller="pages",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/disable_link_access",
-        action="disable_link_access",
-        controller="pages",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/publish", action="publish", controller="pages", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/unpublish", action="unpublish", controller="pages", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/share_with_users",
-        action="share_with_users",
-        controller="pages",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "/api/pages/{id}/slug", action="set_slug", controller="pages", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.resource(
-        "revision",
-        "revisions",
-        path_prefix="/api/pages/{page_id}",
-        controller="page_revisions",
-        parent_resources=dict(member_name="page", collection_name="pages"),
-    )
-
     webapp.mapper.connect(
         "history_exports",
         "/api/histories/{id}/exports",
