@@ -142,8 +142,8 @@ class WebApplication(base.WebApplication):
             if not hasattr(controller_class, action):
                 if action not in DEFAULT_API_RESOURCE_NAMES:
                     # There's a manually specified action that points to a function that doesn't exist anymore
-                    log.warning(
-                        "No action found for '%s' in class '%s' while building API spec", action, controller_class
+                    raise Exception(
+                        f"No action found for {action} in class {controller_class}, remove from buildapp.py ?"
                     )
                 continue
             action_method = getattr(controller_class, action)
