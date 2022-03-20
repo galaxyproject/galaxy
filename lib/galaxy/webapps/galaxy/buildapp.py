@@ -896,22 +896,6 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "get_communication",
-        "/api/users/{id}/communication/inputs",
-        controller="users",
-        action="get_communication",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "set_communication",
-        "/api/users/{id}/communication/inputs",
-        controller="users",
-        action="set_communication",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
         "get_custom_builds",
         "/api/users/{id}/custom_builds",
         controller="users",
