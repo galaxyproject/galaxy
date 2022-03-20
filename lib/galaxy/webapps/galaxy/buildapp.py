@@ -1327,11 +1327,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource(
         "tool_shed_repository",
         "tool_shed_repositories",
-        member={
-            "import_workflow": "POST",
-            "import_workflows": "POST",
-        },
-        collection={"get_latest_installable_revision": "POST", "reset_metadata_on_installed_repositories": "POST"},
+        collection={"reset_metadata_on_installed_repositories": "POST"},
         controller="tool_shed_repositories",
         name_prefix="tool_shed_repository_",
         path_prefix="/api",
