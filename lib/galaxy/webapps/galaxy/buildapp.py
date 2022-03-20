@@ -375,14 +375,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["PUT"]),
     )
 
-    webapp.mapper.connect(
-        "get_custom_builds_metadata",
-        "/api/histories/{id}/custom_builds_metadata",
-        controller="histories",
-        action="get_custom_builds_metadata",
-        conditions=dict(method=["GET"]),
-    )
-
     # =======================
     # ====== TOOLS API ======
     # =======================
