@@ -673,39 +673,6 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
     webapp.mapper.resource_with_deleted("history", "histories", path_prefix="/api")
-    webapp.mapper.connect(
-        "dynamic_tool_confs",
-        "/api/configuration/dynamic_tool_confs",
-        controller="configuration",
-        action="dynamic_tool_confs",
-    )
-    webapp.mapper.connect(
-        "tool_lineages", "/api/configuration/tool_lineages", controller="configuration", action="tool_lineages"
-    )
-    webapp.mapper.connect(
-        "/api/configuration/toolbox",
-        controller="configuration",
-        action="reload_toolbox",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.resource("configuration", "configuration", path_prefix="/api")
-    webapp.mapper.connect(
-        "configuration_version",
-        "/api/version",
-        controller="configuration",
-        action="version",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "api_whoami", "/api/whoami", controller="configuration", action="whoami", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
-        "api_decode",
-        "/api/configuration/decode/{encoded_id}",
-        controller="configuration",
-        action="decode_id",
-        conditions=dict(method=["GET"]),
-    )
     webapp.mapper.resource(
         "datatype",
         "datatypes",
