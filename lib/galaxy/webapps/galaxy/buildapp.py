@@ -332,7 +332,6 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.resource("dataset", "datasets", path_prefix="/api")
     webapp.mapper.resource("form", "forms", path_prefix="/api")
-    webapp.mapper.resource("role", "roles", path_prefix="/api")
     webapp.mapper.resource("upload", "uploads", path_prefix="/api")
     webapp.mapper.connect(
         "/api/upload/resumable_upload/{session_id}",
