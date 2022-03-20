@@ -145,7 +145,7 @@ class WebApplication(base.WebApplication):
                 if method.lower() not in operations:
                     operations[method.lower()] = {
                         "description": f"This route has not yet been ported to FastAPI. The documentation may not be complete.\n{action_method.__doc__}",
-                        "tags": ["routes"],
+                        "tags": ["undocumented"],
                     }
             # Store the swagger path
             apispec.path(path=swagger_path, operations=operations)

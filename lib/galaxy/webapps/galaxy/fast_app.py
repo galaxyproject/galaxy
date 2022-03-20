@@ -27,9 +27,15 @@ api_tags_metadata = [
         "name": "configuration",
         "description": "Configuration-related endpoints.",
     },
+    {"name": "datasets", "description": "Operations on datasets."},
+    {"name": "dataset collections"},
     {
         "name": "datatypes",
         "description": "Operations with supported data types.",
+    },
+    {
+        "name": "datatypes",
+        "description": "Operations on dataset collections.",
     },
     {
         "name": "genomes",
@@ -39,6 +45,18 @@ api_tags_metadata = [
         "name": "group_roles",
         "description": "Operations with group roles.",
     },
+    {"name": "histories"},
+    {"name": "libraries"},
+    {"name": "folders"},
+    {"name": "job_lock"},
+    {"name": "metrics"},
+    {"name": "default"},
+    {"name": "users"},
+    {"name": "jobs"},
+    {"name": "roles"},
+    {"name": "quotas"},
+    {"name": "visualizations"},
+    {"name": "pages"},
     {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
@@ -59,6 +77,7 @@ api_tags_metadata = [
         "name": "remote files",
         "description": "Operations with remote dataset sources.",
     },
+    {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
 ]
 
 
