@@ -285,99 +285,6 @@ def postfork_setup():
 def populate_api_routes(webapp, app):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
-    valid_history_contents_types = [
-        "dataset",
-        "dataset_collection",
-    ]
-
-    # Accesss HDA details via histories/{history_id}/contents/datasets/{hda_id}
-    # and HDCA details via histories/{history_id}/contents/dataset_collections/{hdca_id}
-    webapp.mapper.resource(
-        "content_typed",
-        "{type:%s}s" % "|".join(valid_history_contents_types),
-        name_prefix="history_",
-        controller="history_contents",
-        path_prefix="/api/histories/{history_id}/contents",
-        parent_resources=dict(member_name="history", collection_name="histories"),
-    )
-    # Legacy access to HDA details via histories/{history_id}/contents/{hda_id}
-    webapp.mapper.resource(
-        "content",
-        "contents",
-        controller="history_contents",
-        name_prefix="history_",
-        path_prefix="/api/histories/{history_id}",
-        parent_resources=dict(member_name="history", collection_name="histories"),
-    )
-    webapp.mapper.connect(
-        "history_contents_batch_update",
-        "/api/histories/{history_id}/contents",
-        controller="history_contents",
-        action="update_batch",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "history_contents_display",
-        "/api/histories/{history_id}/contents/{history_content_id}/display",
-        controller="datasets",
-        action="display",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "history_contents_update_permissions",
-        "/api/histories/{history_id}/contents/{history_content_id}/permissions",
-        controller="history_contents",
-        action="update_permissions",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "history_contents_validate",
-        "/api/histories/{history_id}/contents/{history_content_id}/validate",
-        controller="history_contents",
-        action="validate",
-        conditions=dict(method=["PUT"]),
-    )
-    webapp.mapper.connect(
-        "history_contents_extra_files",
-        "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
-        controller="datasets",
-        action="extra_files",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "history_content_as_text",
-        "/api/datasets/{dataset_id}/get_content_as_text",
-        controller="datasets",
-        action="get_content_as_text",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "dataset_storage",
-        "/api/datasets/{dataset_id}/storage",
-        controller="datasets",
-        action="show_storage",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "dataset_inheritance_chain",
-        "/api/datasets/{dataset_id}/inheritance_chain",
-        controller="datasets",
-        action="show_inheritance_chain",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "get_metadata_file",
-        "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
-        controller="datasets",
-        action="get_metadata_file",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "/api/histories/{history_id}/contents/{direction:near|before|after}/{hid}/{limit}",
-        action="contents_near",
-        controller="history_contents",
-        conditions=dict(method=["GET"]),
-    )
     webapp.mapper.resource(
         "user",
         "users",
@@ -952,19 +859,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
 
-    webapp.mapper.connect(
-        "/api/histories/{history_id}/jobs_summary",
-        action="index_jobs_summary",
-        controller="history_contents",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "/api/histories/{history_id}/contents/{type:%s}s/{id}/jobs_summary" % "|".join(valid_history_contents_types),
-        action="show_jobs_summary",
-        controller="history_contents",
-        conditions=dict(method=["GET"]),
-    )
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
     webapp.add_route(
