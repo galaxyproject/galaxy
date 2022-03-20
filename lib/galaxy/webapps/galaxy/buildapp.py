@@ -1171,31 +1171,7 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "tool_shed_category_contents",
-        "/api/tool_shed/category",
-        controller="toolshed",
-        action="category",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "tool_shed_repository_details",
-        "/api/tool_shed/repository",
-        controller="toolshed",
-        action="repository",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "tool_sheds", "/api/tool_shed", controller="toolshed", action="index", conditions=dict(method=["GET"])
-    )
-
-    webapp.mapper.connect(
-        "tool_shed_search",
-        "/api/tool_shed/search",
-        controller="toolshed",
-        action="search",
-        conditions=dict(method=["GET", "POST"]),
     )
 
     webapp.mapper.connect(
@@ -1207,42 +1183,10 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "tool_shed_status",
-        "/api/tool_shed/status",
-        controller="toolshed",
-        action="status",
-        conditions=dict(method=["GET", "POST"]),
-    )
-
-    webapp.mapper.connect(
-        "shed_tool_json",
-        "/api/tool_shed/tool_json",
-        controller="toolshed",
-        action="tool_json",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "tool_shed_repository",
-        "/api/tool_shed_repositories/:id/status",
-        controller="tool_shed_repositories",
-        action="status",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "install_repository",
         "/api/tool_shed_repositories",
         controller="tool_shed_repositories",
         action="install_repository_revision",
-        conditions=dict(method=["POST"]),
-    )
-
-    webapp.mapper.connect(
-        "install_repository",
-        "/api/tool_shed_repositories/install",
-        controller="tool_shed_repositories",
-        action="install",
         conditions=dict(method=["POST"]),
     )
 
