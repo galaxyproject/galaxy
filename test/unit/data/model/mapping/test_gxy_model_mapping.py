@@ -83,7 +83,7 @@ from .testing_utils import (
     has_unique_constraint,
 )
 from .testing_utils.gxy_model_fixtures import *
-from ..common import (
+from ..testing_utils import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,

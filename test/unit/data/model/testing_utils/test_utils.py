@@ -20,7 +20,7 @@ from sqlalchemy.orm import (
 )
 
 from galaxy.model import _HasTable
-from .common import (
+from . import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,

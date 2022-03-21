@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy.model import tool_shed_install as model
-from ...common import dbcleanup_wrapper
+from ...testing_utils import dbcleanup_wrapper
 
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
 

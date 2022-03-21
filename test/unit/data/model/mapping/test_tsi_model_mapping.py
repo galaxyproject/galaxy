@@ -15,7 +15,7 @@ from .testing_utils import (
     collection_consists_of_objects,
 )
 from .testing_utils.tsi_model_fixtures import *
-from ..common import (
+from ..testing_utils import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,

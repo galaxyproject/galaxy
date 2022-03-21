@@ -25,7 +25,7 @@ from . import (
     has_index,
     has_unique_constraint,
 )
-from ...common import persist
+from ...testing_utils import persist
 
 
 def test_has_index(session):

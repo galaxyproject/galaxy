@@ -3,7 +3,7 @@ import pytest
 from galaxy import model
 from galaxy.model.orm.util import add_object_to_object_session
 from . import get_unique_value
-from ...common import dbcleanup_wrapper
+from ...testing_utils import dbcleanup_wrapper
 
 # Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
