@@ -13,6 +13,8 @@ from galaxy.model import tool_shed_install as model
 from .common import (
     AbstractBaseTest,
     collection_consists_of_objects,
+)
+from ..common import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,
