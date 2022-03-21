@@ -33,11 +33,11 @@
                             <i :class="leafIcon" />
                             <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
-                        <div @click.stop="open(data.item)" v-else>
+                        <div v-else>
                             <font-awesome-icon icon="folder" />
-                            <b-link :title="`label-${data.item.labelTitle}`">{{
+                            <span :title="`label-${data.item.labelTitle}`">{{
                                 data.value ? data.value : "-"
-                            }}</b-link>
+                            }}</span>
                         </div>
                     </span>
                 </div>
