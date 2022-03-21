@@ -8,10 +8,7 @@ import logging
 import os
 import random
 from enum import Enum
-from typing import (
-    Set,
-    Tuple,
-)
+from typing import Tuple
 
 from sqlalchemy.orm import object_session
 
@@ -30,7 +27,6 @@ class HANDLER_ASSIGNMENT_METHODS(str, Enum):
     DB_PREASSIGN = "db-preassign"
     DB_TRANSACTION_ISOLATION = "db-transaction-isolation"
     DB_SKIP_LOCKED = "db-skip-locked"
-    UWSGI_MULE_MESSAGE = "uwsgi-mule-message"
 
     @classmethod
     def has_value(cls, value):
@@ -44,7 +40,6 @@ class HandlerAssignmentSkip(Exception):
 class ConfiguresHandlers:
     DEFAULT_HANDLER_TAG = "_default_"
     DEFAULT_BASE_HANDLER_POOLS: Tuple[str, ...] = ()
-    UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS: Set[str] = set()
 
     def add_handler(self, handler_id, tags):
         if handler_id not in self.handlers:
@@ -121,7 +116,6 @@ class ConfiguresHandlers:
             HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN: self._assign_db_preassign_handler,
             HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION: self._assign_db_tag,
             HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED: self._assign_db_tag,
-            HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE: self._assign_uwsgi_mule_message_handler,
         }
         if handling_config_dict:
             for method in handling_config_dict.get("assign", []):
@@ -144,10 +138,7 @@ class ConfiguresHandlers:
 
     def _set_default_handler_assignment_methods(self):
         if not self.handler_assignment_methods_configured:
-            if (
-                not self.app.config.track_jobs_in_database
-                and HANDLER_ASSIGNMENT_METHODS.MEM_SELF not in self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS
-            ):
+            if not self.app.config.track_jobs_in_database:
                 # DEPRECATED: You should just set mem_self as the only method if you want this
                 log.warning(
                     "The `track_jobs_in_database` option is deprecated, please set `%s` as the job"
@@ -239,21 +230,9 @@ class ConfiguresHandlers:
         return rval
 
     @property
-    def use_messaging(self):
-        # The job manager uses this to determine whether the messaging job queue should be used
-        return HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE in self.handler_assignment_methods
-
-    @property
     def deterministic_handler_assignment(self):
         return self.handler_assignment_methods and any(
-            filter(
-                lambda x: x
-                in (
-                    HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE,
-                    HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN,
-                ),
-                self.handler_assignment_methods,
-            )
+            filter(lambda x: x == HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN), self.handler_assignment_methods
         )
 
     def _get_is_handler(self):
@@ -433,36 +412,6 @@ class ConfiguresHandlers:
         if flush:
             _timed_flush_obj(obj)
         return handler
-
-    def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, flush=True, **kwargs):
-        """Assign object to a handler by sending a setup message to the appropriate handler pool (farm), where a handler
-        (mule) will receive the message and assign itself.
-
-        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
-        :param method:          Same as :method:`ConfiguresHandlers._assign_db_preassign_handler()`.
-        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
-        :param queue_callback:  Callback returning a setup message to be sent via the stack messaging interface's
-                                ``send_message()`` method. No arguments are passed.
-        :type queue_callback:   callable
-
-        :raises HandlerAssignmentSkip: if the configured or default handler is not a known handler pool (farm)
-        :returns: str -- The assigned handler pool.
-        """
-        assert message_callback is not None, (
-            "Cannot perform '%s' handler assignment: `message_callback` is None"
-            % HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE
-        )
-        tag = configured or self.DEFAULT_HANDLER_TAG
-        pool = self.pool_for_tag.get(tag)
-        if pool is None:
-            log.debug("(%s) No handler pool (uWSGI farm) for '%s' found", obj.log_str(), tag)
-            raise HandlerAssignmentSkip()
-        else:
-            if flush or not obj.id:
-                _timed_flush_obj(obj)
-            message = message_callback()
-            self.app.application_stack.send_message(pool, message)
-        return pool
 
     def assign_handler(self, obj, configured=None, **kwargs):
         """Set a job handler, flush obj

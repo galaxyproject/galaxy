@@ -20,7 +20,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         name_element = self.history_panel_name_element()
         if self.is_beta_history():
             # look for the editor icon
-            editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            editor = self.components.history_panel.editor.selector(scope=".history-index")
             toggle = editor.toggle
             toggle.wait_for_visible()
         else:
@@ -60,7 +60,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     @edit_details
     def test_history_tags_and_annotations_buttons(self):
         if self.is_beta_history():
-            history_editor = self.components.history_panel.editor.selector(scope=".beta.history")
+            history_editor = self.components.history_panel.editor.selector(scope=".history-index")
             history_editor.annotation_input.wait_for_clickable()
             history_editor.tags_input.wait_for_clickable()
         else:
@@ -158,7 +158,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
         # looks like this is intended to check if the tag editor is open
         def assert_no_tags():
             if self.is_beta_history():
-                tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+                tags_component = self.components.history_panel.tag_editor.selector(scope=".history-index")
                 tags_component.display.assert_absent_or_hidden()
             else:
                 self.components.history_panel.tag_area.assert_absent_or_hidden()
@@ -172,18 +172,21 @@ class HistoryPanelTestCase(SeleniumTestCase):
 
         # add more tags to non-empty tags area
         tags += add_tags(tags_size)
+        self.sleep_for(self.wait_types.UX_RENDER)
+        if self.is_beta_history():
+            tags.sort()
         assert_current_tags(tags)
 
         # delete all tags
         expected_tags_len = len(tags)
         self.clear_tags(expected_tags_len)
-
+        self.sleep_for(self.wait_types.UX_RENDER)
         assert_no_tags()
 
     # after about 5 tags, a toggle link shows up and you have to click it to see the full list
     def open_tags(self):
-        tags_component = self.components.history_panel.tag_editor.selector(scope=".beta.history")
-        if not tags_component.toggle.is_absent:
+        tags_component = self.components.history_panel.tag_editor.selector(scope=".history-index")
+        if tags_component.tag_area.is_absent:
             tags_component.toggle.wait_for_and_click()
         tags_component.display.wait_for_visible()
         return tags_component.display
@@ -192,7 +195,7 @@ class HistoryPanelTestCase(SeleniumTestCase):
     def clear_tags(self, expected_tags_size):
         if self.is_beta_history():
             self.open_tags()
-            tags = self.components.history_panel.tag_editor.selector(scope=".beta.history")
+            tags = self.components.history_panel.tag_editor.selector(scope=".history-index")
             close_tag_buttons = tags.tag_close_btn.all()
         else:
             close_tag_buttons = self.components.history_panel.tag_close_btn.all()

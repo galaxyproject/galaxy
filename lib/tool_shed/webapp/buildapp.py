@@ -309,7 +309,3 @@ def _map_redirects(mapper):
         conditions=dict(function=forward_qs),
     )
     return mapper
-
-
-def uwsgi_app():
-    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "tool_shed")

@@ -583,6 +583,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 stored_workflow.published = workflow_dict["published"]
                 trans.sa_session.flush()
 
+            if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
+                stored_workflow.importable = workflow_dict["importable"]
+                trans.sa_session.flush()
+
             if "annotation" in workflow_dict and not steps_updated:
                 newAnnotation = sanitize_html(workflow_dict["annotation"])
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)

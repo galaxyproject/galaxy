@@ -14,11 +14,13 @@ from ._framework import ApiTestCase
 
 
 class BasePageApiTestCase(ApiTestCase):
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
+
     def _create_valid_page_with_slug(self, slug):
-        page_request = self._test_page_payload(slug=slug)
-        page_response = self._post("pages", page_request, json=True)
-        self._assert_status_code_is(page_response, 200)
-        return page_response.json()
+        return self.dataset_populator.new_page(slug=slug)
 
     def _create_valid_page_as(self, other_email, slug):
         run_as_user = self._setup_user(other_email)
@@ -28,29 +30,12 @@ class BasePageApiTestCase(ApiTestCase):
         return page_response.json()
 
     def _test_page_payload(self, **kwds):
-        content_format = kwds.get("content_format", "html")
-        if content_format == "html":
-            content = "<p>Page!</p>"
-        else:
-            content = "*Page*\n\n"
-        request = dict(
-            slug="mypage",
-            title="MY PAGE",
-            content=content,
-            content_format=content_format,
-        )
-        request.update(**kwds)
-        return request
+        return self.dataset_populator.new_page_payload(**kwds)
 
 
 class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
 
     api_name = "pages"
-
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
     def create(self, name: str) -> str:
         response_json = self._create_valid_page_with_slug(name)

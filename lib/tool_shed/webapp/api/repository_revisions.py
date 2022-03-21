@@ -88,11 +88,11 @@ class RepositoryRevisionsController(BaseAPIController):
         repository_dependencies_dicts = []
         repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, id)
         if repository_metadata is None:
-            log.debug(f"Invalid repository_metadata id received: {str(id)}")
+            log.debug(f"Invalid repository_metadata id received: {id}")
             return repository_dependencies_dicts
         metadata = repository_metadata.metadata
         if metadata is None:
-            log.debug(f"The repository_metadata record with id {str(id)} has no metadata.")
+            log.debug(f"The repository_metadata record with id {id} has no metadata.")
             return repository_dependencies_dicts
         if "repository_dependencies" in metadata:
             rd_tups = metadata["repository_dependencies"]["repository_dependencies"]
@@ -125,10 +125,7 @@ class RepositoryRevisionsController(BaseAPIController):
                             "Cannot locate repository_metadata with id %d for repository dependency %s owned by %s "
                             % (decoded_repository_dependency_id, str(name), str(owner))
                         )
-                        debug_msg += "using either of these changeset_revisions: %s, %s." % (
-                            str(changeset_revision),
-                            str(new_changeset_revision),
-                        )
+                        debug_msg += f"using either of these changeset_revisions: {changeset_revision}, {new_changeset_revision}."
                         log.debug(debug_msg)
                         continue
                 repository_dependency_metadata_dict = repository_dependency_repository_metadata.to_dict(
@@ -163,7 +160,7 @@ class RepositoryRevisionsController(BaseAPIController):
         # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, id)
         if repository_metadata is None:
-            log.debug(f"Cannot locate repository_metadata with id {str(id)}")
+            log.debug(f"Cannot locate repository_metadata with id {id}")
             return {}
         encoded_repository_id = trans.security.encode_id(repository_metadata.repository_id)
         repository_metadata_dict = repository_metadata.to_dict(
@@ -188,7 +185,7 @@ class RepositoryRevisionsController(BaseAPIController):
         repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, repository_metadata_id)
         if repository_metadata is None:
             decoded_repository_metadata_id = trans.security.decode_id(repository_metadata_id)
-            log.debug(f"Cannot locate repository_metadata with id {str(decoded_repository_metadata_id)}")
+            log.debug(f"Cannot locate repository_metadata with id {decoded_repository_metadata_id}")
             return {}
         else:
             decoded_repository_metadata_id = repository_metadata.id

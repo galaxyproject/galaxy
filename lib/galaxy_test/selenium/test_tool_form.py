@@ -60,13 +60,12 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         job_outputs = self._table_to_key_value_elements("table#job-outputs")
         assert job_outputs[0][0].text == "environment_variables"
-        assert "View data\nEdit attributes\nDelete" in job_outputs[0][1].text
-        job_outputs[0][1].click()
-        assert job_outputs[0][1].find_element_by_css_selector("pre").text == "42\nmoo\nNOTTHREE"
-        dataset_operations = self.wait_for_selector_visible("table#job-outputs div.dropdown")
-        dataset_operations.click()
-        menu = self.wait_for_selector_visible("table#job-outputs div.dropdown ul")
-        self.click_menu_item(menu, "Run job again")
+        generic_item = job_outputs[0][1]
+        assert "1 : environment_variables" in generic_item.text
+        generic_item.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert generic_item.find_element_by_css_selector("pre").text == "42\nmoo\nNOTTHREE"
+        generic_item.find_element_by_css_selector("[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
 
     @staticmethod

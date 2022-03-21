@@ -1,7 +1,9 @@
 galaxy-auth
+galaxy-config
 galaxy-data
 galaxy-job-execution
 galaxy-job-metrics
+galaxy-objectstore
 galaxy-tool-util[cwl,edam]
 galaxy-web-framework
 galaxy-web-stack
@@ -19,7 +21,6 @@ paramiko!=2.9.0,!=2.9.1
 pulsar-galaxy-lib>=0.14.13
 pydantic
 PyJWT
-pykwalify
 refgenconf>=0.12.0
 sqlitedict
 svgwrite

@@ -59,8 +59,7 @@ describe("RepositoryTools", () => {
         expect($third.find("td:first-child").text()).toBe("Show more");
         expect($third.find("td:last-child").text()).toBe("");
         const $link = wrapper.find("a");
-        $link.trigger("click");
-        await wrapper.vm.$nextTick();
+        await $link.trigger("click");
 
         const $elExpanded = wrapper.findAll("tr");
         expect($elExpanded.length).toBe(4);
@@ -71,8 +70,7 @@ describe("RepositoryTools", () => {
         expect($forthExpanded.find("td:first-child").text()).toBe("Show less");
         expect($forthExpanded.find("td:last-child").text()).toBe("");
         const $linkExpanded = wrapper.find("a");
-        $linkExpanded.trigger("click");
-        await wrapper.vm.$nextTick();
+        await $linkExpanded.trigger("click");
 
         const $elCollapsed = wrapper.findAll("tr");
         expect($elCollapsed.length).toBe(3);

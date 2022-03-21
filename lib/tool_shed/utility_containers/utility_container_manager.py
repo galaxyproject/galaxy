@@ -766,12 +766,7 @@ class UtilityContainerManager:
                 prior_installation_required_str = " <i>(prior install required)</i>"
             else:
                 prior_installation_required_str = ""
-            label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>%s" % (
-                repository_name,
-                changeset_revision,
-                repository_owner,
-                prior_installation_required_str,
-            )
+            label = f"Repository <b>{repository_name}</b> revision <b>{changeset_revision}</b> owned by <b>{repository_owner}</b>{prior_installation_required_str}"
         return label
 
     def get_components_from_repository_dependency_for_installed_repository(self, repository_dependency):

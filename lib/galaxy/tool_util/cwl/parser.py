@@ -38,6 +38,7 @@ from .cwltool_deps import (
     beta_relaxed_fmt_check,
     ensure_cwltool_available,
     getdefault,
+    normalizeFilesDirs,
     pathmapper,
     process,
     ref_resolver,
@@ -45,6 +46,8 @@ from .cwltool_deps import (
     RuntimeContext,
     sourceline,
     StdFsAccess,
+    visit_class,
+    yaml_no_ts,
 )
 from .representation import (
     field_to_field_type,
@@ -86,25 +89,25 @@ SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
 PERSISTED_REPRESENTATION = "cwl_tool_object"
 
 ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
-InputInstanceDict = TypedDict(
-    "InputInstanceDict",
-    {
-        "type": str,
-        "name": str,
-        "title": str,
-        "label": str,
-        "help": str,
-        "optional": bool,
-        "area": bool,
-        "value": str,
-        "collection_type": str,
-    },
-    total=False,
-)
-InputInstanceArrayDict = TypedDict(
-    "InputInstanceArrayDict",
-    {"type": str, "name": str, "title": str, "blocks": List[InputInstanceDict]},
-)
+
+
+class InputInstanceDict(TypedDict, total=False):
+    type: str
+    name: str
+    title: str
+    label: str
+    help: str
+    optional: bool
+    area: bool
+    value: str
+    collection_type: str
+
+
+class InputInstanceArrayDict(TypedDict):
+    type: str
+    name: str
+    title: str
+    blocks: List[InputInstanceDict]
 
 
 def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None):
@@ -187,10 +190,8 @@ def _to_cwl_tool_object(
         assert cwl_tool_object is None
 
         # Allow loading tools from YAML...
-        from ruamel import yaml as ryaml
-
         as_str = json.dumps(tool_object)
-        tool_object = ryaml.round_trip_load(as_str)
+        tool_object = yaml_no_ts().load(as_str)
         path = tool_directory
         if path is None:
             path = os.getcwd()
@@ -523,9 +524,9 @@ class JobProxy:
         make_fs_access = getdefault(runtime_context.make_fs_access, StdFsAccess)
         fs_access = make_fs_access(runtime_context.basedir)
         process.fill_in_defaults(self._tool_proxy._tool.tool["inputs"], self._input_dict, fs_access)
-        process.visit_class(self._input_dict, ("File", "Directory"), pathToLoc)
+        visit_class(self._input_dict, ("File", "Directory"), pathToLoc)
         # TODO: Why doesn't fillInDefault fill in locations instead of paths?
-        process.normalizeFilesDirs(self._input_dict)
+        normalizeFilesDirs(self._input_dict)
         # TODO: validate like cwltool process _init_job.
         #    validate.validate_ex(self.names.get_name("input_record_schema", ""), builder.job,
         #                         strict=False, logger=_logger_validation_warnings)

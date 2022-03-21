@@ -125,7 +125,7 @@ class DockerSwarmInterface(DockerInterface):
     def _run_swarm_manager(self):
         if self._conf.managed and self._conf.manager_autostart:
             try:
-                # sys.exectuable would be preferable to using $PATH, but sys.executable is probably uwsgi
+                # sys.executable would be preferable to using $PATH, but sys.executable is probably gunicorn
                 subprocess.check_call(
                     [
                         "python",
@@ -374,7 +374,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
     def node_update(self, node_id, **kwopts):
         return self._run_docker(
             subcommand="node update",
-            args="{kwopts} {node_id}".format(kwopts=self._stringify_kwopts(kwopts), node_id=node_id),
+            args=f"{self._stringify_kwopts(kwopts)} {node_id}",
         )
 
     @docker_json

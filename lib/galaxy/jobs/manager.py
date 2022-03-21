@@ -4,8 +4,6 @@ Top-level Galaxy job manager, moves jobs to handler(s)
 import logging
 from functools import partial
 
-from sqlalchemy.sql.expression import null
-
 from galaxy.exceptions import (
     HandlerAssignmentError,
     ToolExecutionError,
@@ -14,7 +12,6 @@ from galaxy.jobs import (
     handler,
     NoopQueue,
 )
-from galaxy.model import Job
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
 
@@ -36,23 +33,6 @@ class JobManager:
     def _check_jobs_at_startup(self):
         if not self.app.is_job_handler:
             self.__check_jobs_at_startup()
-
-    def __check_jobs_at_startup(self):
-        if self.app.job_config.use_messaging:
-            jobs_at_startup = (
-                self.app.model.context.query(Job)
-                .enable_eagerloads(False)
-                .filter((Job.state == Job.states.NEW) & (Job.handler == null()))
-                .all()
-            )
-            if jobs_at_startup:
-                log.info(
-                    "No handler assigned at startup for the following jobs, will dispatch via message: %s",
-                    ", ".join(str(j.id) for j in jobs_at_startup),
-                )
-            for job in jobs_at_startup:
-                tool = self.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
-                self.enqueue(job, tool)
 
     def start(self):
         if self.app.is_job_handler:

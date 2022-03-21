@@ -715,7 +715,7 @@ class FastAPIHistoryContents:
         # Since we are directly accessing the request's query_params we also need to exclude the
         # known params that are already parsed by FastAPI or they may be treated as filter params too.
         # This looks a bit hacky...
-        exclude_params = set(["since"])
+        exclude_params = {"since"}
         exclude_params.update(SerializationParams.__fields__.keys())
         filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
 
@@ -998,7 +998,9 @@ class HistoryContentsController(BaseGalaxyAPIController, UsesLibraryMixinItems, 
         # return self.hda_manager.serialize_dataset_association_roles(trans, hda)
 
     @expose_api
-    def update_permissions(self, trans, history_id, history_content_id, payload: Dict[str, Any] = None, **kwd):
+    def update_permissions(
+        self, trans, history_id, history_content_id, payload: Optional[Dict[str, Any]] = None, **kwd
+    ):
         """
         Set permissions of the given library dataset to the given role ids.
 

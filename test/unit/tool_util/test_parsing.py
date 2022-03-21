@@ -193,6 +193,26 @@ outputs:
 """
 
 
+def get_test_tool_source(source_file_name=None, source_contents=None, macro_contents=None, temp_directory=None):
+    source_directory = temp_directory or tempfile.mkdtemp()
+    macro_paths = []
+    if not os.path.isabs(source_file_name):
+        path = os.path.join(source_directory, source_file_name)
+        with open(path, "w") as out:
+            out.write(source_contents)
+        if macro_contents:
+            macro_path = os.path.join(source_directory, "macros.xml")
+            with open(macro_path, "w") as out:
+                out.write(macro_contents)
+            macro_paths = [macro_path]
+    else:
+        path = source_file_name
+    tool_source = get_tool_source(path, macro_paths=macro_paths)
+    if temp_directory is None:
+        shutil.rmtree(source_directory)
+    return tool_source
+
+
 class BaseLoaderTestCase(unittest.TestCase):
     source_file_name: Optional[str] = None
     source_contents: Optional[str] = None
@@ -208,24 +228,16 @@ class BaseLoaderTestCase(unittest.TestCase):
         return self._get_tool_source()
 
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
-        macro_path = None
         if source_file_name is None:
             source_file_name = self.source_file_name
         if source_contents is None:
             source_contents = self.source_contents
-        if not os.path.isabs(source_file_name):
-            path = os.path.join(self.temp_directory, source_file_name)
-            with open(path, "w") as out:
-                out.write(source_contents)
-            if macro_contents:
-                macro_path = os.path.join(self.temp_directory, "macros.xml")
-                with open(macro_path, "w") as out:
-                    out.write(macro_contents)
-
-        else:
-            path = source_file_name
-        tool_source = get_tool_source(path, macro_paths=[macro_path])
-        return tool_source
+        return get_test_tool_source(
+            source_file_name,
+            source_contents,
+            macro_contents,
+            self.temp_directory,
+        )
 
 
 class XmlExpressionLoaderTestCase(BaseLoaderTestCase):

@@ -8,6 +8,7 @@ from unittest.mock import Mock
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
@@ -387,11 +388,13 @@ def test_export_collection_with_mapping_history():
     ija1 = model.ImplicitCollectionJobsJobAssociation()
     ija1.order_index = 0
     ija1.implicit_collection_jobs = implicit_collection_jobs
+    add_object_to_object_session(ija1, j1)
     ija1.job = j1
 
     j2.add_output_dataset_collection("out_file1", hc2)  # really?
     ija2 = model.ImplicitCollectionJobsJobAssociation()
     ija2.order_index = 1
+    add_object_to_object_session(ija2, implicit_collection_jobs)
     ija2.implicit_collection_jobs = implicit_collection_jobs
     ija2.job = j2
 

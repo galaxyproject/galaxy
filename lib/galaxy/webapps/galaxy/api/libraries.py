@@ -303,7 +303,9 @@ class LibrariesController(BaseGalaxyAPIController):
         return self.service.update(trans, id, update_payload)
 
     @expose_api
-    def delete(self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Dict[str, Any] = None, **kwd):
+    def delete(
+        self, trans: ProvidesUserContext, id: EncodedDatabaseIdField, payload: Optional[Dict[str, Any]] = None, **kwd
+    ):
         """
         * DELETE /api/libraries/{id}
             marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)

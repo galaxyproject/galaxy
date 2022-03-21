@@ -360,7 +360,7 @@ class FPS(GenericMolFile):
             # For one file only, use base class method (move/copy)
             return Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("No fps files given, %r, to merge into %s" % (split_files, output_file))
+            raise ValueError(f"No fps files given, {split_files!r}, to merge into {output_file}")
         with open(output_file, "w") as out:
             first = True
             for filename in split_files:
@@ -682,7 +682,7 @@ class PQR(GenericMolFile):
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
             chain_ids = ",".join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else "None"
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {str(chain_ids)}"
+            dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {chain_ids}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -940,7 +940,7 @@ class CML(GenericXml):
             # For one file only, use base class method (move/copy)
             return Text.merge(split_files, output_file)
         if not split_files:
-            raise ValueError("Given no CML files, %r, to merge into %s" % (split_files, output_file))
+            raise ValueError(f"Given no CML files, {split_files!r}, to merge into {output_file}")
         with open(output_file, "w") as out:
             for filename in split_files:
                 with open(filename) as handle:

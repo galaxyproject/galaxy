@@ -5,11 +5,11 @@ from typing import (
 )
 
 from galaxy import model
-from galaxy.app import MinimalManagerApp
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 

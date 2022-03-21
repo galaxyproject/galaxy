@@ -65,11 +65,11 @@ class InstallEnvironment:
                 break
             except OSError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
-                log.debug(f"Error closing file descriptor: {str(e)}")
+                log.debug(f"Error closing file descriptor: {e}")
                 time.sleep(0.5)
                 current_wait_time = time.time() - start_timer
                 if current_wait_time >= 600:
-                    error = f"Error closing file descriptor: {str(e)}"
+                    error = f"Error closing file descriptor: {e}"
                     break
         return error
 
@@ -100,7 +100,7 @@ class InstallEnvironment:
                 for env_setting in open(env_shell_file_path):
                     cmds.append(env_setting.strip("\n"))
             else:
-                log.debug(f"Invalid file {str(env_shell_file_path)} specified, ignoring {str(action_type)} action.")
+                log.debug(f"Invalid file {env_shell_file_path} specified, ignoring {action_type} action.")
         return cmds
 
     def environment_dict(self, action_type="template_command"):
@@ -112,7 +112,7 @@ class InstallEnvironment:
                     env_name, env_path = env_string.split("=")
                     env_vars[env_name] = env_path
             else:
-                log.debug(f"Invalid file {str(env_shell_file_path)} specified, ignoring template_command action.")
+                log.debug(f"Invalid file {env_shell_file_path} specified, ignoring template_command action.")
         return env_vars
 
     def handle_command(self, tool_dependency, cmd, return_output=False, job_name=""):
@@ -124,14 +124,14 @@ class InstallEnvironment:
         stderr = output.stderr
         if len(stdout) > DATABASE_MAX_STRING_SIZE:
             log.warning(
-                f"Length of stdout > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database."
+                f"Length of stdout > {DATABASE_MAX_STRING_SIZE_PRETTY}, so only a portion will be saved in the database."
             )
             stdout = shrink_string_by_size(
                 stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
             )
         if len(stderr) > DATABASE_MAX_STRING_SIZE:
             log.warning(
-                f"Length of stderr > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database."
+                f"Length of stderr > {DATABASE_MAX_STRING_SIZE_PRETTY}, so only a portion will be saved in the database."
             )
             stderr = shrink_string_by_size(
                 stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
@@ -144,9 +144,8 @@ class InstallEnvironment:
                 error_message = unicodify(stdout)
             else:
                 # We have a problem if there was no stdout and no stderr.
-                error_message = "Unknown error occurred executing shell command %s, return_code: %s" % (
-                    str(cmd),
-                    str(output.return_code),
+                error_message = (
+                    f"Unknown error occurred executing shell command {cmd}, return_code: {output.return_code}"
                 )
             set_tool_dependency_attributes(
                 self.app, tool_dependency=tool_dependency, status=status, error_message=error_message
@@ -171,7 +170,7 @@ class InstallEnvironment:
             llog_name += f":{job_name}"
         llog = logging.getLogger(llog_name)
         # Print the command we're about to execute, ``set -x`` style.
-        llog.debug(f"+ {str(command)}")
+        llog.debug(f"+ {command}")
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
         process_handle = subprocess.Popen(
             str(command),

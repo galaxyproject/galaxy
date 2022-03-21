@@ -32,8 +32,7 @@ describe("Attributes", () => {
 
         const name = wrapper.find("#workflow-name");
         expect(name.element.value).toBe(TEST_NAME);
-        wrapper.setProps({ name: "new_workflow_name" });
-        await localVue.nextTick();
+        await wrapper.setProps({ name: "new_workflow_name" });
         expect(name.element.value).toBe("new_workflow_name");
         const parameters = wrapper.findAll(".list-group-item");
         expect(parameters.length).toBe(2);

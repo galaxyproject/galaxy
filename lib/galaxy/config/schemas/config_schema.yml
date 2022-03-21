@@ -20,7 +20,6 @@ desc: |
 
   Config hackers are encouraged to check there before asking for help.
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   galaxy:
     type: map
     required: true
@@ -501,6 +500,13 @@ mapping:
         required: false
         desc: |
           Configured FileSource plugins.
+
+      file_sources:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          FileSource plugins described embedded into Galaxy's config.
 
       enable_mulled_containers:
         type: bool
@@ -1231,11 +1237,19 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      interactivetools_upstream_proxy:
+        type: bool
+        default: true
+        required: false
+        desc:
+          Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy.
+          `interactivetools_upstream_proxy` should only be set to false in development.
+
       interactivetools_proxy_host:
         type: str
         required: false
         desc: |
-          Proxy host - assumed to just be hosted on the same hostname and port as
+          Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
           Galaxy by default.
 
       interactivetools_base_path:
@@ -1386,14 +1400,12 @@ mapping:
         required: false
         desc: |
           URL (with schema http/https) of the Galaxy instance as accessible
-          within your local network - if specified used as a default by pulsar
-          file staging and Jupyter Docker container for communicating back with
+          within your local network. This URL is used as a default by pulsar
+          file staging and Interactive Tool containers for communicating back with
           Galaxy via the API.
 
-          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-          for Mac and your Galaxy instance runs on port 8080 this should be
-          'http://host.docker.internal:8080'.  For more details see
-          https://docs.docker.com/docker-for-mac/networking/
+          If you plan to run Interactive Tools make sure the docker container
+          can reach this URL. For more details see `job_conf.xml.interactivetools`.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -3392,6 +3404,18 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_broker:
+        type: str
+        required: false
+        desc: |
+          Celery broker (if unset falls back to amqp_internal_connection).
+
+      celery_backend:
+        type: str
+        required: false
+        desc: |
+          If set, it will be the results backend for Celery.
+
       use_pbkdf2:
         type: bool
         default: true
@@ -3505,3 +3529,9 @@ mapping:
         required: false
         desc: |
           Vault config file.
+
+      display_builtin_converters:
+        type: bool
+        default: true
+        required: false
+        desc: Display built-in converters in the tool panel.

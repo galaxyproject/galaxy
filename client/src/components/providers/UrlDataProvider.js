@@ -5,8 +5,9 @@ import { rethrowSimple } from "utils/simple-error";
 
 async function urlData({ url }) {
     try {
-        const { data } = await axios.get(`${getAppRoot()}${url}`);
         console.debug("Requesting data from: ", url);
+        const { data } = await axios.get(`${getAppRoot()}${url}`);
+        console.debug("Received response");
         return data;
     } catch (e) {
         rethrowSimple(e);

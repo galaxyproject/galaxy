@@ -1,5 +1,6 @@
 import os
 
+from galaxy_test.selenium.framework import retry_assertion_during_transitions
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
@@ -90,7 +91,8 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         # search for created user and add him to permission field
         self.components.libraries.add_items_permission.wait_for_and_click()
         self.components.libraries.add_items_permission_input_field.wait_for_and_send_keys(email)
-        self.components.libraries.add_items_permission_option.wait_for_and_click()
+
+        self.select_add_items_permission_option(email)
 
         # assert that the right email has been saved
         allowed_user_email = self.components.libraries.add_items_permission_field_text.wait_for_text()
@@ -102,3 +104,9 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
         self.logout()
         # login back to the 'regular' user account
         self.submit_login(email=email)
+
+    @retry_assertion_during_transitions
+    def select_add_items_permission_option(self, option_text):
+        el = self.components.libraries.add_items_permission_option.wait_for_visible()
+        assert option_text == el.text
+        el.click()

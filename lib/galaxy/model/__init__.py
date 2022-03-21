@@ -58,6 +58,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    event,
     false,
     ForeignKey,
     func,
@@ -120,6 +121,7 @@ from galaxy.model.item_attrs import (
     UsesAnnotations,
 )
 from galaxy.model.orm.now import now
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
@@ -674,12 +676,12 @@ class User(Base, Dictifiable, RepresentById):
                 db_session.query(User)
                 .filter_by(id=self.id)  # don't use get, it will use session variant.
                 .options(
-                    joinedload("roles"),
-                    joinedload("roles.role"),
-                    joinedload("groups"),
-                    joinedload("groups.group"),
-                    joinedload("groups.group.roles"),
-                    joinedload("groups.group.roles.role"),
+                    joinedload(User.roles),
+                    joinedload(User.roles.role),
+                    joinedload(User.groups),
+                    joinedload(User.groups.group),
+                    joinedload(User.groups.group.roles),
+                    joinedload(User.groups.group.roles.role),
                 )
                 .one()
             )
@@ -754,7 +756,8 @@ class User(Base, Dictifiable, RepresentById):
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-        sql_calc = """
+        sql_calc = text(
+            """
             WITH per_user_histories AS
             (
                 SELECT id
@@ -774,6 +777,7 @@ class User(Base, Dictifiable, RepresentById):
             WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
+        )
         sa_session = object_session(self)
         usage = sa_session.scalar(sql_calc, {"id": self.id})
         if not dryrun:
@@ -1269,10 +1273,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         assoc = JobToInputDatasetAssociation(name, dataset)
         if dataset is None and dataset_id is not None:
             assoc.dataset_id = dataset_id
+        add_object_to_object_session(self, assoc)
         self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name, dataset):
-        self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
+        joda = JobToOutputDatasetAssociation(name, dataset)
+        add_object_to_object_session(self, joda)
+        self.output_datasets.append(joda)
 
     def add_input_dataset_collection(self, name, dataset_collection):
         self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
@@ -1554,11 +1561,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def set_final_state(self, final_state, supports_skip_locked):
         self.set_state(final_state)
         # TODO: migrate to where-in subqueries?
-        statement = """
+        statement = text(
+            """
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """
+        )
         sa_session = object_session(self)
         update_time = now()
         self.update_hdca_update_time_for_job(
@@ -1590,7 +1599,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def update_output_states(self, supports_skip_locked):
         # TODO: migrate to where-in subqueries?
         statements = [
-            """
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1600,8 +1610,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_dataset jtod
                 ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE dataset
             SET
                 state = :state,
@@ -1611,8 +1623,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 INNER JOIN job_to_output_library_dataset jtold
                 ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE history_dataset_association
             SET
                 info = :info,
@@ -1622,8 +1636,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_dataset jtod
                 WHERE jtod.job_id = :job_id
             );
-        """,
-            """
+        """
+            ),
+            text(
+                """
             UPDATE library_dataset_dataset_association
             SET
                 info = :info,
@@ -1633,7 +1649,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 FROM job_to_output_library_dataset jtold
                 WHERE jtold.job_id = :job_id
             );
-        """,
+        """
+            ),
         ]
         sa_session = object_session(self)
         update_time = now()
@@ -1716,6 +1733,7 @@ class Task(Base, JobLike, RepresentById):
         self.parameters = []
         self.state = Task.states.NEW
         self.working_directory = working_directory
+        add_object_to_object_session(self, job)
         self.job = job
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
@@ -1869,6 +1887,7 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
@@ -1885,6 +1904,7 @@ class JobToOutputDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
     @property
@@ -1973,6 +1993,7 @@ class JobToInputLibraryDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
 
@@ -1990,6 +2011,7 @@ class JobToOutputLibraryDatasetAssociation(Base, RepresentById):
 
     def __init__(self, name, dataset):
         self.name = name
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
 
 
@@ -2133,6 +2155,7 @@ class JobExternalOutputMetadata(Base, RepresentById):
     job = relationship("Job", back_populates="external_output_metadata")
 
     def __init__(self, job=None, dataset=None):
+        add_object_to_object_session(self, job)
         self.job = job
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
             self.history_dataset_association = dataset
@@ -2180,6 +2203,8 @@ class JobExportHistoryArchive(Base, RepresentById):
     ATTRS_FILENAME_HISTORY = "history_attrs.txt"
 
     def __init__(self, compressed=False, **kwd):
+        if "history" in kwd:
+            add_object_to_object_session(self, kwd["history"])
         super().__init__(**kwd)
         self.compressed = compressed
 
@@ -2271,6 +2296,8 @@ class JobContainerAssociation(Base, RepresentById):
     job = relationship("Job", back_populates="container")
 
     def __init__(self, **kwd):
+        if "job" in kwd:
+            add_object_to_object_session(self, kwd["job"])
         super().__init__(**kwd)
         self.container_info = self.container_info or {}
 
@@ -2362,6 +2389,7 @@ class UserGroupAssociation(Base, RepresentById):
     group = relationship("Group", back_populates="users")
 
     def __init__(self, user, group):
+        add_object_to_object_session(self, user)
         self.user = user
         self.group = group
 
@@ -2529,6 +2557,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self.purged = False
         self.importing = False
         self.published = False
+        add_object_to_object_session(self, user)
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
@@ -2618,6 +2647,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 dataset.hid = self._next_hid()
         if quota and is_dataset and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
+        add_object_to_object_session(dataset, self)
         dataset.history = self
         if is_dataset and genome_build not in [None, "?"]:
             self.genome_build = genome_build
@@ -2666,6 +2696,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
         if set_hid:
             history_dataset_collection.hid = self._next_hid()
+        add_object_to_object_session(history_dataset_collection, self)
         history_dataset_collection.history = self
         # TODO: quota?
         self.dataset_collections.append(history_dataset_collection)
@@ -2973,6 +3004,7 @@ class UserRoleAssociation(Base, RepresentById):
     role = relationship("Role", back_populates="users")
 
     def __init__(self, user, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.role = role
 
@@ -3039,6 +3071,7 @@ class UserQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["user"]
 
     def __init__(self, user, quota):
+        add_object_to_object_session(self, user)
         self.user = user
         self.quota = quota
 
@@ -3057,6 +3090,7 @@ class GroupQuotaAssociation(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["group"]
 
     def __init__(self, group, quota):
+        add_object_to_object_session(self, group)
         self.group = group
         self.quota = quota
 
@@ -3156,6 +3190,7 @@ class DatasetPermissions(Base, RepresentById):
 
     def __init__(self, action, dataset, role=None, role_id=None):
         self.action = action
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         if role is not None:
             self.role = role
@@ -3243,6 +3278,7 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     def __init__(self, action, library_item, role):
         self.action = action
         if isinstance(library_item, LibraryDatasetDatasetAssociation):
+            add_object_to_object_session(self, library_item)
             self.library_dataset_dataset_association = library_item
         else:
             raise Exception(f"Invalid LibraryDatasetDatasetAssociation specified: {library_item.__class__.__name__}")
@@ -3260,6 +3296,7 @@ class DefaultUserPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, user, action, role):
+        add_object_to_object_session(self, user)
         self.user = user
         self.action = action
         self.role = role
@@ -3276,6 +3313,7 @@ class DefaultHistoryPermissions(Base, RepresentById):
     role = relationship("Role")
 
     def __init__(self, history, action, role):
+        add_object_to_object_session(self, history)
         self.history = history
         self.action = action
         self.role = role
@@ -3721,6 +3759,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
             if flush:
                 sa_session.add(dataset)
                 sa_session.flush()
+        add_object_to_object_session(self, dataset)
         self.dataset = dataset
         self.parent_id = parent_id
 
@@ -4278,6 +4317,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
         self.hid = hid
         # Relationships
+        add_object_to_object_session(self, history)
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
@@ -5381,6 +5421,7 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
         self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True
     ):
         self.id = id
+        add_object_to_object_session(self, dataset)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
@@ -6261,6 +6302,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             raise AttributeError(f"Unknown element type provided: {type(element)}")
 
         self.id = id
+        add_object_to_object_session(self, collection)
         self.collection = collection
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
@@ -6459,6 +6501,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
+        add_object_to_object_session(self, history)
         self.history = history
 
 
@@ -6546,8 +6589,26 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     # returns a list of users that workflow is shared with.
     users_shared_with_dot_users = association_proxy("users_shared_with", "user")
 
-    dict_collection_visible_keys = ["id", "name", "create_time", "update_time", "published", "deleted", "hidden"]
-    dict_element_visible_keys = ["id", "name", "create_time", "update_time", "published", "deleted", "hidden"]
+    dict_collection_visible_keys = [
+        "id",
+        "name",
+        "create_time",
+        "update_time",
+        "published",
+        "importable",
+        "deleted",
+        "hidden",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "name",
+        "create_time",
+        "update_time",
+        "published",
+        "importable",
+        "deleted",
+        "hidden",
+    ]
 
     def __init__(
         self,
@@ -6561,6 +6622,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         workflow=None,
         hidden=False,
     ):
+        add_object_to_object_session(self, user)
         self.user = user
         self.name = name
         self.slug = slug
@@ -6623,9 +6685,10 @@ class Workflow(Base, Dictifiable, RepresentById):
     name = Column(TEXT)
     has_cycles = Column(Boolean)
     has_errors = Column(Boolean)
-    reports_config = Column(MutableJSONType)
-    creator_metadata = Column(MutableJSONType)
+    reports_config = Column(JSONType)
+    creator_metadata = Column(JSONType)
     license = Column(TEXT)
+    source_metadata = Column(JSONType)
     uuid = Column(UUIDType, nullable=True)
 
     steps = relationship(
@@ -6878,6 +6941,7 @@ class WorkflowStep(Base, RepresentById):
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
         conn.output_name = output_name
+        add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
         if input_subworkflow_step_index is not None:
             input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
@@ -7046,6 +7110,7 @@ class WorkflowStepInput(Base, RepresentById):
     )
 
     def __init__(self, workflow_step):
+        add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
         self.default_value_set = False
 
@@ -7234,6 +7299,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, RepresentBy
         assoc = WorkflowInvocationToSubworkflowInvocationAssociation()
         assoc.workflow_invocation = self
         assoc.workflow_step = step
+        add_object_to_object_session(subworkflow_invocation, self.history)
         subworkflow_invocation.history = self.history
         subworkflow_invocation.workflow = step.subworkflow
         assoc.subworkflow_invocation = subworkflow_invocation
@@ -8998,6 +9064,7 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, history):
+        add_object_to_object_session(self, history)
         self.history = history
 
 
@@ -9012,6 +9079,7 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     user = relationship("User")
 
     def _set_item(self, history_dataset_association):
+        add_object_to_object_session(self, history_dataset_association)
         self.history_dataset_association = history_dataset_association
 
 
@@ -9026,6 +9094,7 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, stored_workflow):
+        add_object_to_object_session(self, stored_workflow)
         self.stored_workflow = stored_workflow
 
 
@@ -9040,6 +9109,7 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, page):
+        add_object_to_object_session(self, page)
         self.page = page
 
 
@@ -9054,6 +9124,7 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
     user = relationship("User")
 
     def _set_item(self, visualization):
+        add_object_to_object_session(self, visualization)
         self.visualization = visualization
 
 
@@ -9068,6 +9139,7 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
@@ -9082,6 +9154,7 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     user = relationship("User")
 
     def _set_item(self, dataset_collection):
+        add_object_to_object_session(self, dataset_collection)
         self.dataset_collection = dataset_collection
 
 
@@ -9659,3 +9732,19 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
+
+
+@event.listens_for(HistoryDatasetCollectionAssociation, "init")
+def receive_init(target, args, kwargs):
+    """
+    Listens for the 'init' event. This is not called when 'target' is loaded from the database.
+    https://docs.sqlalchemy.org/en/14/orm/events.html#sqlalchemy.orm.InstanceEvents.init
+
+    Addresses SQLAlchemy 2.0 compatibility issue: see inline documentation for
+    `add_object_to_object_session` in galaxy.model.orm.util.
+    """
+    for key in ("history", "copied_from_history_dataset_collection_association"):
+        obj = kwargs.get(key)
+        if obj:
+            add_object_to_object_session(target, obj)
+            return  # Once is enough.

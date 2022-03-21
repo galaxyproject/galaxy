@@ -51,12 +51,6 @@ Start Galaxy by running the command from directory [{}]:
 # whole thing into galaxy.config for templating, so for now just substitute some lines. In the future we will build
 # configs differently.
 GALAXY_CONFIG_SUBSTITUTIONS = {
-    "  http: 127.0.0.1:8080": "  ${uwsgi_transport}: ${host}:${port}",
-    "  static-map: /static=static": "  static-map: /static=${static_path}",
-    "  static-map: /favicon.ico=static/favicon.ico": "  static-map: /static=${static_path}/favicon.ico",
-    "  static-safe: client/src/assets": "  ${client_path}/src/assets",
-    "  virtualenv: .venv": "  #venv: .venv   # not used when running installed",
-    "  pythonpath: lib": "  #pythonpath: lib  # not used  when running installed",
     "  #config_dir: false": "  config_dir: ${config_dir}",
     "  #data_dir: false": "  data_dir: ${data_dir}",
     "  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE": "  database_connection: ${database_connection}",
@@ -68,9 +62,6 @@ def main(argv=None):
     arg_parser = ArgumentParser(description=DESCRIPTION)
     arg_parser.add_argument("--config-dir", default=".", help=HELP_CONFIG_DIR)
     arg_parser.add_argument("--data-dir", default="./data", help=HELP_DATA_DIR)
-    arg_parser.add_argument(
-        "--wsgi-server", choices=["uwsgi-http", "uwsgi-native"], default="uwsgi-http", help=HELP_WSGI_SERVER
-    )
     arg_parser.add_argument("--host", default=DEFAULT_HOST, help=HELP_HOST)
     arg_parser.add_argument("--port", default="8080", help=HELP_PORT)
     arg_parser.add_argument("--db-conn", default=DEFAULT_DB_CONN, help=HELP_DB_CONN)
@@ -100,7 +91,6 @@ def main(argv=None):
 def _print_config_summary(args, mode, relative_config_dir):
     _print_galaxy_yml_info(args, mode)
     print(MSG_CONFIG_SUMMARY.format(CONFIGURE_URL, SAMPLES_PATH, relative_config_dir))
-    _print_galaxy_run(mode)
 
 
 def _print_galaxy_yml_info(args, mode):
@@ -114,19 +104,8 @@ def _print_galaxy_yml_info(args, mode):
         print("   * Binding to host [%s].", args.host)
 
 
-def _print_galaxy_run(mode):
-    if mode.startswith("uwsgi"):
-        print("    uwsgi --yaml galaxy.yml")
-    else:
-        raise Exception(f"Unknown mode: {mode}")
-
-
 def _determine_mode(args):
-    if args.wsgi_server:
-        mode = args.wsgi_server
-    else:
-        mode = "paster"
-    return mode
+    return "gunicorn"
 
 
 def _determine_host(args):
@@ -141,11 +120,9 @@ def _handle_galaxy_yml(args, config_dir, data_dir):
     force = args.force
     yml_file = _determine_yml_file(config_dir)
     _check_file(yml_file, force)
-    uwsgi_transport = "socket" if args.wsgi_server == "uwsgi-native" else "http"
     config_dict = dict(
         port=args.port,
         host=_determine_host(args),
-        uwsgi_transport=uwsgi_transport,
         config_dir=config_dir,
         data_dir=data_dir,
         client_dir=CLIENT_PATH,

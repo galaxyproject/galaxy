@@ -152,3 +152,23 @@ def to_html_string(text):
         text = text.replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")
         text = text.replace(" ", "&nbsp;")
     return text
+
+
+__all__ = (
+    "CHUNK_SIZE",
+    "DOCKER_IMAGE_TEMPLATE",
+    "evaluate_template",
+    "get_env_var_values",
+    "get_file_type_str",
+    "INSTALLATION_LOG",
+    "MAX_DISPLAY_SIZE",
+    "MAXDIFFSIZE",
+    "NO_OUTPUT_TIMEOUT",
+    "move_file",
+    "remove_dir",
+    "SELECTED_REPOSITORIES_TEMPLATE",
+    "size_string",
+    "stringify",
+    "strip_path",
+    "to_html_string",
+)

@@ -2,6 +2,7 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
 import { rethrowSimple } from "utils/simple-error";
+import { stateIsTerminal } from "./utils";
 
 async function getDataset({ id }) {
     const url = `${getAppRoot()}api/datasets/${id}`;
@@ -24,4 +25,4 @@ async function getDatasetAttributes({ id }) {
 }
 
 export const DatasetAttributesProvider = SingleQueryProvider(getDatasetAttributes);
-export default SingleQueryProvider(getDataset);
+export default SingleQueryProvider(getDataset, stateIsTerminal);

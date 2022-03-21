@@ -267,11 +267,7 @@ class UploadController(BaseUIController):
                         else:
                             source_type = "file"
                             source = uploaded_file_filename
-                        message = "The %s <b>%s</b> has been successfully%suploaded to the repository.  " % (
-                            source_type,
-                            escape(source),
-                            uncompress_str,
-                        )
+                        message = f"The {source_type} <b>{escape(source)}</b> has been successfully{uncompress_str}uploaded to the repository.  "
                         if istar and (undesirable_dirs_removed or undesirable_files_removed):
                             items_removed = undesirable_dirs_removed + undesirable_files_removed
                             message += (

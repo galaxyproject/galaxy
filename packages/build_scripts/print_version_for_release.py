@@ -7,7 +7,7 @@ from distutils.version import LooseVersion
 DEV_RELEASE = os.environ.get("DEV_RELEASE", None) == "1"
 PROJECT_DIRECTORY = os.getcwd()
 PROJECT_DIRECTORY_NAME = os.path.basename(os.path.abspath(PROJECT_DIRECTORY))
-PROJECT_MODULE_FILENAME = "project_galaxy_%s.py" % PROJECT_DIRECTORY_NAME
+PROJECT_MODULE_FILENAME = f"project_galaxy_{PROJECT_DIRECTORY_NAME}.py"
 
 source_dir = sys.argv[1]
 PROJECT_MODULE_PATH = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)

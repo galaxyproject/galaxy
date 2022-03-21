@@ -1167,10 +1167,10 @@
   resolved "https://registry.yarnpkg.com/@fortawesome/vue-fontawesome/-/vue-fontawesome-2.0.6.tgz#87e691ed87f28f4667238573a29743f543a087f6"
   integrity sha512-V3vT3flY15AKbUS31aZOP12awQI3aAzkr2B1KnqcHLmwrmy51DW3pwyBczKdypV8QxBZ8U68Hl2XxK2nudTxpg==
 
-"@galaxyproject/bootstrap-tour@^0.12.1":
-  version "0.12.1"
-  resolved "https://registry.yarnpkg.com/@galaxyproject/bootstrap-tour/-/bootstrap-tour-0.12.1.tgz#138ab9d993fda658220dea2662fc8e0d0c720577"
-  integrity sha512-fnDLpaQx/RFKLL9xtuaVz2RTCo4qQrWYrvFspu6h5ZObgFmTGLTQm3tjiZ0qWBV7Npmwt7X9mc8lUpSCwFPmQw==
+"@galaxyproject/bootstrap-tour@0.12.2":
+  version "0.12.2"
+  resolved "https://registry.yarnpkg.com/@galaxyproject/bootstrap-tour/-/bootstrap-tour-0.12.2.tgz#9277e2dd976b8c778927c70d8180bb7a7090f009"
+  integrity sha512-iGmRhRhoq5vuhgVNig5/Hiu+86emgBDMtB12vo0ApAh9K+1lSnb8NLvfxDOOD7XlO9n4UMFJ5xnjSzeKCnOhqQ==
   dependencies:
     bootstrap ">=4.0.0-beta"
     jquery "^3.0.0"
@@ -9914,6 +9914,11 @@ vue-template-es2015-compiler@^1.5.3, vue-template-es2015-compiler@^1.9.0:
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.9.1.tgz#1ee3bc9a16ecbf5118be334bb15f9c46f82f5825"
   integrity sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==
+
+vue-virtual-scroll-list@^2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/vue-virtual-scroll-list/-/vue-virtual-scroll-list-2.3.3.tgz#290f0d04be814b93585f2ef232097b671141e5b1"
+  integrity sha512-heuwlZ+lEdcVSp66CpVXnyNdsiHl/XU1cvqJb0yUHGlLv6DGK8OX16FH8I3w/wKNXtHSPF9itdBBGJFrXkyHeg==
 
 vue@^2.6.10, vue@^2.6.14:
   version "2.6.14"

@@ -121,7 +121,7 @@ class GFFFeature(GFFInterval):
         for interval in self.intervals:
             # Error checking. NOTE: intervals need not share the same strand.
             if interval.chrom != self.chrom:
-                raise ValueError("interval chrom does not match self chrom: %s != %s" % (interval.chrom, self.chrom))
+                raise ValueError(f"interval chrom does not match self chrom: {interval.chrom} != {self.chrom}")
             # Set start, end of interval.
             if interval.start < self.start:
                 self.start = interval.start
@@ -572,3 +572,17 @@ def read_unordered_gtf(iterator, strict=False):
     for chrom_features in chroms_features_sorted:
         for feature in chrom_features:
             yield feature
+
+
+__all__ = (
+    "GFFInterval",
+    "GFFFeature",
+    "GFFIntervalToBEDReaderWrapper",
+    "GFFReaderWrapper",
+    "convert_bed_coords_to_gff",
+    "convert_gff_coords_to_bed",
+    "parse_gff_attributes",
+    "parse_gff3_attributes",
+    "gff_attributes_to_str",
+    "read_unordered_gtf",
+)

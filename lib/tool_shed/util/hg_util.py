@@ -170,14 +170,14 @@ def get_rev_label_changeset_revision_from_repository_metadata(
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = f"{str(ctx.rev())}:{changeset_revision} ({changeset_revision_date})"
+                label = f"{ctx.rev()}:{changeset_revision} ({changeset_revision_date})"
             else:
-                label = f"{str(ctx.rev())} ({changeset_revision_date})"
+                label = f"{ctx.rev()} ({changeset_revision_date})"
         else:
             if include_hash:
-                label = f"{str(ctx.rev())}:{changeset_revision}"
+                label = f"{ctx.rev()}:{changeset_revision}"
             else:
-                label = f"{str(ctx.rev())}"
+                label = f"{ctx.rev()}"
     else:
         rev = "-1"
         if include_hash:
@@ -190,16 +190,12 @@ def get_rev_label_changeset_revision_from_repository_metadata(
 def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
     if include_date:
         if include_hash:
-            return '%s:%s <i><font color="#666666">(%s)</font></i>' % (
-                str(ctx.rev()),
-                str(ctx),
-                str(get_readable_ctx_date(ctx)),
-            )
+            return f'{ctx.rev()}:{ctx} <i><font color="#666666">({get_readable_ctx_date(ctx)})</font></i>'
         else:
-            return '%s <i><font color="#666666">(%s)</font></i>' % (str(ctx.rev()), str(get_readable_ctx_date(ctx)))
+            return f'{ctx.rev()} <i><font color="#666666">({get_readable_ctx_date(ctx)})</font></i>'
     else:
         if include_hash:
-            return f"{str(ctx.rev())}:{str(ctx)}"
+            return f"{ctx.rev()}:{ctx}"
         else:
             return str(ctx.rev())
 

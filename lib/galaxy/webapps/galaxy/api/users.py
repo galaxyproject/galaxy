@@ -6,6 +6,10 @@ import json
 import logging
 import re
 
+from fastapi import (
+    Response,
+    status,
+)
 from markupsafe import escape
 from sqlalchemy import (
     false,
@@ -50,12 +54,34 @@ from galaxy.webapps.base.controller import (
     UsesTagsMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.services.users import UsersService
 from . import (
     BaseGalaxyAPIController,
     depends,
+    DependsOnTrans,
+    Router,
 )
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=["users"])
+
+
+@router.cbv
+class FastAPIHistories:
+    service: UsersService = depends(UsersService)
+
+    @router.put(
+        "/api/users/recalculate_disk_usage",
+        summary="Triggers a recalculation of the current user disk usage.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def recalculate_disk_usage(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        self.service.recalculate_disk_usage(trans)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

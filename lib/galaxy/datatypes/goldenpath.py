@@ -151,7 +151,7 @@ class AGPFile:
 
         line_number = 0
         in_body = False
-        with open(self.fname, "r") as f:
+        with open(self.fname) as f:
             for line in f:
                 line_number += 1
                 line = line.rstrip("\n")
@@ -217,14 +217,12 @@ class AGPFile:
 
     def iterate_objs(self):
         """Iterate over the objects of the AGP file."""
-        for obj in self._objects:
-            yield obj
+        yield from self._objects
 
     def iterate_lines(self):
         """Iterate over the non-comment lines of AGP file."""
         for obj in self.iterate_objs():
-            for j in obj.iterate_lines():
-                yield j
+            yield from obj.iterate_lines()
 
 
 class AGPObject:
@@ -302,11 +300,10 @@ class AGPObject:
         self._agp_lines.append(agp_line)
 
     def iterate_lines(self):
-        for i in self._agp_lines:
-            yield i
+        yield from self._agp_lines
 
 
-class AGPLine(object, metaclass=abc.ABCMeta):
+class AGPLine(metaclass=abc.ABCMeta):
     """
     An abstract base class representing a single AGP file line. Inheriting subclasses should
     override or implement new methods to check the validity of a single AFP line. Validity
@@ -388,7 +385,7 @@ class AGPSeqLine(AGPLine):
         self.orientation = orientation
 
         # Set the object attributes and perform superclass-defined validations
-        super(AGPSeqLine, self).__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
+        super().__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
 
         self.is_gap = False
         self.seqdict = dict(
@@ -509,7 +506,7 @@ class AGPGapLine(AGPLine):
         self.linkage_evidence = linkage_evidence
 
         # Set the object attributes and perform superclass-defined validations
-        super(AGPGapLine, self).__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
+        super().__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
 
         self.is_gap = True
         self.gapdict = dict(

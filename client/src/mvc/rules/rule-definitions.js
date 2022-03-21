@@ -904,3 +904,5 @@ export default {
     RULES: RULES,
     MAPPING_TARGETS: MAPPING_TARGETS,
 };
+
+export { RULES, MAPPING_TARGETS };

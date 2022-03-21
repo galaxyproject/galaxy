@@ -14,7 +14,7 @@ galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pa
 sys.path[0:1] = [os.path.join(galaxy_root, "lib")]
 
 # This is for the tool shed application.
-from galaxy.web import buildapp as galaxybuildapp
+from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.webapp import buildapp as toolshedbuildapp
 
@@ -111,16 +111,12 @@ class ToolShedTestDriver(driver_util.TestDriver):
         with open(shed_tool_data_table_conf_file, "w") as fh:
             fh.write(tool_data_table_conf_xml_template)
         os.environ["TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF"] = shed_tool_data_table_conf_file
-        # ---- Build Tool Shed Application --------------------------------------------------
-        toolshedapp = driver_util.build_shed_app(kwargs)
-
         # ---- Run tool shed webserver ------------------------------------------------------
         # TODO: Needed for hg middleware ('lib/galaxy/webapps/tool_shed/framework/middleware/hg.py')
-        kwargs["global_conf"]["database_connection"] = kwargs["database_connection"]
         tool_shed_server_wrapper = driver_util.launch_server(
-            toolshedapp,
-            toolshedbuildapp.app_factory,
-            kwargs,
+            app_factory=lambda: driver_util.build_shed_app(kwargs),
+            webapp_factory=toolshedbuildapp.app_factory,
+            galaxy_config=kwargs,
             prefix="TOOL_SHED",
         )
         self.server_wrappers.append(tool_shed_server_wrapper)
@@ -175,11 +171,10 @@ class ToolShedTestDriver(driver_util.TestDriver):
             print("Galaxy database connection:", kwargs["database_connection"])
 
             # ---- Run galaxy webserver ------------------------------------------------------
-            galaxyapp = driver_util.build_galaxy_app(kwargs)
             galaxy_server_wrapper = driver_util.launch_server(
-                galaxyapp,
-                galaxybuildapp.app_factory,
-                kwargs,
+                app_factory=lambda: driver_util.build_galaxy_app(kwargs),
+                webapp_factory=galaxy_app_factory,
+                galaxy_config=kwargs,
             )
             log.info(f"Galaxy tests will be run against {galaxy_server_wrapper.host}:{galaxy_server_wrapper.port}")
             self.server_wrappers.append(galaxy_server_wrapper)

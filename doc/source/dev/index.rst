@@ -23,6 +23,5 @@ A multi-hour long video playlist covering these slides can be found at
   debugging_tests
   debugging_galaxy
   debugging_galaxy_slurm
-  starting_galaxy
   file_upload
   translating

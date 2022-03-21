@@ -16,98 +16,125 @@
 # 
 # Config hackers are encouraged to check there before asking for help.
 # 
-uwsgi:
+# Configuration for Gravity process manager.
+# ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
+gravity:
 
-  # The address and port on which to listen.  By default, only listen to
-  # localhost (galaxy will not be accessible over the network).  Use
-  # ':8080' to listen on all available network interfaces.
-  http: 127.0.0.1:8080
+  # Specify Galaxy's root directory.
+  # Gravity will attempt to find the root directory, but you can set the directory explicitly with this option.
+  # galaxy_root:
 
-  # By default uWSGI allocates a very small buffer (4096 bytes) for the
-  # headers of each request. If you start receiving "invalid request
-  # block size" in your logs, it could mean you need a bigger buffer. We
-  # recommend at least 16384.
-  buffer-size: 16384
+  # Set to a directory that should contain log files for the processes controlled by Gravity.
+  # If not specified defaults to ``<state_dir>/logs``.
+  # log_dir:
 
-  # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1,
-  # thunder-lock likely should be enabled below.
-  processes: 1
+  # Set to Galaxy's virtualenv directory.
+  # If not specified, Gravity assumes all processes are on PATH.
+  # virtualenv:
 
-  # Number of threads for each web server process.
-  threads: 4
+  # Select the application server.
+  # ``gunicorn`` is the default application server.
+  # ``unicornherder`` is a production-oriented manager for (G)unicorn servers that automates zero-downtime Galaxy server restarts,
+  # similar to uWSGI Zerg Mode used in the past.
+  # Valid options are: gunicorn, unicornherder
+  # app_server: gunicorn
 
-  # Number of threads for serving static content and handling internal
-  # routing requests.
-  offload-threads: 2
+  # Override the default instance name.
+  # this is hidden from you when running a single instance.
+  # instance_name: _default_
 
-  # Mapping to serve static content.
-  static-map: /static=static
+  # Configuration for Gunicorn.
+  gunicorn:
 
-  # Mapping to serve the favicon.
-  static-map: /favicon.ico=static/favicon.ico
+    # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
+    # bind: localhost:8080
 
-  # Allow serving certain assets out of `client`.  Most modern Galaxy
-  # interfaces bundle all of this, but some older pages still serve
-  # these via symlink, requiring this rule.
-  static-safe: client/src/assets
+    # Controls the number of Galaxy application processes Gunicorn will spawn.
+    # Increased web performance can be attained by increasing this value.
+    # If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
+    # 4-12 workers should be able to handle hundreds if not thousands of requests per second.
+    # workers: 1
 
-  # Enable the master process manager. Disabled by default for maximum
-  # compatibility with CTRL+C, but should be enabled for use with
-  # --daemon and/or production deployments.
-  master: false
+    # Gunicorn workers silent for more than this many seconds are killed and restarted.
+    # Value is a positive number or 0. Setting it to 0 has the effect of infinite timeouts by disabling timeouts for all workers entirely.
+    # If you disable the ``preload`` option workers need to have finished booting within the timeout.
+    # timeout: 300
 
-  # Path to the application's Python virtual environment. If using Conda
-  # for Galaxy's framework dependencies (not tools!), do not set this.
-  virtualenv: .venv
+    # Extra arguments to pass to Gunicorn command line.
+    # extra_args:
 
-  # Path to the application's Python library.
-  pythonpath: lib
+    # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
+    # Consumes less memory when multiple processes are configured.
+    # preload: true
 
-  # The entry point which returns the web application (e.g. Galaxy,
-  # Reports, etc.) that you are loading.
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  # Configuration for Celery Processes.
+  celery:
 
-  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
-  # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+    # Number of Celery Workers to start.
+    # concurrency: 2
 
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
-  # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
+    # Log Level to use for Celery Worker.
+    # Valid options are: DEBUG, INFO, WARNING, ERROR
+    # loglevel: DEBUG
 
-  # It is usually a good idea to set this to ``true`` if processes is
-  # greater than 1.
-  thunder-lock: false
+    # Extra arguments to pass to Celery command line.
+    # extra_args:
 
-  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
-  # (its default is to brutally reload workers)
-  die-on-term: true
+  # Configuration for gx-it-proxy.
+  gx_it_proxy:
 
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGINT (its default is to brutally kill workers)
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
+    # Set to true to start gx-it-proxy
+    # enable: false
 
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGTERM (its default is to brutally kill workers)
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
+    # Public-facing IP of the proxy
+    # ip: localhost
 
-  # Feature necessary for proper mule signal handling on Python versions
-  # below 3.7.2. The default is set to false to prevent a runtime error
-  # under Python 3.7.2 and newer (see
-  # https://github.com/unbit/uwsgi/issues/1978).
-  py-call-osafterfork: false
+    # Public-facing port of the proxy
+    # port: 4002
 
-  # Ensure application threads will run if `threads` is unset.
-  enable-threads: true
+    # Routes file to monitor.
+    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section.
+    # sessions: database/interactivetools_map.sqlite
 
-  # uWSGI default umask. On some systems uWSGI has a default umask of
-  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
-  # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the umask needs to be '022' or the Galaxy users need
-  # to be in the same group as the Galaxy system user
-  umask: 027
+    # Include verbose messages in gx-it-proxy
+    # verbose: true
 
+    # Forward all requests to IP.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # forward_ip:
+
+    # Forward all requests to port.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # forward_port:
+
+    # Rewrite location blocks with proxy port.
+    # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
+    # reverse_proxy: false
+
+  # Configuration for tusd server (https://github.com/tus/tusd).
+  # The ``tusd`` binary must be installed manually and made available on PATH (e.g in galaxy's .venv/bin directory).
+  tusd:
+
+    # Enable tusd server.
+    # If enabled, you also need to set up your proxy as outlined in https://docs.galaxyproject.org/en/latest/admin/nginx.html#receiving-files-via-the-tus-protocol.
+    # enable: false
+
+    # Host to bind the tusd server to
+    # host: localhost
+
+    # Port to bind the tusd server to
+    # port: 1080
+
+    # Directory to store uploads in.
+    # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
+    # upload_dir:
+
+    # Extra arguments to pass to tusd command line.
+    # extra_args:
+
+  # Configure dynamic handlers in this section.
+  # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
+  # handlers: {}
 galaxy:
 
   # The directory that will be prepended to relative paths in options
@@ -921,8 +948,13 @@ galaxy:
   # Enable InteractiveTools.
   #interactivetools_enable: false
 
-  # Proxy host - assumed to just be hosted on the same hostname and port
-  # as Galaxy by default.
+  # Set this to false to redirect users of Interactive tools directly to
+  # the Interactive tools proxy. `interactivetools_upstream_proxy`
+  # should only be set to false in development.
+  #interactivetools_upstream_proxy: true
+
+  # Hostname and port of Interactive tools proxy. It is assumed to be
+  # hosted on the same hostname and port as Galaxy by default.
   #interactivetools_proxy_host: null
 
   # Base path for interactive tools running at a subpath without a
@@ -1007,13 +1039,12 @@ galaxy:
   #galaxy_url_prefix: /
 
   # URL (with schema http/https) of the Galaxy instance as accessible
-  # within your local network - if specified used as a default by pulsar
-  # file staging and Jupyter Docker container for communicating back
+  # within your local network. This URL is used as a default by pulsar
+  # file staging and Interactive Tool containers for communicating back
   # with Galaxy via the API.
-  # If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-  # for Mac and your Galaxy instance runs on port 8080 this should be
-  # 'http://host.docker.internal:8080'.  For more details see
-  # https://docs.docker.com/docker-for-mac/networking/
+  # If you plan to run Interactive Tools make sure the docker container
+  # can reach this URL. For more details see
+  # `job_conf.xml.interactivetools`.
   #galaxy_infrastructure_url: http://localhost:8080
 
   # If the above URL cannot be determined ahead of time in dynamic
@@ -2346,4 +2377,7 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #vault_config_file: vault_conf.yml
+
+  # Display built-in converters in the tool panel.
+  #display_builtin_converters: true
 
