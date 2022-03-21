@@ -705,6 +705,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.server_starttime = int(time.time())  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup
         self.tool_shed_repository_cache = None
+        self.api_spec = None
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):

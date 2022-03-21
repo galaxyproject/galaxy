@@ -6,12 +6,14 @@ from fastapi import (
     FastAPI,
     Request,
 )
+from fastapi.openapi.utils import get_openapi
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import (
     FileResponse,
     Response,
 )
 
+from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
@@ -25,9 +27,15 @@ api_tags_metadata = [
         "name": "configuration",
         "description": "Configuration-related endpoints.",
     },
+    {"name": "datasets", "description": "Operations on datasets."},
+    {"name": "dataset collections"},
     {
         "name": "datatypes",
         "description": "Operations with supported data types.",
+    },
+    {
+        "name": "datatypes",
+        "description": "Operations on dataset collections.",
     },
     {
         "name": "genomes",
@@ -37,6 +45,18 @@ api_tags_metadata = [
         "name": "group_roles",
         "description": "Operations with group roles.",
     },
+    {"name": "histories"},
+    {"name": "libraries"},
+    {"name": "folders"},
+    {"name": "job_lock"},
+    {"name": "metrics"},
+    {"name": "default"},
+    {"name": "users"},
+    {"name": "jobs"},
+    {"name": "roles"},
+    {"name": "quotas"},
+    {"name": "visualizations"},
+    {"name": "pages"},
     {
         "name": "licenses",
         "description": "Operations with [SPDX licenses](https://spdx.org/licenses/).",
@@ -57,6 +77,7 @@ api_tags_metadata = [
         "name": "remote files",
         "description": "Operations with remote dataset sources.",
     },
+    {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
 ]
 
 
@@ -121,6 +142,22 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             return response
 
 
+def include_legacy_openapi(app, gx_app):
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="Galaxy API",
+        version=VERSION,
+        routes=app.routes,
+        tags=api_tags_metadata,
+    )
+    legacy_openapi = gx_app.api_spec.to_dict()
+    legacy_openapi["paths"].update(openapi_schema["paths"])
+    openapi_schema["paths"] = legacy_openapi["paths"]
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     app = FastAPI(
         title="Galaxy API",
@@ -131,6 +168,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
+    include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     app.mount("/", wsgi_handler)
     if gx_app.config.galaxy_url_prefix != "/":

@@ -260,6 +260,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # ==== Done
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
+    app.api_spec = webapp.build_apispec()
 
     # Wrap the webapp in some useful middleware
     if kwargs.get("middleware", True):
@@ -1823,6 +1824,8 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect(
         "create", "/api/metrics", controller="metrics", action="create", conditions=dict(method=["POST"])
     )
+
+    webapp.mapper.connect("docs", "/api/docs", controller="docs", action="index", conditions={"method": "GET"})
 
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
