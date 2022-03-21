@@ -1,6 +1,11 @@
 import os
+from contextlib import contextmanager
 
 import pytest
+from sqlalchemy import (
+    delete,
+    select,
+)
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
@@ -43,3 +48,76 @@ def drop_database(db_url, database):
     else:
         url = make_url(db_url)
         os.remove(url.database)
+
+
+def dbcleanup_wrapper(session, obj, where_clause=None):
+    with dbcleanup(session, obj, where_clause):
+        yield obj
+
+
+@contextmanager
+def dbcleanup(session, obj, where_clause=None):
+    """
+    Use the session to store obj in database; delete from database on exit, bypassing the session.
+
+    If obj does not have an id field, a SQLAlchemy WHERE clause should be provided to construct
+    a custom select statement.
+    """
+    return_id = where_clause is None
+
+    try:
+        obj_id = persist(session, obj, return_id)
+        yield obj_id
+    finally:
+        table = obj.__table__
+        if where_clause is None:
+            where_clause = _get_default_where_clause(type(obj), obj_id)
+        stmt = delete(table).where(where_clause)
+        session.execute(stmt)
+
+
+def persist(session, obj, return_id=True):
+    """
+    Use the session to store obj in database, then remove obj from session,
+    so that on a subsequent load from the database we get a clean instance.
+    """
+    session.add(obj)
+    session.flush()
+    obj_id = obj.id if return_id else None  # save this before obj is expunged
+    session.expunge(obj)
+    return obj_id
+
+
+def delete_from_database(session, objects):
+    """
+    Delete each object in objects from database.
+    May be called at the end of a test if use of a context manager is impractical.
+    (Assume all objects have the id field as their primary key.)
+    """
+    # Ensure we have a list of objects (check for list explicitly: a model can be iterable)
+    if not isinstance(objects, list):
+        objects = [objects]
+
+    for obj in objects:
+        table = obj.__table__
+        stmt = delete(table).where(table.c.id == obj.id)
+        session.execute(stmt)
+
+
+def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
+    # Either obj_id or where_clause must be provided, but not both
+    assert bool(obj_id) ^ (where_clause is not None)
+    if where_clause is None:
+        where_clause = _get_default_where_clause(cls, obj_id)
+    stmt = select(cls).where(where_clause)
+    result = session.execute(stmt)
+    # unique() is required if result contains joint eager loads against collections
+    # https://gerrit.sqlalchemy.org/c/sqlalchemy/sqlalchemy/+/2253
+    if unique:
+        result = result.unique()
+    return result.scalar_one()
+
+
+def _get_default_where_clause(cls, obj_id):
+    where_clause = cls.__table__.c.id == obj_id
+    return where_clause
