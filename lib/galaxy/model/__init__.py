@@ -4317,11 +4317,17 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
         self._metadata = None
-        self.metadata = other_hda.metadata
+        if self.extension == "data":
+            self.extension = other_hda.extension
+            self.metadata = other_hda.metadata
+        else:
+            # keep current extension and regenerate metadata
+            print ("#############################TODO: HOW DO WE ^?")
+            print (self._metadata)
+            pass  # TODO
         self.info = other_hda.info
         self.blurb = other_hda.blurb
         self.peek = other_hda.peek
-        self.extension = other_hda.extension
         self.designation = other_hda.designation
         self.deleted = other_hda.deleted
         self.visible = other_hda.visible
