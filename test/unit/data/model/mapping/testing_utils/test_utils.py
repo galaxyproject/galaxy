@@ -1,9 +1,6 @@
 """
 This module contains tests for the utility functions in the test_mapping module.
 """
-
-from contextlib import contextmanager
-
 import pytest
 from sqlalchemy import (
     Column,
@@ -13,7 +10,6 @@ from sqlalchemy import (
     select,
     UniqueConstraint,
 )
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import (
     registry,
     Session,

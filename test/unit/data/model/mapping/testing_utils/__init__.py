@@ -2,15 +2,10 @@ from abc import (
     ABC,
     abstractmethod,
 )
-from contextlib import contextmanager
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import (
-    delete,
-    select,
-    UniqueConstraint,
-)
+from sqlalchemy import UniqueConstraint
 
 
 class AbstractBaseTest(ABC):

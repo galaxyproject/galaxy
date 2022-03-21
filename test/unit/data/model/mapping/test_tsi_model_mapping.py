@@ -7,17 +7,14 @@ from datetime import (
     timedelta,
 )
 
-import pytest
-
 from galaxy.model import tool_shed_install as model
 from .testing_utils import (
     AbstractBaseTest,
     collection_consists_of_objects,
 )
-from .testing_utils.tsi_model_fixtures import *
+from .testing_utils.tsi_model_fixtures import *  # noqa: F401, F403
 from ..testing_utils import (
     dbcleanup,
-    dbcleanup_wrapper,
     delete_from_database,
     get_stored_obj,
 )

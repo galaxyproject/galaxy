@@ -82,10 +82,9 @@ from .testing_utils import (
     has_index,
     has_unique_constraint,
 )
-from .testing_utils.gxy_model_fixtures import *
+from .testing_utils.gxy_model_fixtures import *  # noqa: F401, F403
 from ..testing_utils import (
     dbcleanup,
-    dbcleanup_wrapper,
     delete_from_database,
     get_stored_obj,
     persist,
