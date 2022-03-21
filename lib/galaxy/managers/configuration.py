@@ -15,12 +15,12 @@ from typing import (
     List,
 )
 
-from galaxy.app import StructuredApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)

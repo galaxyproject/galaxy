@@ -421,8 +421,8 @@ OUTPUTS_UNKNOWN_TAG = """
 OUTPUTS_UNNAMED_INVALID_NAME = """
 <tool>
     <outputs>
-        <data/>
-        <collection name="2output"/>
+        <data label="data out"/>
+        <collection name="2output" label="coll out"/>
     </outputs>
 </tool>
 """
@@ -454,6 +454,14 @@ OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
         <data name="output">
             <discover_datasets from_tool_provided_metadata="true"/>
         </data>
+    </outputs>
+</tool>
+"""
+OUTPUTS_DUPLICATED_NAME_LABEL = """
+<tool>
+    <outputs>
+        <data name="valid_name" format="fasta"/>
+        <data name="valid_name" format="fasta"/>
     </outputs>
 </tool>
 """
@@ -1179,6 +1187,18 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_outputs_duplicated_name_label(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    assert "2 outputs found." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool output [valid_name] has duplicated name" in lint_ctx.error_messages
+    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.error_messages
+    assert len(lint_ctx.error_messages) == 2
+
+
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
     run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
@@ -1372,7 +1392,7 @@ COMPLETE_MACROS = """<macros>
 """
 
 
-def test_tool_and_macro_xml(lint_ctx_xpath):
+def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
     """
     test linters (all of them via lint_tool_source_with) on a tool and macro xml file
     checking a list of asserts, where each assert is a 4-tuple:
@@ -1391,21 +1411,31 @@ def test_tool_and_macro_xml(lint_ctx_xpath):
         tool_xml, _ = load_with_references(tool_path)
 
     tool_source = XmlToolSource(tool_xml)
+    # lint once with the lint context using XMLLintMessageXPath and XMLLintMessageLine
     lint_tool_source_with(lint_ctx_xpath, tool_source)
+    lint_tool_source_with(lint_ctx, tool_source)
 
     asserts = (
-        ("Select parameter [select] has multiple options with the same value", "tool.xml", 5, "/tool/inputs/param[1]"),
-        ("Found param input with no name specified.", "tool.xml", 13, "/tool/inputs/param[2]"),
-        ("Param input [No_type] input with no type specified.", "macros.xml", 3, "/tool/inputs/param[3]"),
+        ("Select parameter [select] has multiple options with the same value", 5, "/tool/inputs/param[1]"),
+        ("Found param input with no name specified.", 13, "/tool/inputs/param[2]"),
+        ("Param input [No_type] input with no type specified.", 3, "/tool/inputs/param[3]"),
     )
     for a in asserts:
-        message, fname, line, xpath = a
+        message, line, xpath = a
         found = False
         for lint_message in lint_ctx_xpath.message_list:
             if lint_message.message != message:
                 continue
             found = True
-            assert lint_message.xpath == xpath, f"Assumed xpath {xpath} xpath {lint_message.xpath} for: {message}"
+            assert (
+                lint_message.xpath == xpath
+            ), f"Assumed xpath {xpath}; found xpath {lint_message.xpath} for: {message}"
+        assert found, f"Did not find {message}"
+        for lint_message in lint_ctx.message_list:
+            if lint_message.message != message:
+                continue
+            found = True
+            assert lint_message.line == line, f"Assumed line {line}; found line {lint_message.line} for: {message}"
         assert found, f"Did not find {message}"
 
 

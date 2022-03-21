@@ -336,7 +336,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "file_name",
                 "display_apps",
                 "display_types",
-                "visualizations",
                 "validated_state",
                 "validated_state_message",
                 # 'url',
@@ -364,58 +363,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         self.add_view(
             "inaccessible",
             ["accessible", "id", "name", "history_id", "hid", "history_content_type", "state", "deleted", "visible"],
-        )
-
-        # fields for new beta web client, there is no summary/detailed split any more
-        self.add_view(
-            "betawebclient",
-            [
-                # common to hdca
-                "create_time",
-                "deleted",
-                "hid",
-                "history_content_type",
-                "history_id",
-                "id",
-                "name",
-                "tags",
-                "type",
-                "type_id",
-                "update_time",
-                "url",
-                "visible",
-                # dataset only
-                "accessible",
-                "api_type",
-                "annotation",
-                "created_from_basename",
-                "creating_job",
-                "dataset_id",
-                "data_type",
-                "display_apps",
-                "display_types",
-                "download_url",
-                "extension",
-                "file_ext",
-                "file_name",
-                "file_size",
-                "genome_build",
-                "hda_ldda",
-                "meta_files",
-                "misc_blurb",
-                "misc_info",
-                "model_class",
-                "peek",
-                "purged",
-                "rerunnable",
-                "resubmitted",
-                "state",
-                "uuid",
-                "validated_state",
-                "validated_state_message",
-                "hashes",
-                "sources",
-            ],
         )
 
     def serialize_copied_from_ldda_id(self, item, key, **context):
@@ -446,7 +393,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "resubmitted": lambda item, key, **context: self.hda_manager.has_been_resubmitted(item),
             "display_apps": self.serialize_display_apps,
             "display_types": self.serialize_old_display_applications,
-            "visualizations": self.serialize_visualization_links,
             # 'url'   : url_for( 'history_content_typed', history_id=encoded_history_id, id=encoded_id, type="dataset" ),
             # TODO: this intermittently causes a routes.GenerationException - temp use the legacy route to prevent this
             #   see also: https://trello.com/c/5d6j4X5y
@@ -455,6 +401,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "history_content",
                 history_id=self.app.security.encode_id(item.history_id),
                 id=self.app.security.encode_id(item.id),
+                context=context,
             ),
             "urls": self.serialize_urls,
             # TODO: backwards compat: need to go away
@@ -462,6 +409,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "history_contents_display",
                 history_id=self.app.security.encode_id(item.history.id),
                 history_content_id=self.app.security.encode_id(item.id),
+                context=context,
             ),
             "parent_id": self.serialize_id,
             # TODO: to DatasetAssociationSerializer
@@ -530,17 +478,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                     display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
-
-    def serialize_visualization_links(self, item, key, trans=None, **context):
-        """
-        Return a list of dictionaries with links to visualization pages
-        for those visualizations that apply to this hda.
-        """
-        hda = item
-        # use older system if registry is off in the config
-        if not self.app.visualizations_registry:
-            return hda.get_visualizations()
-        return self.app.visualizations_registry.get_visualizations(trans, hda)
 
     def serialize_urls(self, item, key, **context):
         """

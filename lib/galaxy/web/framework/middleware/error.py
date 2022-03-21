@@ -409,7 +409,7 @@ def handle_exception(
         else:
             reported = True
     else:
-        error_stream.write("Error - {}: {}\n".format(exc_data.exception_type, exc_data.exception_value))
+        error_stream.write(f"Error - {exc_data.exception_type}: {exc_data.exception_value}\n")
     if html:
         if debug_mode and simple_html_error:
             return_error = formatter.format_html(

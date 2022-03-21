@@ -22,6 +22,7 @@ ARG STAGE1_BASE=python:3.7-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
+ARG GALAXY_PLAYBOOK_BRANCH=v2.0.0
 
 ARG GIT_COMMIT=unspecified
 ARG BUILD_DATE=unspecified
@@ -34,6 +35,7 @@ FROM $STAGE1_BASE AS stage1
 ARG DEBIAN_FRONTEND=noninteractive
 ARG SERVER_DIR
 ARG GALAXY_PLAYBOOK_REPO
+ARG GALAXY_PLAYBOOK_BRANCH
 
 # Init Env
 ENV LC_ALL=en_US.UTF-8
@@ -57,7 +59,7 @@ RUN set -xe; \
 WORKDIR /tmp/ansible
 RUN rm -rf *
 ENV LC_ALL en_US.UTF-8
-RUN git clone --depth 1 $GALAXY_PLAYBOOK_REPO galaxy-docker
+RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
 WORKDIR /tmp/ansible/galaxy-docker
 RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 
@@ -176,6 +178,10 @@ COPY --chown=$GALAXY_USER:$GALAXY_USER --from=server_build $ROOT_DIR .
 COPY --chown=$GALAXY_USER:$GALAXY_USER --from=client_build $SERVER_DIR/static ./server/static
 
 WORKDIR $SERVER_DIR
+
+# The data in version.json will be displayed in Galaxy's /api/version endpoint
+RUN printf "{\n  \"git_commit\": \"$(cat GITREVISION)\",\n  \"build_date\": \"$BUILD_DATE\",\n  \"image_tag\": \"$IMAGE_TAG\"\n}\n" > version.json
+
 EXPOSE 8080
 USER $GALAXY_USER
 

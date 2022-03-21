@@ -134,7 +134,7 @@ def retry_during_transitions(
     return _retry
 
 
-def edit_details(f, scope=".beta.history"):
+def edit_details(f, scope=".history-index"):
     """Open the editor, run the edits, hit the save button"""
 
     @wraps(f)
@@ -1012,6 +1012,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.components.masthead.invocations.wait_for_and_click()
 
+    def navigate_to_pages(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.pages.wait_for_and_click()
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -1238,7 +1243,7 @@ class NavigatesGalaxy(HasDriver):
             self.send_enter(tag_area)
 
     def workflow_run_submit(self):
-        self.wait_for_and_click_selector("#run-workflow")
+        self.wait_for_and_click_selector("button.btn-primary")
 
     def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
@@ -1264,6 +1269,27 @@ class NavigatesGalaxy(HasDriver):
         tool_element = tool_link.wait_for_present()
         self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
         tool_link.wait_for_and_click()
+
+    def create_page_and_edit(self, name=None, slug=None, content_format=None, screenshot_name=None):
+        name = self.create_page(name=name, slug=slug, content_format=content_format, screenshot_name=screenshot_name)
+        self.click_grid_popup_option(name, "Edit content")
+        self.components.pages.editor.wym_iframe.wait_for_visible()
+        return name
+
+    def create_page(self, name=None, slug=None, content_format=None, screenshot_name=None):
+        self.components.pages.create.wait_for_and_click()
+        name = name or self._get_random_name(prefix="page")
+        slug = slug = self._get_random_name(prefix="pageslug")
+        content_format = content_format or "HTML"
+        self.tool_set_value("title", name)
+        self.tool_set_value("slug", slug)
+        self.tool_set_value("content_format", content_format, expected_type="select")
+        if screenshot_name:
+            self.screenshot(screenshot_name)
+        # Sometimes 'submit' button not yet hooked up?
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.submit.wait_for_and_click()
+        return name
 
     def tool_parameter_div(self, expanded_parameter_id):
         return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
@@ -1342,7 +1368,7 @@ class NavigatesGalaxy(HasDriver):
         return not self.components.history_panel.beta.is_absent
 
     # avoids problematic ID and classes on markup
-    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".beta.history"):
+    def beta_history_element(self, attribute_value, attribute_name="data-description", scope=".history-index"):
         return self.components._.by_attribute(name=attribute_name, value=attribute_value, scope=scope)
 
     # join list of attrs into css attribute selectors and append to base beta_item selector
@@ -1852,7 +1878,7 @@ class NavigatesGalaxy(HasDriver):
     def snapshot(self, description):
         """Test case subclass overrides this to provide detailed logging."""
 
-    def open_history_editor(self, scope=".beta.history"):
+    def open_history_editor(self, scope=".history-index"):
         if self.is_beta_history():
             panel = self.components.history_panel.editor.selector(scope=scope)
             toggle = panel.toggle
@@ -1860,7 +1886,7 @@ class NavigatesGalaxy(HasDriver):
             editor = panel.form
             editor.wait_for_present()
 
-    def close_history_editor(self, scope=".beta.history"):
+    def close_history_editor(self, scope=".history-index"):
         if self.is_beta_history():
             toggle = self.components.history_panel.edit_toggle
             toggle.wait_for_and_click()

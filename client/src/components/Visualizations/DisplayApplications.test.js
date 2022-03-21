@@ -44,7 +44,6 @@ describe("DisplayApplications", () => {
                             },
                         ],
                     },
-                    resultLabel: "item",
                 }),
             },
             localVue,

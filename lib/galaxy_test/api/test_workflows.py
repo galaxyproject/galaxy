@@ -645,6 +645,41 @@ steps:
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
 
+    def test_url_import(self):
+        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+        workflow_id = self._post("workflows", data={"archive_source": url}).json()["id"]
+        workflow = self._download_workflow(workflow_id)
+        assert "TestWorkflow1" in workflow["name"]
+        assert (
+            workflow.get("source_metadata").get("url") == url
+        )  # disappearance of source_metadata on modification is tested in test_trs_import
+
+    def test_trs_import(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_server": "dockstore",
+            "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
+            "trs_version_id": "master",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "Test Workflow" in original_workflow["name"]
+        assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
+        assert original_workflow.get("source_metadata").get("trs_version_id") == trs_payload["trs_version_id"]
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
     def test_anonymous_published(self):
         def anonymous_published_workflows():
             workflows_url = self._api_url("workflows?show_published=True")
@@ -919,24 +954,6 @@ steps:
         invocation = self._invocation_details(workflow_id, invocation_id)
         assert invocation["state"] == "scheduled", invocation
 
-    def test_run_workflow_with_missing_tool(self):
-        with self.dataset_populator.test_history() as history_id:
-            workflow_id = self._upload_yaml_workflow(
-                """
-class: GalaxyWorkflow
-steps:
-  step1:
-    tool_id: nonexistent_tool
-    tool_version: "0.1"
-"""
-            )
-            invocation_response = self.__invoke_workflow(workflow_id, history_id=history_id, assert_ok=False)
-            self._assert_status_code_is(invocation_response, 400)
-            self.assertEqual(
-                invocation_response.json().get("err_msg"),
-                "Workflow was not invoked; the following required tools are not installed: nonexistent_tool",
-            )
-
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collections(self) -> None:
         with self.dataset_populator.test_history() as history_id:
@@ -964,6 +981,7 @@ steps:
           cond_param_inner: true
           input1:
             $link: 0/out_file1
+    thedata: null
   cat:
     tool_id: cat1
     in:
@@ -2898,43 +2916,6 @@ text_input:
             )
             jobs = self._history_jobs(history_id)
             assert len(jobs) == 1
-
-    def test_run_with_required_text_parameter_not_provided_fails(self):
-        with self.dataset_populator.test_history() as history_id:
-            try:
-                self._run_workflow(
-                    """
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-""",
-                    assert_ok=True,
-                    history_id=history_id,
-                )
-            except AssertionError as e:
-                assert "(text_input) is not optional" in str(e)
-
-    def test_run_with_required_text_parameter_null_fails(self):
-        with self.dataset_populator.test_history() as history_id:
-            try:
-                self._run_workflow(
-                    """
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-""",
-                    test_data="""
-text_input:
-  value: null
-  type: raw
-""",
-                    assert_ok=True,
-                    history_id=history_id,
-                )
-            except AssertionError as e:
-                assert "(text_input) is not optional" in str(e)
 
     def test_run_with_int_parameter(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5053,10 +5034,15 @@ input_c:
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         response = self._show_workflow(workflow_id)
         assert not response["published"]
+        assert not response["importable"]
         published_worklow = self._put(f"workflows/{workflow_id}", data={"published": True}, json=True).json()
         assert published_worklow["published"]
+        importable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": True}, json=True).json()
+        assert importable_worklow["importable"]
         unpublished_worklow = self._put(f"workflows/{workflow_id}", data={"published": False}, json=True).json()
         assert not unpublished_worklow["published"]
+        unimportable_worklow = self._put(f"workflows/{workflow_id}", data={"importable": False}, json=True).json()
+        assert not unimportable_worklow["importable"]
 
     def test_workflow_from_path_requires_admin(self):
         # There are two ways to import workflows from paths, just verify both require an admin.

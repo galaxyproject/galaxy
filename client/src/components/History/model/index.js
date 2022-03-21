@@ -4,8 +4,6 @@ export { DatasetCollection } from "./DatasetCollection";
 export { JobStateSummary } from "./JobStateSummary";
 export { DateStore } from "./DateStore";
 export { History } from "./History";
-export { ScrollPos } from "./ScrollPos";
-export { CurveFit } from "./CurveFit";
 export { STATES } from "./states";
 
 // crud functions, ajax call + cache

@@ -5,6 +5,7 @@ import shutil
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
@@ -98,23 +99,19 @@ class JobExportHistoryArchiveWrapper:
         Perform setup for job to export a history into an archive.
         """
         app = self.app
-
+        # TODO: prevent circular import here...
         from galaxy.celery.tasks import export_history
 
+        request = SetupHistoryExportJob(
+            history_id=history.id,
+            job_id=self.job_id,
+            store_directory=store_directory,
+            include_files=True,
+            include_hidden=include_hidden,
+            include_deleted=include_deleted,
+        )
         if app.config.enable_celery_tasks:
             # symlink files on export, on worker files will tarred up in a dereferenced manner.
-            export_history.delay(
-                store_directory=store_directory,
-                history_id=history.id,
-                job_id=self.job_id,
-                include_hidden=include_hidden,
-                include_deleted=include_deleted,
-            )
+            export_history.delay(request=request)
         else:
-            export_history(
-                store_directory=store_directory,
-                history_id=history.id,
-                job_id=self.job_id,
-                include_hidden=include_hidden,
-                include_deleted=include_deleted,
-            )
+            export_history(request=request)

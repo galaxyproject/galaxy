@@ -7,6 +7,7 @@ import os
 from typing import (
     Dict,
     List,
+    Optional,
     Type,
     TypeVar,
 )
@@ -526,7 +527,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         # because of that: we need to add a few keys that will use the default serializer
         self.serializable_keyset.update(["name", "state", "tool_version", "extension", "visible", "dbkey"])
 
-    def _proxy_to_dataset(self, serializer: base.Serializer = None, proxy_key=None):
+    def _proxy_to_dataset(self, serializer: Optional[base.Serializer] = None, proxy_key: Optional[str] = None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
         # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
         # or by kwarg serializer: a function that's passed in (e.g. permissions)
@@ -548,10 +549,11 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
                     dict(
                         file_type=meta_type,
                         download_url=self.url_for(
-                            "history_contents_metadata_file",
+                            "get_metadata_file",
                             history_id=self.app.security.encode_id(dataset_assoc.history_id),
                             history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                            metadata_file=meta_type,
+                            query_params={"metadata_file": meta_type},
+                            context=context,
                         ),
                     )
                 )

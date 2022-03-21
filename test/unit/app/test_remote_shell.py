@@ -10,7 +10,7 @@ try:
 except ImportError:
     raise unittest.SkipTest("Skipping tests that require mockssh")
 
-from galaxy.jobs.runners.cli import CliInterface
+from galaxy.jobs.runners.util.cli import CliInterface
 from galaxy.security.ssh_util import (
     generate_ssh_keys,
     SSHKeys,

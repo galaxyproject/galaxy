@@ -1,10 +1,15 @@
 import random
 import socket
+import sys
 
 from galaxy.util import commands
 
 
 def get_ip():
+    if sys.platform == "darwin":
+        # If we're on OSX it is likely that the docker host is localhost.
+        return socket.gethostbyname(socket.gethostname())
+    # This method assumes that the ip with default route is the ip we want to return
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable

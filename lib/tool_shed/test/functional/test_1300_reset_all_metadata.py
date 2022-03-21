@@ -652,9 +652,4 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 del old_metadata["tool_panel_section"]
             assert (
                 repository.metadata_ == old_metadata
-            ), "Metadata for %s repository %s changed after reset. \nOld: %s\nNew: %s" % (
-                repository.status,
-                repository.name,
-                old_metadata,
-                repository.metadata_,
-            )
+            ), f"Metadata for {repository.status} repository {repository.name} changed after reset. \nOld: {old_metadata}\nNew: {repository.metadata_}"

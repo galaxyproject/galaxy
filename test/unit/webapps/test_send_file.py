@@ -1,8 +1,8 @@
 import tempfile
 
 import pytest
+from a2wsgi import WSGIMiddleware
 from fastapi.applications import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.testclient import TestClient
 
 from galaxy.util.bunch import Bunch

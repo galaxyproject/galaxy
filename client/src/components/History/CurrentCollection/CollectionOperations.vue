@@ -1,32 +1,25 @@
 <template>
     <section>
-        <nav class="d-flex justify-content-end">
+        <nav class="content-operations d-flex justify-content-between bg-secondary">
             <b-button-group>
-                <IconButton
-                    v-if="isRoot"
-                    class="mb-2 mx-3"
-                    icon="download"
-                    title="Download Collection"
-                    :href="downloadCollectionUrl"
-                    download />
+                <b-button title="Download Collection" size="sm" variant="link" download :href="downloadUrl">
+                    <Icon class="mr-1" icon="download" />
+                    <span>Download</span>
+                </b-button>
             </b-button-group>
         </nav>
     </section>
 </template>
 
 <script>
-import IconButton from "components/IconButton";
-
 export default {
-    components: { IconButton },
     props: {
-        isRoot: { type: Boolean, required: true },
-        collection: { type: Object, required: true },
+        dsc: { type: Object, required: true },
     },
     computed: {
         /** @return {String} */
-        downloadCollectionUrl() {
-            return `${this.collection.url}/download`;
+        downloadUrl() {
+            return `${this.dsc.url}/download`;
         },
     },
 };

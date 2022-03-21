@@ -35,6 +35,13 @@ config1 = """\
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
+    <specs>
+        <exports>
+            <exports>png</exports>
+            <exports>svg</exports>
+            <exports>pdf</exports>
+        </exports>
+    </specs>
     <template>scatterplot.mako</template>
 </visualization>
 """
@@ -110,6 +117,16 @@ class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
         self.assertTrue(vis1.serves_templates)
         self.assertEqual(vis1.template_path, os.path.join(vis1.path, "templates"))
         self.assertEqual(vis1.template_lookup.__class__.__name__, "TemplateLookup")
+
+        vis1_as_dict = vis1.to_dict()
+        assert vis1_as_dict["specs"]
+        specs = vis1_as_dict["specs"]
+        assert "exports" in specs
+        exports = specs["exports"]
+        assert len(exports) == 3
+        assert "png" in exports
+        assert "svg" in exports
+        assert "pdf" in exports
 
         vis2 = plugin_mgr.plugins["vis2"]
         self.assertEqual(vis2.name, "vis2")

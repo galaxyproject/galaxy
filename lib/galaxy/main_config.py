@@ -75,6 +75,7 @@ class WebappConfigResolver:
         self.is_ini_file = config_is_ini(self.config_file)
         self.config_section = self._resolve_section_name()
         self._update_kwds()
+        os.environ["IS_WEBAPP"] = "1"
 
     def resolve_config(self) -> WebappConfig:
         global_conf = {}

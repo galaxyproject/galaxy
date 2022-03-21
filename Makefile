@@ -38,8 +38,8 @@ docs-develop: ## Fast doc generation and more warnings (for development)
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 
-diff-format:  ## Format Python code changes
-	$(IN_VENV) darker -r $(TARGET_BRANCH)
+diff-format:  ## Format Python code changes since last commit
+	$(IN_VENV) darker .
 
 format:  ## Format Python code base
 	$(IN_VENV) isort .
@@ -63,9 +63,6 @@ open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in bro
 
 open-project: ## open project on github
 	$(OPEN_RESOURCE) $(PROJECT_URL)
-
-uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
-	$(CONFIG_MANAGE) build_uwsgi_yaml
 
 tool-shed-config-validate: ## validate tool shed YAML configuration file
 	$(CONFIG_MANAGE) validate tool_shed

@@ -9,7 +9,6 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.app import MinimalManagerApp
 from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
@@ -21,6 +20,7 @@ from galaxy.schema.remote_files import (
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
+from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import (
     jstree,
     smart_str,

@@ -1,4 +1,5 @@
 from galaxy import model
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.oset import OrderedSet
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
@@ -23,6 +24,7 @@ def set_collection_elements(dataset_collection, type, dataset_instances, associa
     elements = []
     for element in type.generate_elements(new_dataset_instances):
         element.element_index = element_index
+        add_object_to_object_session(element, dataset_collection)
         element.collection = dataset_collection
         elements.append(element)
 

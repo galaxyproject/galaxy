@@ -9,6 +9,9 @@ extend-exclude = '''
 '''
 force-exclude = 'lib/galaxy/util/jstree.py'
 
+[tool.darker]
+isort = true
+
 [tool.poetry]
 name = "galaxy"
 version = "22.01.dev0"
@@ -25,7 +28,10 @@ name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
 
 [tool.poetry.dependencies]
+a2wsgi = "*"
 aiofiles = "*"
+alembic = "*"
+apispec = "*"
 Babel = "*"
 bdbag = "*"
 Beaker = "1.11.0"
@@ -49,7 +55,7 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "main"}
+gravity = ">=0.10.0"
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
@@ -72,10 +78,12 @@ psutil = "*"
 pulsar-galaxy-lib = ">=0.14.13"
 pycryptodome = "*"
 pydantic = "*"
+PyJWT = "*"
 pykwalify = "*"
 pyparsing = "*"
 pysam = "*"
 python = ">=3.7,<4"
+python-dateutil = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 pyuwsgi = "*"
 PyYAML = "*"
@@ -85,7 +93,7 @@ Routes = "*"
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
-sqlalchemy-migrate = "*"
+sqlalchemy-migrate = "*"  # required to support tool shed
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"

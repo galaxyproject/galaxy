@@ -1,4 +1,5 @@
 import time
+from uuid import uuid4
 
 from requests import put
 
@@ -251,7 +252,7 @@ class ImportExportTests(BaseHistories):
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_import_export(self):
-        history_name = "for_export_default"
+        history_name = f"for_export_default_{uuid4()}"
         history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
@@ -284,7 +285,7 @@ class ImportExportTests(BaseHistories):
         self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
 
     def test_import_export_include_deleted(self):
-        history_name = "for_export_include_deleted"
+        history_name = f"for_export_include_deleted_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
         deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3", wait=True)
@@ -316,7 +317,7 @@ class ImportExportTests(BaseHistories):
 
     @skip_without_tool("job_properties")
     def test_import_export_failed_job(self):
-        history_name = "for_export_include_failed_job"
+        history_name = f"for_export_include_failed_job_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.run_tool_raw("job_properties", inputs={"failbool": True}, history_id=history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=False)
@@ -337,7 +338,7 @@ class ImportExportTests(BaseHistories):
         )
 
     def test_import_metadata_regeneration(self):
-        history_name = "for_import_metadata_regeneration"
+        history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(
             history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
@@ -359,13 +360,14 @@ class ImportExportTests(BaseHistories):
         self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
         bai_metadata = import_bam_metadata["meta_files"][0]
         assert bai_metadata["file_type"] == "bam_index"
+        assert "api/" in bai_metadata["download_url"], bai_metadata["download_url"]
         api_url = bai_metadata["download_url"].split("api/", 1)[1]
         bai_response = self._get(api_url)
         self._assert_status_code_is(bai_response, 200)
         assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
-        history_name = "for_export_with_collections"
+        history_name = f"for_export_with_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(
             history_id, contents=["Hello", "World"], direct_upload=True
@@ -391,7 +393,7 @@ class ImportExportTests(BaseHistories):
         )
 
     def test_import_export_nested_collection(self):
-        history_name = "for_export_with_nested_collections"
+        history_name = f"for_export_with_nested_collections_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
 
@@ -424,7 +426,6 @@ class ImportExportTests(BaseHistories):
             history_name,
             wait_on_history_length=wait_on_history_length,
             export_kwds=export_kwds,
-            api_key=self.galaxy_interactor.api_key,
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):

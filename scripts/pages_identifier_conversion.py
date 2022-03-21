@@ -13,6 +13,7 @@ from galaxy.managers.pages import (
     PageContentProcessor,
     placeholderRenderForSave,
 )
+from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
@@ -39,7 +40,7 @@ def main(argv):
             "The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml"
         )
 
-    model = galaxy.config.init_models_from_config(config, object_store=object_store)
+    model = init_models_from_config(config, object_store=object_store)
     session = model.context.current
     pagerevs = session.query(model.PageRevision).all()
     mock_trans = Bunch(app=Bunch(security=security_helper), model=model, user_is_admin=lambda: True, sa_session=session)

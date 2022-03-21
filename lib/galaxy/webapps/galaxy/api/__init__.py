@@ -10,6 +10,7 @@ from typing import (
     Type,
     TypeVar,
 )
+from urllib.parse import urlencode
 
 from fastapi import (
     Cookie,
@@ -153,12 +154,20 @@ class UrlBuilder:
 
     def __call__(self, name: str, **path_params):
         qualified = path_params.pop("qualified", False)
+        # starlette does not support query parameters in url_path_for: https://github.com/encode/starlette/issues/560
+        query_params = path_params.pop("query_params", None)
         try:
             if qualified:
-                return self.request.url_for(name, **path_params)
-            return self.request.app.url_path_for(name, **path_params)
+                url = self.request.url_for(name, **path_params)
+            else:
+                url = self.request.app.url_path_for(name, **path_params)
+            if query_params:
+                url = f"{url}?{urlencode(query_params)}"
+            return url
         except NoMatchFound:
             # Fallback to legacy url_for
+            if query_params:
+                path_params.update(query_params)
             return web.url_for(name, **path_params)
 
 

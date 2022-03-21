@@ -217,8 +217,6 @@ class InteractiveEnvironmentRequest:
             conf_file["galaxy_url"] = f"{self.attr.galaxy_config.galaxy_infrastructure_url.rstrip('/')}/"
         else:
             conf_file["galaxy_url"] = f"{request.application_url.rstrip('/')}/"
-            # Galaxy paster port is deprecated
-            conf_file["galaxy_paster_port"] = conf_file["galaxy_web_port"]
 
         return conf_file
 

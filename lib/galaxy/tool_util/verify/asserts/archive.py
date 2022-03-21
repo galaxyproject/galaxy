@@ -3,6 +3,7 @@ import re
 import tarfile
 import tempfile
 import zipfile
+from typing import Optional
 
 from galaxy.util import asbool
 from ._util import _assert_presence_number
@@ -55,10 +56,10 @@ def assert_has_archive_member(
     verify_assertions_function,
     children,
     all="false",
-    n: int = None,
+    n: Optional[int] = None,
     delta: int = 0,
-    min: int = None,
-    max: int = None,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
     negate: bool = False,
 ):
     """Recursively checks the specified children assertions against the text of

@@ -729,10 +729,10 @@ class InstalledRepositoryManager:
             try:
                 # Remove the repository from disk.
                 shutil.rmtree(repository_install_dir)
-                log.debug(f"Removed repository installation directory: {str(repository_install_dir)}")
+                log.debug(f"Removed repository installation directory: {repository_install_dir}")
                 removed = True
             except Exception as e:
-                log.debug(f"Error removing repository installation directory {str(repository_install_dir)}: {str(e)}")
+                log.debug(f"Error removing repository installation directory {repository_install_dir}: {e}")
                 if isinstance(e, OSError) and not os.path.exists(repository_install_dir):
                     removed = True
                     log.debug("Repository directory does not exist on disk, marking as uninstalled.")
@@ -874,10 +874,7 @@ class InstalledRepositoryManager:
             # Purge the repository.
             sa_session.delete(repository)
             sa_session.flush()
-            message = "The repository named <b>%s</b> with status <b>%s</b> has been purged.<br/>" % (
-                str(repository.name),
-                str(repository.status),
-            )
+            message = f"The repository named <b>{repository.name}</b> with status <b>{repository.status}</b> has been purged.<br/>"
             message += "Total associated tool_version records purged: %d<br/>" % purged_tool_versions
             message += "Total associated tool_dependency records purged: %d<br/>" % purged_tool_dependencies
             message += (
@@ -895,7 +892,7 @@ class InstalledRepositoryManager:
         else:
             status = "error"
             message = "A repository must have the status <b>New</b> in order to be purged.  This repository has "
-            message += f" the status {str(repository.status)}."
+            message += f" the status {repository.status}."
         return status, message
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(self, repository):
@@ -909,17 +906,11 @@ class InstalledRepositoryManager:
         altered_installed_dependent_repositories_of_installed_repositories = {}
         for r_tup, v_tups in self.installed_dependent_repositories_of_installed_repositories.items():
             if repository_tup in v_tups:
-                debug_msg = "Removing entry for revision %s of repository %s owned by %s " % (
-                    installed_changeset_revision,
-                    name,
-                    owner,
+                debug_msg = (
+                    f"Removing entry for revision {installed_changeset_revision} of repository {name} owned by {owner} "
                 )
                 r_tool_shed, r_name, r_owner, r_installed_changeset_revision = r_tup
-                debug_msg += "from the dependent list for revision %s of repository %s owned by %s " % (
-                    r_installed_changeset_revision,
-                    r_name,
-                    r_owner,
-                )
+                debug_msg += f"from the dependent list for revision {r_installed_changeset_revision} of repository {r_name} owned by {r_owner} "
                 debug_msg += "in installed_repository_dependencies_of_installed_repositories."
                 log.debug(debug_msg)
                 v_tups.remove(repository_tup)

@@ -259,7 +259,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def unset_filter(self, filter_key, filter_value):
-        close_button_selector = 'a[filter_key="%s"][filter_val="%s"]' % (filter_key, filter_value)
+        close_button_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
         self.wait_for_and_click_selector(close_button_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 

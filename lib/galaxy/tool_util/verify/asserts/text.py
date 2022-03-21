@@ -1,4 +1,5 @@
 import re
+from typing import Optional
 
 from ._util import (
     _assert_number,
@@ -7,7 +8,13 @@ from ._util import (
 
 
 def assert_has_text(
-    output, text, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output,
+    text,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """Asserts specified output contains the substring specified by
     the argument text. The exact number of occurrences can be
@@ -37,7 +44,13 @@ def assert_not_has_text(output, text):
 
 
 def assert_has_line(
-    output, line, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output,
+    line,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """Asserts the specified output contains the line specified by the
     argument line. The exact number of occurrences can be optionally
@@ -59,7 +72,14 @@ def assert_has_line(
     )
 
 
-def assert_has_n_lines(output, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False):
+def assert_has_n_lines(
+    output,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
+):
     """Asserts the specified output contains ``n`` lines allowing
     for a difference in the number of lines (delta)
     or relative differebce in the number of lines"""
@@ -78,7 +98,13 @@ def assert_has_n_lines(output, n: int = None, delta: int = 0, min: int = None, m
 
 
 def assert_has_text_matching(
-    output, expression, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output,
+    expression,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
@@ -102,7 +128,13 @@ def assert_has_text_matching(
 
 
 def assert_has_line_matching(
-    output, expression, n: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output,
+    expression,
+    n: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given

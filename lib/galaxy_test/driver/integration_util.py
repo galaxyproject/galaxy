@@ -89,8 +89,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     _app_available: ClassVar[bool]
 
     prefer_template_database = True
-    # Subclasses can override this to force uwsgi for tests.
-    require_uwsgi = False
 
     # Don't pull in default configs for un-configured things from Galaxy's
     # config directory and such.
@@ -165,13 +163,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         the test as needed.
         """
 
-    @classmethod
-    def handle_uwsgi_cli_command(cls, command):
-        """Extension point sub subclasses to modify arguments used to launch uWSGI server.
-
-        Command will a list that can be modified.
-        """
-
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
 
@@ -181,8 +172,21 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
 
+def setup_celery_includes():
+    from galaxy.celery import TASKS_MODULES
+
+    def celery_includes():
+        return TASKS_MODULES
+
+    return pytest.fixture(scope="session")(celery_includes)
+
+
 class UsesCeleryTasks:
-    enable_celery_tasks = True
+    @classmethod
+    def setup_celery_config(cls, config):
+        config["enable_celery_tasks"] = True
+        config["celery_broker"] = "memory://"
+        config["celery_backend"] = "cache+memory://"
 
     @pytest.fixture(autouse=True)
     def _request_celery_app(self, celery_app):

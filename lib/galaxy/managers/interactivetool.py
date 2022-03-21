@@ -118,7 +118,6 @@ class InteractiveToolSqlite:
                 c = conn.cursor()
                 try:
                     # Delete entry
-                    # NB: This does not invalidate in-memory caches used by uwsgi (if any)
                     c.execute(delete, tuple(value_list))
                 except Exception as e:
                     log.debug("Error removing entry (%s): %s", delete, e)
@@ -286,6 +285,8 @@ class InteractiveToolManager:
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
+            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
+                request_host = self.app.config.interactivetools_proxy_host
             protocol = trans.request.host_url.split("//", 1)[0]
             if entry_point.requires_domain:
                 rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"

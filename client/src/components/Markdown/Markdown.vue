@@ -5,7 +5,7 @@
             <div>
                 <b-button
                     v-if="effectiveExportLink"
-                    class="float-right"
+                    class="float-right markdown-pdf-export"
                     title="Download PDF"
                     variant="link"
                     role="button"
@@ -15,7 +15,7 @@
                 </b-button>
                 <b-button
                     v-if="!readOnly"
-                    class="float-right"
+                    class="float-right markdown-edit"
                     title="Edit Markdown"
                     variant="link"
                     role="button"

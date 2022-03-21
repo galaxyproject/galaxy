@@ -39,6 +39,7 @@ from galaxy.model.custom_types import (
     TrimmedString,
 )
 from galaxy.model.orm.now import now
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
@@ -182,6 +183,7 @@ class PasswordResetToken(Base, _HasTable):
             self.token = token
         else:
             self.token = unique_id()
+        add_object_to_object_session(self, user)
         self.user = user
         self.expiration_time = now() + timedelta(hours=24)
 
@@ -252,6 +254,7 @@ class UserGroupAssociation(Base, _HasTable):
     group = relationship("Group", back_populates="users")
 
     def __init__(self, user, group):
+        add_object_to_object_session(self, user)
         self.user = user
         self.group = group
 
@@ -268,7 +271,9 @@ class UserRoleAssociation(Base, _HasTable):
     role = relationship("Role", back_populates="users")
 
     def __init__(self, user, role):
+        add_object_to_object_session(self, user)
         self.user = user
+        add_object_to_object_session(self, role)
         self.role = role
 
 
@@ -300,6 +305,7 @@ class RepositoryRoleAssociation(Base, _HasTable):
     role = relationship("Role", back_populates="repositories")
 
     def __init__(self, repository, role):
+        add_object_to_object_session(self, repository)
         self.repository = repository
         self.role = role
 

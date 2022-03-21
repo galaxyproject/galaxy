@@ -160,9 +160,6 @@ class DataMetaFilter(Filter):
             self.column = d_option.column_spec_to_index(self.column)
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
-        log.error(
-            f"data_meta.init: ref_name {self.ref_name} key {self.key} column {self.column} multiple {self.multiple} separator {self.separator}"
-        )
 
     def get_dependency_name(self):
         return self.ref_name

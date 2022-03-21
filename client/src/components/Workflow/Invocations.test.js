@@ -9,10 +9,13 @@ import moment from "moment";
 const localVue = getLocalVue();
 
 describe("Invocations.vue without invocation", () => {
+    let axiosMock;
     let wrapper;
     let propsData;
 
     beforeEach(async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onAny().reply(200, [], { total_matches: "0" });
         propsData = {
             ownerGrid: false,
         };
@@ -20,6 +23,10 @@ describe("Invocations.vue without invocation", () => {
             propsData,
             localVue,
         });
+    });
+
+    afterEach(() => {
+        axiosMock.reset();
     });
 
     it("title should be shown", async () => {
@@ -38,7 +45,9 @@ describe("Invocations.vue with invocation", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/invocations").reply(200, [mockInvocationData], { total_matches: "1" });
+        axiosMock
+            .onGet("/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
+            .reply(200, [mockInvocationData], { total_matches: "1" });
         propsData = {
             ownerGrid: false,
             loading: false,
@@ -50,6 +59,9 @@ describe("Invocations.vue with invocation", () => {
                 getWorkflowByInstanceId: (state) => (id) => {
                     return { id: "workflowId" };
                 },
+                getHistoryById: (state) => (id) => {
+                    return { id: "historyId" };
+                },
                 getHistoryNameById: () => () => "history name",
             },
             stubs: {
@@ -59,6 +71,10 @@ describe("Invocations.vue with invocation", () => {
             },
             localVue,
         });
+    });
+
+    afterEach(() => {
+        axiosMock.reset();
     });
 
     it("renders one row", async () => {

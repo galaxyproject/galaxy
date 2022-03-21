@@ -54,7 +54,7 @@ class Download:
             try:
                 download_to_file(download_url, file_path, chunk_size=basic_util.CHUNK_SIZE)
             except Exception as e:
-                err_msg = f"Error downloading from URL {str(download_url)} : {str(e)}"
+                err_msg = f"Error downloading from URL {download_url} : {e}"
                 raise Exception(err_msg)
 
         if "sha256sum" in checksums or "#sha256#" in download_url:
@@ -174,7 +174,7 @@ class AssertDirectoryExecutable(RecipeStep):
             full_path = os.path.join(current_dir, action_dict["full_path"])
         if not self.assert_directory_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = f"The path {str(full_path)} is not a directory or is not executable by the owner."
+            error_message = f"The path {full_path} is not a directory or is not executable by the owner."
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
                 self.app, tool_dependency, status=status, error_message=error_message
             )
@@ -229,7 +229,7 @@ class AssertDirectoryExists(RecipeStep):
             full_path = os.path.join(current_dir, action_dict["full_path"])
         if not self.assert_directory_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = f"The path {str(full_path)} is not a directory or does not exist."
+            error_message = f"The path {full_path} is not a directory or does not exist."
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
                 self.app, tool_dependency, status=status, error_message=error_message
             )
@@ -287,7 +287,7 @@ class AssertFileExecutable(RecipeStep):
             full_path = os.path.join(current_dir, action_dict["full_path"])
         if not self.assert_file_executable(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = f"The path {str(full_path)} is not a file or is not executable by the owner."
+            error_message = f"The path {full_path} is not a file or is not executable by the owner."
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
                 self.app, tool_dependency, status=status, error_message=error_message
             )
@@ -342,7 +342,7 @@ class AssertFileExists(RecipeStep):
             full_path = os.path.join(current_dir, action_dict["full_path"])
         if not self.assert_file_exists(full_path=full_path):
             status = self.app.install_model.ToolDependency.installation_status.ERROR
-            error_message = f"The path {str(full_path)} is not a file or does not exist."
+            error_message = f"The path {full_path} is not a file or does not exist."
             tool_dependency = tool_dependency_util.set_tool_dependency_attributes(
                 self.app, tool_dependency, status=status, error_message=error_message
             )
@@ -1570,36 +1570,28 @@ class SetupRubyEnvironment(Download, RecipeStep):
                         gem_parameters = ""
                     if os.path.isfile(gem):
                         # we assume a local shipped gem file
-                        cmd = """PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local {} {}""".format(
-                            gem, gem_parameters
-                        )
+                        cmd = f"""PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                gem install --local {gem} {gem_parameters}"""
                     elif gem.find("://") != -1:
                         # We assume a URL to a gem file.
                         url = gem
                         gem_name = url.split("/")[-1]
                         checksums = ruby_package_tup_dict.get("checksums", {})
                         self.url_download(work_dir, gem_name, url, extract=False, checksums=checksums)
-                        cmd = """PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install --local {} {}""".format(
-                            gem_name, gem_parameters
-                        )
+                        cmd = f"""PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                gem install --local {gem_name} {gem_parameters}"""
                     else:
                         # gem file from rubygems.org with or without version number
                         if gem_version:
                             # Specific ruby gem version was requested.
                             # Use raw strings so that python won't automatically unescape the quotes before passing the command
                             # to subprocess.Popen.
-                            cmd = r"""PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install {} --version "={}" {}""".format(
-                                gem, gem_version, gem_parameters
-                            )
+                            cmd = rf"""PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                gem install {gem} --version "={gem_version}" {gem_parameters}"""
                         else:
                             # no version number given
-                            cmd = """PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
-                                gem install {} {}""".format(
-                                gem, gem_parameters
-                            )
+                            cmd = f"""PATH=$PATH:$RUBY_HOME/bin; export PATH; GEM_HOME=$INSTALL_DIR; export GEM_HOME;
+                                gem install {gem} {gem_parameters}"""
                     cmd = install_environment.build_command(basic_util.evaluate_template(cmd, install_environment))
                     return_code = install_environment.handle_command(
                         tool_dependency=tool_dependency, cmd=cmd, return_output=False, job_name=package_name
@@ -1869,7 +1861,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         # and well defined behavior in bash/zsh.
         activate_command = f"POSIXLY_CORRECT=1; . {os.path.join(venv_directory, 'bin', 'activate')}"
         if action_dict["use_requirements_file"]:
-            install_command = "python '%s' install -r '%s' --log '%s'" % (
+            install_command = "python '{}' install -r '{}' --log '{}'".format(
                 os.path.join(venv_directory, "bin", "pip"),
                 requirements_path,
                 os.path.join(install_environment.install_dir, "pip_install.log"),
@@ -1883,7 +1875,7 @@ class SetupVirtualEnv(Download, RecipeStep):
                         break
                     line = line.strip()
                     if line:
-                        line_install_command = "python '%s' install %s --log '%s'" % (
+                        line_install_command = "python '{}' install {} --log '{}'".format(
                             os.path.join(venv_directory, "bin", "pip"),
                             line,
                             os.path.join(install_environment.install_dir, "pip_install_%s.log" % (line)),
@@ -2087,6 +2079,6 @@ class TemplateCommand(RecipeStep):
                 action_dict["language"] = language
                 action_dict["command"] = action_elem_text
         else:
-            log.debug(f"Unsupported template language '{str(language)}'. Not proceeding.")
-            raise Exception(f"Unsupported template language '{str(language)}' in tool dependency definition.")
+            log.debug(f"Unsupported template language '{language}'. Not proceeding.")
+            raise Exception(f"Unsupported template language '{language}' in tool dependency definition.")
         return action_dict

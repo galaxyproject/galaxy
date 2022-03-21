@@ -19,7 +19,7 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
-    eagerload,
+    joinedload,
     undefer,
 )
 
@@ -406,10 +406,10 @@ class HistoryContentsManager(base.SortableManager):
             self._session()
             .query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(undefer("_metadata"))
-            .options(eagerload("dataset.actions"))
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(undefer(component_class._metadata))
+            .options(joinedload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
+            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         return {row.id: row for row in query.all()}
 
@@ -422,9 +422,9 @@ class HistoryContentsManager(base.SortableManager):
             self._session()
             .query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(eagerload("collection"))
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(joinedload(component_class.collection))
+            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.annotations))
         )
 
         # This will conditionally join a potentially costly job_state summary
@@ -432,7 +432,7 @@ class HistoryContentsManager(base.SortableManager):
         # should really be a property of the manager class instance
         if serialization_params and serialization_params.keys:
             if "job_state_summary" in serialization_params.keys:
-                query = query.options(eagerload("job_state_summary"))
+                query = query.options(joinedload(component_class.job_state_summary))
 
         return {row.id: row for row in query.all()}
 

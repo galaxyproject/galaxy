@@ -72,7 +72,6 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2._yaml import ordered_load
-from pkg_resources import resource_string
 from requests.models import Response
 
 from galaxy.tool_util.client.staging import InteractorStaging
@@ -86,18 +85,18 @@ from galaxy.tool_util.verify.wait import wait_on as tool_util_wait_on
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
-    unicodify,
 )
+from galaxy.util.resources import resource_string
 from . import api_asserts
 from .api import ApiTestInteractor
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
+workflow_str = resource_string(__package__, "data/test_workflow_1.ga")
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = unicodify(resource_string(__name__, "data/test_workflow_2.ga"))
+workflow_random_x2_str = resource_string(__package__, "data/test_workflow_2.ga")
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -567,7 +566,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def wait_for_job(self, job_id: str, assert_ok: bool = False, timeout: timeout_type = DEFAULT_TIMEOUT):
         return wait_on_state(
-            lambda: self.get_job_details(job_id), desc="job state", assert_ok=assert_ok, timeout=timeout
+            lambda: self.get_job_details(job_id, full=True), desc="job state", assert_ok=assert_ok, timeout=timeout
         )
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
@@ -923,6 +922,11 @@ class BaseDatasetPopulator(BasePopulator):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def make_public(self, history_id: str) -> dict:
+        sharing_response = self._put(f"histories/{history_id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
     def validate_dataset(self, history_id: str, dataset_id: str) -> Dict[str, Any]:
         url = f"histories/{history_id}/contents/{dataset_id}/validate"
         update_response = self._put(url)
@@ -975,20 +979,19 @@ class BaseDatasetPopulator(BasePopulator):
             assert "job_id" in job_desc
             return self.wait_for_job(job_desc["job_id"])
 
-    def export_url(self, history_id: str, data, api_key: str, check_download: bool = True) -> str:
+    def export_url(self, history_id: str, data, check_download: bool = True) -> str:
         put_response = self.prepare_export(history_id, data)
         response = put_response.json()
         api_asserts.assert_has_keys(response, "download_url")
         download_url = urllib.parse.urljoin(self.galaxy_interactor.api_url, response["download_url"].strip("/"))
 
         if check_download:
-            self.get_export_url(download_url, api_key)
+            self.get_export_url(download_url)
 
         return download_url
 
-    def get_export_url(self, export_url, api_key) -> Response:
-        full_download_url = f"{export_url}?key={api_key}"
-        download_response = self._get(full_download_url)
+    def get_export_url(self, export_url) -> Response:
+        download_response = self._get(export_url)
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
 
@@ -999,6 +1002,7 @@ class BaseDatasetPopulator(BasePopulator):
             files["archive_file"] = archive_file
         import_response = self._post("histories", data=import_data, files=files)
         api_asserts.assert_status_code_is(import_response, 200)
+        return import_response.json()["id"]
 
     def import_history_and_wait_for_name(self, import_data, history_name):
         def history_names():
@@ -1007,7 +1011,8 @@ class BaseDatasetPopulator(BasePopulator):
         import_name = f"imported from archive: {history_name}"
         assert import_name not in history_names()
 
-        self.import_history(import_data)
+        job_id = self.import_history(import_data)
+        self.wait_for_job(job_id, assert_ok=True)
 
         def has_history_with_name():
             histories = history_names()
@@ -1041,14 +1046,13 @@ class BaseDatasetPopulator(BasePopulator):
         contents = contents_response.json()
         return len(contents)
 
-    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, api_key):
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds):
+        # Make history public so we can import by url
+        self.make_public(history_id)
         # Export the history.
-        download_path = self.export_url(history_id, export_kwds, api_key, check_download=True)
+        download_url = self.export_url(history_id, export_kwds, check_download=True)
 
-        # Create download for history
-        full_download_url = urllib.parse.urljoin(download_path, f"?key={api_key}")
-
-        import_data = dict(archive_source=full_download_url, archive_type="url")
+        import_data = dict(archive_source=download_url, archive_type="url")
 
         imported_history_id = self.import_history_and_wait_for_name(import_data, history_name)
 
@@ -1072,6 +1076,36 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
         )
+
+    def new_page(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, Any]:
+        page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
+        page_response.raise_for_status()
+        return page_response.json()
+
+    def new_page_raw(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Response:
+        page_request = self.new_page_payload(slug=slug, title=title, content_format=content_format, content=content)
+        page_response = self._post("pages", page_request, json=True)
+        return page_response
+
+    def new_page_payload(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, str]:
+        if content is None:
+            if content_format == "html":
+                content = "<p>Page!</p>"
+            else:
+                content = "*Page*\n\n"
+        request = dict(
+            slug=slug,
+            title=title,
+            content=content,
+            content_format=content_format,
+        )
+        return request
 
 
 class GalaxyInteractorHttpMixin:
@@ -1130,7 +1164,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def load_workflow_from_resource(self, name: str, filename: Optional[str] = None) -> dict:
         if filename is None:
             filename = f"data/{name}.ga"
-        content = unicodify(resource_string(__name__, filename))
+        content = resource_string(__package__, filename)
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name: str, **create_kwds) -> str:
@@ -2236,12 +2270,13 @@ def wait_on_state(
     def get_state():
         response = state_func()
         assert response.status_code == 200, f"Failed to fetch state update while waiting. [{response.content}]"
-        state = response.json()["state"]
+        state_response = response.json()
+        state = state_response["state"]
         if state in skip_states:
             return None
         else:
             if assert_ok:
-                assert state in ok_states, f"Final state - {state} - not okay."
+                assert state in ok_states, f"Final state - {state} - not okay. Full response: {state_response}"
             return state
 
     if skip_states is None:

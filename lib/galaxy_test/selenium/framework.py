@@ -412,6 +412,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         save_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
+    @retry_assertion_during_transitions
+    def assert_modal_has_text(self, expected_text):
+        modal_element = self.components.workflow_editor.state_modal_body.wait_for_visible()
+        text = modal_element.text
+        assert expected_text in text, f"Failed to find expected text [{expected_text}] in modal text [{text}]"
+
     def workflow_upload_yaml_with_random_name(self, content, **kwds):
         workflow_populator = self.workflow_populator
         name = self._get_random_name()
@@ -712,3 +718,6 @@ class SeleniumSessionWorkflowPopulator(
     def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
         return workflow["id"]
+
+
+__all__ = ("retry_during_transitions",)

@@ -173,12 +173,10 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
         raise exceptions.ItemDeletionException(
-            '%s "%s" is not deleted' % (class_name, getattr(item, "name", id)), type="warning"
+            f'{class_name} "{getattr(item, "name", id)}" is not deleted', type="warning"
         )
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException(
-            '%s "%s" is deleted' % (class_name, getattr(item, "name", id)), type="warning"
-        )
+        raise exceptions.ItemDeletionException(f'{class_name} "{getattr(item, "name", id)}" is deleted', type="warning")
     return item
 
 
@@ -608,8 +606,6 @@ class ModelSerializer(HasAModelManager[T]):
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
 
-    #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(gx_url_for)
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
@@ -635,6 +631,12 @@ class ModelSerializer(HasAModelManager[T]):
         #   inspired by model.dict_{view}_visible_keys
         self.views = {}
         self.default_view = None
+
+    @staticmethod
+    def url_for(*args, context=None, **kwargs):
+        trans = context and context.get("trans")
+        url_for = trans and trans.url_builder or gx_url_for
+        return url_for(*args, **kwargs)
 
     def add_serializers(self):
         """
@@ -760,7 +762,7 @@ class ModelSerializer(HasAModelManager[T]):
         else:
             if keys:
                 all_keys = keys
-            elif default_view:
+            else:
                 all_keys = self._view_to_keys(default_view)
 
         return self.serialize(item, all_keys, **context)
@@ -769,12 +771,14 @@ class ModelSerializer(HasAModelManager[T]):
         """
         Converts a known view into a list of keys.
 
-        :raises ModelSerializingError: if the view is not listed in `self.views`.
+        :raises RequestParameterInvalidException: if the view is not listed in `self.views`.
         """
         if view is None:
             view = self.default_view
         if view not in self.views:
-            raise ModelSerializingError("unknown view", view=view, available_views=self.views)
+            raise exceptions.RequestParameterInvalidException(
+                f"unknown view - {view}", view=view, available_views=self.views
+            )
         return self.views[view][:]
 
 
@@ -793,7 +797,7 @@ class ModelValidator:
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = f"must be a type: {str(types)}"
+            msg = f"must be a type: {types}"
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -1252,7 +1256,7 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
         return True
     if bool_string in ("False", False):
         return False
-    raise ValueError(f"invalid boolean: {str(bool_string)}")
+    raise ValueError(f"invalid boolean: {bool_string}")
 
 
 def raise_filter_err(attr, op, val, msg):

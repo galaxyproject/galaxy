@@ -18,22 +18,7 @@ class PagesTestCase(SeleniumTestCase):
         self.history_panel_wait_for_hid_ok(1)
         self.navigate_to_pages()
         self.screenshot("pages_grid")
-
-        self.components.pages.create.wait_for_and_click()
-        name = self._get_random_name(prefix="page")
-        slug = self._get_random_name(prefix="pageslug")
-        self.tool_set_value("title", name)
-        self.tool_set_value("slug", slug)
-        self.tool_set_value("content_format", "HTML", expected_type="select")
-        self.screenshot("pages_create_form")
-
-        # Sometimes 'submit' button not yet hooked up?
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        self.components.pages.submit.wait_for_and_click()
-
-        self.click_grid_popup_option(name, "Edit content")
-        self.components.pages.editor.wym_iframe.wait_for_visible()
+        name = self.create_page_and_edit(screenshot_name="pages_create_form")
         self.screenshot("pages_editor_new")
         self.driver.switch_to.frame(0)
         try:
@@ -58,7 +43,3 @@ class PagesTestCase(SeleniumTestCase):
         self.navigate_to_pages()
         self.click_grid_popup_option(name, "View")
         self.screenshot("pages_view_simple")
-
-    def navigate_to_pages(self):
-        self.click_masthead_user()  # Open masthead menu
-        self.components.masthead.pages.wait_for_and_click()

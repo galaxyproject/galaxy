@@ -6,12 +6,12 @@ import tempfile
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
 from galaxy.util import unicodify
+from galaxy.util.tool_shed.xml_util import parse_xml
 from tool_shed.util import (
     basic_util,
     hg_util,
     repository_util,
     tool_util,
-    xml_util,
 )
 
 log = logging.getLogger(__name__)
@@ -234,7 +234,7 @@ class ToolValidator(GalaxyToolValidator):
         message = ""
         tmp_tool_config = hg_util.get_named_tmpfile_from_ctx(ctx, ctx_file, work_dir)
         if tmp_tool_config:
-            tool_element, error_message = xml_util.parse_xml(tmp_tool_config)
+            tool_element, error_message = parse_xml(tmp_tool_config)
             if tool_element is None:
                 return tool, message
             # Look for external files required by the tool config.

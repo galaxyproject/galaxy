@@ -118,11 +118,9 @@ def generate_message_for_invalid_tools(
                 sample_ext = f"{missing_file}.sample"
             else:
                 sample_ext = missing_file
-            correction_msg = "This file refers to a missing file %s%s%s.  " % (bold_start, str(missing_file), bold_end)
-            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % (
-                bold_start,
-                sample_ext,
-                bold_end,
+            correction_msg = f"This file refers to a missing file {bold_start}{missing_file}{bold_end}.  "
+            correction_msg += (
+                f"Upload a file named {bold_start}{sample_ext}{bold_end} to the repository to correct this error."
             )
         else:
             if as_html:
@@ -248,3 +246,17 @@ def panel_entry_per_tool(tool_section_dict):
         if k not in ["id", "version", "name"]:
             return True
     return False
+
+
+__all__ = (
+    "build_shed_tool_conf_select_field",
+    "build_tool_panel_section_select_field",
+    "copy_sample_file",
+    "copy_sample_files",
+    "generate_message_for_invalid_tools",
+    "get_tool_path_install_dir",
+    "handle_missing_index_file",
+    "is_data_index_sample_file",
+    "new_state",
+    "panel_entry_per_tool",
+)

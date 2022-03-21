@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import random
+import re
 import socket
 import string
 import time
@@ -17,6 +18,7 @@ from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
+from apispec import APISpec
 from babel import Locale
 from babel.support import Translations
 from sqlalchemy import (
@@ -45,7 +47,6 @@ from galaxy.web.framework import (
     helpers,
     url_for,
 )
-from galaxy.web_stack import get_app_kwds
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -100,6 +101,55 @@ class WebApplication(base.WebApplication):
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
         # Security helper
         self.security = galaxy_app.security
+
+    def build_apispec(self):
+        """
+        Traverse all route paths starting with "api" and create an APISpec instance.
+        """
+        # API specification builder
+        apispec = APISpec(
+            title=self.name, version="0.0.0-unsupported", openapi_version="3.0.2"  # galaxy_app.config.version_major,
+        )
+        RE_URL = re.compile(
+            r"""
+            (?::\(|{)
+                (\w*)
+                (?::.*)?
+            (?:\)|})""",
+            re.X,
+        )
+        for rule in self.mapper.matchlist:
+            if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
+                continue
+            # Try to replace routes various ways to encode variables with simple swagger {form}
+            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            controller = rule.defaults.get("controller", "")
+            action = rule.defaults.get("action", "")
+            # Get the list of methods for the route
+            methods = []
+            if rule.conditions:
+                m = rule.conditions.get("method", [])
+                methods = type(m) is str and [m] or m
+            # Find the controller class
+            if controller not in self.api_controllers:
+                log.warning("No controller class found for '%s' while building API spec", controller)
+                continue
+            controller_class = self.api_controllers[controller]
+            if not hasattr(controller_class, action):
+                log.warning("No action found for '%s' in class '%s' while building API spec", action, controller_class)
+                continue
+            action_method = getattr(controller_class, action)
+            operations = {}
+            # Add methods that have routes but are not documents
+            for method in methods:
+                if method.lower() not in operations:
+                    operations[method.lower()] = {
+                        "description": f"This route has not yet been ported to FastAPI. The documentation may not be complete.\n{action_method.__doc__}",
+                        "tags": ["undocumented"],
+                    }
+            # Store the swagger path
+            apispec.path(path=swagger_path, operations=operations)
+        return apispec
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
@@ -203,7 +253,8 @@ def config_allows_origin(origin_raw, config):
 
 
 def url_builder(*args, **kwargs) -> str:
-    """Wrapper around the uWSGI version of the function for reversing URLs."""
+    """Wrapper around the WSGI version of the function for reversing URLs."""
+    kwargs.update(kwargs.pop("query_params", {}))
     return url_for(*args, **kwargs)
 
 
@@ -1033,17 +1084,7 @@ def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
 
-def build_native_uwsgi_app(paste_factory, config_section):
-    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
-
-    In particular these are useful with --yaml or --json for config."""
-    # TODO: just move this to a classmethod on stack?
-    app_kwds = get_app_kwds(config_section)
-    uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
-    return uwsgi_app
-
-
-def build_url_map(app, global_conf, local_conf):
+def build_url_map(app, global_conf, **local_conf):
     from paste.urlmap import URLMap
 
     from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
@@ -1075,4 +1116,4 @@ def build_url_map(app, global_conf, local_conf):
 
     if "static_local_dir" in conf:
         urlmap["/static_local"] = Static(conf["static_local_dir"], cache_time)
-    return urlmap, cache_time
+    return urlmap

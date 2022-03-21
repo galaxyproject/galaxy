@@ -55,7 +55,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
-    expose_api_raw,
+    expose_api_raw_anonymous_and_sessionless,
 )
 from galaxy.webapps.galaxy.api.common import (
     parse_serialization_params,
@@ -751,7 +751,7 @@ class HistoriesController(BaseGalaxyAPIController):
             trans.response.status = 202
         return export_result
 
-    @expose_api_raw
+    @expose_api_raw_anonymous_and_sessionless
     def archive_download(self, trans, id, jeha_id, **kwds):
         """
         GET /api/histories/{id}/exports/{jeha_id}

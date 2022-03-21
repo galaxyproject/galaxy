@@ -13,6 +13,7 @@ import galaxy.model.mapping
 import galaxy.webapps.base.webapp
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
@@ -67,6 +68,8 @@ def app_factory(global_conf, load_app_kwds=None, **kwargs):
     # Wrap the webapp in some useful middleware
     if kwargs.get("middleware", True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
+    if asbool(kwargs.get("static_enabled", True)):
+        webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map, args=(global_conf,), kwargs=kwargs)
     return webapp
 
 
@@ -121,7 +124,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     return app
-
-
-def uwsgi_app():
-    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "reports")

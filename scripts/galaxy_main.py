@@ -16,11 +16,6 @@ defaults logging to a single file with the following:
 
 galaxy-main -d --server-name handler0 --daemon-log-file=handler0-daemon.log --pid-file handler0.pid --log-file handler0.log
 
-This can also be used to start Galaxy as a uWSGI mule, e.g. for job handling:
-
-uwsgi ... --py-call-osafterfork --mule=lib/galaxy/main.py --mule=lib/galaxy/main.py --farm=job-handlers:1,2
-
-The --py-call-osafterfork allows for proper shutdown on SIGTERM/SIGINT.
 """
 import functools
 import logging
@@ -36,11 +31,6 @@ try:
     from daemonize import Daemonize
 except ImportError:
     Daemonize = None
-
-try:
-    import uwsgi
-except ImportError:
-    uwsgi = None
 
 log = logging.getLogger(__name__)
 
@@ -72,9 +62,6 @@ REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemon
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
 DESCRIPTION = "Daemonized entry point for Galaxy."
-
-SHUTDOWN_MSG = "__SHUTDOWN__"
-UWSGI_FARMS_VAR = "_GALAXY_UWSGI_FARM_NAMES"
 
 
 exit = threading.Event()
@@ -109,13 +96,6 @@ def load_galaxy_app(config_builder, config_env=False, log=None, attach_to_pools=
 
 def handle_signal(signum, frame):
     log.info("Received signal %d, exiting", signum)
-    if uwsgi and "mule_id" in dir(uwsgi) and uwsgi.mule_id() > 0:
-        farms = os.environ.get(UWSGI_FARMS_VAR, None)
-        if farms:
-            for farm in farms.split(","):
-                uwsgi.farm_msg(farm, SHUTDOWN_MSG)
-        else:
-            uwsgi.mule_msg(SHUTDOWN_MSG, uwsgi.mule_id())
     exit.set()
 
 

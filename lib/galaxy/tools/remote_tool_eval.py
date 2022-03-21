@@ -105,8 +105,8 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
     )
     tool_evaluator.set_compute_environment(compute_environment=SharedComputeEnvironment(job_io=job_io, job=job_io.job))
     with open(os.path.join(WORKING_DIRECTORY, "tool_script.sh"), "a") as out:
-        command_line, extra_filenames, environment_variables = tool_evaluator.build()
-        out.write(command_line)
+        command_line, version_command_line, extra_filenames, environment_variables = tool_evaluator.build()
+        out.write(f'{version_command_line or ""}{command_line}')
 
 
 if __name__ == "__main__":

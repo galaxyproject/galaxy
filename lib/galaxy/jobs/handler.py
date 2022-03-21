@@ -38,7 +38,6 @@ from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
-from galaxy.web_stack.message import JobHandlerMessage
 
 log = get_logger(__name__)
 
@@ -248,9 +247,6 @@ class JobHandlerQueue(Monitors):
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
-        # The stack code is initialized in the application
-        JobHandlerMessage().bind_default_handler(self, "_handle_message")
-        self.app.application_stack.register_message_handler(self._handle_message, name=JobHandlerMessage.target)
         log.info("job handler queue started")
 
     def job_wrapper(self, job, use_persisted_destination=False):
@@ -1047,7 +1043,6 @@ class JobHandlerQueue(Monitors):
             if not self.app.config.track_jobs_in_database:
                 self.queue.put(self.STOP_SIGNAL)
             # A message could still be received while shutting down, should be ok since they will be picked up on next startup.
-            self.app.application_stack.deregister_message_handler(name=JobHandlerMessage.target)
             self.sleeper.wake()
             self.shutdown_monitor()
             log.info("job handler queue stopped")

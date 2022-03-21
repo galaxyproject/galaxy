@@ -5,7 +5,8 @@
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
-import createPersistedState from "vuex-persistedstate";
+import VuexPersistence from "vuex-persist";
+import localForage from "localforage";
 
 import config from "config";
 
@@ -35,19 +36,28 @@ import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 
 Vue.use(Vuex);
 
-const panelsState = createPersistedState({
-    paths: ["panels"],
+const galaxyStorage = localForage.createInstance({});
+galaxyStorage.config({
+    driver: [localForage.INDEXEDDB, localForage.LOCALSTORAGE],
+    name: "galaxyIndexedDB",
+    version: 1.0,
+    storeName: "galaxyStore",
+});
+
+const panelsPersistence = new VuexPersistence({
+    storage: galaxyStorage,
+    asyncStorage: true,
+    modules: ["panels"],
 });
 
 export function createStore() {
     const storeConfig = {
-        plugins: [createCache(), panelsState],
+        plugins: [createCache(), panelsPersistence.plugin],
         modules: {
             user: userStore,
             config: configStore,
             betaHistory: betaHistoryStore,
             panels: panelStore,
-
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,
             histories: historyStore,

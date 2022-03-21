@@ -6006,7 +6006,7 @@ will contain the tool parameter inputs.
 ```xml
 <configfiles>
     <inputs name="inputs" />
-<configfiles>
+</configfiles>
 ```
 
 The following will instead write the inputs to the tool's working directory with
@@ -6015,7 +6015,7 @@ the specified name (i.e. ``inputs.json``).
 ```xml
 <configfiles>
     <inputs name="inputs" filename="inputs.json" />
-<configfiles>
+</configfiles>
 ```
 
 A contrived example of a tool that uses this is the test tool

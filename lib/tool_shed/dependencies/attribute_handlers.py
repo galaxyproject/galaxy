@@ -121,9 +121,9 @@ class RepositoryDependencyAttributeHandler:
                     error_message = "Invalid latest installable changeset_revision %s " % str(
                         lastest_installable_changeset_revision
                     )
-                    error_message += f"retrieved for repository {str(name)} owned by {str(owner)}.  "
+                    error_message += f"retrieved for repository {name} owned by {owner}.  "
             else:
-                error_message = f"Unable to locate repository with name {str(name)} and owner {str(owner)}.  "
+                error_message = f"Unable to locate repository with name {name} and owner {owner}.  "
         return altered, elem, error_message
 
     def handle_sub_elem(self, parent_elem, elem_index, elem):
@@ -141,10 +141,7 @@ class RepositoryDependencyAttributeHandler:
             if sub_elem.tag == "repository":
                 altered, new_sub_elem, message = self.handle_elem(sub_elem)
                 if message:
-                    error_message += "The %s file contains an invalid <repository> tag.  %s" % (
-                        TOOL_DEPENDENCY_DEFINITION_FILENAME,
-                        message,
-                    )
+                    error_message += f"The {TOOL_DEPENDENCY_DEFINITION_FILENAME} file contains an invalid <repository> tag.  {message}"
                 if altered:
                     if not sub_elem_altered:
                         sub_elem_altered = True

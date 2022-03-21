@@ -25,6 +25,7 @@ from galaxy.web.framework.middleware.batch import BatchMiddleware
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
+from galaxy.webapps.base.webapp import build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 log = logging.getLogger(__name__)
@@ -259,18 +260,13 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     # ==== Done
     # Indicate that all configuration settings have been provided
     webapp.finalize_config()
+    app.api_spec = webapp.build_apispec()
 
     # Wrap the webapp in some useful middleware
     if kwargs.get("middleware", True):
         webapp = wrap_in_middleware(webapp, global_conf, app.application_stack, **kwargs)
     if asbool(kwargs.get("static_enabled", True)):
-        webapp = wrap_if_allowed(
-            webapp,
-            app.application_stack,
-            wrap_in_static,
-            args=(global_conf,),
-            kwargs=dict(plugin_frameworks=[app.visualizations_registry], **kwargs),
-        )
+        webapp = wrap_if_allowed(webapp, app.application_stack, build_url_map, args=(global_conf,), kwargs=kwargs)
     app.application_stack.register_postfork_function(postfork_setup)
 
     for th in threading.enumerate():
@@ -278,14 +274,6 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
             log.debug("Prior to webapp return, Galaxy thread %s is alive.", th)
     # Return
     return webapp, app
-
-
-def uwsgi_app():
-    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "galaxy")
-
-
-# For backwards compatibility
-uwsgi_app_factory = uwsgi_app
 
 
 def postfork_setup():
@@ -378,7 +366,7 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
-        "history_contents_metadata_file",
+        "get_metadata_file",
         "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
         controller="datasets",
         action="get_metadata_file",
@@ -1837,6 +1825,8 @@ def populate_api_routes(webapp, app):
         "create", "/api/metrics", controller="metrics", action="create", conditions=dict(method=["POST"])
     )
 
+    webapp.mapper.connect("docs", "/api/docs", controller="docs", action="index", conditions={"method": "GET"})
+
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
     # Not just using map.resources because actions should be based on name not id
@@ -1999,7 +1989,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         TusMiddleware,
         kwargs={
             "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
-            "tmp_dir": application_stack.config.new_file_path,
+            "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )
@@ -2010,8 +2000,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
         app = wrap_if_allowed(app, stack, SQLDebugMiddleware, args=(webapp, {}))
     return app
-
-
-def wrap_in_static(app, global_conf, plugin_frameworks=None, **local_conf):
-    urlmap, cache_time = galaxy.webapps.base.webapp.build_url_map(app, global_conf, local_conf)
-    return urlmap

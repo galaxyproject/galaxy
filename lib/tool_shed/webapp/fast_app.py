@@ -1,5 +1,5 @@
+from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -20,3 +20,9 @@ def initialize_fast_app(gx_webapp):
     wsgi_handler = WSGIMiddleware(gx_webapp)
     app.mount("/", wsgi_handler)
     return app
+
+
+__all__ = (
+    "add_request_id_middleware",
+    "initialize_fast_app",
+)
