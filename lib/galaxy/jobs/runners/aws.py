@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import time
+import re
 from queue import Empty
 from typing import List
 
@@ -215,6 +216,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         queue_name = destination_params.get("job_queue").rsplit("/", 1)[-1]
 
         jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
+        jd_name = re.sub(r'[^-_A-Za-z0-9]', '-', jd_name)
         res = self._batch_client.describe_job_definitions(jobDefinitionName=jd_name, status="ACTIVE")
         if not res["jobDefinitions"]:
             jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
