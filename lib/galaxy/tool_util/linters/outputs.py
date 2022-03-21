@@ -63,6 +63,8 @@ def __check_format(node, lint_ctx, allow_ext=False):
         lint_ctx.warn(f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext", node=node)
     if "format_source" in node.attrib:
         return True
+    if node.find(".//action[@type='format']") is not None:
+        return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
     fmt = None
     if allow_ext:

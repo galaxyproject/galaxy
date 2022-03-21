@@ -442,6 +442,25 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 </tool>
 """
 
+# check that setting format with actions is supported
+OUTPUTS_FORMAT_ACTION = """
+<tool>
+    <outputs>
+        <data name="output">
+            <actions>
+                <conditional name="library.type">
+                    <when value="paired">
+                        <action type="format">
+                            <option type="from_param" name="library.input_2" param_attribute="ext" />
+                        </action>
+                    </when>
+                </conditional>
+            </actions>
+        </data>
+    </outputs>
+</tool>
+"""
+
 # check that linter does not complain about missing format if from_tool_provided_metadata is used
 OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
 <tool>
@@ -1099,6 +1118,15 @@ def test_outputs_collection_format_source(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_outputs_format_action(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_ACTION)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
