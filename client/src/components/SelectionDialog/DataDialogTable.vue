@@ -35,9 +35,7 @@
                         </div>
                         <div v-else>
                             <font-awesome-icon icon="folder" />
-                            <span :title="`label-${data.item.labelTitle}`">{{
-                                data.value ? data.value : "-"
-                            }}</span>
+                            <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
                     </span>
                 </div>
