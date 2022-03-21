@@ -112,21 +112,19 @@ class LibrariesService(ServiceBase):
     def update(self, trans, id: EncodedDatabaseIdField, payload: UpdateLibraryPayload) -> LibrarySummary:
         """Updates the library defined by an ``encoded_id`` with the data in the payload.
 
-        .. note:: Currently, only admin users can update libraries. Also the library must not be `deleted`.
-
-         :param  id:      the encoded id of the library
-         :type   id:      an encoded id string
-         :param  payload: dictionary structure containing::
-             :param name:         new library's name, cannot be empty
-             :type  name:         str
-             :param description:  new library's description
-             :type  description:  str
-             :param synopsis:     new library's synopsis
-             :type  synopsis:     str
-         :type   payload: dict
-         :returns:   detailed library information
-         :rtype:     dict
-         :raises: RequestParameterMissingException
+        :param  id:      the encoded id of the library
+        :type   id:      an encoded id string
+        :param  payload: dictionary structure containing::
+            :param name:         new library's name, cannot be empty
+            :type  name:         str
+            :param description:  new library's description
+            :type  description:  str
+            :param synopsis:     new library's synopsis
+            :type  synopsis:     str
+        :type   payload: dict
+        :returns:   detailed library information
+        :rtype:     dict
+        :raises: RequestParameterMissingException
         """
         library = self.library_manager.get(trans, trans.security.decode_id(id, object_name="library"))
         name = payload.name

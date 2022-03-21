@@ -105,10 +105,9 @@ class FastAPILibraries:
         """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
         return self.service.create(trans, payload)
 
-    @router.put(
+    @router.patch(
         "/api/libraries/{id}",
         summary="Updates the information of an existing library.",
-        require_admin=True,
     )
     def update(
         self,
@@ -116,8 +115,9 @@ class FastAPILibraries:
         id: EncodedDatabaseIdField = LibraryIdPathParam,
         payload: UpdateLibraryPayload = Body(...),
     ) -> LibrarySummary:
-        """Updates the information of an existing library.
-        Currently, only admin users can update libraries."""
+        """
+        Updates the information of an existing library.
+        """
         return self.service.update(trans, id, payload)
 
     @router.delete(

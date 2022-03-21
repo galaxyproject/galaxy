@@ -257,6 +257,10 @@ class Router(InferringRouter):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
         return super().get(*args, **self._handle_galaxy_kwd(kwd))
 
+    def patch(self, *args, **kwd):
+        """Extend FastAPI.put to accept a require_admin Galaxy flag."""
+        return super().patch(*args, **self._handle_galaxy_kwd(kwd))
+
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
         return super().put(*args, **self._handle_galaxy_kwd(kwd))
