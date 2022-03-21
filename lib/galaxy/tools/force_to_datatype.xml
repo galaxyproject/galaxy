@@ -1,0 +1,27 @@
+<tool name="__FORCE_TO_DATATYPE__" id="__FORCE_TO_DATATYPE__"
+      version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1"><![CDATA[
+        {
+            var input1 = $job.input1;
+            return {'output': input1.src};
+        }
+    ]]></expression>
+    <inputs>
+        <param type="data" label="Source dataset." name="input1" />
+        <param type="text" label="Target data type." name="target_type" />
+    </inputs>
+    <outputs>
+        <output type="data" name="target_dataset" from="output" format_from="target_type" />
+    </outputs>
+    <help>
+    </help>
+    <tests>
+        <test>
+            <param name="input1" value="1.fasta" ftype="txt" />
+            <param name="target_type" value="fasta" />
+            <output name="target_dataset" file="1.fasta" ftype="fasta">
+                <metadata name="sequences" value="1"/>
+            </output>
+        </test>
+    </tests>
+</tool> 
