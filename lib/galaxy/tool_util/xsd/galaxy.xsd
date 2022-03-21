@@ -4918,6 +4918,11 @@ elements. Note that the format specified here is ignored for discovered data set
         <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="format_from" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the parameter value specified by the tool input with the given name.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="label" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
