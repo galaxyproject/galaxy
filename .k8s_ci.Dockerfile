@@ -191,4 +191,4 @@ ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 ENTRYPOINT ["tini", "--"]
 
 # [optional] to run:
-CMD uwsgi --yaml config/galaxy.yml
+CMD galaxy
