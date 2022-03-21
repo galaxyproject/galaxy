@@ -1,8 +1,15 @@
+from typing import Optional
+
 from ._util import _assert_number
 
 
 def assert_has_size(
-    output_bytes, value: int = None, delta: int = 0, min: int = None, max: int = None, negate: bool = False
+    output_bytes,
+    value: Optional[int] = None,
+    delta: int = 0,
+    min: Optional[int] = None,
+    max: Optional[int] = None,
+    negate: bool = False,
 ):
     """
     Asserts the specified output has a size of the specified value,

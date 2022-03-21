@@ -8,7 +8,10 @@ import shlex
 import shutil
 import sys
 import tempfile
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 import packaging.version
 
@@ -305,7 +308,7 @@ class CondaContext(installable.InstallableContext):
             stdout_path = "/dev/null"
         return self.exec_command("clean", clean_args, stdout_path=stdout_path)
 
-    def exec_search(self, args: List[str], json: bool = False, offline: bool = False, platform: str = None):
+    def exec_search(self, args: List[str], json: bool = False, offline: bool = False, platform: Optional[str] = None):
         """
         Search conda channels for a package
 
@@ -513,7 +516,9 @@ def cleanup_failed_install(conda_target, conda_context=None):
     cleanup_failed_install_of_environment(conda_target.install_environment, conda_context=conda_context)
 
 
-def best_search_result(conda_target, conda_context: CondaContext, offline: bool = False, platform: str = None):
+def best_search_result(
+    conda_target, conda_context: CondaContext, offline: bool = False, platform: Optional[str] = None
+):
     """Find best "conda search" result for specified target.
 
     Return ``None`` if no results match.

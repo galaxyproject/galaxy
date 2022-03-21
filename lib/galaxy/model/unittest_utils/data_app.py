@@ -8,6 +8,7 @@ galaxy-data.
 import os
 import shutil
 import tempfile
+from typing import Optional
 
 from galaxy import (
     model,
@@ -76,7 +77,7 @@ class GalaxyDataTestApp:
     model: GalaxyModelMapping
     security_agent: GalaxyRBACAgent
 
-    def __init__(self, config: GalaxyDataTestConfig = None, **kwd):
+    def __init__(self, config: Optional[GalaxyDataTestConfig] = None, **kwd):
         config = config or GalaxyDataTestConfig(**kwd)
         self.config = config
         self.security = config.security
