@@ -34,7 +34,6 @@ Some important benefits of using Galaxy InteractiveTools
 - If you accidentally close the **InteractiveTool browser window**, you can **regain access** by selecting from a **list of active InteractiveTools**
 - A single **InteractiveTool** can **grant access** to **multiple running applications, servers, and interfaces**
 - **InteractiveTools** can be **added to** Galaxy **Workflows**
-- **Native, out-of-the box support for InteractiveTools** in Galaxy via uWSGI proxying
 - **InteractiveTools** are **bonafide Galaxy Tools**; just specify **tool_type as "interactive"** and list the ports you want to expose
 - **InteractiveTools** can be **added** to and **installed from the ToolShed**.
 - **R Shiny apps**, **Javascript-based VNC** access to desktop environments, **genome-browsers-in-a-box**, **interactive notebook environments**, etc, are all possible with **InteractiveTools**
