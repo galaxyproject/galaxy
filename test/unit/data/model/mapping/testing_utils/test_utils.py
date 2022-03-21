@@ -20,12 +20,12 @@ from sqlalchemy.orm import (
 )
 
 from galaxy.model import _HasTable
-from .common import (
+from . import (
     collection_consists_of_objects,
     has_index,
     has_unique_constraint,
 )
-from ..common import persist
+from ...common import persist
 
 
 def test_has_index(session):

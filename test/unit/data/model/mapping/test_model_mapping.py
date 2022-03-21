@@ -75,7 +75,7 @@ from sqlalchemy import (
 from galaxy import model
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from .common import (
+from .testing_utils import (
     AbstractBaseTest,
     collection_consists_of_objects,
     get_unique_value,

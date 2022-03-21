@@ -10,7 +10,7 @@ from datetime import (
 import pytest
 
 from galaxy.model import tool_shed_install as model
-from .common import (
+from .testing_utils import (
     AbstractBaseTest,
     collection_consists_of_objects,
 )
