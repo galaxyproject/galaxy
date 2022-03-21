@@ -144,7 +144,6 @@
                         [_('Search'), app.config.get( "search_url", "http://galaxyproject.org/search/" ), "_blank" ],
                         [_('Mailing Lists'), app.config.get( "mailing_lists_url", "https://galaxyproject.org/mailing-lists" ), "_blank" ],
                         [_('Videos'), app.config.get( "screencasts_url", "https://vimeo.com/galaxyproject" ), "_blank" ],
-                        [_('Wiki'), app.config.get( "wiki_url", "http://galaxyproject.org/" ), "_blank" ],
                         [_('How to Cite Tool Shed'), app.config.get( "citation_url", "https://galaxyproject.org/citing-galaxy" ), "_blank" ]
                     ] )
                     tab( "help", _("Help"), None, menu_options=menu_options )
