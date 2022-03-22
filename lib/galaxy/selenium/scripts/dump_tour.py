@@ -27,22 +27,21 @@ def main(argv=None):
     driver_wrapper.run_tour(args.tour, tour_callback=callback)
 
 
-class DumpTourCallback(object):
-
+class DumpTourCallback:
     def __init__(self, driver_wrapper, output):
         self.driver_wrapper = driver_wrapper
         self.output = output
 
     def handle_step(self, step, step_index):
-        time.sleep(.5)
+        time.sleep(0.5)
         self.driver_wrapper.driver.save_screenshot("%s/%i.png" % (self.output, step_index))
-        time.sleep(.5)
+        time.sleep(0.5)
 
 
 def _arg_parser():
     parser = argparse.ArgumentParser(description=DESCRIPTION)
-    parser.add_argument('tour', metavar='TOUR', help='tour to walk')
-    parser.add_argument('-o', '--output', default="tour_dump_TIMESTAMP", help='directory to dump tour to')
+    parser.add_argument("tour", metavar="TOUR", help="tour to walk")
+    parser.add_argument("-o", "--output", default="tour_dump_TIMESTAMP", help="directory to dump tour to")
     parser = cli.add_selenium_arguments(parser)
     return parser
 

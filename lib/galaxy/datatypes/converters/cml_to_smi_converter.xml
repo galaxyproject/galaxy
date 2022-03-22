@@ -41,6 +41,17 @@
     <outputs>
         <data name="output" format="smi"/>
     </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="cml" value="drugbank_drugs.cml"/>
+            <output name="output" ftype="smi">
+                <assert_contents>
+                    <has_text text="O=C(N1C(CCC1)"/>
+                    <has_text text="Desmopressin"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
     <help>
 <![CDATA[
 ]]>

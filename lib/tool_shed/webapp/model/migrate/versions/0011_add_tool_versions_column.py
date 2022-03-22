@@ -1,13 +1,16 @@
 """
 Migration script to add the tool_versions column to the repository_metadata table.
 """
-from __future__ import print_function
 
 import datetime
 import logging
 import sys
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType

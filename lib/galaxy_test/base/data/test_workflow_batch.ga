@@ -15,7 +15,7 @@
                     "name": "Input Dataset"
                 }
             ], 
-            "label": null, 
+            "label": "coolinput",
             "name": "Input dataset", 
             "outputs": [], 
             "position": {

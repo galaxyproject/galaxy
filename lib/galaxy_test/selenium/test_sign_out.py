@@ -1,6 +1,6 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -18,4 +18,5 @@ class SignOutTestCase(SeleniumTestCase):
         self.assertTrue(email == new_email)
         self.components.preferences.sign_out.wait_for_and_click()
         self.components.sign_out.sign_out_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
         assert not self.is_logged_in()

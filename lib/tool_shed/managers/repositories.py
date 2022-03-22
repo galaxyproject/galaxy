@@ -3,22 +3,28 @@ Manager and Serializer for TS repositories.
 """
 import logging
 
-from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
+from sqlalchemy.orm.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
 
-from galaxy.exceptions import (InconsistentDatabase, InternalServerError,
-    RequestParameterInvalidException)
+from galaxy.exceptions import (
+    InconsistentDatabase,
+    InternalServerError,
+    RequestParameterInvalidException,
+)
 
 log = logging.getLogger(__name__)
 
 
 # =============================================================================
-class RepoManager(object):
+class RepoManager:
     """
     Interface/service object for interacting with TS repositories.
     """
 
     def __init__(self, *args, **kwargs):
-        super(RepoManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get(self, trans, decoded_repo_id):
         """
@@ -28,16 +34,20 @@ class RepoManager(object):
         :type   decoded_repo_id:       int
 
         :returns:   the requested repo
-        :rtype:     Repository
+        :rtype:     tool_shed.webapp.model.Repository
         """
         try:
-            repo = trans.sa_session.query(trans.app.model.Repository).filter(trans.app.model.Repository.table.c.id == decoded_repo_id).one()
+            repo = (
+                trans.sa_session.query(trans.app.model.Repository)
+                .filter(trans.app.model.Repository.table.c.id == decoded_repo_id)
+                .one()
+            )
         except MultipleResultsFound:
-            raise InconsistentDatabase('Multiple repositories found with the same id.')
+            raise InconsistentDatabase("Multiple repositories found with the same id.")
         except NoResultFound:
-            raise RequestParameterInvalidException('No repository found with the id provided.')
+            raise RequestParameterInvalidException("No repository found with the id provided.")
         except Exception:
-            raise InternalServerError('Error loading from the database.')
+            raise InternalServerError("Error loading from the database.")
         return repo
 
     def list_by_owner(self, trans, user_id):
@@ -47,10 +57,12 @@ class RepoManager(object):
         :returns: query that will emit repositories owned by given user
         :rtype:   sqlalchemy query
         """
-        query = trans.sa_session.query(trans.app.model.Repository).filter(trans.app.model.Repository.table.c.user_id == user_id)
+        query = trans.sa_session.query(trans.app.model.Repository).filter(
+            trans.app.model.Repository.table.c.user_id == user_id
+        )
         return query
 
-    def create(self, trans, name, description=''):
+    def create(self, trans, name, description=""):
         """
         Create a new group.
         """

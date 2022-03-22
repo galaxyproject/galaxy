@@ -4,17 +4,26 @@ import shutil
 import tempfile
 import unittest
 from math import isinf
+from typing import Optional
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.util import galaxy_directory
 
-
 TOOL_XML_1 = """
-<tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
     <xrefs>
         <xref type="bio.tools">bwa</xref>
     </xrefs>
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -184,7 +193,29 @@ outputs:
 """
 
 
+def get_test_tool_source(source_file_name=None, source_contents=None, macro_contents=None, temp_directory=None):
+    source_directory = temp_directory or tempfile.mkdtemp()
+    macro_paths = []
+    if not os.path.isabs(source_file_name):
+        path = os.path.join(source_directory, source_file_name)
+        with open(path, "w") as out:
+            out.write(source_contents)
+        if macro_contents:
+            macro_path = os.path.join(source_directory, "macros.xml")
+            with open(macro_path, "w") as out:
+                out.write(macro_contents)
+            macro_paths = [macro_path]
+    else:
+        path = source_file_name
+    tool_source = get_tool_source(path, macro_paths=macro_paths)
+    if temp_directory is None:
+        shutil.rmtree(source_directory)
+    return tool_source
+
+
 class BaseLoaderTestCase(unittest.TestCase):
+    source_file_name: Optional[str] = None
+    source_contents: Optional[str] = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
@@ -197,24 +228,16 @@ class BaseLoaderTestCase(unittest.TestCase):
         return self._get_tool_source()
 
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
-        macro_path = None
         if source_file_name is None:
             source_file_name = self.source_file_name
         if source_contents is None:
             source_contents = self.source_contents
-        if not os.path.isabs(source_file_name):
-            path = os.path.join(self.temp_directory, source_file_name)
-            with open(path, "w") as out:
-                out.write(source_contents)
-            if macro_contents:
-                macro_path = os.path.join(self.temp_directory, 'macros.xml')
-                with open(macro_path, "w") as out:
-                    out.write(macro_contents)
-
-        else:
-            path = source_file_name
-        tool_source = get_tool_source(path, macro_paths=[macro_path])
-        return tool_source
+        return get_test_tool_source(
+            source_file_name,
+            source_contents,
+            macro_contents,
+            self.temp_directory,
+        )
 
 
 class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
@@ -253,9 +276,6 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_name(self):
         assert self._tool_source.parse_name() == "BWA Mapper"
-
-    def test_is_multi_byte(self):
-        assert self._tool_source.parse_is_multi_byte()
 
     def test_display_interface(self):
         assert self._tool_source.parse_display_interface(False)
@@ -323,8 +343,8 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1["name"] == 'out1'
-        assert output1["value"] == 'moo.txt'
+        assert output1["name"] == "out1"
+        assert output1["value"] == "moo.txt"
         attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
@@ -333,7 +353,7 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2["name"] == 'out1'
+        assert output2["name"] == "out1"
         assert output2["value"] is None
         attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
@@ -341,25 +361,29 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
+        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
 
     def test_exit_code(self):
-        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(
+            source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
                 ls
             </command>
         </tool>
-        """)
+        """
+        )
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         assert len(regexes) == 0, regexes
 
-        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(
+            source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="aggressive">
                 ls
             </command>
         </tool>
-        """)
+        """
+        )
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         # error:, exception: various memory exception...
@@ -375,17 +399,30 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
         command = tool_source.parse_command()
         assert command
-        assert '@' not in command
+        assert "@" not in command
 
     def test_token_significant_whitespace(self):
-        tool_source = self._get_tool_source(source_contents=TOOL_WTIH_TOKEN_FROM_MACRO_FILE, macro_contents=MACRO_CONTENTS)
+        tool_source = self._get_tool_source(
+            source_contents=TOOL_WTIH_TOKEN_FROM_MACRO_FILE, macro_contents=MACRO_CONTENTS
+        )
         command = tool_source.parse_command()
-        assert command == 'cat   '
-        assert '@' not in command
+        assert command == "cat   "
+        assert "@" not in command
 
     def test_recursive_token(self):
-        with self.assertRaises(Exception):
+        with self.assertRaisesRegex(Exception, "^Token '@NESTED_TOKEN@' cannot contain itself$"):
             self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
+
+    def test_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        creator1 = creators[0]
+        assert creator1["class"] == "Person"
+        assert creator1["identifier"] == "http://orcid.org/0000-0002-3079-6586"
+
+        creator2 = creators[1]
+        assert creator2["class"] == "Organization"
+        assert creator2["name"] == "Galaxy IUC"
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
@@ -405,9 +442,6 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
     def test_name(self):
         assert self._tool_source.parse_name() == "Bowtie Mapper"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_display_interface(self):
         assert not self._tool_source.parse_display_interface(False)
@@ -473,7 +507,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = list(page_source.parse_input_sources())
+        input_sources = page_source.parse_input_sources()
         assert len(input_sources) == 2
 
     def test_tests(self):
@@ -490,8 +524,8 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
         output1 = outputs[0]
-        assert output1["name"] == 'out1'
-        assert output1["value"] == 'moo.txt'
+        assert output1["name"] == "out1"
+        assert output1["value"] == "moo.txt"
         attributes1 = output1["attributes"]
         assert attributes1["compare"] == "diff"
         assert attributes1["lines_diff"] == 0
@@ -500,7 +534,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         outputs = test2["outputs"]
         assert len(outputs) == 1
         output2 = outputs[0]
-        assert output2["name"] == 'out1'
+        assert output2["name"] == "out1"
         assert output2["value"] is None
         attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
@@ -508,7 +542,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
+        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
@@ -589,6 +623,47 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[1] == "BuildListCollectionTool"
 
 
+class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
+    source_contents = None
+
+    def test_test(self):
+        test_dicts = self._tool_source.parse_tests_to_dict()["tests"]
+        assert len(test_dicts) == 3
+        test_dict_0 = test_dicts[0]
+        assert "outputs" in test_dict_0, test_dict_0
+        outputs = test_dict_0["outputs"]
+        output0 = outputs[0]
+        assert "object" in output0["attributes"]
+        assert output0["attributes"]["object"] is True
+
+        test_dict_1 = test_dicts[1]
+        assert "outputs" in test_dict_1, test_dict_1
+        outputs = test_dict_1["outputs"]
+        output0 = outputs[0]
+        assert "object" in output0["attributes"]
+        assert output0["attributes"]["object"] is False
+
+        test_dict_2 = test_dicts[2]
+        assert "outputs" in test_dict_2, test_dict_2
+        outputs = test_dict_2["outputs"]
+        output0 = outputs[0]
+        assert "object" in output0["attributes"]
+        assert output0["attributes"]["object"] is None
+
+
+class ExpressionOutputDataToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
+    source_contents = None
+
+    def test_output_parsing(self):
+        outputs, _ = self._tool_source.parse_outputs(None)
+        assert "larger_file" in outputs
+        tool_output = outputs["larger_file"]
+        assert tool_output.format == "data"
+        assert tool_output.from_expression == "output"
+
+
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
@@ -600,9 +675,6 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[0] == "galaxy.tools"
         assert tool_module[1] == "ExportHistoryTool"
         assert self._tool_source.parse_tool_type() == "export_history"
-
-    def test_is_multi_byte(self):
-        assert not self._tool_source.parse_is_multi_byte()
 
     def test_version_command(self):
         assert self._tool_source.parse_version_command() is None

@@ -19,7 +19,7 @@ class OpenObject(dict):
     def __getitem__(self, key):
         if key not in self:
             return None
-        return super(OpenObject, self).__getitem__(key)
+        return super().__getitem__(key)
 
     def __getattr__(self, key):
         return self.__getitem__(key)
@@ -36,7 +36,7 @@ def getattr_recursive(item, attr_key, *args):
     using_default = len(args) >= 1
     default = args[0] if using_default else None
 
-    for attr_key in attr_key.split('.'):
+    for attr_key in attr_key.split("."):
         try:
             if isinstance(item, dict):
                 item = item.__getitem__(attr_key)
@@ -57,8 +57,8 @@ def hasattr_recursive(item, attr_key):
 
     NOTE: also searches dictionaries
     """
-    if '.' in attr_key:
-        attr_key, last_key = attr_key.rsplit('.', 1)
+    if "." in attr_key:
+        attr_key, last_key = attr_key.rsplit(".", 1)
         item = getattr_recursive(item, attr_key, None)
         if item is None:
             return False

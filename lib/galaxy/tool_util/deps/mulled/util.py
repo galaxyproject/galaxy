@@ -1,5 +1,4 @@
 """Utilities for working with mulled abstractions outside the mulled package."""
-from __future__ import print_function
 
 import collections
 import hashlib
@@ -15,42 +14,44 @@ import requests
 
 log = logging.getLogger(__name__)
 
-QUAY_REPOSITORY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
-BUILD_NUMBER_REGEX = re.compile(r'\d+$')
-PARSED_TAG = collections.namedtuple('ParsedTag', 'tag version build_string build_number')
-QUAY_IO_TIMEOUT = 10
+QUAY_REPOSITORY_API_ENDPOINT = "https://quay.io/api/v1/repository"
+BUILD_NUMBER_REGEX = re.compile(r"\d+$")
+PARSED_TAG = collections.namedtuple("PARSED_TAG", "tag version build_string build_number")
+MULLED_SOCKET_TIMEOUT = 12
 
 
 def create_repository(namespace, repo_name, oauth_token):
     assert oauth_token
-    headers = {'Authorization': 'Bearer %s' % oauth_token}
+    headers = {"Authorization": f"Bearer {oauth_token}"}
     data = {
         "repository": repo_name,
         "namespace": namespace,
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=QUAY_IO_TIMEOUT)
+    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
 
 
-def quay_versions(namespace, pkg_name):
+def quay_versions(namespace, pkg_name, session=None):
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
-    data = quay_repository(namespace, pkg_name)
+    data = quay_repository(namespace, pkg_name, session=session)
 
-    if 'error_type' in data and data['error_type'] == "invalid_token":
+    if "error_type" in data and data["error_type"] == "invalid_token":
         return []
 
-    if 'tags' not in data:
-        raise Exception("Unexpected response from quay.io - no tags description found [%s]" % data)
+    if "tags" not in data:
+        raise Exception(f"Unexpected response from quay.io - no tags description found [{data}]")
 
-    return [tag for tag in data['tags'].keys() if tag != 'latest']
+    return [tag for tag in data["tags"].keys() if tag != "latest"]
 
 
-def quay_repository(namespace, pkg_name):
+def quay_repository(namespace, pkg_name, session=None):
     assert namespace is not None
     assert pkg_name is not None
-    url = 'https://quay.io/api/v1/repository/%s/%s' % (namespace, pkg_name)
-    response = requests.get(url, timeout=QUAY_IO_TIMEOUT)
+    url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
+    if not session:
+        session = requests.session()
+    response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
     data = response.json()
     return data
 
@@ -63,19 +64,29 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
     if resolution_cache is not None and cache_key in resolution_cache:
         repo_names = resolution_cache.get(cache_key)
     else:
-        repos_parameters = {'public': 'true', 'namespace': namespace}
-        repos_headers = {'Accept-encoding': 'gzip', 'Accept': 'application/json'}
-        repos_response = requests.get(
-            QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=QUAY_IO_TIMEOUT)
-
-        repos = repos_response.json()['repositories']
-        repo_names = [r["name"] for r in repos]
+        next_page = None
+        repo_names = []
+        repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
+        while True:
+            repos_parameters = {"public": "true", "namespace": namespace, "next_page": next_page}
+            repos_response = requests.get(
+                QUAY_REPOSITORY_API_ENDPOINT,
+                headers=repos_headers,
+                params=repos_parameters,
+                timeout=MULLED_SOCKET_TIMEOUT,
+            )
+            repos_response_json = repos_response.json()
+            repos = repos_response_json["repositories"]
+            repo_names += [r["name"] for r in repos]
+            next_page = repos_response_json.get("next_page")
+            if not next_page:
+                break
         if resolution_cache is not None:
             resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
 
 
-def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
+def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None, session=None):
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -84,7 +95,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
         # Following check is pretty expensive against biocontainers... don't even bother doing it
         # if can't cache the response.
         if not _namespace_has_repo_name(namespace, image, resolution_cache):
-            log.debug("skipping mulled_tags_for [%s] no repository" % image)
+            log.info(f"skipping mulled_tags_for [{image}] no repository")
             return []
 
     cache_key = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
@@ -102,7 +113,7 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
             tags_cached = True
 
     if not tags_cached:
-        tags = quay_versions(namespace, image)
+        tags = quay_versions(namespace, image, session)
         tag_cache[namespace][image] = tags
 
     if tag_prefix is not None:
@@ -113,23 +124,33 @@ def mulled_tags_for(namespace, image, tag_prefix=None, resolution_cache=None):
 
 def split_tag(tag):
     """Split mulled image tag into conda version and conda build."""
-    return tag.rsplit('--', 1)
+    return tag.rsplit("--", 1)
 
 
 def parse_tag(tag):
     """Decompose tag of mulled images into version, build string and build number."""
-    version = tag
+    version = tag.rsplit(":")[-1]
     build_string = "-1"
-    if '--' in tag:
-        version, build_string = tag.rsplit('--', 1)
-    elif '-' in tag:
+    build_number = -1
+    match = BUILD_NUMBER_REGEX.search(version)
+    if match:
+        build_number = int(match.group(0))
+    if "--" in version:
+        version, build_string = version.rsplit("--", 1)
+    elif "-" in version:
         # Should be mulled multi-container image tag
-        version, build_string = tag.rsplit('-', 1)
-    build_number = int(BUILD_NUMBER_REGEX.search(tag).group(0))
-    return PARSED_TAG(tag=tag,
-                      version=packaging.version.parse(version),
-                      build_string=packaging.version.parse(build_string),
-                      build_number=build_number)
+        version, build_string = version.rsplit("-", 1)
+    else:
+        # We don't have a build number, and the BUILD_NUMBER_REGEX above is only accurate for build strings,
+        # so set build number to -1. Any matching image:version combination with a build number
+        # will be considered newer.
+        build_number = -1
+    return PARSED_TAG(
+        tag=tag,
+        version=packaging.version.parse(version),
+        build_string=packaging.version.parse(build_string),
+        build_number=build_number,
+    )
 
 
 def version_sorted(elements):
@@ -137,7 +158,7 @@ def version_sorted(elements):
     elements = (parse_tag(tag) for tag in elements)
     elements = sorted(elements, key=lambda tag: tag.build_string, reverse=True)
     elements = sorted(elements, key=lambda tag: tag.build_number, reverse=True)
-    elements = sorted(elements, key=lambda tag: tag.version)
+    elements = sorted(elements, key=lambda tag: tag.version, reverse=True)
     return [e.tag for e in elements]
 
 
@@ -151,16 +172,17 @@ def build_target(package_name, version=None, build=None, tag=None):
         assert build is None
         version, build = split_tag(tag)
 
-    return Target(package_name, version, build, package_name)
+    # conda package and quay image names are lowercase
+    return Target(package_name.lower(), version, build, package_name)
 
 
 def conda_build_target_str(target):
     rval = target.package_name
     if target.version:
-        rval += "=%s" % target.version
+        rval += f"={target.version}"
 
         if target.build:
-            rval += "=%s" % target.build
+            rval += f"={target.build}"
 
     return rval
 
@@ -174,10 +196,10 @@ def _simple_image_name(targets, image_build=None):
             # Special case image_build == "0", which has been built without a suffix
             print("WARNING: Hard-coding image build instead of using Conda build - this is not recommended.")
             build = image_build
-        suffix += ":%s" % target.version
+        suffix += f":{target.version}"
         if build is not None:
-            suffix += "--%s" % build
-    return "%s%s" % (target.package_name, suffix)
+            suffix += f"--{build}"
+    return f"{target.package_name}{suffix}"
 
 
 def v1_image_name(targets, image_build=None, name_override=None):
@@ -202,7 +224,9 @@ def v1_image_name(targets, image_build=None, name_override=None):
     'mulled-v1-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
     """
     if name_override is not None:
-        print("WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result.")
+        print(
+            "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
+        )
         return name_override
 
     targets = list(targets)
@@ -213,8 +237,8 @@ def v1_image_name(targets, image_build=None, name_override=None):
         requirements_buffer = "\n".join(map(conda_build_target_str, targets_order))
         m = hashlib.sha1()
         m.update(requirements_buffer.encode())
-        suffix = "" if not image_build else ":%s" % image_build
-        return "mulled-v1-%s%s" % (m.hexdigest(), suffix)
+        suffix = "" if not image_build else f":{image_build}"
+        return f"mulled-v1-{m.hexdigest()}{suffix}"
 
 
 def v2_image_name(targets, image_build=None, name_override=None):
@@ -248,7 +272,9 @@ def v2_image_name(targets, image_build=None, name_override=None):
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
     """
     if name_override is not None:
-        print("WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result.")
+        print(
+            "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
+        )
         return name_override
 
     targets = list(targets)
@@ -274,19 +300,19 @@ def v2_image_name(targets, image_build=None, name_override=None):
             build_suffix = ""
         elif version_hash_str:
             # tagged verson is <version_hash>-<build>
-            build_suffix = "-%s" % image_build
+            build_suffix = f"-{image_build}"
         else:
             # tagged version is simply the build
             build_suffix = image_build
         suffix = ""
         if version_hash_str or build_suffix:
-            suffix = ":%s%s" % (version_hash_str, build_suffix)
-        return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
+            suffix = f":{version_hash_str}{build_suffix}"
+        return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
 def get_file_from_recipe_url(url):
     """Downloads file at url and returns tarball"""
-    r = requests.get(url)
+    r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
     return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
 
 
@@ -296,10 +322,10 @@ def split_container_name(name):
     >>> split_container_name('samtools:1.7--1')
     ['samtools', '1.7', '1']
     """
-    return name.replace('--', ':').split(':')
+    return name.replace("--", ":").split(":")
 
 
-class PrintProgress(object):
+class PrintProgress:
     def __init__(self):
         self.thread = threading.Thread(target=self.progress)
         self.stop = threading.Event()

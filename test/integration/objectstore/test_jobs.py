@@ -3,9 +3,13 @@
 import os
 import string
 
-from ._base import BaseObjectStoreIntegrationTestCase, files_count
+from ._base import (
+    BaseObjectStoreIntegrationTestCase,
+    files_count,
+)
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
+    """<?xml version="1.0"?>
 <object_store type="hierarchical">
     <backends>
         <object_store type="distributed" id="primary" order="0">
@@ -29,19 +33,24 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
         </object_store>
     </backends>
 </object_store>
-""")
+"""
+)
 
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
 class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    # setup by _configure_object_store
+    files1_path: str
+    files2_path: str
+    files3_path: str
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls._configure_object_store(DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE, config)
 
     def setUp(self):
-        super(ObjectStoreJobsIntegrationTestCase, self).setUp()
+        super().setUp()
         with self.dataset_populator.test_history() as history_id:
             hda1 = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_FILES_CONTENT)
             create_10_inputs = {
@@ -52,7 +61,6 @@ class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
                 "create_10",
                 create_10_inputs,
                 history_id,
-                assert_ok=True,
             )
             self.dataset_populator.wait_for_history(history_id)
 

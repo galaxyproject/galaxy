@@ -1,4 +1,3 @@
-import os
 import tempfile
 from abc import (
     ABCMeta,
@@ -6,11 +5,8 @@ from abc import (
     abstractproperty,
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class ToolLocationResolver(object):
+class ToolLocationResolver(metaclass=ABCMeta):
     """Parse a URI-like string and return a ToolSource object."""
 
     @abstractproperty
@@ -23,6 +19,5 @@ class ToolLocationResolver(object):
 
     def _temp_path(self, uri_like):
         """Create an abstraction for this so we can configure and cache later."""
-        handle, filename = tempfile.mkstemp(suffix=uri_like.split("/")[-1])
-        os.close(handle)
-        return filename
+        with tempfile.NamedTemporaryFile(suffix=uri_like.split("/")[-1], delete=False) as temp:
+            return temp.name

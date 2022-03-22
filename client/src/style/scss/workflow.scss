@@ -1,0 +1,227 @@
+.workflow-client {
+    .workflow-panel {
+        background: $white;
+    }
+    .workflow-center {
+        z-index: 0;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        .workflow-recommendations {
+            height: 30rem;
+        }
+        .workflow-node {
+            @extend .card;
+            @extend .position-absolute;
+            z-index: 100;
+            width: $workflow-node-width;
+            border: solid $brand-primary 1px;
+            &.node-highlight {
+                z-index: 1001;
+                border: solid $white 1px;
+                box-shadow: 0 0 0 2px $brand-primary;
+            }
+            &.node-on-scroll-to {
+                z-index: 1001;
+                border: solid $white 1px;
+                box-shadow: 0 0 0 4px $brand-primary;
+                transition: box-shadow 0.5s ease-in-out;
+            }
+            &.node-active {
+                z-index: 1001;
+                border: solid $white 1px;
+                box-shadow: 0 0 0 3px $brand-primary;
+            }
+            .node-header {
+                @extend .card-header;
+                @extend .py-1;
+                @extend .px-2;
+                cursor: move;
+                background: $brand-primary;
+                color: $white;
+            }
+            .node-error {
+                @extend .m-0;
+                @extend .rounded-0;
+                @extend .rounded-bottom;
+            }
+            .node-body {
+                @extend .card-body;
+                @extend .p-0;
+                @extend .mx-2;
+                .rule {
+                    height: 0;
+                    border: none;
+                    border-bottom: dotted $brand-primary 1px;
+                    margin: 0 5px;
+                }
+            }
+        }
+        .workflow-canvas {
+            #canvas-viewport {
+                @extend .rounded;
+                background: $workflow-editor-bg;
+                background-size: $workflow-editor-grid-size $workflow-editor-grid-size;
+                background-image: linear-gradient(to right, $workflow-editor-grid-color 1px, transparent 1px),
+                    linear-gradient(to bottom, $workflow-editor-grid-color 1px, transparent 1px);
+                width: 100%;
+                height: 100%;
+                position: relative;
+                overflow: hidden;
+            }
+            .ribbon {
+                .ribbon-outer {
+                    stroke: $brand-primary;
+                }
+                .ribbon-inner {
+                    stroke: $white;
+                }
+                .ribbon-inner-valid {
+                    stroke: $brand-success;
+                }
+                .ribbon-inner-invalid {
+                    stroke: $brand-warning;
+                }
+            }
+            .base-terminal {
+                @extend .fa;
+                @extend .fa-circle;
+                @extend .mt-1;
+                color: $brand-light;
+                position: absolute;
+                z-index: 101;
+                .icon {
+                    @extend .fa;
+                    @extend .fa-chevron-circle-right;
+                    color: $brand-primary;
+                    position: absolute;
+                    left: 0px;
+                    top: 0px;
+                }
+            }
+            .input-terminal {
+                @extend .base-terminal;
+                left: -0.65rem;
+            }
+            .output-terminal {
+                @extend .base-terminal;
+                right: -0.65rem;
+                &:hover > .icon {
+                    color: $brand-success;
+                }
+            }
+            .input-terminal.multiple {
+                font-size: 1.2rem;
+                left: -0.8rem;
+                top: 3px;
+            }
+            .output-terminal.multiple {
+                font-size: 1.2rem;
+                right: -0.8rem;
+                bottom: 6px;
+            }
+            .input-terminal-active.can-accept > .icon {
+                color: $brand-success;
+            }
+            .input-terminal-active.cannot-accept > .icon {
+                color: $brand-warning;
+            }
+            .drag-terminal {
+                @extend .fa;
+                @extend .fa-circle;
+                color: $brand-success;
+                position: absolute;
+                z-index: 101;
+            }
+            .mark-terminal {
+                @extend .far;
+                @extend .fa-square;
+                color: $brand-primary;
+                cursor: pointer;
+                &.mark-terminal-active {
+                    @extend .fa;
+                    @extend .fa-check-square;
+                }
+            }
+            .delete-terminal {
+                @extend .btn;
+                @extend .btn-sm;
+                @extend .btn-danger;
+                @extend .fa;
+                @extend .fa-minus-circle;
+                @extend .p-1;
+                @extend .mt-1;
+                cursor: pointer;
+                position: absolute;
+                z-index: 2500;
+                top: 2px;
+                left: -0.8rem;
+            }
+            .callout-terminal {
+                @extend .float-left;
+                @extend .mr-1;
+            }
+            .workflow-overview {
+                border-top-left-radius: 0.3rem;
+                cursor: pointer;
+                position: absolute;
+                width: 150px;
+                height: 150px;
+                right: 0px;
+                bottom: 0px;
+                border-top: solid $border-color 1px;
+                border-left: solid $border-color 1px;
+                padding: 7px 0 0 7px;
+                background: $workflow-overview-bg no-repeat url("../../assets/images/resizable.png");
+                z-index: 20000;
+                overflow: hidden;
+                max-width: 300px;
+                max-height: 300px;
+                min-width: 50px;
+                min-height: 50px;
+                .workflow-overview-body {
+                    position: relative;
+                    overflow: hidden;
+                    width: 100%;
+                    height: 100%;
+                }
+            }
+            #input-choices-menu {
+                color: black;
+            }
+        }
+        .workflow-report-body {
+            display: flex;
+        }
+        #canvas-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        #overview-container {
+            position: absolute;
+        }
+        #overview-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        #overview-viewport {
+            @extend .rounded;
+            position: absolute;
+            width: 0px;
+            height: 0px;
+            border: solid $brand-info 3px;
+            background: $white;
+            opacity: 0.8;
+            z-index: 10;
+        }
+        canvas {
+            position: absolute;
+            z-index: 10;
+        }
+        canvas.dragging {
+            position: absolute;
+            z-index: 1000;
+        }
+    }
+}

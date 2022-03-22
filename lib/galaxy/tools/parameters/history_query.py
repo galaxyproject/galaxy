@@ -1,9 +1,10 @@
 import logging
+
 log = logging.getLogger(__name__)
 
 
-class HistoryQuery(object):
-    """ An object for describing the collections to pull out of a history,
+class HistoryQuery:
+    """An object for describing the collections to pull out of a history,
     used by DataCollectionToolParameter.
     """
 
@@ -18,7 +19,9 @@ class HistoryQuery(object):
     @staticmethod
     def from_collection_types(collection_types, collection_type_descriptions):
         if collection_types:
-            collection_type_descriptions = [collection_type_descriptions.for_collection_type(t) for t in collection_types]
+            collection_type_descriptions = [
+                collection_type_descriptions.for_collection_type(t) for t in collection_types
+            ]
             # Place higher dimension descriptions first so subcollection mapping
             # (until we expose it to the user) will default to providing tool as much
             # data as possible. So a list:list:paired mapped to a tool that takes
@@ -31,8 +34,7 @@ class HistoryQuery(object):
 
     @staticmethod
     def from_parameter(param, collection_type_descriptions):
-        """ Take in a tool parameter element.
-        """
+        """Take in a tool parameter element."""
         collection_types = param.collection_types
         return HistoryQuery.from_collection_types(collection_types, collection_type_descriptions)
 

@@ -2,6 +2,7 @@
 API operations on the contents of a data library.
 """
 import logging
+from typing import Optional
 
 from sqlalchemy.orm.exc import (
     MultipleResultsFound,
@@ -13,33 +14,39 @@ from galaxy import (
     managers,
     util,
 )
-from galaxy.actions.library import LibraryActions, validate_path_upload
+from galaxy.actions.library import (
+    LibraryActions,
+    validate_path_upload,
+)
 from galaxy.managers.collections_util import (
     api_payload_to_create_params,
-    dictify_dataset_collection_instance
+    dictify_dataset_collection_instance,
 )
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
-    tags
+    LibraryDataset,
+    tags,
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
-    BaseAPIController,
     HTTPBadRequest,
     url_for,
     UsesFormDefinitionsMixin,
-    UsesLibraryMixin,
-    UsesLibraryMixinItems
+    UsesLibraryMixinItems,
 )
+from . import BaseGalaxyAPIController
+
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
-
-    def __init__(self, app):
-        super(LibraryContentsController, self).__init__(app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+class LibraryContentsController(
+    BaseGalaxyAPIController, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions
+):
+    def __init__(self, app: StructuredApp, hda_manager: managers.hdas.HDAManager):
+        super().__init__(app)
+        self.hda_manager = hda_manager
 
     @expose_api
     def index(self, trans, library_id, **kwd):
@@ -55,11 +62,13 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   library_id: str
 
         :returns:   list of dictionaries of the form:
+
             * id:   the encoded id of the library item
             * name: the 'library path'
                 or relationship of the library item to the root
             * type: 'file' or 'folder'
             * url:  the url to get detailed information on the library item
+
         :rtype:     list
 
         :raises:  MalformedId, InconsistentDatabase, RequestParameterInvalidException, InternalServerError
@@ -72,53 +81,68 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval = []
             for subfolder in folder.active_folders:
                 if not admin:
-                    can_access, folder_ids = trans.app.security_agent.check_folder_contents(trans.user, current_user_roles, subfolder)
+                    can_access, folder_ids = trans.app.security_agent.check_folder_contents(
+                        trans.user, current_user_roles, subfolder
+                    )
                 if (admin or can_access) and not subfolder.deleted:
-                    subfolder.api_path = folder.api_path + '/' + subfolder.name
-                    subfolder.api_type = 'folder'
+                    subfolder.api_path = f"{folder.api_path}/{subfolder.name}"
+                    subfolder.api_type = "folder"
                     rval.append(subfolder)
                     rval.extend(traverse(subfolder))
             for ld in folder.datasets:
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset(
-                        current_user_roles,
-                        ld.library_dataset_dataset_association.dataset
+                        current_user_roles, ld.library_dataset_dataset_association.dataset
                     )
                 if (admin or can_access) and not ld.deleted:
-                    ld.api_path = folder.api_path + '/' + ld.name
-                    ld.api_type = 'file'
+                    ld.api_path = f"{folder.api_path}/{ld.name}"
+                    ld.api_type = "file"
                     rval.append(ld)
             return rval
+
+        decoded_library_id = self.decode_id(library_id)
         try:
-            decoded_library_id = self.decode_id(library_id)
-        except Exception:
-            raise exceptions.MalformedId('Malformed library id ( %s ) specified, unable to decode.' % library_id)
-        try:
-            library = trans.sa_session.query(trans.app.model.Library).filter(trans.app.model.Library.table.c.id == decoded_library_id).one()
+            library = (
+                trans.sa_session.query(trans.app.model.Library)
+                .filter(trans.app.model.Library.table.c.id == decoded_library_id)
+                .one()
+            )
         except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('Multiple libraries found with the same id.')
+            raise exceptions.InconsistentDatabase("Multiple libraries found with the same id.")
         except NoResultFound:
-            raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
+            raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
+            raise exceptions.InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
-            raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
-        encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
+            raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
+        encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
         # appending root folder
-        rval.append(dict(id=encoded_id,
-                         type='folder',
-                         name='/',
-                         url=url_for('library_content', library_id=library_id, id=encoded_id)))
-        library.root_folder.api_path = ''
+        rval.append(
+            dict(
+                id=encoded_id,
+                type="folder",
+                name="/",
+                url=url_for("library_content", library_id=library_id, id=encoded_id),
+            )
+        )
+        library.root_folder.api_path = ""
         # appending all other items in the library recursively
         for content in traverse(library.root_folder):
             encoded_id = trans.security.encode_id(content.id)
-            if content.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
-            rval.append(dict(id=encoded_id,
-                             type=content.api_type,
-                             name=content.api_path,
-                             url=url_for('library_content', library_id=library_id, id=encoded_id, )))
+            if content.api_type == "folder":
+                encoded_id = f"F{encoded_id}"
+            rval.append(
+                dict(
+                    id=encoded_id,
+                    type=content.api_type,
+                    name=content.api_path,
+                    url=url_for(
+                        "library_content",
+                        library_id=library_id,
+                        id=encoded_id,
+                    ),
+                )
+            )
         return rval
 
     @expose_api
@@ -142,23 +166,23 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
         class_name, content_id = self._decode_library_content_id(id)
-        if class_name == 'LibraryFolder':
+        if class_name == "LibraryFolder":
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-            rval['id'] = 'F' + str(rval['id'])
-            if rval['parent_id'] is not None:  # This can happen for root folders.
-                rval['parent_id'] = 'F' + str(trans.security.encode_id(rval['parent_id']))
-            rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
+            rval = content.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
+            rval["id"] = f"F{str(rval['id'])}"
+            if rval["parent_id"] is not None:  # This can happen for root folders.
+                rval["parent_id"] = f"F{str(trans.security.encode_id(rval['parent_id']))}"
+            rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
         else:
             content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view='element')
-            rval['id'] = trans.security.encode_id(rval['id'])
-            rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
-            rval['folder_id'] = 'F' + str(trans.security.encode_id(rval['folder_id']))
-            rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
+            rval = content.to_dict(view="element")
+            rval["id"] = trans.security.encode_id(rval["id"])
+            rval["ldda_id"] = trans.security.encode_id(rval["ldda_id"])
+            rval["folder_id"] = f"F{str(trans.security.encode_id(rval['folder_id']))}"
+            rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
 
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-            rval['tags'] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
+            rval["tags"] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
@@ -213,59 +237,74 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     in that case a list of such dictionaries is returned.
         :rtype:     object
         """
-        if 'create_type' not in payload:
-            trans.response.status = 400
-            return "Missing required 'create_type' parameter."
-        else:
-            create_type = payload.pop('create_type')
-        if create_type not in ('file', 'folder', 'collection'):
-            trans.response.status = 400
-            return "Invalid value for 'create_type' parameter ( %s ) specified." % create_type
-
-        if 'folder_id' not in payload:
-            trans.response.status = 400
-            return "Missing required 'folder_id' parameter."
-        else:
-            folder_id = payload.pop('folder_id')
-            class_name, folder_id = self._decode_library_content_id(folder_id)
-        try:
-            # security is checked in the downstream controller
-            parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
-        except Exception as e:
-            return util.unicodify(e)
+        if trans.user_is_bootstrap_admin:
+            raise exceptions.RealUserRequiredException("Only real users can create a new library file or folder.")
+        if "create_type" not in payload:
+            raise exceptions.RequestParameterMissingException("Missing required 'create_type' parameter.")
+        create_type = payload.pop("create_type")
+        if create_type not in ("file", "folder", "collection"):
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid value for 'create_type' parameter ( {create_type} ) specified."
+            )
+        if "upload_option" in payload and payload["upload_option"] not in (
+            "upload_file",
+            "upload_directory",
+            "upload_paths",
+        ):
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid value for 'upload_option' parameter ( {payload['upload_option']} ) specified."
+            )
+        if "folder_id" not in payload:
+            raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
+        folder_id = payload.pop("folder_id")
+        _, folder_id = self._decode_library_content_id(folder_id)
+        # security is checked in the downstream controller
+        parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
 
-        payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
-        payload['tags'] = util.listify(payload.get('tags', None))
+        payload["tag_using_filenames"] = util.string_as_bool(payload.get("tag_using_filenames", None))
+        payload["tags"] = util.listify(payload.get("tags", None))
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
-        from_hda_id, from_hdca_id, ldda_message = (payload.pop('from_hda_id', None), payload.pop('from_hdca_id', None), payload.pop('ldda_message', ''))
-        if create_type == 'file':
+        from_hda_id, from_hdca_id, ldda_message = (
+            payload.pop("from_hda_id", None),
+            payload.pop("from_hdca_id", None),
+            payload.pop("ldda_message", ""),
+        )
+        if create_type == "file":
             if from_hda_id:
-                return self._copy_hda_to_library_folder(trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message)
+                return self._copy_hda_to_library_folder(
+                    trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message
+                )
             if from_hdca_id:
-                return self._copy_hdca_to_library_folder(trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message)
+                return self._copy_hdca_to_library_folder(
+                    trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message
+                )
 
         # check for extended metadata, store it and pop it out of the param
         # otherwise sanitize_param will have a fit
-        ex_meta_payload = payload.pop('extended_metadata', None)
+        ex_meta_payload = payload.pop("extended_metadata", None)
 
         # Now create the desired content object, either file or folder.
-        if create_type == 'file':
+        if create_type == "file":
             status, output = self._upload_library_dataset(trans, library_id, real_folder_id, **payload)
-        elif create_type == 'folder':
+        elif create_type == "folder":
             status, output = self._create_folder(trans, real_folder_id, library_id, **payload)
-        elif create_type == 'collection':
+        elif create_type == "collection":
             # Not delegating to library_common, so need to check access to parent
             # folder here.
             self.check_user_can_add_to_library_item(trans, parent, check_accessible=True)
             create_params = api_payload_to_create_params(payload)
-            create_params['parent'] = parent
-            service = trans.app.dataset_collections_service
-            dataset_collection_instance = service.create(**create_params)
-            return [dictify_dataset_collection_instance(dataset_collection_instance, security=trans.security, parent=parent)]
+            create_params["parent"] = parent
+            dataset_collection_manager = trans.app.dataset_collection_manager
+            dataset_collection_instance = dataset_collection_manager.create(**create_params)
+            return [
+                dictify_dataset_collection_instance(
+                    dataset_collection_instance, security=trans.security, url_builder=trans.url_builder, parent=parent
+                )
+            ]
         if status != 200:
             trans.response.status = status
             return output
@@ -286,27 +325,29 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 if type(v) == trans.app.model.LibraryDatasetDatasetAssociation:
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id(v.id)
-                if create_type == 'folder':
-                    encoded_id = 'F' + encoded_id
-                rval.append(dict(id=encoded_id,
-                                 name=v.name,
-                                 url=url_for('library_content', library_id=library_id, id=encoded_id)))
+                if create_type == "folder":
+                    encoded_id = f"F{encoded_id}"
+                rval.append(
+                    dict(
+                        id=encoded_id, name=v.name, url=url_for("library_content", library_id=library_id, id=encoded_id)
+                    )
+                )
             return rval
 
     def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
-        replace_id = kwd.get('replace_id', None)
-        replace_dataset = None
-        upload_option = kwd.get('upload_option', 'upload_file')
-        dbkey = kwd.get('dbkey', '?')
+        replace_id = kwd.get("replace_id", None)
+        replace_dataset: Optional[LibraryDataset] = None
+        upload_option = kwd.get("upload_option", "upload_file")
+        dbkey = kwd.get("dbkey", "?")
         if isinstance(dbkey, list):
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        roles = kwd.get('roles', '')
+        roles = kwd.get("roles", "")
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        if replace_id not in ['', None, 'None']:
-            replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
+        if replace_id not in ["", None, "None"]:
+            replace_dataset = trans.sa_session.query(LibraryDataset).get(trans.security.decode_id(replace_id))
             self._check_access(trans, is_admin, replace_dataset, current_user_roles)
             self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
             library = replace_dataset.folder.parent_library
@@ -320,28 +361,24 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             self._check_access(trans, is_admin, folder, current_user_roles)
             self._check_add(trans, is_admin, folder, current_user_roles)
             library = folder.parent_library
-        if folder and last_used_build in ['None', None, '?']:
+        if folder and last_used_build in ["None", None, "?"]:
             last_used_build = folder.genome_build
         error = False
-        if upload_option == 'upload_paths':
+        if upload_option == "upload_paths":
             validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
-        elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
-            error = True
-            message = 'Invalid upload_option'
         elif roles:
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
             vars = dict(DATASET_ACCESS_in=roles)
-            permissions, in_roles, error, message = \
-                trans.app.security_agent.derive_roles_from_access(trans, library.id, 'api', library=True, **vars)
+            permissions, in_roles, error, message = trans.app.security_agent.derive_roles_from_access(
+                trans, library.id, "api", library=True, **vars
+            )
         if error:
             return 400, message
         else:
-            created_outputs_dict = self._upload_dataset(trans,
-                                                        library_id=trans.security.encode_id(library.id),
-                                                        folder_id=trans.security.encode_id(folder.id),
-                                                        replace_dataset=replace_dataset,
-                                                        **kwd)
+            created_outputs_dict = self._upload_dataset(
+                trans, folder_id=trans.security.encode_id(folder.id), replace_dataset=replace_dataset, **kwd
+            )
             if created_outputs_dict:
                 if type(created_outputs_dict) == str:
                     return 400, created_outputs_dict
@@ -367,16 +404,14 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         if isinstance(meta, dict):
             for a in meta:
-                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
-                    yield path, value
+                yield from self._scan_json_block(meta[a], f"{prefix}/{a}")
         elif isinstance(meta, list):
             for i, a in enumerate(meta):
-                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
-                    yield path, value
+                yield from self._scan_json_block(a, prefix + "[%d]" % (i))
         else:
             # BUG: Everything is cast to string, which can lead to false positives
             # for cross type comparisions, ie "True" == True
-            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
+            yield prefix, (f"{meta}").encode()
 
     @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
@@ -398,24 +433,26 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :rtype:     None
         :returns:   None
         """
-        if 'converted_dataset_id' in payload:
-            converted_id = payload.pop('converted_dataset_id')
+        if "converted_dataset_id" in payload:
+            converted_id = payload.pop("converted_dataset_id")
             content = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=False)
             content_conv = self.get_library_dataset(trans, converted_id, check_ownership=False, check_accessible=False)
-            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(parent=content.library_dataset_dataset_association,
-                                                                          dataset=content_conv.library_dataset_dataset_association,
-                                                                          file_type=content_conv.library_dataset_dataset_association.extension,
-                                                                          metadata_safe=True)
+            assoc = trans.app.model.ImplicitlyConvertedDatasetAssociation(
+                parent=content.library_dataset_dataset_association,
+                dataset=content_conv.library_dataset_dataset_association,
+                file_type=content_conv.library_dataset_dataset_association.extension,
+                metadata_safe=True,
+            )
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
     def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
-            return 'LibraryDataset', content_id
-        elif content_id.startswith('F'):
-            return 'LibraryFolder', content_id[1:]
+            return "LibraryDataset", content_id
+        elif content_id.startswith("F"):
+            return "LibraryFolder", content_id[1:]
         else:
-            raise HTTPBadRequest('Malformed library content id ( %s ) specified, unable to decode.' % str(content_id))
+            raise HTTPBadRequest(f"Malformed library content id ( {str(content_id)} ) specified, unable to decode.")
 
     @expose_api
     def delete(self, trans, library_id, id, **kwd):
@@ -439,18 +476,18 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             * purged:     if the library dataset was purged
         """
         purge = False
-        if kwd.get('payload', None):
-            purge = util.string_as_bool(kwd['payload'].get('purge', False))
+        if kwd.get("payload", None):
+            purge = util.string_as_bool(kwd["payload"].get("purge", False))
 
-        rval = {'id': id}
+        rval = {"id": id}
         try:
             ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
             user_is_admin = trans.user_is_admin
             can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
-            log.debug('is_admin: %s, can_modify: %s', user_is_admin, can_modify)
+            log.debug("is_admin: %s, can_modify: %s", user_is_admin, can_modify)
             if not (user_is_admin or can_modify):
                 trans.response.status = 403
-                rval.update({'error': 'Unauthorized to delete or purge this library dataset'})
+                rval.update({"error": "Unauthorized to delete or purge this library dataset"})
                 return rval
 
             ld.deleted = True
@@ -473,19 +510,17 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                         pass
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()
-                rval['purged'] = True
+                rval["purged"] = True
             trans.sa_session.flush()
-            rval['deleted'] = True
+            rval["deleted"] = True
 
         except exceptions.httpexceptions.HTTPInternalServerError:
-            log.exception('Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s',
-                          id, str(kwd))
+            log.exception("Library_contents API, delete: uncaught HTTPInternalServerError: %s, %s", id, str(kwd))
             raise
         except exceptions.httpexceptions.HTTPException:
             raise
         except Exception as exc:
-            log.exception('library_contents API, delete: uncaught exception: %s, %s',
-                          id, str(kwd))
+            log.exception("library_contents API, delete: uncaught exception: %s, %s", id, str(kwd))
             trans.response.status = 500
-            rval.update({'error': util.unicodify(exc)})
+            rval.update({"error": util.unicodify(exc)})
         return rval

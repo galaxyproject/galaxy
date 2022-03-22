@@ -4,18 +4,15 @@ import uuid
 
 def dict_for(obj, **kwds):
     # Create dict to represent item.
-    return dict(
-        model_class=obj.__class__.__name__,
-        **kwds
-    )
+    return dict(model_class=obj.__class__.__name__, **kwds)
 
 
-class Dictifiable(object):
-    """ Mixin that enables objects to be converted to dictionaries. This is useful
-        when for sharing objects across boundaries, such as the API, tool scripts,
-        and JavaScript code. """
+class Dictifiable:
+    """Mixin that enables objects to be converted to dictionaries. This is useful
+    when for sharing objects across boundaries, such as the API, tool scripts,
+    and JavaScript code."""
 
-    def to_dict(self, view='collection', value_mapper=None):
+    def to_dict(self, view="collection", value_mapper=None):
         """
         Return item dictionary.
         """
@@ -50,9 +47,9 @@ class Dictifiable(object):
 
         # Fill item dict with visible keys.
         try:
-            visible_keys = self.__getattribute__('dict_' + view + '_visible_keys')
+            visible_keys = self.__getattribute__(f"dict_{view}_visible_keys")
         except AttributeError:
-            raise Exception('Unknown Dictifiable view: %s' % view)
+            raise Exception(f"Unknown Dictifiable view: {view}")
         for key in visible_keys:
             try:
                 item = self.__getattribute__(key)

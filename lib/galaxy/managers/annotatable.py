@@ -3,6 +3,16 @@ Mixins for Annotatable model managers and serializers.
 """
 
 import logging
+from typing import Dict
+
+from galaxy.model.scoped_session import galaxy_scoped_session
+from .base import (
+    Deserializer,
+    FunctionFilterParsersType,
+    ModelValidator,
+    Serializer,
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -18,9 +28,12 @@ def _match_by_user(item, user):
     return None
 
 
-class AnnotatableManagerMixin(object):
+class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
-    annotation_assoc = None
+    annotation_assoc: type
+
+    def session(self) -> galaxy_scoped_session:
+        ...
 
     def annotation(self, item):
         """
@@ -57,10 +70,11 @@ class AnnotatableManagerMixin(object):
         return returned
 
 
-class AnnotatableSerializerMixin(object):
+class AnnotatableSerializerMixin:
+    serializers: Dict[str, Serializer]
 
     def add_serializers(self):
-        self.serializers['annotation'] = self.serialize_annotation
+        self.serializers["annotation"] = self.serialize_annotation
 
     def serialize_annotation(self, item, key, user=None, **context):
         """
@@ -70,22 +84,24 @@ class AnnotatableSerializerMixin(object):
         return annotation.strip() if annotation else None
 
 
-class AnnotatableDeserializerMixin(object):
+class AnnotatableDeserializerMixin:
+    deserializers: Dict[str, Deserializer]
 
     def add_deserializers(self):
-        self.deserializers['annotation'] = self.deserialize_annotation
+        self.deserializers["annotation"] = self.deserialize_annotation
 
     def deserialize_annotation(self, item, key, val, user=None, **context):
         """
         Make sure `val` is a valid annotation and assign it, deleting any existing
         if `val` is None.
         """
-        val = self.validate.nullable_basestring(key, val)
+        val = ModelValidator.nullable_basestring(key, val)
         return self.manager.annotate(item, val, user=user, flush=False)
 
 
 # TODO: I'm not entirely convinced this (or tags) are a good idea for filters since they involve a/the user
-class AnnotatableFilterMixin(object):
+class AnnotatableFilterMixin:
+    fn_filter_parsers: FunctionFilterParsersType
 
     def _owner_annotation(self, item):
         """
@@ -103,7 +119,13 @@ class AnnotatableFilterMixin(object):
         return val in owner_annotation
 
     def _add_parsers(self):
-        self.fn_filter_parsers.update({
-            'annotation'    : {'op': {'has': self.filter_annotation_contains,
-                                      'contains': self.filter_annotation_contains}},
-        })
+        self.fn_filter_parsers.update(
+            {
+                "annotation": {
+                    "op": {
+                        "has": self.filter_annotation_contains,
+                        "contains": self.filter_annotation_contains,
+                    },
+                },
+            }
+        )

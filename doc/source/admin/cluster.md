@@ -2,7 +2,7 @@
 
 Galaxy is designed to run jobs on your local system by default, but it can be configured to run jobs on a cluster.  The front-end Galaxy application runs on a single server as usual, but tools are run on cluster nodes instead.
 
-A [general reference for the job configuration file](jobs.md) is also available.
+A [general reference for the job configuration file](./jobs.md) is also available.
 
 ## Distributed Resources Managers
 
@@ -70,7 +70,7 @@ You may also find that attribute caching in your filesystem causes problems with
 
 ## Runner Configuration
 
-**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
+**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](./jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
 
 ### Local
 
@@ -330,7 +330,12 @@ Since this is a complex problem, the current solution does have some caveats:
 
 ### Configuration
 
-You'll need to ensure that all datasets are stored on the filesystem such that they are readable by all users that will use Galaxy: either made readable by a group, or world-readable. If using a group, set your `umask(1)` to `027` or for world-readable, use `022` Setting the umask assumes your underlying filesystem uses POSIX permissions, so if this is not the case, your environment changes may be different. For uWSGI setups (which are the default since release 19.01) the default umask is set in the `uwsgi:` section of `galaxy.yml` .
+You'll need to ensure that all datasets are stored on the filesystem such that they are readable by all users that will use Galaxy: either made readable by a group, or world-readable. If using a group, set your `umask(1)` to `027` or for world-readable, use `022` Setting the umask assumes your underlying filesystem uses POSIX permissions, so if this is not the case, your environment changes may be different. For [gravity](https://github.com/galaxyproject/gravity/) setups (which are the default since release 22.01) the default umask can be set in the `gravity:` section of `galaxy.yml`:
+
+```yaml
+gravity:
+  umask: 027
+```
 
 The directory specified in `new_file_path` in the Galaxy config should be world-writable, cluster-accessible (via the same absolute path) and have its sticky bit (+t) set. This directory should also be cleaned regularly using a script or program as is appropriate for your site, since temporary files created here may not always be cleaned up under certain conditions.
 

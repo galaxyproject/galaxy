@@ -2,13 +2,10 @@ import logging
 import os
 import stat
 
-from six import string_types
-
 log = logging.getLogger(__name__)
 
 
-class EnvFileBuilder(object):
-
+class EnvFileBuilder:
     def __init__(self, install_dir):
         self.install_dir = install_dir
         self.return_code = 0
@@ -22,22 +19,22 @@ class EnvFileBuilder(object):
 
     @staticmethod
     def create_or_update_env_shell_file(install_dir, env_var_dict):
-        env_var_action = env_var_dict['action']
-        env_var_value = env_var_dict['value']
-        if env_var_action in ['prepend_to', 'set_to', 'append_to']:
-            env_var_name = env_var_dict['name']
-            if env_var_action == 'prepend_to':
-                changed_value = '%s:$%s' % (env_var_value, env_var_name)
-            elif env_var_action == 'set_to':
-                changed_value = '%s' % env_var_value
-            elif env_var_action == 'append_to':
-                changed_value = '$%s:%s' % (env_var_name, env_var_value)
-            line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
+        env_var_action = env_var_dict["action"]
+        env_var_value = env_var_dict["value"]
+        if env_var_action in ["prepend_to", "set_to", "append_to"]:
+            env_var_name = env_var_dict["name"]
+            if env_var_action == "prepend_to":
+                changed_value = f"{env_var_value}:${env_var_name}"
+            elif env_var_action == "set_to":
+                changed_value = f"{env_var_value}"
+            elif env_var_action == "append_to":
+                changed_value = f"${env_var_name}:{env_var_value}"
+            line = f"{env_var_name}={changed_value}; export {env_var_name}"
         elif env_var_action == "source":
-            line = "if [ -f %s ] ; then . %s ; fi" % (env_var_value, env_var_value)
+            line = f"if [ -f {env_var_value} ] ; then . {env_var_value} ; fi"
         else:
-            raise Exception("Unknown shell file action %s" % env_var_action)
-        env_shell_file_path = os.path.join(install_dir, 'env.sh')
+            raise Exception(f"Unknown shell file action {env_var_action}")
+        env_shell_file_path = os.path.join(install_dir, "env.sh")
         return line, env_shell_file_path
 
     def file_append(self, text, file_path, make_executable=True):
@@ -56,7 +53,7 @@ class EnvFileBuilder(object):
         if os.path.exists(file_path):
             try:
                 new_env_file_contents = []
-                env_file_contents = open(file_path, 'r').readlines()
+                env_file_contents = open(file_path).readlines()
                 # Clean out blank lines from the env.sh file.
                 for line in env_file_contents:
                     line = line.rstrip()
@@ -67,7 +64,7 @@ class EnvFileBuilder(object):
                 log.exception(str(e))
                 return 1
         else:
-            env_file_handle = open(file_path, 'w')
+            env_file_handle = open(file_path, "w")
             env_file_handle.close()
             env_file_contents = []
         if make_executable:
@@ -78,20 +75,20 @@ class EnvFileBuilder(object):
                 log.exception(str(e))
                 return 1
         # Convert the received text to a list, in order to support adding one or more lines to the file.
-        if isinstance(text, string_types):
+        if isinstance(text, str):
             text = [text]
         for line in text:
             line = line.rstrip()
             if line and line not in env_file_contents:
                 env_file_contents.append(line)
         try:
-            open(file_path, 'w').write('\n'.join(env_file_contents))
+            open(file_path, "w").write("\n".join(env_file_contents))
         except Exception as e:
             log.exception(str(e))
             return 1
         return 0
 
     def handle_action_shell_file_paths(self, action_dict):
-        shell_file_paths = action_dict.get('action_shell_file_paths', [])
+        shell_file_paths = action_dict.get("action_shell_file_paths", [])
         for shell_file_path in shell_file_paths:
             self.append_line(action="source", value=shell_file_path)

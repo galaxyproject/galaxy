@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
 
 import sys
 
@@ -12,22 +11,22 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     i = 0
-    with open(input_name) as fh, open(output_name, 'w') as out:
+    with open(input_name) as fh, open(output_name, "w") as out:
         for i, line in enumerate(fh):
-            line = line.rstrip('\r\n')
-            if line and not line.startswith('#'):
+            line = line.rstrip("\r\n")
+            if line and not line.startswith("#"):
                 try:
-                    elems = line.split('\t')
+                    elems = line.split("\t")
                     start = str(int(elems[3]) - 1)
                     strand = elems[6]
-                    if strand not in ['+', '-']:
-                        strand = '+'
+                    if strand not in ["+", "-"]:
+                        strand = "+"
                     # GFF format: chrom source, name, chromStart, chromEnd, score, strand
                     # Bed format: chrom, chromStart, chromEnd, name, score, strand
                     #
                     # Replace any spaces in the name with underscores so UCSC will not complain
                     name = elems[2].replace(" ", "_")
-                    out.write("%s\t%s\t%s\t%s\t0\t%s\n" % (elems[0], start, elems[4], name, strand))
+                    out.write(f"{elems[0]}\t{start}\t{elems[4]}\t{name}\t0\t{strand}\n")
                 except Exception:
                     skipped_lines += 1
                     if not first_skipped_line:
@@ -38,7 +37,10 @@ def __main__():
                     first_skipped_line = i + 1
     info_msg = "%i lines converted to BED.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 

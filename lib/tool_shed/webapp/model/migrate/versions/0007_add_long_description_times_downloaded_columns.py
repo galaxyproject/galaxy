@@ -1,12 +1,17 @@
 """
 Migration script to add the long_description and times_downloaded columns to the repository table.
 """
-from __future__ import print_function
 
 import logging
 import sys
 
-from sqlalchemy import Column, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

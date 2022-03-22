@@ -1,0 +1,209 @@
+@import "theme/blue.scss";
+
+.library_style_container {
+    width: 100%;
+    height: 100%;
+    padding: 1em;
+    overflow: auto;
+
+    .fa-globe,
+    .fa-shield,
+    .fa-key,
+    .fa-ban {
+        font-size: initial;
+        margin-left: 0.6em;
+    }
+    .libraryRow {
+        background-color: $table-heading-bg;
+    }
+    .datasetHighlighted {
+        background-color: $table-bg-accent;
+    }
+    .libraryItemDeleted-True {
+        font-style: italic;
+    }
+    div.libraryItemBody {
+        padding: 4px 4px 2px 4px;
+    }
+    li.folderRow,
+    li.datasetRow {
+        border-top: solid 1px $table-border-color;
+    }
+    li.folderRow:hover,
+    li.datasetRow:hover {
+        background-color: $table-bg-accent;
+    }
+    td.right-center {
+        vertical-align: middle !important;
+        text-align: right;
+    }
+    .library-genome-select {
+        max-width: 350px;
+    }
+    .library-extension-select {
+        max-width: 140px;
+    }
+    .library_table {
+        td {
+            border-top: 1px solid #5f6990 !important;
+        }
+        th {
+            border-bottom: 2px solid #5f6990 !important;
+        }
+        a {
+            color: #0a143d;
+            &:hover {
+                color: $brand-info;
+            }
+        }
+    }
+    tr.light {
+        font-weight: initial;
+        color: initial;
+    }
+    tr.light td {
+        background-color: white;
+        color: black;
+    }
+    tr.light:hover td {
+        background-color: #f5e8cc;
+    }
+    tr.dark td {
+        background-color: #d6b161;
+        color: white;
+    }
+    tr.dark:hover td {
+        background-color: #ebd4a4;
+        color: white;
+    }
+    tr.table-primary td {
+        color: $brand-light;
+    }
+    tr.table-primary td a {
+        color: $white;
+    }
+    a.dark {
+        color: white;
+    }
+    .dataset_table {
+        tr,
+        th,
+        td {
+            border: none;
+        }
+        .dataset-first-column {
+            width: 30%;
+        }
+    }
+    th.button_heading {
+        width: 2em;
+    }
+    .bigdrop.select2-container .select2-results {
+        max-height: 300px;
+    }
+    .bigdrop .select2-results {
+        max-height: 300px;
+    }
+    .select2-container-multi {
+        width: 100%;
+    }
+    .roles-selection {
+        width: 66%;
+    }
+    #libraries_element,
+    #folder_items_element {
+        button {
+            margin-left: 0.5em;
+        }
+    }
+    .import-type-switch {
+        text-decoration: underline;
+    }
+    .libimport-select-none,
+    .libimport-select-all {
+        margin-left: 0.5em;
+    }
+    td,
+    thead {
+        vertical-align: middle;
+    }
+    .mid {
+        vertical-align: middle;
+        text-align: center;
+    }
+    .library_container {
+        th,
+        tr {
+            white-space: nowrap;
+        }
+        @media only screen and (max-width: 1000px) {
+            th:nth-child(3),
+            td:nth-child(3) {
+                display: none;
+            }
+        }
+        @media only screen and (max-width: 800px) {
+            th:nth-child(2),
+            td:nth-child(2) {
+                display: none;
+            }
+        }
+    }
+    .folder-container {
+        th,
+        tr {
+            white-space: nowrap;
+        }
+        @media only screen and (max-width: 1200px) {
+            th:nth-child(5),
+            td:nth-child(5) {
+                display: none;
+            }
+        }
+        @media only screen and (max-width: 1000px) {
+            th:nth-child(8),
+            td:nth-child(8) {
+                display: none;
+            }
+        }
+        @media only screen and (max-width: 800px) {
+            th:nth-child(9),
+            td:nth-child(9),
+            th:nth-child(4),
+            td:nth-child(4) {
+                display: none;
+            }
+        }
+    }
+}
+
+// Extra style for Galaxy modal
+.modal-content {
+    .library_selected_history_content {
+        ul {
+            list-style-type: none;
+        }
+    }
+    .library-collection-type-select,
+    .library-collection-history-select {
+        margin-left: auto;
+        margin-right: auto;
+        width: 200px;
+        min-width: 200px;
+    }
+    .library-modal-item {
+        width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 1.5em;
+    }
+}
+
+.libraryTitle {
+    th {
+        text-align: left;
+    }
+    .rowTitle {
+        padding: 2px;
+    }
+}

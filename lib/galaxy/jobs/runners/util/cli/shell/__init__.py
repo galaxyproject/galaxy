@@ -3,15 +3,11 @@ Abstract base class for runners which execute commands via a shell.
 """
 from abc import (
     ABCMeta,
-    abstractmethod
+    abstractmethod,
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class BaseShellExec(object):
-
+class BaseShellExec(metaclass=ABCMeta):
     @abstractmethod
     def __init__(self, *args, **kwargs):
         """

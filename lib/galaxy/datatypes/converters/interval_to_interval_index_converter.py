@@ -8,7 +8,6 @@ usage: %prog <options> in_file out_file
     -s, --start-col: start column, default=2
     -e, --end-col: end column, default=3
 """
-from __future__ import division
 
 import optparse
 
@@ -19,9 +18,9 @@ def main():
 
     # Read options, args.
     parser = optparse.OptionParser()
-    parser.add_option('-c', '--chr-col', type='int', dest='chrom_col', default=1)
-    parser.add_option('-s', '--start-col', type='int', dest='start_col', default=2)
-    parser.add_option('-e', '--end-col', type='int', dest='end_col', default=3)
+    parser.add_option("-c", "--chr-col", type="int", dest="chrom_col", default=1)
+    parser.add_option("-s", "--start-col", type="int", dest="start_col", default=2)
+    parser.add_option("-e", "--end-col", type="int", dest="end_col", default=3)
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
 
@@ -45,7 +44,7 @@ def main():
             index.add(chrom, chrom_start, chrom_end, offset)
             offset += len(line)
 
-    with open(output_fname, 'wb') as out:
+    with open(output_fname, "wb") as out:
         index.write(out)
 
 

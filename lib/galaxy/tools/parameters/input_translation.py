@@ -1,7 +1,6 @@
 """
 Tool Input Translation.
 """
-from __future__ import print_function
 
 import logging
 
@@ -10,7 +9,7 @@ from galaxy.util.bunch import Bunch
 log = logging.getLogger(__name__)
 
 
-class ToolInputTranslator(object):
+class ToolInputTranslator:
     """
     Handles Tool input translation.
     This is used for data source tools
@@ -49,6 +48,7 @@ class ToolInputTranslator(object):
     >>> params.get('URL', None) in ['URL_value?GALAXY_URL=0&_export=1', 'URL_value?_export=1&GALAXY_URL=0']
     True
     """
+
     @classmethod
     def from_element(cls, elem):
         """Loads the proper filter by the type attribute of elem"""
@@ -62,9 +62,9 @@ class ToolInputTranslator(object):
             value_trans = {}
             append_param = None
 
-            value_trans_elem = req_param.find('value_translation')
+            value_trans_elem = req_param.find("value_translation")
             if value_trans_elem is not None:
-                for value_elem in value_trans_elem.findall('value'):
+                for value_elem in value_trans_elem.findall("value"):
                     remote_value = value_elem.get("remote_value")
                     galaxy_value = value_elem.get("galaxy_value")
                     if None not in [remote_value, galaxy_value]:
@@ -72,18 +72,22 @@ class ToolInputTranslator(object):
 
             append_param_elem = req_param.find("append_param")
             if append_param_elem is not None:
-                separator = append_param_elem.get('separator', ',')
-                first_separator = append_param_elem.get('first_separator', None)
-                join_str = append_param_elem.get('join', '=')
+                separator = append_param_elem.get("separator", ",")
+                first_separator = append_param_elem.get("first_separator", None)
+                join_str = append_param_elem.get("join", "=")
                 append_dict = {}
-                for value_elem in append_param_elem.findall('value'):
-                    value_name = value_elem.get('name')
-                    value_missing = value_elem.get('missing')
+                for value_elem in append_param_elem.findall("value"):
+                    value_name = value_elem.get("name")
+                    value_missing = value_elem.get("missing")
                     if None not in [value_name, value_missing]:
                         append_dict[value_name] = value_missing
-                append_param = Bunch(separator=separator, first_separator=first_separator, join_str=join_str, append_dict=append_dict)
+                append_param = Bunch(
+                    separator=separator, first_separator=first_separator, join_str=join_str, append_dict=append_dict
+                )
 
-            rval.param_trans_dict[remote_name] = Bunch(galaxy_name=galaxy_name, missing=missing, value_trans=value_trans, append_param=append_param)
+            rval.param_trans_dict[remote_name] = Bunch(
+                galaxy_name=galaxy_name, missing=missing, value_trans=value_trans, append_param=append_param
+            )
 
         return rval
 
@@ -95,8 +99,12 @@ class ToolInputTranslator(object):
         update params in-place
         """
         for remote_name, translator in self.param_trans_dict.items():
-            galaxy_name = translator.galaxy_name  # NB: if a param by name galaxy_name is provided, it is always thrown away unless galaxy_name == remote_name
-            value = params.get(remote_name, translator.missing)  # get value from input params, or use default value specified in tool config
+            galaxy_name = (
+                translator.galaxy_name
+            )  # NB: if a param by name galaxy_name is provided, it is always thrown away unless galaxy_name == remote_name
+            value = params.get(
+                remote_name, translator.missing
+            )  # get value from input params, or use default value specified in tool config
             if translator.value_trans and value in translator.value_trans:
                 value = translator.value_trans[value]
             if translator.append_param:
@@ -106,5 +114,5 @@ class ToolInputTranslator(object):
                         sep = translator.append_param.first_separator
                     else:
                         sep = translator.append_param.separator
-                    value += '%s%s%s%s' % (sep, param_name, translator.append_param.join_str, param_value)
+                    value += f"{sep}{param_name}{translator.append_param.join_str}{param_value}"
             params.update({galaxy_name: value})

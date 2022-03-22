@@ -1,0 +1,32 @@
+:orphan:
+
+Configuration Changes
+=====================
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/tool_shed.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+config/galaxy.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+config/reports.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  uwsgi.static-safe has changed from ``client/galaxy/images`` to ``client/src/assets``
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/trs_servers_conf.yml.sample``

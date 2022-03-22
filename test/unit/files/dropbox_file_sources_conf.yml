@@ -1,0 +1,4 @@
+- type: dropbox
+  id: test1
+  doc: Test access to a dropbox account.
+  accessToken: ${user.preferences['dropbox|access_token']}

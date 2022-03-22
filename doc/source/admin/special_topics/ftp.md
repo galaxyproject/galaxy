@@ -121,7 +121,7 @@ For PBKDF2 passwords, the following additions to `proftpd.conf` should work:
 # Configuration that handles PBKDF2 encryption
 # Set up mod_sql to authenticate against the Galaxy database
 SQLAuthTypes                    PBKDF2
-SQLPasswordPBKDF2               SHA256 10000 24 
+SQLPasswordPBKDF2               SHA256 100000 24
 SQLPasswordEncoding             base64
  
 # For PBKDF2 authentication
@@ -130,11 +130,13 @@ SQLPasswordUserSalt             sql:/GetUserSalt
  
 # Define a custom query for lookup that returns a passwd-like entry. Replace 512s with the UID and GID of the user running the Galaxy server
 SQLUserInfo                     custom:/LookupGalaxyUser
-SQLNamedQuery                   LookupGalaxyUser SELECT "email, (CASE WHEN substring(password from 1 for 6) = 'PBKDF2' THEN substring(password from 38 for 69) ELSE password END) AS password2,512,512,'/home/nate/galaxy_dist/database/ftp/%U','/bin/bash' FROM galaxy_user WHERE email='%U'"
+SQLNamedQuery                   LookupGalaxyUser SELECT "email, split_part(password, '$', 5) AS password2,512,512,'/home/nate/galaxy_dist/database/ftp/%U','/bin/bash' FROM galaxy_user WHERE email='%U'"
  
 # Define custom query to fetch the password salt
-SQLNamedQuery                   GetUserSalt SELECT "(CASE WHEN SUBSTRING (password from 1 for 6) = 'PBKDF2' THEN SUBSTRING (password from 21 for 16) END) AS salt FROM galaxy_user WHERE email='%U'"
+SQLNamedQuery                   GetUserSalt SELECT "split_part(password, '$', 4) AS salt FROM galaxy_user WHERE email='%U'"
 ```
+
+Please note that you would need to update `SQLPasswordPBKDF2` based on the values (HASH_FUNCTION, COST_FACTOR and KEY_LENGTH) you will find here [Galaxy security passwords](https://docs.galaxyproject.org/en/master/_modules/galaxy/security/passwords.html)
 
 For SHA1 passwords, the following additions to `proftpd.conf` should work:
 

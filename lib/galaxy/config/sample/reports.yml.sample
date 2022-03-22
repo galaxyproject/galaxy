@@ -1,92 +1,3 @@
-uwsgi:
-
-  # The address and port on which to listen.  By default, only listen to
-  # localhost (reports will not be accessible over the network).  Use
-  # ':9001' to listen on all available network interfaces.
-  http: 127.0.0.1:9001
-
-  # By default uWSGI allocates a very small buffer (4096 bytes) for the
-  # headers of each request. If you start receiving "invalid request
-  # block size" in your logs, it could mean you need a bigger buffer. We
-  # recommend at least 16384.
-  buffer-size: 16384
-
-  # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1,
-  # thunder-lock likely should be enabled below.
-  processes: 1
-
-  # Number of threads for each web server process.
-  threads: 4
-
-  # Number of threads for serving static content and handling internal
-  # routing requests.
-  offload-threads: 2
-
-  # Mapping to serve static content.
-  static-map: /static=static
-
-  # Mapping to serve the favicon.
-  static-map: /favicon.ico=static/favicon.ico
-
-  # Allow serving images out of `client`.  Most modern Galaxy interfaces
-  # bundle all of this, but some older pages still serve these via
-  # symlink, requiring this rule.
-  static-safe: client/galaxy/images
-
-  # Enable the master process manager. Disabled by default for maximum
-  # compatibility with CTRL+C, but should be enabled for use with
-  # --daemon and/or production deployments.
-  master: false
-
-  # Path to the application's Python virtual environment. If using Conda
-  # for Galaxy's framework dependencies (not tools!), do not set this.
-  virtualenv: .venv
-
-  # Path to the application's Python library.
-  pythonpath: lib
-
-  # The entry point which returns the web application (e.g. Galaxy,
-  # Reports, etc.) that you are loading.
-  module: galaxy.webapps.reports.buildapp:uwsgi_app()
-
-  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
-  # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
-
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
-  # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
-
-  # It is usually a good idea to set this to ``true`` if processes is
-  # greater than 1.
-  thunder-lock: false
-
-  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
-  # (its default is to brutally reload workers)
-  die-on-term: true
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGINT (its default is to brutally kill workers)
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGTERM (its default is to brutally kill workers)
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
-
-  # Ensure application threads will run if `threads` is unset.
-  enable-threads: true
-
-  # uWSGI default umask. On some systems uWSGI has a default umask of
-  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
-  # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the umask needs to be '022' or the Galaxy users need
-  # to be in the same group as the Galaxy system user
-  umask: 027
-
 reports:
 
   # Verbosity of console log messages.  Acceptable values can be found
@@ -100,7 +11,7 @@ reports:
   #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Where dataset files are stored.
-  #file_path: database/files
+  #file_path: database/objects
 
   # Where temporary files are stored.
   #new_file_path: database/tmp

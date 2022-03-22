@@ -23,16 +23,24 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
     optional control over which line to start on and how many lines
     to return.
     """
-    DEFAULT_COMMENT_CHAR = '#'
+
+    DEFAULT_COMMENT_CHAR = "#"
     settings = {
-        'strip_lines'   : 'bool',
-        'strip_newlines': 'bool',
-        'provide_blank' : 'bool',
-        'comment_char'  : 'str',
+        "strip_lines": "bool",
+        "strip_newlines": "bool",
+        "provide_blank": "bool",
+        "comment_char": "str",
     }
 
-    def __init__(self, source, strip_lines=True, strip_newlines=False, provide_blank=False,
-                 comment_char=DEFAULT_COMMENT_CHAR, **kwargs):
+    def __init__(
+        self,
+        source,
+        strip_lines=True,
+        strip_newlines=False,
+        provide_blank=False,
+        comment_char=DEFAULT_COMMENT_CHAR,
+        **kwargs,
+    ):
         """
         :param strip_lines: remove whitespace from the beginning an ending
             of each line (or not).
@@ -53,7 +61,7 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
             Optional: defaults to '#'
         :type comment_char: str
         """
-        super(FilteredLineDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
         self.strip_lines = strip_lines
         self.strip_newlines = strip_newlines
         self.provide_blank = provide_blank
@@ -72,13 +80,13 @@ class FilteredLineDataProvider(base.LimitedOffsetDataProvider):
             if self.strip_lines:
                 line = line.strip()
             elif self.strip_newlines:
-                line = line.strip('\n')
-            if not self.provide_blank and line == '':
+                line = line.strip("\n")
+            if not self.provide_blank and line == "":
                 return None
             elif self.comment_char and line.startswith(self.comment_char):
                 return None
 
-        return super(FilteredLineDataProvider, self).filter(line)
+        return super().filter(line)
 
 
 class RegexLineDataProvider(FilteredLineDataProvider):
@@ -90,9 +98,10 @@ class RegexLineDataProvider(FilteredLineDataProvider):
     .. note:: the regex matches are effectively OR'd (if **any** regex matches
         the line it is considered valid and will be provided).
     """
+
     settings = {
-        'regex_list'    : 'list:escaped',
-        'invert'        : 'bool',
+        "regex_list": "list:escaped",
+        "invert": "bool",
     }
 
     def __init__(self, source, regex_list=None, invert=False, **kwargs):
@@ -106,7 +115,7 @@ class RegexLineDataProvider(FilteredLineDataProvider):
             Optional: defaults to False
         :type invert: bool
         """
-        super(RegexLineDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
         self.regex_list = regex_list if isinstance(regex_list, list) else []
         self.compiled_regex_list = [re.compile(regex) for regex in self.regex_list]
@@ -115,13 +124,13 @@ class RegexLineDataProvider(FilteredLineDataProvider):
 
     def filter(self, line):
         # NOTE: filter_fn will occur BEFORE any matching
-        line = super(RegexLineDataProvider, self).filter(line)
+        line = super().filter(line)
         if line is not None and self.compiled_regex_list:
             line = self.filter_by_regex(line)
         return line
 
     def filter_by_regex(self, line):
-        matches = any([regex.match(line) for regex in self.compiled_regex_list])
+        matches = any(regex.match(line) for regex in self.compiled_regex_list)
         if self.invert:
             return line if not matches else None
         return line if matches else None
@@ -153,10 +162,9 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         """
         # composition - not inheritance
         # TODO: not a fan of this:
-        (filter_fn, limit, offset) = (kwargs.pop('filter_fn', None),
-                                      kwargs.pop('limit', None), kwargs.pop('offset', 0))
+        (filter_fn, limit, offset) = (kwargs.pop("filter_fn", None), kwargs.pop("limit", None), kwargs.pop("offset", 0))
         line_provider = FilteredLineDataProvider(source, **kwargs)
-        super(BlockDataProvider, self).__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
+        super().__init__(line_provider, filter_fn=filter_fn, limit=limit, offset=offset)
 
         self.new_block_delim_fn = new_block_delim_fn
         self.block_filter_fn = block_filter_fn
@@ -173,9 +181,8 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         """
         Overridden to provide last block.
         """
-        parent_gen = super(BlockDataProvider, self).__iter__()
-        for block in parent_gen:
-            yield block
+        parent_gen = super().__iter__()
+        yield from parent_gen
 
         last_block = self.handle_last_block()
         if last_block is not None:
@@ -191,7 +198,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         :type line: str
         :returns: a block or `None`
         """
-        line = super(BlockDataProvider, self).filter(line)
+        line = super().filter(line)
         # TODO: HACK
         self.num_data_read -= 1
         if line is None:
@@ -242,7 +249,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         Called per block (just before providing).
         """
         # empty block_lines and assemble block
-        return list((self.block_lines.popleft() for i in range(len(self.block_lines))))
+        return list(self.block_lines.popleft() for i in range(len(self.block_lines)))
 
     def filter_block(self, block):
         """

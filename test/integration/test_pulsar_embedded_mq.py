@@ -36,6 +36,8 @@ execution:
       dependency_resolution: none
       default_file_action: remote_transfer
       jobs_directory: ${jobs_directory}
+      remote_metadata: true
+      remote_property_galaxy_home: ${galaxy_home}
     local_environment:
       runner: local
 tools:
@@ -52,8 +54,6 @@ class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.Integration
     """
 
     framework_tool_and_types = True
-    # Test leverages $UWSGI_PORT in job code, need to set this up.
-    require_uwsgi = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -65,13 +65,12 @@ class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.Integration
         safe_makedirs(jobs_directory)
         job_conf_template = string.Template(JOB_CONF_TEMPLATE)
         job_conf_str = job_conf_template.substitute(
-            amqp_url=AMQP_URL,
-            jobs_directory=jobs_directory,
+            amqp_url=AMQP_URL, jobs_directory=jobs_directory, galaxy_home=os.path.join(SCRIPT_DIRECTORY, os.pardir)
         )
         with tempfile.NamedTemporaryFile(suffix="_mq_job_conf.yml", mode="w", delete=False) as job_conf:
             job_conf.write(job_conf_str)
         config["job_config_file"] = job_conf.name
-        infrastructure_url = "http://localhost:$UWSGI_PORT"
+        infrastructure_url = "http://localhost:$GALAXY_WEB_PORT"
         config["galaxy_infrastructure_url"] = infrastructure_url
 
 

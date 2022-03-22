@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 
 def _get_subs(d, k, params):
     if k not in d or not d[k]:
-        raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
+        raise ConfigurationError(f"Missing '{k}' parameter in LDAP options")
     return str(d[k]).format(**params)
 
 
@@ -43,11 +43,16 @@ def _parse_ldap_options(options_unparsed):
         try:
             key, value = opt.split("=")
         except ValueError:
-            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2", opt)
+            log.warning(
+                "LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2",
+                opt,
+            )
             continue
 
         if not key.startswith(prefix):
-            log.warning("LDAP authenticate: Invalid LDAP option '%s'. '%s' doesn't start with prefix '%s'", opt, key, prefix)
+            log.warning(
+                "LDAP authenticate: Invalid LDAP option '%s'. '%s' doesn't start with prefix '%s'", opt, key, prefix
+            )
             continue
         try:
             key = getattr(ldap, key)
@@ -58,7 +63,9 @@ def _parse_ldap_options(options_unparsed):
             try:
                 value = getattr(ldap, value)
             except AttributeError:
-                log.warning("LDAP authenticate: Invalid LDAP option '%s'. '%s' is not available in module ldap", opt, value)
+                log.warning(
+                    "LDAP authenticate: Invalid LDAP option '%s'. '%s' is not available in module ldap", opt, value
+                )
                 continue
         pair = (key, value)
         log.debug("LDAP authenticate: Valid LDAP option pair '%s' -> '%s=%s'", opt, *pair)
@@ -76,42 +83,47 @@ class LDAP(AuthProvider):
     those fields first.  After that it will bind to LDAP with the username
     (formatted as specified).
     """
-    plugin_type = 'ldap'
-    role_search_option = 'auto-register-roles'
+
+    plugin_type = "ldap"
+    role_search_option = "auto-register-roles"
 
     def __init__(self):
-        super(LDAP, self).__init__()
+        super().__init__()
         self.auto_create_roles_or_groups = False
         self.role_search_attribute = None
 
     def check_config(self, username, email, options):
         ok = True
-        if options.get('continue-on-failure', 'False') == 'False':
+        if options.get("continue-on-failure", "False") == "False":
             failure_mode = None  # reject and do not continue
         else:
             failure_mode = False  # reject but continue
 
-        if string_as_bool(options.get('login-use-username', False)):
+        if string_as_bool(options.get("login-use-username", False)):
             if not username:
-                log.debug('LDAP authenticate: username must be used to login, cannot be None')
+                log.debug("LDAP authenticate: username must be used to login, cannot be None")
                 return ok, failure_mode
         else:
             if not email:
-                log.debug('LDAP authenticate: email must be used to login, cannot be None')
+                log.debug("LDAP authenticate: email must be used to login, cannot be None")
                 return ok, failure_mode
 
-        auto_create_roles = string_as_bool(options.get('auto-create-roles', False))
-        auto_create_groups = string_as_bool(options.get('auto-create-groups', False))
+        auto_create_roles = string_as_bool(options.get("auto-create-roles", False))
+        auto_create_groups = string_as_bool(options.get("auto-create-groups", False))
         self.auto_create_roles_or_groups = auto_create_roles or auto_create_groups
-        auto_assign_roles_to_groups_only = string_as_bool(options.get('auto-assign-roles-to-groups-only', False))
+        auto_assign_roles_to_groups_only = string_as_bool(options.get("auto-assign-roles-to-groups-only", False))
         if auto_assign_roles_to_groups_only and not (auto_create_roles and auto_create_groups):
-            raise ConfigurationError("If 'auto-assign-roles-to-groups-only' is True, auto-create-roles and "
-                                     "auto-create-groups have to be True as well.")
+            raise ConfigurationError(
+                "If 'auto-assign-roles-to-groups-only' is True, auto-create-roles and "
+                "auto-create-groups have to be True as well."
+            )
 
         self.role_search_attribute = options.get(self.role_search_option)
         if self.auto_create_roles_or_groups and self.role_search_attribute is None:
-            raise ConfigurationError("If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
-                                     " be provided." % self.role_search_option)
+            raise ConfigurationError(
+                "If 'auto-create-roles' or 'auto-create-groups' is True, a '%s' attribute has to"
+                " be provided." % self.role_search_option
+            )
 
         return ok, failure_mode
 
@@ -123,10 +135,10 @@ class LDAP(AuthProvider):
         if not config_ok:
             return failure_mode, None
 
-        params = {'email': email, 'username': username}
+        params = {"email": email, "username": username}
 
         try:
-            ldap_options_raw = _get_subs(options, 'ldap-options', params)
+            ldap_options_raw = _get_subs(options, "ldap-options", params)
         except ConfigurationError:
             ldap_options = ()
         else:
@@ -139,32 +151,37 @@ class LDAP(AuthProvider):
             for opt in ldap_options:
                 ldap.set_option(*opt)
         except Exception:
-            log.exception('LDAP authenticate: set_option exception')
+            log.exception("LDAP authenticate: set_option exception")
             return (failure_mode, None)
 
-        if 'search-fields' in options:
+        if "search-fields" in options:
             try:
-                l = ldap.initialize(_get_subs(options, 'server', params))
-                l.protocol_version = 3
+                conn = ldap.initialize(_get_subs(options, "server", params))
+                conn.protocol_version = 3
 
-                if 'search-user' in options:
-                    l.simple_bind_s(_get_subs(options, 'search-user', params),
-                                    _get_subs(options, 'search-password', params))
+                if "search-user" in options:
+                    conn.simple_bind_s(
+                        _get_subs(options, "search-user", params), _get_subs(options, "search-password", params)
+                    )
                 else:
-                    l.simple_bind_s()
+                    conn.simple_bind_s()
 
                 # setup search
-                attributes = {_.strip().format(**params) for _ in options['search-fields'].split(',')}
-                if 'search-memberof-filter' in options:
-                    attributes.add('memberOf')
-                suser = l.search_ext_s(_get_subs(options, 'search-base', params),
+                attributes = {_.strip().format(**params) for _ in options["search-fields"].split(",")}
+                if "search-memberof-filter" in options:
+                    attributes.add("memberOf")
+                suser = conn.search_ext_s(
+                    _get_subs(options, "search-base", params),
                     ldap.SCOPE_SUBTREE,
-                    _get_subs(options, 'search-filter', params), attributes,
-                    timeout=60, sizelimit=1)
+                    _get_subs(options, "search-filter", params),
+                    attributes,
+                    timeout=60,
+                    sizelimit=1,
+                )
 
                 # parse results
                 if suser is None or len(suser) == 0:
-                    log.warning('LDAP authenticate: search returned no results')
+                    log.warning("LDAP authenticate: search returned no results")
                     return (failure_mode, None)
                 dn, attrs = suser[0]
                 log.debug("LDAP authenticate: dn is %s", dn)
@@ -173,7 +190,7 @@ class LDAP(AuthProvider):
                     if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
                         # keep role names as list
                         params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
-                    elif attr == 'memberOf':
+                    elif attr == "memberOf":
                         params[attr] = [unicodify(_) for _ in attrs[attr]]
                     elif attr in attrs:
                         params[attr] = unicodify(attrs[attr][0])
@@ -181,12 +198,13 @@ class LDAP(AuthProvider):
                         params[attr] = ""
 
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
-                    raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
-                                             "included in the 'search-fields'." %
-                                             (self.role_search_option, self.role_search_attribute))
-                params['dn'] = dn
+                    raise ConfigurationError(
+                        "Missing or mismatching LDAP parameters for %s. Make sure the %s is "
+                        "included in the 'search-fields'." % (self.role_search_option, self.role_search_attribute)
+                    )
+                params["dn"] = dn
             except Exception:
-                log.exception('LDAP authenticate: search exception')
+                log.exception("LDAP authenticate: search exception")
                 return (failure_mode, None)
 
         return failure_mode, params
@@ -195,7 +213,7 @@ class LDAP(AuthProvider):
         """
         See abstract method documentation.
         """
-        if not options['redact_username_in_logs']:
+        if not options["redact_username_in_logs"]:
             log.debug("LDAP authenticate: email is %s", email)
             log.debug("LDAP authenticate: username is %s", username)
 
@@ -203,56 +221,58 @@ class LDAP(AuthProvider):
 
         failure_mode, params = self.ldap_search(email, username, options)
         if not params:
-            return failure_mode, '', ''
+            return failure_mode, "", ""
 
         # allow to skip authentication to allow for pre-populating users
-        if not options.get('no_password_check', False):
-            params['password'] = password
+        if not options.get("no_password_check", False):
+            params["password"] = password
             if not self._authenticate(params, options):
-                return failure_mode, '', ''
+                return failure_mode, "", ""
 
         # check whether the user is a member of a specified group/domain/...
-        if 'search-memberof-filter' in options:
-            search_filter = _get_subs(options, 'search-memberof-filter', params)
-            if not any(search_filter in ad_node_name for ad_node_name in params['memberOf']):
-                return failure_mode, '', ''
+        if "search-memberof-filter" in options:
+            search_filter = _get_subs(options, "search-memberof-filter", params)
+            if not any(search_filter in ad_node_name for ad_node_name in params["memberOf"]):
+                return failure_mode, "", ""
 
         attributes = {}
         if self.auto_create_roles_or_groups:
-            attributes['roles'] = params[self.role_search_option]
-        return (True,
-                _get_subs(options, 'auto-register-email', params),
-                transform_publicname(_get_subs(options, 'auto-register-username', params)),
-                attributes)
+            attributes["roles"] = params[self.role_search_option]
+        return (
+            True,
+            _get_subs(options, "auto-register-email", params),
+            transform_publicname(_get_subs(options, "auto-register-username", params)),
+            attributes,
+        )
 
     def _authenticate(self, params, options):
         """
         Do the actual authentication by binding as the user to check their credentials
         """
         try:
-            l = ldap.initialize(_get_subs(options, 'server', params))
-            l.protocol_version = 3
-            bind_user = _get_subs(options, 'bind-user', params)
-            bind_password = _get_subs(options, 'bind-password', params)
+            conn = ldap.initialize(_get_subs(options, "server", params))
+            conn.protocol_version = 3
+            bind_user = _get_subs(options, "bind-user", params)
+            bind_password = _get_subs(options, "bind-password", params)
         except Exception:
-            log.exception('LDAP authenticate: initialize exception')
+            log.exception("LDAP authenticate: initialize exception")
             return False
         try:
-            l.simple_bind_s(bind_user, bind_password)
+            conn.simple_bind_s(bind_user, bind_password)
             try:
-                whoami = l.whoami_s()
+                whoami = conn.whoami_s()
             except ldap.PROTOCOL_ERROR:
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
                 if whoami is None:
-                    raise RuntimeError('LDAP authenticate: anonymous bind')
-                if not options['redact_username_in_logs']:
+                    raise RuntimeError("LDAP authenticate: anonymous bind")
+                if not options["redact_username_in_logs"]:
                     log.debug("LDAP authenticate: whoami is %s", whoami)
         except Exception as e:
-            log.info('LDAP authenticate: bind exception: %s', unicodify(e))
+            log.info("LDAP authenticate: bind exception: %s", unicodify(e))
             return False
-        log.debug('LDAP authentication successful')
+        log.debug("LDAP authentication successful")
         return True
 
     def authenticate_user(self, user, password, options):
@@ -263,9 +283,10 @@ class LDAP(AuthProvider):
 
 
 class ActiveDirectory(LDAP):
-    """ Effectively just an alias for LDAP auth, but may contain active directory specific
-    logic in the future. """
-    plugin_type = 'activedirectory'
+    """Effectively just an alias for LDAP auth, but may contain active directory specific
+    logic in the future."""
+
+    plugin_type = "activedirectory"
 
 
-__all__ = ('LDAP', 'ActiveDirectory')
+__all__ = ("LDAP", "ActiveDirectory")

@@ -1,16 +1,25 @@
 """
 Migration script to add the repository_metadata table.
 """
-from __future__ import print_function
 
 import datetime
 import logging
 import sys
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+)
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import JSONType, TrimmedString
+from galaxy.model.custom_types import (
+    JSONType,
+    TrimmedString,
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -23,13 +32,16 @@ log.addHandler(handler)
 
 metadata = MetaData()
 
-RepositoryMetadata_table = Table("repository_metadata", metadata,
-                                 Column("id", Integer, primary_key=True),
-                                 Column("create_time", DateTime, default=now),
-                                 Column("update_time", DateTime, default=now, onupdate=now),
-                                 Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
-                                 Column("changeset_revision", TrimmedString(255), index=True),
-                                 Column("metadata", JSONType, nullable=True))
+RepositoryMetadata_table = Table(
+    "repository_metadata",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    Column("repository_id", Integer, ForeignKey("repository.id"), index=True),
+    Column("changeset_revision", TrimmedString(255), index=True),
+    Column("metadata", JSONType, nullable=True),
+)
 
 
 def upgrade(migrate_engine):

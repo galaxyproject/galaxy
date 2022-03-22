@@ -5,7 +5,7 @@ from collections import namedtuple
 from galaxy import (
     exceptions,
     util,
-    web
+    web,
 )
 from galaxy.tools.parameters import params_to_strings
 from galaxy.tools.repositories import ValidationContext
@@ -17,8 +17,8 @@ from tool_shed.util import (
     common_util,
     metadata_util,
     repository_util,
-    shed_util_common as suc
 )
+from tool_shed.util import shed_util_common as suc
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.webapp.search.tool_search import ToolSearch
 
@@ -56,22 +56,24 @@ class ToolsController(BaseAPIController):
             GET http://localhost:9009/api/tools
             GET http://localhost:9009/api/tools?q=fastq
         """
-        q = kwd.get('q', '')
+        q = kwd.get("q", "")
         if not q:
-            raise exceptions.NotImplemented('Listing of all the tools is not implemented. Provide parameter "q" to search instead.')
+            raise exceptions.NotImplemented(
+                'Listing of all the tools is not implemented. Provide parameter "q" to search instead.'
+            )
         else:
-            page = kwd.get('page', 1)
-            page_size = kwd.get('page_size', 10)
+            page = kwd.get("page", 1)
+            page_size = kwd.get("page_size", 10)
             try:
                 page = int(page)
                 page_size = int(page_size)
             except ValueError:
                 raise exceptions.RequestParameterInvalidException('The "page" and "page_size" have to be integers.')
-            return_jsonp = util.asbool(kwd.get('jsonp', False))
-            callback = kwd.get('callback', 'callback')
+            return_jsonp = util.asbool(kwd.get("jsonp", False))
+            callback = kwd.get("callback", "callback")
             search_results = self._search(trans, q, page, page_size)
             if return_jsonp:
-                response = str('%s(%s);' % (callback, json.dumps(search_results)))
+                response = str(f"{callback}({json.dumps(search_results)});")
             else:
                 response = json.dumps(search_results)
             return response
@@ -86,30 +88,31 @@ class ToolsController(BaseAPIController):
         """
         conf = self.app.config
         if not conf.toolshed_search_on:
-            raise exceptions.ConfigDoesNotAllowException('Searching the TS through the API is turned off for this instance.')
+            raise exceptions.ConfigDoesNotAllowException(
+                "Searching the TS through the API is turned off for this instance."
+            )
         if not conf.whoosh_index_dir:
-            raise exceptions.ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
+            raise exceptions.ConfigDoesNotAllowException(
+                "There is no directory for the search index specified. Please contact the administrator."
+            )
         search_term = q.strip()
         if len(search_term) < 1:
-            raise exceptions.RequestParameterInvalidException('The search term has to be at least one character long.')
+            raise exceptions.RequestParameterInvalidException("The search term has to be at least one character long.")
 
         tool_search = ToolSearch()
 
-        Boosts = namedtuple('Boosts', ['tool_name_boost',
-                                       'tool_description_boost',
-                                       'tool_help_boost',
-                                       'tool_repo_owner_username_boost'])
-        boosts = Boosts(float(conf.get('tool_name_boost', 1.2)),
-                        float(conf.get('tool_description_boost', 0.6)),
-                        float(conf.get('tool_help_boost', 0.4)),
-                        float(conf.get('tool_repo_owner_username_boost', 0.3)))
+        Boosts = namedtuple(
+            "Boosts", ["tool_name_boost", "tool_description_boost", "tool_help_boost", "tool_repo_owner_username_boost"]
+        )
+        boosts = Boosts(
+            float(conf.get("tool_name_boost", 1.2)),
+            float(conf.get("tool_description_boost", 0.6)),
+            float(conf.get("tool_help_boost", 0.4)),
+            float(conf.get("tool_repo_owner_username_boost", 0.3)),
+        )
 
-        results = tool_search.search(trans,
-                                     search_term,
-                                     page,
-                                     page_size,
-                                     boosts)
-        results['hostname'] = web.url_for('/', qualified=True)
+        results = tool_search.search(trans, search_term, page, page_size, boosts)
+        results["hostname"] = web.url_for("/", qualified=True)
         return results
 
     @expose_api_raw_anonymous_and_sessionless
@@ -128,27 +131,26 @@ class ToolsController(BaseAPIController):
         :param changeset:     the changeset at which to load the tool json
         :param changeset:     str
         """
-        guid = kwd.get('guid', None)
-        tsr_id = kwd.get('tsr_id', None)
-        changeset = kwd.get('changeset', None)
+        guid = kwd.get("guid", None)
+        tsr_id = kwd.get("tsr_id", None)
+        changeset = kwd.get("changeset", None)
         if None in [changeset, tsr_id, guid]:
-            message = 'Changeset, repository ID, and tool GUID are all required parameters.'
+            message = "Changeset, repository ID, and tool GUID are all required parameters."
             trans.response.status = 400
-            return {'status': 'error', 'message': message}
+            return {"status": "error", "message": message}
         tsucm = ToolShedUtilityContainerManager(trans.app)
         repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
         repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(repository.user, repository)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, tsr_id, changeset)
-        toolshed_base_url = str(web.url_for('/', qualified=True)).rstrip('/')
+        toolshed_base_url = str(web.url_for("/", qualified=True)).rstrip("/")
         rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        containers_dict = tsucm.build_repository_containers(repository,
-                                                            changeset,
-                                                            repository_dependencies,
-                                                            repository_metadata)
+        containers_dict = tsucm.build_repository_containers(
+            repository, changeset, repository_dependencies, repository_metadata
+        )
         found_tool = None
-        for folder in containers_dict['valid_tools'].folders:
-            if hasattr(folder, 'valid_tools'):
+        for folder in containers_dict["valid_tools"].folders:
+            if hasattr(folder, "valid_tools"):
                 for tool in folder.valid_tools:
                     tool.id = tool.tool_id
                     tool_guid = suc.generate_tool_guid(repository_clone_url, tool)
@@ -156,33 +158,35 @@ class ToolsController(BaseAPIController):
                         found_tool = tool
                         break
         if found_tool is None:
-            message = 'Unable to find tool with guid %s in repository %s.' % (guid, repository.name)
+            message = f"Unable to find tool with guid {guid} in repository {repository.name}."
             trans.response.status = 404
-            return {'status': 'error', 'message': message}
+            return {"status": "error", "message": message}
 
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, valid, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                                    changeset,
-                                                                                    found_tool.tool_config)
+            repository, tool, valid, message = tv.load_tool_from_changeset_revision(
+                tsr_id, changeset, found_tool.tool_config
+            )
         if message or not valid:
-            status = 'error'
+            status = "error"
             return dict(message=message, status=status)
-        tool_help = ''
+        tool_help = ""
         if tool.help:
-            tool_help = tool.help.render(static_path=web.url_for('/static'), host_url=web.url_for('/', qualified=True))
-            tool_help = util.unicodify(tool_help, 'utf-8')
+            tool_help = tool.help.render(static_path=web.url_for("/static"), host_url=web.url_for("/", qualified=True))
+            tool_help = util.unicodify(tool_help, "utf-8")
         tool_dict = tool.to_dict(trans)
-        tool_dict['inputs'] = {}
-        tool.populate_model(trans, tool.inputs, {}, tool_dict['inputs'])
-        tool_dict.update({
-            'help'          : tool_help,
-            'citations'     : bool(tool.citations),
-            'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
-            'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
-            'display'       : tool.display_interface,
-            'action'        : web.url_for(tool.action),
-            'method'        : tool.method,
-            'enctype'       : tool.enctype
-        })
+        tool_dict["inputs"] = {}
+        tool.populate_model(trans, tool.inputs, {}, tool_dict["inputs"])
+        tool_dict.update(
+            {
+                "help": tool_help,
+                "citations": bool(tool.citations),
+                "requirements": [{"name": r.name, "version": r.version} for r in tool.requirements],
+                "state_inputs": params_to_strings(tool.inputs, {}, trans.app),
+                "display": tool.display_interface,
+                "action": web.url_for(tool.action),
+                "method": tool.method,
+                "enctype": tool.enctype,
+            }
+        )
         return json.dumps(tool_dict)

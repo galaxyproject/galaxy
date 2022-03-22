@@ -1,0 +1,18 @@
+<macros>
+  <xml name="typed_outputs">
+    <outputs>
+        <output type="text" name="text_param" from="output">
+            <filter>param_type == 'text'</filter>
+        </output>
+        <output type="integer" name="integer_param" from="output">
+            <filter>param_type == 'integer'</filter>
+        </output>
+        <output type="float" name="float_param" from="output">
+            <filter>param_type == 'float'</filter>
+        </output>
+        <output type="boolean" name="boolean_param" from="output">
+            <filter>param_type == 'boolean'</filter>
+        </output>
+    </outputs>
+  </xml>
+</macros>

@@ -5,8 +5,8 @@ Export a history to an archive file using attribute files.
 usage: %prog history_attrs dataset_attrs job_attrs out_file
     -G, --gzip: gzip archive file
 """
-from __future__ import print_function
 
+import json
 import optparse
 import os
 import shutil
@@ -21,48 +21,63 @@ def create_archive(export_directory, out_file, gzip=False):
     try:
         tar_export_directory(export_directory, out_file, gzip)
         # Status.
-        print('Created history archive.')
+        print("Created history archive.")
         return 0
     except Exception as e:
-        print('Error creating history archive: %s' % unicodify(e), file=sys.stderr)
+        print(f"Error creating history archive: {unicodify(e)}", file=sys.stderr)
         return 1
+    finally:
+        shutil.rmtree(export_directory, ignore_errors=True)
 
 
 def main(argv=None):
     # Parse command line.
     parser = optparse.OptionParser()
-    parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
-    parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
+    parser.add_option("-G", "--gzip", dest="gzip", action="store_true", help="Compress archive using gzip.")
+    parser.add_option(
+        "--galaxy-version", dest="galaxy_version", help="Galaxy version that initiated the command.", default=None
+    )
+    parser.add_option("--file-sources", type=str, help="file sources json")
     (options, args) = parser.parse_args(argv)
     galaxy_version = options.galaxy_version
     if galaxy_version is None:
-        galaxy_version = "19.01" if len(args) == 4 else "19.05"
+        galaxy_version = "19.05"
 
     gzip = bool(options.gzip)
-    if galaxy_version == "19.01":
-        # This job was created pre 18.0X with old argument style.
-        out_file = args[3]
-        temp_directory = os.path.dirname(args[0])
+    assert len(args) >= 2
+    temp_directory = args[0]
+    out_arg = args[1]
+
+    destination_uri = None
+    if "://" in out_arg:
+        # writing to a file source instead of a dataset path.
+        destination_uri = out_arg
+        out_file = "./temp_out_archive"
     else:
-        assert len(args) >= 2
-        # We have a 19.0X directory argument instead of individual arguments.
-        temp_directory = args[0]
-        out_file = args[1]
-
-    if galaxy_version == "19.01":
-        history_attrs = os.path.join(temp_directory, 'history_attrs.txt')
-        dataset_attrs = os.path.join(temp_directory, 'datasets_attrs.txt')
-        job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
-
-        shutil.move(args[0], history_attrs)
-        shutil.move(args[1], dataset_attrs)
-        provenance_path = args[1] + ".provenance"
-        if os.path.exists(provenance_path):
-            shutil.move(provenance_path, dataset_attrs + ".provenance")
-        shutil.move(args[2], job_attrs)
-
+        out_file = out_arg
     # Create archive.
-    return create_archive(temp_directory, out_file, gzip=gzip)
+    exit = create_archive(temp_directory, out_file, gzip=gzip)
+    if destination_uri is not None and exit == 0:
+        _write_to_destination(options.file_sources, os.path.abspath(out_file), destination_uri)
+    return exit
+
+
+def _write_to_destination(file_sources_path, out_file, destination_uri):
+    file_sources = get_file_sources(file_sources_path)
+    file_source_path = file_sources.get_file_source_path(destination_uri)
+    file_source = file_source_path.file_source
+    assert os.path.exists(out_file)
+    file_source.write_from(file_source_path.path, out_file)
+
+
+def get_file_sources(file_sources_path):
+    assert os.path.exists(file_sources_path), f"file sources path [{file_sources_path}] does not exist"
+    from galaxy.files import ConfiguredFileSources
+
+    with open(file_sources_path) as f:
+        file_sources_as_dict = json.load(f)
+    file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+    return file_sources
 
 
 if __name__ == "__main__":

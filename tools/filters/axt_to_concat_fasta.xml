@@ -32,7 +32,7 @@
 
 This tool converts an AXT formatted file to the FASTA format, and concatenates the results in the same build.
 
-- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines. 
+- **AXT format** The alignments are produced from Blastz, an alignment tool available from Webb Miller's lab at Penn State University. The lav format Blastz output, which does not include the sequence, was converted to AXT format with lavToAxt. Each alignment block in an AXT file contains three lines: a summary line and 2 sequence lines. Blocks are separated from one another by blank lines.
 
 - **FASTA format** a text-based format for representing both nucleic and protein sequences, in which base pairs or proteins are represented using a single-letter code.
 

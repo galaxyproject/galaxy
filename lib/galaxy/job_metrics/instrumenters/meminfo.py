@@ -1,35 +1,27 @@
 """The module describes the ``meminfo`` job metrics plugin."""
 import re
-import sys
 
 from galaxy import util
 from . import InstrumentPlugin
 from .. import formatting
 
-if sys.version_info > (3,):
-    long = int
-
-
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 
 # Important (non-verbose) meminfo property titles.
-MEMINFO_TITLES = {
-    "memtotal": "Total System Memory",
-    "swaptotal": "Total System Swap"
-}
+MEMINFO_TITLES = {"memtotal": "Total System Memory", "swaptotal": "Total System Swap"}
 
 
 class MemInfoFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         title = MEMINFO_TITLES.get(key, key)
         return title, util.nice_size(value * 1000)  # kB = *1000, KB = *1024 - wikipedia
 
 
 class MemInfoPlugin(InstrumentPlugin):
-    """ Gather information about processor configuration from /proc/cpuinfo.
+    """Gather information about processor configuration from /proc/cpuinfo.
     Linux only.
     """
+
     plugin_type = "meminfo"
     formatter = MemInfoFormatter()
 
@@ -37,7 +29,7 @@ class MemInfoPlugin(InstrumentPlugin):
         self.verbose = util.asbool(kwargs.get("verbose", False))
 
     def pre_execute_instrument(self, job_directory):
-        return "cat /proc/meminfo > '%s'" % self.__instrument_meminfo_path(job_directory)
+        return f"cat /proc/meminfo > '{self.__instrument_meminfo_path(job_directory)}'"
 
     def job_properties(self, job_id, job_directory):
         properties = {}
@@ -54,7 +46,7 @@ class MemInfoPlugin(InstrumentPlugin):
                 # defined for formatter. Grab everything in verbose mode for
                 # an arbitrary snapshot of memory at beginning of run.
                 if key in MEMINFO_TITLES or self.verbose:
-                    value = long(line_match.group(2))
+                    value = int(line_match.group(2))
                     properties[key] = value
         return properties
 
@@ -62,4 +54,4 @@ class MemInfoPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "meminfo")
 
 
-__all__ = ('MemInfoPlugin', )
+__all__ = ("MemInfoPlugin",)

@@ -1,12 +1,12 @@
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    SelectToolParameter
+    SelectToolParameter,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
     Repeat,
-    Section
+    Section,
 )
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
@@ -14,7 +14,7 @@ from galaxy.tools.wrappers import (
     DatasetListWrapper,
     ElementIdentifierMapper,
     InputValueWrapper,
-    SelectToolParameterWrapper
+    SelectToolParameterWrapper,
 )
 
 PARAMS_UNWRAPPED = object()
@@ -23,13 +23,12 @@ PARAMS_UNWRAPPED = object()
 def copy_identifiers(source, destination):
     if isinstance(source, dict):
         for k, v in source.items():
-            if k.endswith('|__identifier__'):
+            if k.endswith("|__identifier__"):
                 if isinstance(destination, dict):
                     destination[k] = v
 
 
-class WrappedParameters(object):
-
+class WrappedParameters:
     def __init__(self, trans, tool, incoming, input_datasets=None):
         self.trans = trans
         self.tool = tool
@@ -71,19 +70,17 @@ class WrappedParameters(object):
                 self.wrap_values(input.inputs, values, skip_missing_values=skip_missing_values)
             elif isinstance(input, DataToolParameter) and input.multiple:
                 dataset_instances = DatasetListWrapper.to_dataset_instances(value)
-                input_values[input.name] = \
-                    DatasetListWrapper(None,
-                                       dataset_instances,
-                                       datatypes_registry=trans.app.datatypes_registry,
-                                       tool=tool,
-                                       name=input.name,
-                                       formats=input.formats)
-            elif isinstance(input, DataToolParameter):
-                wrapper_kwds = dict(
+                input_values[input.name] = DatasetListWrapper(
+                    None,
+                    dataset_instances,
                     datatypes_registry=trans.app.datatypes_registry,
                     tool=tool,
                     name=input.name,
-                    formats=input.formats
+                    formats=input.formats,
+                )
+            elif isinstance(input, DataToolParameter):
+                wrapper_kwds = dict(
+                    datatypes_registry=trans.app.datatypes_registry, tool=tool, name=input.name, formats=input.formats
                 )
                 element_identifier = element_identifier_mapper.identifier(value, input_values)
                 if element_identifier:
@@ -113,7 +110,7 @@ def make_dict_copy(from_dict):
     """
     copy_from_dict = {}
     for key, value in from_dict.items():
-        if type(value).__name__ == 'dict':
+        if type(value).__name__ == "dict":
             copy_from_dict[key] = make_dict_copy(value)
         elif isinstance(value, list):
             copy_from_dict[key] = make_list_copy(value)
@@ -134,4 +131,4 @@ def make_list_copy(from_list):
     return new_list
 
 
-__all__ = ('WrappedParameters', 'make_dict_copy')
+__all__ = ("WrappedParameters", "make_dict_copy")

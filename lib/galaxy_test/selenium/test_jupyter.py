@@ -50,7 +50,7 @@ class JupyterTestCase(SeleniumTestCase):
                         cell_li = li_link
                         break
                 if cell_li is None:
-                    raise Exception("Failed to find 'Cell' drop down menu, found menu options %s" % found_li_texts)
+                    raise Exception(f"Failed to find 'Cell' drop down menu, found menu options {found_li_texts}")
                 cell_li.click()
                 self.wait_for_and_click_selector("ul#cell_menu li#run_all_cells")
             finally:

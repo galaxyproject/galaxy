@@ -18,8 +18,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="bed12" value="2.bed12"/>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="bed12" value="2.bed12"/>
         </test>
     </tests>
     <help>

@@ -97,6 +97,22 @@ These sorts of terminal states *and their justifications* (e.g. the
 reason why it's a wontfix, or a reference to the duplicate issue) should
 be indicated in the closing comment by the issue closer.
 
+The following statuses may be applied to issues that need to be revisited
+after some event.
+
+- ``status/waiting/response`` - this issue or pull request is waiting for
+  a response from the author. The issue or pull request may be assumed stale
+  and closed after a month. The committers reserve the right to close issues
+  and pull requests without this process, but this tag makes tracking explicit
+  and easy.
+- ``status/waiting/deployment/org`` - this issue was exhibited on usegalaxy.org
+  and committers believe a fix has been committed but are not certain and so the
+  issue should be rechecked after deployment of the target branch. Typically the
+  committers will close out issues when a fix has been merged, but in cases they
+  are uncertain whether the fix will correct the underlying issue, this tag may be used.
+- ``status/waiting/deployment/eu`` - this is the same as above but for issues
+  affecting usegalaxy.eu.
+
 Area Labels
 -----------
 
@@ -111,21 +127,23 @@ particular domain, as well as more organized release notes.
 - ``area/compliance``
 - ``area/configuration`` - Galaxy's configuration system
 - ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
-- ``area/database`` - Change requires a modification to Galaxy's database
+- ``area/database`` - Change to Galaxy's database or data access layer
 - ``area/dataset-collections``
 - ``area/datatypes`` - Changes to Galaxy's datatypes
 - ``area/datatype-framework`` - Changes to Galaxy's datatype and metadata framework
 - ``area/dependencies`` - Changes related to Python or JavaScript dependencies of Galaxy itself
 - ``area/documentation``
 - ``area/framework``
-- ``area/GIEs``
 - ``area/histories``
 - ``area/i18n`` - Internationalization and localization
+- ``area/interactive-tools``
 - ``area/jobs``
+- ``area/jobs/kubernetes``
 - ``area/libraries`` - Change related to data libraries
 - ``area/objectstore``
 - ``area/performance``
-- ``area/reports``
+- ``area/reports`` - The reports webapp
+- ``area/rules`` - Rule builder
 - ``area/security``
 - ``area/scripts`` - Changes to scripts used to run or manage Galaxy.
 - ``area/testing``
@@ -142,6 +160,8 @@ particular domain, as well as more organized release notes.
 - ``area/visualizations``
 - ``area/webhooks``
 - ``area/workflows``
+- ``area/workflows/editor``
+- ``area/workflows/reports``
 - ``area/workflows/subworkflows``
 
 New labels should be proposed by opening a pull request against this document
@@ -169,7 +189,9 @@ special purpose.
 -  ``friendliness/beginner`` can be used to indicate a nice entry-level
    issue that only requires limited understanding of the larger Galaxy
    framework and ecosystem. This is useful for encouraging new
-   contributors.
+   contributors. This tag may alternatively be called ``help wanted``.
+   ``hacktoberfest`` or ``paper-cut`` are event specific tags that denote
+   similar things about an issue.
 
 -  ``friendliness/intermediate`` can be used to indicate an advanced
    level issue that requires decent understanding of the larger Galaxy
@@ -199,10 +221,10 @@ special purpose.
 -  ``triage`` is a tag automatically added by a GalaxyBot to indicate that
    the issue needs to be evaluated and properly tagged.
 
--  ``hacktoberfest`` is a tag that encourages contributions to Galaxy codebase
-   by including these issues in the `Hacktoberfest <https://hacktoberfest.digitalocean.com/>`__ event.
-   Similar to ``friendliness/beginner`` tag in other characteristics.
-
+- ``confirmed`` is a tag that should only be applied to issues that also have
+  ``kind/bug``. The ``confirmed`` tag indicates a committer has verified the
+  bug affects the actual current Galaxy development branch and isn't a usage
+  issue, a previously fixed issue, etc..
 
 The Roadmap
 ===========

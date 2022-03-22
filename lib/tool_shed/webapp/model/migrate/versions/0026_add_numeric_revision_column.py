@@ -1,10 +1,14 @@
 """Migration script to add the numeric_revision column to the repository metadata table."""
-from __future__ import print_function
 
 import logging
 import sys
 
-from sqlalchemy import Column, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    Integer,
+    MetaData,
+    Table,
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

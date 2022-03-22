@@ -1,13 +1,21 @@
 import json
+import os
+import urllib.parse
+
+import pytest
+from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
+    ONE_TO_SIX_WITH_SPACES_ON_WINDOWS,
     ONE_TO_SIX_WITH_TABS,
+    ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    skip_if_github_down,
     skip_if_site_down,
     skip_without_datatype,
     stage_inputs,
@@ -17,25 +25,24 @@ from ._framework import ApiTestCase
 
 
 class ToolsUploadTestCase(ApiTestCase):
-
     def setUp(self):
-        super(ToolsUploadTestCase, self).setUp()
+        super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_upload1_paste(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, 'Hello World')
+            payload = self.dataset_populator.upload_payload(history_id, "Hello World")
             create_response = self._post("tools", data=payload)
-            self._assert_has_keys(create_response.json(), 'outputs')
+            self._assert_has_keys(create_response.json(), "outputs")
 
     def test_upload1_paste_bad_datatype(self):
         # Check that you get a nice message if you upload an incorrect datatype
         with self.dataset_populator.test_history() as history_id:
             file_type = "johnsawesomebutfakedatatype"
-            payload = self.dataset_populator.upload_payload(history_id, 'Hello World', file_type=file_type)
+            payload = self.dataset_populator.upload_payload(history_id, "Hello World", file_type=file_type)
             create = self._post("tools", data=payload).json()
-            self._assert_has_keys(create, 'err_msg')
-            assert file_type in create['err_msg']
+            self._assert_has_keys(create, "err_msg")
+            assert file_type in create["err_msg"]
 
     # upload1 rewrites content with posix lines by default but this can be disabled by setting
     # to_posix_lines=None in the request. Newer fetch API does not do this by default prefering
@@ -61,6 +68,30 @@ class ToolsUploadTestCase(ApiTestCase):
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
+    # Test how trailing new lines are added
+    # - upload1 adds by default because to_posix_lines is on by default
+    # - fetch doesn't add by default because to_posix_lines is off by default
+    # - fetch does add trailing newline if to_posix_lines is enabled
+    def test_post_lines_trailing(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_post_lines_trailing_off(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, to_posix_lines=False)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_off_by_default(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch")
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+
+    def test_fetch_post_lines_trailing_if_to_posix(self):
+        input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
+        result_content = self._upload_and_get_content(input_content, api="fetch", to_posix_lines=True)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
     def test_upload_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table)
@@ -68,7 +99,7 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_fetch_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
-        result_content = self._upload_and_get_content(table, api='fetch')
+        result_content = self._upload_and_get_content(table, api="fetch")
         self.assertEqual(result_content, table)
 
     def test_upload_tab_to_space(self):
@@ -80,6 +111,11 @@ class ToolsUploadTestCase(ApiTestCase):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+
+    def test_fetch_tab_to_space_doesnt_swap_newlines(self):
+        table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
+        result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
+        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -100,11 +136,9 @@ class ToolsUploadTestCase(ApiTestCase):
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
         with open(fastqgz_path, "rb") as fh:
-            details = self._upload_and_get_details(fh,
-                                                   api="fetch",
-                                                   history_id=history_id,
-                                                   assert_ok=False,
-                                                   auto_decompress=True)
+            details = self._upload_and_get_details(
+                fh, api="fetch", history_id=history_id, assert_ok=False, auto_decompress=True
+            )
         assert details["state"] == "ok"
         assert details["file_ext"] == "fastqsanger.gz", details
 
@@ -145,11 +179,9 @@ class ToolsUploadTestCase(ApiTestCase):
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         bedgz_path = TestDataResolver().get_filename("4.bed.gz")
         with open(bedgz_path, "rb") as fh:
-            details = self._upload_and_get_details(fh,
-                                                   api="fetch",
-                                                   history_id=history_id,
-                                                   auto_decompress=True,
-                                                   assert_ok=False)
+            details = self._upload_and_get_details(
+                fh, api="fetch", history_id=history_id, auto_decompress=True, assert_ok=False
+            )
         assert details["state"] == "ok"
         assert details["file_ext"] == "bed"
 
@@ -196,37 +228,75 @@ class ToolsUploadTestCase(ApiTestCase):
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
         self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
-    @skip_without_datatype("velvet")
-    def test_composite_datatype(self):
-        with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps content",
-                "files_1|type": "upload_dataset",
-                "files_2|url_paste": "log content",
-                "files_2|type": "upload_dataset",
-            })
-
-            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
-            assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
-
-    @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
-    def test_composite_datatype_fetch(self, history_id):
+    def test_newlines_stage_fetch(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+            }
+        }
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        # By default this appends the newline.
+        self.assertEqual(content, "This is a line of text.\n")
+
+    @uses_test_history(require_new=False)
+    def test_stage_object(self, history_id):
+        job = {"input1": "randomstr"}
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
+        )
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        self.assertEqual(content.strip(), '"randomstr"')
+
+    @uses_test_history(require_new=False)
+    def test_stage_object_fetch(self, history_id):
+        job = {"input1": "randomstr"}
+        inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        self.assertEqual(content, '"randomstr"')
+
+    @uses_test_history(require_new=False)
+    def test_newlines_stage_fetch_configured(self, history_id):
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "txt",
+                "path": "test-data/simple_line_no_newline.txt",
+                "dbkey": "hg19",
+            }
+        }
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
+        )
+        dataset = datasets[0][0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
+        self.assertEqual(content, "This is a line of text.")
+        details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
+        assert details["genome_build"] == "hg19"
+
+    @uses_test_history(require_new=False)
+    @skip_if_github_down
+    def test_upload_multiple_mixed_success(self, history_id):
         destination = {"type": "hdas"}
-        targets = [{
-            "destination": destination,
-            "items": [{
-                "src": "composite",
-                "ext": "velvet",
-                "composite": {
-                    "items": [
-                        {"src": "pasted", "paste_content": "sequences content"},
-                        {"src": "pasted", "paste_content": "roadmaps content"},
-                        {"src": "pasted", "paste_content": "log content"},
-                    ]
-                },
-            }],
-        }]
+        targets = [
+            {
+                "destination": destination,
+                "items": [
+                    {"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"},
+                    {
+                        "src": "url",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/12.bed",
+                    },
+                ],
+            }
+        ]
         payload = {
             "history_id": history_id,
             "targets": json.dumps(targets),
@@ -234,9 +304,85 @@ class ToolsUploadTestCase(ApiTestCase):
         fetch_response = self.dataset_populator.fetch(payload)
         self._assert_status_code_is(fetch_response, 200)
         outputs = fetch_response.json()["outputs"]
-        assert len(outputs) == 1
-        output = outputs[0]
+        assert len(outputs) == 2
+        output0 = outputs[0]
+        output1 = outputs[1]
+        output0 = self.dataset_populator.get_history_dataset_details(history_id, dataset=output0, assert_ok=False)
+        output1 = self.dataset_populator.get_history_dataset_details(history_id, dataset=output1, assert_ok=False)
+        assert output0["state"] == "ok"
+        assert output1["state"] == "error"
 
+    @uses_test_history(require_new=False)
+    @skip_if_github_down
+    def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
+        item = {
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam",
+            "ext": "bam",
+        }
+        output = self.dataset_populator.fetch_hda(history_id, item)
+        self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
+
+    @uses_test_history(require_new=False)
+    @skip_if_github_down
+    def test_fetch_html_from_url(self, history_id):
+        destination = {"type": "hdas"}
+        targets = [
+            {
+                "destination": destination,
+                "items": [
+                    {
+                        "src": "url",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/html_file.txt",
+                    },
+                ],
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload)
+        self._assert_status_code_is(fetch_response, 200)
+        response = fetch_response.json()
+        output = response["outputs"][0]
+        job = response["jobs"][0]
+        self.dataset_populator.wait_for_job(job["id"])
+        dataset = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=False)
+        assert dataset["state"] == "error"
+        assert dataset["name"] == "html_file.txt"
+
+    @skip_without_datatype("velvet")
+    def test_composite_datatype(self):
+        with self.dataset_populator.test_history() as history_id:
+            dataset = self._velvet_upload(
+                history_id,
+                extra_inputs={
+                    "files_1|url_paste": "roadmaps content",
+                    "files_1|type": "upload_dataset",
+                    "files_2|url_paste": "log content",
+                    "files_2|type": "upload_dataset",
+                },
+            )
+
+            roadmaps_content = self._get_roadmaps_content(history_id, dataset)
+            assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
+
+    @skip_without_datatype("velvet")
+    @uses_test_history(require_new=False)
+    def test_composite_datatype_fetch(self, history_id):
+        item = {
+            "src": "composite",
+            "ext": "velvet",
+            "composite": {
+                "items": [
+                    {"src": "pasted", "paste_content": "sequences content"},
+                    {"src": "pasted", "paste_content": "roadmaps content"},
+                    {"src": "pasted", "paste_content": "log content"},
+                ]
+            },
+        }
+        output = self.dataset_populator.fetch_hda(history_id, item)
         roadmaps_content = self._get_roadmaps_content(history_id, output)
         assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
@@ -251,7 +397,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "test-data/simple_line.txt",
                     "test-data/simple_line_alternative.txt",
                     "test-data/simple_line_x2.txt",
-                ]
+                ],
             }
         }
         inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
@@ -267,23 +413,28 @@ class ToolsUploadTestCase(ApiTestCase):
                     "test-data/simple_line.txt",
                     "test-data/simple_line_alternative.txt",
                     "test-data/simple_line_x2.txt",
-                ]
+                ],
             }
         }
-        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
+        inputs, datsets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
+        )
 
     @skip_without_datatype("velvet")
     @uses_test_history(require_new=False)
     def test_composite_datatype_space_to_tab(self, history_id):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
-        dataset = self._velvet_upload(history_id, extra_inputs={
-            "files_1|url_paste": "roadmaps content",
-            "files_1|type": "upload_dataset",
-            "files_1|space_to_tab": "Yes",
-            "files_2|url_paste": "log content",
-            "files_2|type": "upload_dataset",
-        })
+        dataset = self._velvet_upload(
+            history_id,
+            extra_inputs={
+                "files_1|url_paste": "roadmaps content",
+                "files_1|type": "upload_dataset",
+                "files_1|space_to_tab": "Yes",
+                "files_2|url_paste": "log content",
+                "files_2|type": "upload_dataset",
+            },
+        )
 
         roadmaps_content = self._get_roadmaps_content(history_id, dataset)
         assert roadmaps_content.strip() == "roadmaps\tcontent", roadmaps_content
@@ -293,13 +444,16 @@ class ToolsUploadTestCase(ApiTestCase):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
         with self.dataset_populator.test_history() as history_id:
-            dataset = self._velvet_upload(history_id, extra_inputs={
-                "files_1|url_paste": "roadmaps\rcontent",
-                "files_1|type": "upload_dataset",
-                "files_1|space_to_tab": "Yes",
-                "files_2|url_paste": "log\rcontent",
-                "files_2|type": "upload_dataset",
-            })
+            dataset = self._velvet_upload(
+                history_id,
+                extra_inputs={
+                    "files_1|url_paste": "roadmaps\rcontent",
+                    "files_1|type": "upload_dataset",
+                    "files_1|space_to_tab": "Yes",
+                    "files_2|url_paste": "log\rcontent",
+                    "files_2|type": "upload_dataset",
+                },
+            )
 
             roadmaps_content = self._get_roadmaps_content(history_id, dataset)
             assert roadmaps_content.strip() == "roadmaps\ncontent", roadmaps_content
@@ -311,6 +465,102 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "isa-tab", details
         assert details["file_size"] == 85, details
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                },
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            dataset = run_response.json()["outputs"][0]
+            self._check_testdir_composite(dataset, history_id)
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_as_tar_fetch(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("testdir.tar")
+        with open(tar_path, "rb") as tar_f:
+            destination = {"type": "hdas"}
+            targets = [
+                {
+                    "destination": destination,
+                    "items": [
+                        {
+                            "src": "pasted",
+                            "paste_content": "Test123\n",
+                            "ext": "txt",
+                            "extra_files": {
+                                "items_from": "archive",
+                                "src": "files",
+                                # Prevent Galaxy from checking for a single file in
+                                # a directory and re-interpreting the archive
+                                "fuzzy_root": False,
+                            },
+                        }
+                    ],
+                }
+            ]
+            payload = {
+                "history_id": history_id,
+                "targets": json.dumps(targets),
+            }
+            payload["__files"] = {"files_0|file_data": tar_f}
+            fetch_response = self.dataset_populator.fetch(payload)
+            self._assert_status_code_is(fetch_response, 200)
+            outputs = fetch_response.json()["outputs"]
+            assert len(outputs) == 1
+            output = outputs[0]
+            self._check_testdir_composite(output, history_id)
+
+    def _check_testdir_composite(self, dataset, history_id):
+        content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+        assert content.strip() == "Test123"
+        extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+        assert len(extra_files) == 5, extra_files
+        expected_contents = {
+            "testdir": "Directory",
+            "testdir/c": "Directory",
+            "testdir/a": "File",
+            "testdir/b": "File",
+            "testdir/c/d": "File",
+        }
+        found_files = set()
+        for extra_file in extra_files:
+            path = extra_file["path"]
+            assert path in expected_contents
+            assert extra_file["class"] == expected_contents[path]
+            found_files.add(path)
+
+        assert len(found_files) == 5, found_files
+
+    @uses_test_history(require_new=False)
+    def test_upload_composite_from_bad_tar(self, history_id):
+        tar_path = self.test_data_resolver.get_filename("unsafe.tar")
+        with open(tar_path, "rb") as tar_f:
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                },
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response, assert_ok=False)
+            dataset = run_response.json()["outputs"][0]
+            details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
+            assert details["state"] == "error"
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
@@ -324,10 +574,7 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_fetch_bam_file(self, history_id):
         bam_path = TestDataResolver().get_filename("1.bam")
         with open(bam_path, "rb") as fh:
-            details = self._upload_and_get_details(fh,
-                                                   api="fetch",
-                                                   history_id=history_id,
-                                                   assert_ok=False)
+            details = self._upload_and_get_details(fh, api="fetch", history_id=history_id, assert_ok=False)
         assert details["state"] == "ok"
         assert details["file_ext"] == "bam", details
 
@@ -340,7 +587,9 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_fetch_metadata(self):
         table = ONE_TO_SIX_WITH_SPACES
-        details = self._upload_and_get_details(table, api='fetch', dbkey="hg19", info="cool upload", tags=["name:data", "group:type:paired-end"])
+        details = self._upload_and_get_details(
+            table, api="fetch", dbkey="hg19", info="cool upload", tags=["name:data", "group:type:paired-end"]
+        )
         assert details.get("genome_build") == "hg19"
         assert details.get("misc_info") == "cool upload", details
         tags = details.get("tags")
@@ -350,7 +599,9 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_multiple_files_1(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
                 dbkey="hg19",
                 extra_inputs={
                     "files_1|url_paste": "SecondOutputContent",
@@ -358,7 +609,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_1|file_type": "tabular",
                     "files_1|dbkey": "hg18",
                     "file_count": "2",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -377,7 +628,9 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_multiple_files_2(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
                 file_type="tabular",
                 dbkey="hg19",
                 extra_inputs={
@@ -386,7 +639,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_1|file_type": "txt",
                     "files_1|dbkey": "hg18",
                     "file_count": "2",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -405,7 +658,9 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_multiple_files_3(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
                 file_type="tabular",
                 dbkey="hg19",
                 extra_inputs={
@@ -416,7 +671,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_1|file_type": "txt",
                     "files_1|dbkey": "hg18",
                     "file_count": "2",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -435,7 +690,9 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_multiple_files_no_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
                 file_type="tabular",
                 dbkey=None,
                 extra_inputs={
@@ -444,7 +701,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_1|NAME": "SecondOutputName",
                     "files_1|file_type": "txt",
                     "file_count": "2",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -463,7 +720,8 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_multiple_files_space_to_tab(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id,
+            payload = self.dataset_populator.upload_payload(
+                history_id,
                 content=ONE_TO_SIX_WITH_SPACES,
                 file_type="tabular",
                 dbkey="hg19",
@@ -478,7 +736,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_2|file_type": "txt",
                     "files_2|space_to_tab": "Yes",
                     "file_count": "3",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -496,7 +754,8 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_multiple_files_posix_lines(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id,
+            payload = self.dataset_populator.upload_payload(
+                history_id,
                 content=ONE_TO_SIX_ON_WINDOWS,
                 file_type="tabular",
                 dbkey="hg19",
@@ -511,7 +770,7 @@ class ToolsUploadTestCase(ApiTestCase):
                     "files_2|NAME": "ThirdOutputName",
                     "files_2|file_type": "txt",
                     "file_count": "3",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -529,13 +788,15 @@ class ToolsUploadTestCase(ApiTestCase):
 
     def test_upload_force_composite(self):
         with self.dataset_populator.test_history() as history_id:
-            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+            payload = self.dataset_populator.upload_payload(
+                history_id,
+                "Test123",
                 extra_inputs={
                     "files_1|url_paste": "CompositeContent",
                     "files_1|NAME": "composite",
                     "file_count": "2",
                     "force_composite": "True",
-                }
+                },
             )
             run_response = self.dataset_populator.tools_post(payload)
             self.dataset_populator.wait_for_tool_run(history_id, run_response)
@@ -548,15 +809,28 @@ class ToolsUploadTestCase(ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
-    @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_invalid_url(self):
-        history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
-        dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
-        assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
+        with pytest.raises(AssertionError):
+            self._upload("https://foo.invalid", assert_ok=False)
+
+    @skip_if_site_down("https://usegalaxy.org")
+    def test_upload_from_404_url(self):
+        history_id, new_dataset = self._upload("https://usegalaxy.org/bla123", assert_ok=False)
+        dataset_details = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset_id=new_dataset["id"], assert_ok=False
+        )
+        assert (
+            dataset_details["state"] == "error"
+        ), f"expected dataset state to be 'error', but got '{dataset_details['state']}'"
 
     @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_valid_url(self):
-        history_id, new_dataset = self._upload('https://usegalaxy.org/api/version')
+        history_id, new_dataset = self._upload("https://usegalaxy.org/api/version")
+        self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
+    @skip_if_site_down("https://usegalaxy.org")
+    def test_upload_from_valid_url_spaces(self):
+        history_id, new_dataset = self._upload("  https://usegalaxy.org/api/version  ")
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
 
     def test_upload_and_validate_invalid(self):
@@ -564,22 +838,22 @@ class ToolsUploadTestCase(ApiTestCase):
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqcssanger")
         assert "validated_state" in metadata
-        assert metadata['validated_state'] == 'unknown'
+        assert metadata["validated_state"] == "unknown"
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
-        assert terminal_validated_state == 'invalid', terminal_validated_state
+        assert terminal_validated_state == "invalid", terminal_validated_state
 
     def test_upload_and_validate_valid(self):
         path = TestDataResolver().get_filename("1.fastqsanger")
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqsanger")
         assert "validated_state" in metadata
-        assert metadata['validated_state'] == 'unknown'
+        assert metadata["validated_state"] == "unknown"
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
-        assert terminal_validated_state == 'ok', terminal_validated_state
+        assert terminal_validated_state == "ok", terminal_validated_state
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(
@@ -598,7 +872,9 @@ class ToolsUploadTestCase(ApiTestCase):
         return dataset
 
     def _get_roadmaps_content(self, history_id, dataset):
-        roadmaps_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset, filename="Roadmaps")
+        roadmaps_content = self.dataset_populator.get_history_dataset_content(
+            history_id, dataset=dataset, filename="Roadmaps"
+        )
         return roadmaps_content
 
     def _upload_and_get_content(self, content, **upload_kwds):
@@ -623,11 +899,38 @@ class ToolsUploadTestCase(ApiTestCase):
                 "elements": [element],
             }
             targets = json.dumps([target])
-            payload = {
-                "history_id": history_id,
-                "targets": targets,
-                "__files": {"files_0|file_data": content}
-            }
+            payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": content}}
             new_dataset = self.dataset_populator.fetch(payload, assert_ok=assert_ok).json()["outputs"][0]
         self.dataset_populator.wait_for_history(history_id, assert_ok=assert_ok)
         return history_id, new_dataset
+
+    def test_upload_dataset_resumable(self):
+        def upload_file(url, path, api_key, history_id):
+            filename = os.path.basename(path)
+            metadata = {
+                "filename": filename,
+                "history_id": history_id,
+            }
+            my_client = client.TusClient(url, headers={"x-api-key": api_key})
+
+            # Upload a file to a tus server.
+            uploader = my_client.uploader(path, metadata=metadata)
+            uploader.upload()
+            return uploader.url.rsplit("/", 1)[1]
+
+        with self.dataset_populator.test_history() as history_id:
+            session_id = upload_file(
+                url=urllib.parse.urljoin(self.url, "api/upload/resumable_upload"),
+                path=TestDataResolver().get_filename("1.fastqsanger.gz"),
+                api_key=self.galaxy_interactor.api_key,
+                history_id=history_id,
+            )
+            hda = self._upload_and_get_details(
+                content=json.dumps({"session_id": session_id}),
+                api="fetch",
+                ext="fastqsanger.gz",
+                name="1.fastqsanger.gz",
+            )
+            assert hda["name"] == "1.fastqsanger.gz"
+            assert hda["file_ext"] == "fastqsanger.gz"
+            assert hda["state"] == "ok"

@@ -1,0 +1,186 @@
+.navbar-fixed-top .navbar-brand {
+    font-family: Verdana, sans-serif;
+    font-weight: bold;
+    font-size: 160%;
+}
+
+// Don't wrap text inside pre
+pre {
+    overflow: auto;
+    word-wrap: normal;
+    white-space: pre;
+}
+
+.alert {
+    word-wrap: break-word;
+}
+
+.btn.hover {
+    $btn: hover();
+}
+
+// Allow text in buttons to wrap
+.btn {
+    white-space: normal;
+}
+
+.btn-secondary {
+    border: $border-default;
+}
+
+.popover .popover-body {
+    font-size: $font-size-base;
+}
+
+.dropdown-menu {
+    .dropdown-item {
+        text-decoration: none;
+        .fa {
+            @extend .fa-fw;
+            @extend .mr-2;
+        }
+    }
+}
+
+.dropdown-item,
+.dropdown-header {
+    color: $text-color;
+}
+
+// Input fields
+
+input[type="checkbox"],
+input[type="radio"] {
+    margin-left: 0.5ex;
+    margin-right: 0.5ex;
+    float: left;
+}
+
+select {
+    padding: 2px;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+}
+
+select,
+input,
+textarea {
+    font: inherit;
+}
+
+textarea,
+input[type="text"],
+input[type="password"] {
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+}
+
+// Always style buttons and submits as bootstrap buttons
+input[type="submit"],
+button {
+    @extend .btn;
+    @extend .btn-secondary;
+    &.btn-primary {
+        @extend .btn-primary;
+    }
+}
+
+// Modal -- wider by default, scroll like Trello
+
+.modal-dialog {
+    width: 690px;
+    max-width: 900px; // BS4 sets this to 500px now, so width not respected.
+}
+
+// Scroll modal body.
+
+.modal-body {
+    overflow: auto;
+}
+
+// Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
+
+.nav-tabs {
+    @extend .mb-2;
+}
+
+.tabbable {
+    .nav-tabs {
+        .nav-item {
+            cursor: pointer;
+        }
+    }
+}
+
+// Don't make blockquotes very large since they're often used in the toolform
+// and this does not look nice to have a quoted portion of a tool's help
+// documentation be rendered 150% larger.
+div.ui-form-help {
+    blockquote {
+        p {
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+        }
+    }
+}
+
+// pre styling
+pre.code {
+    white-space: pre-wrap;
+    background: #1d1f21;
+    color: white;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+pre.code.preview {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+table.info_data_table {
+    table-layout: fixed;
+    word-break: break-word;
+}
+table.info_data_table td:nth-child(1) {
+    width: 25%;
+}
+table.info_data_table th:nth-child(1) {
+    width: 25%;
+}
+
+// increase visibility of links within alert boxes
+.alert-info,
+.alert-danger,
+.alert-warning,
+.alert-success {
+    a {
+        font-weight: bold;
+    }
+    border-color: transparent;
+}
+
+.alert-info {
+    background: $state-info-bg !important;
+}
+
+// increase visibility of dropdown menu section headers
+.dropdown-header {
+    font-size: 1rem;
+    color: $brand-dark;
+    padding: 0.5rem 1.5rem 0.5rem 1rem;
+    font-weight: bold;
+}
+
+// progress bar
+.progress-bar.bg-success {
+    background: $state-success-bg !important;
+}
+.progress-bar.bg-danger {
+    background: $state-danger-bg !important;
+}
+.progress-bar.bg-warning {
+    background: $state-warning-bg !important;
+}

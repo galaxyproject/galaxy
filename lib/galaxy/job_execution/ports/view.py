@@ -1,16 +1,18 @@
 import logging
 
 from galaxy import (
-    exceptions,
     model,
-    util
+    util,
+)
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    ObjectAttributeMissingException,
 )
 
 log = logging.getLogger(__name__)
 
 
-class JobPortsView(object):
-
+class JobPortsView:
     def __init__(self, app):
         self._app = app
 
@@ -25,20 +27,20 @@ class JobPortsView(object):
     def __authorize_job_access(self, encoded_job_id, **kwargs):
         key = "job_key"
         if key not in kwargs:
-            error_message = "Job files action requires a valid '%s'." % key
-            raise exceptions.ObjectAttributeMissingException(error_message)
+            error_message = f"Job files action requires a valid '{key}'."
+            raise ObjectAttributeMissingException(error_message)
 
         job_id = self._security.decode_id(encoded_job_id)
         job_key = self._security.encode_id(job_id, kind="jobs_files")
         if not util.safe_str_cmp(kwargs["job_key"], job_key):
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
+            raise ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
-        sa_session = self._app.model.context.current
+        sa_session = self._app.model.session
         job = sa_session.query(model.Job).get(job_id)
         if not job.running:
             error_message = "Attempting to read or modify the files of a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
+            raise ItemAccessibilityException(error_message)
         return job
 
     @property

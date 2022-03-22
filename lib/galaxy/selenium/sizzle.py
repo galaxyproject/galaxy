@@ -1,6 +1,6 @@
 """Utilities for using sizzle (jQuery-style) selectors with Selenium."""
 
-import re
+import json
 
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
@@ -62,30 +62,24 @@ def sizzle_presence_of_selector(selector):
     return ec
 
 
-def find_element_by_sizzle(driver, sizzle_selector):
+def find_element_by_sizzle(driver, sizzle_selector: str):
     """
     Finds an element by sizzle selector.
-    :Args:
-     - sizzle_selector: The sizzle selector to use when finding element.
-    :Usage:
-        driver.find_element_by_sizzle('#foo')
+
+    :param sizzle_selector: The sizzle selector to use when finding element.
     """
     elements = driver.find_elements_by_sizzle(sizzle_selector)
     if elements:
         return elements[0]
     else:
-        raise NoSuchElementException(
-            "Unable to locate element by Sizzle: {selector}".format(selector=sizzle_selector)
-        )
+        raise NoSuchElementException(f"Unable to locate element by Sizzle: {sizzle_selector}")
 
 
-def find_elements_by_sizzle(driver, sizzle_selector):
+def find_elements_by_sizzle(driver, sizzle_selector: str):
     """
     Finds elements by sizzle selector.
-    :Args:
-     - sizzle_selector: The sizzle selector to use when finding elements.
-    :Usage:
-        driver.find_elements_by_sizzle('.foo')
+
+    :param sizzle_selector: The sizzle selector to use when finding elements.
     """
     if not _is_sizzle_loaded(driver):
         _inject_sizzle(driver, SIZZLE_URL, SIZZLE_LOAD_TIMEOUT)
@@ -94,7 +88,8 @@ def find_elements_by_sizzle(driver, sizzle_selector):
 
 
 def _inject_sizzle(driver, sizzle_url, timeout):
-    script = """
+    script = (
+        """
         if(typeof(window.$) != "undefined") {
             // Just reuse jQuery if it is available, avoids potential amd problems
             // that have cropped up with Galaxy for instance.
@@ -106,24 +101,23 @@ def _inject_sizzle(driver, sizzle_url, timeout):
             var _h = document.getElementsByTagName("head")[0];
             _h.appendChild(_s);
         }
-    """ % sizzle_url
+    """
+        % sizzle_url
+    )
     driver.execute_script(script)
     wait = WebDriverWait(driver, timeout)
-    wait.until(lambda d: _is_sizzle_loaded(d),
-               "Can't inject Sizzle in {timeout} seconds".format(timeout=timeout))
+    wait.until(lambda d: _is_sizzle_loaded(d), f"Can't inject Sizzle in {timeout} seconds")
 
 
 def _is_sizzle_loaded(driver):
-    script = "return typeof(Sizzle) != \"undefined\";"
+    script = 'return typeof(Sizzle) != "undefined";'
     return driver.execute_script(script)
 
 
 def _make_sizzle_string(sizzle_selector):
-    try:
-        selector = sizzle_selector.decode("utf-8")
-    except (AttributeError, UnicodeEncodeError):
-        selector = sizzle_selector
-    return u"return Sizzle(\"{selector}\");".format(selector=re.escape(selector))
+    # Use json.dumps to escape quotes
+    selector = json.dumps(sizzle_selector)
+    return f"return Sizzle({selector});"
 
 
 __all__ = (

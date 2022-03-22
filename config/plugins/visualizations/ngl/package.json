@@ -16,6 +16,6 @@
         "ngl": "^0.10.4"
     },
     "scripts": {
-        "build": "parcel build src/ngl.js -d static"
+        "build": "parcel build src/ngl.js -d static/dist"
     }
 }

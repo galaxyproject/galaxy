@@ -6,17 +6,20 @@ Populates blank uuid fields in datasets with randomly generated values
 Going forward, these ids will be generated for all new datasets. This
 script fixes datasets that were generated before the change.
 """
-from __future__ import print_function
 
 import argparse
 import os
 import sys
 import uuid
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 import galaxy.config
-from galaxy.util.script import app_properties_from_args, populate_config_args
+from galaxy.model.mapping import init_models_from_config
+from galaxy.util.script import (
+    app_properties_from_args,
+    populate_config_args,
+)
 
 DESCRIPTION = """
 Populates blank uuid fields in datasets with randomly generated values.
@@ -33,7 +36,7 @@ def main():
 
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)
-    model = galaxy.config.init_models_from_config(config)
+    model = init_models_from_config(config)
 
     for row in model.context.query(model.Dataset):
         if row.uuid is None:

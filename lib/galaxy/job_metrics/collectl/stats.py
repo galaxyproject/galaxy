@@ -3,8 +3,7 @@ memory.
 """
 
 
-class StatisticsTracker(object):
-
+class StatisticsTracker:
     def __init__(self):
         self.min = None
         self.max = None

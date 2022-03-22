@@ -10,19 +10,15 @@ log = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = [
     {
-        'type': 'email',
-        'verbose': True,
-        'user_submission': True,
-    },
-    {
-        'type': 'sentry',
-        'user_submission': False,
+        "type": "email",
+        "verbose": True,
+        "user_submission": True,
     },
 ]
-DEFAULT_PLUGINS_SOURCE = plugin_config.PluginConfigSource('dict', DEFAULT_CONFIG)
+DEFAULT_PLUGINS_SOURCE = plugin_config.PluginConfigSource("dict", DEFAULT_CONFIG)
 
 
-class ErrorReports(object):
+class ErrorReports:
     """Load and store a collection of :class:`ErrorPlugin` objects."""
 
     def __init__(self, conf_file=None, **kwargs):
@@ -33,11 +29,11 @@ class ErrorReports(object):
 
     def __plugins_dict(self):
         import galaxy.tools.error_reports.plugins
-        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, 'plugin_type')
+
+        return plugin_config.plugins_dict(galaxy.tools.error_reports.plugins, "plugin_type")
 
 
-class NullErrorPlugin(object):
-
+class NullErrorPlugin:
     def submit_report(self, dataset, job, tool, **kwargs):
         log.warning("Bug report for dataset %s, job %s submitted to NullErrorPlugin", dataset, job)
         return [("Error reporting is not configured for this Galaxy instance", "danger")]
@@ -46,11 +42,10 @@ class NullErrorPlugin(object):
 NULL_ERROR_PLUGIN = NullErrorPlugin()
 
 
-class ErrorPlugin(object):
-
+class ErrorPlugin:
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
-        self.app = kwargs['app']
+        self.app = kwargs["app"]
         self.plugin_classes = plugin_classes
         self.plugins = self.__plugins_from_source(plugins_source)
 

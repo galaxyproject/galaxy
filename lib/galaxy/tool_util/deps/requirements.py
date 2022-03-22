@@ -1,27 +1,25 @@
 import copy
 
-import six
-
 from galaxy.util import (
     asbool,
     xml_text,
 )
 from galaxy.util.oset import OrderedSet
 
-
 DEFAULT_REQUIREMENT_TYPE = "package"
 DEFAULT_REQUIREMENT_VERSION = None
 
 
-@six.python_2_unicode_compatible
-class ToolRequirement(object):
+class ToolRequirement:
     """
     Represents an external requirement that must be available for the tool to
     run (for example, a program, package, or library).  Requirements can
     optionally assert a specific version.
     """
 
-    def __init__(self, name=None, type=None, version=None, specs=[]):
+    def __init__(self, name=None, type=None, version=None, specs=None):
+        if specs is None:
+            specs = []
         self.name = name
         self.type = type
         self.version = version
@@ -35,15 +33,20 @@ class ToolRequirement(object):
         return copy.deepcopy(self)
 
     @staticmethod
-    def from_dict(dict):
-        version = dict.get("version", None)
-        name = dict.get("name", None)
-        type = dict.get("type", None)
-        specs = [RequirementSpecification.from_dict(s) for s in dict.get("specs", [])]
+    def from_dict(d):
+        version = d.get("version")
+        name = d.get("name")
+        type = d.get("type")
+        specs = [RequirementSpecification.from_dict(s) for s in d.get("specs", [])]
         return ToolRequirement(name=name, type=type, version=version, specs=specs)
 
     def __eq__(self, other):
-        return self.name == other.name and self.type == other.type and self.version == other.version and self.specs == other.specs
+        return (
+            self.name == other.name
+            and self.type == other.type
+            and self.version == other.version
+            and self.specs == other.specs
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -52,12 +55,12 @@ class ToolRequirement(object):
         return hash((self.name, self.type, self.version, frozenset(self.specs)))
 
     def __str__(self):
-        return "ToolRequirement[%s,version=%s,type=%s,specs=%s]" % (self.name, self.version, self.type, self.specs)
+        return f"ToolRequirement[{self.name},version={self.version},type={self.type},specs={self.specs}]"
 
     __repr__ = __str__
 
 
-class RequirementSpecification(object):
+class RequirementSpecification:
     """Refine a requirement using a URI."""
 
     def __init__(self, uri, version=None):
@@ -91,7 +94,7 @@ class RequirementSpecification(object):
         return hash((self.uri, self.version))
 
 
-class ToolRequirements(object):
+class ToolRequirements:
     """
     Represents all requirements (packages, env vars) needed to run a tool.
     """
@@ -99,8 +102,10 @@ class ToolRequirements(object):
     def __init__(self, tool_requirements=None):
         if tool_requirements:
             if not isinstance(tool_requirements, list):
-                raise ToolRequirementsException('ToolRequirements Constructor expects a list')
-            self.tool_requirements = OrderedSet([r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements])
+                raise ToolRequirementsException("ToolRequirements Constructor expects a list")
+            self.tool_requirements = OrderedSet(
+                [r if isinstance(r, ToolRequirement) else ToolRequirement.from_dict(r) for r in tool_requirements]
+            )
         else:
             self.tool_requirements = OrderedSet()
 
@@ -110,11 +115,11 @@ class ToolRequirements(object):
 
     @property
     def resolvable(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type in {'package', 'set_environment'}])
+        return ToolRequirements([r for r in self.tool_requirements if r.type in {"package", "set_environment"}])
 
     @property
     def packages(self):
-        return ToolRequirements([r for r in self.tool_requirements if r.type == 'package'])
+        return ToolRequirements([r for r in self.tool_requirements if r.type == "package"])
 
     def to_list(self):
         return [r.to_dict() for r in self.tool_requirements]
@@ -125,14 +130,17 @@ class ToolRequirements(object):
         self.tool_requirements.add(requirement)
 
     def __eq__(self, other):
-        return len(self.tool_requirements & other.tool_requirements) == len(self.tool_requirements) == len(other.tool_requirements)
+        return (
+            len(self.tool_requirements & other.tool_requirements)
+            == len(self.tool_requirements)
+            == len(other.tool_requirements)
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __iter__(self):
-        for r in self.tool_requirements:
-            yield r
+        yield from self.tool_requirements
 
     def __getitem__(self, ii):
         return list(self.tool_requirements)[ii]
@@ -141,7 +149,7 @@ class ToolRequirements(object):
         return len(self.tool_requirements)
 
     def __hash__(self):
-        return sum([r.__hash__() for r in self.tool_requirements])
+        return sum(r.__hash__() for r in self.tool_requirements)
 
     def to_dict(self):
         return [r.to_dict() for r in self.tool_requirements]
@@ -156,9 +164,7 @@ DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES = False
 DEFAULT_CONTAINER_SHELL = "/bin/sh"  # Galaxy assumes bash, but containers are usually thinner.
 
 
-@six.python_2_unicode_compatible
-class ContainerDescription(object):
-
+class ContainerDescription:
     def __init__(
         self,
         identifier=None,
@@ -195,7 +201,7 @@ class ContainerDescription(object):
         )
 
     def __str__(self):
-        return "ContainerDescription[identifier=%s,type=%s]" % (self.identifier, self.type)
+        return f"ContainerDescription[identifier={self.identifier},type={self.type}]"
 
 
 def parse_requirements_from_dict(root_dict):
@@ -231,7 +237,7 @@ def parse_requirements_from_xml(xml_root):
 
     requirement_elems = []
     if requirements_elem is not None:
-        requirement_elems = requirements_elem.findall('requirement')
+        requirement_elems = requirements_elem.findall("requirement")
 
     requirements = ToolRequirements()
     for requirement_elem in requirement_elems:
@@ -243,7 +249,7 @@ def parse_requirements_from_xml(xml_root):
 
     container_elems = []
     if requirements_elem is not None:
-        container_elems = requirements_elem.findall('container')
+        container_elems = requirements_elem.findall("container")
 
     containers = [container_from_element(c) for c in container_elems]
 

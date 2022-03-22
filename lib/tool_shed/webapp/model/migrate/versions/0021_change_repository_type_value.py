@@ -1,5 +1,4 @@
 """Migration script to change repository.type column value from generic to unrestricted."""
-from __future__ import print_function
 
 import logging
 import sys

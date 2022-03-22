@@ -29,7 +29,7 @@ def parse_tool_provided_metadata(meta_file, provided_metadata_style=None, job_wr
 
 def _guess_tool_provided_metadata_style(path):
     try:
-        with open(path, "r") as f:
+        with open(path) as f:
             metadata = json.load(f)
         metadata_type = metadata.get("type", None)
         return "legacy" if metadata_type in ["dataset", "new_primary_dataset"] else "default"
@@ -39,8 +39,7 @@ def _guess_tool_provided_metadata_style(path):
         return "legacy"
 
 
-class BaseToolProvidedMetadata(object):
-
+class BaseToolProvidedMetadata:
     def get_new_datasets(self, output_name):
         """Find new datasets for dataset discovery for specified output.
 
@@ -76,8 +75,7 @@ class BaseToolProvidedMetadata(object):
         return []
 
     def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
-        """Return primary dataset metadata for specified output.
-        """
+        """Return primary dataset metadata for specified output."""
         return {}
 
     def rewrite(self):
@@ -89,8 +87,7 @@ class BaseToolProvidedMetadata(object):
         return None
 
     def get_new_datasets_for_metadata_collection(self):
-        """Return all datasets tracked that are not explicit primary outputs.
-        """
+        """Return all datasets tracked that are not explicit primary outputs."""
         return []
 
 
@@ -99,56 +96,58 @@ class NullToolProvidedMetadata(BaseToolProvidedMetadata):
 
 
 class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
-
     def __init__(self, meta_file, job_wrapper=None):
         self.meta_file = meta_file
         self.tool_provided_job_metadata = []
 
-        with open(meta_file, 'r') as f:
+        with open(meta_file) as f:
             for line in f:
                 try:
                     line = stringify_dictionary_keys(json.loads(line))
-                    assert 'type' in line
-                except Exception:
-                    log.exception('(%s) Got JSON data from tool, but data is improperly formatted or no "type" key in data' % getattr(job_wrapper, "job_id", None))
-                    log.debug('Offending data was: %s' % line)
-                    continue
+                    assert "type" in line
+                except Exception as e:
+                    message = f'Got JSON data from tool, but line is improperly formatted or no "type" key in: [{line}]'
+                    raise ValueError(message) from e
                 # Set the dataset id if it's a dataset entry and isn't set.
                 # This isn't insecure.  We loop the job's output datasets in
                 # the finish method, so if a tool writes out metadata for a
                 # dataset id that it doesn't own, it'll just be ignored.
-                dataset_id_not_specified = line['type'] == 'dataset' and 'dataset_id' not in line
+                dataset_id_not_specified = line["type"] == "dataset" and "dataset_id" not in line
                 if dataset_id_not_specified:
-                    dataset_basename = line['dataset']
+                    dataset_basename = line["dataset"]
                     if job_wrapper:
                         try:
-                            line['dataset_id'] = job_wrapper.get_output_file_id(dataset_basename)
+                            line["dataset_id"] = job_wrapper.job_io.get_output_file_id(dataset_basename)
                         except KeyError:
-                            log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
+                            log.warning(
+                                f"({job_wrapper.job_id}) Tool provided job dataset-specific metadata without specifying a dataset"
+                            )
                             continue
                     else:
-                        match = re.match(r'(galaxy_)?dataset_(.*)\.dat', dataset_basename)
+                        match = re.match(r"(galaxy_)?dataset_(.*)\.dat", dataset_basename)
                         if match is None:
-                            raise Exception("processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [%s]" % dataset_basename)
+                            raise Exception(
+                                f"processing tool_provided_metadata (e.g. galaxy.json) entry with invalid dataset name [{dataset_basename}]"
+                            )
                         dataset_id = match.group(2)
                         if dataset_id.isdigit():
-                            line['dataset_id'] = dataset_id
+                            line["dataset_id"] = dataset_id
                         else:
-                            line['dataset_uuid'] = dataset_id
+                            line["dataset_uuid"] = dataset_id
 
                 self.tool_provided_job_metadata.append(line)
 
     def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
         for meta in self.tool_provided_job_metadata:
-            if meta['type'] == 'dataset' and 'dataset_id' in meta and int(meta['dataset_id']) == dataset_id:
+            if meta["type"] == "dataset" and "dataset_id" in meta and int(meta["dataset_id"]) == dataset_id:
                 return meta
-            if meta['type'] == 'dataset' and 'dataset_uuid' in meta and meta['dataset_uuid'] == dataset_uuid:
+            if meta["type"] == "dataset" and "dataset_uuid" in meta and meta["dataset_uuid"] == dataset_uuid:
                 return meta
         return {}
 
     def get_new_dataset_meta_by_basename(self, output_name, basename):
         for meta in self.tool_provided_job_metadata:
-            if meta['type'] == 'new_primary_dataset' and meta['filename'] == basename:
+            if meta["type"] == "new_primary_dataset" and meta["filename"] == basename:
                 return meta
 
     def get_new_datasets(self, output_name):
@@ -159,7 +158,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         found_failed = False
         for meta in self.tool_provided_job_metadata:
             if meta.get("failed", False):
-                log.info("One or more tool outputs is marked as failed (%s)." % meta)
+                log.info(f"One or more tool outputs is marked as failed ({meta}).")
                 found_failed = True
 
         return found_failed
@@ -168,21 +167,20 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         return []
 
     def rewrite(self):
-        with open(self.meta_file, 'wt') as job_metadata_fh:
+        with open(self.meta_file, "wt") as job_metadata_fh:
             for meta in self.tool_provided_job_metadata:
-                job_metadata_fh.write("%s\n" % (json.dumps(meta)))
+                job_metadata_fh.write(f"{json.dumps(meta)}\n")
 
     def get_new_datasets_for_metadata_collection(self):
         for meta in self.tool_provided_job_metadata:
-            if meta['type'] == 'new_primary_dataset':
+            if meta["type"] == "new_primary_dataset":
                 yield meta
 
 
 class ToolProvidedMetadata(BaseToolProvidedMetadata):
-
     def __init__(self, meta_file):
         self.meta_file = meta_file
-        with open(meta_file, 'r') as f:
+        with open(meta_file) as f:
             self.tool_provided_job_metadata = json.load(f)
 
     def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
@@ -191,7 +189,7 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
     def get_new_dataset_meta_by_basename(self, output_name, basename):
         datasets = self.tool_provided_job_metadata.get(output_name, {}).get("datasets", [])
         for meta in datasets:
-            if meta['filename'] == basename:
+            if meta["filename"] == basename:
                 return meta
 
     def get_new_datasets(self, output_name):
@@ -222,15 +220,15 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
                 continue
 
             if meta.get("failed", False):
-                log.info("One or more tool outputs is marked as failed (%s)." % meta)
+                log.info(f"One or more tool outputs is marked as failed ({meta}).")
                 found_failed = True
 
         return found_failed
 
     def get_unnamed_outputs(self):
-        log.debug("unnamed outputs [%s]" % self.tool_provided_job_metadata)
+        log.debug(f"unnamed outputs [{self.tool_provided_job_metadata}]")
         return self.tool_provided_job_metadata.get("__unnamed_outputs", [])
 
     def rewrite(self):
-        with open(self.meta_file, 'wt') as job_metadata_fh:
+        with open(self.meta_file, "wt") as job_metadata_fh:
             json.dump(self.tool_provided_job_metadata, job_metadata_fh)

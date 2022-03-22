@@ -15,7 +15,7 @@
 # verbose/user_submission, but those are not necessary to provide.
 
 # The default Email bug reporter. By default, the standard
-# configuration is taken from your galaxy.ini
+# configuration is taken from your galaxy.yml
 - type: email
   verbose: true
   user_submission: true
@@ -29,10 +29,9 @@
 #   directory: /tmp/reports/
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
-# galaxy.ini, then Galaxy will submit the job error to Sentry. You may supply a
-# separate DSN for tool reports by supplying a ``custom_dsn`` parameter.
-- type: sentry
-  user_submission: false
+# galaxy.yml, then Galaxy will submit the job error to Sentry.
+# - type: sentry
+#   user_submission: false
 
 # InfluxDB error reporting backend. You will need to `pip install
 # influxdb` in the galaxy virtualenv yourself. This sends well tagged
@@ -72,7 +71,10 @@
 # repository of the tool by querying the ToolShed where the tool comes from
 # (if applicable). Set verbose to true if you want the message to be displayed
 # to the user. The 'gitlab_default_repo_only' flags ensures all errors are
-# submitted to the default repository only.
+# submitted to the default repository only. The 'gitlab_new_issue_on_closed' flag
+# ensures that, when set to true, if an issue is closed it will create a new issue.
+# The 'gitlab_labels' flag allows to submit an array of labels that are added to
+# each issues.
 # - type: gitlab
 #   verbose: false
 #   user_submission: true
@@ -82,3 +84,7 @@
 #   gitlab_default_repo_name: galaxy
 #   gitlab_default_repo_only: true
 #   gitlab_allow_proxy: false
+#   gitlab_new_issue_on_closed: true
+#   gitlab_labels:
+#     - Label1
+#     - Label2

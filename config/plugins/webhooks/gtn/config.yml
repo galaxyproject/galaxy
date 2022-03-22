@@ -1,0 +1,7 @@
+id: gtn
+type:
+  - masthead
+activate: true
+
+icon: fa-graduation-cap
+tooltip: See Galaxy Training Materials

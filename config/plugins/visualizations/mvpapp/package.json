@@ -1,0 +1,34 @@
+{
+  "name": "mvpapp",
+  "version": "1.3.0",
+  "keywords": [
+    "galaxy",
+    "visualization"
+  ],
+  "description": "MVP Viewer",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --mode production"
+  },
+  "author": "Thomas McGowan <mcgo0092@umn.edu>",
+  "license": "MIT",
+  "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "copy-webpack-plugin": "^6.0.3",
+    "css-loader": "^3.4.2",
+    "extract-text-webpack-plugin": "^3.0.2",
+    "file": "^0.2.2",
+    "file-loader": "^5.0.2",
+    "mini-css-extract-plugin": "^0.9.0",
+    "script-loader": "^0.7.2",
+    "style-loader": "^1.2.0",
+    "system": "^2.0.1",
+    "url-loader": "^4.0.0",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  },
+  "dependencies": {
+    "bootstrap": "3",
+    "igv": "^2.6.6"
+  }
+}

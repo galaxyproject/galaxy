@@ -4,18 +4,19 @@ import os
 import tempfile
 
 
-class RenamedTemporaryFile(object):
+class RenamedTemporaryFile:
     """
     A temporary file object which will be renamed to the specified
     path on exit.
     """
+
     def __init__(self, final_path, **kwargs):
         """
         >>> dir = tempfile.mkdtemp()
         >>> with RenamedTemporaryFile(os.path.join(dir, 'test.txt'), mode="w") as out:
         ...     _ = out.write('bla')
         """
-        tmpfile_dir = kwargs.pop('dir', None)
+        tmpfile_dir = kwargs.pop("dir", None)
 
         # Put temporary file in the same directory as the location for the
         # final file so that an atomic move into place can occur.

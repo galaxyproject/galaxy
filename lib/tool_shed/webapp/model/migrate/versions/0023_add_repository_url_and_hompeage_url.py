@@ -2,12 +2,15 @@
 Migration script to add the remote_repository_url and homepage_url
 columns to the repository table.
 """
-from __future__ import print_function
 
 import logging
 import sys
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+)
 
 from galaxy.model.custom_types import TrimmedString
 

@@ -9,25 +9,22 @@ import warnings
 
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
-try:
-    import requests
-except ImportError:
-    requests = None
+import requests
 
 try:
     from cwltool import (
-        main,
-        workflow,
         job,
-        process,
+        main,
         pathmapper,
+        process,
+        workflow,
     )
 except ImportError:
-    main = None
-    workflow = None
-    job = None
-    process = None
-    pathmapper = None
+    main = None  # type: ignore[assignment]
+    workflow = None  # type: ignore[assignment]
+    job = None  # type: ignore[assignment]
+    process = None  # type: ignore[assignment]
+    pathmapper = None  # type: ignore[assignment]
 
 try:
     from cwltool.context import (
@@ -38,28 +35,40 @@ try:
     from cwltool.job import relink_initialworkdir
     from cwltool.stdfsaccess import StdFsAccess
 except ImportError:
-    getdefault = None
-    LoadingContext = None
-    relink_initialworkdir = None
-    RuntimeContext = None
-    StdFsAccess = None
+    getdefault = None  # type: ignore[assignment]
+    LoadingContext = None  # type: ignore[assignment,misc]
+    relink_initialworkdir = None  # type: ignore[assignment]
+    RuntimeContext = None  # type: ignore[assignment,misc]
+    StdFsAccess = None  # type: ignore[assignment,misc]
 
 try:
     from cwltool import load_tool
+except ImportError:
+    load_tool = None  # type: ignore[assignment]
+
+
+try:
+    from cwltool import command_line_tool
+except ImportError:
+    command_line_tool = None  # type: ignore[assignment]
+
+try:
     from cwltool.load_tool import (
         default_loader,
         resolve_and_validate_document,
     )
 except ImportError:
-    default_loader = None
-    load_tool = None
-    resolve_and_validate_document = None
+    default_loader = None  # type: ignore[assignment]
+    resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
-    from cwltool import command_line_tool
-    command_line_tool.ACCEPTLIST_RE = command_line_tool.ACCEPTLIST_EN_RELAXED_RE
+    from cwltool.utils import (
+        normalizeFilesDirs,
+        visit_class,
+    )
 except ImportError:
-    command_line_tool = None
+    visit_class = None  # type: ignore[assignment]
+    normalizeFilesDirs = None  # type: ignore[assignment]
 
 try:
     import shellescape
@@ -72,10 +81,12 @@ try:
         ref_resolver,
         sourceline,
     )
+    from schema_salad.utils import yaml_no_ts
 except ImportError:
-    schema_salad = None
-    ref_resolver = None
-    sourceline = None
+    schema_salad = None  # type: ignore[assignment]
+    ref_resolver = None  # type: ignore[assignment]
+    sourceline = None  # type: ignore[assignment]
+    yaml_no_ts = None  # type: ignore[assignment]
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
@@ -104,22 +115,25 @@ def ensure_cwltool_available():
 
 
 __all__ = (
-    'default_loader',
-    'ensure_cwltool_available',
-    'getdefault',
-    'load_tool',
-    'LoadingContext',
-    'main',
-    'needs_shell_quoting',
-    'pathmapper',
-    'process',
-    'ref_resolver',
-    'relink_initialworkdir',
-    'resolve_and_validate_document',
-    'RuntimeContext',
-    'schema_salad',
-    'shellescape',
-    'sourceline',
-    'StdFsAccess',
-    'workflow',
+    "default_loader",
+    "ensure_cwltool_available",
+    "getdefault",
+    "load_tool",
+    "LoadingContext",
+    "main",
+    "needs_shell_quoting",
+    "normalizeFilesDirs",
+    "pathmapper",
+    "process",
+    "ref_resolver",
+    "relink_initialworkdir",
+    "resolve_and_validate_document",
+    "RuntimeContext",
+    "schema_salad",
+    "shellescape",
+    "sourceline",
+    "StdFsAccess",
+    "visit_class",
+    "workflow",
+    "yaml_no_ts",
 )

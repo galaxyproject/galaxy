@@ -8,18 +8,15 @@ from abc import (
     abstractproperty,
 )
 
-import six
-
 from galaxy.util.filelock import (
     FileLock,
-    FileLockException
+    FileLockException,
 )
 
 log = logging.getLogger(__name__)
 
 
-@six.add_metaclass(ABCMeta)
-class InstallableContext(object):
+class InstallableContext(metaclass=ABCMeta):
     """Represent a directory/configuration of something that can be installed."""
 
     @abstractmethod
@@ -50,11 +47,11 @@ def ensure_installed(installable_context, install_func, auto_init):
                 if installable_context.can_install():
                     if install_func(installable_context):
                         installed = False
-                        log.warning("%s installation requested and failed." % desc)
+                        log.warning(f"{desc} installation requested and failed.")
                     else:
                         installed = installable_context.is_installed()
                         if not installed:
-                            log.warning("%s installation requested, seemed to succeed, but not found." % desc)
+                            log.warning(f"{desc} installation requested, seemed to succeed, but not found.")
                 else:
                     installed = False
             else:
@@ -74,4 +71,4 @@ def ensure_installed(installable_context, install_func, auto_init):
         else:
             return _check()
     except FileLockException:
-        raise Exception("Failed to get file lock for %s" % os.path.join(parent_path, desc.lower()))
+        raise Exception(f"Failed to get file lock for {os.path.join(parent_path, desc.lower())}")

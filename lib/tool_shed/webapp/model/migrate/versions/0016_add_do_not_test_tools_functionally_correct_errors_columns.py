@@ -1,12 +1,17 @@
 """
 Migration script to add the tool_test_errors, do_not_test, tools_functionally_correct, and time_last_tested columns to the repository_metadata table.
 """
-from __future__ import print_function
 
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, DateTime, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    MetaData,
+    Table,
+)
 
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType
@@ -34,11 +39,11 @@ def upgrade(migrate_engine):
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_tfc")
         assert c is RepositoryMetadata_table.c.tools_functionally_correct
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
             default_false = "0"
-        elif migrate_engine.name in ['postgresql', 'postgres']:
+        elif migrate_engine.name in ["postgresql", "postgres"]:
             default_false = "false"
-        migrate_engine.execute("UPDATE repository_metadata SET tools_functionally_correct=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET tools_functionally_correct={default_false}")
     except Exception:
         log.exception("Adding tools_functionally_correct column to the repository_metadata table failed.")
     c = Column("do_not_test", Boolean, default=False, index=True)
@@ -47,11 +52,11 @@ def upgrade(migrate_engine):
         c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_dnt")
         assert c is RepositoryMetadata_table.c.do_not_test
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        if migrate_engine.name == "mysql" or migrate_engine.name == "sqlite":
             default_false = "0"
-        elif migrate_engine.name in ['postgresql', 'postgres']:
+        elif migrate_engine.name in ["postgresql", "postgres"]:
             default_false = "false"
-        migrate_engine.execute("UPDATE repository_metadata SET do_not_test=%s" % default_false)
+        migrate_engine.execute(f"UPDATE repository_metadata SET do_not_test={default_false}")
     except Exception:
         log.exception("Adding do_not_test column to the repository_metadata table failed.")
     c = Column("time_last_tested", DateTime, default=None, nullable=True)

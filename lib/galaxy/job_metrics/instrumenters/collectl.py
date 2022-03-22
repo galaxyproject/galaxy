@@ -9,7 +9,7 @@ from .. import formatting
 from ..collectl import (
     cli,
     processes,
-    subsystems
+    subsystems,
 )
 
 log = logging.getLogger(__name__)
@@ -27,11 +27,12 @@ FORMATTED_RESOURCE_TITLES = {
     "WSYS": "Disk Writes",
 }
 
-EMPTY_COLLECTL_FILE_MESSAGE = "Skipping process summary due to empty file... job probably did not run long enough for collectl to gather data."
+EMPTY_COLLECTL_FILE_MESSAGE = (
+    "Skipping process summary due to empty file... job probably did not run long enough for collectl to gather data."
+)
 
 
 class CollectlFormatter(formatting.JobMetricFormatter):
-
     def format(self, key, value):
         if key == "pid":
             return ("Process ID", int(value))
@@ -42,19 +43,20 @@ class CollectlFormatter(formatting.JobMetricFormatter):
         else:
             _, stat_type, resource_type = key.split("_", 2)
             if resource_type.startswith("Vm"):
-                value_str = "%s KB" % int(value)
+                value_str = f"{int(value)} KB"
             elif resource_type in ["RSYS", "WSYS"] and stat_type in ["count", "max", "sum"]:
                 value_str = "%d (# system calls)" % int(value)
             else:
                 value_str = str(value)
             resource_title = FORMATTED_RESOURCE_TITLES.get(resource_type, resource_type)
-            return ("%s (%s)" % (resource_title, stat_type), value_str)
+            return (f"{resource_title} ({stat_type})", value_str)
 
 
 class CollectlPlugin(InstrumentPlugin):
-    """ Run collectl along with job to capture system and/or process data
+    """Run collectl along with job to capture system and/or process data
     according to specified collectl subsystems.
     """
+
     plugin_type = "collectl"
     formatter = CollectlFormatter()
 
@@ -63,7 +65,7 @@ class CollectlPlugin(InstrumentPlugin):
         self.__configure_subsystems(kwargs)
         saved_logs_path = kwargs.get("saved_logs_path", "")
         if "app" in kwargs:
-            log.debug("Found path for saved logs: %s" % saved_logs_path)
+            log.debug(f"Found path for saved logs: {saved_logs_path}")
             saved_logs_path = kwargs["app"].config.resolve_path(saved_logs_path)
         self.saved_logs_path = saved_logs_path
         self.__configure_collectl_recorder_args(kwargs)
@@ -71,7 +73,9 @@ class CollectlPlugin(InstrumentPlugin):
         self.log_collectl_program_output = util.asbool(kwargs.get("log_collectl_program_output", False))
         if self.summarize_process_data:
             if subsystems.get_subsystem("process") not in self.subsystems:
-                raise Exception("Collectl plugin misconfigured - cannot summarize_process_data without process subsystem being enabled.")
+                raise Exception(
+                    "Collectl plugin misconfigured - cannot summarize_process_data without process subsystem being enabled."
+                )
 
             process_statistics = kwargs.get("process_statistics", None)
             # None will let processes module use default set of statistics
@@ -82,7 +86,7 @@ class CollectlPlugin(InstrumentPlugin):
         commands = []
         # Capture PID of process so we can walk its ancestors when building
         # statistics for the whole job.
-        commands.append('''echo "$$" > '%s' ''' % self.__pid_file(job_directory))
+        commands.append(f"""echo "$$" > '{self.__pid_file(job_directory)}' """)
         # Run collectl in record mode to capture process and system level
         # statistics according to supplied subsystems.
         commands.append(self.__collectl_record_command(job_directory))
@@ -96,13 +100,13 @@ class CollectlPlugin(InstrumentPlugin):
         return commands
 
     def job_properties(self, job_id, job_directory):
-        pid = open(self.__pid_file(job_directory), "r").read().strip()
+        pid = open(self.__pid_file(job_directory)).read().strip()
         contents = os.listdir(job_directory)
         try:
-            rel_path = filter(self._is_instrumented_collectl_log, contents)[0]
+            rel_path = next(iter(filter(self._is_instrumented_collectl_log, contents)))
             path = os.path.join(job_directory, rel_path)
         except IndexError:
-            message = "Failed to find collectl log in directory %s, files were %s" % (job_directory, contents)
+            message = f"Failed to find collectl log in directory {job_directory}, files were {contents}"
             raise Exception(message)
 
         properties = dict(
@@ -123,7 +127,7 @@ class CollectlPlugin(InstrumentPlugin):
             # Run collectl in playback and generate statistics of interest
             summary_statistics = self.__summarize_process_data(pid, path)
             for statistic, value in summary_statistics:
-                properties["process_%s" % "_".join(statistic)] = value
+                properties[f"process_{'_'.join(statistic)}"] = value
 
         return properties
 
@@ -167,11 +171,7 @@ class CollectlPlugin(InstrumentPlugin):
         self.collectl_recorder_args = collectl_recorder_args
 
     def __summarize_process_data(self, pid, collectl_log_path):
-        playback_cli_args = dict(
-            collectl_path=self.local_collectl_path,
-            playback_path=collectl_log_path,
-            sep="9"
-        )
+        playback_cli_args = dict(collectl_path=self.local_collectl_path, playback_path=collectl_log_path, sep="9")
         if not os.stat(collectl_log_path).st_size:
             log.debug(EMPTY_COLLECTL_FILE_MESSAGE)
             return []
@@ -190,10 +190,7 @@ class CollectlPlugin(InstrumentPlugin):
             redirect_to = self._instrument_file_path(job_directory, "program_output")
         else:
             redirect_to = "/dev/null"
-        return "%s > %s 2>&1 &" % (
-            collectl_cli.build_command_line(),
-            redirect_to,
-        )
+        return f"{collectl_cli.build_command_line()} > {redirect_to} 2>&1 &"
 
     def __pid_file(self, job_directory):
         return self._instrument_file_path(job_directory, "pid")
@@ -215,4 +212,4 @@ def procfilt_argument(procfilt_on):
         return ""
 
 
-__all__ = ('CollectlPlugin', )
+__all__ = ("CollectlPlugin",)

@@ -2,14 +2,12 @@
 Utility functions for bi-directional Python version compatibility.  Python 2.5
 introduced hashlib which replaced sha in Python 2.4 and previous versions.
 """
-from __future__ import absolute_import
 
 import hashlib
 import hmac
 import logging
 
 from . import smart_str
-
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +41,7 @@ def memory_bound_hexdigest(hash_func=None, hash_func_name=None, path=None, file=
         assert path is None, "Cannot specify path and path keyword arguments."
 
     try:
-        for block in iter(lambda: file.read(BLOCK_SIZE), b''):
+        for block in iter(lambda: file.read(BLOCK_SIZE), b""):
             hasher.update(block)
         return hasher.hexdigest()
     finally:
@@ -56,11 +54,11 @@ def md5_hash_file(path):
     """
     hasher = hashlib.md5()
     try:
-        with open(path, 'rb') as afile:
+        with open(path, "rb") as afile:
             buf = afile.read()
             hasher.update(buf)
             return hasher.hexdigest()
-    except IOError:
+    except OSError:
         # This may happen if path has been deleted
         return None
 
@@ -74,7 +72,7 @@ def new_secure_hash(text_type):
 
 
 def hmac_new(key, value):
-    return hmac.new(key, value, sha).hexdigest()
+    return hmac.new(smart_str(key), smart_str(value), sha).hexdigest()
 
 
 def is_hashable(value):
@@ -85,4 +83,4 @@ def is_hashable(value):
     return True
 
 
-__all__ = ('md5', 'hashlib', 'sha1', 'sha', 'new_secure_hash', 'hmac_new', 'is_hashable')
+__all__ = ("md5", "hashlib", "sha1", "sha", "new_secure_hash", "hmac_new", "is_hashable")

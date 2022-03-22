@@ -4,22 +4,27 @@ Plugins resource control over the API.
 import logging
 
 from galaxy import exceptions
-from galaxy.managers import hdas, histories
+from galaxy.managers import (
+    hdas,
+    histories,
+)
+from galaxy.util import asbool
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
 
-class PluginsController(BaseAPIController):
+class PluginsController(BaseGalaxyAPIController):
     """
     RESTful controller for interactions with plugins.
     """
 
-    def __init__(self, app):
-        super(PluginsController, self).__init__(app)
-        self.hda_manager = hdas.HDAManager(app)
-        self.history_manager = histories.HistoryManager(app)
+    hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
+    history_manager: histories.HistoryManager = depends(histories.HistoryManager)
 
     @expose_api
     def index(self, trans, **kwargs):
@@ -32,7 +37,8 @@ class PluginsController(BaseAPIController):
             hda = self.hda_manager.get_accessible(self.decode_id(dataset_id), trans.user)
             return registry.get_visualizations(trans, hda)
         else:
-            return registry.get_plugins()
+            embeddable = asbool(kwargs.get("embeddable"))
+            return registry.get_plugins(embeddable=embeddable)
 
     @expose_api
     def show(self, trans, id, **kwargs):
@@ -40,17 +46,17 @@ class PluginsController(BaseAPIController):
         GET /api/plugins/{id}:
         """
         registry = self._get_registry(trans)
-        result = {}
         history_id = kwargs.get("history_id")
         if history_id is not None:
-            history = self.history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
-            result["hdas"] = []
-            for hda in history.datasets:
+            history = self.history_manager.get_owned(
+                trans.security.decode_id(history_id), trans.user, current_history=trans.history
+            )
+            result = {"hdas": []}
+            for hda in history.contents_iter(types=["dataset"], deleted=False, visible=True):
                 if registry.get_visualization(trans, id, hda):
-                    result["hdas"].append({
-                        "id": trans.security.encode_id(hda.id),
-                        "name": hda.name
-                    })
+                    result["hdas"].append({"id": trans.security.encode_id(hda.id), "name": hda.name})
+        else:
+            result = registry.get_plugin(id).to_dict()
         return result
 
     def _get_registry(self, trans):

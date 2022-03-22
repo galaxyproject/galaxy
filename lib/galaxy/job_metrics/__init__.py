@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 DEFAULT_FORMATTER = formatting.JobMetricFormatter()
 
 
-class JobMetrics(object):
+class JobMetrics:
     """Load and store a collection of :class:`JobInstrumenter` objects."""
 
     def __init__(self, conf_file=None, **kwargs):
@@ -47,12 +47,12 @@ class JobMetrics(object):
         self.set_destination_instrumenter(destination_id, instrumenter)
 
     def set_destination_conf_element(self, destination_id, element):
-        plugin_source = plugin_config.PluginConfigSource('xml', element)
+        plugin_source = plugin_config.PluginConfigSource("xml", element)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
     def set_destination_conf_dicts(self, destination_id, conf_dicts):
-        plugin_source = plugin_config.PluginConfigSource('dict', conf_dicts)
+        plugin_source = plugin_config.PluginConfigSource("dict", conf_dicts)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
@@ -66,11 +66,11 @@ class JobMetrics(object):
 
     def __plugins_dict(self):
         import galaxy.job_metrics.instrumenters
-        return plugin_config.plugins_dict(galaxy.job_metrics.instrumenters, 'plugin_type')
+
+        return plugin_config.plugins_dict(galaxy.job_metrics.instrumenters, "plugin_type")
 
 
-class NullJobInstrumenter(object):
-
+class NullJobInstrumenter:
     def pre_execute_commands(self, job_directory):
         return None
 
@@ -84,8 +84,7 @@ class NullJobInstrumenter(object):
 NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 
-class JobInstrumenter(object):
-
+class JobInstrumenter:
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes

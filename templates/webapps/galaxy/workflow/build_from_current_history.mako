@@ -33,10 +33,12 @@
     $(function() {
         $("#checkall").click( function() {
             $("input[type=checkbox]").attr( 'checked', true );
+            $(".as-named-input").prop( 'disabled', false );
             return false;
         }).show();
         $("#uncheckall").click( function() {
             $("input[type=checkbox]").attr( 'checked', false );
+            $(".as-named-input").prop( 'disabled', true );
             return false;
         }).show();
     });
@@ -62,7 +64,8 @@
                     </div>
                     %if disabled:
                         <input type="checkbox" id="as-input-${ encoded_id }" class="as-input"
-                               name="${data.history_content_type}_ids" value="${data.hid}" checked="true" />
+                               name="${data.history_content_type}_ids" value="${data.hid}" checked="true"
+                               onclick="document.getElementById('as-named-input-${ encoded_id }').disabled = !document.getElementById('as-input-${ encoded_id }').checked" />
                         <label for="as-input-${ encoded_id }" >${_('Treat as input dataset')}</label>
                         <input type="text" id="as-named-input-${ encoded_id }" class="as-named-input"
                                name="${data.history_content_type}_names" value="${data.display_name() | h}" />
@@ -90,7 +93,7 @@ into a workflow will be shown in gray.</p>
     <input name="workflow_name" type="text" value="Workflow constructed from history '${ util.unicodify( history.name )}'" size="60"/>
 </div>
 <p>
-    <input type="submit" value="${_('Create Workflow')}" />
+    <input type="submit" class="btn btn-primary" value="${_('Create Workflow')}" />
     <button id="checkall" style="display: none;">Check all</button>
     <button id="uncheckall" style="display: none;">Uncheck all</button>
 </p>

@@ -47,7 +47,7 @@
             <help>Select a kind of position of nodes in graph.</help>
             <type>select</type>
             <display>radio</display>
-            <value>breadthfirst</value>
+            <value>preset</value>
             <data>
                 <data>
                     <label>Breadth First</label>

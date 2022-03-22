@@ -1,16 +1,16 @@
 <tool id="simple_constructs" name="simple_constructs" version="1.0.0">
-    <command>
-        echo "$p1.p1val"  >> $out_file1;
-        echo "$booltest"  >> $out_file1;
-        echo "$inttest"   >> $out_file1; 
-        echo "$floattest" >> $out_file1;
-        echo "$radio_select" >> $out_file1;
-        echo "$check_select" >> $out_file1;
-        echo "$drop_select"  >> $out_file1;
-        #if len($files) > 0
-        cat "$files[0].file" >> $out_file1;
-        #end if
-    </command>
+    <command><![CDATA[
+echo '$p1.p1val'  > '$out_file1' &&
+echo $booltest  >> '$out_file1' &&
+echo $inttest   >> '$out_file1' &&
+echo $floattest >> '$out_file1' &&
+echo $radio_select >> '$out_file1' &&
+echo $check_select >> '$out_file1' &&
+echo $drop_select  >> '$out_file1' &&
+#if len($files) > 0
+    cat '$files[0].file' >> '$out_file1'
+#end if
+    ]]></command>
     <inputs>
         <conditional name="p1">
             <param type="boolean" name="p1use" />

@@ -11,9 +11,8 @@ log = logging.getLogger(__name__)
 
 
 class ConfigurationController(BaseAPIController):
-
     def __init__(self, app):
-        super(ConfigurationController, self).__init__(app)
+        super().__init__(app)
 
     @expose_api_anonymous_and_sessionless
     def version(self, trans, **kwds):

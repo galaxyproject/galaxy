@@ -1,173 +1,140 @@
 """
 API operations on remote files.
 """
-import hashlib
 import logging
-import os
-import time
-from operator import itemgetter
-
-from galaxy import exceptions
-from galaxy.util import (
-    jstree,
-    smart_str,
-    unicodify
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
 )
-from galaxy.util.path import (
-    safe_path,
-    safe_walk
+
+from fastapi.param_functions import Query
+
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.remote_files import RemoteFilesManager
+from galaxy.schema.remote_files import (
+    FilesSourcePluginList,
+    RemoteFilesDisableMode,
+    RemoteFilesFormat,
+    RemoteFilesTarget,
 )
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["remote files"])
 
-class RemoteFilesAPIController(BaseAPIController):
+TargetQueryParam: str = Query(
+    default=RemoteFilesTarget.ftpdir,
+    title="Target source",
+    description=("The source to load datasets from." " Possible values: ftpdir, userdir, importdir"),
+)
+
+FormatQueryParam: Optional[RemoteFilesFormat] = Query(
+    default=RemoteFilesFormat.uri,
+    title="Response format",
+    description=(
+        "The requested format of returned data. Either `flat` to simply list all the files"
+        ", `jstree` to get a tree representation of the files, or the default `uri` to list "
+        "files and directories by their URI."
+    ),
+)
+
+RecursiveQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Recursive",
+    description=(
+        "Wether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
+    ),
+)
+
+DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
+    default=None,
+    title="Disable mode",
+    description=(
+        "(This only applies when `format` is `jstree`)"
+        " The value can be either `folders` or `files` and it will disable the"
+        " corresponding nodes of the tree."
+    ),
+)
+
+
+@router.cbv
+class FastAPIRemoteFiles:
+    manager: RemoteFilesManager = depends(RemoteFilesManager)
+
+    @router.get(
+        "/api/remote_files",
+        summary="Displays remote files available to the user.",
+        response_description="A list with details about the remote files available to the user.",
+    )
+    async def index(
+        self,
+        user_ctx: ProvidesUserContext = DependsOnTrans,
+        target: str = TargetQueryParam,
+        format: Optional[RemoteFilesFormat] = FormatQueryParam,
+        recursive: Optional[bool] = RecursiveQueryParam,
+        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
+    ) -> List[Dict[str, Any]]:
+        """Lists all remote files available to the user from different sources."""
+        return self.manager.index(user_ctx, target, format, recursive, disable)
+
+    @router.get(
+        "/api/remote_files/plugins",
+        summary="Display plugin information for each of the gxfiles:// URI targets available.",
+        response_description="A list with details about each plugin.",
+    )
+    async def plugins(
+        self,
+        user_ctx: ProvidesUserContext = DependsOnTrans,
+    ) -> FilesSourcePluginList:
+        """Display plugin information for each of the gxfiles:// URI targets available."""
+        return self.manager.get_files_source_plugins(user_ctx)
+
+
+class RemoteFilesAPIController(BaseGalaxyAPIController):
+    manager: RemoteFilesManager = depends(RemoteFilesManager)
 
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesUserContext, **kwd):
         """
         GET /api/remote_files/
 
         Displays remote files.
 
-        :param  target:      target to load available datasets from, defaults to ftp
-            possible values: ftp, userdir, importdir
+        :param  target:      target to load available datasets from, defaults to ftpdir
+            possible values: ftpdir, userdir, importdir
         :type   target:      str
 
         :param  format:      requested format of data, defaults to flat
-            possible values: flat, jstree, ajax
+            possible values: flat, jstree
 
         :returns:   list of available files
         :rtype:     list
         """
-        target = kwd.get('target', None)
-        format = kwd.get('format', None)
+        # If set, target must be one of 'ftpdir' (default), 'userdir', 'importdir'
+        target = kwd.get("target", "ftpdir")
+        format = kwd.get("format", None)
+        recursive = kwd.get("recursive", None)
+        disable = kwd.get("disable", None)
 
-        if target == 'userdir':
-            user_login = trans.user.email
-            user_base_dir = trans.app.config.user_library_import_dir
-            if user_base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from user directories.')
-            full_import_dir = os.path.join(user_base_dir, user_login)
-            if not os.path.exists(full_import_dir):
-                raise exceptions.ObjectNotFound('You do not have any files in your user directory. Use FTP to upload there.')
-            if full_import_dir is not None:
-                if format == 'jstree':
-                    disable = kwd.get('disable', 'folders')
-                    try:
-                        userdir_jstree = self.__create_jstree(full_import_dir, disable, allowlist=trans.app.config.user_library_import_symlink_allowlist)
-                        response = userdir_jstree.jsonData()
-                    except Exception as e:
-                        log.debug(unicodify(e))
-                        raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % full_import_dir)
-                    if not response:
-                        raise exceptions.ObjectNotFound('You do not have any files in your user directory. Use FTP to upload there.')
-                elif format == 'ajax':
-                    raise exceptions.NotImplemented('Not implemented yet. Sorry.')
-                else:
-                    try:
-                        response = self.__load_all_filenames(full_import_dir, allowlist=trans.app.config.user_library_import_symlink_allowlist)
-                    except Exception:
-                        log.exception('Could not get user import files')
-                        raise exceptions.InternalServerError('Could not get the files from your user directory folder.')
-            else:
-                raise exceptions.InternalServerError('Could not get the files from your user directory folder.')
-        elif target == 'importdir':
-            base_dir = trans.app.config.library_import_dir
-            if base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow usage of import directory.')
-            if format == 'jstree':
-                disable = kwd.get('disable', 'folders')
-                try:
-                    importdir_jstree = self.__create_jstree(base_dir, disable, allowlist=trans.app.config.user_library_import_symlink_allowlist)
-                    response = importdir_jstree.jsonData()
-                except Exception as e:
-                    log.debug(unicodify(e))
-                    raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % base_dir)
-            elif format == 'ajax':
-                raise exceptions.NotImplemented('Not implemented yet. Sorry.')
-            else:
-                try:
-                    response = self.__load_all_filenames(base_dir, trans.app.config.user_library_import_symlink_allowlist)
-                except Exception:
-                    log.exception('Could not get user import files')
-                    raise exceptions.InternalServerError('Could not get the files from your import directory folder.')
-        else:
-            user_ftp_base_dir = trans.app.config.ftp_upload_dir
-            if user_ftp_base_dir is None:
-                raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow upload from FTP directories.')
-            try:
-                user_ftp_dir = trans.user_ftp_dir
-                if user_ftp_dir is not None:
-                    response = self.__load_all_filenames(user_ftp_dir, trans.app.config.user_library_import_symlink_allowlist)
-                else:
-                    log.warning('You do not have an FTP directory named as your login at this Galaxy instance.')
-                    return None
-            except Exception:
-                log.warning('Could not get ftp files', exc_info=True)
-                return None
-        return response
+        return self.manager.index(trans, target, format, recursive, disable)
 
-    def __load_all_filenames(self, directory, allowlist=None):
+    @expose_api
+    def plugins(self, trans: ProvidesUserContext, **kwd):
         """
-        Loads recursively all files within the given folder and its
-        subfolders and returns a flat list.
-        """
-        response = []
-        if self.__safe_directory(directory, allowlist=allowlist):
-            for (dirpath, dirnames, filenames) in safe_walk(directory, allowlist=allowlist):
-                for filename in filenames:
-                    path = os.path.relpath(os.path.join(dirpath, filename), directory)
-                    statinfo = os.lstat(os.path.join(dirpath, filename))
-                    response.append(dict(path=path,
-                                         size=statinfo.st_size,
-                                         ctime=time.strftime("%m/%d/%Y %I:%M:%S %p", time.localtime(statinfo.st_ctime))))
-        else:
-            log.warning("The directory \"%s\" does not exist." % directory)
-            return response
-        # sort by path
-        response = sorted(response, key=itemgetter("path"))
-        return response
+        GET /api/remote_files/plugins
 
-    def __create_jstree(self, directory, disable='folders', allowlist=None):
-        """
-        Loads recursively all files and folders within the given folder
-        and its subfolders and returns jstree representation
-        of its structure.
-        """
-        jstree_paths = []
-        if self.__safe_directory(directory, allowlist=allowlist):
-            for (dirpath, dirnames, filenames) in safe_walk(directory, allowlist=allowlist):
-                for dirname in dirnames:
-                    dir_path = os.path.relpath(os.path.join(dirpath, dirname), directory)
-                    dir_path_hash = hashlib.sha1(smart_str(dir_path)).hexdigest()
-                    disabled = True if disable == 'folders' else False
-                    jstree_paths.append(jstree.Path(dir_path, dir_path_hash, {'type': 'folder', 'state': {'disabled': disabled}, 'li_attr': {'full_path': dir_path}}))
+        Display plugin information for each of the gxfiles:// URI targets available.
 
-                for filename in filenames:
-                    file_path = os.path.relpath(os.path.join(dirpath, filename), directory)
-                    file_path_hash = hashlib.sha1(smart_str(file_path)).hexdigest()
-                    disabled = True if disable == 'files' else False
-                    jstree_paths.append(jstree.Path(file_path, file_path_hash, {'type': 'file', 'state': {'disabled': disabled}, 'li_attr': {'full_path': file_path}}))
-        else:
-            raise exceptions.ConfigDoesNotAllowException('The given directory does not exist.')
-        userdir_jstree = jstree.JSTree(jstree_paths)
-        return userdir_jstree
-
-    def __safe_directory(self, directory, allowlist=None):
+        :returns:   list of configured plugins
+        :rtype:     list
         """
-        Checks to see if the directory is contained within itself or the allowlist, and whether it exists
-
-        :param directory:   the directory to check for safety
-        :type directory:    string
-        :param allowlist:   a list of acceptable paths to import from
-        :type allowlist:    comma separated list of strings
-        :return:            ``True`` if the path is safe to import from, ``False`` otherwise
-        """
-        if not safe_path(directory, allowlist=allowlist):
-            raise exceptions.ConfigDoesNotAllowException('directory (%s) is a symlink to a location not on the allowlist' % directory)
-        if not os.path.exists(directory):
-            return False
-        return True
+        return self.manager.get_files_source_plugins(trans)

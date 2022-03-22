@@ -15,9 +15,9 @@ import logging
 import os
 import re
 import sys
+from urllib.parse import quote_plus
 
 from markupsafe import escape
-from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
@@ -25,7 +25,10 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
 from galaxy.util import (
@@ -37,8 +40,8 @@ gal_Log = logging.getLogger(__name__)
 verbose = False
 
 # https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
-VALID_GENOME_GRAPH_MARKERS = re.compile(r'^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
-VALID_GENOTYPES_LINE = re.compile(r'^([a-zA-Z0-9]+)(\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\s*$')
+VALID_GENOME_GRAPH_MARKERS = re.compile(r"^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)")
+VALID_GENOTYPES_LINE = re.compile(r"^([a-zA-Z0-9]+)(\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\s*$")
 
 
 @build_sniff_from_prefix
@@ -50,22 +53,22 @@ class GenomeGraphs(Tabular):
     MetadataElement(name="markerCol", default=1, desc="Marker ID column", param=metadata.ColumnParameter)
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True)
     MetadataElement(name="column_types", default=[], desc="Column types", readonly=True, visible=False)
-    file_ext = 'gg'
+    file_ext = "gg"
 
     def __init__(self, **kwd):
         """
         Initialize gg datatype, by adding UCSC display apps
         """
-        Tabular.__init__(self, **kwd)
-        self.add_display_app('ucsc', 'Genome Graph', 'as_ucsc_display_file', 'ucsc_links')
+        super().__init__(**kwd)
+        self.add_display_app("ucsc", "Genome Graph", "as_ucsc_display_file", "ucsc_links")
 
     def set_meta(self, dataset, **kwd):
-        Tabular.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         dataset.metadata.markerCol = 1
-        header = open(dataset.file_name, 'r').readlines()[0].strip().split('\t')
+        header = open(dataset.file_name).readlines()[0].strip().split("\t")
         dataset.metadata.columns = len(header)
-        t = ['numeric' for x in header]
-        t[0] = 'string'
+        t = ["numeric" for x in header]
+        t[0] = "string"
         dataset.metadata.column_types = t
         return True
 
@@ -73,7 +76,7 @@ class GenomeGraphs(Tabular):
         """
         Returns file
         """
-        return open(dataset.file_name, 'rb')
+        return open(dataset.file_name, "rb")
 
     def ucsc_links(self, dataset, type, app, base_url):
         """
@@ -94,79 +97,85 @@ class GenomeGraphs(Tabular):
         """
         ret_val = []
         if not dataset.dbkey:
-            dataset.dbkey = 'hg18'  # punt!
+            dataset.dbkey = "hg18"  # punt!
         if dataset.has_data():
-            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
-                if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    site_url = site_url.replace('/hgTracks?', '/hgGenome?')  # for genome graphs
-                    internal_url = "%s" % app.url_for(controller='dataset',
-                                                      dataset_id=dataset.id,
-                                                      action='display_at',
-                                                      filename='ucsc_' + site_name)
-                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type)
+            for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
+                if site_name in app.datatypes_registry.get_display_sites("ucsc"):
+                    site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
+                    internal_url = "%s" % app.url_for(
+                        controller="dataset", dataset_id=dataset.id, action="display_at", filename=f"ucsc_{site_name}"
+                    )
+                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (
+                        base_url,
+                        app.url_for(controller="root"),
+                        dataset.id,
+                        type,
+                    )
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
-                    sl = ["%sdb=%s" % (site_url, dataset.dbkey), ]
+                    sl = [
+                        f"{site_url}db={dataset.dbkey}",
+                    ]
                     # sl.append("&hgt.customText=%s")
-                    sl.append("&hgGenome_dataSetName=%s&hgGenome_dataSetDescription=%s" % (dataset.name, 'GalaxyGG_data'))
+                    sl.append(f"&hgGenome_dataSetName={dataset.name}&hgGenome_dataSetDescription=GalaxyGG_data")
                     sl.append("&hgGenome_formatType=best guess&hgGenome_markerType=best guess")
                     sl.append("&hgGenome_columnLabels=first row&hgGenome_maxVal=&hgGenome_labelVals=")
                     sl.append("&hgGenome_doSubmitUpload=submit")
-                    sl.append("&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=%s" % display_url)
-                    s = ''.join(sl)
+                    sl.append(f"&hgGenome_maxGapToFill=25000000&hgGenome_uploadFile={display_url}")
+                    s = "".join(sl)
                     s = quote_plus(s)
                     redirect_url = s
-                    link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
+                    link = f"{internal_url}?redirect_url={redirect_url}&display_url={display_url}"
                     ret_val.append((site_name, link))
         return ret_val
 
-    def make_html_table(self, dataset, skipchars=[]):
+    def make_html_table(self, dataset):
         """
         Create HTML table, used for displaying peek
         """
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
-            with open(dataset.file_name, 'r') as f:
+            with open(dataset.file_name) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
-                out = "Cannot find anything to parse in %s" % dataset.name
+                out = f"Cannot find anything to parse in {dataset.name}"
                 return out
             hasheader = 0
             try:
-                ['%f' % x for x in d[0][1:]]  # first is name - see if starts all numerics
+                [f"{x:f}" for x in d[0][1:]]  # first is name - see if starts all numerics
             except Exception:
                 hasheader = 1
             # Generate column header
-            out.append('<tr>')
+            out.append("<tr>")
             if hasheader:
                 for i, name in enumerate(d[0].split()):
-                    out.append('<th>%s.%s</th>' % (i + 1, name))
+                    out.append(f"<th>{i + 1}.{name}</th>")
                 d.pop(0)
-                out.append('</tr>')
+                out.append("</tr>")
             for row in d:
-                out.append('<tr>')
-                out.append(''.join('<td>%s</td>' % x for x in row.split()))
-                out.append('</tr>')
-            out.append('</table>')
+                out.append("<tr>")
+                out.append("".join(f"<td>{x}</td>" for x in row.split()))
+                out.append("</tr>")
+            out.append("</table>")
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % exc
+            out = f"Can't create peek {exc}"
         return out
 
     def validate(self, dataset, **kwd):
         """
         Validate a gg file - all numeric after header row
         """
-        with open(dataset.file_name, "r") as infile:
+        with open(dataset.file_name) as infile:
             next(infile)  # header
-            for i, row in enumerate(infile):
-                ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
-                for j, x in enumerate(ll):
+            for row in infile:
+                ll = row.strip().split("\t")[1:]  # first is alpha feature identifier
+                for x in ll:
                     x = float(x)
         return DatatypeValidation.validated()
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Determines whether the file is in gg format
 
@@ -179,7 +188,7 @@ class GenomeGraphs(Tabular):
         True
         """
         buf = file_prefix.contents_header
-        rows = [l.split() for l in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
+        rows = [line.split() for line in buf.splitlines()[1:4]]  # break on lines and drop header, small sample
 
         if len(rows) < 1:
             return False
@@ -200,7 +209,7 @@ class GenomeGraphs(Tabular):
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
-        return 'application/vnd.ms-excel'
+        return "application/vnd.ms-excel"
 
 
 class rgTabList(Tabular):
@@ -208,13 +217,14 @@ class rgTabList(Tabular):
     for sampleid and for featureid lists of exclusions or inclusions in the clean tool
     featureid subsets on statistical criteria -> specialized display such as gg
     """
+
     file_ext = "rgTList"
 
     def __init__(self, **kwd):
         """
         Initialize featurelistt datatype
         """
-        Tabular.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.column_names = []
 
     def display_peek(self, dataset):
@@ -223,7 +233,7 @@ class rgTabList(Tabular):
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
-        return 'text/html'
+        return "text/html"
 
 
 class rgSampleList(rgTabList):
@@ -234,15 +244,16 @@ class rgSampleList(rgTabList):
     but they are persistent at least
     same infrastructure for expression?
     """
+
     file_ext = "rgSList"
 
     def __init__(self, **kwd):
         """
         Initialize samplelist datatype
         """
-        rgTabList.__init__(self, **kwd)
-        self.column_names[0] = 'FID'
-        self.column_names[1] = 'IID'
+        super().__init__(**kwd)
+        self.column_names[0] = "FID"
+        self.column_names[1] = "IID"
         # this is what Plink wants as at 2009
 
 
@@ -253,12 +264,13 @@ class rgFeatureList(rgTabList):
     featureid subsets on statistical criteria -> specialized display such as gg
     same infrastructure for expression?
     """
+
     file_ext = "rgFList"
 
     def __init__(self, **kwd):
         """Initialize featurelist datatype"""
-        rgTabList.__init__(self, **kwd)
-        for i, s in enumerate(['#FeatureId', 'Chr', 'Genpos', 'Mappos']):
+        super().__init__(**kwd)
+        for i, s in enumerate(["#FeatureId", "Chr", "Genpos", "Mappos"]):
             self.column_names[i] = s
 
 
@@ -269,26 +281,32 @@ class Rgenetics(Html):
     stored in extra files path
     """
 
-    MetadataElement(name="base_name", desc="base name for all transformed versions of this genetic dataset", default='RgeneticsData',
-                    readonly=True, set_in_upload=True)
+    MetadataElement(
+        name="base_name",
+        desc="base name for all transformed versions of this genetic dataset",
+        default="RgeneticsData",
+        readonly=True,
+        set_in_upload=True,
+    )
 
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
-    file_ext = 'rgenetics'
+    composite_type = "auto_primary_file"
+    file_ext = "rgenetics"
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>Rgenetics Galaxy Composite Dataset </title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
+        rval = ["<html><head><title>Rgenetics Galaxy Composite Dataset </title></head><p/>"]
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
-            opt_text = ''
+            opt_text = ""
             if composite_file.optional:
-                opt_text = ' (optional)'
-            if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+                opt_text = " (optional)"
+            if composite_file.get("description"):
+                rval.append(
+                    f"<li><a href=\"{fn}\" type=\"application/binary\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                )
             else:
-                rval.append('<li><a href="%s" type="application/binary">%s</a>%s</li>' % (fn, fn, opt_text))
-        rval.append('</ul></div></html>')
+                rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
+        rval.append("</ul></div></html>")
         return "\n".join(rval)
 
     def regenerate_primary_file(self, dataset):
@@ -297,51 +315,53 @@ class Rgenetics(Html):
         """
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>' % (dataset.name, dataset.name)]
-        for i, fname in enumerate(flist):
+        rval = [
+            f"<html><head><title>Files for Composite Dataset {dataset.name}</title></head><body><p/>Composite {dataset.name} contains:<p/><ul>"
+        ]
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
-            rval.append('<li><a href="%s">%s</a></li>' % (sfname, sfname))
-        rval.append('</ul></body></html>')
-        with open(dataset.file_name, 'w') as f:
+            rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
+        rval.append("</ul></body></html>")
+        with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
-            f.write('\n')
+            f.write("\n")
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
-        return 'text/html'
+        return "text/html"
 
     def set_meta(self, dataset, **kwd):
         """
         for lped/pbed eg
 
         """
-        Html.set_meta(self, dataset, **kwd)
-        if not kwd.get('overwrite'):
+        super().set_meta(dataset, **kwd)
+        if not kwd.get("overwrite"):
             if verbose:
-                gal_Log.debug('@@@ rgenetics set_meta called with overwrite = False')
+                gal_Log.debug("@@@ rgenetics set_meta called with overwrite = False")
             return True
         try:
             efp = dataset.extra_files_path
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
+                gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
             return False
         try:
             flist = os.listdir(efp)
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed %s - dataset %s has no efp ?' % (sys.exc_info()[0], dataset.name))
+                gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
             return False
         if len(flist) == 0:
             if verbose:
-                gal_Log.debug('@@@rgenetics set_meta failed - %s efp %s is empty?' % (dataset.name, efp))
+                gal_Log.debug(f"@@@rgenetics set_meta failed - {dataset.name} efp {efp} is empty?")
             return False
         self.regenerate_primary_file(dataset)
         if not dataset.info:
-            dataset.info = 'Galaxy genotype datatype object'
+            dataset.info = "Galaxy genotype datatype object"
         if not dataset.blurb:
-            dataset.blurb = 'Composite file - Rgenetics Galaxy toolkit'
+            dataset.blurb = "Composite file - Rgenetics Galaxy toolkit"
         return True
 
 
@@ -349,6 +369,7 @@ class SNPMatrix(Rgenetics):
     """
     BioC SNPMatrix Rgenetics data collections
     """
+
     file_ext = "snpmatrix"
 
     def set_peek(self, dataset, **kwd):
@@ -356,16 +377,15 @@ class SNPMatrix(Rgenetics):
             dataset.peek = "Binary RGenetics file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
     def sniff(self, filename):
-        """ need to check the file header hex code
-        """
-        infile = open(filename, "b")
-        head = infile.read(16)
+        """need to check the file header hex code"""
+        with open(filename, "b") as infile:
+            head = infile.read(16)
         head = [hex(x) for x in head]
-        if head != '':
+        if head != "":
             return False
         else:
             return True
@@ -375,32 +395,31 @@ class Lped(Rgenetics):
     """
     linkage pedigree (ped,map) Rgenetics data collections
     """
+
     file_ext = "lped"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.ped',
-                                description='Pedigree File',
-                                substitute_name_with_metadata='base_name',
-                                is_binary=False)
-        self.add_composite_file('%s.map',
-                                description='Map File',
-                                substitute_name_with_metadata='base_name',
-                                is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.ped", description="Pedigree File", substitute_name_with_metadata="base_name", is_binary=False
+        )
+        self.add_composite_file(
+            "%s.map", description="Map File", substitute_name_with_metadata="base_name", is_binary=False
+        )
 
 
 class Pphe(Rgenetics):
     """
     Plink phenotype file - header must have FID\tIID... Rgenetics data collections
     """
+
     file_ext = "pphe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.pphe',
-                                description='Plink Phenotype File',
-                                substitute_name_with_metadata='base_name',
-                                is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.pphe", description="Plink Phenotype File", substitute_name_with_metadata="base_name", is_binary=False
+        )
 
 
 class Fphe(Rgenetics):
@@ -408,27 +427,26 @@ class Fphe(Rgenetics):
     fbat pedigree file - mad format with ! as first char on header row
     Rgenetics data collections
     """
+
     file_ext = "fphe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.fphe',
-                                description='FBAT Phenotype File',
-                                substitute_name_with_metadata='base_name')
+        super().__init__(**kwd)
+        self.add_composite_file("%s.fphe", description="FBAT Phenotype File", substitute_name_with_metadata="base_name")
 
 
 class Phe(Rgenetics):
     """
     Phenotype file
     """
+
     file_ext = "phe"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.phe',
-                                description='Phenotype File',
-                                substitute_name_with_metadata='base_name',
-                                is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.phe", description="Phenotype File", substitute_name_with_metadata="base_name", is_binary=False
+        )
 
 
 class Fped(Rgenetics):
@@ -436,26 +454,28 @@ class Fped(Rgenetics):
     FBAT pedigree format - single file, map is header row of rs numbers. Strange.
     Rgenetics data collections
     """
+
     file_ext = "fped"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.fped', description='FBAT format pedfile',
-                                substitute_name_with_metadata='base_name',
-                                is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.fped", description="FBAT format pedfile", substitute_name_with_metadata="base_name", is_binary=False
+        )
 
 
 class Pbed(Rgenetics):
     """
     Plink Binary compressed 2bit/geno Rgenetics data collections
     """
+
     file_ext = "pbed"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.bim', substitute_name_with_metadata='base_name', is_binary=False)
-        self.add_composite_file('%s.bed', substitute_name_with_metadata='base_name', is_binary=True)
-        self.add_composite_file('%s.fam', substitute_name_with_metadata='base_name', is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file("%s.bim", substitute_name_with_metadata="base_name", is_binary=False)
+        self.add_composite_file("%s.bed", substitute_name_with_metadata="base_name", is_binary=True)
+        self.add_composite_file("%s.fam", substitute_name_with_metadata="base_name", is_binary=False)
 
 
 class ldIndep(Rgenetics):
@@ -464,13 +484,14 @@ class ldIndep(Rgenetics):
     This is really a plink binary, but some tools work better with less redundancy so are constrained to
     these files
     """
+
     file_ext = "ldreduced"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.bim', substitute_name_with_metadata='base_name', is_binary=False)
-        self.add_composite_file('%s.bed', substitute_name_with_metadata='base_name', is_binary=True)
-        self.add_composite_file('%s.fam', substitute_name_with_metadata='base_name', is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file("%s.bim", substitute_name_with_metadata="base_name", is_binary=False)
+        self.add_composite_file("%s.bed", substitute_name_with_metadata="base_name", is_binary=True)
+        self.add_composite_file("%s.fam", substitute_name_with_metadata="base_name", is_binary=False)
 
 
 class Eigenstratgeno(Rgenetics):
@@ -479,13 +500,14 @@ class Eigenstratgeno(Rgenetics):
     if we move to shellfish
     Rgenetics data collections
     """
+
     file_ext = "eigenstratgeno"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.eigenstratgeno', substitute_name_with_metadata='base_name', is_binary=False)
-        self.add_composite_file('%s.ind', substitute_name_with_metadata='base_name', is_binary=False)
-        self.add_composite_file('%s.map', substitute_name_with_metadata='base_name', is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file("%s.eigenstratgeno", substitute_name_with_metadata="base_name", is_binary=False)
+        self.add_composite_file("%s.ind", substitute_name_with_metadata="base_name", is_binary=False)
+        self.add_composite_file("%s.map", substitute_name_with_metadata="base_name", is_binary=False)
 
 
 class Eigenstratpca(Rgenetics):
@@ -493,18 +515,21 @@ class Eigenstratpca(Rgenetics):
     Eigenstrat PCA file for case control adjustment
     Rgenetics data collections
     """
+
     file_ext = "eigenstratpca"
 
     def __init__(self, **kwd):
-        Rgenetics.__init__(self, **kwd)
-        self.add_composite_file('%s.eigenstratpca',
-                                description='Eigenstrat PCA file', substitute_name_with_metadata='base_name')
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.eigenstratpca", description="Eigenstrat PCA file", substitute_name_with_metadata="base_name"
+        )
 
 
 class Snptest(Rgenetics):
     """
     BioC snptest Rgenetics data collections
     """
+
     file_ext = "snptest"
 
 
@@ -521,25 +546,30 @@ class IdeasPre(Html):
     - compressed archived tmp directory containing a number of compressed bed files.
     """
 
-    MetadataElement(name="base_name", desc="Base name for this dataset", default='IDEASData', readonly=True, set_in_upload=True)
+    MetadataElement(
+        name="base_name", desc="Base name for this dataset", default="IDEASData", readonly=True, set_in_upload=True
+    )
     MetadataElement(name="chrom_bed", desc="Bed file specifying window positions", default=None, readonly=True)
     MetadataElement(name="chrom_windows", desc="Chromosome window positions", default=None, readonly=True)
     MetadataElement(name="input_config", desc="IDEAS input config", default=None, readonly=True)
     MetadataElement(name="tmp_archive", desc="Compressed archive of compressed bed files", default=None, readonly=True)
 
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
-    file_ext = 'ideaspre'
+    composite_type = "auto_primary_file"
+    file_ext = "ideaspre"
 
     def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
-        self.add_composite_file('chromosome_windows.txt', description='Chromosome window positions', is_binary=False, optional=True)
-        self.add_composite_file('chromosomes.bed', description='Bed file specifying window positions', is_binary=False, optional=True)
-        self.add_composite_file('IDEAS_input_config.txt', description='IDEAS input config', is_binary=False)
-        self.add_composite_file('tmp.tar.gz', description='Compressed archive of compressed bed files', is_binary=True)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "chromosome_windows.txt", description="Chromosome window positions", is_binary=False, optional=True
+        )
+        self.add_composite_file(
+            "chromosomes.bed", description="Bed file specifying window positions", is_binary=False, optional=True
+        )
+        self.add_composite_file("IDEAS_input_config.txt", description="IDEAS input config", is_binary=False)
+        self.add_composite_file("tmp.tar.gz", description="Compressed archive of compressed bed files", is_binary=True)
 
     def set_meta(self, dataset, **kwd):
-        Html.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
                 dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
@@ -552,34 +582,35 @@ class IdeasPre(Html):
         self.regenerate_primary_file(dataset)
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head></head><body>']
-        rval.append('<h3>Files prepared for IDEAS</h3>')
-        rval.append('<ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        rval = ["<html><head></head><body>"]
+        rval.append("<h3>Files prepared for IDEAS</h3>")
+        rval.append("<ul>")
+        for composite_name in self.get_composite_files(dataset=dataset).keys():
             fn = composite_name
-            rval.append('<li><a href="%s>%s</a></li>' % (fn, fn))
-        rval.append('</ul></body></html>\n')
+            rval.append(f'<li><a href="{fn}>{fn}</a></li>')
+        rval.append("</ul></body></html>\n")
         return "\n".join(rval)
 
     def regenerate_primary_file(self, dataset):
         # Cannot do this until we are setting metadata.
-        rval = ['<html><head></head><body>']
-        rval.append('<h3>Files prepared for IDEAS</h3>')
-        rval.append('<ul>')
+        rval = ["<html><head></head><body>"]
+        rval.append("<h3>Files prepared for IDEAS</h3>")
+        rval.append("<ul>")
         for fname in os.listdir(dataset.extra_files_path):
             fn = os.path.split(fname)[-1]
-            rval.append('<li><a href="%s">%s</a></li>' % (fn, fn))
-        rval.append('</ul></body></html>')
-        with open(dataset.file_name, 'w') as f:
+            rval.append(f'<li><a href="{fn}">{fn}</a></li>')
+        rval.append("</ul></body></html>")
+        with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
-            f.write('\n')
+            f.write("\n")
 
 
 class Pheno(Tabular):
     """
     base class for pheno files
     """
-    file_ext = 'pheno'
+
+    file_ext = "pheno"
 
 
 class RexpBase(Html):
@@ -588,34 +619,44 @@ class RexpBase(Html):
     must be constructed with the pheno data in place since that
     goes into the metadata for each instance
     """
+
     MetadataElement(name="columns", default=0, desc="Number of columns", visible=True)
     MetadataElement(name="column_names", default=[], desc="Column names", visible=True)
     MetadataElement(name="pheCols", default=[], desc="Select list for potentially interesting variables", visible=True)
-    MetadataElement(name="base_name",
-                    desc="base name for all transformed versions of this expression dataset", default='rexpression', set_in_upload=True)
-    MetadataElement(name="pheno_path", desc="Path to phenotype data for this experiment", default="rexpression.pheno", visible=True)
-    file_ext = 'rexpbase'
+    MetadataElement(
+        name="base_name",
+        desc="base name for all transformed versions of this expression dataset",
+        default="rexpression",
+        set_in_upload=True,
+    )
+    MetadataElement(
+        name="pheno_path", desc="Path to phenotype data for this experiment", default="rexpression.pheno", visible=True
+    )
+    file_ext = "rexpbase"
     html_table = None
-    composite_type = 'auto_primary_file'
-    allow_datatype_change = False
+    composite_type = "auto_primary_file"
 
     def __init__(self, **kwd):
-        Html.__init__(self, **kwd)
-        self.add_composite_file('%s.pheno', description='Phenodata tab text file',
-                                substitute_name_with_metadata='base_name', is_binary=False)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.pheno",
+            description="Phenodata tab text file",
+            substitute_name_with_metadata="base_name",
+            is_binary=False,
+        )
 
     def generate_primary_file(self, dataset=None):
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
-        return '<html><head></head><body>AutoGenerated Primary File for Composite Dataset</body></html>'
+        return "<html><head></head><body>AutoGenerated Primary File for Composite Dataset</body></html>"
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
-        return 'text/html'
+        return "text/html"
 
-    def get_phecols(self, phenolist=[], maxConc=20):
+    def get_phecols(self, phenolist, maxConc=20):
         """
         sept 2009: cannot use whitespace to split - make a more complex structure here
         and adjust the methods that rely on this structure
@@ -632,7 +673,7 @@ class RexpBase(Html):
         for nrows, row in enumerate(phenolist):  # construct concordance
             if len(row.strip()) == 0:
                 break
-            row = row.strip().split('\t')
+            row = row.strip().split("\t")
             if nrows == 0:  # set up from header
                 head = row
                 totcols = len(row)
@@ -640,7 +681,10 @@ class RexpBase(Html):
             else:
                 for col, code in enumerate(row):  # keep column order correct
                     if col >= totcols:
-                        gal_Log.warning('### get_phecols error in pheno file - row %d col %d (%s) longer than header %s' % (nrows, col, row, head))
+                        gal_Log.warning(
+                            "### get_phecols error in pheno file - row %d col %d (%s) longer than header %s"
+                            % (nrows, col, row, head)
+                        )
                     else:
                         concordance[col].setdefault(code, 0)  # first one is zero
                         concordance[col][code] += 1
@@ -656,15 +700,15 @@ class RexpBase(Html):
         # now to check for pairs of concordant columns - drop one of these.
         delme = []
         p = phenolist[1:]  # drop header
-        plist = [x.strip().split('\t') for x in p]  # list of lists
+        plist = [x.strip().split("\t") for x in p]  # list of lists
         phe = [[x[i] for i in useCols] for x in plist if len(x) >= totcols]  # strip unused data
         for i in range(0, (nuse - 1)):  # for each interesting column
             for j in range(i + 1, nuse):
                 kdict = {}
                 for row in phe:  # row is a list of lists
-                    k = '%s%s' % (row[i], row[j])  # composite key
+                    k = f"{row[i]}{row[j]}"  # composite key
                     kdict[k] = k
-                if (len(kdict.keys()) == len(concordance[useCols[j]])):  # i and j are always matched
+                if len(kdict.keys()) == len(concordance[useCols[j]]):  # i and j are always matched
                     delme.append(j)
         delme = list(set(delme))  # remove dupes
         listCol = []
@@ -682,7 +726,14 @@ class RexpBase(Html):
             res = listCol
             # metadata.pheCols becomes [('bar;22,zot;113','foo'), ...]
         else:
-            res = [('no usable phenotype columns found', [('?', 0), ]), ]
+            res = [
+                (
+                    "no usable phenotype columns found",
+                    [
+                        ("?", 0),
+                    ],
+                ),
+            ]
         return res
 
     def get_pheno(self, dataset):
@@ -693,16 +744,16 @@ class RexpBase(Html):
         A file can be written as
         write.table(file='foo.pheno',pData(foo),sep='\t',quote=F,row.names=F)
         """
-        p = open(dataset.metadata.pheno_path, 'r').readlines()
+        p = open(dataset.metadata.pheno_path).readlines()
         if len(p) > 0:  # should only need to fix an R pheno file once
-            head = p[0].strip().split('\t')
-            line1 = p[1].strip().split('\t')
+            head = p[0].strip().split("\t")
+            line1 = p[1].strip().split("\t")
             if len(head) < len(line1):
-                head.insert(0, 'ChipFileName')  # fix R write.table b0rken-ness
-                p[0] = '\t'.join(head)
+                head.insert(0, "ChipFileName")  # fix R write.table b0rken-ness
+                p[0] = "\t".join(head)
         else:
             p = []
-        return '\n'.join(p)
+        return "\n".join(p)
 
     def set_peek(self, dataset, **kwd):
         """
@@ -710,38 +761,43 @@ class RexpBase(Html):
         note that R is weird and does not include the row.name in
         the header. why?"""
         if not dataset.dataset.purged:
-            pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
+            pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata.base_name}.pheno")
             try:
-                p = open(pp, 'r').readlines()
+                with open(pp) as f:
+                    p = f.readlines()
             except Exception:
-                p = ['##failed to find %s' % pp, ]
-            dataset.peek = ''.join(p[:5])
-            dataset.blurb = 'Galaxy Rexpression composite file'
+                p = [
+                    f"##failed to find {pp}",
+                ]
+            dataset.peek = "".join(p[:5])
+            dataset.blurb = "Galaxy Rexpression composite file"
         else:
-            dataset.peek = 'file does not exist\n'
-            dataset.blurb = 'file purged from disk'
+            dataset.peek = "file does not exist\n"
+            dataset.blurb = "file purged from disk"
 
     def get_peek(self, dataset):
         """
         expects a .pheno file in the extra_files_dir - ugh
         """
-        pp = os.path.join(dataset.extra_files_path, '%s.pheno' % dataset.metadata.base_name)
+        pp = os.path.join(dataset.extra_files_path, f"{dataset.metadata.base_name}.pheno")
         try:
-            p = open(pp, 'r').readlines()
+            with open(pp) as f:
+                p = f.readlines()
         except Exception:
-            p = ['##failed to find %s' % pp]
-        return ''.join(p[:5])
+            p = [f"##failed to find {pp}"]
+        return "".join(p[:5])
 
     def get_file_peek(self, filename):
         """
         can't really peek at a filename - need the extra_files_path and such?
         """
-        h = '## rexpression get_file_peek: no file found'
+        h = "## rexpression get_file_peek: no file found"
         try:
-            h = open(filename, 'r').readlines()
+            with open(filename) as f:
+                h = f.readlines()
         except Exception:
             pass
-        return ''.join(h[:5])
+        return "".join(h[:5])
 
     def regenerate_primary_file(self, dataset):
         """
@@ -749,14 +805,16 @@ class RexpBase(Html):
         """
         bn = dataset.metadata.base_name
         flist = os.listdir(dataset.extra_files_path)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><p/>Comprises the following files:<p/><ul>' % (bn)]
-        for i, fname in enumerate(flist):
+        rval = [
+            f"<html><head><title>Files for Composite Dataset {bn}</title></head><p/>Comprises the following files:<p/><ul>"
+        ]
+        for fname in flist:
             sfname = os.path.split(fname)[-1]
-            rval.append('<li><a href="%s">%s</a>' % (sfname, sfname))
-        rval.append('</ul></html>')
-        with open(dataset.file_name, 'w') as f:
+            rval.append(f'<li><a href="{sfname}">{sfname}</a>')
+        rval.append("</ul></html>")
+        with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
-            f.write('\n')
+            f.write("\n")
 
     def init_meta(self, dataset, copy_from=None):
         if copy_from:
@@ -768,12 +826,12 @@ class RexpBase(Html):
         from a BioC eSet or affybatch.
 
         """
-        Html.set_meta(self, dataset, **kwd)
+        super().set_meta(dataset, **kwd)
         try:
             flist = os.listdir(dataset.extra_files_path)
         except Exception:
             if verbose:
-                gal_Log.debug('@@@rexpression set_meta failed - no dataset?')
+                gal_Log.debug("@@@rexpression set_meta failed - no dataset?")
             return False
         bn = dataset.metadata.base_name
         if not bn:
@@ -782,59 +840,64 @@ class RexpBase(Html):
                 bn = n
                 dataset.metadata.base_name = bn
         if not bn:
-            bn = '?'
+            bn = "?"
             dataset.metadata.base_name = bn
-        pn = '%s.pheno' % (bn)
+        pn = f"{bn}.pheno"
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            pf = open(pp, 'r').readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as f:
+                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
             h = pf[0].strip()
-            h = h.split('\t')  # hope is header
+            h = h.split("\t")  # hope is header
             h = [escape(x) for x in h]
             dataset.metadata.column_names = h
             dataset.metadata.columns = len(h)
-            dataset.peek = ''.join(pf[:5])
+            dataset.peek = "".join(pf[:5])
         else:
             dataset.metadata.column_names = []
             dataset.metadata.columns = 0
-            dataset.peek = 'No pheno file found'
+            dataset.peek = "No pheno file found"
         if pf and len(pf) > 1:
             dataset.metadata.pheCols = self.get_phecols(phenolist=pf)
         else:
-            dataset.metadata.pheCols = [('', 'No useable phenotypes found', False), ]
+            dataset.metadata.pheCols = [
+                ("", "No useable phenotypes found", False),
+            ]
         if not dataset.info:
-            dataset.info = 'Galaxy Expression datatype object'
+            dataset.info = "Galaxy Expression datatype object"
         if not dataset.blurb:
-            dataset.blurb = 'R loadable BioC expression object for the Rexpression Galaxy toolkit'
+            dataset.blurb = "R loadable BioC expression object for the Rexpression Galaxy toolkit"
         return True
 
-    def make_html_table(self, pp='nothing supplied from peek\n'):
+    def make_html_table(self, pp="nothing supplied from peek\n"):
         """
         Create HTML table, used for displaying peek
         """
-        out = ['<table cellspacing="0" cellpadding="3">', ]
+        out = [
+            '<table cellspacing="0" cellpadding="3">',
+        ]
         try:
             # Generate column header
-            p = pp.split('\n')
+            p = pp.split("\n")
             for i, row in enumerate(p):
-                lrow = row.strip().split('\t')
+                lrow = row.strip().split("\t")
                 if i == 0:
-                    orow = ['<th>%s</th>' % escape(x) for x in lrow]
-                    orow.insert(0, '<tr>')
-                    orow.append('</tr>')
+                    orow = [f"<th>{escape(x)}</th>" for x in lrow]
+                    orow.insert(0, "<tr>")
+                    orow.append("</tr>")
                 else:
-                    orow = ['<td>%s</td>' % escape(x) for x in lrow]
-                    orow.insert(0, '<tr>')
-                    orow.append('</tr>')
-                out.append(''.join(orow))
-            out.append('</table>')
+                    orow = [f"<td>{escape(x)}</td>" for x in lrow]
+                    orow.insert(0, "<tr>")
+                    orow.append("</tr>")
+                out.append("".join(orow))
+            out.append("</table>")
             out = "\n".join(out)
         except Exception as exc:
-            out = "Can't create html table %s" % unicodify(exc)
+            out = f"Can't create html table {unicodify(exc)}"
         return out
 
     def display_peek(self, dataset):
@@ -853,49 +916,63 @@ class Affybatch(RexpBase):
     file_ext = "affybatch"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
-        self.add_composite_file('%s.affybatch',
-                                description='AffyBatch R object saved to file',
-                                substitute_name_with_metadata='base_name', is_binary=True)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.affybatch",
+            description="AffyBatch R object saved to file",
+            substitute_name_with_metadata="base_name",
+            is_binary=True,
+        )
 
 
 class Eset(RexpBase):
     """
     derived class for BioC data structures in Galaxy
     """
+
     file_ext = "eset"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
-        self.add_composite_file('%s.eset',
-                                description='ESet R object saved to file',
-                                substitute_name_with_metadata='base_name', is_binary=True)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.eset",
+            description="ESet R object saved to file",
+            substitute_name_with_metadata="base_name",
+            is_binary=True,
+        )
 
 
 class MAlist(RexpBase):
     """
     derived class for BioC data structures in Galaxy
     """
+
     file_ext = "malist"
 
     def __init__(self, **kwd):
-        RexpBase.__init__(self, **kwd)
-        self.add_composite_file('%s.malist',
-                                description='MAlist R object saved to file',
-                                substitute_name_with_metadata='base_name', is_binary=True)
+        super().__init__(**kwd)
+        self.add_composite_file(
+            "%s.malist",
+            description="MAlist R object saved to file",
+            substitute_name_with_metadata="base_name",
+            is_binary=True,
+        )
 
 
 class LinkageStudies(Text):
     """
     superclass for classical linkage analysis suites
     """
+
     test_files = [
-        'linkstudies.allegro_fparam', 'linkstudies.alohomora_gts',
-        'linkstudies.linkage_datain', 'linkstudies.linkage_map'
+        "linkstudies.allegro_fparam",
+        "linkstudies.alohomora_gts",
+        "linkstudies.linkage_datain",
+        "linkstudies.linkage_map",
     ]
 
     def __init__(self, **kwd):
-        Text.__init__(self, **kwd)
+        super().__init__(**kwd)
         self.max_lines = 10
 
 
@@ -905,25 +982,26 @@ class GenotypeMatrix(LinkageStudies):
     Sample matrix of genotypes
     - GTs as columns
     """
+
     file_ext = "alohomora_gts"
 
     def __init__(self, **kwd):
-        super(GenotypeMatrix, self).__init__(**kwd)
+        super().__init__(**kwd)
 
     def header_check(self, fio):
-        header_elems = fio.readline().split('\t')
+        header_elems = fio.readline().split("\t")
 
         if header_elems[0] != "Name":
             return False
 
         try:
-            return all([int(sid) > 0 for sid in header_elems[1:]])
+            return all(int(sid) > 0 for sid in header_elems[1:])
         except ValueError:
             return False
 
         return True
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -953,7 +1031,7 @@ class GenotypeMatrix(LinkageStudies):
             if lcount > self.max_lines:
                 return True
 
-            tokens = line.split('\t')
+            tokens = line.split("\t")
 
             if num_cols == -1:
                 num_cols = len(tokens)
@@ -973,6 +1051,7 @@ class MarkerMap(LinkageStudies):
 
     chrom, genetic pos, markername, physical pos, Nr
     """
+
     file_ext = "linkage_map"
 
     def header_check(self, fio):
@@ -983,7 +1062,7 @@ class MarkerMap(LinkageStudies):
 
         return False
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1019,7 +1098,7 @@ class MarkerMap(LinkageStudies):
                 try:
                     int(chrm)
                 except ValueError:
-                    if not chrm.lower()[0] in ('x', 'y', 'm'):
+                    if not chrm.lower()[0] in ("x", "y", "m"):
                         return False
 
             except ValueError:
@@ -1034,12 +1113,13 @@ class DataIn(LinkageStudies):
     Common linkage input file for intermarker distances
     and recombination rates
     """
+
     file_ext = "linkage_datain"
 
     def __init__(self, **kwd):
-        super(DataIn, self).__init__(**kwd)
+        super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1104,18 +1184,17 @@ class AllegroLOD(LinkageStudies):
     """
     Allegro output format for LOD scores
     """
+
     file_ext = "allegro_fparam"
 
     def header_check(self, fio):
         header = fio.readline().splitlines()[0].split()
-        if len(header) == 4 and header == [
-                "family", "location", "LOD", "marker"
-        ]:
+        if len(header) == 4 and header == ["family", "location", "LOD", "marker"]:
             return True
 
         return False
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         >>> classname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1159,6 +1238,7 @@ class AllegroLOD(LinkageStudies):
         return True
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import doctest
+
     doctest.testmod(sys.modules[__name__])

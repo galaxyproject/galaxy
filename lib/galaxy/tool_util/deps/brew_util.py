@@ -7,8 +7,7 @@ from ..deps import brew_exts
 DEFAULT_TAP = "homebrew/science"
 
 
-class HomebrewRecipe(object):
-
+class HomebrewRecipe:
     def __init__(self, recipe, version, tap):
         self.recipe = recipe
         self.version = version
@@ -31,9 +30,6 @@ def requirement_to_recipe(requirement):
 
 def requirements_to_recipe_contexts(requirements, brew_context):
     def to_recipe_context(homebrew_recipe):
-        return brew_exts.RecipeContext(
-            homebrew_recipe.recipe,
-            homebrew_recipe.version,
-            brew_context
-        )
+        return brew_exts.RecipeContext(homebrew_recipe.recipe, homebrew_recipe.version, brew_context)
+
     return map(to_recipe_context, requirements_to_recipes(requirements))

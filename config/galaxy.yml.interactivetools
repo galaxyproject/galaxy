@@ -1,40 +1,19 @@
-uwsgi:
-
-  http: localhost:8080
-
-  threads: 8
-
-  http-raw-body: True
-
-  offload-threads: 8
-
-  master: true
-
-  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
-
-  interactivetools_map: database/interactivetools_map.sqlite
-  python-raw: scripts/interactivetools/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ goto:interactivetool
-  route-run: goto:endendend
-  route-label: interactivetool
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)-([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $1 $3 $2 $4 $0 5
-  route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
-  route: .* break:404 Not Found
-  route-label: endendend
-
-
+gravity:
+  gx_it_proxy:
+    enable: true
+    proxy_port: 4002
 galaxy:
   interactivetools_enable: true
   # outputs_to_working_directory will provide you with a better level of isolation. It is highly recommended to set
   # this parameter with InteractiveTools.
   outputs_to_working_directory: true
-  interactivetools_prefix: interactivetool
   interactivetools_map: database/interactivetools_map.sqlite
-  # If you develop InteractiveTools locally and do not have a full FQDN you can
-  # use an arbritrary one, e.g. 'my-hostname' here, if you set this hostname in your
-  # job_conf.xml as well (see the corresponding comment). If running mac OS X, do not match the
-  # "http://host.docker.internal:8080" used at galaxy_infrastructure_url in the galaxy.yml file, 
-  # and use an arbitrary name here instead.
-  # Please make sure that in the local development case you use https://localhost:8080 to access
-  # your Galaxy. http://my-hostname:8080 will not work.
-  # galaxy_infrastructure_url: http://my-hostname:8080
+  # `galaxy_infrastructure_url` needs to be reachable from IT containers.
+  # For local development you can map arbitrary hostnames. See `job_conf.xml.interactivetools`
+  # for an example.
+  # In the local development case you should use the `http` protocol (e.g http://localhost:8080) to access
+  # your Galaxy, so saving notebooks doesn't fail due to invalid certificates.
+  galaxy_infrastructure_url: http://localhost:8080
+  # Do not set the following 2 options if you are using an upstream proxy server like nginx
+  interactivetools_upstream_proxy: false
+  interactivetools_proxy_host: localhost:4002

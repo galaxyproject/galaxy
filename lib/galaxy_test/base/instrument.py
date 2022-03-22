@@ -35,25 +35,30 @@ def fetch_job_data():
 
 
 class StructuredTestDataPlugin(Plugin):
-    name = 'structureddata'
+    name = "structureddata"
 
     def options(self, parser, env):
-        super(StructuredTestDataPlugin, self).options(parser, env=env)
+        super().options(parser, env=env)
         parser.add_option(
-            '--structured-data-file', action='store',
-            dest='structured_data_file', metavar="FILE",
-            default=env.get('NOSE_STRUCTURED_DATA', 'structured_test_data.json'),
-            help=("Path to JSON file to store the Galaxy structured data report in."
-                  "Default is structured_test_data.json in the working directory "
-                  "[NOSE_STRUCTURED_DATA]"))
+            "--structured-data-file",
+            action="store",
+            dest="structured_data_file",
+            metavar="FILE",
+            default=env.get("NOSE_STRUCTURED_DATA", "structured_test_data.json"),
+            help=(
+                "Path to JSON file to store the Galaxy structured data report in."
+                "Default is structured_test_data.json in the working directory "
+                "[NOSE_STRUCTURED_DATA]"
+            ),
+        )
 
     def configure(self, options, conf):
-        super(StructuredTestDataPlugin, self).configure(options, conf)
+        super().configure(options, conf)
         self.conf = conf
         if not self.enabled:
             return
         self.tests = []
-        self.structured_data_report_file = open(options.structured_data_file, 'w')
+        self.structured_data_report_file = open(options.structured_data_file, "w")
 
     def finalize(self, result):
         pass
@@ -63,9 +68,9 @@ class StructuredTestDataPlugin(Plugin):
         id = test.id()
         has_data = job_data is not NO_JOB_DATA
         entry = {
-            'id': id,
-            'has_data': has_data,
-            'data': job_data if has_data else None,
+            "id": id,
+            "has_data": has_data,
+            "data": job_data if has_data else None,
         }
         self.tests.append(entry)
 
@@ -75,8 +80,8 @@ class StructuredTestDataPlugin(Plugin):
 
     def report(self, stream):
         report_obj = {
-            'version': '0.1',
-            'tests': self.tests,
+            "version": "0.1",
+            "tests": self.tests,
         }
         json.dump(report_obj, self.structured_data_report_file)
         self.structured_data_report_file.close()

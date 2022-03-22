@@ -8,47 +8,53 @@ from galaxy import exceptions
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import (
     cloud,
-    datasets
+    datasets,
 )
+from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class CloudController(BaseAPIController):
+class CloudController(BaseGalaxyAPIController):
     """
     RESTfull controller for interaction with Amazon S3.
     """
 
-    def __init__(self, app):
-        super(CloudController, self).__init__(app)
-        self.cloud_manager = cloud.CloudManager(app)
-        self.datasets_serializer = datasets.DatasetSerializer(app)
+    def __init__(
+        self, app: StructuredApp, cloud_manager: cloud.CloudManager, datasets_serializer: datasets.DatasetSerializer
+    ):
+        super().__init__(app)
+        self.cloud_manager = cloud_manager
+        self.datasets_serializer = datasets_serializer
 
     @expose_api
     def index(self, trans, **kwargs):
         """
-        * GET /api/cloud/storage
-            Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
-        :param trans:
-        :param kwargs:
+        GET /api/cloud/storage
+
+        Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined.
+
         :return: A list of cloud-based buckets user has defined.
         """
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
         trans.response.status = 501
-        return 'Not Implemented'
+        return "Not Implemented"
 
     @expose_api
     def get(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/get
-            gets given objects from a given cloud-based bucket to a Galaxy history.
+        POST /api/cloud/storage/get
+
+        gets given objects from a given cloud-based bucket to a Galaxy history.
+
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
+
             *   history_id:    the (encoded) id of history to which the object should be received to.
             *   bucket:        the name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).
             *   objects:       a list of the names of objects to be fetched.
@@ -84,10 +90,13 @@ class CloudController(BaseAPIController):
 
         :rtype:  dictionary
         :return: a dictionary containing a `summary` view of the datasets copied from the given cloud-based storage.
+
         """
         if not isinstance(payload, dict):
-            raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, '
-                                   'but received data of type `{}`.'.format(str(type(payload))))
+            raise ActionInputError(
+                "Invalid payload data type. The payload is expected to be a dictionary, "
+                "but received data of type `{}`.".format(str(type(payload)))
+            )
 
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
@@ -107,46 +116,52 @@ class CloudController(BaseAPIController):
             missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
-            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
+            raise ActionInputError(f"The following required arguments are missing in the payload: {missing_arguments}")
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid history ID. {}'.format(e))
+            raise ActionInputError(f"Invalid history ID. {e}")
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid authz ID. {}'.format(e))
+            raise ActionInputError(f"Invalid authz ID. {e}")
 
         if not isinstance(objects, list):
-            raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
-                type(objects)))
+            raise ActionInputError(
+                f"The `objects` should be a list, but received an object of type {type(objects)} instead."
+            )
 
-        datasets = self.cloud_manager.get(trans=trans,
-                                          history_id=history_id,
-                                          bucket_name=bucket,
-                                          objects=objects,
-                                          authz_id=authz_id,
-                                          input_args=payload.get("input_args", None))
+        datasets = self.cloud_manager.get(
+            trans=trans,
+            history_id=history_id,
+            bucket_name=bucket,
+            objects=objects,
+            authz_id=authz_id,
+            input_args=payload.get("input_args", None),
+        )
         rtv = []
         for dataset in datasets:
-            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
+            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
         return rtv
 
     @expose_api
     def send(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/send
-            Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
-            using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
-            If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
-            cloud-based bucket.
+        POST /api/cloud/storage/send
+
+        Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
+        using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
+        If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
+        cloud-based bucket.
+
         :type  trans: galaxy.webapps.base.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
+
             *   history_id              the (encoded) id of history from which the object should be downloaed.
             *   bucket:                 the name of a bucket to which data should be sent (e.g., a bucket name on AWS S3).
             *   authz_id:               the encoded ID of CloudAuthz to be used for authorizing access to the resource
@@ -163,11 +178,10 @@ class CloudController(BaseAPIController):
                                         with the dataset to be sent. If set to "False", Galaxy appends datetime
                                         to the dataset name to prevent overwriting an existing object.
 
-        :param kwargs:
-
         :rtype:     dictionary
         :return:    Information about the (un)successfully submitted dataset send jobs,
                     containing the following keys:
+
                         *   `bucket_name`:                  The name of bucket to which the listed datasets are queued
                                                             to be sent.
                         *   `sent_dataset_labels`:          A list of JSON objects with the following key-value pair:
@@ -177,6 +191,7 @@ class CloudController(BaseAPIController):
                         *   `failed_dataset_labels`:        A list of JSON objects with the following key-value pair
                                                             representing the datasets Galaxy failed to create
                                                             (and queue) send job for:
+
                             **  `object`:                   The name of object is queued to be created.
                             **  `error`:                    A descriptive error message.
 
@@ -195,17 +210,17 @@ class CloudController(BaseAPIController):
             missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
-            raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
+            raise ActionInputError(f"The following required arguments are missing in the payload: {missing_arguments}")
 
         try:
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid history ID. {}'.format(e))
+            raise ActionInputError(f"Invalid history ID. {e}")
 
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except exceptions.MalformedId as e:
-            raise ActionInputError('Invalid authz ID. {}'.format(e))
+            raise ActionInputError(f"Invalid authz ID. {e}")
 
         encoded_dataset_ids = payload.get("dataset_ids", None)
         if encoded_dataset_ids is None:
@@ -219,20 +234,24 @@ class CloudController(BaseAPIController):
                 except exceptions.MalformedId:
                     invalid_dataset_ids.append(encoded_id)
             if len(invalid_dataset_ids) > 0:
-                raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
-                                       "{}".format(invalid_dataset_ids))
+                raise ActionInputError(
+                    "The following provided dataset IDs are invalid, please correct them and retry. "
+                    "{}".format(invalid_dataset_ids)
+                )
 
-        log.info(msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
-                     "".format("all the dataset in the given history" if not dataset_ids else len(dataset_ids),
-                               authz_id,
-                               history_id))
+        log.info(
+            msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
+            "".format(
+                "all the dataset in the given history" if not dataset_ids else len(dataset_ids), authz_id, history_id
+            )
+        )
 
-        sent, failed = self.cloud_manager.send(trans=trans,
-                                               history_id=history_id,
-                                               bucket_name=bucket,
-                                               authz_id=authz_id,
-                                               dataset_ids=dataset_ids,
-                                               overwrite_existing=payload.get("overwrite_existing", False))
-        return {'sent_dataset_labels': sent,
-                'failed_dataset_labels': failed,
-                'bucket_name': bucket}
+        sent, failed = self.cloud_manager.send(
+            trans=trans,
+            history_id=history_id,
+            bucket_name=bucket,
+            authz_id=authz_id,
+            dataset_ids=dataset_ids,
+            overwrite_existing=payload.get("overwrite_existing", False),
+        )
+        return {"sent_dataset_labels": sent, "failed_dataset_labels": failed, "bucket_name": bucket}

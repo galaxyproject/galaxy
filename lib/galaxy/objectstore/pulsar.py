@@ -1,5 +1,3 @@
-from __future__ import absolute_import  # Need to import pulsar_client absolutely.
-
 from ..objectstore import BaseObjectStore
 
 try:
@@ -61,7 +59,7 @@ class PulsarObjectStore(BaseObjectStore):
         return None
 
     def __build_kwds(self, obj, **kwds):
-        kwds['object_id'] = obj.id
+        kwds["object_id"] = obj.id
         return kwds
 
     def __build_pulsar_client(self, config_xml):

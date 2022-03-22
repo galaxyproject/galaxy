@@ -51,8 +51,7 @@
 <%def name="javascripts()">
     ## TODO: remove when all libs are required directly in modules
     ${h.dist_js(
-        'libs.chunk',
-        'base.chunk',
+        'libs.bundled',
         'generic.bundled'
     )}
 </%def>
@@ -63,6 +62,12 @@
     ${ galaxy_client.config_sentry( app=self.js_app ) }
     %if self.js_app and self.js_app.config and self.js_app.config.ga_code:
         ${ galaxy_client.config_google_analytics(self.js_app.config.ga_code) }
+    %endif
+    %if self.js_app and self.js_app.config and self.js_app.config.plausible_server and self.js_app.config.plausible_domain:
+        ${ galaxy_client.config_plausible_analytics(self.js_app.config.plausible_server, self.js_app.config.plausible_domain) }
+    %endif
+    %if self.js_app and self.js_app.config and self.js_app.config.matomo_server and self.js_app.config.matomo_site_id:
+        ${ galaxy_client.config_matomo_analytics(self.js_app.config.matomo_server, self.js_app.config.matomo_site_id) }
     %endif
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:

@@ -4,14 +4,10 @@ statistics for a given pid's process and process ancestors.
 import collections
 import csv
 import logging
-import sys
 import tempfile
 
 from galaxy import util
 from ..collectl import stats
-
-if sys.version_info > (3,):
-    long = int
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +64,7 @@ PROCESS_COLUMNS = [
 # Types of statistics this module can summarize
 STATISTIC_TYPES = ["max", "min", "sum", "count", "avg"]
 
-COLUMN_INDICES = dict([(col, i) for i, col in enumerate(PROCESS_COLUMNS)])
+COLUMN_INDICES = {col: i for i, col in enumerate(PROCESS_COLUMNS)}
 PID_INDEX = COLUMN_INDICES["PID"]
 PARENT_PID_INDEX = COLUMN_INDICES["PPID"]
 
@@ -88,7 +84,7 @@ DEFAULT_STATISTICS = [
 
 
 def parse_process_statistics(statistics):
-    """ Turn string or list of strings into list of tuples in format ( stat,
+    """Turn string or list of strings into list of tuples in format ( stat,
     resource ) where stat is a value from STATISTIC_TYPES and resource is a
     value from PROCESS_COLUMNS.
     """
@@ -100,18 +96,17 @@ def parse_process_statistics(statistics):
     # Check for validity...
     for statistic in statistics:
         if statistic[0] not in STATISTIC_TYPES:
-            raise Exception("Unknown statistic type encountered %s" % statistic[0])
+            raise Exception(f"Unknown statistic type encountered {statistic[0]}")
         if statistic[1] not in PROCESS_COLUMNS:
-            raise Exception("Unknown process column encountered %s" % statistic[1])
+            raise Exception(f"Unknown process column encountered {statistic[1]}")
     return statistics
 
 
 def generate_process_statistics(collectl_playback_cli, pid, statistics=DEFAULT_STATISTICS):
-    """ Playback collectl file and generate summary statistics.
-    """
+    """Playback collectl file and generate summary statistics."""
     with tempfile.NamedTemporaryFile() as tmp_tsv:
         collectl_playback_cli.run(stdout=tmp_tsv)
-        with open(tmp_tsv.name, "r") as tsv_file:
+        with open(tmp_tsv.name) as tsv_file:
             return _read_process_statistics(tsv_file, pid, statistics)
 
 
@@ -123,7 +118,7 @@ def _read_process_statistics(tsv_file, pid, statistics):
         if current_interval is None:
             for header, expected_header in zip(row, PROCESS_COLUMNS):
                 if header.lower() != expected_header.lower():
-                    raise Exception("Unknown header value encountered while processing collectl playback - %s" % header)
+                    raise Exception(f"Unknown header value encountered while processing collectl playback - {header}")
 
             # First row, check contains correct header.
             current_interval = CollectlProcessInterval()
@@ -142,8 +137,7 @@ def _read_process_statistics(tsv_file, pid, statistics):
     return process_summarizer.get_statistics()
 
 
-class CollectlProcessSummarizer(object):
-
+class CollectlProcessSummarizer:
     def __init__(self, pid, statistics):
         self.pid = pid
         self.statistics = statistics
@@ -169,7 +163,7 @@ class CollectlProcessSummarizer(object):
                 if column_name in ["SysT", "UsrT", "PCT"]:
                     to_num = float
                 else:
-                    to_num = long
+                    to_num = int
 
                 interval_stat = sum(to_num(r[column_index]) for r in rows)
                 self.tree_statistics[column_name].track(interval_stat)
@@ -226,8 +220,8 @@ class CollectlProcessSummarizer(object):
         return seconds
 
 
-class CollectlProcessInterval(object):
-    """ Represent all rows in collectl playback file for given time slice with
+class CollectlProcessInterval:
+    """Represent all rows in collectl playback file for given time slice with
     ability to filter out just rows corresponding to the process tree
     corresponding to a given pid.
     """
@@ -252,4 +246,4 @@ def _tuplize_statistic(statistic):
     return statistic
 
 
-__all__ = ('generate_process_statistics', )
+__all__ = ("generate_process_statistics",)

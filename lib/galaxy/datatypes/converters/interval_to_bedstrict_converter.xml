@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="interval" value="2.interval"/>
-            <output name="output1" format="bedstrict" value="2.bedstrict"/>
+            <param name="input1" ftype="interval" value="2.interval"/>
+            <output name="output1" ftype="bedstrict" value="2.bedstrict"/>
         </test>
     </tests>
     <help>

@@ -1,0 +1,83 @@
+<tool id="select_from_dataset" name="select_from_dataset" version="0.1.0">
+    <description>Create dynamic options from data sets</description>
+    <command><![CDATA[
+echo select_single '$select_single' > '$output' && 
+echo select_multiple '$select_multiple' >> '$output' &&
+echo select_collection '$select_collection' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="single" type="data" format="tabular" label="single"/>
+        <param name="select_single" type="select" label="select_single">
+            <options from_dataset="single">
+                <column name="name" index="1"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
+        </param>
+        <param name="multiple" type="data" format="tabular" multiple="true" label="multiple"/>
+        <param name="select_multiple" type="select" multiple="true" label="select_multiple">
+            <options from_dataset="multiple">
+                <column name="name" index="1"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
+        </param>
+        <param name="collection" type="data_collection" format="tabular" collection_type="list" label="collection"/>
+        <param name="select_collection" type="select" multiple="true" label="select_collection">
+            <options from_dataset="collection">
+                <column name="name" index="1"/>
+                <column name="value" index="0"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <test>
+            <param name="single" value="1.tabular" />
+            <param name="select_single" value="chr10" />
+            <param name="multiple" value="1.tabular,2.tabular" />
+            <param name="select_multiple" value="chr10,7" />
+            <param name="collection">
+                <collection type="list">
+                    <element name="1" value="1.tabular" />
+                    <element name="2" value="2.tabular" />
+                </collection>
+            </param>
+            <param name="select_collection" value="chr10,7" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="select_single chr10" />    
+                    <has_text text="select_multiple chr10,7" />    
+                    <has_text text="select_collection chr10,7" />    
+                </assert_contents>
+            </output>
+        </test>
+        <!-- test that dynamic selects can be chosen by name -->
+        <test>
+            <param name="single" value="2.tabular" />
+            <param name="select_single" value="68" />
+            <param name="multiple" value="2.tabular" />
+            <param name="select_multiple" value="71,62" />
+            <param name="collection">
+                <collection type="list">
+                    <element name="2" value="2.tabular" />
+                </collection>
+            </param>
+            <param name="select_collection" value="75,58" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="select_single 1" />    
+                    <has_text text="select_multiple 2,3" />    
+                    <has_text text="select_collection 4,5" />    
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

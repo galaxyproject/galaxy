@@ -1,0 +1,118 @@
+<template>
+    <div>
+        <SidePanel id="left" side="left">
+            <template v-slot:panel>
+                <MarkdownToolBox :get-manager="getManager" @onInsert="onInsert" />
+            </template>
+        </SidePanel>
+        <div id="center" class="workflow-markdown-editor">
+            <div class="markdown-editor h-100">
+                <div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <div class="panel-header-buttons">
+                            <slot name="buttons" />
+                            <b-button
+                                title="Help"
+                                variant="link"
+                                role="button"
+                                v-b-tooltip.hover.bottom
+                                @click="onHelp">
+                                <font-awesome-icon icon="question" />
+                            </b-button>
+                        </div>
+                        <div class="my-1">
+                            {{ title }}
+                        </div>
+                    </div>
+                </div>
+                <div class="unified-panel-body d-flex">
+                    <textarea
+                        class="markdown-textarea"
+                        id="workflow-report-editor"
+                        v-model="content"
+                        @input="onUpdate"
+                        ref="text-area" />
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+import _ from "underscore";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+import MarkdownToolBox from "./MarkdownToolBox";
+import SidePanel from "components/Panels/SidePanel";
+import { showMarkdownHelp } from "./markdownHelp";
+
+Vue.use(BootstrapVue);
+
+library.add(faQuestion);
+
+const FENCE = "```";
+
+export default {
+    components: {
+        MarkdownToolBox,
+        SidePanel,
+        FontAwesomeIcon,
+    },
+    props: {
+        markdownText: {
+            type: String,
+            default: null,
+        },
+        markdownConfig: {
+            type: Object,
+            default: null,
+        },
+        getManager: {
+            type: Function,
+            default: null,
+        },
+        title: {
+            type: String,
+            default: null,
+        },
+    },
+    data() {
+        return {
+            content: this.markdownText,
+        };
+    },
+    watch: {
+        markdownText() {
+            const textArea = this.$refs["text-area"];
+            const textCursor = textArea.selectionEnd;
+            this.content = this.markdownText;
+            Vue.nextTick(() => {
+                textArea.selectionEnd = textCursor;
+                textArea.focus();
+            });
+        },
+    },
+    methods: {
+        onInsert(markdown) {
+            markdown = markdown.replace(")(", ", ");
+            markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
+            const textArea = this.$refs["text-area"];
+            textArea.focus();
+            const cursorPosition = textArea.selectionStart;
+            let newContent = this.content.substr(0, cursorPosition);
+            newContent += `\r\n${markdown.trim()}\r\n`;
+            newContent += this.content.substr(cursorPosition);
+            this.$emit("onUpdate", newContent);
+        },
+        onUpdate: _.debounce(function (e) {
+            this.$emit("onUpdate", this.content);
+        }, 300),
+        onHelp() {
+            showMarkdownHelp();
+        },
+    },
+};
+</script>

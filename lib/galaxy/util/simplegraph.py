@@ -3,10 +3,8 @@ Fencepost-simple graph structure implementation.
 """
 # Currently (2013.7.12) only used in easing the parsing of graph datatype data.
 
-from collections import OrderedDict
 
-
-class SimpleGraphNode(object):
+class SimpleGraphNode:
     """
     Node representation.
     """
@@ -23,7 +21,7 @@ class SimpleGraphNode(object):
         self.data = data
 
 
-class SimpleGraphEdge(object):
+class SimpleGraphEdge:
     """
     Edge representation.
     """
@@ -42,7 +40,7 @@ class SimpleGraphEdge(object):
         self.data = data
 
 
-class SimpleGraph(object):
+class SimpleGraph:
     """
     Each node is unique (by id) and stores its own index in the node list/odict.
     Each edge is represented as two indeces into the node list/odict.
@@ -58,7 +56,7 @@ class SimpleGraph(object):
 
     def __init__(self, nodes=None, edges=None):
         # use an odict so that edge indeces actually match the final node list indeces
-        self.nodes = nodes or OrderedDict()
+        self.nodes = nodes or {}
         self.edges = edges or []
 
     def add_node(self, node_id, **data):
@@ -108,7 +106,7 @@ class SimpleGraph(object):
             { 'id': <the nodes unique id>, 'data': <any additional node data> }
         """
         for node_id, node in self.nodes.items():
-            yield {'id': node_id, 'data': node.data}
+            yield {"id": node_id, "data": node.data}
 
     def gen_edge_dicts(self):
         """
@@ -121,7 +119,7 @@ class SimpleGraph(object):
             }
         """
         for edge in self.edges:
-            yield {'source': edge.source_index, 'target': edge.target_index, 'data': edge.data}
+            yield {"source": edge.source_index, "target": edge.target_index, "data": edge.data}
 
     def as_dict(self):
         """
@@ -129,4 +127,4 @@ class SimpleGraph(object):
 
             { 'nodes': <a list of node dictionaries>, 'edges': <a list of node dictionaries> }
         """
-        return {'nodes': list(self.gen_node_dicts()), 'edges': list(self.gen_edge_dicts())}
+        return {"nodes": list(self.gen_node_dicts()), "edges": list(self.gen_edge_dicts())}

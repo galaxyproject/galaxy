@@ -1,20 +1,63 @@
 """Constructors for concrete tool and input source objects."""
-from __future__ import absolute_import
 
 import logging
 
+from yaml import safe_load
+
 from galaxy.tool_util.loader import load_tool_with_refereces
+from galaxy.util import parse_xml_string_to_etree
 from galaxy.util.yaml_util import ordered_load
-from .cwl import CwlToolSource
-from .interface import InputSource
-from .xml import XmlInputSource, XmlToolSource
-from .yaml import YamlInputSource, YamlToolSource
+from .cwl import (
+    CwlToolSource,
+    tool_proxy,
+)
+from .interface import (
+    InputSource,
+    ToolSource,
+)
+from .xml import (
+    XmlInputSource,
+    XmlToolSource,
+)
+from .yaml import (
+    YamlInputSource,
+    YamlToolSource,
+)
 from ..fetcher import ToolLocationFetcher
 
 log = logging.getLogger(__name__)
 
 
-def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, tool_location_fetcher=None, macro_paths=None):
+def build_xml_tool_source(xml_string):
+    return XmlToolSource(parse_xml_string_to_etree(xml_string))
+
+
+def build_cwl_tool_source(yaml_string):
+    tool_proxy(tool_object=safe_load(yaml_string))
+    # regular CwlToolSource sets basename as tool id, but that's not going to cut it in production
+    return CwlToolSource(tool_file=None, tool_id="serialized_cwl_tool", tool_proxy=tool_proxy)
+
+
+def build_yaml_tool_source(yaml_string):
+    return YamlToolSource(safe_load(yaml_string))
+
+
+TOOL_SOURCE_FACTORIES = {
+    "XmlToolSource": build_xml_tool_source,
+    "YamlToolSource": build_yaml_tool_source,
+    "CwlToolSource": build_cwl_tool_source,
+}
+
+
+def get_tool_source(
+    config_file=None,
+    xml_tree=None,
+    enable_beta_formats=True,
+    tool_location_fetcher=None,
+    macro_paths=None,
+    tool_source_class=None,
+    raw_tool_source=None,
+) -> ToolSource:
     """Return a ToolSource object corresponding to supplied source.
 
     The supplied source may be specified as a file path (using the config_file
@@ -22,8 +65,12 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
     """
     if xml_tree is not None:
         return XmlToolSource(xml_tree, source_path=config_file, macro_paths=macro_paths)
-    elif config_file is None:
+    elif config_file is None and raw_tool_source is None:
         raise ValueError("get_tool_source called with invalid config_file None.")
+
+    if tool_source_class and raw_tool_source:
+        factory = TOOL_SOURCE_FACTORIES[tool_source_class]
+        return factory(raw_tool_source)
 
     if tool_location_fetcher is None:
         tool_location_fetcher = ToolLocationFetcher()
@@ -35,11 +82,13 @@ def get_tool_source(config_file=None, xml_tree=None, enable_beta_formats=True, t
 
     if config_file.endswith(".yml"):
         log.info("Loading tool from YAML - this is experimental - tool will not function in future.")
-        with open(config_file, "r") as f:
+        with open(config_file) as f:
             as_dict = ordered_load(f)
             return YamlToolSource(as_dict, source_path=config_file)
     elif config_file.endswith(".json") or config_file.endswith(".cwl"):
-        log.info("Loading CWL tool - this is experimental - tool likely will not function in future at least in same way.")
+        log.info(
+            "Loading CWL tool - this is experimental - tool likely will not function in future at least in same way."
+        )
         return CwlToolSource(config_file)
     else:
         tree, macro_paths = load_tool_with_refereces(config_file)
@@ -54,7 +103,7 @@ def get_tool_source_from_representation(tool_format, tool_representation):
             tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
         return YamlToolSource(tool_representation)
     else:
-        raise Exception("Unknown tool representation format [%s]." % tool_format)
+        raise Exception(f"Unknown tool representation format [{tool_format}].")
 
 
 def get_input_source(content):

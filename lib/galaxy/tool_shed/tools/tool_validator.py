@@ -3,12 +3,12 @@ import logging
 from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from galaxy.tool_shed.util import (
     basic_util,
-    hg_util
+    hg_util,
 )
 from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import (
     create_tool_from_source,
-    get_tool_source,
     parameters,
 )
 from galaxy.tools.parameters import dynamic_options
@@ -16,8 +16,7 @@ from galaxy.tools.parameters import dynamic_options
 log = logging.getLogger(__name__)
 
 
-class ToolValidator(object):
-
+class ToolValidator:
     def __init__(self, app):
         self.app = app
         self.stdtm = ShedToolDataTableManager(self.app)
@@ -36,13 +35,17 @@ class ToolValidator(object):
                 if options and isinstance(options, dynamic_options.DynamicOptions):
                     if options.tool_data_table or options.missing_tool_data_table_name:
                         # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                        sample_tool_data_table_conf = hg_util.get_config_from_disk('tool_data_table_conf.xml.sample', repo_dir)
+                        sample_tool_data_table_conf = hg_util.get_config_from_disk(
+                            "tool_data_table_conf.xml.sample", repo_dir
+                        )
                         if sample_tool_data_table_conf:
-                            error, correction_msg = \
-                                self.stdtm.handle_sample_tool_data_table_conf_file(sample_tool_data_table_conf,
-                                                                                  persist=False)
+                            error, correction_msg = self.stdtm.handle_sample_tool_data_table_conf_file(
+                                sample_tool_data_table_conf, persist=False
+                            )
                             if error:
-                                invalid_files_and_errors_tups.append(('tool_data_table_conf.xml.sample', correction_msg))
+                                invalid_files_and_errors_tups.append(
+                                    ("tool_data_table_conf.xml.sample", correction_msg)
+                                )
                         else:
                             correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  "
                             correction_msg += "Upload a file named tool_data_table_conf.xml.sample to the repository "
@@ -57,16 +60,18 @@ class ToolValidator(object):
                         sample_found = False
                         for sample_file in sample_files:
                             sample_file_name = basic_util.strip_path(sample_file)
-                            if sample_file_name == '%s.sample' % index_file_name:
+                            if sample_file_name == f"{index_file_name}.sample":
                                 options.index_file = index_file_name
                                 if options.tool_data_table:
                                     options.tool_data_table.missing_index_file = None
                                 sample_found = True
                                 break
                         if not sample_found:
-                            correction_msg = "This file refers to a file named <b>%s</b>.  " % str(index_file_name)
-                            correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % \
-                                str(index_file_name)
+                            correction_msg = f"This file refers to a file named <b>{str(index_file_name)}</b>.  "
+                            correction_msg += (
+                                "Upload a file named <b>%s.sample</b> to the repository to correct this error."
+                                % str(index_file_name)
+                            )
                             invalid_files_and_errors_tups.append((tool_config_name, correction_msg))
         return invalid_files_and_errors_tups
 
@@ -77,20 +82,30 @@ class ToolValidator(object):
             tool_location_fetcher=ToolLocationFetcher(),
         )
         try:
-            tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id, allow_code_files=False)
+            tool = create_tool_from_source(
+                config_file=full_path,
+                app=self.app,
+                tool_source=tool_source,
+                repository_id=repository_id,
+                allow_code_files=False,
+            )
             tool.assert_finalized(raise_if_invalid=True)
             valid = True
             error_message = None
         except KeyError as e:
             tool = None
             valid = False
-            error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str(e)
-            error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-            error_message += 'this error.  '
+            error_message = (
+                f'This file requires an entry for "{str(e)}" in the tool_data_table_conf.xml file.  Upload a file '
+            )
+            error_message += (
+                "named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct "
+            )
+            error_message += "this error.  "
             log.exception(error_message)
         except Exception as e:
             tool = None
             valid = False
             error_message = str(e)
-            log.exception('Caught exception loading tool from %s:', full_path)
+            log.exception("Caught exception loading tool from %s:", full_path)
         return tool, valid, error_message

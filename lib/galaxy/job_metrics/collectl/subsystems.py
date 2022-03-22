@@ -4,28 +4,22 @@ Subsystems are essentially monitoring plugins available within collectl.
 """
 from abc import (
     ABCMeta,
-    abstractmethod
+    abstractmethod,
 )
 
-import six
 
-
-@six.add_metaclass(ABCMeta)
-class CollectlSubsystem(object):
-    """ Class providing an abstraction of collectl subsytems.
-    """
+class CollectlSubsystem(metaclass=ABCMeta):
+    """Class providing an abstraction of collectl subsytems."""
 
     @property
     @abstractmethod
     def command_line_arg(self):
-        """ Return single letter command-line argument used by collectl CLI.
-        """
+        """Return single letter command-line argument used by collectl CLI."""
 
     @property
     @abstractmethod
-    def name(self, job_directory):
-        """ High-level name for subsystem as consumed by this module.
-        """
+    def name(self):
+        """High-level name for subsystem as consumed by this module."""
 
 
 class ProcessesSubsystem(CollectlSubsystem):
@@ -66,7 +60,7 @@ SUBSYSTEMS = [
     EnvironmentSubsystem(),
     MemorySubsystem(),
 ]
-SUBSYSTEM_DICT = dict([(s.name, s) for s in SUBSYSTEMS])
+SUBSYSTEM_DICT = {s.name: s for s in SUBSYSTEMS}
 
 
 def get_subsystem(name):
@@ -78,4 +72,4 @@ def get_subsystem(name):
     return SUBSYSTEM_DICT[name]
 
 
-__all__ = ('get_subsystem', )
+__all__ = ("get_subsystem",)

@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
@@ -17,7 +19,6 @@ from .framework import (
 
 
 class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
-
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -40,23 +41,38 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         hda = self.latest_history_item()
         self._check_dataset_details_for_inttest_value(1)
 
-        with self.main_panel():
-            dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
-            number_found = name_found = format_found = False
-            for key, value in dataset_details_key_value_pairs:
-                if "Number:" in key.text:
-                    assert str(hda["hid"]) in value.text
-                    number_found = True
-                if "Name:" in key.text:
-                    assert hda["name"] in value.text
-                    name_found = True
-                if "Format:" in key.text:
-                    assert hda["extension"] in value.text
-                    format_found = True
+        dataset_details_key_value_pairs = self._table_to_key_value_elements("table#dataset-details")
+        number_found = name_found = format_found = False
+        for key, value in dataset_details_key_value_pairs:
+            if "Number" in key.text:
+                assert str(hda["hid"]) in value.text
+                number_found = True
+            if "Name" in key.text:
+                assert hda["name"] in value.text
+                name_found = True
+            if "Format" in key.text:
+                assert hda["extension"] in value.text
+                format_found = True
 
-            assert number_found
-            assert name_found
-            assert format_found
+        assert number_found
+        assert name_found
+        assert format_found
+
+        job_outputs = self._table_to_key_value_elements("table#job-outputs")
+        assert job_outputs[0][0].text == "environment_variables"
+        generic_item = job_outputs[0][1]
+        assert "1 : environment_variables" in generic_item.text
+        generic_item.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        assert generic_item.find_element_by_css_selector("pre").text == "42\nmoo\nNOTTHREE"
+        generic_item.find_element_by_css_selector("[title='Run Job Again']").click()
+        self.components.tool_form.execute.wait_for_visible()
+
+    @staticmethod
+    def click_menu_item(menu, text):
+        for element in menu.find_elements_by_css_selector("a"):
+            if element.text == text:
+                return element.click()
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
@@ -122,38 +138,29 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.home()
         # prefetch citations so they will be available quickly when rendering tool form.
         citations_api = self.api_get("tools/bibtex/citations")
-        assert len(citations_api) == 29, len(citations_api)
+        citation_count = len(citations_api)
         self.tool_open("bibtex")
-        self.components.tool_form.citations.wait_for_visible()
+        self.components.tool_form.about.wait_for_and_click()
 
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            assert len(references) == 29
+            assert len(references) == citation_count
             return references
 
         references = assert_citations_visible()
-
         doi_resolved_citation = references[0]
-        assert "Galaxy: A platform for interactive" in doi_resolved_citation.text
+        assert "platform for interactive" in doi_resolved_citation.text
         self.screenshot("tool_form_citations_formatted")
 
-        self.components.tool_form.show_bibtex.wait_for_and_click()
-        references = assert_citations_visible()
-        r0text = references[0].text
-        assert "@article{Giardine_2005" in r0text
-        self.screenshot("tool_form_citations_bibtex")
-
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
-        self.hda_click_primary_action_button(hid, "info")
-
-        with self.main_panel():
-            self.wait_for_selector_visible("table#dataset-details")
-            tool_parameters_table = self.wait_for_selector_visible("table#tool-parameters")
-            tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
-            tds = tbody_element.find_elements_by_css_selector("td")
-            assert tds
-            assert any([expected_value in td.text for td in tds])
+        self.hda_click_details(hid)
+        self.components.dataset_details._.wait_for_visible()
+        tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
+        tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
+        tds = tbody_element.find_elements_by_css_selector("td")
+        assert tds
+        assert any(expected_value in td.text for td in tds)
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()
@@ -189,18 +196,22 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
     @selenium_test
     @managed_history
     @skip_if_github_down
+    @pytest.mark.gtn_screenshot
+    @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.components.upload.rule_source_content.wait_for_and_send_keys("""https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
+        self.components.upload.rule_source_content.wait_for_and_send_keys(
+            """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated1fb.txt untreated_single_4
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated2fb.txt untreated_single_5
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated3fb.txt untreated_paired_6
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/untreated4fb.txt untreated_paired_7
-""")
+"""
+        )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -223,12 +234,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
                     "type": "add_column_metadata",
                     "value": "identifier0",
                 },
-                {
-                    "type": "add_column_regex",
-                    "target_column": 0,
-                    "expression": "(.*)_(.*)_.*",
-                    "group_count": 2
-                }
+                {"type": "add_column_regex", "target_column": 0, "expression": "(.*)_(.*)_.*", "group_count": 2},
             ],
             "mapping": [
                 {
@@ -242,7 +248,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
             hid=1,
             landing_screenshot="rules_apply_rules_example_4_5_apply_rules_landing",
             rule_init_screenshot="rules_apply_rules_example_4_6_apply_rules_init_flat",
-            rule_complete_screenshot="rules_apply_rules_example_4_7_apply_rules_add_depth"
+            rule_complete_screenshot="rules_apply_rules_example_4_7_apply_rules_add_depth",
         )
         self.history_panel_wait_for_hid_ok(16)
         self.history_multi_view_display_collection_contents(16, "list:list:list")
@@ -273,7 +279,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self._tool_apply_with_source(
             invert_rules,
             rule_init_screenshot="rules_apply_rules_example_4_9_apply_rules_init_nested",
-            rule_complete_screenshot="rules_apply_rules_example_4_10_apply_rules_inverted"
+            rule_complete_screenshot="rules_apply_rules_example_4_10_apply_rules_inverted",
         )
         self.history_panel_wait_for_hid_ok(24)
         self.history_multi_view_display_collection_contents(24, "list:list:list")
@@ -290,7 +296,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
                     "target_column": 0,
                     "expression": ".*_single_.*",
                     "invert": False,
-                }
+                },
             ],
             "mapping": [
                 {
@@ -300,9 +306,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
             ],
         }
         self._tool_apply_with_source(
-            filter_rules,
-            hid=1,
-            rule_complete_screenshot="rules_apply_rules_example_4_12_apply_rules_filter"
+            filter_rules, hid=1, rule_complete_screenshot="rules_apply_rules_example_4_12_apply_rules_filter"
         )
         self.history_panel_wait_for_hid_ok(28)
         self.history_multi_view_display_collection_contents(28, "list")
@@ -320,12 +324,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
                     "expression": ".*_single_.*",
                     "invert": False,
                 },
-                {
-                    "type": "add_column_regex",
-                    "target_column": 0,
-                    "expression": "(.*)_single_.*",
-                    "group_count": 1
-                }
+                {"type": "add_column_regex", "target_column": 0, "expression": "(.*)_single_.*", "group_count": 1},
             ],
             "mapping": [
                 {
@@ -337,7 +336,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self._tool_apply_with_source(
             filter_and_nest_rules,
             hid=1,
-            rule_complete_screenshot="rules_apply_rules_example_4_14_apply_rules_filtered_and_nested"
+            rule_complete_screenshot="rules_apply_rules_example_4_14_apply_rules_filtered_and_nested",
         )
         self.history_panel_wait_for_hid_ok(32)
         self.history_multi_view_display_collection_contents(32, "list:list")
@@ -361,14 +360,17 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         rule_builder.main_button_ok.wait_for_and_click()
         self.tool_form_execute()
         output_hid = example["output_hid"]
+        self.home()
         self.history_panel_wait_for_hid_ok(output_hid)
         output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
         example["check"](output_hdca, self.dataset_populator)
 
-    def _tool_apply_with_source(self, rules_json, hid=None, landing_screenshot=None, rule_init_screenshot=None, rule_complete_screenshot=None):
+    def _tool_apply_with_source(
+        self, rules_json, hid=None, landing_screenshot=None, rule_init_screenshot=None, rule_complete_screenshot=None
+    ):
         self._tool_open_apply_rules()
         if hid:
-            self.tool_set_value("input", "%s:" % hid, expected_type="data_collection")
+            self.tool_set_value("input", f"{hid}:", expected_type="data_collection")
         if landing_screenshot:
             self.screenshot(landing_screenshot)
         rule_builder = self.components.rule_builder

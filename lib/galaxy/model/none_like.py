@@ -5,7 +5,7 @@ Objects with No values
 from galaxy.model.metadata import MetadataCollection
 
 
-class RecursiveNone(object):
+class RecursiveNone:
     def __str__(self):
         return "None"
 
@@ -19,11 +19,12 @@ class RecursiveNone(object):
 
     def __bool__(self):
         return False
+
     __nonzero__ = __bool__
 
 
 class NoneDataset(RecursiveNone):
-    def __init__(self, datatypes_registry=None, ext='data', dbkey='?'):
+    def __init__(self, datatypes_registry=None, ext="data", dbkey="?"):
         self.ext = self.extension = ext
         self.dbkey = dbkey
         assert datatypes_registry is not None

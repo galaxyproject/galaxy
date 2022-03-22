@@ -1,11 +1,14 @@
 <tool id="__TAG_FROM_FILE__"
-      name="Tag elements from file"
+      name="Tag elements"
       version="1.0.0"
       tool_type="tag_from_file">
-    <description>from contents of a file</description>
+    <description></description>
     <type class="TagFromFileTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_3096</edam_operation>
+    </edam_operations>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection" help="A tabular file indicating how to tag collection elements."/>
         <param type="data" name="tags" format="tabular" label="Tag collection elements according to this file"/>
@@ -34,13 +37,13 @@
                     <assert_contents>
                         <has_text_matching expression="^This is a line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward,zoo" />
+                    <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward,zoo" />
                 </element>
                 <element name="reverse">
                     <assert_contents>
                         <has_text_matching expression="^This is a different line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
+                    <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
                 </element>
             </output_collection>
         </test>
@@ -63,13 +66,13 @@
                         <assert_contents>
                             <has_text_matching expression="^This is a line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward" />
+                        <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward" />
                     </element>
                     <element name="reverse">
                         <assert_contents>
                             <has_text_matching expression="^This is a different line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
+                        <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
                     </element>
                 </element>
             </output_collection>
@@ -77,15 +80,31 @@
     </tests>
     <help><![CDATA[
 
-.. class:: infomark
+========
+Synopsis
+========
 
-        This tool will take an input collection and a tabular file,
-        where the first column indicates an element identifier and the
-        remaining columns contains the new tags. This file may contain
-        less entries than elements in the collection.
-        In that case only matching list identifiers will be tagged.
+Adds tags (including name: and group: tags) to collection elements.
 
-        This tool will create new history datasets from your collection
-        but your quota usage will not increase.
+===========
+Description
+===========
+
+The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain less entries than elements in the collection. In that case only matching list identifiers will be tagged.
+
+To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively. 
+
+===============
+More about tags
+===============
+
+Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label group of datasets. This is useful. for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
+
+To learn mote about tags go to `our training site`_. 
+
+.. _our training site: https://training.galaxyproject.org/training-material/search?query=tags
+
+
+
     ]]></help>
 </tool>

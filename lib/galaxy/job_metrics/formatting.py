@@ -1,7 +1,7 @@
 """Utilities related to formatting job metrics for human consumption."""
 
 
-class JobMetricFormatter(object):
+class JobMetricFormatter:
     """Format job metric key-value pairs for human consumption in Web UI."""
 
     def format(self, key, value):
@@ -10,9 +10,12 @@ class JobMetricFormatter(object):
 
 def seconds_to_str(value):
     """Convert seconds to a simple simple string describing the amount of time."""
+    mins, secs = divmod(value, 60)
+    hours, mins = divmod(mins, 60)
+
     if value < 60:
-        return "%s seconds" % round(value, 2)
+        return f"{secs} second{'s' if secs != 1 else ''}"
     elif value < 3600:
-        return "%s minutes" % round(value / 60, 2)
+        return f"{mins} minute{'s' if mins != 1 else ''}"
     else:
-        return "%s hours and %s minutes" % (round(value / 3600, 2), round((value % 3600) / 60, 2))
+        return f"{hours} hour{'s' if hours != 1 else ''} and {mins} minute{'s' if mins != 1 else ''}"

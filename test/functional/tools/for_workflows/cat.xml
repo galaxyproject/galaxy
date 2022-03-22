@@ -1,8 +1,8 @@
-<tool id="cat" name="Concatenate datasets (for test workflows)">
+<tool id="cat" name="Concatenate datasets (for test workflows)" version="1.0.0">
     <description>tail-to-head</description>
-    <command>
-        cat $input1 #for $q in $queries# ${q.input2} #end for# > $out_file1
-    </command>
+    <command><![CDATA[
+cat '$input1' #for $q in $queries# '${q.input2}' #end for# > '$out_file1'
+    ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>
         <repeat name="queries" title="Dataset">

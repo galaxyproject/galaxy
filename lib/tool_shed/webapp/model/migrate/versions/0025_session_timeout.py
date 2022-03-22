@@ -1,12 +1,16 @@
 """
 Migration script to add session update time (used for timeouts)
 """
-from __future__ import print_function
 
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    MetaData,
+    Table,
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)

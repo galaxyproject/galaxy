@@ -1,0 +1,25 @@
+<tool id="CONVERTER_Pdb_to_Gro_0" name="PDB to GRO" version="1.0.0" hidden="true" profile="20.09">
+    <requirements>
+        <requirement type="package" version="2020.4">gromacs</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        ln -s '$input1' ./input.pdb &&
+        gmx editconf
+            -f ./input.pdb
+            -o ./output.gro
+    ]]></command>
+    <inputs>
+        <param format="pdb" name="input1" type="data" label="Choose PDB"/>
+    </inputs>
+    <outputs>
+        <data format="gro" name="output1" from_work_dir="output.gro"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" ftype="pdb" value="newbox.pdb"/>
+            <output name="output1" ftype="gro" value="newbox.gro" lines_diff="2"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

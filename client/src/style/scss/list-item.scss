@@ -1,0 +1,241 @@
+// ---------------------------------------------------------------------------- generic panel list items
+
+%info-section {
+    @extend .rounded;
+    border: 1px solid fade-out($border-color, 0.5);
+    padding: 4px;
+}
+
+$vertical-gap: 8px;
+%vertical-spacing {
+    margin-bottom: $vertical-gap;
+}
+
+%help-text {
+    font-weight: normal;
+    color: $gray-700;
+}
+
+.list-item {
+    border: 1px solid $border-color;
+
+    .vertical-spacing {
+        @extend %vertical-spacing;
+    }
+
+    .info-section {
+        @extend %info-section;
+    }
+
+    $spacing-top: 6px;
+    $spacing-right: $margin-v * 0.5;
+    $spacing-bottom: 6px;
+    $spacing-left: $margin-v * 0.5;
+
+    .warnings {
+        &:not(:empty) {
+            padding-top: 4px;
+        }
+        [class$="messagesmall"] {
+            margin: $spacing-top $spacing-right ($spacing-bottom - 4) $spacing-left;
+            font-size: 90%;
+            &:first-child {
+                margin-top: 0px;
+            }
+            &:last-child {
+                margin-bottom: 0px;
+            }
+        }
+    }
+
+    .help-text {
+        @extend %help-text;
+        font-weight: normal;
+        color: $gray-700;
+    }
+
+    .selector {
+        float: left;
+        // always initially hidden and zero width
+        display: none;
+        @extend .pt-2;
+        @extend .pl-3;
+        width: 2.5rem;
+        font-size: 80%;
+        color: $btn-default-color;
+        cursor: pointer;
+        vertical-align: middle;
+        // prevent text highlight when holding shift to select a range
+        @include user-select(none);
+    }
+    .selector:hover {
+        color: $brand-info;
+    }
+
+    .title-bar {
+        cursor: pointer;
+        outline: none;
+        @extend .p-2;
+        @extend .px-3;
+        .title {
+            display: inline;
+            font-weight: bold;
+            word-wrap: break-word;
+            word-break: break-all;
+            line-height: 16px;
+        }
+        .title:hover {
+            text-decoration: underline;
+        }
+        .subtitle {
+            color: $text-muted;
+            font-size: 90%;
+            a {
+                color: inherit;
+            }
+        }
+        .state-description {
+            color: $text-muted;
+            font-size: 90%;
+            a {
+                color: inherit;
+            }
+        }
+    }
+
+    .primary-actions {
+        @extend .icon-btn-group;
+        @extend .mt-2;
+        @extend .mx-3;
+        float: right;
+        .icon-btn {
+            margin-left: $icon-btn-margin;
+        }
+    }
+
+    .details {
+        display: none;
+        @extend .pb-2;
+        @extend .px-3;
+        label {
+            margin: 0px;
+            padding: 0px;
+            font-weight: normal;
+        }
+        .prompt {
+            @extend .help-text;
+        }
+        .prompt:after {
+            content: ":";
+            margin-right: 4px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------- generic panel list (of list-items)
+.list-panel {
+    overflow: hidden;
+    // overflow-x: hidden;
+
+    .vertical-spacing {
+        @extend %vertical-spacing;
+    }
+
+    .controls {
+        & > *:not(:empty) {
+            @extend .mb-2;
+        }
+        .name {
+            word-wrap: break-word;
+            font-weight: bold;
+            input {
+                width: 100%;
+                // keep the text in position
+                margin: -3px 0px -3px -3px;
+                font-weight: bold;
+            }
+        }
+        .subtitle {
+            color: $text-muted;
+            font-size: 90%;
+            a {
+                color: inherit;
+            }
+        }
+        .editable-text {
+            border: solid transparent 1px;
+        }
+        .editable-text:hover {
+            cursor: pointer;
+            border: 1px dotted #999999;
+        }
+
+        .actions {
+            @extend .icon-btn-group;
+            float: right;
+            .icon-btn {
+                margin-left: $icon-btn-margin;
+            }
+        }
+        .messages {
+            @include clearfix();
+            [class$="message"],
+            [class$="messagesmall"] {
+                margin: 0px;
+                &:not(:last-child) {
+                    margin-bottom: 8px;
+                }
+            }
+        }
+        .list-actions {
+            display: none;
+            @extend .clear;
+            .btn {
+                padding-top: 2px;
+                padding-bottom: 2px;
+                font-size: 90%;
+            }
+            .list-action-menu {
+                float: right;
+            }
+        }
+    }
+    // display only a top border on all but the last
+    .list-items {
+        margin: 0;
+        padding: 0;
+
+        .list-item {
+            border-width: 1px 0px 1px 0px;
+            &:not(:last-child) {
+                border-bottom-width: 0px;
+            }
+        }
+    }
+    .empty-message {
+        display: none;
+        margin: 0px;
+    }
+}
+
+// ---------------------------------------------------------------------------- a list panel nested inside a list-item
+.list-item .details .list-panel {
+    margin-top: 8px;
+    border-radius: 3px;
+    background: white;
+    padding: 4px;
+    .list-items {
+        border: 1px solid $border-color;
+        border-radius: 3px;
+        .list-item {
+            &:first-child {
+                border-top-width: 0px;
+                border-radius: 3px 3px 0px 0px;
+            }
+            &:last-child {
+                border-bottom-width: 0px;
+                border-radius: 0px 0px 3px 3px;
+            }
+        }
+    }
+}

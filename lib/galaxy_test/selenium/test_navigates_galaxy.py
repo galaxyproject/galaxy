@@ -1,7 +1,5 @@
-from galaxy.selenium.navigates_galaxy import (
-    exception_indicates_not_clickable,
-    exception_seems_to_indicate_transition,
-)
+from galaxy.selenium.has_driver import exception_indicates_not_clickable
+from galaxy.selenium.navigates_galaxy import exception_seems_to_indicate_transition
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -22,7 +20,7 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
         # Open the details, verify they are open and do a refresh.
         exception = None
         try:
-            refresh_button = self.wait_for_selector("#history-refresh-button")
+            refresh_button = self.wait_for_selector(".history-refresh-button")
             refresh_button.click()
         except Exception as e:
             exception = e

@@ -10,18 +10,17 @@ Make sure you adjust your Toolshed config to:
 
 This script expects the Tool Shed's runtime virtualenv to be active.
 """
-from __future__ import print_function
 
 import argparse
 import logging
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
 
 from galaxy.util.script import (
     app_properties_from_args,
-    populate_config_args
+    populate_config_args,
 )
 from tool_shed.util.shed_index import build_index
 from tool_shed.webapp import config as ts_config
@@ -31,12 +30,11 @@ log.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='Build a disk-backed Toolshed repository index and tool index for searching.')
+    parser = argparse.ArgumentParser(
+        description="Build a disk-backed Toolshed repository index and tool index for searching."
+    )
     populate_config_args(parser)
-    parser.add_argument('-d', '--debug',
-                        action='store_true',
-                        default=False,
-                        help='Print extra info')
+    parser.add_argument("-d", "--debug", action="store_true", default=False, help="Print extra info")
     args = parser.parse_args()
     app_properties = app_properties_from_args(args)
     config = ts_config.ToolShedAppConfiguration(**app_properties)
@@ -46,9 +44,9 @@ def parse_arguments():
     args.file_path = config.file_path
     if args.debug:
         log.setLevel(logging.DEBUG)
-        log.debug('Full options:')
+        log.debug("Full options:")
         for i in vars(args).items():
-            log.debug('%s: %s' % i)
+            log.debug("%s: %s" % i)
     return args
 
 

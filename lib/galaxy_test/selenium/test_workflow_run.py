@@ -8,6 +8,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
+    WORKFLOW_SELECT_FROM_OPTIONAL_DATASET,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
@@ -37,8 +38,13 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("workflow_run_simple_submitted")
-        self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
-        self.history_panel_click_item_title(hid=2, wait=True)
+        if self.is_beta_history():
+            item = self.content_item_by_attributes(hid=2, state="ok")
+            item.wait_for_present()
+            item.title.wait_for_and_click()
+        else:
+            self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
+            self.history_panel_click_item_title(hid=2, wait=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
 
@@ -93,7 +99,10 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("workflow_run_rename_simple_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            self.content_item_by_attributes(hid=output_hid, state="ok").wait_for_present()
+        else:
+            self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
         history_id = self.current_history_id()
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
@@ -103,7 +112,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run("""
+        self.open_in_workflow_run(
+            """
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -115,7 +125,8 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-""")
+"""
+        )
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")
@@ -125,7 +136,10 @@ steps:
         self.screenshot("workflow_run_step_parameter_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            self.content_item_by_attributes(hid=output_hid, state="ok").wait_for_present()
+        else:
+            self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
         history_id = self.current_history_id()
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=output_hid)
         assert "12345" in content, content
@@ -142,7 +156,10 @@ steps:
         self.screenshot("workflow_run_rename_subworkflow_input")
         self.workflow_run_submit()
         output_hid = 2
-        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            self.content_item_by_attributes(hid=output_hid, state="ok").wait_for_present()
+        else:
+            self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
         history_id = self.current_history_id()
         details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
         assert details["name"] == "moocow suffix", details
@@ -164,10 +181,42 @@ steps:
         self.workflow_run_specify_inputs(inputs)
         self.screenshot("workflow_run_two_inputs")
         self.workflow_run_submit()
-
-        self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+            item = self.content_item_by_attributes(hid=7, state="ok")
+            self.wait_for_present(item, timeout=timeout)
+        else:
+            self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_text_default_value_connected_to_restricted_select(self):
+        self.open_in_workflow_run(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    optional: true
+    default: ex2
+    restrictOnConnections: true
+    type: text
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+"""
+        )
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
 
     @selenium_test
     @managed_history
@@ -177,27 +226,37 @@ steps:
         self.workflow_run_specify_inputs(inputs)
         self.screenshot("workflow_run_rules")
         self.workflow_run_submit()
-        self.history_panel_wait_for_hid_ok(6, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+            item = self.content_item_by_attributes(hid=6, state="ok")
+            self.wait_for_present(item, timeout=timeout)
+        else:
+            self.history_panel_wait_for_hid_ok(6, allowed_force_refreshes=1)
         output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
         rules_test_data.check_example_2(output_content, self.dataset_populator)
 
     @selenium_test
     @managed_history
-    def test_execution_with_custom_invocation_repoprt(self):
+    def test_execution_with_custom_invocation_report(self):
         history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA)
         self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
         self.workflow_run_specify_inputs(inputs)
         self.workflow_run_submit()
-
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("workflow_run_invocation_report")
-
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
-
         invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
-        self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
-        self.wait_for_selector_visible(".embedded-item.dataset")
+        self.get(f"workflows/invocations/report?id={invocation_0['id']}")
+        self.wait_for_selector_visible(".embedded-dataset")
         self.screenshot("workflow_report_custom_1")
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_null_optional_select_from_data(self):
+        self.open_in_workflow_run(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
@@ -226,14 +285,17 @@ steps:
         self.workflow_click_option(".workflow-run")
 
     def _assert_has_3_lines_after_run(self, hid):
-        self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+        if self.is_beta_history():
+            self.content_item_by_attributes(hid=hid, state="ok").wait_for_present()
+        else:
+            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
         history_id = self.current_history_id()
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
         assert len([x for x in content.split("\n") if x]) == 3, content
 
-    def _set_num_lines_to_3(self, tour_id):
+    def _set_num_lines_to_3(self, element_id):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         # runtime parameters not being set to tool default value:
         # https://github.com/galaxyproject/galaxy/pull/7157
@@ -242,9 +304,9 @@ steps:
         input_element.clear()
         input_element.send_keys("3")
 
-    def _set_replacement_parameter(self, tour_id, value):
+    def _set_replacement_parameter(self, element_id, value):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
-        div = self.tool_parameter_div(tour_id)
+        div = self.tool_parameter_div(element_id)
         input_element = div.find_element_by_css_selector("input")
         initial_value = input_element.get_attribute("value")
         assert initial_value == "", initial_value

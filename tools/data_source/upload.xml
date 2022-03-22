@@ -1,7 +1,13 @@
 <?xml version="1.0"?>
-<tool name="Upload File" id="upload1" version="1.1.6" workflow_compatible="false" profile="16.04">
+<tool name="Upload File" id="upload1" version="1.1.7" workflow_compatible="false" profile="16.04">
   <description>from your computer</description>
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
+  <edam_operations>
+    <edam_operation>operation_0224</edam_operation>
+  </edam_operations>
+  <configfiles>
+    <file_sources filename="file_sources.json" />
+  </configfiles>
   <command>
     python '$__tool_directory__/upload.py' '$GALAXY_ROOT_DIR' '$GALAXY_DATATYPES_CONF_FILE' '$paramfile'
     #set $outnum = 0

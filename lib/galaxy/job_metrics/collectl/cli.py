@@ -12,7 +12,7 @@ MODE_RECORD = "record"
 MODE_PLAYBACK = "playback"
 
 
-class CollectlCli(object):
+class CollectlCli:
     """
     Abstraction over (some of) the command-line arguments of collectl.
     Ideally this will be useful for building up command line arguments for
@@ -69,30 +69,30 @@ class CollectlCli(object):
         if self.mode == MODE_RECORD:
             mode_arg = ""
         elif self.mode == MODE_PLAYBACK:
-            mode_arg = "-P -p '%s'" % playback_path
+            mode_arg = f"-P -p '{playback_path}'"
         else:
-            raise Exception("Invalid mode supplied to CollectlCli - %s" % self.mode)
+            raise Exception(f"Invalid mode supplied to CollectlCli - {self.mode}")
         command_args["mode_arg"] = mode_arg
         command_args["interval_arg"] = self.__interval_arg(kwargs)
         destination = kwargs.get("destination_path", None)
         if destination:
-            destination_arg = "-f '%s'" % destination
+            destination_arg = f"-f '{destination}'"
         else:
             destination_arg = ""
         command_args["destination_arg"] = destination_arg
         procfilt = kwargs.get("procfilt", None)
-        command_args["procfilt_arg"] = "" if not procfilt else "--procfilt %s" % procfilt
+        command_args["procfilt_arg"] = "" if not procfilt else f"--procfilt {procfilt}"
         command_args["subsystems_arg"] = self.__subsystems_arg(kwargs.get("subsystems", []))
         flush = kwargs.get("flush", None)
-        command_args["flush_arg"] = "--flush %s" % flush if flush else ""
+        command_args["flush_arg"] = f"--flush {flush}" if flush else ""
         sep = kwargs.get("sep", None)
-        command_args["sep_arg"] = "--sep=%s" % sep if sep else ""
+        command_args["sep_arg"] = f"--sep={sep}" if sep else ""
 
         self.command_args = command_args
 
     def __subsystems_arg(self, subsystems):
         if subsystems:
-            return "-s%s" % "".join(s.command_line_arg for s in subsystems)
+            return f"-s{''.join(s.command_line_arg for s in subsystems)}"
         else:
             return ""
 
@@ -105,37 +105,37 @@ class CollectlCli(object):
             return ""
 
         self.__validate_interval_arg(interval)
-        interval_arg = "-i %s" % interval
+        interval_arg = f"-i {interval}"
         interval2 = kwargs.get("interval2", None)
         if not interval2:
             return interval_arg
         self.__validate_interval_arg(interval2, multiple_of=int(interval))
-        interval_arg = "%s:%s" % (interval_arg, interval2)
+        interval_arg = f"{interval_arg}:{interval2}"
 
         interval3 = kwargs.get("interval3", None)
         if not interval3:
             return interval_arg
         self.__validate_interval_arg(interval3, multiple_of=int(interval))
-        interval_arg = "%s:%s" % (interval_arg, interval3)
+        interval_arg = f"{interval_arg}:{interval3}"
         return interval_arg
 
     def __validate_interval_arg(self, value, multiple_of=None):
         if value and not str(value).isdigit():
-            raise Exception("Invalid interval argument supplied, must be integer %s" % value)
+            raise Exception(f"Invalid interval argument supplied, must be integer {value}")
         if multiple_of:
             if int(value) % multiple_of != 0:
-                raise Exception("Invalid interval argument supplied, must multiple of %s" % multiple_of)
+                raise Exception(f"Invalid interval argument supplied, must multiple of {multiple_of}")
 
     def build_command_line(self):
         return COMMAND_LINE_TEMPLATE.substitute(**self.command_args)
 
     def run(self, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         command_line = self.build_command_line()
-        log.info("Executing %s" % command_line)
+        log.info(f"Executing {command_line}")
         proc = subprocess.Popen(command_line, shell=True, stdout=stdout, stderr=stderr)
         return_code = proc.wait()
         if return_code:
             raise Exception("Problem running collectl command.")
 
 
-__all__ = ('CollectlCli', )
+__all__ = ("CollectlCli",)

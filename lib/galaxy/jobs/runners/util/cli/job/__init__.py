@@ -3,23 +3,33 @@ Abstract base class for cli job plugins.
 """
 from abc import (
     ABCMeta,
-    abstractmethod
+    abstractmethod,
 )
+from enum import Enum
 
-import six
+try:
+    from galaxy.model import Job
+
+    job_states = Job.states
+except ImportError:
+
+    # Not in Galaxy, map Galaxy job states to Pulsar ones.
+    class job_states(str, Enum):  # type: ignore[no-redef]
+        RUNNING = "running"
+        OK = "complete"
+        QUEUED = "queued"
+        ERROR = "failed"
 
 
-@six.add_metaclass(ABCMeta)
-class BaseJobExec(object):
-
-    @abstractmethod
+class BaseJobExec(metaclass=ABCMeta):
     def __init__(self, **params):
         """
         Constructor for CLI job executor.
         """
+        self.params = params.copy()
 
     def job_script_kwargs(self, ofile, efile, job_name):
-        """ Return extra keyword argument for consumption by job script
+        """Return extra keyword argument for consumption by job script
         module.
         """
         return {}
@@ -73,3 +83,9 @@ class BaseJobExec(object):
         Parses the failure reason, assigning it against a
         """
         return None
+
+
+__all__ = (
+    "BaseJobExec",
+    "job_states",
+)

@@ -6,12 +6,12 @@ import math
 from galaxy.util.topsort import (
     CycleError,
     topsort,
-    topsort_levels
+    topsort_levels,
 )
 
 
 def attach_ordered_steps(workflow, steps):
-    """ Attempt to topologically order steps and attach to workflow. If this
+    """Attempt to topologically order steps and attach to workflow. If this
     fails - the workflow contains cycles so it mark it as such.
     """
     ordered_steps = order_workflow_steps(steps)
@@ -30,10 +30,10 @@ def order_workflow_steps(steps):
     """
     position_data_available = True
     for step in steps:
-        if not step.position or 'left' not in step.position or 'top' not in step.position:
+        if not step.position or "left" not in step.position or "top" not in step.position:
             position_data_available = False
     if position_data_available:
-        steps.sort(key=lambda _: math.sqrt(_.position['left'] ** 2 + _.position['top'] ** 2))
+        steps.sort(key=lambda _: math.sqrt(_.position["left"] ** 2 + _.position["top"] ** 2))
     try:
         edges = sorted(edgelist_for_workflow_steps(steps))
         node_order = topsort(edges)
@@ -44,11 +44,11 @@ def order_workflow_steps(steps):
 
 def edgelist_for_workflow_steps(steps):
     """
-    Create a list of tuples representing edges between ``WorkflowSteps`` based
-    on associated ``WorkflowStepConnection``s
+    Create a list of tuples representing edges between ``WorkflowStep`` s based
+    on associated ``WorkflowStepConnection`` s
     """
     edges = []
-    steps_to_index = dict((step, i) for i, step in enumerate(steps))
+    steps_to_index = {step: i for i, step in enumerate(steps)}
     for step in steps:
         edges.append((steps_to_index[step], steps_to_index[step]))
         for conn in step.input_connections:

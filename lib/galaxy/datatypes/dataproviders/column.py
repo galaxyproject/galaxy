@@ -4,8 +4,7 @@ is further subdivided into multiple data (e.g. columns from a line).
 """
 import logging
 import re
-
-from six.moves.urllib.parse import unquote_plus
+from urllib.parse import unquote_plus
 
 from . import line
 
@@ -32,57 +31,66 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
     the same number of columns as the number of indeces asked for (even if they
     are filled with None).
     """
+
     settings = {
-        'indeces'       : 'list:int',
-        'column_count'  : 'int',
-        'column_types'  : 'list:str',
-        'parse_columns' : 'bool',
-        'deliminator'   : 'str',
-        'filters'       : 'list:str'
+        "indeces": "list:int",
+        "column_count": "int",
+        "column_types": "list:str",
+        "parse_columns": "bool",
+        "deliminator": "str",
+        "filters": "list:str",
     }
 
-    def __init__(self, source, indeces=None,
-                 column_count=None, column_types=None, parsers=None, parse_columns=True,
-                 deliminator='\t', filters=None, **kwargs):
+    def __init__(
+        self,
+        source,
+        indeces=None,
+        column_count=None,
+        column_types=None,
+        parsers=None,
+        parse_columns=True,
+        deliminator="\t",
+        filters=None,
+        **kwargs,
+    ):
         """
+
         :param indeces: a list of indeces of columns to gather from each row
-            Optional: will default to `None`.
-            If `None`, this provider will return all rows (even when a
-                particular row contains more/less than others).
-            If a row/line does not contain an element at a given index, the
-                provider will-return/fill-with a `None` value as the element.
+                        Optional: will default to `None`.
+                        If `None`, this provider will return all rows (even when a
+                        particular row contains more/less than others).
+                        If a row/line does not contain an element at a given index, the
+                        provider will-return/fill-with a `None` value as the element.
         :type indeces: list or None
 
         :param column_count: an alternate means of defining indeces, use an int
-            here to effectively provide the first N columns.
-            Optional: will default to `None`.
+                             here to effectively provide the first N columns.
+                             Optional: will default to `None`.
         :type column_count: int
 
         :param column_types: a list of string names of types that the
-            provider will use to look up an appropriate parser for the column.
-            (e.g. 'int', 'float', 'str', 'bool')
-            Optional: will default to parsing all columns as strings.
+                             provider will use to look up an appropriate parser for the column.
+                             (e.g. 'int', 'float', 'str', 'bool')
+                             Optional: will default to parsing all columns as strings.
         :type column_types: list of strings
 
         :param parsers: a dictionary keyed with column type strings
-            and with values that are functions to use when parsing those
-            types.
-            Optional: will default to using the function `_get_default_parsers`.
+                        and with values that are functions to use when parsing those
+                        types.
+                        Optional: will default to using the function `_get_default_parsers`.
         :type parsers: dictionary
 
-        :param parse_columns: attempt to parse columns?
-            Optional: defaults to `True`.
+        :param parse_columns: attempt to parse columns? Optional: defaults to `True`.
         :type parse_columns: bool
 
-        :param deliminator: character(s) used to split each row/line of the source.
-            Optional: defaults to the tab character.
+        :param deliminator: character(s) used to split each row/line of the source. Optional: defaults to the tab character.
         :type deliminator: str
 
         .. note:: that the subclass constructors are passed kwargs - so they're
-            params (limit, offset, etc.) are also applicable here.
+                  params (limit, offset, etc.) are also applicable here.
         """
         # TODO: other columnar formats: csv, etc.
-        super(ColumnarDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
 
         # IMPLICIT: if no indeces, column_count, or column_types passed: return all columns
         self.selected_column_indeces = indeces
@@ -116,7 +124,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
                 self.column_filters.append(parsed)
 
     def parse_filter(self, filter_param_str):
-        split = filter_param_str.split('-', 2)
+        split = filter_param_str.split("-", 2)
         if not len(split) >= 3:
             return None
         column, op, val = split
@@ -125,11 +133,11 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         column = int(column)
         if column > len(self.column_types):
             return None
-        if self.column_types[column] in ('float', 'int'):
+        if self.column_types[column] in ("float", "int"):
             return self.create_numeric_filter(column, op, val)
-        if self.column_types[column] in ('str'):
+        if self.column_types[column] in ("str"):
             return self.create_string_filter(column, op, val)
-        if self.column_types[column] in ('list'):
+        if self.column_types[column] in ("list"):
             return self.create_list_filter(column, op, val)
         return None
 
@@ -155,17 +163,17 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             val = float(val)
         except ValueError:
             return None
-        if 'lt' == op:
+        if "lt" == op:
             return lambda d: d[column] < val
-        elif 'le' == op:
+        elif "le" == op:
             return lambda d: d[column] <= val
-        elif 'eq' == op:
+        elif "eq" == op:
             return lambda d: d[column] == val
-        elif 'ne' == op:
+        elif "ne" == op:
             return lambda d: d[column] != val
-        elif 'ge' == op:
+        elif "ge" == op:
             return lambda d: d[column] >= val
-        elif 'gt' == op:
+        elif "gt" == op:
             return lambda d: d[column] > val
         return None
 
@@ -182,11 +190,11 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         - has: the column contains the substring `val`
         - re: the column matches the regular expression in `val`
         """
-        if 'eq' == op:
+        if "eq" == op:
             return lambda d: d[column] == val
-        elif 'has' == op:
+        elif "has" == op:
             return lambda d: val in d[column]
-        elif 're' == op:
+        elif "re" == op:
             val = unquote_plus(val)
             val = re.compile(val)
             return lambda d: val.match(d[column]) is not None
@@ -204,10 +212,10 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         - eq: the list `val` exactly matches the list in the column
         - has: the list in the column contains the sublist `val`
         """
-        if 'eq' == op:
-            val = self.parse_value(val, 'list')
+        if "eq" == op:
+            val = self.parse_value(val, "list")
             return lambda d: d[column] == val
-        elif 'has' == op:
+        elif "has" == op:
             return lambda d: val in d[column]
         return None
 
@@ -225,10 +233,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         # TODO: move to module level (or datatypes, util)
         return {
             # str is default and not needed here
-            'int'   : int,
-            'float' : float,
-            'bool'  : bool,
-
+            "int": int,
+            "float": float,
+            "bool": bool,
             # unfortunately, 'list' is used in dataset metadata both for
             #   query style maps (9th col gff) AND comma-sep strings.
             #   (disabled for now)
@@ -237,12 +244,9 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             # i don't like how urlparses does sub-lists...
             # 'querystr' : lambda v: dict([ ( p.split( '=', 1 ) if '=' in p else ( p, True ) )
             #                              for p in v.split( ';', 1 ) ])
-
             # 'scifloat': #floating point which may be in scientific notation
-
             # always with the 1 base, biologists?
             # 'int1'  : ( lambda i: int( i ) - 1 ),
-
             # 'gffval': string or '.' for None
             # 'gffint': # int or '.' for None
             # 'gffphase': # 0, 1, 2, or '.' for None
@@ -250,7 +254,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
         }
 
     def filter(self, line):
-        line = super(ColumnarDataProvider, self).filter(line)
+        line = super().filter(line)
         if line is None:
             return line
         columns = self.parse_columns_from_line(line)
@@ -292,7 +296,7 @@ class ColumnarDataProvider(line.RegexLineDataProvider):
             or `value` if no `type` found in `parsers`
             or `None` if there was a parser error (ValueError)
         """
-        if type == 'str' or type is None:
+        if type == "str" or type is None:
             return val
         try:
             return self.parsers[type](val)
@@ -334,8 +338,9 @@ class DictDataProvider(ColumnarDataProvider):
     .. note:: The subclass constructors are passed kwargs - so their
         params (limit, offset, etc.) are also applicable here.
     """
+
     settings = {
-        'column_names'  : 'list:str',
+        "column_names": "list:str",
     }
 
     def __init__(self, source, column_names=None, **kwargs):
@@ -347,11 +352,11 @@ class DictDataProvider(ColumnarDataProvider):
         :type column_names:
         """
         # TODO: allow passing in a map instead of name->index { 'name1': index1, ... }
-        super(DictDataProvider, self).__init__(source, **kwargs)
+        super().__init__(source, **kwargs)
         self.column_names = column_names or []
 
     def __iter__(self):
-        parent_gen = super(DictDataProvider, self).__iter__()
+        parent_gen = super().__iter__()
         for column_values in parent_gen:
             map = dict(zip(self.column_names, column_values))
             yield map

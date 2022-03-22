@@ -2,19 +2,19 @@ import logging
 
 from galaxy import (
     util,
-    web
+    web,
 )
 from galaxy.exceptions import (
     AdminRequiredException,
     ObjectNotFound,
-    RequestParameterMissingException
+    RequestParameterMissingException,
 )
 from galaxy.util import pretty_print_time_interval
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
-    require_admin as require_admin
 )
+from galaxy.web import require_admin as require_admin
 from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
 
@@ -25,11 +25,11 @@ class GroupsController(BaseAPIController):
     """RESTful controller for interactions with groups in the Tool Shed."""
 
     def __init__(self, app):
-        super(GroupsController, self).__init__(app)
+        super().__init__(app)
         self.group_manager = groups.GroupManager()
 
     def __get_value_mapper(self, trans):
-        value_mapper = {'id' : trans.security.encode_id}
+        value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
     @expose_api_anonymous_and_sessionless
@@ -45,7 +45,7 @@ class GroupsController(BaseAPIController):
         group_dicts = []
         deleted = util.asbool(deleted)
         if deleted and not trans.user_is_admin:
-            raise AdminRequiredException('Only administrators can query deleted groups.')
+            raise AdminRequiredException("Only administrators can query deleted groups.")
         for group in self.group_manager.list(trans, deleted):
             group_dicts.append(self._populate(trans, group))
         return group_dicts
@@ -65,15 +65,17 @@ class GroupsController(BaseAPIController):
         Content-Disposition: form-data; name="name" Group_Name
         Content-Disposition: form-data; name="description" Group_Description
         """
-        group_dict = dict(message='', status='ok')
-        name = payload.get('name', '')
+        group_dict = dict(message="", status="ok")
+        name = payload.get("name", "")
         if name:
-            description = payload.get('description', '')
+            description = payload.get("description", "")
             if not description:
-                description = ''
+                description = ""
             else:
                 # TODO add description field to the model
-                group_dict = self.group_manager.create(trans, name=name).to_dict(view='element', value_mapper=self.__get_value_mapper(trans))
+                group_dict = self.group_manager.create(trans, name=name).to_dict(
+                    view="element", value_mapper=self.__get_value_mapper(trans)
+                )
         else:
             raise RequestParameterMissingException('Missing required parameter "name".')
         return group_dict
@@ -91,7 +93,7 @@ class GroupsController(BaseAPIController):
         decoded_id = trans.security.decode_id(encoded_id)
         group = self.group_manager.get(trans, decoded_id)
         if group is None:
-            raise ObjectNotFound('Unable to locate group record for id %s.' % (str(encoded_id)))
+            raise ObjectNotFound(f"Unable to locate group record for id {str(encoded_id)}.")
         return self._populate(trans, group)
 
     def _populate(self, trans, group):
@@ -100,19 +102,21 @@ class GroupsController(BaseAPIController):
         and add other characteristics like members and repositories.
         """
         model = trans.app.model
-        group_dict = group.to_dict(view='collection', value_mapper=self.__get_value_mapper(trans))
+        group_dict = group.to_dict(view="collection", value_mapper=self.__get_value_mapper(trans))
         group_members = []
         group_repos = []
         total_downloads = 0
         for uga in group.users:
             user = trans.sa_session.query(model.User).filter(model.User.table.c.id == uga.user_id).one()
             user_repos_count = 0
-            for repo in trans.sa_session.query(model.Repository) \
-                    .filter(model.Repository.table.c.user_id == uga.user_id) \
-                    .join(model.RepositoryMetadata.table) \
-                    .join(model.User.table) \
-                    .outerjoin(model.RepositoryCategoryAssociation.table) \
-                    .outerjoin(model.Category.table):
+            for repo in (
+                trans.sa_session.query(model.Repository)
+                .filter(model.Repository.table.c.user_id == uga.user_id)
+                .join(model.RepositoryMetadata.table)
+                .join(model.User.table)
+                .outerjoin(model.RepositoryCategoryAssociation.table)
+                .outerjoin(model.Category.table)
+            ):
                 categories = []
                 for rca in repo.categories:
                     cat_dict = dict(name=rca.category.name, id=trans.app.security.encode_id(rca.category.id))
@@ -121,36 +125,49 @@ class GroupsController(BaseAPIController):
                 time_repo_updated_full = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
                 time_repo_created = pretty_print_time_interval(repo.create_time, True)
                 time_repo_updated = pretty_print_time_interval(repo.update_time, True)
-                approved = ''
+                approved = ""
                 ratings = []
                 for review in repo.reviews:
                     if review.rating:
                         ratings.append(review.rating)
-                    if review.approved == 'yes':
-                        approved = 'yes'
+                    if review.approved == "yes":
+                        approved = "yes"
                 # TODO add user ratings
-                ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ''
+                ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ""
                 total_downloads += repo.times_downloaded
-                group_repos.append({'name': repo.name,
-                                    'times_downloaded': repo.times_downloaded,
-                                    'owner': repo.user.username,
-                                    'time_created_full': time_repo_created_full,
-                                    'time_created': time_repo_created,
-                                    'time_updated_full': time_repo_updated_full,
-                                    'time_updated': time_repo_updated,
-                                    'description': repo.description,
-                                    'approved': approved,
-                                    'ratings_mean': ratings_mean,
-                                    'categories' : categories})
+                group_repos.append(
+                    {
+                        "name": repo.name,
+                        "times_downloaded": repo.times_downloaded,
+                        "owner": repo.user.username,
+                        "time_created_full": time_repo_created_full,
+                        "time_created": time_repo_created,
+                        "time_updated_full": time_repo_updated_full,
+                        "time_updated": time_repo_updated,
+                        "description": repo.description,
+                        "approved": approved,
+                        "ratings_mean": ratings_mean,
+                        "categories": categories,
+                    }
+                )
                 user_repos_count += 1
             encoded_user_id = trans.app.security.encode_id(user.id)
-            user_repos_url = web.url_for(controller='repository', action='browse_repositories_by_user', user_id=encoded_user_id)
+            user_repos_url = web.url_for(
+                controller="repository", action="browse_repositories_by_user", user_id=encoded_user_id
+            )
             time_created = pretty_print_time_interval(user.create_time, True)
-            member_dict = {'id': encoded_user_id, 'username': user.username, 'user_repos_url': user_repos_url, 'user_repos_count': user_repos_count, 'user_tools_count': 'unknown', 'time_created': time_created}
+            member_dict = {
+                "id": encoded_user_id,
+                "username": user.username,
+                "user_repos_url": user_repos_url,
+                "user_repos_count": user_repos_count,
+                "user_tools_count": "unknown",
+                "time_created": time_created,
+            }
             group_members.append(member_dict)
-        group_dict['members'] = group_members
-        group_dict['total_members'] = len(group_members)
-        group_dict['repositories'] = group_repos
-        group_dict['total_repos'] = len(group_repos)
-        group_dict['total_downloads'] = total_downloads
+        group_dict["members"] = group_members
+        group_dict["total_members"] = len(group_members)
+        group_dict["repositories"] = group_repos
+        group_dict["total_repos"] = len(group_repos)
+        group_dict["total_downloads"] = total_downloads
         return group_dict

@@ -19,18 +19,18 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 def stop_err(msg):
-    sys.exit("%s" % msg)
+    sys.exit(f"{msg}")
 
 
 def __main__():
     infile_name = sys.argv[1]
     fastq_block_lines = 0
-    seq_title_startswith = ''
+    seq_title_startswith = ""
 
-    with open(infile_name) as fh, open(sys.argv[2], 'w') as outfile:
+    with open(infile_name) as fh, open(sys.argv[2], "w") as outfile:
         for i, line in enumerate(fh):
             line = line.rstrip()  # eliminate trailing space and new line characters
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
             fastq_block_lines = (fastq_block_lines + 1) % 4
             line_startswith = line[0:1]
@@ -39,11 +39,11 @@ def __main__():
                 if not seq_title_startswith:
                     seq_title_startswith = line_startswith
                 if seq_title_startswith != line_startswith:
-                    stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
-                outfile.write('>%s\n' % line[1:])
+                    stop_err("Invalid fastqsolexa format at line %d: %s." % (i + 1, line))
+                outfile.write(f">{line[1:]}\n")
             elif fastq_block_lines == 2:
                 # line 2 is nucleotides
-                outfile.write('%s\n' % line)
+                outfile.write(f"{line}\n")
             else:
                 pass
 

@@ -1,6 +1,9 @@
-""" Tests for the tool data API.
+"""Tests for the tool data API.
+
+The tests for the DELETE endpoint can be found in the
+integration tests directory (tests/integration/test_tool_data_delete.py)
+since these tests can mutate the server config state.
 """
-from __future__ import print_function
 
 import operator
 
@@ -8,7 +11,6 @@ from ._framework import ApiTestCase
 
 
 class ToolDataApiTestCase(ApiTestCase):
-
     def test_admin_only(self):
         index_response = self._get("tool_data", admin=False)
         self._assert_status_code_is(index_response, 403)
@@ -37,7 +39,7 @@ class ToolDataApiTestCase(ApiTestCase):
         field = show_field_response.json()
         self._assert_has_keys(field, "files", "name", "fields", "fingerprint", "base_dir")
         files = field["files"]
-        assert len(files) == 2, "Length of files [%s] was not 2." % files
+        assert len(files) == 2, f"Length of files [{files}] was not 2."
 
     def test_download_field_file(self):
         show_field_response = self._get("tool_data/testalpha/fields/data1/files/entry.txt", admin=True)
@@ -45,32 +47,39 @@ class ToolDataApiTestCase(ApiTestCase):
         content = show_field_response.text
         assert content == "This is data 1.", content
 
-    # Following test case rendered invalid by the fix in
-    # https://github.com/galaxyproject/galaxy/commit/48f77dc742acf01ddbafafcc4634e69378f1f020#diff-bfb557a99c1f7d646d4968d8d680b885R154.
-    # TODO: Restore the test case when test framework allows actions from
-    # admin users.
+    def test_reload(self):
+        show_response = self._get("tool_data/test_fasta_indexes/reload", admin=True)
+        self._assert_status_code_is(show_response, 200)
+        print(show_response.content)
+        data_table = show_response.json()
+        assert data_table["columns"] == ["value", "dbkey", "name", "path"]
 
-    # def test_delete_entry(self):
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     original_count = len(show_response.json()["fields"])
+    def test_show_unknown_raises_404(self):
+        show_response = self._get("tool_data/unknown", admin=True)
+        self._assert_status_code_is(show_response, 404)
 
-    #     dataset_populator = DatasetPopulator( self.galaxy_interactor )
-    #     history_id = dataset_populator.new_history()
-    #     payload = dataset_populator.run_tool_payload(
-    #         tool_id="data_manager",
-    #         inputs={"ignored_value": "moo"},
-    #         history_id=history_id,
-    #     )
-    #     create_response = self._post( "tools", data=payload )
-    #     self._assert_status_code_is( create_response, 200 )
-    #     dataset_populator.wait_for_history( history_id, assert_ok=True )
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     updated_fields = show_response.json()["fields"]
-    #     assert len(updated_fields) == original_count + 1
-    #     field0 = updated_fields[0]
-    #     url = self._api_url( "tool_data/testbeta?key=%s" % self.galaxy_interactor.master_api_key )
-    #     delete( url, data=json.dumps({"values": "\t".join(field0)}) )
+    def test_show_unknown_field_raises_404(self):
+        show_response = self._get("tool_data/testalpha/fields/unknown", admin=True)
+        self._assert_status_code_is(show_response, 404)
 
-    #     show_response = self._get( "tool_data/testbeta", admin=True )
-    #     updated_fields = show_response.json()["fields"]
-    #     assert len(updated_fields) == original_count
+    def test_reload_unknown_raises_404(self):
+        show_response = self._get("tool_data/unknown/reload", admin=True)
+        self._assert_status_code_is(show_response, 404)
+
+    def test_download_field_unknown_file_raises_404(self):
+        show_field_response = self._get("tool_data/testalpha/fields/data1/files/unknown.txt", admin=True)
+        self._assert_status_code_is(show_field_response, 404)
+
+    def test_delete_without_payload_raises_400(self):
+        delete_response = self._delete("tool_data/testbeta", admin=True)
+        self._assert_status_code_is(delete_response, 400)
+
+    def test_delete_without_values_raises_400(self):
+        payload = {"unknown": "test"}
+        delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
+        self._assert_status_code_is(delete_response, 400)
+
+    def test_delete_with_wrong_values_raises_400(self):
+        payload = {"values": "wrong"}
+        delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
+        self._assert_status_code_is(delete_response, 400)

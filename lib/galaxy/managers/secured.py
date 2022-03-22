@@ -3,16 +3,26 @@ Accessible models can be read and copied but not modified or deleted.
 
 Owned models can be modified and deleted.
 """
+from typing import Type
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
 
 
-class AccessibleManagerMixin(object):
+class AccessibleManagerMixin:
     """
     A security interface to check if a User can read/view an item's.
 
     This can also be thought of as 'read but not modify' privileges.
     """
+
+    # declare what we are using from base ModelManager
+    model_class: Type[model._HasTable]
+
+    def by_id(self, id: int):
+        ...
 
     # don't want to override by_id since consumers will also want to fetch w/o any security checks
     def is_accessible(self, item, user, **kwargs):
@@ -40,7 +50,7 @@ class AccessibleManagerMixin(object):
         """
         if self.is_accessible(item, user, **kwargs):
             return item
-        raise exceptions.ItemAccessibilityException("%s is not accessible by user" % (self.model_class.__name__))
+        raise exceptions.ItemAccessibilityException(f"{self.model_class.__name__} is not accessible by user")
 
     # TODO:?? are these even useful?
     def list_accessible(self, user, **kwargs):
@@ -65,7 +75,7 @@ class AccessibleManagerMixin(object):
         # return filter( lambda item: self.is_accessible( trans, item, user ), items )
 
 
-class OwnableManagerMixin(object):
+class OwnableManagerMixin:
     """
     A security interface to check if a User is an item's owner.
 
@@ -74,6 +84,12 @@ class OwnableManagerMixin(object):
 
     This can also be thought of as write/edit privileges.
     """
+
+    # declare what we are using from base ModelManager
+    model_class: Type[model._HasTable]
+
+    def by_id(self, id: int):
+        ...
 
     def is_owner(self, item, user, **kwargs):
         """
@@ -100,7 +116,7 @@ class OwnableManagerMixin(object):
         """
         if self.is_owner(item, user, **kwargs):
             return item
-        raise exceptions.ItemOwnershipException("%s is not owned by user" % (self.model_class.__name__))
+        raise exceptions.ItemOwnershipException(f"{self.model_class.__name__} is not owned by user")
 
     def list_owned(self, user, **kwargs):
         """

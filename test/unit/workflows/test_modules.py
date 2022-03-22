@@ -1,14 +1,25 @@
 import json
-from collections import namedtuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Tuple,
+    Union,
+)
+from unittest import mock
 
-import mock
 import pytest
 
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.util import bunch
 from galaxy.workflow import modules
-from .workflow_support import MockTrans, yaml_to_model
+from .workflow_support import (
+    MockTrans,
+    yaml_to_model,
+)
 
 
 def test_input_has_no_errors():
@@ -55,7 +66,9 @@ def test_data_input_compute_runtime_state_args():
     hda = model.HistoryDatasetAssociation()
     with mock.patch("galaxy.workflow.modules.check_param") as check_method:
         check_method.return_value = (hda, None)
-        state, errors = module.compute_runtime_state(module.trans, module.test_step, {"input": 4, "tool_state": tool_state})
+        state, errors = module.compute_runtime_state(
+            module.trans, module.test_step, {"input": 4, "tool_state": tool_state}
+        )
     assert not errors
     assert "input" in state.inputs
     assert state.inputs["input"] is hda
@@ -73,16 +86,20 @@ def test_data_input_connections():
 
 def test_data_collection_input_default_state():
     trans = MockTrans()
-    module = modules.module_factory.from_dict(trans, {"type": "data_collection_input", "label": "Input Dataset Collection"})
+    module = modules.module_factory.from_dict(
+        trans, {"type": "data_collection_input", "label": "Input Dataset Collection"}
+    )
     __assert_has_runtime_input(module, label="Input Dataset Collection", collection_type="list")
 
 
 def test_data_input_collection_modified_state():
-    module = __from_state({
-        "type": "data_collection_input",
-        "label": "Cool Input Collection",
-        "tool_state": json.dumps({"collection_type": "list:paired"}),
-    })
+    module = __from_state(
+        {
+            "type": "data_collection_input",
+            "label": "Cool Input Collection",
+            "tool_state": json.dumps({"collection_type": "list:paired"}),
+        }
+    )
     __assert_has_runtime_input(module, label="Cool Input Collection", collection_type="list:paired")
 
 
@@ -98,12 +115,7 @@ def test_data_input_collection_step_modified_state():
 
 
 def test_data_collection_input_connections():
-    module = __from_step(
-        type="data_collection_input",
-        tool_inputs={
-            "collection_type": "list:paired"
-        }
-    )
+    module = __from_step(type="data_collection_input", tool_inputs={"collection_type": "list:paired"})
     assert len(module.get_data_inputs()) == 0
     outputs = module.get_data_outputs()
     assert len(outputs) == 1
@@ -118,7 +130,7 @@ def test_data_collection_input_config_form():
         type="data_collection_input",
         tool_inputs={
             "collection_type": "list:paired",
-        }
+        },
     )
     result = module.get_config_form()
     assert result["inputs"][0]["value"], "list:paired"
@@ -224,7 +236,7 @@ def test_subworkflow_new_inputs():
 def test_subworkflow_new_inputs_collection_type():
     subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKLFOW_YAML)
     inputs = subworkflow_module.get_data_inputs()
-    assert inputs[0]['collection_type'] == 'list:list'
+    assert inputs[0]["collection_type"] == "list:list"
 
 
 def test_subworkflow_new_outputs():
@@ -233,27 +245,33 @@ def test_subworkflow_new_outputs():
     assert len(outputs) == 2, len(outputs)
     output1, output2 = outputs
     assert output1["name"] == "out1"
-    assert output1["label"] == "out1"
     assert output1["extensions"] == ["input"]
     assert output2["name"] == "4:out_file1", output2["name"]
-    assert output2["label"] == "4:out_file1", output2["label"]
+
+
+class MapOverTestCase(NamedTuple):
+    data_input: str
+    step_input_def: Union[str, List[str]]
+    step_output_def: str
+    expected_collection_type: Optional[str]
+    steps: Dict[int, Any]
 
 
 def _construct_steps_for_map_over():
-    test_case = namedtuple('MapOverTestCase', 'data_input step_input_def step_output_def expected_collection_type steps')
+    test_case = MapOverTestCase
     # these are the cartesian product of
     # data_input = ['dataset', 'list', 'list:pair', 'list:list']
     # step_input_definition = ['dataset', 'dataset_multiple', 'list', ['list', 'pair']]
     # step_output_definition = ['dataset', 'list', 'list:list']
     # list(itertools.product(data_input, step_input_definition, step_output_definition, [None])),
     # with the last item filled in manually
-    test_case_args = [
-        ('dataset', 'dataset', 'dataset', None),
-        ('dataset', 'dataset', 'list', 'list'),
-        ('dataset', 'dataset', 'list:list', 'list:list'),
-        ('dataset', 'dataset_multiple', 'dataset', None),
-        ('dataset', 'dataset_multiple', 'list', 'list'),
-        ('dataset', 'dataset_multiple', 'list:list', 'list:list'),
+    test_case_args: List[Tuple[str, Union[str, List[str]], str, Optional[str]]] = [
+        ("dataset", "dataset", "dataset", None),
+        ("dataset", "dataset", "list", "list"),
+        ("dataset", "dataset", "list:list", "list:list"),
+        ("dataset", "dataset_multiple", "dataset", None),
+        ("dataset", "dataset_multiple", "list", "list"),
+        ("dataset", "dataset_multiple", "list:list", "list:list"),
         # Can't feed a dataset into a list or pair input
         # ('dataset', 'list', 'dataset', None),
         # ('dataset', 'list', 'list', None),
@@ -261,21 +279,21 @@ def _construct_steps_for_map_over():
         # ('dataset', ['list', 'pair'], 'dataset', None),
         # ('dataset', ['list', 'pair'], 'list', None),
         # ('dataset', ['list', 'pair'], 'list:list', None),
-        ('list', 'dataset', 'dataset', 'list'),
-        ('list', 'dataset', 'list', 'list:list'),
-        ('list', 'dataset', 'list:list', 'list:list:list'),
-        ('list', 'dataset_multiple', 'dataset', None),
-        ('list', 'dataset_multiple', 'list', 'list'),
-        ('list', 'dataset_multiple', 'list:list', 'list:list'),
-        ('list', 'list', 'dataset', None),
-        ('list', 'list', 'list', 'list'),
-        ('list', 'list', 'list:list', 'list:list'),
-        ('list', ['list', 'pair'], 'dataset', None),
-        ('list', ['list', 'pair'], 'list', 'list'),
-        ('list', ['list', 'pair'], 'list:list', 'list:list'),
-        ('list:pair', 'dataset', 'dataset', 'list:pair'),
-        ('list:pair', 'dataset', 'list', 'list:pair:list'),
-        ('list:pair', 'dataset', 'list:list', 'list:pair:list:list'),
+        ("list", "dataset", "dataset", "list"),
+        ("list", "dataset", "list", "list:list"),
+        ("list", "dataset", "list:list", "list:list:list"),
+        ("list", "dataset_multiple", "dataset", None),
+        ("list", "dataset_multiple", "list", "list"),
+        ("list", "dataset_multiple", "list:list", "list:list"),
+        ("list", "list", "dataset", None),
+        ("list", "list", "list", "list"),
+        ("list", "list", "list:list", "list:list"),
+        ("list", ["list", "pair"], "dataset", None),
+        ("list", ["list", "pair"], "list", "list"),
+        ("list", ["list", "pair"], "list:list", "list:list"),
+        ("list:pair", "dataset", "dataset", "list:pair"),
+        ("list:pair", "dataset", "list", "list:pair:list"),
+        ("list:pair", "dataset", "list:list", "list:pair:list:list"),
         # Pair into multiple="True" is not allowed
         # ('list:pair', 'dataset_multiple', 'dataset', None),
         # ('list:pair', 'dataset_multiple', 'list', None),
@@ -284,27 +302,27 @@ def _construct_steps_for_map_over():
         # ('list:pair', 'list', 'dataset', None),
         # ('list:pair', 'list', 'list', None),
         # ('list:pair', 'list', 'list:list', None),
-        ('list:pair', ['list', 'pair'], 'dataset', 'list'),
-        ('list:pair', ['list', 'pair'], 'list', 'list:list'),
-        ('list:pair', ['list', 'pair'], 'list:list', 'list:list:list'),
-        ('list:list', 'dataset', 'dataset', 'list:list'),
-        ('list:list', 'dataset', 'list', 'list:list:list'),
-        ('list:list', 'dataset', 'list:list', 'list:list:list:list'),
-        ('list:list', 'dataset_multiple', 'dataset', 'list'),
-        ('list:list', 'dataset_multiple', 'list', 'list:list'),
-        ('list:list', 'dataset_multiple', 'list:list', 'list:list:list'),
-        ('list:list', 'list', 'dataset', 'list'),
-        ('list:list', 'list', 'list', 'list:list'),
-        ('list:list', 'list', 'list:list', 'list:list:list'),
-        ('list:list', ['list', 'pair'], 'dataset', 'list'),
-        ('list:list', ['list', 'pair'], 'list', 'list:list'),
-        ('list:list', ['list', 'pair'], 'list:list', 'list:list:list')
+        ("list:pair", ["list", "pair"], "dataset", "list"),
+        ("list:pair", ["list", "pair"], "list", "list:list"),
+        ("list:pair", ["list", "pair"], "list:list", "list:list:list"),
+        ("list:list", "dataset", "dataset", "list:list"),
+        ("list:list", "dataset", "list", "list:list:list"),
+        ("list:list", "dataset", "list:list", "list:list:list:list"),
+        ("list:list", "dataset_multiple", "dataset", "list"),
+        ("list:list", "dataset_multiple", "list", "list:list"),
+        ("list:list", "dataset_multiple", "list:list", "list:list:list"),
+        ("list:list", "list", "dataset", "list"),
+        ("list:list", "list", "list", "list:list"),
+        ("list:list", "list", "list:list", "list:list:list"),
+        ("list:list", ["list", "pair"], "dataset", "list"),
+        ("list:list", ["list", "pair"], "list", "list:list"),
+        ("list:list", ["list", "pair"], "list:list", "list:list:list"),
     ]
     test_cases = []
     for (data_input, step_input_def, step_output_def, expected_collection_type) in test_case_args:
-        steps = {
+        steps: Dict[int, Dict[str, Any]] = {
             0: _input_step(collection_type=data_input),
-            1: _output_step(step_input_def=step_input_def, step_output_def=step_output_def)
+            1: _output_step(step_input_def=step_input_def, step_output_def=step_output_def),
         }
         test_cases.append(
             test_case(
@@ -318,68 +336,70 @@ def _construct_steps_for_map_over():
     return test_cases
 
 
-def _input_step(collection_type):
-    output = {'name': 'output', 'extensions': ['input_collection']}
-    if collection_type != 'dataset':
-        output['collection'] = True
-        output['collection_type'] = collection_type
-    step_type = 'data_colletion_input' if collection_type == 'dataset' else 'data_input'
+def _input_step(collection_type) -> Dict[str, Any]:
+    output: Dict[str, Any] = {"name": "output", "extensions": ["input_collection"]}
+    if collection_type != "dataset":
+        output["collection"] = True
+        output["collection_type"] = collection_type
+    step_type = "data_colletion_input" if collection_type == "dataset" else "data_input"
     return {
-        'id': 0,
-        'type': step_type,
-        'inputs': [],
-        'outputs': [output],
-        'workflow_outputs': [],
-        'input_connections': {},
+        "id": 0,
+        "type": step_type,
+        "inputs": [],
+        "outputs": [output],
+        "workflow_outputs": [],
+        "input_connections": {},
     }
 
 
-def _output_step(step_input_def, step_output_def):
+def _output_step(step_input_def, step_output_def) -> Dict[str, Any]:
     multiple = False
-    if step_input_def in ['dataset', 'dataset_multiple']:
-        input_type = 'dataset'
+    if step_input_def in ["dataset", "dataset_multiple"]:
+        input_type = "dataset"
         collection_types = None
-        if step_input_def == 'dataset_multiple':
+        if step_input_def == "dataset_multiple":
             multiple = True
     else:
-        input_type = 'dataset_collection'
+        input_type = "dataset_collection"
         collection_types = step_input_def if isinstance(step_input_def, list) else [step_input_def]
-    output = {'name': 'output', 'extensions': ['data']}
-    if step_output_def != 'dataset':
-        output['collection'] = True
-        output['collection_type'] = step_output_def
-    input_connection_input = [{'id': 0, 'output_name': 'output', 'input_type': input_type}]
-    if step_input_def == 'dataset':
+    output: Dict[str, Any] = {"name": "output", "extensions": ["data"]}
+    if step_output_def != "dataset":
+        output["collection"] = True
+        output["collection_type"] = step_output_def
+    input_connection_input: Any = [{"id": 0, "output_name": "output", "input_type": input_type}]
+    if step_input_def == "dataset":
         # For whatever reason multiple = False inputs are not wrapped in a list.
         input_connection_input = input_connection_input[0]
     return {
-        'id': 1,
-        'type': 'tool',
-        'inputs': [
-            {'name': 'input',
-             'multiple': multiple,
-             'input_type': input_type,
-             'collection_types': collection_types,
-             'extensions': ['data']
-             }
+        "id": 1,
+        "type": "tool",
+        "inputs": [
+            {
+                "name": "input",
+                "multiple": multiple,
+                "input_type": input_type,
+                "collection_types": collection_types,
+                "extensions": ["data"],
+            }
         ],
-        'input_connections': {'input': input_connection_input},
-        'outputs': [output],
-        'workflow_outputs': [{'output_name': 'output'}]
+        "input_connections": {"input": input_connection_input},
+        "outputs": [output],
+        "workflow_outputs": [{"output_name": "output"}],
     }
 
 
-@pytest.mark.parametrize('test_case', _construct_steps_for_map_over())
+@pytest.mark.parametrize("test_case", _construct_steps_for_map_over())
 def test_subworkflow_map_over_type(test_case):
     trans = MockTrans()
     new_steps = WorkflowContentsManager(app=trans.app)._resolve_collection_type(test_case.steps)
-    assert new_steps[1]['outputs'][0].get('collection_type') == test_case.expected_collection_type, \
-        "Expected collection_type '%s' for a '%s' input module, a '%s' input and a '%s' output, got collection_type '%s' instead" % (
-            test_case.expected_collection_type,
-            test_case.data_input,
-            test_case.step_input_def,
-            test_case.step_output_def,
-            new_steps[1]['outputs'][0].get('collection_type'),
+    assert (
+        new_steps[1]["outputs"][0].get("collection_type") == test_case.expected_collection_type
+    ), "Expected collection_type '{}' for a '{}' input module, a '{}' input and a '{}' output, got collection_type '{}' instead".format(
+        test_case.expected_collection_type,
+        test_case.data_input,
+        test_case.step_input_def,
+        test_case.step_output_def,
+        new_steps[1]["outputs"][0].get("collection_type"),
     )
 
 
@@ -418,9 +438,7 @@ def __from_step(**kwds):
         del kwds["trans"]
     else:
         trans = MockTrans()
-    step = __step(
-        **kwds
-    )
+    step = __step(**kwds)
     injector = modules.WorkflowModuleInjector(trans)
     injector.inject(step, exact_tools=False)
     module = step.module
@@ -447,13 +465,17 @@ def __mock_tool(
         version=version,
         name=id,
         inputs={},
-        outputs={'out_file1': bunch.Bunch(collection=None,
-                                          format='input',
-                                          format_source=None,
-                                          change_format=[],
-                                          filters=[],
-                                          label=None,
-                                          output_type='data')},
+        outputs={
+            "out_file1": bunch.Bunch(
+                collection=None,
+                format="input",
+                format_source=None,
+                change_format=[],
+                filters=[],
+                label=None,
+                output_type="data",
+            )
+        },
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json,
