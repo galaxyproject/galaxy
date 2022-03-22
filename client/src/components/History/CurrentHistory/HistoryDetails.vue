@@ -7,9 +7,8 @@
         @save="$emit('update:currentHistory', $event)">
         <template v-slot:name>
             <h3 data-description="history name display">{{ history.name || "History" }}</h3>
-            <h5 class="history-size">
-                <span v-if="history.size">{{ history.size | niceFileSize }}</span>
-                <span v-else v-localize>(empty)</span>
+            <h5 v-if="history.size" class="history-size mt-1">
+                <span>{{ history.size | niceFileSize }}</span>
             </h5>
         </template>
     </Details>

@@ -16,7 +16,7 @@
         <!-- display annotation, tags -->
         <div v-if="!editing">
             <div v-if="annotation" class="mt-2" data-description="annotation value">{{ annotation }}</div>
-            <StatelessTags v-if="tags" class="tags mt-3" :value="tags" :disabled="true" />
+            <StatelessTags v-if="tags" class="tags mt-2" :value="tags" :disabled="true" />
         </div>
 
         <!-- edit form, change title, annotation, or tags -->
