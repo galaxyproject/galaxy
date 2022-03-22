@@ -15,7 +15,7 @@
 
         <!-- display annotation, tags -->
         <div v-if="!editing">
-            <div v-if="annotation" class="mt-2" data-description="annotation value">{{ annotation }}</div>
+            <div v-if="annotation" class="mt-2" data-description="annotation value" v-short="annotation" />
             <StatelessTags v-if="tags" class="tags mt-2" :value="tags" :disabled="true" />
         </div>
 
@@ -67,10 +67,15 @@
 </template>
 
 <script>
+import short from "components/directives/v-short";
 import { StatelessTags } from "components/Tags";
+
 export default {
     components: {
         StatelessTags,
+    },
+    directives: {
+        short,
     },
     props: {
         name: { type: String, default: null },
