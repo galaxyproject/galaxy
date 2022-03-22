@@ -6,7 +6,7 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
-import { mergeArray } from "./utilities";
+import { getFilterDict, mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -31,10 +31,10 @@ const getters = {
                 if (showHidden == item.visible) {
                     return false;
                 }
-                const filterDict = { name: filterText };
+                const filterDict = getFilterDict(filterText);
                 for (const [key, value] of Object.entries(filterDict)) {
                     const itemValue = String(item[key]);
-                    if (itemValue && !itemValue.includes(value)) {
+                    if (!itemValue.includes(value)) {
                         return false;
                     }
                 }
@@ -44,16 +44,16 @@ const getters = {
         },
 };
 
-const getQueryString = (showDeleted, showHidden) => {
+const getQueryString = (filterText, showDeleted, showHidden) => {
     const deleted = showDeleted ? "True" : "False";
     const visible = showHidden ? "False" : "True";
     return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
 };
 
 const actions = {
-    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, showDeleted, showHidden }) => {
+    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText, showDeleted, showHidden }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
-        const queryString = getQueryString(showDeleted, showHidden);
+        const queryString = getQueryString(filterText, showDeleted, showHidden);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
         await queue.enqueue(urlData, { url }).then((payload) => {
