@@ -28,12 +28,14 @@ export function getFilterDict(filterText) {
         return result;
     }
     let matches = filterText.match(pairSplitRE);
-    if (matches === null && filterText.length > 0) {
+    if (!matches && filterText.length > 0 && !filterText.includes("=")) {
         matches = [`name=${filterText}`];
     }
-    matches.forEach((pair) => {
-        const [field, val] = pair.split("=");
-        result[field] = val.replace(scrubQuotesRE, "");
-    });
+    if (matches) {
+        matches.forEach((pair) => {
+            const [field, value] = pair.split("=");
+            result[field] = value.replace(scrubQuotesRE, "");
+        });
+    }
     return result;
 }

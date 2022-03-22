@@ -47,7 +47,15 @@ const getters = {
 const getQueryString = (filterText, showDeleted, showHidden) => {
     const deleted = showDeleted ? "True" : "False";
     const visible = showHidden ? "False" : "True";
-    return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
+    const filterDict = {
+        ...getFilterDict(filterText),
+        deleted: deleted,
+        visible: visible,
+    };
+    const queryString = Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
+        .join("&");
+    return queryString;
 };
 
 const actions = {
