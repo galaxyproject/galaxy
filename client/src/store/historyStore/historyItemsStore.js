@@ -19,7 +19,7 @@ const state = {
 const getters = {
     getHistoryItems:
         (state) =>
-        ({ historyId, showDeleted, showHidden }) => {
+        ({ historyId, filterText, showDeleted, showHidden }) => {
             const itemArray = state.items[historyId] || [];
             const filtered = itemArray.filter((item) => {
                 if (!item) {
@@ -30,6 +30,13 @@ const getters = {
                 }
                 if (showHidden == item.visible) {
                     return false;
+                }
+                const filterDict = { name: filterText };
+                for (const [key, value] of Object.entries(filterDict)) {
+                    const itemValue = String(item[key]);
+                    if (itemValue && !itemValue.includes(value)) {
+                        return false;
+                    }
                 }
                 return true;
             });
