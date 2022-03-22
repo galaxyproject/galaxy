@@ -1,11 +1,11 @@
-<tool id="interactive_tool_jupytool" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.0.1">
+<tool id="interactive_tool_jupytool" tool_type="interactive" name="Interactive JupyTool and notebook" version="0.0.1" profile="22.01">
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
     <entry_points>
         <entry_point name="JupyTool interactive tool" requires_domain="True">
             <port>8888</port>
-            <url>ipython/lab</url>
+            <url>lab?</url>
         </entry_point>
     </entry_points>
     <environment_variables>
@@ -13,36 +13,61 @@
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
-        <environment_variable name="API_KEY" inject="api_key" />
+        <environment_variable name="API_KEY" inject="api_key"/>
     </environment_variables>
     <configfiles>
-        <inputs name="inputs" filename="galaxy_inputs.json" /> <!-- data_style="paths" /> data_collection doesnt support paths-->
+        <inputs name="inputs" filename="galaxy_inputs.json" data_style="staging_path_and_source_path"/>
+        <configfile name="staging_script" filename="staging_script.py"><![CDATA[
+import json, os, shutil
+import os.path
+galaxy_inputs = "galaxy_inputs.json"
+galaxy_inputs_raw = "galaxy_inputs_raw.json"
+base_staging_path = "jupyter"
+base_data_staging_path = "galaxy_inputs"
+data_staging_path = os.path.join(base_staging_path, base_data_staging_path)
+os.makedirs(data_staging_path, exist_ok=True)
+shutil.copyfile(galaxy_inputs, os.path.join(data_staging_path, galaxy_inputs_raw))
+galaxy_input_dict = {}
+for user_input in json.load(open(galaxy_inputs, "r")).get("user_inputs", []):
+    input_values = user_input['input_type']['input_value']
+    input_name = user_input["input_name"]
+    assert input_name not in galaxy_input_dict, ValueError("Each name can only be used once, but a duplicate was found: %s" % (input_name))
+    if 'dataset' in user_input['input_type']['input_type_selector']:
+        input_values2 = []
+        if not isinstance(input_values, list):
+            input_values = [input_values]
+        for input_value_dict in input_values:
+            path, filename = os.path.split(input_value_dict['staging_path'])
+            input_value_dict2 = {"path": os.path.join(base_data_staging_path, input_name, path, filename), "metadata_files": []}
+            ## TODO: enable passing in all metadata values; ideally just handed off from original json creation
+            path = os.path.join(data_staging_path, input_name, path)
+            os.makedirs(path, exist_ok=True)
+            try:
+                os.symlink(input_value_dict['source_path'], os.path.join(path, filename))
+            except FileExistsError:
+                pass
+            for metadata_value_dict in input_value_dict['metadata_files']:
+                path, filename = os.path.split(metadata_value_dict['staging_path'])
+                input_value_dict2["metadata_files"].append(os.path.join(base_data_staging_path, input_name, path, filename))
+                path = os.path.join(data_staging_path, input_name, path)
+                os.makedirs(path, exist_ok=True)
+                try:
+                    os.symlink(metadata_value_dict['source_path'], os.path.join(path, filename))
+                except FileExistsError:
+                    pass
+            input_values2.append(input_value_dict2)
+        input_values = input_values2
+    galaxy_input_dict[input_name] = input_values
+with open(os.path.join(data_staging_path, galaxy_inputs), "w") as fh:
+    json.dump(galaxy_input_dict, fh)
+]]>
+        </configfile>
     </configfiles>
     <command detect_errors="aggressive"><![CDATA[
-        #import re
+        python staging_script.py &&
         export GALAXY_WORKING_DIR=`pwd` &&
-        mkdir -p ./jupyter/outputs/ &&
-        mkdir -p ./jupyter/data &&
-        mkdir -p ./jupyter/inputs &&
-        cp 'galaxy_inputs.json' './jupyter/inputs/galaxy_inputs.json' &&
-
-        ##set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        ##ln -sf '$input' './jupyter/data/${cleaned_name}' &&
-        #for $user_input in $user_inputs:
-            #if str($user_input.input_type.input_type_selector) == "dataset":
-                ln -sf '${user_input.input_type.input_value}' './jupyter/data/${user_input.input_name}' &&
-            #elif str($user_input.input_type.input_type_selector) == "dataset_multiple":
-                #for $i, $inp in enumerate($user_input.input_type.input_value):
-                    ln -sf '${inp}' './jupyter/data/${i}_${user_input.input_name}' &&
-                #end for
-            #elif str($user_input.input_type.input_type_selector) == "dataset_collection":
-                mkdir -p ./jupyter/data/${user_input.input_name} &&
-                #for $inp in $user_input.input_type.input_value:
-                    #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($inp.element_identifier))
-                    ln -sf '${inp}' './jupyter/data/${user_input.input_name}/${cleaned_name}' &&
-                #end for
-            #end if
-        #end for
+        mkdir -p ./jupyter/outputs/collection &&
+        mkdir -p ./jupyter/galaxy_inputs &&
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
@@ -52,10 +77,10 @@
             ## copy default notebook
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
-            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True --ip='*' --NotebookApp.token='' --NotebookApp.password='' &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
-
         #else:
+            #import re
             #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
             cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
             jupyter trust ./${cleaned_name}.ipynb &&
@@ -63,7 +88,7 @@
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
             #else:
-                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True --ip='*' --NotebookApp.token='' --NotebookApp.password='' &&
             #end if
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
@@ -78,58 +103,125 @@
             <when value="scratch"/>
             <when value="previous">
                 <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
-                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
-                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one." help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
         <repeat name="user_inputs" title="User inputs">
-            <param name="input_name" type="text" value="" optional="False"/>
+            <param name="input_name" type="text" value="" label="Name for parameter" optional="False" help="Required. ASCII letters and numbers only.">
+                <validator type="empty_field" message="Name is required"/>
+                <sanitizer>
+                    <valid initial="string.ascii_letters,string.digits"/>
+                </sanitizer>
+            </param>
+            <param name="description" type="text" label="Additional optional description" optional="true"/>
             <conditional name="input_type">
                 <param name="input_type_selector" type="select" label="Choose the input type">
                     <option value="dataset" selected="true">Dataset</option>
-                    <option value="dataset_multiple">Dataset Multiples</option>
-                    <option value="dataset_collection">Dataset Collection</option>
+                    <option value="dataset_multiple">Multiple datasets</option>
+                    <option value="dataset_collection">Dataset collection</option>
+                    <option value="dataset_collection_list">Dataset collection (list)</option>
+                    <option value="dataset_collection_paired">Dataset collection (paired)</option>
+                    <option value="dataset_collection_list_paired">Dataset collection (list:paired)</option>
                     <option value="text">Text</option>
                     <option value="integer">Integer</option>
-                    <option value="float">Floating Point</option>
+                    <option value="float">Floating point</option>
                     <option value="boolean">Boolean</option>
+                    <option value="color">Color selector</option>
+                    <option value="dataset_optional" selected="true">Optional Dataset</option>
+                    <option value="dataset_multiple_optional">Optional Multiple datasets</option>
+                    <option value="dataset_collection_optional">Optional Dataset collection</option>
+                    <option value="dataset_collection_list_optional">Optional Dataset collection (list)</option>
+                    <option value="dataset_collection_paired_optional">Optional Dataset collection (paired)</option>
+                    <option value="dataset_collection_list_paired_optional">Optional Dataset collection (list:paired)</option>
+                    <option value="text_optional">Optional Text</option>
+                    <option value="integer_optional">Optional Integer</option>
+                    <option value="float_optional">Optional Floating point</option>
+                    <option value="boolean_optional">Optional Boolean</option>
+                    <option value="color_optional">Optional Color selector</option>
                 </param>
                 <when value="dataset">
-                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="true"/>
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="false"/>
                 </when>
                 <when value="dataset_multiple">
-                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="true"/>
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="false"/>
                 </when>
                 <when value="dataset_collection">
-                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="true"/>
+                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="false"/>
+                </when>
+                <when value="dataset_collection_list">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list" optional="false"/>
+                </when>
+                <when value="dataset_collection_paired">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="paired" optional="false"/>
+                </when>
+                <when value="dataset_collection_list_paired">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list:paired" optional="false"/>
                 </when>
                 <when value="text">
-                    <param name="input_value" type="text" value="" label="Select value" optional="true"/>
+                    <param name="input_value" type="text" value="" label="Select value" optional="false"/>
                 </when>
                 <when value="integer">
-                    <param name="input_value" type="integer" value="" label="Select value" optional="true"/>
+                    <param name="input_value" type="integer" value="" label="Select value" optional="false"/>
                 </when>
                 <when value="float">
-                    <param name="input_value" type="float" value="" label="Select value" optional="true"/>
+                    <param name="input_value" type="float" value="" label="Select value" optional="false"/>
                 </when>
                 <when value="boolean">
-                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" />
+                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" optional="false"/>
+                </when>
+                <when value="color">
+                    <param name="input_value" type="color" label="Select value" optional="false"/>
+                </when>
+                <when value="dataset_optional">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="true"/>
+                </when>
+                <when value="dataset_multiple_optional">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="true"/>
+                </when>
+                <when value="dataset_collection_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="true"/>
+                </when>
+                <when value="dataset_collection_list_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list" optional="true"/>
+                </when>
+                <when value="dataset_collection_paired_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="paired" optional="true"/>
+                </when>
+                <when value="dataset_collection_list_paired_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list:paired" optional="true"/>
+                </when>
+                <when value="text_optional">
+                    <param name="input_value" type="text" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="integer_optional">
+                    <param name="input_value" type="integer" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="float_optional">
+                    <param name="input_value" type="float" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="boolean_optional">
+                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" optional="true"/>
+                </when>
+                <when value="color_optional">
+                    <param name="input_value" type="color" label="Select value" optional="true"/>
                 </when>
             </conditional>
         </repeat>
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed JupyTool Notebook"></data>
-        <data name="output_dataset" format="data" label="JupyTool dataset"></data>
-        <collection name="output_collection" type="list" label="JupyTool collection" hidden="False">
-            <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs/" visible="true"/>
+        <data name="jupyter_notebook" format="ipynb" label="Executed JupyTool Notebook"/>
+        <data name="output_dataset" format="data">
+            <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs" visible="true" assign_primary_output="true"/>
+        </data>
+        <collection name="output_collection" type="list" label="JupyTool output collection">
+            <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs/collection" visible="false"/>
         </collection>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="mode" value="previous" />
-            <param name="ipynb" value="test.ipynb" />
-            <param name="run_it" value="true" />
+            <param name="mode" value="previous"/>
+            <param name="ipynb" value="test.ipynb"/>
+            <param name="run_it" value="true"/>
             <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
         </test>
     </tests>
@@ -143,7 +235,7 @@
     Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
     do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
 
-    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
+    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your colleague and execute it on your dataset.
     If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
 
     You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
