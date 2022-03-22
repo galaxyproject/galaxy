@@ -3,8 +3,8 @@
         <virtual-list
             ref="listing"
             class="listing"
-            :data-key="itemKey"
-            :data-sources="getItems"
+            data-key="id"
+            :data-sources="items"
             :data-component="{}"
             @scroll="onScroll">
             <template v-slot:item="{ item }">
@@ -17,9 +17,8 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import VirtualList from "vue-virtual-scroll-list";
-import { reverse, throttle } from "lodash";
+import { throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
@@ -28,60 +27,21 @@ export default {
         VirtualList,
     },
     props: {
-        itemKey: { type: String, default: "hid" },
-        limit: { type: Number, required: true },
-        payload: { type: Array, default: null },
-        queryKey: { type: String, default: null },
-        reversed: { type: Boolean, default: false },
+        loading: { type: Boolean, default: false },
+        items: { type: Array, default: null },
     },
     data() {
         return {
-            items: [],
             throttlePeriod: 20,
             deltaMax: 20,
-            queryCurrent: this.queryKey,
         };
     },
     created() {
-        this.updateItems();
         this.onScrollThrottle = throttle((event) => {
             this.onScroll(event);
         }, this.throttlePeriod);
     },
-    watch: {
-        payload() {
-            this.updateItems();
-        },
-    },
-    computed: {
-        loading() {
-            return !!this.payload && this.payload.length == this.limit;
-        },
-        getItems() {
-            const filtered = this.items.filter((n) => n);
-            return this.reversed ? reverse(filtered) : filtered;
-        },
-    },
     methods: {
-        updateItems() {
-            /* This function merges the existing data with new incoming data. */
-            if (this.queryKey != this.queryCurrent) {
-                this.queryCurrent = this.queryKey;
-                this.items.splice(0);
-            } else if (this.payload) {
-                for (const item of this.payload) {
-                    const itemIndex = item[this.itemKey];
-                    if (this.items[itemIndex]) {
-                        const localItem = this.items[itemIndex];
-                        Object.keys(localItem).forEach((key) => {
-                            localItem[key] = item[key];
-                        });
-                    } else {
-                        Vue.set(this.items, itemIndex, item);
-                    }
-                }
-            }
-        },
         onScrollHandler(event) {
             /* CURRENTLY UNUSED
             // this avoids diagonal scrolling, we either scroll left/right or top/down

@@ -1,7 +1,13 @@
 <!-- When a dataset collection is being viewed, this panel shows the contents of that collection -->
 
 <template>
-    <UrlDataProvider v-if="dsc" :key="dsc.id" :url="url" auto-refresh v-slot="{ result: payload }">
+    <CollectionElementsProvider
+        v-if="dsc"
+        :key="dsc.id"
+        :id="dsc.id"
+        :contentsUrl="contentsUrl"
+        :offset="offset"
+        v-slot="{ loading, result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
             <Layout class="dataset-collection-panel">
                 <template v-slot:navigation>
@@ -20,7 +26,7 @@
                 </template>
 
                 <template v-slot:listing>
-                    <Listing item-key="element_index" :payload="payload" :limit="limit" @scroll="onScroll">
+                    <Listing :items="payload" :loading="loading" @scroll="onScroll">
                         <template v-slot:history-item="{ item }">
                             <ContentItem
                                 :item="item.object"
@@ -30,17 +36,17 @@
                                 :expand-dataset="isExpanded(item)"
                                 :is-history-item="false"
                                 @update:expand-dataset="setExpanded(item, $event)"
-                                @view-collection="$emit('view-collection', item)" />
+                                @view-collection="onViewSubCollection" />
                         </template>
                     </Listing>
                 </template>
             </Layout>
         </ExpandedItems>
-    </UrlDataProvider>
+    </CollectionElementsProvider>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { CollectionElementsProvider } from "components/providers/storeProviders";
 import { History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
@@ -54,13 +60,13 @@ import CollectionDetails from "./CollectionDetails";
 export default {
     components: {
         CollectionDetails,
+        CollectionElementsProvider,
         CollectionNavigation,
         CollectionOperations,
         ContentItem,
         ExpandedItems,
         Layout,
         Listing,
-        UrlDataProvider,
     },
     props: {
         history: { type: History, required: true },
@@ -69,7 +75,6 @@ export default {
     data() {
         return {
             offset: 0,
-            limit: 100,
         };
     },
     computed: {
@@ -83,11 +88,8 @@ export default {
         rootCollection() {
             return this.selectedCollections[0];
         },
-        url() {
-            // either the observered source is a collection element or the initial history item i.e. root collection
-            const source = this.dsc.object || this.rootCollection;
-            const contentsUrl = source.contents_url.substring(1);
-            return `${contentsUrl}?offset=${this.offset}&limit=${this.limit}`;
+        contentsUrl() {
+            return this.dsc.contents_url.substring(1);
         },
     },
     methods: {
@@ -100,6 +102,20 @@ export default {
         },
         onScroll(offset) {
             this.offset = offset;
+        },
+        /**
+         * Passes a sub-collection i.e a collection element object containing another collection, into
+         * a populated object for drilldown without the need for a separate data request. This object
+         * is used for breadcrumbs in the navigation component and to render the collection details and
+         * description at the top of the collection panel. Details include the collection name, the
+         * collection type, and the element count.
+         */
+        onViewSubCollection(itemObject, elementIdentifer) {
+            const collectionObject = {
+                name: elementIdentifer,
+                ...itemObject,
+            };
+            this.$emit("view-collection", collectionObject);
         },
     },
 };

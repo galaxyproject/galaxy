@@ -1070,9 +1070,9 @@ galaxy:
   #logo_src_secondary: null
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
-  #helpsite_url: null
+  #helpsite_url: https://help.galaxyproject.org/
 
-  # The URL linked by the "Wiki" link in the "Help" menu.
+  # The URL linked by the "Community Hub" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
   # The URL linked for quota information in the UI.
@@ -1087,24 +1087,13 @@ galaxy:
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
 
-  # The URL linked by the "Search" link in the "Help" menu.
-  #search_url: https://galaxyproject.org/search/
-
-  # The URL linked by the "Mailing Lists" link in the "Help" menu.
-  #mailing_lists_url: https://galaxyproject.org/mailing-lists/
-
   # The URL linked by the "Videos" link in the "Help" menu.
-  #screencasts_url: https://vimeo.com/galaxyproject
+  #screencasts_url: https://www.youtube.com/c/galaxyproject
 
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
   #terms_url: null
-
-  # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-  # Galaxy Q&A site is under development; when the site is done, this
-  # URL will be set and uncommented.
-  #qa_url: null
 
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so

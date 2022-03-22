@@ -1,5 +1,11 @@
 <template>
-    <UrlDataProvider :key="history.id" :url="dataUrl" auto-refresh v-slot="{ loading, result: payload }">
+    <HistoryItemsProvider
+        :key="history.id"
+        :historyId="historyId"
+        :offset="offset"
+        :showDeleted="params.showDeleted"
+        :showHidden="params.showHidden"
+        v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
@@ -47,20 +53,21 @@
                     </template>
 
                     <template v-slot:listing>
-                        <HistoryEmpty v-if="payload && payload.length == 0" class="m-2" />
-                        <b-alert v-else-if="loading" class="m-2" variant="info" show>
-                            <LoadingSpan message="Loading History" />
-                        </b-alert>
-                        <Listing
-                            v-else
-                            reversed
-                            :query-key="queryKey"
-                            :limit="limit"
-                            :payload="payload"
-                            @scroll="onScroll">
+                        <div v-if="payload && payload.length == 0">
+                            <b-alert v-if="loading" class="m-2" variant="info" show>
+                                <LoadingSpan message="Loading History" />
+                            </b-alert>
+                            <div v-else>
+                                <HistoryEmpty v-if="queryDefault" class="m-2" />
+                                <b-alert v-else class="m-2" variant="info" show>
+                                    No data found for selected filter.
+                                </b-alert>
+                            </div>
+                        </div>
+                        <Listing v-else :items="payload" @scroll="onScroll">
                             <template v-slot:history-item="{ item }">
                                 <ContentItem
-                                    v-if="!hideSelection[item.hid]"
+                                    v-if="!invisible[item.hid]"
                                     :item="item"
                                     :id="item.hid"
                                     :name="item.name"
@@ -84,11 +91,12 @@
                 </Layout>
             </SelectedItems>
         </ExpandedItems>
-    </UrlDataProvider>
+    </HistoryItemsProvider>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import Vue from "vue";
+import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { History } from "components/History/model";
@@ -107,13 +115,13 @@ import HistoryMessages from "./HistoryMessages";
 export default {
     components: {
         LoadingSpan,
-        UrlDataProvider,
         Layout,
         Listing,
         ContentItem,
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryItemsProvider,
         HistoryMenu,
         HistoryOperations,
         ToolHelpModal,
@@ -125,32 +133,29 @@ export default {
     },
     data() {
         return {
-            hideSelection: {},
+            invisible: {},
             offset: 0,
-            limit: 500,
-            params: {},
+            params: {
+                showDeleted: false,
+                showHidden: false,
+            },
         };
     },
     watch: {
         queryKey() {
-            this.hideSelection = {};
+            this.invisible = {};
             this.offset = 0;
         },
     },
     computed: {
-        dataUrl() {
-            return `api/histories/${this.historyId}/contents?v=dev&order=hid&offset=${this.offset}&limit=${this.limit}&${this.queryString}`;
-        },
         historyId() {
             return this.history.id;
         },
         queryKey() {
-            return `${this.history.id}&${this.queryString}`;
+            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}`;
         },
-        queryString() {
-            const deleted = this.params.showDeleted ? "True" : "False";
-            const visible = this.params.showHidden ? "False" : "True";
-            return `q=deleted&q=visible&qv=${deleted}&qv=${visible}`;
+        queryDefault() {
+            return !this.params.showDeleted && !this.params.showHidden;
         },
     },
     methods: {
@@ -162,20 +167,23 @@ export default {
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
-                this.hideSelection[item.hid] = true;
+                this.setInvisible(item);
             });
         },
         onDelete(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             deleteContent(item);
         },
         onUndelete(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             updateContentFields(item, { deleted: false });
         },
         onUnhide(item) {
-            this.hideSelection[item.hid] = true;
+            this.setInvisible(item);
             updateContentFields(item, { visible: true });
+        },
+        setInvisible(item) {
+            Vue.set(this.invisible, item.hid, true);
         },
     },
 };
