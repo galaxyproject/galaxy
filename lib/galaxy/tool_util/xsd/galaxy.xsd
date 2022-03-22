@@ -3228,6 +3228,10 @@ $attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
+Allows to select values from a hierarchy. The default (``hierarchy="exact"``) is
+that only exactly the selected options are used. With ``hierarchy="recurse"``
+all leaf nodes in the subtree are used.
+
 See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
 
 $attribute_list:hierarchy:5
