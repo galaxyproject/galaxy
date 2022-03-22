@@ -14,7 +14,7 @@
                 :multiple="multiple"
                 :filter="filter"
                 @clicked="onClick"
-                @load="load" />
+                @open="onLoad" />
         </template>
         <template v-slot:buttons>
             <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
@@ -147,6 +147,11 @@ export default {
         onCancel() {
             this.modalShow = false;
             this.$emit("onCancel");
+        },
+        /** On clicking the div containing the folder name 
+         * Basically, overloader for the @click.stop in DataDialogTable **/
+        onLoad(record) {
+            this.load(record.url);
         },
         /** Performs server request to retrieve data records **/
         load(url) {
