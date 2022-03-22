@@ -44,28 +44,25 @@ export class SearchParams {
         const raw = this.filterText;
 
         const result = new Map();
-        if (!raw.length) {
+        if (raw.length == 0) {
             return result;
         }
 
         let matches = raw.match(pairSplitRE);
-        if (matches === null && raw.length) {
+        if (matches === null && raw.length > 0) {
             matches = [`name=${raw}`];
         }
 
         const criteria = matches.reduce((result, pair) => {
             const [field, val] = pair.split("=");
-
             if (validTextFields.has(field)) {
                 let cleanVal = val.replace(scrubQuotesRE, "");
                 // set an array of criteria if we have multiples of the same field name
                 if (result.has(field)) {
                     cleanVal = [result.get(field), cleanVal].flat();
                 }
-
                 result.set(field, cleanVal);
             }
-
             return result;
         }, result);
 
