@@ -154,7 +154,10 @@ def lint_inputs(tool_xml, lint_ctx):
         # lint for valid param type - child node combinations
         for ptcc in PARAM_TYPE_CHILD_COMBINATIONS:
             if param.find(ptcc[0]) is not None and param_type not in ptcc[1]:
-                lint_ctx.error(f"Parameter [{param_name}] '{ptcc[0]}' tags are only allowed for parameters of type {ptcc[1]}", node=param)
+                lint_ctx.error(
+                    f"Parameter [{param_name}] '{ptcc[0]}' tags are only allowed for parameters of type {ptcc[1]}",
+                    node=param,
+                )
 
         # param type specific linting
         if param_type == "data":
@@ -272,6 +275,7 @@ def lint_inputs(tool_xml, lint_ctx):
             if len(set(select_options_values)) != len(select_options_values):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value", node=param)
 
+        if param_type in ["select", "data_column", "drill_down"]:
             multiple = string_as_bool(param_attrib.get("multiple", "false"))
             optional = string_as_bool(param_attrib.get("optional", multiple))
             if param_attrib.get("display") == "checkboxes":

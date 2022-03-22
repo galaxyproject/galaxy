@@ -1111,9 +1111,18 @@ def test_inputs_type_child_combinations(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
-    assert "Parameter [text_param] './options' tags are only allowed for parameters of type ['select', 'drill_down']" in lint_ctx.error_messages
-    assert "Parameter [select_param] './options/option' tags are only allowed for parameters of type ['drill_down']" in lint_ctx.error_messages
-    assert "Parameter [data_param] './column' tags are only allowed for parameters of type ['data_column']" in lint_ctx.error_messages
+    assert (
+        "Parameter [text_param] './options' tags are only allowed for parameters of type ['select', 'drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [select_param] './options/option' tags are only allowed for parameters of type ['drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [data_param] './column' tags are only allowed for parameters of type ['data_column']"
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.error_messages) == 3
 
 

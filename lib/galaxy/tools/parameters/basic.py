@@ -1677,6 +1677,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
                 else:
                     for opt in option["options"]:
                         recurse_option(option_list, opt)
+
             rval: List[str] = []
             base_option = get_base_option(value, self.get_options(other_values=other_values))
             recurse_option(rval, base_option)
