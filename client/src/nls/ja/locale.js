@@ -23,6 +23,7 @@ define({
     Videos: "動画",
     "Community Hub": "コミュニティハブ",
     "How to Cite Galaxy": "Galaxy を引用する方法",
+    "Interactive Tours": "インタラクティブツアー",
     User: "ユーザー",
     Login: "ログイン",
     Register: "登録",

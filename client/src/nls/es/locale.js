@@ -44,6 +44,8 @@ define({
 
     "How to Cite Galaxy": "Cómo citar Galaxy",
 
+    "Interactive Tours": "Tours Interactivos",
+
     "Galaxy Help": "Ayuda de Galaxy",
 
     "Terms and Conditions": "Términos y Condiciones",
