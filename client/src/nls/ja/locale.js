@@ -21,8 +21,7 @@ define({
     Search: "検索",
     "Mailing Lists": "メーリングリスト",
     Videos: "動画",
-    //"Wiki":
-    //    "ドキュメント",
+    "Community Hub": "コミュニティハブ",
     "How to Cite Galaxy": "Galaxy を引用する方法",
     "Interactive Tours": "インタラクティブツアー",
     User: "ユーザー",
