@@ -768,7 +768,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.version_minor = VERSION_MINOR
 
         # Database related configuration
-        self.check_migrate_databases = kwargs.get("check_migrate_databases", True)
+        self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
         if not self.database_connection:  # Provide default if not supplied by user
             db_path = self._in_data_dir("universe.sqlite")
             self.database_connection = f"sqlite:///{db_path}?isolation_level=IMMEDIATE"
