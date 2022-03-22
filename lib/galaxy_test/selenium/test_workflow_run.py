@@ -46,9 +46,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkf
         self.perform_upload(self.get_filename("1.fasta"))
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
-        workflow_run = self.components.workflow_run
-        workflow_run.expand_form_link.wait_for_and_click()
-        workflow_run.expanded_form.wait_for_visible()
+        self.workflow_run_ensure_expanded()
         self.screenshot("workflow_run_expanded_ready")
         self.workflow_run_submit()
         self.sleep_for(self.wait_types.UX_TRANSITION)
@@ -73,10 +71,11 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkf
 
     @selenium_test
     @managed_history
-    def test_subworkflows_simple(self):
+    def test_subworkflows_expanded(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_SIMPLE)
+        self.workflow_run_ensure_expanded()
         self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
         self.screenshot("workflow_run_nested_collapsed")
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
@@ -88,6 +87,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkf
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        self.workflow_run_ensure_expanded()
         self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
         self.screenshot("workflow_run_nested_parameters_collapsed")
         self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
@@ -103,6 +103,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkf
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
+        self.workflow_run_ensure_expanded()
         self.screenshot("workflow_run_rename_simple_empty")
         self._set_replacement_parameter("replaceme", "moocow")
         self.screenshot("workflow_run_rename_simple_input")
@@ -133,6 +134,7 @@ steps:
       files_0|file: input_data
 """
         )
+        self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")
@@ -154,6 +156,7 @@ steps:
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
+        self.workflow_run_ensure_expanded()
         self.screenshot("workflow_run_rename_subworkflow_empty")
         self._set_replacement_parameter("replaceme", "moocow")
         self.screenshot("workflow_run_rename_subworkflow_input")
@@ -180,6 +183,7 @@ steps:
             WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
             WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
             inputs_specified_screenshot_name="workflow_run_two_inputs",
+            ensure_expanded=True,
         )
         self.workflow_run_wait_for_ok(hid=7)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
@@ -221,6 +225,7 @@ steps:
             WORKFLOW_WITH_RULES_1,
             landing_screenshot_name="workflow_run_rules_landing",
             inputs_specified_screenshot_name="workflow_run_rules",
+            ensure_expanded=True,
         )
         self.workflow_run_wait_for_ok(hid=6)
         output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
@@ -232,6 +237,7 @@ steps:
         history_id = self.workflow_run_and_submit(
             WORKFLOW_WITH_CUSTOM_REPORT_1,
             WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+            ensure_expanded=True,
         )
         self.screenshot("workflow_run_invocation_report")
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)

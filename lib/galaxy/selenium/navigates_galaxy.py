@@ -1286,6 +1286,12 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()
 
+    def workflow_run_ensure_expanded(self):
+        workflow_run = self.components.workflow_run
+        if workflow_run.expanded_form.is_absent:
+            workflow_run.expand_form_link.wait_for_and_click()
+            workflow_run.expanded_form.wait_for_visible()
+
     def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
         self.sleep_for(self.wait_types.UX_RENDER)

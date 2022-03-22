@@ -11,7 +11,7 @@
             </p>
             <p v-else-if="wasNewHistoryTarget">
                 This workflow will generate results in a new history.
-                <a :href="historyTarget">Switch to that history now</a>.
+                <a class="workflow-new-history-target-link" :href="historyTarget">Switch to that history now</a>.
             </p>
             <p v-else>
                 You can check the status of queued jobs and view the resulting data by refreshing the History pane, if

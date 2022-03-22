@@ -530,6 +530,7 @@ workflow_run:
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
+    new_history_target_link: '.workflow-new-history-target-link'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
