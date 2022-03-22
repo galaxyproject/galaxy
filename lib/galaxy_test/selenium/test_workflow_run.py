@@ -42,6 +42,23 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkf
 
     @selenium_test
     @managed_history
+    def test_expanded_execution_of_simple_workflow(self):
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
+        workflow_run = self.components.workflow_run
+        workflow_run.expand_form_link.wait_for_and_click()
+        workflow_run.expanded_form.wait_for_visible()
+        self.screenshot("workflow_run_expanded_ready")
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("workflow_run_expanded_submitted")
+        self.workflow_run_wait_for_ok(hid=2, expand=True)
+        self.assert_item_summary_includes(2, "2 sequences")
+        self.screenshot("workflow_run_simple_complete")
+
+    @selenium_test
+    @managed_history
     def test_runtime_parameters_simple(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()

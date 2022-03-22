@@ -6,7 +6,7 @@
         </div>
         <FormDisplay :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
-        <a href="#" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
+        <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
     </div>
 </template>
 
