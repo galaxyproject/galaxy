@@ -105,6 +105,12 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
     ],
 }
 
+PARAM_TYPE_CHILD_COMBINATIONS = [
+    ("./options", ["select", "drill_down"]),
+    ("./options/option", ["drill_down"]),
+    ("./column", ["data_column"]),
+]
+
 
 def lint_inputs(tool_xml, lint_ctx):
     """Lint parameters in a tool's inputs block."""
@@ -145,6 +151,12 @@ def lint_inputs(tool_xml, lint_ctx):
 
         # TODO lint for valid param type - attribute combinations
 
+        # lint for valid param type - child node combinations
+        for ptcc in PARAM_TYPE_CHILD_COMBINATIONS:
+            if param.find(ptcc[0]) is not None and param_type not in ptcc[1]:
+                lint_ctx.error(f"Parameter [{param_name}] '{ptcc[0]}' tags are only allowed for parameters of type {ptcc[1]}", node=param)
+
+        # param type specific linting
         if param_type == "data":
             if "format" not in param_attrib:
                 lint_ctx.warn(
@@ -178,6 +190,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
             # lint dynamic options
             if len(options) == 1:
+
                 filters = options[0].findall("./filter")
                 # lint filters
                 # TODO check if dataset is available for filters referring other datasets
