@@ -148,8 +148,7 @@ export default {
             this.modalShow = false;
             this.$emit("onCancel");
         },
-        /** On clicking the div containing the folder name 
-         * Basically, overloader for the @click.stop in DataDialogTable **/
+        /** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
         onLoad(record) {
             this.load(record.url);
         },
