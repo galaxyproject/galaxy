@@ -22,8 +22,7 @@ export default Backbone.Model.extend({
         this.visualization_name = viz_options.visualization_name;
         this.dataset_id = viz_options.dataset_id;
         this.chart_dict = viz_options.chart_dict;
-        console.debug("model::initialize() - Initialized with configuration:");
-        console.debug(viz_options);
+        console.debug("model::initialize() - Initialized with configuration:", viz_options);
     },
 
     reset: function () {
@@ -103,7 +102,7 @@ export default Backbone.Model.extend({
                     console.debug("model::save() - Unrecognized response. Saving may have failed.");
                 }
             })
-            .fail(function (response) {
+            .fail(function () {
                 if (options.error) {
                     options.error();
                 }
@@ -113,26 +112,23 @@ export default Backbone.Model.extend({
     },
 
     /** Load nested models/collections from packed dictionary */
-    load: function (chart_parsed) {
-        var d = chart_parsed || this.chart_dict;
-        if (d) {
-            console.debug("model::load() - Attempting to load with configuration:");
-            console.debug(d);
-        }
+    load: function () {
         this.reset();
+        var d = this.chart_dict;
         if (d && d.attributes) {
+            console.debug("model::load() - Loading saved visualization.", d);
             this.set(d.attributes);
             this.state("ok", "Loading saved visualization...");
             this.settings.set(d.settings);
             this.groups.reset();
             this.groups.add(d.groups);
             this.set("modified", false);
-            this.trigger("load");
-            console.debug("model::load() - Loading chart model " + d.attributes.type + ".");
+            this.trigger("refresh");
+            console.debug("model::load() - Loading chart model.");
             return true;
         } else {
             this.set("modified", true);
-            this.trigger("load");
+            this.trigger("refresh");
             console.debug("model::load() - Visualization attributes unavailable.");
             return false;
         }
