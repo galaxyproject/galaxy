@@ -115,7 +115,7 @@ export default {
                 },
                 {
                     key: "size",
-                    sortable: false, // The API does not allow sort by size?
+                    sortable: true,
                     formatter: this.toNiceSize,
                 },
                 {
@@ -124,7 +124,7 @@ export default {
                     sortable: true,
                 },
             ],
-            sortBy: "update_time",
+            sortBy: "size",
             sortDesc: true,
             perPage: 50,
             currentPage: 1,
