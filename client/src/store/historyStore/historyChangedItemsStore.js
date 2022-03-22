@@ -14,7 +14,7 @@ const throttlePeriod = 3000;
 
 const actions = {
     fetchHistoryChangedItems: async ({ commit, dispatch }, { historyId }) => {
-        const params = `limit=${limit}&q=update_time-ge&qv=${lastDate.toISOString()}`;
+        const params = `limit=${limit}&q=update_time-ge&qv=${encodeURIComponent(lastDate.toISOString())}`;
         const url = `api/histories/${historyId}/contents?v=dev&view=detailed&${params}`;
         lastDate = new Date();
         const payload = await urlData({ url });
