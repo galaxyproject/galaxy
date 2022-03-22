@@ -138,6 +138,7 @@ steps:
         assert jobs1 == jobs2
 
     @uses_test_history(require_new=True)
+    @skip_without_tool("multi_data_optional")
     def test_index_workflow_filter_implicit_jobs(self, history_id):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
@@ -157,14 +158,14 @@ steps:
             "0": self.dataset_populator.ds_entry(hdca_id),
         }
         invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs, assert_ok=True
-        )
+            workflow_id, history_id=history_id, inputs=inputs
+        ).json()["id"]
         jobs1 = self.__jobs_index(data={"workflow_id": workflow_id})
         jobs2 = self.__jobs_index(data={"invocation_id": invocation_id})
         assert len(jobs1) == len(jobs2) == 1
         second_invocation_id = self.workflow_populator.invoke_workflow_and_wait(
-            workflow_id, history_id=history_id, inputs=inputs, assert_ok=True
-        )
+            workflow_id, history_id=history_id, inputs=inputs
+        ).json()["id"]
         workflow_jobs = self.__jobs_index(data={"workflow_id": workflow_id})
         second_invocation_jobs = self.__jobs_index(data={"invocation_id": second_invocation_id})
         assert len(workflow_jobs) == 2
