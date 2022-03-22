@@ -2,8 +2,8 @@ import functools
 import hashlib
 import logging
 import os
-import time
 import re
+import time
 from queue import Empty
 from typing import List
 
