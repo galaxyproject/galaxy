@@ -75,8 +75,7 @@ This will start up an extra client development server running on port 8081.
 Open your browser to http://localhost:8081 (instead of the default 8080 that
 Galaxy would run on), and you should see Galaxy like normal.  Except now, when
 you change client code it'll automatically rebuild *and* reload the relevant
-portion of the application for you.  Note that unlike previous versions of this
-functionality, it is no longer required to use uWSGI for this.  Lastly, if you
+portion of the application for you. Lastly, if you
 are running Galaxy at a location other than the default, you can specify a
 different proxy target (in this example, port 8000) using the GALAXY_URL
 environment variable:

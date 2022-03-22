@@ -17,11 +17,6 @@ DESCRIPTION = "Initialize a directory with a minimal Galaxy config."
 HELP_CONFIG_DIR = "Directory containing the configuration files for Galaxy."
 HELP_DATA_DIR = "Directory containing Galaxy-created data."
 HELP_FORCE = "Overwrite existing files if they already exist."
-HELP_WSGI_SERVER = "Web server stack used to host Galaxy web application, and if uWSGI, which protocol to use."
-HELP_LIBDRMAA = (
-    "Configure Galaxy to submit jobs to a cluster via DRMAA by supplying the path to a libdrmaa.so file using this "
-    "argument."
-)
 HELP_INSTALL = "Install optional dependencies required by specified configuration (e.g. drmaa, etc...)."
 HELP_HOST = (
     'Host to bind Galaxy to - defaults to localhost. Specify an IP address or "all" to listen on all interfaces.'

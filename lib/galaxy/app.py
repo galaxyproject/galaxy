@@ -631,8 +631,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
-        # Start the heartbeat process if configured and available (wait until
-        # postfork if using uWSGI)
+        # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             if heartbeat.Heartbeat:
                 self.heartbeat = heartbeat.Heartbeat(

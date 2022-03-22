@@ -34,4 +34,4 @@ complete list of supported transports and their configuration.
 
 <!-- TODO Specify any requirements Galaxy has for transport features. -->
 
-<!-- TODO Specify what nodes need to be able to access the MQ (nginx proxy, uwsgi web, job handlers, workflow schedulers, compute nodes, etc?). -->
+<!-- TODO Specify what nodes need to be able to access the MQ (nginx proxy, web and job handlers, workflow schedulers, compute nodes, etc?). -->
