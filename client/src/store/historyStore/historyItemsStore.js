@@ -36,8 +36,9 @@ const getters = {
                 }
                 const filterDict = getFilterDict(filterText, validFields);
                 for (const [key, value] of Object.entries(filterDict)) {
-                    const itemValue = String(item[key]);
-                    if (!itemValue.includes(value)) {
+                    const itemValue = String(item[key]).toLowerCase();
+                    const filterValue = String(value).toLowerCase();
+                    if (!itemValue.includes(filterValue)) {
                         return false;
                     }
                 }
