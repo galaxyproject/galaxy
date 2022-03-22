@@ -3228,6 +3228,8 @@ $attribute_list:force_select,numerical,use_header_name:5
 
 #### ``drill_down``
 
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
+
 $attribute_list:hierarchy:5
 
 #### ``data_collection``
@@ -3891,6 +3893,7 @@ if the corresponding option is selected by default (the default is ``false``).
   <xs:complexType name="ParamDrillDownOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
+See [drill_down.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/drill_down.xml)
       ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
@@ -3898,12 +3901,12 @@ if the corresponding option is selected by default (the default is ``false``).
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name of the DrillDown option.</xs:documentation>
+        <xs:documentation xml:lang="en">Name of the ``drill_down`` option.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Value of the DrillDown option.</xs:documentation>
+        <xs:documentation xml:lang="en">Value of the ``drill_down`` option.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
