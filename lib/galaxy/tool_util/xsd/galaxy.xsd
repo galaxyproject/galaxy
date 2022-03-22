@@ -3549,7 +3549,6 @@ allow access to Python code to generate options for a select list. See
       <xs:element name="conversion" type="ParamConversion" />
       <xs:element name="option" type="ParamSelectOption" />
       <xs:element name="options" type="ParamOptions"/>
-      <xs:element name="options" type="ParamDrillDownOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
       <xs:element name="help" type="xs:string">
@@ -3935,16 +3934,6 @@ dataset for the contained input of the type specified using the ``type`` tag.
     </xs:attribute>
   </xs:complexType>
 
-  <xs:complexType name="ParamDrillDownOptions">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[
-      ]]></xs:documentation>
-    </xs:annotation>
-    <xs:sequence>
-      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4166,6 +4155,7 @@ used to generate dynamic options.
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Column">
