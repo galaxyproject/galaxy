@@ -11,6 +11,9 @@ import { getFilterDict, mergeArray } from "./utilities";
 const limit = 100;
 const queue = new LastQueue();
 
+// fields that can be used for text searches
+const validFields = new Set(["name", "history_content_type", "type", "format", "extension", "state", "hid", "tags"]);
+
 const state = {
     items: {},
     itemKey: "hid",
@@ -31,7 +34,7 @@ const getters = {
                 if (showHidden == item.visible) {
                     return false;
                 }
-                const filterDict = getFilterDict(filterText);
+                const filterDict = getFilterDict(filterText, validFields);
                 for (const [key, value] of Object.entries(filterDict)) {
                     const itemValue = String(item[key]);
                     if (!itemValue.includes(value)) {
@@ -48,7 +51,7 @@ const getQueryString = (filterText, showDeleted, showHidden) => {
     const deleted = showDeleted ? "True" : "False";
     const visible = showHidden ? "False" : "True";
     const filterDict = {
-        ...getFilterDict(filterText),
+        ...getFilterDict(filterText, validFields),
         deleted: deleted,
         visible: visible,
     };

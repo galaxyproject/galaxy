@@ -20,7 +20,7 @@ export function mergeArray(id, payload, items, itemKey) {
 }
 
 /* Parses single text input into a dict of field->value pairs. */
-export function getFilterDict(filterText) {
+export function getFilterDict(filterText, validFields) {
     const pairSplitRE = /(\w+=\w+)|(\w+="(\w|\s)+")/g;
     const scrubQuotesRE = /'|"/g;
     const result = {};
@@ -34,7 +34,9 @@ export function getFilterDict(filterText) {
     if (matches) {
         matches.forEach((pair) => {
             const [field, value] = pair.split("=");
-            result[field] = value.replace(scrubQuotesRE, "");
+            if (validFields.has(field)) {
+                result[field] = value.replace(scrubQuotesRE, "");
+            }
         });
     }
     return result;
