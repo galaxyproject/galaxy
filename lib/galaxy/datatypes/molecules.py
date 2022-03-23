@@ -833,7 +833,7 @@ class Cell(GenericMolFile):
         visible=True,
     )
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a CASTEP CELL file.
 
@@ -851,21 +851,13 @@ class Cell(GenericMolFile):
         >>> Cell().sniff(fname)
         False
         """
-        with open(filename) as f:
-            cell = f.read(1000)
-        if re.search(r"\n%BLOCK", cell, flags=re.IGNORECASE) is not None:
-            if re.search(r"\n%ENDBLOCK", cell, flags=re.IGNORECASE) is not None:
+        start_found = False
+        for line in file_prefix.line_iterator():
+            if not start_found and line.lower().startswith('%block'):
+                start_found = True
+            elif start_found and line.lower().startswith('%endblock'):
                 return True
-        else:
-            return False
-
-        # if %BLOCK was found but not %ENDBLOCK, check the rest of the file
-        with open(filename) as f:
-            cell = f.read()
-        if re.search(r"\n%ENDBLOCK", cell, flags=re.IGNORECASE) is not None:
-            return True
-        else:
-            return False
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
