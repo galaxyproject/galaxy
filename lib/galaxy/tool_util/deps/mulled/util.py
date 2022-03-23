@@ -79,6 +79,7 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
             return repo_name in resolution_cache.get(cache_key)
         except KeyError:
             pass
+    log.debug("Resolution cache miss: " + cache_key)
     next_page = None
     repo_names = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
