@@ -10,9 +10,11 @@ export function mergeArray(id, payload, items, itemKey) {
         const itemIndex = item[itemKey];
         if (itemArray[itemIndex]) {
             const localItem = itemArray[itemIndex];
-            Object.keys(localItem).forEach((key) => {
-                localItem[key] = item[key];
-            });
+            if (localItem.id == item.id) {
+                Object.keys(localItem).forEach((key) => {
+                    localItem[key] = item[key];
+                });
+            }
         } else {
             Vue.set(itemArray, itemIndex, item);
         }
