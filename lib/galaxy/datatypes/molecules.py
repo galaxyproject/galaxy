@@ -795,6 +795,7 @@ class PQR(GenericMolFile):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
 class Cell(GenericMolFile):
     """
     CASTEP CELL format.
@@ -960,6 +961,7 @@ For full metadata, ask your admin to install the 'ase' Python package."""
         return info
 
 
+@build_sniff_from_prefix
 class CIF(GenericMolFile):
     """
     CIF format.
@@ -1005,7 +1007,7 @@ class CIF(GenericMolFile):
         visible=True,
     )
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a CIF file.
 
@@ -1023,35 +1025,23 @@ class CIF(GenericMolFile):
         >>> CIF().sniff(fname)
         False
         """
-        with open(filename) as f:
-            cif = f.read(1000)
 
         # check for optional CIF version marker '#\#CIF_<version>' at start of file
-        if cif[0:7] == "#\\#CIF_":
+        if file_prefix.startswith("#\\#CIF_"):
             return True
 
         # no version marker, search for mandatory CIF keywords
         # first non-comment line must begin with 'data_'
         # and '_atom_site_fract_(x|y|z)' must be specified somewhere in the file
-        for line in cif.split("\n"):
+        for line in file_prefix.line_iterator():
             if not line:
                 continue
             elif line[0] == "#":  # comment so skip
                 continue
-            if line.startswith("data_"):
-                if "_atom_site_fract_" in cif:
-                    return True
-                break
-            else:
+            elif line.startswith("data_"):
+                return file_prefix.search_str("_atom_site_fract_")
+            else:  # line has some other content
                 return False
-
-        # if 'data_' found but '_atom_site_fract_' not found, check the rest of the file
-        with open(filename) as f:
-            cif = f.read()
-        if "_atom_site_fract_" in cif:
-            return True
-        else:
-            return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -1141,6 +1131,7 @@ For full metadata, ask your admin to install the 'ase' Python package."""
         return info
 
 
+@build_sniff_from_prefix
 class XYZ(GenericMolFile):
     """
     XYZ format.
@@ -1179,11 +1170,13 @@ class XYZ(GenericMolFile):
         visible=True,
     )
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is a XYZ file.
 
-        XYZ has no fingerprint phrases, so the whole file must be checked for the correct structure.
+        XYZ has no fingerprint phrases, so the whole prefix must be checked
+        for the correct structure. If the prefix passes, assume the whole file
+        passes.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.xyz')
@@ -1197,34 +1190,20 @@ class XYZ(GenericMolFile):
         >>> XYZ().sniff(fname)
         False
         """
-        with open(filename) as f:
-            xyz_lines = f.readlines(1000)[:-1]
 
         try:
-            blocks = self.read_blocks(xyz_lines)
+            self.read_blocks(list(file_prefix.line_iterator()))
+            return True  # blocks read successfully
         except (TypeError, ValueError):
             return False
         except IndexError as e:
             if "pop from empty list" in str(e):
-                # xyz_lines ran out mid block – check full file
-                with open(filename) as f:
-                    xyz_lines = f.readlines()
-                try:
-                    blocks = self.read_blocks(xyz_lines)
-                except (TypeError, ValueError, IndexError):
-                    # any error is now a failure
-                    return False
+                # file_prefix ran out mid block with no other errors
+                # assume the whole file is ok
+                return True
             else:
                 # some other IndexError - invalid input
                 return False
-
-        # check blocks are valid
-        for block in blocks:
-            if block["number_of_atoms"] is None:
-                return False
-
-        # all checks passed
-        return True
 
     def read_blocks(self, lines):
         """
@@ -1351,6 +1330,7 @@ For full metadata, ask your admin to install the 'ase' Python package."""
         return info
 
 
+@build_sniff_from_prefix
 class ExtendedXYZ(XYZ):
     """
     Extended XYZ format.
@@ -1360,7 +1340,7 @@ class ExtendedXYZ(XYZ):
 
     file_ext = "extxyz"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Try to guess if the file is an Extended XYZ file.
 
@@ -1374,13 +1354,18 @@ class ExtendedXYZ(XYZ):
         >>> ExtendedXYZ().sniff(fname)
         False
         """
-        with open(filename) as f:
-            # fingerprint is 'Properties="<name>:<type>:<number>:..."' in the second line
+        line_iterator = file_prefix.line_iterator()
+        try:
+            # fingerprint is 'Properties="<name>:<type>:<number>:..."'
+            # in the second line
             # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
-            f.readline()
-            comment = f.readline()
+            next(line_iterator)
+            comment = next(line_iterator)
             properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)  # returns None if no match
             return True if properties else False
+        except StopIteration:
+            # insufficient lines
+            return False
 
     def read_blocks(self, lines):
         """
