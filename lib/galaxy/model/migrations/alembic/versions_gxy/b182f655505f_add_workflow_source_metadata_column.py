@@ -9,7 +9,10 @@ from alembic import op
 from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType
-from galaxy.model.migrations.util import drop_column
+from galaxy.model.migrations.util import (
+    drop_column,
+    ignore_add_column_error,
+)
 
 # revision identifiers, used by Alembic.
 revision = "b182f655505f"
@@ -19,7 +22,9 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("workflow", Column("source_metadata", JSONType))
+    table, column = "workflow", "source_metadata"
+    with ignore_add_column_error(table, column):
+        op.add_column(table, Column(column, JSONType))
 
 
 def downgrade():
