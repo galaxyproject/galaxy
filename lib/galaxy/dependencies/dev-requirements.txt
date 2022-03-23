@@ -160,7 +160,6 @@ python-jose==3.3.0
 python-multipart==0.0.5
 python3-openid==3.2.0; python_version >= "3.0"
 pytz==2021.3; python_version >= "3.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7"
-pyuwsgi==2.0.20
 pyyaml==6.0; python_version >= "3.6"
 pyzmq==22.3.0; python_version >= "3.6"
 rdflib==6.0.2; python_version >= "3.7" and python_version < "4"
