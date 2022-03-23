@@ -1295,6 +1295,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["annotation"] = self.get_item_annotation_str(sa_session, stored.user, stored)
         item["license"] = workflow.license
         item["creator"] = workflow.creator_metadata
+        item["source_metadata"] = workflow.source_metadata
         steps = {}
         steps_to_order_index = {}
         for step in workflow.steps:

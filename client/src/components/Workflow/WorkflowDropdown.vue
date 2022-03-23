@@ -9,6 +9,12 @@
             <font-awesome-icon icon="caret-down" />
             <span>{{ workflow.name }}</span>
         </b-link>
+        <font-awesome-icon
+            v-if="workflow.source_metadata && workflow.source_metadata.trs_tool_id"
+            v-b-tooltip.hover
+            :title="'Imported from TRS ID (version ' + workflow.source_metadata.trs_version_id + ')'"
+            icon="check"
+            style="color: green" />
         <p v-if="workflow.description">{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="onCopy">
@@ -44,6 +50,13 @@
             <a class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span>View</span>
+            </a>
+            <a
+                v-if="workflow.source_metadata && workflow.source_metadata.trs_server == 'dockstore'"
+                class="dropdown-item"
+                :href="urlDockstore">
+                <span class="fa fa-cube fa-fw mr-1" />
+                <span>View on Dockstore</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
@@ -84,6 +97,13 @@ export default {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                 this.workflow.slug
             }`;
+        },
+        urlDockstore() {
+            if (this.workflow.source_metadata && this.workflow.source_metadata.trs_tool_id) {
+                return `https://dockstore.org/workflows${this.workflow.source_metadata.trs_tool_id.slice(9)}`;
+            } else {
+                return null;
+            }
         },
     },
     created() {
