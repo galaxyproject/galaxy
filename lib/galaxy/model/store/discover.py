@@ -94,7 +94,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         storage_callbacks=None,
         purged=False,
     ):
-        log.error(f"create_dataset default_format {default_format}")
+        # log.error(f"create_dataset default_format {default_format}")
         tag_list = tag_list or []
         sources = sources or []
         hashes = hashes or []
@@ -179,7 +179,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if name is not None:
             primary_data.name = name
 
-        log.error(f"create_dataset primary_data.ext {primary_data.ext}")
+        # log.error(f"create_dataset primary_data.ext {primary_data.ext}")
         if default_format and not primary_data.ext:
             primary_data.change_datatype(default_format)
 
@@ -294,7 +294,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         discovered_files,
         name=None,
         default_format=None,
-        format_source_name=None, 
         final_job_state="ok",
         change_datatype_actions=None,
     ):

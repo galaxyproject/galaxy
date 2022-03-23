@@ -171,7 +171,7 @@ class DefaultToolAction(ToolAction):
                     # are stored as name1, name2, ...
                     for i, v in enumerate(value):
                         processed_dataset = process_dataset(v)
-                        log.error(f"ADD DTP list input.name {input.name} i+1 {i+1}")
+                        # log.error(f"ADD DTP list input.name {input.name} i+1 {i+1}")
                         if i == 0:
                             # Allow copying metadata to output, first item will be source.
                             input_datasets[prefixed_name] = processed_dataset
@@ -213,6 +213,7 @@ class DefaultToolAction(ToolAction):
                                 ] = conversion_data.id  # a more robust way to determine JSONable value is desired
                 else:
 <<<<<<< HEAD
+<<<<<<< HEAD
                     input_datasets[prefixed_name] = process_dataset(value)
                     input_datasets.set_legacy_alias(new_key=prefixed_name, old_key=prefix + input.name)
 =======
@@ -220,6 +221,11 @@ class DefaultToolAction(ToolAction):
                     input_datasets[prefix + input.name] = process_dataset(value)
                     log.error(f"==> input_datasets {input_datasets}")
 >>>>>>> f578c6ad55 (more debug)
+=======
+                    # log.error(f"ADD DTP !list input.name {input.name}")
+                    input_datasets[prefix + input.name] = process_dataset(value)
+                    # log.error(f"==> input_datasets {input_datasets}")
+>>>>>>> 26d94faf82 (fix linter problems and commend log statements)
                     conversions = []
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                         new_data = process_dataset(input_datasets[prefixed_name], conversion_datatypes)
@@ -283,6 +289,7 @@ class DefaultToolAction(ToolAction):
                         if processed_dataset is not v:
                             processed_dataset_dict[v] = processed_dataset
 <<<<<<< HEAD
+<<<<<<< HEAD
                     input_datasets[prefixed_name + str(i + 1)] = processed_dataset or v
                     input_datasets.set_legacy_alias(
                         new_key=prefixed_name + str(i + 1), old_key=prefix + input.name + str(i + 1)
@@ -292,6 +299,11 @@ class DefaultToolAction(ToolAction):
                     input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
                     log.error(f"==> input_datasets {input_datasets}")
 >>>>>>> f578c6ad55 (more debug)
+=======
+                    # log.error(f"ADD DCTP input.name {input.name} i+1 {i+1}")
+                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset or v
+                    # log.error(f"==> input_datasets {input_datasets}")
+>>>>>>> 26d94faf82 (fix linter problems and commend log statements)
                 if conversion_required:
                     collection_type_description = (
                         trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
@@ -508,6 +520,14 @@ class DefaultToolAction(ToolAction):
         async_tool = tool.tool_type == "data_source_async"
 
         def handle_output(name, output, hidden=None):
+<<<<<<< HEAD
+=======
+            # log.error(f"handle_output name {name}")
+            # log.error(f"handle_output output {output}")
+            if output.parent:
+                parent_to_child_pairs.append((output.parent, name))
+                child_dataset_names.add(name)
+>>>>>>> 26d94faf82 (fix linter problems and commend log statements)
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
@@ -1183,10 +1203,10 @@ def determine_output_format(
                 pass
         ext = random_input_ext
     format_source = output.format_source
-    log.error(f"determine_output_format output.name {output.name}")
-    log.error(f"determine_output_format format_source {format_source}")
-    log.error(f"determine_output_format input_datasets {input_datasets}")
-    log.error(f"determine_output_format format_source in input_datasets {format_source in input_datasets}")
+    # log.error(f"determine_output_format output.name {output.name}")
+    # log.error(f"determine_output_format format_source {format_source}")
+    # log.error(f"determine_output_format input_datasets {input_datasets}")
+    # log.error(f"determine_output_format format_source in input_datasets {format_source in input_datasets}")
 
     if format_source is not None and format_source in input_datasets:
         try:

@@ -1561,7 +1561,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
         inp_collections = {obj.name: obj.dataset_collection for obj in self.input_dataset_collections}
-        log.error(f"io_dicts inp_collections {inp_collections}")
+        # log.error(f"io_dicts inp_collections {inp_collections}")
 
         out_data: Dict[str, DatasetInstance] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
