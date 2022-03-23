@@ -154,7 +154,7 @@ function forceBuildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);

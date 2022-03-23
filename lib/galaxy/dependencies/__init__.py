@@ -13,7 +13,6 @@ from os.path import (
 import pkg_resources
 import yaml
 
-from galaxy.containers import parse_containers_config
 from galaxy.util import (
     asbool,
     etree,
@@ -121,13 +120,6 @@ class ConditionalDependencies:
                     self.authenticators.append(auth_type.text)
         except OSError:
             pass
-
-        # Parse containers config
-        containers_conf_yml = self.config.get(
-            "containers_config_file", join(dirname(self.config_file), "containers_conf.yml")
-        )
-        containers_conf = parse_containers_config(containers_conf_yml)
-        self.container_interface_types = [c.get("type", None) for c in containers_conf.values()]
 
         # Parse error report config
         error_report_yml = self.config.get("error_report_file", join(dirname(self.config_file), "error_report.yml"))

@@ -32,7 +32,6 @@ from typing import (
 import yaml
 
 from galaxy.config.schema import AppSchema
-from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
@@ -1064,8 +1063,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.interactivetools_map = self._in_root_dir(
             kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
         )
-
-        self.containers_conf = parse_containers_config(self.containers_config_file)
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False

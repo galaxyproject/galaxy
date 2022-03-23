@@ -27,7 +27,6 @@ from galaxy import (
     tools,
 )
 from galaxy.config_watchers import ConfigWatchers
-from galaxy.containers import build_container_interfaces
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
@@ -646,12 +645,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
             self.authnz_manager = managers.AuthnzManager(
                 self, self.config.oidc_config_file, self.config.oidc_backends_config_file
-            )
-
-        self.containers = {}
-        if self.config.enable_beta_containers_interface:
-            self.containers = build_container_interfaces(
-                self.config.containers_config_file, containers_conf=self.config.containers_conf
             )
 
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
