@@ -42,6 +42,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web.framework import (
     base,
     helpers,
@@ -108,7 +109,9 @@ class WebApplication(base.WebApplication):
         """
         # API specification builder
         apispec = APISpec(
-            title=self.name, version="0.0.0-unsupported", openapi_version="3.0.2"  # galaxy_app.config.version_major,
+            title=self.name,
+            version=VERSION,
+            openapi_version="3.0.2",
         )
         RE_URL = re.compile(
             r"""
@@ -118,6 +121,7 @@ class WebApplication(base.WebApplication):
             (?:\)|})""",
             re.X,
         )
+        DEFAULT_API_RESOURCE_NAMES = ("index", "create", "new", "update", "edit", "show", "delete")
         for rule in self.mapper.matchlist:
             if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
                 continue
@@ -132,11 +136,15 @@ class WebApplication(base.WebApplication):
                 methods = type(m) is str and [m] or m
             # Find the controller class
             if controller not in self.api_controllers:
-                log.warning("No controller class found for '%s' while building API spec", controller)
-                continue
+                # Only happens when removing a controller after porting to FastAPI.
+                raise Exception(f"No controller class found for '{controller}', remove from buildapp.py ?")
             controller_class = self.api_controllers[controller]
             if not hasattr(controller_class, action):
-                log.warning("No action found for '%s' in class '%s' while building API spec", action, controller_class)
+                if action not in DEFAULT_API_RESOURCE_NAMES:
+                    # There's a manually specified action that points to a function that doesn't exist anymore
+                    raise Exception(
+                        f"No action found for {action} in class {controller_class}, remove from buildapp.py ?"
+                    )
                 continue
             action_method = getattr(controller_class, action)
             operations = {}

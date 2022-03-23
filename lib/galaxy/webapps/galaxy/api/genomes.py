@@ -11,13 +11,7 @@ from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
-from galaxy.web import (
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
-)
-from galaxy.web.framework.helpers import is_true
 from . import (
-    BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
@@ -130,64 +124,3 @@ class FastAPIGenomes:
         id = get_id(id, format)
         rval = self.manager.get_sequence(trans, id, chrom, low, high)
         return Response(rval)
-
-
-class GenomesController(BaseGalaxyAPIController):
-    """
-    RESTful controller for interactions with genome data.
-    """
-
-    manager: GenomesManager = depends(GenomesManager)
-
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans, **kwd):
-        """
-        GET /api/genomes: returns a list of installed genomes
-        ---
-        get:
-            description: returns a list of installed genomes
-            responses:
-                200:
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    type: string
-        """
-        chrom_info = kwd.get("chrom_info")
-        return self.manager.get_dbkeys(trans.user, chrom_info)
-
-    @expose_api_anonymous_and_sessionless
-    def show(self, trans, id, num=None, chrom=None, low=None, high=None, **kwd):
-        """
-        GET /api/genomes/{id}
-
-        Returns information about build <id>
-        """
-        id = get_id(id, kwd.get("format"))
-        reference = is_true(kwd.get("reference", False))
-        return self.manager.get_genome(trans, id, num, chrom, low, high, reference)
-
-    @expose_api_raw_anonymous_and_sessionless
-    def indexes(self, trans, id, **kwd):
-        """
-        GET /api/genomes/{id}/indexes?type={table name}
-
-        Returns all available indexes for a genome id for type={table name}
-        For instance, /api/genomes/hg19/indexes?type=fasta_indexes
-        """
-        id = get_id(id, kwd.get("format"))
-        index_type = kwd.get("type")
-        return self.manager.get_indexes(id, index_type)
-
-    @expose_api_raw_anonymous_and_sessionless
-    def sequences(self, trans, id, chrom=None, low=None, high=None, **kwd):
-        """
-        GET /api/genomes/{id}/sequences
-
-        This is a wrapper for accepting sequence requests that
-        want a raw return, not json
-        """
-        id = get_id(id, kwd.get("format"))
-        return self.manager.get_sequence(trans, id, chrom, low, high)

@@ -6,9 +6,7 @@ from galaxy.managers.licenses import (
     LicenseMetadataModel,
     LicensesManager,
 )
-from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
-    BaseGalaxyAPIController,
     depends,
     Router,
 )
@@ -43,26 +41,3 @@ class FastAPILicenses:
         """Returns the license metadata associated with the given
         [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)."""
         return self.licenses_manager.get_license_by_id(id)
-
-
-class LicensesController(BaseGalaxyAPIController):
-    licenses_manager: LicensesManager = depends(LicensesManager)
-
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans, **kwd):
-        """
-        GET /api/licenses
-
-        Return an index of known licenses.
-        """
-        return self.licenses_manager.index()
-
-    @expose_api_anonymous_and_sessionless
-    def get(self, trans, id, **kwd):
-        """
-        GET /api/licenses/<license_id>
-
-        Return license metadata by URI or SPDX id.
-        """
-        license_id = id
-        return self.licenses_manager.get_license_by_id(license_id)
