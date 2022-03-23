@@ -21,7 +21,7 @@ TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
 DATA_MANAGER_REGEX = re.compile(r"\stool_type=\"manage_data\"")
 
-YAML_EXTENSIONS = [".yaml", ".yml"]
+YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
 EXCLUDE_WALK_DIRS = [".hg", ".git", ".venv"]
 
