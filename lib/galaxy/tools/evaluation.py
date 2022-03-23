@@ -513,13 +513,13 @@ class ToolEvaluator:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
             directory = ensure_configs_directory(self.local_working_directory)
+            with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
+                config_filename = temp.name
             if filename is not None:
-                # Explicit filename was requested, needs to be placed in tool working directory
+                # Explicit filename was requested, this is implemented as symbolic link
+                # to the actual config file that is placed in tool working directory
                 directory = os.path.join(self.local_working_directory, "working")
-                config_filename = os.path.join(directory, filename)
-            else:
-                with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
-                    config_filename = temp.name
+                os.symlink(config_filename, os.path.join(directory, filename))
             self.__write_workdir_file(config_filename, config_text, param_dict, is_template=is_template)
             self.__register_extra_file(name, config_filename)
             config_filenames.append(config_filename)
