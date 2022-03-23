@@ -63,7 +63,6 @@ PATH_CONFIG_PROPERTIES = [
     "ftp_upload_dir",
     "galaxy_data_manager_data_path",
     "integrated_tool_panel_config",
-    "interactive_environment_plugins_directory",
     "involucro_path",
     "job_config_file",
     "job_resource_params_file",

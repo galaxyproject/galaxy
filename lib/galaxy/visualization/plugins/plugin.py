@@ -12,9 +12,7 @@ from typing import (
 
 import mako.lookup
 
-from galaxy.managers import api_keys
 from galaxy.visualization.plugins import (
-    interactive_environments,
     resource_parser,
     utils,
 )
@@ -232,72 +230,6 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         """
         # as is for now
         return embedded
-
-
-class InteractiveEnvironmentPlugin(VisualizationPlugin):
-    """
-    Serves web-based REPLs such as Jupyter and RStudio.
-    """
-
-    INTENV_REQUEST_FACTORY = interactive_environments.InteractiveEnvironmentRequest
-
-    def __init__(self, app, path, name, config, context=None, **kwargs):
-        # TODO: this is a hack until we can get int envs seperated from the vis reg and into their own framework
-        context["base_url"] = "interactive_environments"
-        super().__init__(app, path, name, config, context=context, **kwargs)
-
-    def _error_template(self, trans):
-        return trans.fill_template(
-            "message.mako",
-            message="Loading the interactive environment failed, please contact the {admin_tag} for assistance".format(
-                admin_tag='<a href="mailto:{admin_mail}">Galaxy administrator</a>'.format(
-                    admin_mail=trans.app.config.error_email_to
-                )
-                if trans.app.config.error_email_to
-                else "Galaxy administrator"
-            ),
-            status="error",
-        )
-
-    def _render(self, render_vars, trans=None, embedded=None, **kwargs):
-        """
-        Override to add interactive environment specific template vars.
-        """
-        render_vars["embedded"] = self._parse_embedded(embedded)
-        # NOTE: (mako specific) vars is a dictionary for shared data in the template
-        #   this feels hacky to me but it's what mako recommends:
-        #   http://docs.makotemplates.org/en/latest/runtime.html
-        render_vars.update(vars={})
-        # No longer needed but being left around for a few releases as jupyter-galaxy
-        # as an external visualization plugin is deprecated in favor of core interactive
-        # environment plugin.
-        if "get_api_key" not in render_vars:
-
-            def get_api_key():
-                return api_keys.ApiKeyManager(trans.app).get_or_create_api_key(trans.user)
-
-            render_vars["get_api_key"] = get_api_key
-
-        if "plugin_path" not in render_vars:
-            render_vars["plugin_path"] = os.path.abspath(self.path)
-
-        if self.config.get("plugin_type", "visualization") == "interactive_environment":
-            try:
-                request = self.INTENV_REQUEST_FACTORY(trans, self)
-            except Exception:
-                log.exception("IE plugin request handling failed")
-                return self._error_template(trans)
-            render_vars["ie_request"] = request
-
-        template_filename = self.config["entry_point"]["file"]
-        try:
-            return trans.fill_template(template_filename, template_lookup=self.template_lookup, **render_vars)
-        except Exception:
-            log.exception("IE plugin template fill failed")
-            return self._error_template(trans)
-
-    def _get_url(self):
-        return url_for("interactive_environment_plugin", visualization_name=self.name)
 
 
 class ScriptVisualizationPlugin(VisualizationPlugin):

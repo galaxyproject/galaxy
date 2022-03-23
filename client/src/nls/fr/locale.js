@@ -12,7 +12,6 @@ define({
     Visualization: "Visualisation",
     "New Track Browser": "Nouveau Navigateur de Tracks/Pistes",
     "Saved Visualizations": "Visualisations sauvegardées",
-    "Interactive Environments": "Environnements interactifs",
     Admin: "Admin",
     Help: "Aide",
     Support: "Assistance",

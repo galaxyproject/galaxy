@@ -1057,11 +1057,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get("statsd_host", "")
 
-        ie_dirs = self.interactive_environment_plugins_directory
-        self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
-        if ie_dirs:
-            self.visualization_plugins_directory += f",{ie_dirs}"
-
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 

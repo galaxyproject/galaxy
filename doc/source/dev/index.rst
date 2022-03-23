@@ -13,7 +13,6 @@ A multi-hour long video playlist covering these slides can be found at
 
   schema
   api_guidelines
-  interactive_environments
   build_a_job_runner
   finding_and_improving_slow_code
   data_managers
