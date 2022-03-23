@@ -1,5 +1,8 @@
 import textwrap
-from typing import Dict
+from typing import (
+    Dict,
+    List,
+)
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -31,6 +34,32 @@ class DatasetsApiTestCase(ApiTestCase):
         for dataset in datasets:
             assert len(dataset) == 1
             self._assert_has_keys(dataset, "id")
+
+    def test_index_order_by_size(self):
+        num_datasets = 3
+        history_id = self.dataset_populator.new_history()
+        dataset_ids_ordered_by_size_asc = []
+        for index in range(num_datasets):
+            dataset_content = (index + 1) * "content"
+            hda = self.dataset_populator.new_dataset(history_id, content=dataset_content)
+            dataset_ids_ordered_by_size_asc.append(hda["id"])
+        dataset_ids_ordered_by_size = dataset_ids_ordered_by_size_asc[::-1]
+        self.dataset_populator.wait_for_history(history_id)
+
+        self._assert_history_datasets_ordered(
+            history_id, order_by="size", expected_ids_order=dataset_ids_ordered_by_size
+        )
+        self._assert_history_datasets_ordered(
+            history_id, order_by="size-asc", expected_ids_order=dataset_ids_ordered_by_size_asc
+        )
+
+    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: List[str]):
+        datasets_response = self._get(f"histories/{history_id}/contents?v=dev&keys=size&order={order_by}")
+        self._assert_status_code_is(datasets_response, 200)
+        datasets = datasets_response.json()
+        assert len(datasets) == len(expected_ids_order)
+        for index, dataset in enumerate(datasets):
+            assert dataset["id"] == expected_ids_order[index]
 
     def test_search_datasets(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
