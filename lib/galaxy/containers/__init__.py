@@ -48,10 +48,6 @@ class ContainerVolume(metaclass=ABCMeta):
     def __str__(self):
         """Return this container type's string representation of the volume."""
 
-    @abstractmethod
-    def to_native(self):
-        """Return this container type's native representation of the volume."""
-
     @property
     def mode_is_valid(self):
         return self.mode in self.valid_modes

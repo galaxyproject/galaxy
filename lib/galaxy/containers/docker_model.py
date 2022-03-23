@@ -50,10 +50,6 @@ class DockerVolume(ContainerVolume):
             volume_for_cmd_line = f'"{volume_str}"'
         return volume_for_cmd_line
 
-    def to_native(self):
-        host_path = self.host_path or self.path
-        return (self.path, {host_path: {"bind": self.path, "mode": self.mode}})
-
 
 class DockerContainer(Container):
     def __init__(self, interface, id, name=None, inspect=None):
