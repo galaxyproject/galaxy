@@ -5,7 +5,7 @@
     <entry_points>
         <entry_point name="JupyTool interactive tool" requires_domain="True">
             <port>8888</port>
-            <url>lab?</url>
+            <url>ipython/lab</url>
         </entry_point>
     </entry_points>
     <environment_variables>
@@ -62,6 +62,18 @@ with open(os.path.join(data_staging_path, galaxy_inputs), "w") as fh:
     json.dump(galaxy_input_dict, fh)
 ]]>
         </configfile>
+        <configfile name="galaxy_input_startup_script"><![CDATA[
+import json, os
+from galaxy_ie_helpers import get
+from galaxy_ie_helpers import put
+from galaxy_ie_helpers import get_galaxy_connection
+HISTORY_ID = os.environ.get('HISTORY_ID', None)
+try:
+    GALAXY_INPUTS = json.load(open(os.path.join(os.environ.get("GALAXY_WORKING_DIR", ""), "jupyter", "galaxy_inputs", "galaxy_inputs.json")))
+except FileNotFoundError:
+    GALAXY_INPUTS = {}
+        ]]>
+    </configfile>
     </configfiles>
     <command detect_errors="aggressive"><![CDATA[
         python staging_script.py &&
@@ -71,13 +83,15 @@ with open(os.path.join(data_staging_path, galaxy_inputs), "w") as fh:
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
+        export HOME=/home/jovyan/ &&
         export PATH=/home/jovyan/.local/bin:\$PATH &&
+        cp '${galaxy_input_startup_script}' /home/jovyan/.ipython/profile_default/startup/00-load.py &&
 
         #if $mode.mode_select == 'scratch':
             ## copy default notebook
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
             jupyter trust ./ipython_galaxy_notebook.ipynb &&
-            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True --ip='*' --NotebookApp.token='' --NotebookApp.password='' &&
+            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #else:
             #import re
@@ -88,7 +102,7 @@ with open(os.path.join(data_staging_path, galaxy_inputs), "w") as fh:
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
             #else:
-                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True --ip='*' --NotebookApp.token='' --NotebookApp.password='' &&
+                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
             #end if
             cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
