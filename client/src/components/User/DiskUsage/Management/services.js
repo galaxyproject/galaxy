@@ -7,7 +7,8 @@ const datasetKeys = "id,name,size,update_time,hda_ldda";
 const isDataset = "q=history_content_type-eq&qv=dataset";
 const isDeleted = "q=deleted-eq&qv=True";
 const isNotPurged = "q=purged-eq&qv=False";
-const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}`;
+const maxItemsToFetch = 5000;
+const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
 
 /**
  * Calculates the total amount of bytes that can be cleaned by permanently removing
