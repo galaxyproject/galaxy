@@ -215,7 +215,7 @@ export default {
 }
 .content-item {
     .name {
-        word-wrap: break-word;
+        word-break: break-all;
     }
 }
 .detail-animation-wrapper {
