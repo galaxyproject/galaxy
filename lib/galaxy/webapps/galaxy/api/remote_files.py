@@ -73,6 +73,11 @@ class FastAPIRemoteFiles:
         summary="Displays remote files available to the user.",
         response_description="A list with details about the remote files available to the user.",
     )
+    @router.get(
+        "/api/ftp_files",
+        deprecated=True,
+        summary="Displays remote files available to the user. Please use /api/remote_files instead.",
+    )
     async def index(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
