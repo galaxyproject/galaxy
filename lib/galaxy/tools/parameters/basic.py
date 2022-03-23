@@ -1007,6 +1007,7 @@ class SelectToolParameter(ToolParameter):
                         )
             if is_runtime_value(value):
                 return None
+            log.error(f"value {value} legal_values {legal_values}")
             if value in legal_values:
                 return value
             elif value in fallback_values:
