@@ -126,7 +126,7 @@ export default {
             ],
             sortBy: "update_time",
             sortDesc: true,
-            perPage: 5,
+            perPage: 50,
             currentPage: 1,
             totalRows: 1,
             allSelected: false,
