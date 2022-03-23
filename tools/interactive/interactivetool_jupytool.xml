@@ -240,7 +240,7 @@ except FileNotFoundError:
         </test>
     </tests>
     <help>
-    Welcome to the JupyTool! Here you can create, run, and share custom Galaxy tools based upon Jupyter Notebooks.
+    Welcome to the **JupyTool**! Here you can create, run, and share custom Galaxy tools based upon Jupyter Notebooks.
 
     The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations,
     visualizations and narrative text. Uses include: data cleaning and transformation, numerical simulation, statistical modeling, data visualization,
@@ -250,8 +250,13 @@ except FileNotFoundError:
     do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
 
     You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your colleague and execute it on your dataset.
-    If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
+    You can specify any number of user-defined inputs using the repeat input, providing `name` value, selecting the type of input, and then providing values.
 
-    You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
+    You can make the JupyTool reusable in a workflow, by allowing the user to specify input values for the defined input blocks.
+    Inputs can be accessed by `name` from the automatically provided `GALAXY_INPUTS` dictionary.
+    Outputs can be written automatically to the user's history by writing to the `outputs` directory for one individual file or to the `outputs/collection` directory for multiple files.
+    Using collection tools, you can parse out the individual elements from the collection, as needed.
+
+    For backwards compatibility, you can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
     </help>
 </tool>
