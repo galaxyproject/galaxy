@@ -1011,7 +1011,8 @@ class CIF(GenericMolFile):
         """
         Try to guess if the file is a CIF file.
 
-        Note that STAR image files and the STAR sniffer also use "data_" blocks.
+        The CIF format and the Relion STAR format have a shared origin.
+        Note therefore that STAR files and the STAR sniffer also use "data_" blocks.
         STAR files will not pass the CIF sniffer, but CIF files can pass the STAR sniffer.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
