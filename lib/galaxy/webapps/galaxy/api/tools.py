@@ -634,6 +634,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Set up inputs.
         inputs = payload.get("inputs", {})
+        log.error(f"_create inputs {inputs}")
         if not isinstance(inputs, dict):
             raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 

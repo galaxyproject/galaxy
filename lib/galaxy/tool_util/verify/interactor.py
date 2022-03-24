@@ -495,6 +495,7 @@ class GalaxyInteractorApi:
     def run_tool(self, testdef, history_id, resource_parameters=None):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
+        log.error(f"run_tool testdef.inputs {testdef.inputs}")
         resource_parameters = resource_parameters or {}
         inputs_tree = testdef.inputs.copy()
         for key, value in inputs_tree.items():
@@ -520,6 +521,7 @@ class GalaxyInteractorApi:
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
+        log.error(f"run_tool inputs_tree {inputs_tree}")
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
@@ -703,6 +705,7 @@ class GalaxyInteractorApi:
         data = dict(
             history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
         )
+        log.error(f"__submit_tool files {files} data {data}")
         return self._post("tools", files=files, data=data)
 
     def ensure_user_with_email(self, email, password=None):
@@ -771,6 +774,7 @@ class GalaxyInteractorApi:
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
+        log.error(f"_post url {url} kwd {kwd}")
         return requests.post(url, **kwd)
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
