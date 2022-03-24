@@ -3,7 +3,7 @@ import _ from "underscore";
 import jqplot from 'jqplot-exported/jqplot';
 import { LineRenderer } from 'jqplot-exported/LineRenderer';
 import { BarRenderer } from 'jqplot-exported/plugins/BarRenderer';
-import { OHLCRenderer } from 'jqplot-exported/plugins/OHLCRenderer';
+import { OHLCRenderer } from 'jqplot-exported/plugins/OhlcRenderer';
 import { EnhancedLegendRenderer } from 'jqplot-exported/plugins/EnhancedLegendRenderer';
 
 import { getDomains, makeCategories, makeTickFormat, makeSeries, mapCategories } from "@galaxyproject/charts/lib/utilities/series";

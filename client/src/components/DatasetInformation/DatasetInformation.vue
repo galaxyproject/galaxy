@@ -1,5 +1,5 @@
 <template>
-    <DatasetProvider :id="hda_id" v-slot="{ item: dataset, loading }">
+    <DatasetProvider :id="hda_id" v-slot="{ result: dataset, loading }">
         <div v-if="!loading">
             <h3>Dataset Information</h3>
             <table id="dataset-details" class="tabletip info_data_table">

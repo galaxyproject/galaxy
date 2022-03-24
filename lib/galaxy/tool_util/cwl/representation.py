@@ -5,12 +5,18 @@ import json
 import logging
 import os
 from enum import Enum
-from typing import Any, NamedTuple, Optional
+from typing import (
+    Any,
+    NamedTuple,
+    Optional,
+)
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.util import safe_makedirs, string_as_bool
+from galaxy.util import (
+    safe_makedirs,
+    string_as_bool,
+)
 from .util import set_basename_and_derived_properties
-
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +185,9 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     if dataset_wrapper.unsanitized:
         raw_file_object["size"] = int(dataset_wrapper.get_size())
 
-    set_basename_and_derived_properties(raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name))
+    set_basename_and_derived_properties(
+        raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name)
+    )
     return raw_file_object
 
 
@@ -197,12 +205,14 @@ def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
     except Exception:
         archive_location = None
 
-    directory_json = {"location": dataset_wrapper.extra_files_path,
-                      "class": "Directory",
-                      "name": directory_name,
-                      "archive_location": archive_location,
-                      "archive_nameext": nameext,
-                      "archive_nameroot": nameroot}
+    directory_json = {
+        "location": dataset_wrapper.extra_files_path,
+        "class": "Directory",
+        "name": directory_name,
+        "archive_location": archive_location,
+        "archive_nameext": nameext,
+        "archive_nameroot": nameroot,
+    }
 
     return directory_json
 
@@ -222,7 +232,7 @@ def collection_wrapper_to_record(inputs_dir, wrapped_value):
 
 
 def to_cwl_job(tool, param_dict, local_working_directory):
-    """ tool is Galaxy's representation of the tool and param_dict is the
+    """tool is Galaxy's representation of the tool and param_dict is the
     parameter dictionary with wrapped values.
     """
     tool_proxy = tool._cwl_tool_proxy
@@ -297,8 +307,8 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             only_input = next(iter(input.inputs.values()))
             array_value = []
             for instance in param_dict[input_name]:
-                array_value.append(simple_value(only_input, instance[input_name[:-len("_repeat")]]))
-            input_json[input_name[:-len("_repeat")]] = array_value
+                array_value.append(simple_value(only_input, instance[input_name[: -len("_repeat")]]))
+            input_json[input_name[: -len("_repeat")]] = array_value
         elif input.type == "conditional":
             assert input_name in param_dict, f"No value for {input_name} in {param_dict}"
             current_case = param_dict[input_name]["_cwl__type_"]
@@ -327,7 +337,7 @@ def to_cwl_job(tool, param_dict, local_working_directory):
 
 
 def to_galaxy_parameters(tool, as_dict):
-    """ Tool is Galaxy's representation of the tool and as_dict is a Galaxified
+    """Tool is Galaxy's representation of the tool and as_dict is a Galaxified
     representation of the input json (no paths, HDA references for instance).
     """
     inputs = tool.inputs
@@ -357,7 +367,7 @@ def to_galaxy_parameters(tool, as_dict):
             # TODO: less crazy handling of defaults...
             if (as_dict_value is NOT_PRESENT or as_dict_value is None) and "null" in case_strings:
                 type_representation_name = "null"
-            elif (as_dict_value is NOT_PRESENT or as_dict_value is None):
+            elif as_dict_value is NOT_PRESENT or as_dict_value is None:
                 raise RequestParameterInvalidException(
                     "Cannot translate CWL datatype - value [{}] of type [{}] with case_strings [{}]. Non-null property must be set.".format(
                         as_dict_value, type(as_dict_value), case_strings
@@ -375,9 +385,19 @@ def to_galaxy_parameters(tool, as_dict):
                 type_representation_name = "double"
             elif isinstance(as_dict_value, str) and "string" in case_strings:
                 type_representation_name = "string"
-            elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value and "file" in case_strings:
+            elif (
+                isinstance(as_dict_value, dict)
+                and "src" in as_dict_value
+                and "id" in as_dict_value
+                and "file" in case_strings
+            ):
                 type_representation_name = "file"
-            elif isinstance(as_dict_value, dict) and "src" in as_dict_value and "id" in as_dict_value and "directory" in case_strings:
+            elif (
+                isinstance(as_dict_value, dict)
+                and "src" in as_dict_value
+                and "id" in as_dict_value
+                and "directory" in case_strings
+            ):
                 # TODO: can't disambiuate with above if both are available...
                 type_representation_name = "directory"
             elif "field" in case_strings:

@@ -1,8 +1,11 @@
-from ..base.twilltestcase import common, ShedTwillTestCase
+from ..base.twilltestcase import (
+    common,
+    ShedTwillTestCase,
+)
 
-repository_name = 'filtering_0400'
-repository_description = 'Galaxy filtering tool for test 0400'
-repository_long_description = 'Long description of Galaxy filtering tool for test 0400'
+repository_name = "filtering_0400"
+repository_description = "Galaxy filtering tool for test 0400"
+repository_long_description = "Long description of Galaxy filtering tool for test 0400"
 
 """
 1. Create users.
@@ -47,15 +50,19 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert test_user_1 is not None, f'Problem retrieving user with email {common.test_user_1_email} from the database'
+        assert (
+            test_user_1 is not None
+        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
         self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert test_user_2 is not None, f'Problem retrieving user with email {common.test_user_2_email} from the database'
+        assert (
+            test_user_2 is not None
+        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
         self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
         admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f'Problem retrieving user with email {common.admin_email} from the database'
+        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
         self.test_db_util.get_private_role(admin_user)
 
     def test_0005_grant_reviewer_role(self):
@@ -65,7 +72,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         We now have an admin user (admin_user) and two non-admin users (test_user_1 and test_user_2). Grant the repository
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories.
         """
-        reviewer_role = self.test_db_util.get_role_by_name('Repository Reviewer')
+        reviewer_role = self.test_db_util.get_role_by_name("Repository Reviewer")
         test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
         self.grant_role_to_user(test_user_2, reviewer_role)
 
@@ -76,11 +83,21 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         We now have an admin user (admin_user) and two non-admin users (test_user_1 and test_user_2). Grant the repository
         reviewer role to test_user_2, who will not be the owner of the reviewed repositories.
         """
-        strings_not_displayed = ['Repository dependencies']
+        strings_not_displayed = ["Repository dependencies"]
         self.manage_review_components(strings_not_displayed=strings_not_displayed)
-        self.add_repository_review_component(name='Repository dependencies',
-                                             description='Repository dependencies defined in a file named repository_dependencies.xml included in the repository')
-        strings_displayed = ['Data types', 'Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
+        self.add_repository_review_component(
+            name="Repository dependencies",
+            description="Repository dependencies defined in a file named repository_dependencies.xml included in the repository",
+        )
+        strings_displayed = [
+            "Data types",
+            "Functional tests",
+            "README",
+            "Repository dependencies",
+            "Tool dependencies",
+            "Tools",
+            "Workflows",
+        ]
         self.manage_review_components(strings_displayed=strings_displayed)
 
     def test_0015_create_repository(self):
@@ -90,24 +107,30 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         Log in as test_user_1 and create the filtering repository, then upload a basic set of
         components to be reviewed in subsequent tests.
         """
-        category = self.create_category(name='Test 0400 Repository Component Reviews', description='Test 0400 Repository Component Reviews')
+        category = self.create_category(
+            name="Test 0400 Repository Component Reviews", description="Test 0400 Repository Component Reviews"
+        )
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         strings_displayed = self.expect_repo_created_strings(repository_name)
-        repository = self.get_or_create_repository(name=repository_name,
-                                                   description=repository_description,
-                                                   long_description=repository_long_description,
-                                                   owner=common.test_user_1_name,
-                                                   category_id=self.security.encode_id(category.id),
-                                                   strings_displayed=strings_displayed)
-        self.upload_file(repository,
-                         filename='filtering/filtering_1.1.0.tar',
-                         filepath=None,
-                         valid_tools_only=True,
-                         uncompress_file=True,
-                         remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded filtering 1.1.0 tarball.',
-                         strings_displayed=[],
-                         strings_not_displayed=[])
+        repository = self.get_or_create_repository(
+            name=repository_name,
+            description=repository_description,
+            long_description=repository_long_description,
+            owner=common.test_user_1_name,
+            category_id=self.security.encode_id(category.id),
+            strings_displayed=strings_displayed,
+        )
+        self.upload_file(
+            repository,
+            filename="filtering/filtering_1.1.0.tar",
+            filepath=None,
+            valid_tools_only=True,
+            uncompress_file=True,
+            remove_repo_files_not_in_tar=False,
+            commit_message="Uploaded filtering 1.1.0 tarball.",
+            strings_displayed=[],
+            strings_not_displayed=[],
+        )
 
     def test_0020_review_initial_revision_data_types(self):
         """Review the datatypes component for the current tip revision.
@@ -128,7 +151,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Data types': dict()}
+        review_contents_dict = {"Data types": dict()}
         self.create_repository_review(repository, review_contents_dict)
 
     def test_0025_verify_datatype_review(self):
@@ -140,9 +163,18 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Data types', 'not_applicable']
-        strings_not_displayed = ['Functional tests', 'README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["Data types", "not_applicable"]
+        strings_not_displayed = [
+            "Functional tests",
+            "README",
+            "Repository dependencies",
+            "Tool dependencies",
+            "Tools",
+            "Workflows",
+        ]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0030_review_initial_revision_functional_tests(self):
         """Review the functional tests component for the current tip revision.
@@ -166,13 +198,15 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Functional tests': dict(rating=1, comment='Functional tests missing', approved='no', private='yes')}
+        review_contents_dict = {
+            "Functional tests": dict(rating=1, comment="Functional tests missing", approved="no", private="yes")
+        }
         self.review_repository(repository, review_contents_dict, user)
 
-#    def test_0030_verify_review_display( self ):
-#        """Verify that private reviews are restricted to owner and reviewer, and non-private views are viewable by others."""
-#        # Currently not implemented because third parties cannot view reviews whether they are private or not.
-#        self.login( email=common.test_user_3_email, username=common.test_user_3_name )
+    #    def test_0030_verify_review_display( self ):
+    #        """Verify that private reviews are restricted to owner and reviewer, and non-private views are viewable by others."""
+    #        # Currently not implemented because third parties cannot view reviews whether they are private or not.
+    #        self.login( email=common.test_user_3_email, username=common.test_user_3_name )
 
     def test_0035_verify_functional_test_review(self):
         """Verify that the functional tests component review displays correctly.
@@ -185,9 +219,11 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Functional tests', 'Functional tests missing', 'no']
-        strings_not_displayed = ['README', 'Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["Functional tests", "Functional tests missing", "no"]
+        strings_not_displayed = ["README", "Repository dependencies", "Tool dependencies", "Tools", "Workflows"]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0040_review_readme(self):
         """Review the readme component for the current tip revision.
@@ -211,7 +247,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'README': dict()}
+        review_contents_dict = {"README": dict()}
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0045_verify_readme_review(self):
@@ -223,9 +259,11 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['README', 'not_applicable']
-        strings_not_displayed = ['Repository dependencies', 'Tool dependencies', 'Tools', 'Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["README", "not_applicable"]
+        strings_not_displayed = ["Repository dependencies", "Tool dependencies", "Tools", "Workflows"]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0050_review_repository_dependencies(self):
         """Review the repository dependencies component for the current tip revision.
@@ -250,7 +288,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Repository dependencies': dict()}
+        review_contents_dict = {"Repository dependencies": dict()}
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0055_verify_repository_dependency_review(self):
@@ -263,9 +301,11 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Repository dependencies', 'not_applicable']
-        strings_not_displayed = ['Tool dependencies', 'Tools', 'Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["Repository dependencies", "not_applicable"]
+        strings_not_displayed = ["Tool dependencies", "Tools", "Workflows"]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0060_review_tool_dependencies(self):
         """Review the tool dependencies component for the current tip revision.
@@ -291,7 +331,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Tool dependencies': dict()}
+        review_contents_dict = {"Tool dependencies": dict()}
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0065_verify_tool_dependency_review(self):
@@ -304,9 +344,11 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Tool dependencies', 'not_applicable']
-        strings_not_displayed = ['Tools', 'Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["Tool dependencies", "not_applicable"]
+        strings_not_displayed = ["Tools", "Workflows"]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0070_review_tools(self):
         """Review the tools component for the current tip revision.
@@ -334,7 +376,9 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Tools': dict(rating=5, comment='Excellent tool, easy to use.', approved='yes', private='no')}
+        review_contents_dict = {
+            "Tools": dict(rating=5, comment="Excellent tool, easy to use.", approved="yes", private="no")
+        }
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0075_verify_tools_review(self):
@@ -347,9 +391,11 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Tools', 'yes', 'Excellent tool, easy to use.']
-        strings_not_displayed = ['Workflows']
-        self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed)
+        strings_displayed = ["Tools", "yes", "Excellent tool, easy to use."]
+        strings_not_displayed = ["Workflows"]
+        self.verify_repository_reviews(
+            repository, reviewer=user, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        )
 
     def test_0080_review_workflows(self):
         """Review the workflows component for the current tip revision.
@@ -377,7 +423,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Workflows': dict()}
+        review_contents_dict = {"Workflows": dict()}
         self.review_repository(repository, review_contents_dict, user)
 
     def test_0085_verify_workflows_review(self):
@@ -390,7 +436,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Workflows', 'not_applicable']
+        strings_displayed = ["Workflows", "not_applicable"]
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0090_upload_readme_file(self):
@@ -402,15 +448,17 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(repository,
-                         filename='readme.txt',
-                         filepath=None,
-                         valid_tools_only=True,
-                         uncompress_file=False,
-                         remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded readme.txt.',
-                         strings_displayed=[],
-                         strings_not_displayed=[])
+        self.upload_file(
+            repository,
+            filename="readme.txt",
+            filepath=None,
+            valid_tools_only=True,
+            uncompress_file=False,
+            remove_repo_files_not_in_tar=False,
+            commit_message="Uploaded readme.txt.",
+            strings_displayed=[],
+            strings_not_displayed=[],
+        )
 
     def test_0095_review_new_changeset_readme_component(self):
         """Update the filtering repository's readme component review to reflect the presence of the readme file.
@@ -427,7 +475,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         # Get the last changeset revision that has a review associated with it.
         last_review = self.get_last_reviewed_revision_by_user(user, repository)
         if last_review is None:
-            raise AssertionError('Previous review expected, none found.')
+            raise AssertionError("Previous review expected, none found.")
         # The create_repository_review method takes a dict( component label=review contents ).
         # If review_contents is empty, it marks that component as not applicable. The review
         # contents dict should have the structure:
@@ -437,11 +485,20 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'README': dict(rating=5, comment='Clear and concise readme file, a true pleasure to read.', approved='yes', private='no')}
-        self.create_repository_review(repository,
-                                      review_contents_dict,
-                                      changeset_revision=self.get_repository_tip(repository),
-                                      copy_from=(str(last_review.changeset_revision), last_review.id))
+        review_contents_dict = {
+            "README": dict(
+                rating=5,
+                comment="Clear and concise readme file, a true pleasure to read.",
+                approved="yes",
+                private="no",
+            )
+        }
+        self.create_repository_review(
+            repository,
+            review_contents_dict,
+            changeset_revision=self.get_repository_tip(repository),
+            copy_from=(str(last_review.changeset_revision), last_review.id),
+        )
 
     def test_0100_verify_readme_review(self):
         """Verify that the readme component review displays correctly.
@@ -453,7 +510,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['README', 'yes', 'Clear and concise readme file, a true pleasure to read.']
+        strings_displayed = ["README", "yes", "Clear and concise readme file, a true pleasure to read."]
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0105_upload_test_data(self):
@@ -466,15 +523,17 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         last dowloadable revision hash.
         """
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(repository,
-                         filename='filtering/filtering_test_data.tar',
-                         filepath=None,
-                         valid_tools_only=True,
-                         uncompress_file=True,
-                         remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded filtering test data.',
-                         strings_displayed=[],
-                         strings_not_displayed=[])
+        self.upload_file(
+            repository,
+            filename="filtering/filtering_test_data.tar",
+            filepath=None,
+            valid_tools_only=True,
+            uncompress_file=True,
+            remove_repo_files_not_in_tar=False,
+            commit_message="Uploaded filtering test data.",
+            strings_displayed=[],
+            strings_not_displayed=[],
+        )
 
     def test_0110_review_new_changeset_functional_tests(self):
         """Update the filtering repository's readme component review to reflect the presence of the readme file.
@@ -498,11 +557,15 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Functional tests': dict(rating=5, comment='A good set of functional tests.', approved='yes', private='no')}
-        self.create_repository_review(repository,
-                                      review_contents_dict,
-                                      changeset_revision=self.get_repository_tip(repository),
-                                      copy_from=(str(last_review.changeset_revision), last_review.id))
+        review_contents_dict = {
+            "Functional tests": dict(rating=5, comment="A good set of functional tests.", approved="yes", private="no")
+        }
+        self.create_repository_review(
+            repository,
+            review_contents_dict,
+            changeset_revision=self.get_repository_tip(repository),
+            copy_from=(str(last_review.changeset_revision), last_review.id),
+        )
 
     def test_0115_verify_functional_tests_review(self):
         """Verify that the functional tests component review displays correctly.
@@ -514,7 +577,7 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Functional tests', 'yes', 'A good set of functional tests.']
+        strings_displayed = ["Functional tests", "yes", "A good set of functional tests."]
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)
 
     def test_0120_upload_new_tool_version(self):
@@ -526,15 +589,17 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(repository,
-                         filename='filtering/filtering_2.2.0.tar',
-                         filepath=None,
-                         valid_tools_only=True,
-                         uncompress_file=True,
-                         remove_repo_files_not_in_tar=False,
-                         commit_message='Uploaded filtering 2.2.0 tarball.',
-                         strings_displayed=[],
-                         strings_not_displayed=[])
+        self.upload_file(
+            repository,
+            filename="filtering/filtering_2.2.0.tar",
+            filepath=None,
+            valid_tools_only=True,
+            uncompress_file=True,
+            remove_repo_files_not_in_tar=False,
+            commit_message="Uploaded filtering 2.2.0 tarball.",
+            strings_displayed=[],
+            strings_not_displayed=[],
+        )
 
     def test_0125_review_new_changeset_functional_tests(self):
         """Update the filtering repository's review to apply to the new changeset with filtering 2.2.0.
@@ -557,11 +622,20 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         #   approved: yes/no
         #   private: yes/no
         # }
-        review_contents_dict = {'Tools': dict(rating=5, comment='Version 2.2.0 does the impossible and improves this tool.', approved='yes', private='yes')}
-        self.create_repository_review(repository,
-                                      review_contents_dict,
-                                      changeset_revision=self.get_repository_tip(repository),
-                                      copy_from=(str(last_review.changeset_revision), last_review.id))
+        review_contents_dict = {
+            "Tools": dict(
+                rating=5,
+                comment="Version 2.2.0 does the impossible and improves this tool.",
+                approved="yes",
+                private="yes",
+            )
+        }
+        self.create_repository_review(
+            repository,
+            review_contents_dict,
+            changeset_revision=self.get_repository_tip(repository),
+            copy_from=(str(last_review.changeset_revision), last_review.id),
+        )
 
     def test_0135_verify_review_for_new_version(self):
         """Verify that the reviews display correctly for this changeset revision.
@@ -573,7 +647,20 @@ class TestRepositoryComponentReviews(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         user = self.test_db_util.get_user(common.test_user_2_email)
-        strings_displayed = ['Data types', 'Functional tests', 'yes', 'A good set of functional tests.', 'README', 'yes', 'Workflows', 'Tools']
-        strings_displayed.extend(['Clear and concise readme file, a true pleasure to read.', 'Tool dependencies', 'not_applicable'])
-        strings_displayed.extend(['Repository dependencies', 'Version 2.2.0 does the impossible and improves this tool.'])
+        strings_displayed = [
+            "Data types",
+            "Functional tests",
+            "yes",
+            "A good set of functional tests.",
+            "README",
+            "yes",
+            "Workflows",
+            "Tools",
+        ]
+        strings_displayed.extend(
+            ["Clear and concise readme file, a true pleasure to read.", "Tool dependencies", "not_applicable"]
+        )
+        strings_displayed.extend(
+            ["Repository dependencies", "Version 2.2.0 does the impossible and improves this tool."]
+        )
         self.verify_repository_reviews(repository, reviewer=user, strings_displayed=strings_displayed)

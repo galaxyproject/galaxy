@@ -1,7 +1,15 @@
 """Utilities to help job and tool code setup jobs."""
 import json
 import os
-from typing import Any, cast, Dict, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from galaxy.files import (
     ConfiguredFileSources,
@@ -21,8 +29,8 @@ from galaxy.model import (
 from galaxy.util import safe_makedirs
 from galaxy.util.dictifiable import Dictifiable
 
-TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
+TOOL_PROVIDED_JOB_METADATA_FILE = "galaxy.json"
+TOOL_PROVIDED_JOB_METADATA_KEYS = ["name", "info", "dbkey", "created_from_basename"]
 
 
 OutputHdasAndType = Dict[str, Tuple[DatasetInstance, DatasetPath]]
@@ -31,56 +39,57 @@ OutputPaths = List[DatasetPath]
 
 class JobIO(Dictifiable):
     dict_collection_visible_keys = (
-        'job_id',
-        'working_directory',
-        'outputs_directory',
-        'outputs_to_working_directory',
-        'galaxy_url',
-        'version_path',
-        'tool_directory',
-        'home_directory',
-        'tmp_directory',
-        'tool_data_path',
-        'galaxy_data_manager_data_path',
-        'new_file_path',
-        'len_file_path',
-        'builds_file_path',
-        'file_sources_dict',
-        'check_job_script_integrity',
-        'check_job_script_integrity_count',
-        'check_job_script_integrity_sleep',
-        'tool_source',
-        'tool_source_class',
-        'tool_dir',
-        'is_task',
+        "job_id",
+        "working_directory",
+        "outputs_directory",
+        "outputs_to_working_directory",
+        "galaxy_url",
+        "version_path",
+        "tool_directory",
+        "home_directory",
+        "tmp_directory",
+        "tool_data_path",
+        "galaxy_data_manager_data_path",
+        "new_file_path",
+        "len_file_path",
+        "builds_file_path",
+        "file_sources_dict",
+        "check_job_script_integrity",
+        "check_job_script_integrity_count",
+        "check_job_script_integrity_sleep",
+        "tool_source",
+        "tool_source_class",
+        "tool_dir",
+        "is_task",
     )
 
     def __init__(
-            self,
-            sa_session,
-            job: Job,
-            working_directory: str,
-            outputs_directory: str,
-            outputs_to_working_directory: bool,
-            galaxy_url: str,
-            version_path: str,
-            tool_directory: str,
-            home_directory: str,
-            tmp_directory: str,
-            tool_data_path: str,
-            galaxy_data_manager_data_path: str,
-            new_file_path: str,
-            len_file_path: str,
-            builds_file_path: str,
-            check_job_script_integrity: bool,
-            check_job_script_integrity_count: int,
-            check_job_script_integrity_sleep: float,
-            file_sources_dict: Dict[str, Any],
-            user_context: Union[ProvidesUserFileSourcesUserContext, Dict['str', Any]],
-            tool_source: Optional[str] = None,
-            tool_source_class: Optional['str'] = 'XmlToolSource',
-            tool_dir: Optional[str] = None,
-            is_task: bool = False):
+        self,
+        sa_session,
+        job: Job,
+        working_directory: str,
+        outputs_directory: str,
+        outputs_to_working_directory: bool,
+        galaxy_url: str,
+        version_path: str,
+        tool_directory: str,
+        home_directory: str,
+        tmp_directory: str,
+        tool_data_path: str,
+        galaxy_data_manager_data_path: str,
+        new_file_path: str,
+        len_file_path: str,
+        builds_file_path: str,
+        check_job_script_integrity: bool,
+        check_job_script_integrity_count: int,
+        check_job_script_integrity_sleep: float,
+        file_sources_dict: Dict[str, Any],
+        user_context: Union[ProvidesUserFileSourcesUserContext, Dict["str", Any]],
+        tool_source: Optional[str] = None,
+        tool_source_class: Optional["str"] = "XmlToolSource",
+        tool_dir: Optional[str] = None,
+        is_task: bool = False,
+    ):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
         if isinstance(user_context, dict):
             user_context_instance = DictFileSourcesUserContext(**user_context)
@@ -123,18 +132,18 @@ class JobIO(Dictifiable):
 
     @classmethod
     def from_dict(cls, io_dict, sa_session):
-        io_dict.pop('model_class')
-        job_id = io_dict.pop('job_id')
+        io_dict.pop("model_class")
+        job_id = io_dict.pop("job_id")
         job = sa_session.query(Job).get(job_id)
         return cls(sa_session=sa_session, job=job, **io_dict)
 
     def to_dict(self):
         io_dict = super().to_dict()
-        io_dict['user_context'] = self.user_context.to_dict()
+        io_dict["user_context"] = self.user_context.to_dict()
         return io_dict
 
     def to_json(self, path):
-        with open(path, 'w') as out:
+        with open(path, "w") as out:
             out.write(json.dumps(self.to_dict()))
 
     @property
@@ -191,7 +200,7 @@ class JobIO(Dictifiable):
 
     def get_input_path(self, dataset: DatasetInstance):
         real_path = dataset.file_name
-        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, 'input')
+        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
         return DatasetPath(
             dataset.dataset.id,
             real_path=real_path,
@@ -232,15 +241,17 @@ class JobIO(Dictifiable):
 
         results = []
         for da in job.output_datasets + job.output_library_datasets:
-            da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'output')
+            da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
             mutable = da.dataset.dataset.external_filename is None
-            dataset_path = DatasetPath(da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable)
+            dataset_path = DatasetPath(
+                da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable
+            )
             results.append((da.name, da.dataset, dataset_path))
 
         self._output_paths = [t[2] for t in results]
         self._output_hdas_and_paths = {t[0]: t[1:] for t in results}
         if special:
-            false_path = dataset_path_rewriter.rewrite_dataset_path(special, 'output')
+            false_path = dataset_path_rewriter.rewrite_dataset_path(special, "output")
             dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
             self._output_paths.append(dsp)
             self._output_hdas_and_paths["output_file"] = (special.fda, dsp)
@@ -262,8 +273,6 @@ def ensure_configs_directory(work_dir):
 
 
 def create_working_directory_for_job(object_store, job):
-    object_store.create(
-        job, base_dir='job_work', dir_only=True, obj_dir=True)
-    working_directory = object_store.get_filename(
-        job, base_dir='job_work', dir_only=True, obj_dir=True)
+    object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
+    working_directory = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
     return working_directory

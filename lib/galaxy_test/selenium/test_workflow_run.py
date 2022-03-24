@@ -112,7 +112,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run("""
+        self.open_in_workflow_run(
+            """
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -124,7 +125,8 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-""")
+"""
+        )
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")
@@ -187,6 +189,34 @@ steps:
             self.history_panel_wait_for_hid_ok(7, allowed_force_refreshes=1)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
         self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
+
+    @selenium_test
+    @managed_history
+    def test_execution_with_text_default_value_connected_to_restricted_select(self):
+        self.open_in_workflow_run(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    optional: true
+    default: ex2
+    restrictOnConnections: true
+    type: text
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+"""
+        )
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
 
     @selenium_test
     @managed_history

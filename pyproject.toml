@@ -1,3 +1,17 @@
+[tool.black]
+line-length = 120
+target-version = ['py37']
+include = '\.pyi?$'
+extend-exclude = '''
+^/(
+  | packages
+)/
+'''
+force-exclude = 'lib/galaxy/util/jstree.py'
+
+[tool.darker]
+isort = true
+
 [tool.poetry]
 name = "galaxy"
 version = "22.01.dev0"
@@ -14,7 +28,10 @@ name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
 
 [tool.poetry.dependencies]
+a2wsgi = "*"
 aiofiles = "*"
+alembic = "*"
+apispec = "*"
 Babel = "*"
 bdbag = "*"
 Beaker = "1.11.0"
@@ -38,7 +55,7 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-gravity = { git = "https://github.com/galaxyproject/gravity.git" }
+gravity = ">=0.10.0"
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
@@ -61,12 +78,13 @@ psutil = "*"
 pulsar-galaxy-lib = ">=0.14.13"
 pycryptodome = "*"
 pydantic = "*"
+PyJWT = "*"
 pykwalify = "*"
 pyparsing = "*"
 pysam = "*"
 python = ">=3.7,<4"
+python-dateutil = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
-pyuwsgi = "*"
 PyYAML = "*"
 refgenconf = ">=0.12.0"
 requests = "*"
@@ -74,7 +92,7 @@ Routes = "*"
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
-sqlalchemy-migrate = "*"
+sqlalchemy-migrate = "*"  # required to support tool shed
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
@@ -90,10 +108,12 @@ Whoosh = "*"
 zipstream-new = "*"
 
 [tool.poetry.dev-dependencies]
+black = "^22.1.0"
 cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
 httpx = "*"
+isort = "^5.10.1"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 NoseHTML = "*"
@@ -106,7 +126,6 @@ pytest-html = "*"
 python-irodsclient = "*"
 pytest-json-report = "*"
 pytest-mock = "*"
-pytest-pythonpath = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 recommonmark = "*"

@@ -14,7 +14,10 @@ from galaxy.web import (
     expose_api,
     require_admin,
 )
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 

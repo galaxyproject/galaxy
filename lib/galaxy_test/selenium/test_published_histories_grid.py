@@ -6,7 +6,6 @@ from .framework import (
 
 
 class HistoryGridTestCase(SharedStateSeleniumTestCase):
-
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -19,7 +18,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.published_grid_search_for(self.history1_name)
         self.assert_grid_histories_are([self.history1_name])
 
-        self.unset_filter('free-text-search', self.history1_name)
+        self.unset_filter("free-text-search", self.history1_name)
         self.published_grid_search_for(self.history4_name)
 
         self.assert_grid_histories_are([])
@@ -28,38 +27,38 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def test_history_grid_search_advanced(self):
         self.navigate_to_published_histories_page()
 
-        self.wait_for_and_click_selector('#standard-search .advanced-search-toggle')
+        self.wait_for_and_click_selector("#standard-search .advanced-search-toggle")
 
-        name_filter_selector = '#input-name-filter'
-        annot_filter_selector = '#input-annotation-filter'
-        owner_filter_selector = '#input-username-filter'
-        tags_filter_selector = '#input-tags-filter'
+        name_filter_selector = "#input-name-filter"
+        annot_filter_selector = "#input-annotation-filter"
+        owner_filter_selector = "#input-username-filter"
+        tags_filter_selector = "#input-tags-filter"
 
         # Search by name
         self.set_filter(name_filter_selector, self.history1_name)
         self.screenshot("histories_published_grid_advanced")
         self.assert_grid_histories_are([self.history1_name])
-        self.unset_filter('name', self.history1_name)
+        self.unset_filter("name", self.history1_name)
 
         self.set_filter(name_filter_selector, self.history4_name)
         self.assert_grid_histories_are([])
-        self.unset_filter('name', self.history4_name)
+        self.unset_filter("name", self.history4_name)
 
         # Search by annotation
         self.set_filter(annot_filter_selector, self.history3_annot)
         self.assert_grid_histories_are([self.history3_name])
-        self.unset_filter('annotation', self.history3_annot)
+        self.unset_filter("annotation", self.history3_annot)
 
         # Search by owner
-        owner = self.user2_email.split('@')[0]
+        owner = self.user2_email.split("@")[0]
         self.set_filter(owner_filter_selector, owner)
         self.assert_grid_histories_are([self.history2_name])
-        self.unset_filter('username', owner)
+        self.unset_filter("username", owner)
 
         # Search by tags
         self.set_filter(tags_filter_selector, self.history1_tags[0])
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
-        self.unset_filter('tags', self.history1_tags[0])
+        self.unset_filter("tags", self.history1_tags[0])
 
     # Trying to address an intermittent failure by injecting a small rendering
     # sleep. to be honest, I'm not sure that the timing is the issue, because
@@ -69,14 +68,14 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def test_history_grid_sort_by_name(self):
         self.navigate_to_published_histories_page()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.wait_for_and_click_selector('th#name-header > a')
+        self.wait_for_and_click_selector("th#name-header > a")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_grid_histories_are(sorted(self.all_histories))
 
     @selenium_test
     def test_history_grid_sort_by_owner(self):
         self.navigate_to_published_histories_page()
-        self.wait_for_and_click_selector('th#username-header > a')
+        self.wait_for_and_click_selector("th#username-header > a")
         self.assert_grid_histories_sorted_by_owner()
 
     @selenium_test
@@ -84,18 +83,18 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.navigate_to_published_histories_page()
 
         tags = None
-        grid = self.wait_for_selector('#grid-table-body')
-        for row in grid.find_elements_by_tag_name('tr'):
-            td = row.find_elements_by_tag_name('td')
+        grid = self.wait_for_selector("#grid-table-body")
+        for row in grid.find_elements_by_tag_name("tr"):
+            td = row.find_elements_by_tag_name("td")
             name = td[0].text
             if name == self.history1_name:
                 tags = td[4]
                 break
 
         if tags is None:
-            raise AssertionError(f'Failed to find history with name [{self.history1_name}]')
+            raise AssertionError(f"Failed to find history with name [{self.history1_name}]")
 
-        tag_button_selector = 'div.tag-name'
+        tag_button_selector = "div.tag-name"
         tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
         tag_button_text = None
         target_tag_button_text = self.history1_tags[0]
@@ -112,9 +111,9 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
     def get_histories(self, sleep=False):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
-        grid = self.wait_for_selector('#grid-table-body')
-        for row in grid.find_elements_by_tag_name('tr'):
-            cell = row.find_elements_by_tag_name('td')[0]  # Name
+        grid = self.wait_for_selector("#grid-table-body")
+        for row in grid.find_elements_by_tag_name("tr"):
+            cell = row.find_elements_by_tag_name("td")[0]  # Name
             names.append(cell.text)
         return names
 
@@ -132,7 +131,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         actual_histories = self.get_histories()
 
         # Filter out histories created by other tests
-        all_histories = self.all_histories + ['No items']
+        all_histories = self.all_histories + ["No items"]
         actual_histories = [x for x in actual_histories if x in all_histories]
 
         if not sort_matters:
@@ -155,8 +154,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.send_enter(filter_input)
 
     def unset_filter(self, filter_key, filter_value):
-        close_link_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
-            (filter_key, filter_value)
+        close_link_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
         self.wait_for_and_click_selector(close_link_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 
@@ -165,8 +163,8 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)
 
-        HistoryGridTestCase.user1_email = self._get_random_email('test1')
-        HistoryGridTestCase.user2_email = self._get_random_email('test2')
+        HistoryGridTestCase.user1_email = self._get_random_email("test1")
+        HistoryGridTestCase.user2_email = self._get_random_email("test2")
         HistoryGridTestCase.history1_name = self._get_random_name()
         HistoryGridTestCase.history2_name = self._get_random_name()
         HistoryGridTestCase.history3_name = self._get_random_name()
@@ -198,7 +196,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.history_panel_create_new_with_name(name)
 
     def publish_current_history(self):
-        self.click_history_option('Share or Publish')
+        self.click_history_option("Share or Publish")
         self.make_accessible_and_publishable()
 
     def navigate_to_published_histories_page(self):

@@ -32,7 +32,6 @@ class FileDescription:
 
 
 class PathFileDescription:
-
     def __init__(self, path):
         self.path = path
 
@@ -42,7 +41,6 @@ class PathFileDescription:
 
 
 class PathDirectoryDescription:
-
     def __init__(self, path):
         self.path = path
 
@@ -51,7 +49,6 @@ class PathDirectoryDescription:
 
 
 class LiteralFileDescription:
-
     def __init__(self, content):
         self.content = content
 
@@ -92,7 +89,11 @@ def handle_outputs(job_directory=None):
     tool_working_directory = os.path.join(job_directory, "working")
 
     job_id_tag = metadata_params["job_id_tag"]
-    from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
+    from galaxy.job_execution.output_collect import (
+        default_exit_code_file,
+        read_exit_code_from,
+    )
+
     exit_code_file = default_exit_code_file(".", job_id_tag)
     tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
 
@@ -127,9 +128,7 @@ def handle_outputs(job_directory=None):
         if secondary_files:
 
             order = []
-            index_contents = {
-                "order": order
-            }
+            index_contents = {"order": order}
 
             for secondary_file in secondary_files:
                 if output_name is None:
@@ -145,7 +144,7 @@ def handle_outputs(job_directory=None):
                     prefix = ""
                     while True:
                         if secondary_file_basename.startswith(output_basename):
-                            secondary_file_name = prefix + secondary_file_basename[len(output_basename):]
+                            secondary_file_name = prefix + secondary_file_basename[len(output_basename) :]
                             break
                         prefix = f"^{prefix}"
                         if "." not in output_basename:
@@ -156,9 +155,7 @@ def handle_outputs(job_directory=None):
                 else:
                     secondary_file_name = secondary_file_basename
                 # Convert to ^ format....
-                secondary_files_dir = job_proxy.output_secondary_files_dir(
-                    output_name, create=True
-                )
+                secondary_files_dir = job_proxy.output_secondary_files_dir(output_name, create=True)
                 extra_target = os.path.join(secondary_files_dir, secondary_file_name)
                 secondary_file_description.write_to(extra_target)
                 order.append(secondary_file_name)
@@ -214,7 +211,9 @@ def handle_outputs(job_directory=None):
             for index, el in enumerate(output):
                 if isinstance(el, dict) and el["class"] == "File":
                     output_path = _possible_uri_to_path(el["location"])
-                    elements.append({"name": str(index), "filename": output_path, "created_from_basename": el["basename"]})
+                    elements.append(
+                        {"name": str(index), "filename": output_path, "created_from_basename": el["basename"]}
+                    )
                 else:
                     target_path = f"{output_name}____{str(index)}"
                     with open(target_path, "w") as f:
@@ -233,6 +232,4 @@ def handle_outputs(job_directory=None):
         json.dump(provided_metadata, f)
 
 
-__all__ = (
-    'handle_outputs',
-)
+__all__ = ("handle_outputs",)

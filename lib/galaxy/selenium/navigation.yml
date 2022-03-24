@@ -154,7 +154,7 @@ history_panel:
   content_item:
     selectors:
       # specific rows selectable with attributes via suffix
-      _: '.beta.history .content-item${suffix}'
+      _: '.history-index .content-item${suffix}'
       title: '${_} .content-title'
       details: '${_} .details'
       summary: '${_} .summary'
@@ -177,7 +177,7 @@ history_panel:
       info_button: '${_} .params-btn'
       nametags: '${_} .nametags .badge-tags'
 
-      dataset_operations_dropdown: '${_}  .dataset-operations-dropdown'
+      dataset_operations_dropdown: '${_}  .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -193,10 +193,11 @@ history_panel:
   # beta history tags
   tag_editor:
     selectors:
-      _: '${scope} .history-details .tags'
+      _: '${scope} .details .tags'
       toggle: '${_} .toggle-link'
       display: '${_} .tag-area .tag-name'
       input: '${_} input'
+      tag_area: '${_} .tag-area'
       tag_close_btn: '${_} .ti-icon-close'
 
   multi_operations:
@@ -226,7 +227,7 @@ history_panel:
       list_items_beta: '.dataset-collection-panel .listing .content-item'
 
   selectors:
-    beta: '.beta.history'
+    beta: '.history-index'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
@@ -240,25 +241,25 @@ history_panel:
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
-    tag_area: '.history-details .tags-display'
-    tag_area_input: '.history-details .tags-display .tags-input input'
+    tag_area: '.details .tags-display'
+    tag_area_input: '.details .tags-display .tags-input input'
     tag_close_btn: '.tags-display .ti-icon-close'
     tags: 'li.ti-tag.ti-valid .tag-name'
 
     annotation_icon: '.actions .history-annotate-btn'
-    annotation_area: '.history-details .history-annotation'
+    annotation_area: '.details .history-annotation'
     annotation_editable_text:
-      selector: 'history annotation'
+      selector: 'annotation value'
       type: data-description
     annotation_edit:
       selector: 'annotation input'
       type: data-description
 
-    annotation_done: '.history-details .history-annotation .annotation button'
+    annotation_done: '.details .history-annotation .annotation button'
 
     options_button: '#history-options-button'
-    options_button_icon: '.history-details .menu-expand-button'
-    options_button_icon_beta: '.history-details .menu-expand-button'
+    options_button_icon: '.details .menu-expand-button'
+    options_button_icon_beta: '.details .menu-expand-button'
     options_button_copy_datasets_beta: '.copy-datasets-menu-item'
     options_menu: '#history-options-button-menu'
     options_menu_item:
@@ -441,6 +442,7 @@ pages:
   selectors:
     create: '.manage-table-actions .action-button'
     submit: '#submit'
+    export: '.markdown-pdf-export'
   editor:
     selectors:
       wym_iframe: 'div.wym_iframe iframe'
@@ -449,7 +451,7 @@ pages:
       embed_button: '#embed-galaxy-object'
       dataset_selector: '.saved-datasets'
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
-
+      markdown_editor: '.markdown-textarea'
     labels:
       embed_dataset: 'Embed Dataset'
 
@@ -524,6 +526,11 @@ workflow_run:
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
+    run_workflow: "#run-workflow"
+    validation_error: ".validation-error"
+    input_select_field:
+      type: xpath
+      selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
 
 workflow_editor:
 
@@ -626,7 +633,7 @@ invocations:
     step_output_collection_toggle: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .name'
     step_output_collection_element_identifier:
       type: xpath
-      selector: '//span[@class="name"][text()="${element_identifier}"]'
+      selector: '//span[@class="content-title name"][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-output-collection-details .datatype .value'
     step_job_details: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '.workflow-invocation-state-component .invocation-steps-details [data-step="${order_index}"] .invocation-step-job-details table'

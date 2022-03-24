@@ -1,7 +1,7 @@
 from galaxy import model
 from galaxy.workflow.run_request import (
     _normalize_inputs,
-    _normalize_step_parameters
+    _normalize_step_parameters,
 )
 from .workflow_support import MockTrans
 
@@ -14,62 +14,51 @@ def test_normalize_parameters_empty():
 
 
 def test_normalize_parameters_by_tool():
-    normalized_params = __normalize_parameters_against_fixture({
-        'cat1': {'foo': 'bar'}
-    })
+    normalized_params = __normalize_parameters_against_fixture({"cat1": {"foo": "bar"}})
     # Tool specified parameters are expanded out.
-    assert normalized_params[STEP_ID_OFFSET + 3] == {'foo': 'bar'}
-    assert normalized_params[STEP_ID_OFFSET + 4] == {'foo': 'bar'}
+    assert normalized_params[STEP_ID_OFFSET + 3] == {"foo": "bar"}
+    assert normalized_params[STEP_ID_OFFSET + 4] == {"foo": "bar"}
     assert len(normalized_params.keys()) == 2
 
 
 def test_step_parameters():
-    normalized_params = __normalize_parameters_against_fixture({
-        str(STEP_ID_OFFSET + 1): {'foo': 'bar'}
-    })
-    assert normalized_params[STEP_ID_OFFSET + 1] == {'foo': 'bar'}
+    normalized_params = __normalize_parameters_against_fixture({str(STEP_ID_OFFSET + 1): {"foo": "bar"}})
+    assert normalized_params[STEP_ID_OFFSET + 1] == {"foo": "bar"}
     assert len(normalized_params.keys()) == 1
 
 
 def test_step_parameters_legacy():
-    normalized_params = __normalize_parameters_against_fixture({
-        str(STEP_ID_OFFSET + 1): {'param': 'foo', 'value': 'bar'}
-    })
-    assert normalized_params[STEP_ID_OFFSET + 1] == {'foo': 'bar'}, normalized_params
+    normalized_params = __normalize_parameters_against_fixture(
+        {str(STEP_ID_OFFSET + 1): {"param": "foo", "value": "bar"}}
+    )
+    assert normalized_params[STEP_ID_OFFSET + 1] == {"foo": "bar"}, normalized_params
     assert len(normalized_params.keys()) == 1
 
 
 def test_inputs_by_step_id():
     input1 = __new_input()
     input2 = __new_input()
-    normalized_inputs = __normalize_inputs_against_fixture({
-        str(STEP_ID_OFFSET + 1): input1,
-        str(STEP_ID_OFFSET + 2): input2
-    }, inputs_by="step_id")
-    assert normalized_inputs[STEP_ID_OFFSET + 1]['content'] == input1['content']
-    assert normalized_inputs[STEP_ID_OFFSET + 2]['content'] == input2['content']
+    normalized_inputs = __normalize_inputs_against_fixture(
+        {str(STEP_ID_OFFSET + 1): input1, str(STEP_ID_OFFSET + 2): input2}, inputs_by="step_id"
+    )
+    assert normalized_inputs[STEP_ID_OFFSET + 1]["content"] == input1["content"]
+    assert normalized_inputs[STEP_ID_OFFSET + 2]["content"] == input2["content"]
 
 
 def test_inputs_by_step_index():
     input1 = __new_input()
     input2 = __new_input()
-    normalized_inputs = __normalize_inputs_against_fixture({
-        str(0): input1,
-        str(1): input2
-    }, inputs_by="step_index")
-    assert normalized_inputs[STEP_ID_OFFSET + 1]['content'] == input1['content']
-    assert normalized_inputs[STEP_ID_OFFSET + 2]['content'] == input2['content']
+    normalized_inputs = __normalize_inputs_against_fixture({str(0): input1, str(1): input2}, inputs_by="step_index")
+    assert normalized_inputs[STEP_ID_OFFSET + 1]["content"] == input1["content"]
+    assert normalized_inputs[STEP_ID_OFFSET + 2]["content"] == input2["content"]
 
 
 def test_inputs_by_name():
     input1 = __new_input()
     input2 = __new_input()
-    normalized_inputs = __normalize_inputs_against_fixture({
-        "input1": input1,
-        "input2": input2
-    }, inputs_by="name")
-    assert normalized_inputs[STEP_ID_OFFSET + 1]['content'] == input1['content']
-    assert normalized_inputs[STEP_ID_OFFSET + 2]['content'] == input2['content']
+    normalized_inputs = __normalize_inputs_against_fixture({"input1": input1, "input2": input2}, inputs_by="name")
+    assert normalized_inputs[STEP_ID_OFFSET + 1]["content"] == input1["content"]
+    assert normalized_inputs[STEP_ID_OFFSET + 2]["content"] == input2["content"]
 
 
 def __normalize_parameters_against_fixture(params):
@@ -99,10 +88,7 @@ def __new_input():
 
 
 def __workflow_fixure(trans):
-    user = model.User(
-        email="testworkflow_params@bx.psu.edu",
-        password="pass"
-    )
+    user = model.User(email="testworkflow_params@bx.psu.edu", password="pass")
     stored_workflow = model.StoredWorkflow()
     stored_workflow.user = user
     workflow = model.Workflow()
@@ -118,16 +104,8 @@ def __workflow_fixure(trans):
         workflow,
     )
 
-    add_step(
-        type="data_input",
-        order_index=0,
-        tool_inputs={"name": "input1"}
-    )
-    add_step(
-        type="data_input",
-        order_index=1,
-        tool_inputs={"name": "input2"}
-    )
+    add_step(type="data_input", order_index=0, tool_inputs={"name": "input1"})
+    add_step(type="data_input", order_index=1, tool_inputs={"name": "input2"})
     add_step(
         type="tool",
         tool_id="cat1",

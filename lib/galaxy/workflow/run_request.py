@@ -5,18 +5,18 @@ from typing import Dict
 
 from galaxy import (
     exceptions,
-    model
+    model,
 )
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
-INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
+INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]
 
 log = logging.getLogger(__name__)
 
 
 class WorkflowRunConfig:
-    """ Wrapper around all the ways a workflow execution can be parameterized.
+    """Wrapper around all the ways a workflow execution can be parameterized.
 
     :param target_history: History to execute workflow in.
     :type target_history: galaxy.model.History.
@@ -43,14 +43,17 @@ class WorkflowRunConfig:
     :type param_map: dict
     """
 
-    def __init__(self, target_history,
-                 replacement_dict,
-                 copy_inputs_to_history=False,
-                 inputs=None,
-                 param_map=None,
-                 allow_tool_state_corrections=False,
-                 use_cached_job=False,
-                 resource_params=None):
+    def __init__(
+        self,
+        target_history,
+        replacement_dict,
+        copy_inputs_to_history=False,
+        inputs=None,
+        param_map=None,
+        allow_tool_state_corrections=False,
+        use_cached_job=False,
+        resource_params=None,
+    ):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
@@ -75,9 +78,11 @@ def _normalize_inputs(steps, inputs, inputs_by):
             elif inputs_by_el == "step_uuid":
                 possible_input_keys.append(str(step.uuid))
             elif inputs_by_el == "name":
-                possible_input_keys.append(step.label or step.tool_inputs.get('name'))
+                possible_input_keys.append(step.label or step.tool_inputs.get("name"))
             else:
-                raise exceptions.MessageException("Workflow cannot be run because unexpected inputs_by value specified.")
+                raise exceptions.MessageException(
+                    "Workflow cannot be run because unexpected inputs_by value specified."
+                )
         inputs_key = None
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
@@ -97,7 +102,7 @@ def _normalize_inputs(steps, inputs, inputs_by):
 
 
 def _normalize_step_parameters(steps, param_map, legacy=False, already_normalized=False):
-    """ Take a complex param_map that can reference parameters by
+    """Take a complex param_map that can reference parameters by
     step_id in the new flexible way or in the old one-parameter
     per step fashion or by tool id and normalize the parameters so
     everything is referenced by a numeric step id.
@@ -110,14 +115,18 @@ def _normalize_step_parameters(steps, param_map, legacy=False, already_normalize
             param_dict = _step_parameters(step, param_map, legacy=legacy)
         if step.type == "subworkflow" and param_dict:
             if not already_normalized:
-                raise exceptions.RequestParameterInvalidException("Specifying subworkflow step parameters requires already_normalized to be specified as true.")
+                raise exceptions.RequestParameterInvalidException(
+                    "Specifying subworkflow step parameters requires already_normalized to be specified as true."
+                )
             subworkflow_param_dict: Dict[str, Dict[str, str]] = {}
             for key, value in param_dict.items():
                 step_index, param_name = key.split("|", 1)
                 if step_index not in subworkflow_param_dict:
                     subworkflow_param_dict[step_index] = {}
                 subworkflow_param_dict[step_index][param_name] = value
-            param_dict = _normalize_step_parameters(step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized)
+            param_dict = _normalize_step_parameters(
+                step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized
+            )
         if param_dict:
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
@@ -158,10 +167,10 @@ def _step_parameters(step, param_map, legacy=False):
         uuid_params = param_map.get(str(step_uuid), {})
         param_dict.update(uuid_params)
     if param_dict:
-        if 'param' in param_dict and 'value' in param_dict:
-            param_dict[param_dict['param']] = param_dict['value']
-            del param_dict['param']
-            del param_dict['value']
+        if "param" in param_dict and "value" in param_dict:
+            param_dict[param_dict["param"]] = param_dict["value"]
+            del param_dict["param"]
+            del param_dict["value"]
     # Inputs can be nested dict, but Galaxy tool code wants nesting of keys (e.g.
     # cond1|moo=4 instead of cond1: {moo: 4} ).
     new_params = _flatten_step_params(param_dict)
@@ -182,7 +191,7 @@ def _flatten_step_params(param_dict, prefix=""):
         else:
             effective_key = key
         value = param_dict[key]
-        if isinstance(value, dict) and (not ('src' in value and 'id' in value) and key != "__POST_JOB_ACTIONS__"):
+        if isinstance(value, dict) and (not ("src" in value and "id" in value) and key != "__POST_JOB_ACTIONS__"):
             new_params.update(_flatten_step_params(value, effective_key))
         else:
             new_params[effective_key] = value
@@ -191,30 +200,34 @@ def _flatten_step_params(param_dict, prefix=""):
 
 def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
     param_keys = param_keys or []
-    history_name = payload.get('new_history_name', None)
-    history_id = payload.get('history_id', None)
-    history_param = payload.get('history', None)
+    history_name = payload.get("new_history_name", None)
+    history_id = payload.get("history_id", None)
+    history_param = payload.get("history", None)
     if [history_name, history_id, history_param].count(None) < 2:
-        raise exceptions.RequestParameterInvalidException("Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified.")
+        raise exceptions.RequestParameterInvalidException(
+            "Specified workflow target history multiple ways - at most one of 'history', 'history_id', and 'new_history_name' may be specified."
+        )
     if history_param:
-        if history_param.startswith('hist_id='):
+        if history_param.startswith("hist_id="):
             history_id = history_param[8:]
         else:
             history_name = history_param
     if history_id:
         history_manager = trans.app.history_manager
-        target_history = history_manager.get_owned(trans.security.decode_id(history_id), trans.user, current_history=trans.history)
+        target_history = history_manager.get_owned(
+            trans.security.decode_id(history_id), trans.user, current_history=trans.history
+        )
     else:
         if history_name:
             nh_name = history_name
         else:
-            nh_name = f'History from {workflow.name} workflow'
+            nh_name = f"History from {workflow.name} workflow"
         if len(param_keys) <= index:
             raise exceptions.MessageException("Incorrect expansion of workflow batch parameters.")
         ids = param_keys[index]
         nids = len(ids)
         if nids == 1:
-            nh_name = f'{nh_name} on {ids[0]}'
+            nh_name = f"{nh_name} on {ids[0]}"
         elif nids > 1:
             nh_name = f"{nh_name} on {', '.join(ids[0:-1])} and {ids[-1]}"
         new_history = trans.app.model.History(user=trans.user, name=nh_name)
@@ -226,8 +239,8 @@ def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
 
 def build_workflow_run_configs(trans, workflow, payload):
     app = trans.app
-    allow_tool_state_corrections = payload.get('allow_tool_state_corrections', False)
-    use_cached_job = payload.get('use_cached_job', False)
+    allow_tool_state_corrections = payload.get("allow_tool_state_corrections", False)
+    use_cached_job = payload.get("use_cached_job", False)
 
     # Sanity checks.
     if len(workflow.steps) == 0:
@@ -235,37 +248,43 @@ def build_workflow_run_configs(trans, workflow, payload):
     if workflow.has_cycles:
         raise exceptions.MessageException("Workflow cannot be run because it contains cycles")
 
-    if 'step_parameters' in payload and 'parameters' in payload:
-        raise exceptions.RequestParameterInvalidException("Cannot specify both legacy parameters and step_parameters attributes.")
-    if 'inputs' in payload and 'ds_map' in payload:
+    if "step_parameters" in payload and "parameters" in payload:
+        raise exceptions.RequestParameterInvalidException(
+            "Cannot specify both legacy parameters and step_parameters attributes."
+        )
+    if "inputs" in payload and "ds_map" in payload:
         raise exceptions.RequestParameterInvalidException("Cannot specify both legacy ds_map and input attributes.")
 
-    add_to_history = 'no_add_to_history' not in payload
-    legacy = payload.get('legacy', False)
-    already_normalized = payload.get('parameters_normalized', False)
-    raw_parameters = payload.get('parameters', {})
+    add_to_history = "no_add_to_history" not in payload
+    legacy = payload.get("legacy", False)
+    already_normalized = payload.get("parameters_normalized", False)
+    raw_parameters = payload.get("parameters", {})
 
     run_configs = []
-    unexpanded_param_map = _normalize_step_parameters(workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized)
-    unexpanded_inputs = payload.get('inputs', None)
-    inputs_by = payload.get('inputs_by', None)
+    unexpanded_param_map = _normalize_step_parameters(
+        workflow.steps, raw_parameters, legacy=legacy, already_normalized=already_normalized
+    )
+    unexpanded_inputs = payload.get("inputs", None)
+    inputs_by = payload.get("inputs_by", None)
     # New default is to reference steps by index of workflow step
     # which is intrinsic to the workflow and independent of the state
     # of Galaxy at the time of workflow import.
-    default_inputs_by = 'step_index|step_uuid'
+    default_inputs_by = "step_index|step_uuid"
     inputs_by = inputs_by or default_inputs_by
 
     if unexpanded_inputs is None:
         # Default to legacy behavior - read ds_map and reference steps
         # by unencoded step id (a raw database id).
-        unexpanded_inputs = payload.get('ds_map', {})
+        unexpanded_inputs = payload.get("ds_map", {})
         if legacy:
-            default_inputs_by = 'step_id|step_uuid'
+            default_inputs_by = "step_id|step_uuid"
         inputs_by = inputs_by or default_inputs_by
     else:
         unexpanded_inputs = unexpanded_inputs or {}
 
-    expanded_params, expanded_param_keys, expanded_inputs = expand_workflow_inputs(unexpanded_param_map, unexpanded_inputs)
+    expanded_params, expanded_param_keys, expanded_inputs = expand_workflow_inputs(
+        unexpanded_param_map, unexpanded_inputs
+    )
     for index, (param_map, inputs) in enumerate(zip(expanded_params, expanded_inputs)):
         history = _get_target_history(trans, workflow, payload, expanded_param_keys, index)
         if inputs or not already_normalized:
@@ -292,54 +311,78 @@ def build_workflow_run_configs(trans, workflow, payload):
             if input_dict is None:
                 continue
             step = steps_by_id[key]
-            if step.type == 'parameter_input':
+            if step.type == "parameter_input":
                 continue
-            if 'src' not in input_dict:
-                raise exceptions.RequestParameterInvalidException(f"Not input source type defined for input '{input_dict}'.")
-            if 'id' not in input_dict:
+            if "src" not in input_dict:
+                raise exceptions.RequestParameterInvalidException(
+                    f"Not input source type defined for input '{input_dict}'."
+                )
+            if "id" not in input_dict:
                 raise exceptions.RequestParameterInvalidException(f"Not input id defined for input '{input_dict}'.")
-            if 'content' in input_dict:
-                raise exceptions.RequestParameterInvalidException(f"Input cannot specify explicit 'content' attribute {input_dict}'.")
-            input_source = input_dict['src']
-            input_id = input_dict['id']
+            if "content" in input_dict:
+                raise exceptions.RequestParameterInvalidException(
+                    f"Input cannot specify explicit 'content' attribute {input_dict}'."
+                )
+            input_source = input_dict["src"]
+            input_id = input_dict["id"]
             try:
-                if input_source == 'ldda':
-                    ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                if input_source == "ldda":
+                    ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(
+                        trans.security.decode_id(input_id)
+                    )
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                        trans.get_current_user_roles(), ldda.dataset
+                    )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif input_source == 'ld':
-                    ldda = trans.sa_session.query(app.model.LibraryDataset).get(trans.security.decode_id(input_id)).library_dataset_dataset_association
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                elif input_source == "ld":
+                    ldda = (
+                        trans.sa_session.query(app.model.LibraryDataset)
+                        .get(trans.security.decode_id(input_id))
+                        .library_dataset_dataset_association
+                    )
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                        trans.get_current_user_roles(), ldda.dataset
+                    )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
-                elif input_source == 'hda':
+                elif input_source == "hda":
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), content.dataset)
-                elif input_source == 'uuid':
-                    dataset = trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
+                    content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(
+                        trans.security.decode_id(input_id)
+                    )
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                        trans.get_current_user_roles(), content.dataset
+                    )
+                elif input_source == "uuid":
+                    dataset = (
+                        trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
+                    )
                     if dataset is None:
                         # this will need to be changed later. If federation code is avalible, then a missing UUID
                         # could be found amoung fereration partners
                         raise exceptions.RequestParameterInvalidException(f"Input cannot find UUID: {input_id}.")
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), dataset)
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                        trans.get_current_user_roles(), dataset
+                    )
                     content = history.add_dataset(dataset)
-                elif input_source == 'hdca':
-                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, 'history', input_id)
+                elif input_source == "hdca":
+                    content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
                 else:
-                    raise exceptions.RequestParameterInvalidException(f"Unknown workflow input source '{input_source}' specified.")
+                    raise exceptions.RequestParameterInvalidException(
+                        f"Unknown workflow input source '{input_source}' specified."
+                    )
                 if add_to_history and content.history != history:
                     content = content.copy(flush=False)
                     history.stage_addition(content)
-                input_dict['content'] = content
+                input_dict["content"] = content
             except AssertionError:
                 raise exceptions.ItemAccessibilityException(f"Invalid workflow input '{input_id}' specified")
         for key in set(normalized_inputs.keys()):
             value = normalized_inputs[key]
-            if isinstance(value, dict) and 'content' in value:
-                normalized_inputs[key] = value['content']
+            if isinstance(value, dict) and "content" in value:
+                normalized_inputs[key] = value["content"]
             else:
                 normalized_inputs[key] = value
-        resource_params = payload.get('resource_params', {})
+        resource_params = payload.get("resource_params", {})
         if resource_params:
             # quick attempt to validate parameters, just handle select options now since is what
             # is needed for DTD - arbitrary plugins can define arbitrary logic at runtime in the
@@ -361,22 +404,26 @@ def build_workflow_run_configs(trans, workflow, payload):
                         if value is None:
                             valid_option = True
                         else:
-                            for option_elem in resource_parameter.get('data'):
+                            for option_elem in resource_parameter.get("data"):
                                 option_value = option_elem.get("value")
                                 if value == option_value:
                                     valid_option = True
                         if not valid_option:
-                            raise exceptions.RequestParameterInvalidException(f"Invalid value for parameter '{name}' found.")
+                            raise exceptions.RequestParameterInvalidException(
+                                f"Invalid value for parameter '{name}' found."
+                            )
         history.add_pending_items()
-        run_configs.append(WorkflowRunConfig(
-            target_history=history,
-            replacement_dict=payload.get('replacement_params', {}),
-            inputs=normalized_inputs,
-            param_map=param_map,
-            allow_tool_state_corrections=allow_tool_state_corrections,
-            use_cached_job=use_cached_job,
-            resource_params=resource_params,
-        ))
+        run_configs.append(
+            WorkflowRunConfig(
+                target_history=history,
+                replacement_dict=payload.get("replacement_params", {}),
+                inputs=normalized_inputs,
+                param_map=param_map,
+                allow_tool_state_corrections=allow_tool_state_corrections,
+                use_cached_job=use_cached_job,
+                resource_params=resource_params,
+            )
+        )
 
     return run_configs
 
@@ -416,7 +463,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 inputs={},
                 param_map=run_config.param_map.get(step.order_index, {}),
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
-                resource_params=run_config.resource_params
+                resource_params=run_config.resource_params,
             )
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
@@ -447,7 +494,9 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     resource_parameters = run_config.resource_params
     for key, value in resource_parameters.items():
         add_parameter(key, value, param_types.RESOURCE_PARAMETERS)
-    add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS)
+    add_parameter(
+        "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS
+    )
     add_parameter("use_cached_job", "true" if run_config.use_cached_job else "false", param_types.META_PARAMETERS)
     return workflow_invocation
 
@@ -468,9 +517,9 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
             replacement_dict[parameter.name] = parameter.value
         elif parameter_type == param_types.META_PARAMETERS:
             if parameter.name == "copy_inputs_to_history":
-                copy_inputs_to_history = (parameter.value == "true")
-            if parameter.name == 'use_cached_job':
-                use_cached_job = (parameter.value == 'true')
+                copy_inputs_to_history = parameter.value == "true"
+            if parameter.name == "use_cached_job":
+                use_cached_job = parameter.value == "true"
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
         elif parameter_type == param_types.STEP_PARAMETERS:
@@ -486,7 +535,9 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         if step_label and step_label not in replacement_dict:
             replacement_dict[step_label] = str(parameter_value)
     if copy_inputs_to_history is None:
-        raise exceptions.InconsistentDatabase("Failed to find copy_inputs_to_history parameter loading workflow_invocation from database.")
+        raise exceptions.InconsistentDatabase(
+            "Failed to find copy_inputs_to_history parameter loading workflow_invocation from database."
+        )
     workflow_run_config = WorkflowRunConfig(
         target_history=history,
         replacement_dict=replacement_dict,

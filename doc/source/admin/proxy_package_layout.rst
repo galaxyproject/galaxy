@@ -89,7 +89,7 @@ without enclosing them in any sort of block:
 
 .. code-block:: nginx
 
-    uwsgi_read_timeout 180;
+    proxy_read_timeout 180;
     client_max_body_size 10g;
     ssl_certificate /etc/nginx/ssl/server.crt;
     ssl_certificate_key /etc/nginx/ssl/server.key;

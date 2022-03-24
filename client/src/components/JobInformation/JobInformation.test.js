@@ -1,40 +1,17 @@
-import Vuex from "vuex";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import JobInformation from "./JobInformation";
-import datasetResponse from "components/DatasetInformation/testData/datasetResponse";
 import jobResponse from "./testData/jobInformationResponse.json";
 
 import flushPromises from "flush-promises";
-import createCache from "vuex-cache";
 
 jest.mock("app");
 
 const JOB_ID = "test_id";
 
 const localVue = getLocalVue();
-
-const jobStore = new Vuex.Store({
-    plugins: [createCache()],
-    modules: {
-        jobStore: {
-            actions: {
-                fetchDataset: jest.fn(),
-                fetchJob: jest.fn(),
-            },
-            getters: {
-                dataset: (state) => (hda_id) => {
-                    return datasetResponse;
-                },
-                job: (state) => (hda_id) => {
-                    return jobResponse;
-                },
-            },
-        },
-    },
-});
 
 describe("JobInformation/JobInformation.vue", () => {
     let wrapper;
@@ -44,6 +21,7 @@ describe("JobInformation/JobInformation.vue", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
+        axiosMock.onGet("/api/jobs/test_id?full=True").reply(200, jobResponse);
     });
 
     afterEach(() => {
@@ -65,14 +43,12 @@ describe("JobInformation/JobInformation.vue", () => {
         const propsData = {
             job_id: JOB_ID,
         };
-
         wrapper = mount(JobInformation, {
-            store: jobStore,
             propsData,
             localVue,
         });
-        jobInfoTable = wrapper.find("#job-information");
         await flushPromises();
+        jobInfoTable = wrapper.find("#job-information");
     });
 
     it("job information table should be rendered", async () => {

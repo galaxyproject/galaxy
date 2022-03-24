@@ -5,7 +5,6 @@ from galaxy_test.driver import integration_util
 
 
 class FluentMetricsIntegrationTestCase(integration_util.IntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["fluent_log"] = True
@@ -14,9 +13,7 @@ class FluentMetricsIntegrationTestCase(integration_util.IntegrationTestCase):
 
     def test_create(self):
         metrics = self._get_test_metrics()
-        payload = {
-            "metrics": metrics
-        }
+        payload = {"metrics": metrics}
         response = self._post("metrics", payload, json=True)
         self._assert_status_code_is(response, 200)
 
@@ -33,9 +30,7 @@ class FluentMetricsIntegrationTestCase(integration_util.IntegrationTestCase):
                 "namespace": "api-test",
                 "time": f"{datetime.utcnow().isoformat()}Z",
                 "level": 1,
-                "args": json.dumps({
-                    "arg01": "test"
-                }),
+                "args": json.dumps({"arg01": "test"}),
             }
         ]
         return metrics

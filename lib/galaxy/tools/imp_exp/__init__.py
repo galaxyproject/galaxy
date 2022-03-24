@@ -5,6 +5,7 @@ import shutil
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
@@ -12,8 +13,8 @@ log = logging.getLogger(__name__)
 
 class JobImportHistoryArchiveWrapper:
     """
-        Class provides support for performing jobs that import a history from
-        an archive.
+    Class provides support for performing jobs that import a history from
+    an archive.
     """
 
     def __init__(self, app, job_id):
@@ -28,18 +29,18 @@ class JobImportHistoryArchiveWrapper:
                     archive_source,
                     jiha.job.user.system_user_pwent(self.app.config.real_system_username),
                     self.app.config.external_chown_script,
-                    "history import archive"
+                    "history import archive",
                 )
             external_chown(
                 jiha.archive_dir,
                 jiha.job.user.system_user_pwent(self.app.config.real_system_username),
                 self.app.config.external_chown_script,
-                "history import archive directory"
+                "history import archive directory",
             )
 
     def cleanup_after_job(self):
-        """ Set history, datasets, collections and jobs' attributes
-            and clean up archive directory.
+        """Set history, datasets, collections and jobs' attributes
+        and clean up archive directory.
         """
 
         #
@@ -59,9 +60,11 @@ class JobImportHistoryArchiveWrapper:
                     archive_dir,
                     jiha.job.user.system_user_pwent(getpass.getuser()),
                     self.app.config.external_chown_script,
-                    "history import archive directory"
+                    "history import archive directory",
                 )
-            model_store = store.get_import_model_store_for_directory(archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session())
+            model_store = store.get_import_model_store_for_directory(
+                archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session()
+            )
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
 
@@ -96,10 +99,19 @@ class JobExportHistoryArchiveWrapper:
         Perform setup for job to export a history into an archive.
         """
         app = self.app
-
+        # TODO: prevent circular import here...
         from galaxy.celery.tasks import export_history
+
+        request = SetupHistoryExportJob(
+            history_id=history.id,
+            job_id=self.job_id,
+            store_directory=store_directory,
+            include_files=True,
+            include_hidden=include_hidden,
+            include_deleted=include_deleted,
+        )
         if app.config.enable_celery_tasks:
             # symlink files on export, on worker files will tarred up in a dereferenced manner.
-            export_history.delay(store_directory=store_directory, history_id=history.id, job_id=self.job_id, include_hidden=include_hidden, include_deleted=include_deleted)
+            export_history.delay(request=request)
         else:
-            export_history(store_directory=store_directory, history_id=history.id, job_id=self.job_id, include_hidden=include_hidden, include_deleted=include_deleted)
+            export_history(request=request)

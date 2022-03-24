@@ -26,7 +26,7 @@ import sys
 def getopts(argv):
     opts = {}
     while argv:
-        if argv[0][0] == '-':
+        if argv[0][0] == "-":
             opts[argv[0]] = argv[1]
             argv = argv[2:]
         else:
@@ -71,7 +71,7 @@ def main():
         return -3
 
     columns = opts.get("-c")
-    if columns is None or columns == 'None':
+    if columns is None or columns == "None":
         print("Columns not specified.")
         return -4
 
@@ -101,18 +101,18 @@ def main():
 
     commandline = "cut "
     # Set delimiter
-    if delim == 'C':
-        commandline += "-d \",\" "
-    if delim == 'D':
-        commandline += "-d \"-\" "
-    if delim == 'U':
-        commandline += "-d \"_\" "
-    if delim == 'P':
-        commandline += "-d \"|\" "
-    if delim == 'Dt':
-        commandline += "-d \".\" "
-    if delim == 'Sp':
-        commandline += "-d \" \" "
+    if delim == "C":
+        commandline += '-d "," '
+    if delim == "D":
+        commandline += '-d "-" '
+    if delim == "U":
+        commandline += '-d "_" '
+    if delim == "P":
+        commandline += '-d "|" '
+    if delim == "Dt":
+        commandline += '-d "." '
+    if delim == "Sp":
+        commandline += '-d " " '
 
     # set columns
     commandline += "-f " + columns

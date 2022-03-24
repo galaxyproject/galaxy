@@ -516,6 +516,9 @@ const View = Backbone.View.extend({
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, (v) => {
+                    // element_id deals with override in old backbone code,
+                    // can remove when old history is deprecated
+                    v.id = v.element_id || v.id;
                     self._patchValue(v);
                     const new_id = v.id;
                     const new_src = (v.src = this._getSource(v));

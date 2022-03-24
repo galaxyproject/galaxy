@@ -1,11 +1,10 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
 class AnonymousHistoriesTestCase(SeleniumTestCase):
-
     @selenium_test
     def test_anon_history_landing(self):
         self.home()

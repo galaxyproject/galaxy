@@ -88,6 +88,8 @@ import { ActiveOutputs } from "./modules/outputs";
 import { attachDragging } from "./modules/dragging";
 Vue.use(BootstrapVue);
 
+const OFFSET_RANGE = 100;
+
 export default {
     components: {
         LoadingSpan,
@@ -162,8 +164,10 @@ export default {
             const p = document.getElementById("canvas-viewport");
             const o = document.getElementById("canvas-container");
             if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
+                const left =
+                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
+                const top =
+                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
                 el.style.top = `${top}px`;
                 el.style.left = `${left}px`;
             }
@@ -343,6 +347,9 @@ export default {
             })(element.parentNode);
             // Remove active class
             element.classList.remove("node-active");
+        },
+        offsetVaryPosition(offsetRange) {
+            return Math.floor(Math.random() * offsetRange);
         },
     },
 };

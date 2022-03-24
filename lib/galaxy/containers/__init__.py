@@ -12,24 +12,30 @@ import uuid
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty
+    abstractproperty,
 )
-from typing import Any, Dict, NamedTuple, Optional, Type
+from typing import (
+    Any,
+    Dict,
+    NamedTuple,
+    Optional,
+    Type,
+)
 
 import yaml
 
 from galaxy.exceptions import ContainerCLIError
 from galaxy.util.submodules import import_submodules
 
-
-DEFAULT_CONTAINER_TYPE = 'docker'
-DEFAULT_CONF = {'_default_': {'type': DEFAULT_CONTAINER_TYPE}}
+DEFAULT_CONTAINER_TYPE = "docker"
+DEFAULT_CONF = {"_default_": {"type": DEFAULT_CONTAINER_TYPE}}
 
 log = logging.getLogger(__name__)
 
 
 class ContainerPort(NamedTuple):
     """Named tuple representing ports published by a container, with attributes"""
+
     port: int  # Port number (inside the container)
     protocol: str  # Port protocol, either ``tcp`` or ``udp``
     hostaddr: str  # Address or hostname where the published port can be accessed
@@ -57,13 +63,11 @@ class ContainerVolume(metaclass=ABCMeta):
 
     @abstractmethod
     def __str__(self):
-        """Return this container type's string representation of the volume.
-        """
+        """Return this container type's string representation of the volume."""
 
     @abstractmethod
     def to_native(self):
-        """Return this container type's native representation of the volume.
-        """
+        """Return this container type's native representation of the volume."""
 
     @property
     def mode_is_valid(self):
@@ -71,7 +75,6 @@ class ContainerVolume(metaclass=ABCMeta):
 
 
 class Container(metaclass=ABCMeta):
-
     def __init__(self, interface, id, name=None, **kwargs):
         """
 
@@ -149,9 +152,13 @@ class Container(metaclass=ABCMeta):
             if port == mapping.port:
                 return mapping
             if port is None:
-                log.warning("Container %s (%s): Don't know how to map ports to containers with multiple exposed ports "
-                            "when a specific port is not requested. Arbitrarily choosing first: %s",
-                            self.name, self.id, mapping)
+                log.warning(
+                    "Container %s (%s): Don't know how to map ports to containers with multiple exposed ports "
+                    "when a specific port is not requested. Arbitrarily choosing first: %s",
+                    self.name,
+                    self.id,
+                    mapping,
+                )
                 return mapping
         else:
             if port is None:
@@ -167,7 +174,7 @@ class ContainerInterface(metaclass=ABCMeta):
     container_class: Optional[Type[Container]] = None
     volume_class = Optional[Type[ContainerVolume]]
     conf_defaults: Dict[str, Optional[Any]] = {
-        'name_prefix': 'galaxy_',
+        "name_prefix": "galaxy_",
     }
     option_map: Dict[str, Dict] = {}
     publish_port_list_required = False
@@ -190,18 +197,18 @@ class ContainerInterface(metaclass=ABCMeta):
         return command
 
     def _guess_kwopt_type(self, val):
-        opttype = 'string'
+        opttype = "string"
         if isinstance(val, bool):
-            opttype = 'boolean'
+            opttype = "boolean"
         elif isinstance(val, list):
-            opttype = 'list'
+            opttype = "list"
             try:
                 if isinstance(val[0], tuple) and len(val[0]) == 3:
-                    opttype = 'list_of_kovtrips'
+                    opttype = "list_of_kovtrips"
             except IndexError:
                 pass
         elif isinstance(val, dict):
-            opttype = 'list_of_kvpairs'
+            opttype = "list_of_kvpairs"
         return opttype
 
     def _guess_kwopt_flag(self, opt):
@@ -214,34 +221,35 @@ class ContainerInterface(metaclass=ABCMeta):
                 optdef = self.option_map[opt]
             except KeyError:
                 optdef = {
-                    'flag': self._guess_kwopt_flag(opt),
-                    'type': self._guess_kwopt_type(val),
+                    "flag": self._guess_kwopt_flag(opt),
+                    "type": self._guess_kwopt_type(val),
                 }
-                log.warning("option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
-                            opt, self.__class__.__name__, optdef['flag'], optdef['type'])
-            opts.append(getattr(self, f"_stringify_kwopt_{optdef['type']}")(optdef['flag'], val))
-        return ' '.join(opts)
+                log.warning(
+                    "option '%s' not in %s.option_map, guessing flag '%s' type '%s'",
+                    opt,
+                    self.__class__.__name__,
+                    optdef["flag"],
+                    optdef["type"],
+                )
+            opts.append(getattr(self, f"_stringify_kwopt_{optdef['type']}")(optdef["flag"], val))
+        return " ".join(opts)
 
     def _stringify_kwopt_boolean(self, flag, val):
-        """
-        """
-        return f'{flag}={str(val).lower()}'
+        """ """
+        return f"{flag}={str(val).lower()}"
 
     def _stringify_kwopt_string(self, flag, val):
-        """
-        """
-        return f'{flag} {shlex.quote(str(val))}'
+        """ """
+        return f"{flag} {shlex.quote(str(val))}"
 
     def _stringify_kwopt_list(self, flag, val):
-        """
-        """
+        """ """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
-        return ' '.join(f'{flag} {shlex.quote(str(v))}' for v in val)
+        return " ".join(f"{flag} {shlex.quote(str(v))}" for v in val)
 
     def _stringify_kwopt_list_of_kvpairs(self, flag, val):
-        """
-        """
+        """ """
         kwopt_list = []
         if isinstance(val, list):
             # ['foo=bar', 'baz=quux']
@@ -249,22 +257,21 @@ class ContainerInterface(metaclass=ABCMeta):
         else:
             # {'foo': 'bar', 'baz': 'quux'}
             for k, v in dict(val).items():
-                kwopt_list.append(f'{k}={v}')
+                kwopt_list.append(f"{k}={v}")
         return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _stringify_kwopt_list_of_kovtrips(self, flag, val):
-        """
-        """
+        """ """
         if isinstance(val, str):
             return self._stringify_kwopt_string(flag, val)
         kwopt_list = []
         for k, o, v in val:
-            kwopt_list.append(f'{k}{o}{v}')
+            kwopt_list.append(f"{k}{o}{v}")
         return self._stringify_kwopt_list(flag, kwopt_list)
 
     def _run_command(self, command, verbose=False):
         if verbose:
-            log.debug('running command: [%s]', command)
+            log.debug("running command: [%s]", command)
         command_list = self._normalize_command(command)
         p = subprocess.Popen(command_list, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         stdout, stderr = p.communicate()
@@ -279,7 +286,8 @@ class ContainerInterface(metaclass=ABCMeta):
                 stderr=stderr.strip(),
                 returncode=p.returncode,
                 command=command,
-                subprocess_command=command_list)
+                subprocess_command=command_list,
+            )
 
     @property
     def key(self):
@@ -294,25 +302,19 @@ class ContainerInterface(metaclass=ABCMeta):
 
     def set_kwopts_name(self, kwopts):
         if self._name_prefix is not None:
-            name = '{prefix}{name}'.format(
-                prefix=self._name_prefix,
-                name=kwopts.get('name', uuid.uuid4().hex)
-            )
-            kwopts['name'] = name
+            name = "{prefix}{name}".format(prefix=self._name_prefix, name=kwopts.get("name", uuid.uuid4().hex))
+            kwopts["name"] = name
 
     def validate_config(self):
-        """
-        """
+        """ """
         self._name_prefix = self._conf.name_prefix
 
     @abstractmethod
     def run_in_container(self, command, image=None, **kwopts):
-        """
-        """
+        """ """
 
 
 class ContainerInterfaceConfig(dict):
-
     def __setattr__(self, name, value):
         self[name] = value
 
@@ -345,7 +347,7 @@ def build_container_interfaces(containers_config_file, containers_conf=None):
     interface_classes = _get_interface_modules()
     interfaces = {}
     for k, conf in containers_conf.items():
-        container_type = conf.get('type', DEFAULT_CONTAINER_TYPE)
+        container_type = conf.get("type", DEFAULT_CONTAINER_TYPE)
         assert container_type in interface_classes, f"unknown container interface type: {container_type}"
         interfaces[k] = interface_classes[container_type](conf, k, containers_config_file)
     return interfaces
@@ -363,7 +365,7 @@ def parse_containers_config(containers_config_file):
     try:
         with open(containers_config_file) as fh:
             c = yaml.safe_load(fh)
-            conf.update(c.get('containers', {}))
+            conf.update(c.get("containers", {}))
     except OSError as exc:
         if exc.errno == errno.ENOENT:
             log.debug("config file '%s' does not exist, running with default config", containers_config_file)
@@ -377,7 +379,10 @@ def _get_interface_modules():
     modules = import_submodules(sys.modules[__name__])
     for module in modules:
         module_names = [getattr(module, _) for _ in dir(module)]
-        classes = [_ for _ in module_names if inspect.isclass(_)
-            and not _ == ContainerInterface and issubclass(_, ContainerInterface)]
+        classes = [
+            _
+            for _ in module_names
+            if inspect.isclass(_) and not _ == ContainerInterface and issubclass(_, ContainerInterface)
+        ]
         interfaces.extend(classes)
     return {x.container_type: x for x in interfaces}

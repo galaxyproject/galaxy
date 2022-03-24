@@ -5,6 +5,10 @@ export function copyLink(toolId, message) {
     copy(`${window.location.origin + getAppRoot()}root?tool_id=${toolId}`, message);
 }
 
+export function copyId(toolId, message) {
+    copy(toolId, message);
+}
+
 export function downloadTool(toolId) {
     window.location.href = `${getAppRoot()}api/tools/${toolId}/download`;
 }

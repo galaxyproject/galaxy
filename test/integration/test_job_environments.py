@@ -17,14 +17,17 @@ SETS_TMP_DIR_TO_TRUE_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_t
 SETS_TMP_DIR_AS_EXPRESSION_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "sets_tmp_dir_expression_job_conf.xml")
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.xml")
 
-JobEnvironmentProperties = collections.namedtuple("JobEnvironmentProperties", [
-    "user_id",
-    "group_id",
-    "pwd",
-    "home",
-    "tmp",
-    "some_env",
-])
+JobEnvironmentProperties = collections.namedtuple(
+    "JobEnvironmentProperties",
+    [
+        "user_id",
+        "group_id",
+        "pwd",
+        "home",
+        "tmp",
+        "some_env",
+    ],
+)
 
 
 class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -64,7 +67,6 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
 
 
 class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = tempfile.mkdtemp()
@@ -132,7 +134,7 @@ class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentI
 
         assert job_env.user_id == str(euid), job_env.user_id
         assert job_env.group_id == str(egid), job_env.group_id
-        assert 'pulsar_staging' in job_env.pwd
+        assert "pulsar_staging" in job_env.pwd
         assert job_env.pwd.endswith("/working")
         # job ran in embedded pulsar, not local job dir
         assert self.jobs_directory not in job_env.pwd
@@ -146,7 +148,6 @@ class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentI
 
 
 class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = tempfile.mkdtemp()
@@ -164,7 +165,6 @@ class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegratio
 
 
 class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = tempfile.mkdtemp()
@@ -182,7 +182,6 @@ class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIn
 
 
 class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = tempfile.mkdtemp()
@@ -219,7 +218,6 @@ class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationT
 
 
 class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = tempfile.mkdtemp()
@@ -236,7 +234,7 @@ class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase)
         job = jobs[0]
         job_details = self.dataset_populator.get_job_details(job["id"], full=True)
         job_details = job_details.json()
-        assert 'moo std cow' in job_details['job_stdout']
-        assert 'moo err cow' in job_details['job_stderr']
-        assert 'Writing environment properties to output files.' in job_details['tool_stdout']
-        assert 'Example tool stderr output.' in job_details['tool_stderr']
+        assert "moo std cow" in job_details["job_stdout"]
+        assert "moo err cow" in job_details["job_stderr"]
+        assert "Writing environment properties to output files." in job_details["tool_stdout"]
+        assert "Example tool stderr output." in job_details["tool_stderr"]

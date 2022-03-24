@@ -1,10 +1,17 @@
 from celery import shared_task
 
-from galaxy.celery.tasks import galaxy_task, purge_hda
+from galaxy.celery import galaxy_task
+from galaxy.celery.tasks import purge_hda
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.schema.schema import CreatePagePayload
-from galaxy_test.base.populators import DatasetPopulator, wait_on
-from galaxy_test.driver.integration_util import IntegrationTestCase, UsesCeleryTasks
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    wait_on,
+)
+from galaxy_test.driver.integration_util import (
+    IntegrationTestCase,
+    UsesCeleryTasks,
+)
 
 
 @shared_task
@@ -19,7 +26,6 @@ def process_page(request: CreatePagePayload):
 
 
 class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -34,7 +40,10 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
             slug="my-cool-title",
             annotation="my cool annotation",
         )
-        assert process_page.delay(request).get(timeout=10) == "content_format is markdown with annotation my cool annotation"
+        assert (
+            process_page.delay(request).get(timeout=10)
+            == "content_format is markdown with annotation my cool annotation"
+        )
 
     def test_galaxy_task(self):
         history_id = self.dataset_populator.new_history()
@@ -43,7 +52,9 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
         assert hda
 
         def hda_purged():
-            latest_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False, wait=False)
+            latest_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset=dataset, assert_ok=False, wait=False
+            )
             return True if latest_details["purged"] else None
 
         assert not hda_purged()
@@ -55,5 +66,9 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
 
     @property
     def _latest_hda(self):
-        latest_hda = self._app.model.session.query(HistoryDatasetAssociation).order_by(HistoryDatasetAssociation.table.c.id.desc()).first()
+        latest_hda = (
+            self._app.model.session.query(HistoryDatasetAssociation)
+            .order_by(HistoryDatasetAssociation.table.c.id.desc())
+            .first()
+        )
         return latest_hda

@@ -1,16 +1,16 @@
 SUFFIX_TO_BYTES = {
-    'KI': 1024,
-    'MI': 1024**2,
-    'GI': 1024**3,
-    'TI': 1024**4,
-    'PI': 1024**5,
-    'EI': 1024**6,
-    'K': 1000,
-    'M': 1000**2,
-    'G': 1000**3,
-    'T': 1000**4,
-    'P': 1000**5,
-    'E': 1000**6,
+    "KI": 1024,
+    "MI": 1024**2,
+    "GI": 1024**3,
+    "TI": 1024**4,
+    "PI": 1024**5,
+    "EI": 1024**6,
+    "K": 1000,
+    "M": 1000**2,
+    "G": 1000**3,
+    "T": 1000**4,
+    "P": 1000**5,
+    "E": 1000**6,
 }
 
 
@@ -55,7 +55,7 @@ def parse_bytesize(value):
             found_suffix = suffix
             break
     if found_suffix:
-        value = value[:-len(found_suffix)]
+        value = value[: -len(found_suffix)]
     try:
         value = int(value)
     except ValueError:

@@ -20,7 +20,6 @@ desc: |
 
   Config hackers are encouraged to check there before asking for help.
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   galaxy:
     type: map
     required: true
@@ -501,6 +500,13 @@ mapping:
         required: false
         desc: |
           Configured FileSource plugins.
+
+      file_sources:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          FileSource plugins described embedded into Galaxy's config.
 
       enable_mulled_containers:
         type: bool
@@ -1231,11 +1237,19 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      interactivetools_upstream_proxy:
+        type: bool
+        default: true
+        required: false
+        desc:
+          Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy.
+          `interactivetools_upstream_proxy` should only be set to false in development.
+
       interactivetools_proxy_host:
         type: str
         required: false
         desc: |
-          Proxy host - assumed to just be hosted on the same hostname and port as
+          Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
           Galaxy by default.
 
       interactivetools_base_path:
@@ -1386,14 +1400,12 @@ mapping:
         required: false
         desc: |
           URL (with schema http/https) of the Galaxy instance as accessible
-          within your local network - if specified used as a default by pulsar
-          file staging and Jupyter Docker container for communicating back with
+          within your local network. This URL is used as a default by pulsar
+          file staging and Interactive Tool containers for communicating back with
           Galaxy via the API.
 
-          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-          for Mac and your Galaxy instance runs on port 8080 this should be
-          'http://host.docker.internal:8080'.  For more details see
-          https://docs.docker.com/docker-for-mac/networking/
+          If you plan to run Interactive Tools make sure the docker container
+          can reach this URL. For more details see `job_conf.xml.interactivetools`.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1443,7 +1455,8 @@ mapping:
 
       helpsite_url:
         type: str
-        required: false
+        required: true
+        default: https://help.galaxyproject.org/
         per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
@@ -1454,7 +1467,7 @@ mapping:
         required: false
         per_host: true
         desc: |
-          The URL linked by the "Wiki" link in the "Help" menu.
+          The URL linked by the "Community Hub" link in the "Help" menu.
 
       quota_url:
         type: str
@@ -1486,25 +1499,9 @@ mapping:
         desc: |
           The URL linked by the "Galaxy Version" link in the "Help" menu.
 
-      search_url:
-        type: str
-        default: https://galaxyproject.org/search/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Search" link in the "Help" menu.
-
-      mailing_lists_url:
-        type: str
-        default: https://galaxyproject.org/mailing-lists/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Mailing Lists" link in the "Help" menu.
-
       screencasts_url:
         type: str
-        default: https://vimeo.com/galaxyproject
+        default: https://www.youtube.com/c/galaxyproject
         required: false
         per_host: true
         desc: |
@@ -1517,14 +1514,6 @@ mapping:
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
-
-      qa_url:
-        type: str
-        required: false
-        desc: |
-          The URL linked by the "Galaxy Q&A" link in the "Help" menu
-          The Galaxy Q&A site is under development; when the site is done, this URL
-          will be set and uncommented.
 
       static_enabled:
         type: bool
@@ -1708,6 +1697,14 @@ mapping:
           completion by remote job runners (i.e. Pulsar) that initiate staging
           operations on the remote end.  See the Galaxy nginx documentation for the
           corresponding nginx configuration.
+
+      tus_upload_store:
+        type: str
+        required: False
+        desc: |
+          The upload store is a temporary directory in which files uploaded by the
+          tus middleware or server will be placed.
+          Defaults to new_file_path if not set.
 
       chunk_upload_size:
         type: int
@@ -1967,12 +1964,6 @@ mapping:
           causes the files used by PBS/SGE (submission script, output, and error)
           to remain on disk after the job is complete.
 
-          In addition, this will set uWSGI's `honour-stdin` option to `true`;
-          thus, preventing uWSGI from remapping stdin to `/dev/null` and
-          enabling debugging with tools like pdb. To keep uWSGI's default
-          setting, set `honor-stdin` to `false` in the `uwsgi` section of this
-          configuration file.
-
       use_lint:
         type: bool
         default: false
@@ -2004,9 +1995,8 @@ mapping:
           terminate without waiting. Among others, these threads include the job handler
           workers, which are responsible for preparing/submitting and collecting/finishing
           jobs, and which can cause job errors if not shut down cleanly. If using
-          supervisord, consider also increasing the value of `stopwaitsecs`. If using job
-          handler mules, consider also setting the `mule-reload-mercy` uWSGI option. See
-          the Galaxy Admin Documentation for more.
+          supervisord, consider also increasing the value of `stopwaitsecs`. See the
+          Galaxy Admin Documentation for more.
 
       use_heartbeat:
         type: bool
@@ -2024,7 +2014,7 @@ mapping:
         desc: |
           Control the period (in seconds) between dumps. Use -1 to disable. Regardless
           of this setting, if use_heartbeat is enabled, you can send a Galaxy process
-          (unless running with uWSGI) SIGUSR1 (`kill -USR1`) to force a dump.
+          SIGUSR1 (`kill -USR1`) to force a dump.
 
       heartbeat_log:
         type: str
@@ -3391,6 +3381,18 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_broker:
+        type: str
+        required: false
+        desc: |
+          Celery broker (if unset falls back to amqp_internal_connection).
+
+      celery_backend:
+        type: str
+        required: false
+        desc: |
+          If set, it will be the results backend for Celery.
+
       use_pbkdf2:
         type: bool
         default: true
@@ -3504,3 +3506,9 @@ mapping:
         required: false
         desc: |
           Vault config file.
+
+      display_builtin_converters:
+        type: bool
+        default: true
+        required: false
+        desc: Display built-in converters in the tool panel.

@@ -2,20 +2,19 @@ import os
 import string
 from abc import (
     ABCMeta,
-    abstractmethod
+    abstractmethod,
 )
 from logging import getLogger
 from uuid import uuid4
 
-
 from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (
     asbool,
-    in_directory
+    in_directory,
 )
 from . import (
     docker_util,
-    singularity_util
+    singularity_util,
 )
 from .requirements import (
     DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
@@ -27,7 +26,7 @@ log = getLogger(__name__)
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
 
-LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r'''
+LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r"""
 python << EOF
 from __future__ import print_function
 
@@ -54,7 +53,7 @@ if not found:
     cmd = "cat ${cached_image_file} | ${load_cmd}"
     subprocess.check_call(cmd, shell=True)
 EOF
-'''
+"""
 SOURCE_CONDA_ACTIVATE = """
 # Check if container was created by installing conda packages,
 # and if so, source scripts to populate environment variables
@@ -72,8 +71,9 @@ fi
 
 
 class Container(metaclass=ABCMeta):
-
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None):
+    def __init__(
+        self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None
+    ):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
@@ -89,7 +89,11 @@ class Container(metaclass=ABCMeta):
 
     @property
     def resolve_dependencies(self):
-        return DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES if not self.container_description else self.container_description.resolve_dependencies
+        return (
+            DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES
+            if not self.container_description
+            else self.container_description.resolve_dependencies
+        )
 
     @property
     def shell(self):
@@ -172,7 +176,7 @@ def preprocess_volumes(volumes_raw_str, container_type):
         # for a while singularity did not allow to specify the bind type rw
         # (which is the default). so we omit this default
         # see https://github.com/hpcng/singularity/pull/5487
-        if container_type == SINGULARITY_CONTAINER_TYPE and volume[1] == 'rw':
+        if container_type == SINGULARITY_CONTAINER_TYPE and volume[1] == "rw":
             del volume[1]
 
     return [":".join(v) for v in volumes]
@@ -205,8 +209,8 @@ class HasDockerLikeVolumes:
         add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
-        add_var('tool_data_path', self.app_info.tool_data_path)
-        add_var('shed_tool_data_path', self.app_info.shed_tool_data_path)
+        add_var("tool_data_path", self.app_info.tool_data_path)
+        add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
@@ -260,7 +264,7 @@ class HasDockerLikeVolumes:
             end_index = volumes_str.find(",", tool_directory_index)
             if end_index < 0:
                 end_index = len(volumes_str)
-            volumes_str = volumes_str[0:tool_directory_index] + volumes_str[end_index:len(volumes_str)]
+            volumes_str = volumes_str[0:tool_directory_index] + volumes_str[end_index : len(volumes_str)]
 
         return volumes_str
 
@@ -296,7 +300,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # pass through only what tool needs however. (See todo in ToolInfo.)
         for key, value in self.destination_info.items():
             if key.startswith("docker_env_"):
-                env = key[len("docker_env_"):]
+                env = key[len("docker_env_") :]
                 env_directives.append(f'"{env}={value}"')
 
         working_directory = self.job_info.working_directory
@@ -330,9 +334,11 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
-            **docker_host_props
+            **docker_host_props,
         )
-        kill_command = docker_util.build_docker_simple_command("kill", container_name=self.container_name, **docker_host_props)
+        kill_command = docker_util.build_docker_simple_command(
+            "kill", container_name=self.container_name, **docker_host_props
+        )
         # Suppress standard error below in the kill command because it can cause jobs that otherwise would work
         # to fail. Likely, in these cases the container has been stopped normally and so cannot be stopped again.
         # A less hacky approach might be to check if the container is running first before trying to kill.
@@ -352,9 +358,7 @@ trap _on_exit 0
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
-            cached_image_file=cached_image_file,
-            images_cmd=images_cmd,
-            load_cmd=load_cmd
+            cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd
         )
 
     def __get_cached_image_file(self):
@@ -397,14 +401,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
             namespace=namespace,
-            **self.get_singularity_target_kwds()
+            **self.get_singularity_target_kwds(),
         )
 
     def build_singularity_pull_command(self, cache_path):
         return singularity_util.pull_singularity_command(
-            image_identifier=self.container_id,
-            cache_path=cache_path,
-            **self.get_singularity_target_kwds()
+            image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
         )
 
     def containerize_command(self, command):
@@ -418,7 +420,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         # pass through only what tool needs however. (See todo in ToolInfo.)
         for key, value in self.destination_info.items():
             if key.startswith("singularity_env_"):
-                real_key = key[len("singularity_env_"):]
+                real_key = key[len("singularity_env_") :]
                 env.append((real_key, value))
 
         working_directory = self.job_info.working_directory
@@ -438,7 +440,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
-            **self.get_singularity_target_kwds()
+            **self.get_singularity_target_kwds(),
         )
         return run_command
 
@@ -450,12 +452,12 @@ CONTAINER_CLASSES = dict(
 
 
 class NullContainer:
-
     def __init__(self):
         pass
 
     def __bool__(self):
         return False
+
     __nonzero__ = __bool__
 
 

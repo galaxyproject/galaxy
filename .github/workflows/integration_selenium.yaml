@@ -6,6 +6,9 @@ on:
   pull_request:
     paths-ignore:
       - 'doc/**'
+  schedule:
+    # Run at midnight UTC every Tuesday
+    - cron: '0 0 * * 2'
 env:
   GALAXY_SKIP_CLIENT_BUILD: '0'
   GALAXY_TEST_DBURI: 'postgresql://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -13,6 +16,7 @@ env:
   GALAXY_TEST_SELENIUM_RETRIES: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
 concurrency:
   group: integration-selenium-${{ github.ref }}
   cancel-in-progress: true
@@ -33,6 +37,10 @@ jobs:
         ports:
           - 5432:5432
     steps:
+      - if: github.event_name == 'schedule'
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - uses: actions/checkout@v2
@@ -53,15 +61,19 @@ jobs:
       - name: Cache galaxy venv
         uses: actions/cache@v2
         with:
-          path: .venv
+          path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration-selenium
       - uses: mvdbeek/gha-yarn-cache@master
         with:
           yarn-lock-file: 'galaxy root/client/yarn.lock'
       - uses: nanasess/setup-chromedriver@master
       - name: Run tests
-        run: ./run_tests.sh -integration test/integration_selenium
+        run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
+      - uses: codecov/codecov-action@v2
+        with:
+          flags: integration-selenium
+          working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v2
         if: failure()
         with:

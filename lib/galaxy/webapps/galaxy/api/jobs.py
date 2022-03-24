@@ -7,17 +7,17 @@ API operations on a jobs.
 import logging
 import typing
 
-from sqlalchemy import (
-    or_,
-)
+from sqlalchemy import or_
 
 from galaxy import (
     exceptions,
     model,
-    util,
 )
 from galaxy.managers import hdas
-from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.jobs import (
     JobLock,
     JobManager,
@@ -33,12 +33,8 @@ from galaxy.web import (
     expose_api_anonymous,
     require_admin,
 )
-from galaxy.webapps.base.controller import (
-    UsesVisualizationMixin
-)
-from galaxy.work.context import (
-    WorkRequestContext,
-)
+from galaxy.webapps.base.controller import UsesVisualizationMixin
+from galaxy.work.context import WorkRequestContext
 from . import (
     BaseGalaxyAPIController,
     depends,
@@ -57,8 +53,13 @@ class FastAPIJobs:
     job_search: JobSearch = depends(JobSearch)
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
-    @router.get("/api/job/{id}")
-    def show(self, id: EncodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans, full: typing.Optional[bool] = False) -> typing.Dict:
+    @router.get("/api/jobs/{id}")
+    def show(
+        self,
+        id: EncodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+        full: typing.Optional[bool] = False,
+    ) -> typing.Dict:
         """
         Return dictionary containing description of job data
 
@@ -127,14 +128,14 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :rtype:     list
         :returns:   list of dictionaries containing summary job information
         """
-        state = kwd.get('state', None)
+        state = kwd.get("state", None)
         is_admin = trans.user_is_admin
-        user_details = kwd.get('user_details', False)
-        user_id = kwd.get('user_id', None)
-        view = kwd.get('view', 'collection')
-        if view not in ('collection', 'admin_job_list'):
+        user_details = kwd.get("user_details", False)
+        user_id = kwd.get("user_id", None)
+        view = kwd.get("view", "collection")
+        if view not in ("collection", "admin_job_list"):
             raise exceptions.RequestParameterInvalidException(f"view parameter '{view} is invalid")
-        if view == 'admin_job_list' and not is_admin:
+        if view == "admin_job_list" and not is_admin:
             raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
 
         if user_id:
@@ -164,37 +165,50 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         query = build_and_apply_filters(query, state, lambda s: model.Job.state == s)
 
-        query = build_and_apply_filters(query, kwd.get('tool_id', None), lambda t: model.Job.tool_id == t)
-        query = build_and_apply_filters(query, kwd.get('tool_id_like', None), lambda t: model.Job.tool_id.like(t))
+        query = build_and_apply_filters(query, kwd.get("tool_id", None), lambda t: model.Job.tool_id == t)
+        query = build_and_apply_filters(query, kwd.get("tool_id_like", None), lambda t: model.Job.tool_id.like(t))
 
-        query = build_and_apply_filters(query, kwd.get('date_range_min', None), lambda dmin: model.Job.update_time >= dmin)
-        query = build_and_apply_filters(query, kwd.get('date_range_max', None), lambda dmax: model.Job.update_time <= dmax)
+        query = build_and_apply_filters(
+            query, kwd.get("date_range_min", None), lambda dmin: model.Job.update_time >= dmin
+        )
+        query = build_and_apply_filters(
+            query, kwd.get("date_range_max", None), lambda dmax: model.Job.update_time <= dmax
+        )
 
-        history_id = kwd.get('history_id', None)
-        workflow_id = kwd.get('workflow_id', None)
-        invocation_id = kwd.get('invocation_id', None)
+        history_id = kwd.get("history_id", None)
+        workflow_id = kwd.get("workflow_id", None)
+        invocation_id = kwd.get("invocation_id", None)
         if history_id is not None:
             decoded_history_id = self.decode_id(history_id)
             query = query.filter(model.Job.history_id == decoded_history_id)
         if workflow_id or invocation_id:
             if workflow_id is not None:
                 decoded_workflow_id = self.decode_id(workflow_id)
-                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).join(model.WorkflowInvocation).join(model.Workflow).filter(
-                    model.Workflow.stored_workflow_id == decoded_workflow_id,
-                ).subquery()
+                wfi_step = (
+                    trans.sa_session.query(model.WorkflowInvocationStep)
+                    .join(model.WorkflowInvocation)
+                    .join(model.Workflow)
+                    .filter(
+                        model.Workflow.stored_workflow_id == decoded_workflow_id,
+                    )
+                    .subquery()
+                )
             elif invocation_id is not None:
                 decoded_invocation_id = self.decode_id(invocation_id)
-                wfi_step = trans.sa_session.query(model.WorkflowInvocationStep).filter(
-                    model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id
-                ).subquery()
+                wfi_step = (
+                    trans.sa_session.query(model.WorkflowInvocationStep)
+                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
+                    .subquery()
+                )
             query1 = query.join(wfi_step)
             query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
                 wfi_step,
-                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == wfi_step.c.implicit_collection_jobs_id
+                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
+                == wfi_step.c.implicit_collection_jobs_id,
             )
             query = query1.union(query2)
 
-        if kwd.get('order_by') == 'create_time':
+        if kwd.get("order_by") == "create_time":
             order_by = model.Job.create_time.desc()
         else:
             order_by = model.Job.update_time.desc()
@@ -207,33 +221,13 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         for job in query.yield_per(model.YIELD_PER_ROWS):
             job_dict = job.to_dict(view, system_details=is_admin)
             j = self.encode_all_ids(trans, job_dict, True)
-            if view == 'admin_job_list':
-                j['decoded_job_id'] = job.id
+            if view == "admin_job_list":
+                j["decoded_job_id"] = job.id
             if user_details:
-                j['user_email'] = job.get_user_email()
+                j["user_email"] = job.get_user_email()
             out.append(j)
 
         return out
-
-    @expose_api_anonymous
-    def show(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        show( trans, id )
-        * GET /api/jobs/{id}:
-            return jobs for current user
-
-        :type   id: string
-        :param  id: Specific job id
-
-        :type   full: boolean
-        :param  full: whether to return extra information
-
-        :rtype:     dictionary
-        :returns:   dictionary containing full description of job data
-        """
-        job = self.__get_job(trans, id)
-        full_output = util.asbool(kwd.get('full', 'false'))
-        return view_show_job(trans, job, full_output)
 
     @expose_api
     def common_problems(self, trans: ProvidesUserContext, id, **kwd):
@@ -420,7 +414,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get('tool_version') or job.tool_version)
+        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
@@ -455,8 +449,8 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     @expose_api
     def create(self, trans: ProvidesUserContext, payload, **kwd):
-        """ See the create method in tools.py in order to submit a job. """
-        raise exceptions.NotImplemented('Please POST to /api/tools instead.')
+        """See the create method in tools.py in order to submit a job."""
+        raise exceptions.NotImplemented("Please POST to /api/tools instead.")
 
     @expose_api
     def search(self, trans: ProvidesHistoryContext, payload: dict, **kwd):
@@ -476,35 +470,39 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
         recycle the old results.
         """
-        tool_id = payload.get('tool_id')
+        tool_id = payload.get("tool_id")
         if tool_id is None:
             raise exceptions.RequestParameterMissingException("No tool id")
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
-        if 'inputs' not in payload:
+        if "inputs" not in payload:
             raise exceptions.RequestParameterMissingException("No inputs defined")
-        inputs = payload.get('inputs', {})
+        inputs = payload.get("inputs", {})
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
-            if k.startswith('files_') or k.startswith('__files_'):
+            if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(trans=trans, incoming=inputs, request_context=request_context)
+        all_params, all_errors, _, _ = tool.expand_incoming(
+            trans=trans, incoming=inputs, request_context=request_context
+        )
         if any(all_errors):
             return []
         params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
         jobs = []
         for param_dump, param in zip(params_dump, all_params):
-            job = self.job_search.by_tool_input(trans=trans,
-                                                tool_id=tool_id,
-                                                tool_version=tool.version,
-                                                param=param,
-                                                param_dump=param_dump,
-                                                job_state=payload.get('state'))
+            job = self.job_search.by_tool_input(
+                trans=trans,
+                tool_id=tool_id,
+                tool_version=tool.version,
+                param=param,
+                param_dump=param_dump,
+                job_state=payload.get("state"),
+            )
             if job:
                 jobs.append(job)
-        return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
+        return [self.encode_all_ids(trans, single_job.to_dict("element"), True) for single_job in jobs]
 
     @expose_api_anonymous
     def error(self, trans: ProvidesUserContext, id, payload, **kwd):
@@ -520,18 +518,18 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :returns:   dictionary containing information regarding where the error report was sent.
         """
         # Get dataset on which this error was triggered
-        dataset_id = payload.get('dataset_id')
+        dataset_id = payload.get("dataset_id")
         if not dataset_id:
-            raise exceptions.RequestParameterMissingException('No dataset_id')
+            raise exceptions.RequestParameterMissingException("No dataset_id")
         decoded_dataset_id = self.decode_id(dataset_id)
         dataset = self.hda_manager.get_accessible(decoded_dataset_id, trans.user)
 
         # Get job
         job = self.__get_job(trans, id)
         if dataset.creating_job.id != job.id:
-            raise exceptions.RequestParameterInvalidException('dataset_id was not created by job_id')
+            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        email = payload.get('email')
+        email = payload.get("email")
         if not email and not trans.anonymous:
             email = trans.user.email
         messages = trans.app.error_reports.default_error_plugin.submit_report(
@@ -541,10 +539,10 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             user_submission=True,
             user=trans.user,
             email=email,
-            message=payload.get('message')
+            message=payload.get("message"),
         )
 
-        return {'messages': messages}
+        return {"messages": messages}
 
     @require_admin
     @expose_api

@@ -3,6 +3,7 @@
  */
 import $ from "jquery";
 import Vue from "vue";
+import store from "store";
 import PageDisplay from "./PageDisplay.vue";
 
 export const mountPageDisplay = (propsData = {}) => {
@@ -10,6 +11,6 @@ export const mountPageDisplay = (propsData = {}) => {
         const pageId = $(el).attr("page_id");
         const component = Vue.extend(PageDisplay);
         propsData.pageId = pageId;
-        return new component({ propsData: propsData }).$mount(el);
+        return new component({ store: store, propsData: propsData }).$mount(el);
     });
 };

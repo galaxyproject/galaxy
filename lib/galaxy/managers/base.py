@@ -48,12 +48,17 @@ from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
 
-from galaxy import exceptions
-from galaxy import model
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.model import tool_shed_install
 from galaxy.schema import FilterQueryParams
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
+from galaxy.structured_app import (
+    BasicSharedApp,
+    MinimalManagerApp,
+)
 from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
@@ -88,20 +93,34 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     # Verify ownership: there is a current user and that user is the same as the item's
     if check_ownership:
         if not trans.user:
-            raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type='error')
+            raise exceptions.ItemOwnershipException("Must be logged in to manage Galaxy items", type="error")
         if item.user != trans.user:
-            raise exceptions.ItemOwnershipException(f"{item.__class__.__name__} is not owned by the current user", type='error')
+            raise exceptions.ItemOwnershipException(
+                f"{item.__class__.__name__} is not owned by the current user", type="error"
+            )
 
     # Verify accessible:
     #   if it's part of a lib - can they access via security
     #   if it's something else (sharable) have they been added to the item's users_shared_with_dot_users
     if check_accessible:
-        if type(item) in (trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset):
+        if type(item) in (
+            trans.app.model.LibraryFolder,
+            trans.app.model.LibraryDatasetDatasetAssociation,
+            trans.app.model.LibraryDataset,
+        ):
             if not trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user):
-                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
+                raise exceptions.ItemAccessibilityException(
+                    f"{item.__class__.__name__} is not accessible to the current user", type="error"
+                )
         else:
-            if (item.user != trans.user) and (not item.importable) and (trans.user not in item.users_shared_with_dot_users):
-                raise exceptions.ItemAccessibilityException(f"{item.__class__.__name__} is not accessible to the current user", type='error')
+            if (
+                (item.user != trans.user)
+                and (not item.importable)
+                and (trans.user not in item.users_shared_with_dot_users)
+            ):
+                raise exceptions.ItemAccessibilityException(
+                    f"{item.__class__.__name__} is not accessible to the current user", type="error"
+                )
     return item
 
 
@@ -110,7 +129,7 @@ def get_class(class_name):
     Returns the class object that a string denotes. Without this method, we'd have
     to do eval(<class_name>).
     """
-    if class_name == 'ToolShedRepository':
+    if class_name == "ToolShedRepository":
         item_class = tool_shed_install.ToolShedRepository
     else:
         if not hasattr(model, class_name):
@@ -153,11 +172,11 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     if check_ownership or check_accessible:
         security_check(trans, item, check_ownership, check_accessible)
     if deleted is True and not item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is not deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException(
+            f'{class_name} "{getattr(item, "name", id)}" is not deleted', type="warning"
+        )
     elif deleted is False and item.deleted:
-        raise exceptions.ItemDeletionException('%s "%s" is deleted'
-                                               % (class_name, getattr(item, 'name', id)), type="warning")
+        raise exceptions.ItemDeletionException(f'{class_name} "{getattr(item, "name", id)}" is deleted', type="warning")
     return item
 
 
@@ -188,6 +207,7 @@ class ModelManager:
     Provides common queries and CRUD operations as a (hopefully) light layer
     over the ORM.
     """
+
     model_class: Type[model._HasTable]
     foreign_key_name: str
     app: BasicSharedApp
@@ -207,7 +227,14 @@ class ModelManager:
         return item
 
     # .... query foundation wrapper
-    def query(self, eagerloads: bool = True, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
+    def query(
+        self,
+        eagerloads: bool = True,
+        filters=None,
+        order_by=None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Query:
         """
         Return a basic query from model_class, filters, order_by, and limit and offset.
 
@@ -219,7 +246,9 @@ class ModelManager:
             query = query.enable_eagerloads(False)
         return self._filter_and_order_query(query, filters=filters, order_by=order_by, limit=limit, offset=offset)
 
-    def _filter_and_order_query(self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None) -> Query:
+    def _filter_and_order_query(
+        self, query: Query, filters=None, order_by=None, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> Query:
         # TODO: not a lot of functional cohesion here
         query = self._apply_orm_filters(query, filters)
         query = self._apply_order_by(query, order_by)
@@ -267,7 +296,7 @@ class ModelManager:
         """
         Returns a tuple of columns for the default order when getting multiple models.
         """
-        return (self.model_class.table.c.create_time, )
+        return (self.model_class.table.c.create_time,)
 
     def _apply_orm_limit_offset(self, query: Query, limit: Optional[int], offset: Optional[int]) -> Query:
         """
@@ -333,8 +362,7 @@ class ModelManager:
         orm_filters, fn_filters = self._split_filters(filters)
         if not fn_filters:
             # if no fn_filtering required, we can use the 'all orm' version with limit offset
-            return self._orm_list(filters=orm_filters, order_by=order_by,
-                limit=limit, offset=offset, **kwargs)
+            return self._orm_list(filters=orm_filters, order_by=order_by, limit=limit, offset=offset, **kwargs)
 
         # fn filters will change the number of items returnable by limit/offset - remove them here from the orm query
         query = self.query(filters=orm_filters, order_by=order_by, limit=None, offset=None, **kwargs)
@@ -357,11 +385,11 @@ class ModelManager:
         if not isinstance(filters, list):
             filters = [filters]
         for filter_ in filters:
-            if not hasattr(filter_, 'filter_type'):
+            if not hasattr(filter_, "filter_type"):
                 orm_filters.append(filter_)
-            elif filter_.filter_type == 'function':
+            elif filter_.filter_type == "function":
                 fn_filters.append(filter_.filter)
-            elif filter_.filter_type == 'orm_function':
+            elif filter_.filter_type == "orm_function":
                 orm_filters.append(filter_.filter(self.model_class))
             else:
                 orm_filters.append(filter_.filter)
@@ -430,7 +458,7 @@ class ModelManager:
         If an id in ids is not found or if an item in items doesn't have a given
         id, they will not be in the returned list.
         """
-        ID_ATTR_NAME = 'id'
+        ID_ATTR_NAME = "id"
         # TODO:?? aside from sqlalx.get mentioned above, I haven't seen an in-SQL way
         #   to make this happen. This may not be the most efficient way either.
         # NOTE: that this isn't sorting by id - this is matching the order in items to the order in ids
@@ -462,7 +490,7 @@ class ModelManager:
         """
         Clone or copy an item.
         """
-        raise exceptions.NotImplemented('Abstract method')
+        raise exceptions.NotImplemented("Abstract method")
 
     def update(self, item, new_values, flush=True, **kwargs):
         """
@@ -502,7 +530,7 @@ class ModelManager:
     #    return item
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 # ---- code for classes that use one *main* model manager
@@ -515,7 +543,9 @@ class HasAModelManager(Generic[T]):
     """
 
     #: the class used to create this serializer's generically accessible model_manager
-    model_manager_class: Type[T]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
+    model_manager_class: Type[
+        T
+    ]  # ideally this would be Type[ModelManager] but HistoryContentsManager cannot be a ModelManager
     # examples where this doesn't really work are ConfigurationSerializer (no manager)
     # and contents (2 managers)
     app: MinimalManagerApp
@@ -554,7 +584,6 @@ class SkipAttribute(Exception):
 
 
 class Serializer(Protocol):
-
     def __call__(self, item: Any, key: str, **context) -> Any:
         ...
 
@@ -576,8 +605,7 @@ class ModelSerializer(HasAModelManager[T]):
         keys_to_serialize = [ 'id', 'name', 'attr1', 'attr2', ... ]
         item_dict = MySerializer.serialize( my_item, keys_to_serialize )
     """
-    #: 'service' to use for getting urls - use class var to allow overriding when testing
-    url_for = staticmethod(gx_url_for)
+
     default_view: Optional[str]
     views: Dict[str, List[str]]
 
@@ -604,16 +632,24 @@ class ModelSerializer(HasAModelManager[T]):
         self.views = {}
         self.default_view = None
 
+    @staticmethod
+    def url_for(*args, context=None, **kwargs):
+        trans = context and context.get("trans")
+        url_for = trans and trans.url_builder or gx_url_for
+        return url_for(*args, **kwargs)
+
     def add_serializers(self):
         """
         Register a map of attribute keys -> serializing functions that will serialize
         the attribute.
         """
-        self.serializers.update({
-            'id': self.serialize_id,
-            'create_time': self.serialize_date,
-            'update_time': self.serialize_date,
-        })
+        self.serializers.update(
+            {
+                "id": self.serialize_id,
+                "create_time": self.serialize_date,
+                "update_time": self.serialize_date,
+            }
+        )
 
     def add_view(self, view_name, key_list, include_keys_from=None):
         """
@@ -651,7 +687,7 @@ class ModelSerializer(HasAModelManager[T]):
             # ignore bad/unreg keys
         return returned
 
-    def skip(self, msg='skipped'):
+    def skip(self, msg="skipped"):
         """
         To be called from inside a serializer to skip it.
 
@@ -693,7 +729,7 @@ class ModelSerializer(HasAModelManager[T]):
         """
         Serialize an type-id for `item`.
         """
-        TYPE_ID_SEP = '-'
+        TYPE_ID_SEP = "-"
         type_id = getattr(item, key)
         if type_id is None:
             return None
@@ -726,7 +762,7 @@ class ModelSerializer(HasAModelManager[T]):
         else:
             if keys:
                 all_keys = keys
-            elif default_view:
+            else:
                 all_keys = self._view_to_keys(default_view)
 
         return self.serialize(item, all_keys, **context)
@@ -735,12 +771,14 @@ class ModelSerializer(HasAModelManager[T]):
         """
         Converts a known view into a list of keys.
 
-        :raises ModelSerializingError: if the view is not listed in `self.views`.
+        :raises RequestParameterInvalidException: if the view is not listed in `self.views`.
         """
         if view is None:
             view = self.default_view
         if view not in self.views:
-            raise ModelSerializingError('unknown view', view=view, available_views=self.views)
+            raise exceptions.RequestParameterInvalidException(
+                f"unknown view - {view}", view=view, available_views=self.views
+            )
         return self.views[view][:]
 
 
@@ -759,7 +797,7 @@ class ModelValidator:
         :raises exceptions.RequestParameterInvalidException: if not an instance.
         """
         if not isinstance(val, types):
-            msg = f'must be a type: {str(types)}'
+            msg = f"must be a type: {types}"
             raise exceptions.RequestParameterInvalidException(msg, key=key, val=val)
         return val
 
@@ -812,7 +850,7 @@ class ModelValidator:
         """
         # TODO: is this correct?
         if val is None:
-            return '?'
+            return "?"
         # currently, data source sites like UCSC are able to set the genome build to non-local build names
         # afterwards, attempting to validate the whole model will choke here
         # for genome_build_shortname, longname in self.app.genome_builds.get_genome_build_names( trans=trans ):
@@ -828,7 +866,6 @@ class ModelValidator:
 
 
 class Deserializer(Protocol):
-
     def __call__(self, item: Any, key: Any, val: Any, **kwargs) -> Any:
         ...
 
@@ -838,6 +875,7 @@ class ModelDeserializer(HasAModelManager[T]):
     An object that converts an incoming serialized dict into values that can be
     directly assigned to an item's attributes and assigns them.
     """
+
     validate = ModelValidator()
     app: MinimalManagerApp
 
@@ -894,7 +932,7 @@ class ModelDeserializer(HasAModelManager[T]):
         return val
 
     def deserialize_basestring(self, item, key, val, convert_none_to_empty=False, **context):
-        val = '' if (convert_none_to_empty and val is None) else self.validate.basestring(key, val)
+        val = "" if (convert_none_to_empty and val is None) else self.validate.basestring(key, val)
         return self.default_deserializer(item, key, val, **context)
 
     def deserialize_bool(self, item, key, val, **context):
@@ -939,6 +977,7 @@ class ModelFilterParser(HasAModelManager):
     These might be safely be replaced in the future by creating SQLAlchemy
     hybrid properties or more thoroughly mapping derived values.
     """
+
     # ??: this class kindof 'lives' in both the world of the controllers/param-parsing and to models/orm
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
@@ -955,7 +994,9 @@ class ModelFilterParser(HasAModelManager):
         super().__init__(app, **kwargs)
 
         #: regex for testing/dicing iso8601 date strings, with optional time and ms, but allowing only UTC timezone
-        self.date_string_re = re.compile(r'^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$')
+        self.date_string_re = re.compile(
+            r"^(\d{4}\-\d{2}\-\d{2})[T| ]{0,1}(\d{2}:\d{2}:\d{2}(?:\.\d{1,6}){0,1}){0,1}Z{0,1}$"
+        )
 
         # dictionary containing parsing data for ORM/SQLAlchemy-based filters
         # ..note: although kind of a pain in the ass and verbose, opt-in/allowlisting allows more control
@@ -973,27 +1014,29 @@ class ModelFilterParser(HasAModelManager):
         Set up, extend, or alter `orm_filter_parsers` and `fn_filter_parsers`.
         """
         # note: these are the default filters for all models
-        self.orm_filter_parsers.update({
-            # (prob.) applicable to all models
-            'id': {'op': ('in')},
-            'encoded_id': {'column': 'id', 'op': ('in'), 'val': self.parse_id_list},
-            # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
-            'extension': {'op': ('eq', 'like', 'in')},
-            'create_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-            'update_time': {'op': ('le', 'ge', 'lt', 'gt'), 'val': self.parse_date},
-        })
+        self.orm_filter_parsers.update(
+            {
+                # (prob.) applicable to all models
+                "id": {"op": ("in")},
+                "encoded_id": {"column": "id", "op": ("in"), "val": self.parse_id_list},
+                # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
+                "extension": {"op": ("eq", "like", "in")},
+                "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
+                "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
+            }
+        )
 
     def build_filter_params(
         self,
         query_params: FilterQueryParams,
-        filter_attr_key: str = 'q',
-        filter_value_key: str = 'qv',
-        attr_op_split_char: str = '-',
+        filter_attr_key: str = "q",
+        filter_value_key: str = "qv",
+        attr_op_split_char: str = "-",
     ) -> List[Tuple[str, str, str]]:
         """
         Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
         """
-        DEFAULT_OP = 'eq'
+        DEFAULT_OP = "eq"
         qdict = query_params.dict(exclude_defaults=True)
         if filter_attr_key not in qdict:
             return []
@@ -1059,12 +1102,13 @@ class ModelFilterParser(HasAModelManager):
 
         # by convention, assume most val parsers raise ValueError
         except ValueError as val_err:
-            raise exceptions.RequestParameterInvalidException('unparsable value for filter',
-                column=attr, operation=op, value=val, ValueError=str(val_err))
+            raise exceptions.RequestParameterInvalidException(
+                "unparsable value for filter", column=attr, operation=op, value=val, ValueError=str(val_err)
+            )
 
         # if neither of the above work, raise an error with how-to info
         # TODO: send back all valid filter keys in exception for added user help
-        raise exceptions.RequestParameterInvalidException('bad filter', column=attr, operation=op)
+        raise exceptions.RequestParameterInvalidException("bad filter", column=attr, operation=op)
 
     # ---- fn filters
     def _parse_fn_filter(self, attr, op, val):
@@ -1077,13 +1121,13 @@ class ModelFilterParser(HasAModelManager):
         attr_map = self.fn_filter_parsers.get(attr, None)
         if not attr_map:
             return None
-        allowed_ops = attr_map['op']
+        allowed_ops = attr_map["op"]
         # allowed ops is a map here, op => fn
         filter_fn = allowed_ops.get(op, None)
         if not filter_fn:
             return None
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = attr_map.get('val', None)
+        val_parser = attr_map.get("val", None)
         if val_parser:
             val = val_parser(val)
 
@@ -1106,8 +1150,8 @@ class ModelFilterParser(HasAModelManager):
             return self.parsed_filter(filter_type="orm_function", filter=column_map(attr, op, val))
         # attr must be an allowlisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
-        if 'column' in column_map:
-            attr = column_map['column']
+        if "column" in column_map:
+            attr = column_map["column"]
         column = self.model_class.table.columns.get(attr)
         if column is None:
             # could be a property (hybrid_property, etc.) - assume we can make a filter from it
@@ -1117,7 +1161,7 @@ class ModelFilterParser(HasAModelManager):
             return None
 
         # op must be allowlisted: contained in the list orm_filter_list[ attr ][ 'op' ]
-        allowed_ops = column_map['op']
+        allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
         op = self._convert_op_string_to_fn(column, op)
@@ -1125,7 +1169,7 @@ class ModelFilterParser(HasAModelManager):
             return None
 
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = column_map.get('val', None)
+        val_parser = column_map.get("val", None)
         if val_parser:
             val = val_parser(val)
 
@@ -1133,7 +1177,7 @@ class ModelFilterParser(HasAModelManager):
         return self.parsed_filter(filter_type="orm", filter=orm_filter)
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
-    UNDERSCORED_OPS = ('lt', 'le', 'eq', 'ne', 'ge', 'gt')
+    UNDERSCORED_OPS = ("lt", "le", "eq", "ne", "ge", "gt")
 
     def _convert_op_string_to_fn(self, column, op_string):
         """
@@ -1144,8 +1188,8 @@ class ModelFilterParser(HasAModelManager):
         fn_name = op_string
         if op_string in self.UNDERSCORED_OPS:
             fn_name = f"__{op_string}__"
-        elif op_string == 'in':
-            fn_name = 'in_'
+        elif op_string == "in":
+            fn_name = "in_"
 
         # get the column fn using the op_string and error if not a callable attr
         # TODO: special case 'not in' - or disallow?
@@ -1157,15 +1201,15 @@ class ModelFilterParser(HasAModelManager):
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
     def string_standard_ops(self, key):
         return {
-            'op': {
-                'eq': lambda i, v: v == getattr(i, key),
-                'contains': lambda i, v: v in getattr(i, key),
+            "op": {
+                "eq": lambda i, v: v == getattr(i, key),
+                "contains": lambda i, v: v in getattr(i, key),
             }
         }
 
     # --- more parsers! yay!
     # TODO: These should go somewhere central - we've got ~6 parser modules/sections now
-    def parse_id_list(self, id_list_string, sep=','):
+    def parse_id_list(self, id_list_string, sep=","):
         """
         Split `id_list_string` at `sep`.
         """
@@ -1173,7 +1217,7 @@ class ModelFilterParser(HasAModelManager):
         id_list = [self.app.security.decode_id(id_) for id_ in id_list_string.split(sep)]
         return id_list
 
-    def parse_int_list(self, int_list_string, sep=','):
+    def parse_int_list(self, int_list_string, sep=","):
         """
         Split `int_list_string` at `sep` and parse as ints.
         """
@@ -1192,15 +1236,15 @@ class ModelFilterParser(HasAModelManager):
         try:
             epoch = float(date_string)
             datetime_obj = datetime.datetime.fromtimestamp(epoch)
-            return datetime_obj.isoformat(sep=' ')
+            return datetime_obj.isoformat(sep=" ")
         except ValueError:
             pass
 
         match = self.date_string_re.match(date_string)
         if match:
-            date_string = ' '.join(group for group in match.groups() if group)
+            date_string = " ".join(group for group in match.groups() if group)
             return date_string
-        raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
+        raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
 
 def parse_bool(bool_string: Union[str, bool]) -> bool:
@@ -1208,11 +1252,11 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
     Parse a boolean from a string.
     """
     # Be strict here to remove complexity of options (but allow already parsed).
-    if bool_string in ('True', True):
+    if bool_string in ("True", True):
         return True
-    if bool_string in ('False', False):
+    if bool_string in ("False", False):
         return False
-    raise ValueError(f"invalid boolean: {str(bool_string)}")
+    raise ValueError(f"invalid boolean: {bool_string}")
 
 
 def raise_filter_err(attr, op, val, msg):

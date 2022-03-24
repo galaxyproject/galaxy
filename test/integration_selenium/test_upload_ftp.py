@@ -2,7 +2,7 @@ import os
 
 from .framework import (
     selenium_test,
-    SeleniumIntegrationTestCase
+    SeleniumIntegrationTestCase,
 )
 
 

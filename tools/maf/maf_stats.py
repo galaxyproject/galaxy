@@ -24,7 +24,10 @@ def __main__():
         start_col = int(sys.argv[6].strip()) - 1
         end_col = int(sys.argv[7].strip()) - 1
     except Exception:
-        print("You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file.", file=sys.stderr)
+        print(
+            "You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file.",
+            file=sys.stderr,
+        )
         sys.exit()
     summary = sys.argv[8].strip()
     if summary.lower() == "true":
@@ -40,7 +43,9 @@ def __main__():
     index = index_filename = None
     if maf_source_type == "user":
         # index maf for use here
-        index, index_filename = maf_utilities.open_or_build_maf_index(input_maf_filename, maf_index_filename, species=[dbkey])
+        index, index_filename = maf_utilities.open_or_build_maf_index(
+            input_maf_filename, maf_index_filename, species=[dbkey]
+        )
         if index is None:
             print("Your MAF file appears to be malformed.", file=sys.stderr)
             sys.exit()
@@ -51,17 +56,27 @@ def __main__():
             print("The MAF source specified (%s) appears to be invalid." % (input_maf_filename), file=sys.stderr)
             sys.exit()
     else:
-        print('Invalid source type specified: %s' % maf_source_type, file=sys.stdout)
+        print("Invalid source type specified: %s" % maf_source_type, file=sys.stdout)
         sys.exit()
 
-    out = open(output_filename, 'w')
+    out = open(output_filename, "w")
 
     num_region = None
     num_bad_region = 0
     species_summary = {}
     total_length = 0
     # loop through interval file
-    for num_region, region in enumerate(bx.intervals.io.NiceReaderWrapper(open(input_interval_filename, 'r'), chrom_col=chr_col, start_col=start_col, end_col=end_col, fix_strand=True, return_header=False, return_comments=False)):  # noqa: B007
+    for num_region, region in enumerate(  # noqa: B007
+        bx.intervals.io.NiceReaderWrapper(
+            open(input_interval_filename, "r"),
+            chrom_col=chr_col,
+            start_col=start_col,
+            end_col=end_col,
+            fix_strand=True,
+            return_header=False,
+            return_comments=False,
+        )
+    ):
         src = "%s.%s" % (dbkey, region.chrom)
         region_length = region.end - region.start
         if region_length < 1:
@@ -77,11 +92,15 @@ def __main__():
             for block in maf_utilities.iter_blocks_split_by_species(block):
                 if maf_utilities.component_overlaps_region(block.get_component_by_src(src), region):
                     # need to chop and orient the block
-                    block = maf_utilities.orient_block_by_region(maf_utilities.chop_block_by_region(block, src, region), src, region, force_strand='+')
-                    start_offset, alignment = maf_utilities.reduce_block_by_primary_genome(block, dbkey, region.chrom, region.start)
+                    block = maf_utilities.orient_block_by_region(
+                        maf_utilities.chop_block_by_region(block, src, region), src, region, force_strand="+"
+                    )
+                    start_offset, alignment = maf_utilities.reduce_block_by_primary_genome(
+                        block, dbkey, region.chrom, region.start
+                    )
                     for i in range(len(alignment[dbkey])):
                         for spec, text in alignment.items():
-                            if text[i] != '-':
+                            if text[i] != "-":
                                 coverage[spec].set(start_offset + i)
         if summary:
             # record summary
@@ -92,13 +111,17 @@ def __main__():
         else:
             # print coverage for interval
             coverage_sum = coverage[dbkey].count_range()
-            out.write("%s\t%s\t%s\t%s\n" % ("\t".join(region.fields), dbkey, coverage_sum, region_length - coverage_sum))
+            out.write(
+                "%s\t%s\t%s\t%s\n" % ("\t".join(region.fields), dbkey, coverage_sum, region_length - coverage_sum)
+            )
             keys = list(coverage.keys())
             keys.remove(dbkey)
             keys.sort()
             for key in keys:
                 coverage_sum = coverage[key].count_range()
-                out.write("%s\t%s\t%s\t%s\n" % ("\t".join(region.fields), key, coverage_sum, region_length - coverage_sum))
+                out.write(
+                    "%s\t%s\t%s\t%s\n" % ("\t".join(region.fields), key, coverage_sum, region_length - coverage_sum)
+                )
     if summary:
         out.write("#species\tnucleotides\tcoverage\n")
         for spec in species_summary:

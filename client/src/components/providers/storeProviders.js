@@ -2,7 +2,7 @@
 import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 
 export const SimpleProviderMixin = {
     props: {
@@ -44,39 +44,6 @@ export const SimpleProviderMixin = {
             item: this.item,
             save: this.save,
         });
-    },
-};
-
-export const StoreProviderMixin = {
-    computed: {
-        storeItem() {
-            throw new Error("define me");
-        },
-    },
-    watch: {
-        storeItem: {
-            handler(newItem, oldItem) {
-                this.item = newItem;
-            },
-        },
-    },
-};
-
-export const DatasetCollectionProvider = {
-    mixins: [SimpleProviderMixin, StoreProviderMixin],
-    methods: {
-        ...mapCacheActions("datasetCollections", ["fetchDatasetCollection"]),
-        async load() {
-            this.loading = true;
-            this.item = await this.fetchDatasetCollection(this.id);
-            this.loading = false;
-        },
-    },
-    computed: {
-        ...mapGetters("datasetCollections", ["getDatasetCollectionById"]),
-        storeItem() {
-            return this.getDatasetCollectionById(this.id);
-        },
     },
 };
 
@@ -159,3 +126,50 @@ export const JobProvider = {
         },
     },
 };
+
+/**
+ * Provider component interface to the actual stores i.e. history items and collection elements stores.
+ * @param {String} This store action is executed when the consuming component e.g. the history panel, changes the provider props.
+ * @param {String} This store getter passes its result to the slot of the corresponding provider.
+ */
+export const StoreProvider = (storeAction, storeGetter) => {
+    return {
+        watch: {
+            $attrs() {
+                this.load();
+            },
+        },
+        data() {
+            return {
+                loading: false,
+            };
+        },
+        created() {
+            this.load();
+        },
+        methods: {
+            ...mapActions([storeAction]),
+            async load() {
+                this.loading = true;
+                await this[storeAction]({ ...this.$attrs });
+                this.loading = false;
+            },
+        },
+        computed: {
+            ...mapGetters([storeGetter]),
+            result() {
+                return this[storeGetter]({ ...this.$attrs });
+            },
+        },
+        render() {
+            return this.$scopedSlots.default({
+                loading: this.loading,
+                result: this.result,
+            });
+        },
+    };
+};
+
+export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
+export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems");

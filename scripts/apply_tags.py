@@ -7,7 +7,6 @@ from bioblend.galaxy import GalaxyInstance
 
 
 class ApplyTagsHistory:
-
     @classmethod
     def __init__(self, galaxy_url, galaxy_api_key, history_id=None):
         self.galaxy_url = galaxy_url
@@ -54,7 +53,7 @@ class ApplyTagsHistory:
         print("Total datasets: %d. Updating their tags may take a while..." % len(all_datasets))
         for dataset in all_datasets:
             try:
-                if dataset["deleted"] is False and dataset["state"] == 'ok':
+                if dataset["deleted"] is False and dataset["state"] == "ok":
                     parent_ids = list()
                     child_dataset_id = dataset["id"]
                     own_tags[child_dataset_id] = dataset["tags"]
@@ -89,7 +88,9 @@ class ApplyTagsHistory:
             parent_dataset_ids = all_parents[dataset_id]
             # update history tags for a dataset taking all from its parents if there is a parent
             if len(parent_dataset_ids) > 0:
-                is_updated = self.propagate_tags(history, history_id, parent_dataset_ids, dataset_id, parent_tags, own_tags)
+                is_updated = self.propagate_tags(
+                    history, history_id, parent_dataset_ids, dataset_id, parent_tags, own_tags
+                )
                 if is_updated is True:
                     count_datasets_updated += 1
         print("Tags of %d datasets updated" % count_datasets_updated)
@@ -111,6 +112,7 @@ class ApplyTagsHistory:
                     recursive_parents.extend(dataset_parents)
                     for parent in dataset_parents:
                         find_parent_recursive(parent)
+
             find_parent_recursive(item)
             # take unique parents
             recursive_parent_ids[item] = list(set(recursive_parents))
@@ -138,7 +140,7 @@ class ApplyTagsHistory:
         # find unique tags from all parents
         all_tags = set(all_tags)
         self_tags_set = set(self_tags)
-        is_same = (all_tags == self_tags_set)
+        is_same = all_tags == self_tags_set
         # update tags if there are new tags from parents
         if is_same is False:
             is_subset = all_tags.issubset(self_tags_set)

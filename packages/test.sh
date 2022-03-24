@@ -23,6 +23,7 @@ PACKAGE_DIRS=(
     objectstore
     job_metrics
     containers
+    config
     files
     tool_util
     data
@@ -33,8 +34,6 @@ PACKAGE_DIRS=(
     app
     webapps
 )
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 1 1 0)
-RUN_MYPY=(1 1 1 1 1 1 1 1 1 1 1 1 1)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
     package_dir=${PACKAGE_DIRS[$i]}
@@ -52,11 +51,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
 
     pip install -r test-requirements.txt
 
-    if [[ "${RUN_TESTS[$i]}" == "1" ]]; then
-        pytest --doctest-modules galaxy tests
-    fi
-    if [[ "${RUN_MYPY[$i]}" == "1" ]]; then
-        make mypy
-    fi
+    # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
+    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
+    pytest $unit_extra galaxy tests
+    make mypy
     cd ..
 done

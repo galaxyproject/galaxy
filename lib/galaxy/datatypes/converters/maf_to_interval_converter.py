@@ -15,7 +15,7 @@ def __main__():
     input_name = sys.argv.pop(1)
     species = sys.argv.pop(1)
     count = 0
-    with open(output_name, 'w') as out:
+    with open(output_name, "w") as out:
         # write interval header line
         out.write("#chrom\tstart\tend\tstrand\n")
         try:
@@ -23,7 +23,15 @@ def __main__():
                 for block in bx.align.maf.Reader(fh):
                     for c in maf_utilities.iter_components_by_src_start(block, species):
                         if c is not None:
-                            out.write("%s\t%i\t%i\t%s\n" % (maf_utilities.src_split(c.src)[-1], c.get_forward_strand_start(), c.get_forward_strand_end(), c.strand))
+                            out.write(
+                                "%s\t%i\t%i\t%s\n"
+                                % (
+                                    maf_utilities.src_split(c.src)[-1],
+                                    c.get_forward_strand_start(),
+                                    c.get_forward_strand_end(),
+                                    c.strand,
+                                )
+                            )
                             count += 1
         except Exception as e:
             print(f"There was a problem processing your input: {e}", file=sys.stderr)

@@ -1,4 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from contextlib import contextmanager
 from uuid import uuid4
 
@@ -117,7 +120,7 @@ def collection_consists_of_objects(collection, *objects):
     """
     if len(collection) != len(objects):  # False if lengths are different
         return False
-    if not collection:   # True if both are empty
+    if not collection:  # True if both are empty
         return True
 
     # Sort, then compare each member by its 'id' attribute, which must be its primary key.

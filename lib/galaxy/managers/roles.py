@@ -21,8 +21,9 @@ class RoleManager(base.ModelManager):
     """
     Business logic for roles.
     """
+
     model_class = model.Role
-    foreign_key_name = 'role'
+    foreign_key_name = "role"
 
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
@@ -40,17 +41,16 @@ class RoleManager(base.ModelManager):
         :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
-            role = (self.session().query(self.model_class)
-                    .filter(self.model_class.id == decoded_role_id).one())
+            role = self.session().query(self.model_class).filter(self.model_class.id == decoded_role_id).one()
         except sqlalchemy_exceptions.MultipleResultsFound:
-            raise galaxy.exceptions.InconsistentDatabase('Multiple roles found with the same id.')
+            raise galaxy.exceptions.InconsistentDatabase("Multiple roles found with the same id.")
         except sqlalchemy_exceptions.NoResultFound:
-            raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
+            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
         except Exception as e:
             raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            raise galaxy.exceptions.RequestParameterInvalidException('No accessible role found with the id provided.')
+            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
 
         return role
 

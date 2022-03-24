@@ -17,16 +17,20 @@ from typing import cast
 import markupsafe
 from paste import (
     request,
-    wsgilib
+    wsgilib,
 )
-from paste.exceptions import collector, formatter, reporter
+from paste.exceptions import (
+    collector,
+    formatter,
+    reporter,
+)
 
-__all__ = ('ErrorMiddleware', 'handle_exception')
+__all__ = ("ErrorMiddleware", "handle_exception")
 
 
 class _NoDefault:
     def __repr__(self):
-        return '<NoDefault>'
+        return "<NoDefault>"
 
 
 NoDefault = _NoDefault()
@@ -88,53 +92,60 @@ class ErrorMiddleware:
 
     """
 
-    def __init__(self, application, global_conf=None,
-                 debug=NoDefault,
-                 error_email=None,
-                 error_log=None,
-                 show_exceptions_in_wsgi_errors=NoDefault,
-                 from_address=None,
-                 smtp_server=None,
-                 smtp_username=None,
-                 smtp_password=None,
-                 smtp_use_tls=False,
-                 error_subject_prefix=None,
-                 error_message=None,
-                 xmlhttp_key=None):
+    def __init__(
+        self,
+        application,
+        global_conf=None,
+        debug=NoDefault,
+        error_email=None,
+        error_log=None,
+        show_exceptions_in_wsgi_errors=NoDefault,
+        from_address=None,
+        smtp_server=None,
+        smtp_username=None,
+        smtp_password=None,
+        smtp_use_tls=False,
+        error_subject_prefix=None,
+        error_message=None,
+        xmlhttp_key=None,
+    ):
         from paste.util import converters
+
         self.application = application
         # @@: global_conf should be handled elsewhere in a separate
         # function for the entry point
         if global_conf is None:
             global_conf = {}
         if debug is NoDefault:
-            debug = converters.asbool(global_conf.get('debug'))
+            debug = converters.asbool(global_conf.get("debug"))
         if show_exceptions_in_wsgi_errors is NoDefault:
-            show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get('show_exceptions_in_wsgi_errors'))
+            show_exceptions_in_wsgi_errors = converters.asbool(global_conf.get("show_exceptions_in_wsgi_errors"))
         self.debug_mode = converters.asbool(debug)
         if error_email is None:
-            error_email = (global_conf.get('error_email')
-                           or global_conf.get('admin_email')
-                           or global_conf.get('webmaster_email')
-                           or global_conf.get('sysadmin_email'))
+            error_email = (
+                global_conf.get("error_email")
+                or global_conf.get("admin_email")
+                or global_conf.get("webmaster_email")
+                or global_conf.get("sysadmin_email")
+            )
         self.error_email = converters.aslist(error_email)
         self.error_log = error_log
         self.show_exceptions_in_wsgi_errors = show_exceptions_in_wsgi_errors
         if from_address is None:
-            from_address = global_conf.get('error_from_address', 'errors@localhost')
+            from_address = global_conf.get("error_from_address", "errors@localhost")
         self.from_address = from_address
         if smtp_server is None:
-            smtp_server = global_conf.get('smtp_server', 'localhost')
+            smtp_server = global_conf.get("smtp_server", "localhost")
         self.smtp_server = smtp_server
-        self.smtp_username = smtp_username or global_conf.get('smtp_username')
-        self.smtp_password = smtp_password or global_conf.get('smtp_password')
-        self.smtp_use_tls = smtp_use_tls or converters.asbool(global_conf.get('smtp_use_tls'))
-        self.error_subject_prefix = error_subject_prefix or ''
+        self.smtp_username = smtp_username or global_conf.get("smtp_username")
+        self.smtp_password = smtp_password or global_conf.get("smtp_password")
+        self.smtp_use_tls = smtp_use_tls or converters.asbool(global_conf.get("smtp_use_tls"))
+        self.error_subject_prefix = error_subject_prefix or ""
         if error_message is None:
-            error_message = global_conf.get('error_message')
+            error_message = global_conf.get("error_message")
         self.error_message = error_message
         if xmlhttp_key is None:
-            xmlhttp_key = global_conf.get('xmlhttp_key', '_')
+            xmlhttp_key = global_conf.get("xmlhttp_key", "_")
         self.xmlhttp_key = xmlhttp_key
 
     def __call__(self, environ, start_response):
@@ -144,9 +155,9 @@ class ErrorMiddleware:
         # We want to be careful about not sending headers twice,
         # and the content type that the app has committed to (if there
         # is an exception in the iterator body of the response)
-        if environ.get('paste.throw_errors'):
+        if environ.get("paste.throw_errors"):
             return self.application(environ, start_response)
-        environ['paste.throw_errors'] = True
+        environ["paste.throw_errors"] = True
 
         try:
             __traceback_supplement__ = Supplement, self, environ
@@ -156,12 +167,10 @@ class ErrorMiddleware:
         except Exception:
             exc_info = sys.exc_info()
             try:
-                for expect in environ.get('paste.expected_exceptions', []):
+                for expect in environ.get("paste.expected_exceptions", []):
                     if isinstance(exc_info[1], expect):
                         raise
-                start_response('500 Internal Server Error',
-                               [('content-type', 'text/html')],
-                               exc_info)
+                start_response("500 Internal Server Error", [("content-type", "text/html")], exc_info)
                 # @@: it would be nice to deal with bad content types here
                 response = self.exception_handler(exc_info, environ)
                 return [response]
@@ -182,7 +191,8 @@ class ErrorMiddleware:
             if dict(get_vars).get(self.xmlhttp_key):
                 simple_html_error = True
         return handle_exception(
-            exc_info, environ['wsgi.errors'],
+            exc_info,
+            environ["wsgi.errors"],
             html=True,
             debug_mode=self.debug_mode,
             error_email=self.error_email,
@@ -196,7 +206,8 @@ class ErrorMiddleware:
             error_subject_prefix=self.error_subject_prefix,
             error_message=self.error_message,
             simple_html_error=simple_html_error,
-            environ=environ)
+            environ=environ,
+        )
 
 
 class ResponseStartChecker:
@@ -231,8 +242,7 @@ class CatchingIter:
         return self
 
     def __next__(self):
-        __traceback_supplement__ = (
-            Supplement, self.error_middleware, self.environ)
+        __traceback_supplement__ = (Supplement, self.error_middleware, self.environ)
         if self.closed:
             raise StopIteration
         try:
@@ -248,16 +258,12 @@ class CatchingIter:
             self.closed = True
             close_response = self._close()
             exc_info = sys.exc_info()
-            response = self.error_middleware.exception_handler(
-                exc_info, self.environ)
+            response = self.error_middleware.exception_handler(exc_info, self.environ)
             if close_response is not None:
-                response += (
-                    f'<hr noshade>Error in .close():<br>{close_response}')
+                response += f"<hr noshade>Error in .close():<br>{close_response}"
 
             if not self.start_checker.response_started:
-                self.start_checker('500 Internal Server Error',
-                                   [('content-type', 'text/html')],
-                                   exc_info)
+                self.start_checker("500 Internal Server Error", [("content-type", "text/html")], exc_info)
 
             return response
 
@@ -269,14 +275,13 @@ class CatchingIter:
 
     def _close(self):
         """Close and return any error message"""
-        if not hasattr(self.app_iterable, 'close'):
+        if not hasattr(self.app_iterable, "close"):
             return None
         try:
             self.app_iterable.close()
             return None
         except Exception:
-            close_response = self.error_middleware.exception_handler(
-                sys.exc_info(), self.environ)
+            close_response = self.error_middleware.exception_handler(sys.exc_info(), self.environ)
             return close_response
 
 
@@ -294,59 +299,66 @@ class Supplement:
 
     def extraData(self):
         data = {}
-        cgi_vars = data[('extra', 'CGI Variables')] = {}
-        wsgi_vars = data[('extra', 'WSGI Variables')] = {}
-        hide_vars = ['paste.config', 'wsgi.errors', 'wsgi.input',
-                     'wsgi.multithread', 'wsgi.multiprocess',
-                     'wsgi.run_once', 'wsgi.version',
-                     'wsgi.url_scheme']
+        cgi_vars = data[("extra", "CGI Variables")] = {}
+        wsgi_vars = data[("extra", "WSGI Variables")] = {}
+        hide_vars = [
+            "paste.config",
+            "wsgi.errors",
+            "wsgi.input",
+            "wsgi.multithread",
+            "wsgi.multiprocess",
+            "wsgi.run_once",
+            "wsgi.version",
+            "wsgi.url_scheme",
+        ]
         for name, value in self.environ.items():
             if name.upper() == name:
                 if value:
                     cgi_vars[name] = value
             elif name not in hide_vars:
                 wsgi_vars[name] = value
-        if self.environ['wsgi.version'] != (1, 0):
-            wsgi_vars['wsgi.version'] = self.environ['wsgi.version']
-        proc_desc = tuple(int(bool(self.environ[key])) for key in (
-            'wsgi.multiprocess',
-            'wsgi.multithread',
-            'wsgi.run_once'
-        ))
-        wsgi_vars['wsgi process'] = self.process_combos[proc_desc]
-        wsgi_vars['application'] = self.middleware.application
-        if 'paste.config' in self.environ:
-            data[('extra', 'Configuration')] = dict(self.environ['paste.config'])
+        if self.environ["wsgi.version"] != (1, 0):
+            wsgi_vars["wsgi.version"] = self.environ["wsgi.version"]
+        proc_desc = tuple(
+            int(bool(self.environ[key])) for key in ("wsgi.multiprocess", "wsgi.multithread", "wsgi.run_once")
+        )
+        wsgi_vars["wsgi process"] = self.process_combos[proc_desc]
+        wsgi_vars["application"] = self.middleware.application
+        if "paste.config" in self.environ:
+            data[("extra", "Configuration")] = dict(self.environ["paste.config"])
         return data
 
     process_combos = {
         # multiprocess, multithread, run_once
-        (0, 0, 0): 'Non-concurrent server',
-        (0, 1, 0): 'Multithreaded',
-        (1, 0, 0): 'Multiprocess',
-        (1, 1, 0): 'Multi process AND threads (?)',
-        (0, 0, 1): 'Non-concurrent CGI',
-        (0, 1, 1): 'Multithread CGI (?)',
-        (1, 0, 1): 'CGI',
-        (1, 1, 1): 'Multi thread/process CGI (?)',
+        (0, 0, 0): "Non-concurrent server",
+        (0, 1, 0): "Multithreaded",
+        (1, 0, 0): "Multiprocess",
+        (1, 1, 0): "Multi process AND threads (?)",
+        (0, 0, 1): "Non-concurrent CGI",
+        (0, 1, 1): "Multithread CGI (?)",
+        (1, 0, 1): "CGI",
+        (1, 1, 1): "Multi thread/process CGI (?)",
     }
 
 
-def handle_exception(exc_info, error_stream, html=True,
-                     debug_mode=False,
-                     error_email=None,
-                     error_log=None,
-                     show_exceptions_in_wsgi_errors=False,
-                     error_email_from='errors@localhost',
-                     smtp_server='localhost',
-                     smtp_username=None,
-                     smtp_password=None,
-                     smtp_use_tls=False,
-                     error_subject_prefix='',
-                     error_message=None,
-                     simple_html_error=False,
-                     environ=None
-                     ):
+def handle_exception(
+    exc_info,
+    error_stream,
+    html=True,
+    debug_mode=False,
+    error_email=None,
+    error_log=None,
+    show_exceptions_in_wsgi_errors=False,
+    error_email_from="errors@localhost",
+    smtp_server="localhost",
+    smtp_username=None,
+    smtp_password=None,
+    smtp_use_tls=False,
+    error_subject_prefix="",
+    error_message=None,
+    simple_html_error=False,
+    environ=None,
+):
     """
     For exception handling outside of a web context
 
@@ -366,7 +378,7 @@ def handle_exception(exc_info, error_stream, html=True,
     """
     reported = False
     exc_data = collector.collect_exception(*exc_info)
-    extra_data = ''
+    extra_data = ""
     if error_email:
         rep = reporter.EmailReporter(
             to_addresses=error_email,
@@ -375,57 +387,54 @@ def handle_exception(exc_info, error_stream, html=True,
             smtp_username=smtp_username,
             smtp_password=smtp_password,
             smtp_use_tls=smtp_use_tls,
-            subject_prefix=error_subject_prefix)
+            subject_prefix=error_subject_prefix,
+        )
         rep_err = send_report(rep, exc_data, html=html)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if error_log:
-        rep = reporter.LogReporter(
-            filename=error_log)
+        rep = reporter.LogReporter(filename=error_log)
         rep_err = send_report(rep, exc_data, html=html)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     if show_exceptions_in_wsgi_errors:
-        rep = reporter.FileReporter(
-            file=error_stream)
+        rep = reporter.FileReporter(file=error_stream)
         rep_err = send_report(rep, exc_data, html=html)
         if rep_err:
             extra_data += rep_err
         else:
             reported = True
     else:
-        error_stream.write('Error - {}: {}\n'.format(
-            exc_data.exception_type, exc_data.exception_value))
+        error_stream.write(f"Error - {exc_data.exception_type}: {exc_data.exception_value}\n")
     if html:
         if debug_mode and simple_html_error:
             return_error = formatter.format_html(
-                exc_data, include_hidden_frames=False,
-                include_reusable=False, show_extra_data=False)
+                exc_data, include_hidden_frames=False, include_reusable=False, show_extra_data=False
+            )
             reported = True
         elif debug_mode and not simple_html_error:
-            error_html = formatter.format_html(
-                exc_data,
-                include_hidden_frames=True,
-                include_reusable=False)
+            error_html = formatter.format_html(exc_data, include_hidden_frames=True, include_reusable=False)
             head_html = formatter.error_css + formatter.hide_display_js
-            return_error = error_template(
-                head_html, error_html, extra_data)
-            extra_data = ''
+            return_error = error_template(head_html, error_html, extra_data)
+            extra_data = ""
             reported = True
         else:
-            msg = error_message or '''
+            msg = (
+                error_message
+                or """
             An error occurred.
-            '''
+            """
+            )
             extra = "<p><b>The error has been logged to our team.</b>"
-            if 'sentry_event_id' in environ:
+            if "sentry_event_id" in environ:
                 extra += " If you want to contact us about this error, please reference the following<br><br>"
                 extra += f"<b><large>GURU MEDITATION: #{environ['sentry_event_id']}</large></b>"
             extra += "</p>"
-            return_error = error_template('', msg, extra)
+            return_error = error_template("", msg, extra)
     else:
         return_error = None
     if not reported and error_stream:
@@ -449,17 +458,16 @@ def send_report(rep, exc_data, html=True):
 
             <pre>{}</pre>
             </p>""".format(
-                markupsafe.escape(str(rep)), output.getvalue())
+                markupsafe.escape(str(rep)), output.getvalue()
+            )
         else:
-            return (
-                "Additionally an error occurred while sending the "
-                "%s report:\n%s" % (str(rep), output.getvalue()))
+            return "Additionally an error occurred while sending the " "%s report:\n%s" % (str(rep), output.getvalue())
     else:
-        return ''
+        return ""
 
 
 def error_template(head_html, exception, extra):
-    return '''
+    return """
     <!DOCTYPE HTML>
     <html>
     <head>
@@ -483,7 +491,9 @@ def error_template(head_html, exception, extra):
     {}
     </div>
     </body>
-    </html>'''.format(head_html, exception, extra)
+    </html>""".format(
+        head_html, exception, extra
+    )
 
 
 def make_error_middleware(app, global_conf, **kw):
@@ -492,7 +502,7 @@ def make_error_middleware(app, global_conf, **kw):
 
 doc_lines = cast(str, ErrorMiddleware.__doc__).splitlines(True)
 for i in range(len(doc_lines)):
-    if doc_lines[i].strip().startswith('Settings'):
-        make_error_middleware.__doc__ = ''.join(doc_lines[i:])
+    if doc_lines[i].strip().startswith("Settings"):
+        make_error_middleware.__doc__ = "".join(doc_lines[i:])
         break
 del i, doc_lines

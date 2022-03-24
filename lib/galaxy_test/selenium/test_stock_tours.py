@@ -11,7 +11,6 @@ STOCK_TOURS_DIRECTORY = os.path.join(galaxy_root_path, "config", "plugins", "tou
 
 
 class TestStockToursTestCase(SeleniumTestCase):
-
     @selenium_test
     def test_core_galaxy_ui(self):
         sleep_on_steps = {
@@ -19,10 +18,7 @@ class TestStockToursTestCase(SeleniumTestCase):
             "Select a tool": 2 * TIMEOUT_MULTIPLIER,
             "History": 20 * TIMEOUT_MULTIPLIER,
         }
-        self.run_tour(
-            os.path.join(STOCK_TOURS_DIRECTORY, "core.galaxy_ui.yaml"),
-            sleep_on_steps=sleep_on_steps
-        )
+        self.run_tour(os.path.join(STOCK_TOURS_DIRECTORY, "core.galaxy_ui.yaml"), sleep_on_steps=sleep_on_steps)
 
     @selenium_test
     def test_core_scratchbook(self):

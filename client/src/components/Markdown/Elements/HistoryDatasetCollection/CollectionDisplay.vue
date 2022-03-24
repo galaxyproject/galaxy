@@ -53,7 +53,7 @@ import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
 import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/History/UserHistories";
+import UserHistories from "components/providers/UserHistories";
 import { copyCollection } from "components/Markdown/services";
 
 export default {

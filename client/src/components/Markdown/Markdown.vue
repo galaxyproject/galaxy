@@ -5,7 +5,7 @@
             <div>
                 <b-button
                     v-if="effectiveExportLink"
-                    class="float-right"
+                    class="float-right markdown-pdf-export"
                     title="Download PDF"
                     variant="link"
                     role="button"
@@ -15,7 +15,7 @@
                 </b-button>
                 <b-button
                     v-if="!readOnly"
-                    class="float-right"
+                    class="float-right markdown-edit"
                     title="Edit Markdown"
                     variant="link"
                     role="button"
@@ -94,7 +94,6 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import store from "store";
-import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -156,6 +155,10 @@ export default {
             type: Object,
             default: null,
         },
+        enable_beta_markdown_export: {
+            type: Boolean,
+            default: false,
+        },
         readOnly: {
             type: Boolean,
             default: false,
@@ -197,8 +200,7 @@ export default {
             return "unavailable";
         },
         effectiveExportLink() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
+            return this.enable_beta_markdown_export ? this.exportLink : null;
         },
     },
     watch: {

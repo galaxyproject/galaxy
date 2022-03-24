@@ -1,7 +1,7 @@
 from galaxy.model import tool_shed_install
 from galaxy.tool_util.deps import (
     dependencies,
-    requirements
+    requirements,
 )
 
 
@@ -27,9 +27,7 @@ def test_serialization():
         requirements=[tool_requirement],
         installed_tool_dependencies=[dependency],
     )
-    result_descript = dependencies.DependenciesDescription.from_dict(
-        descript.to_dict()
-    )
+    result_descript = dependencies.DependenciesDescription.from_dict(descript.to_dict())
     result_requirement = result_descript.requirements[0]
     assert result_requirement.name == "tophat"
     assert result_requirement.version == "2.0"

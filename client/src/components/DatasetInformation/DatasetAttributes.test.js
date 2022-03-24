@@ -1,4 +1,3 @@
-import Vue from "vue";
 import axios from "axios";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
@@ -9,8 +8,8 @@ import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
 
-function buildWrapper(conversion_disable = false) {
-    return mount(DatasetAttributes, {
+async function buildWrapper(conversion_disable = false) {
+    const wrapper = mount(DatasetAttributes, {
         propsData: {
             datasetId: "dataset_id",
         },
@@ -29,14 +28,15 @@ function buildWrapper(conversion_disable = false) {
             FormElement: false,
         },
     });
+    await flushPromises();
+    return wrapper;
 }
 
 describe("DatasetAttributes", () => {
     it("check rendering", async () => {
         const axiosMock = new MockAdapter(axios);
         axiosMock.onPut(`/dataset/set_edit`).reply(200, { message: "success", status: "success" });
-        const wrapper = buildWrapper();
-        await Vue.nextTick();
+        const wrapper = await buildWrapper();
         expect(wrapper.findAll("button").length).toBe(6);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(1);
@@ -50,8 +50,7 @@ describe("DatasetAttributes", () => {
     });
 
     it("check rendering without conversion option", async () => {
-        const wrapper = buildWrapper(true);
-        await Vue.nextTick();
+        const wrapper = await buildWrapper(true);
         expect(wrapper.findAll("button").length).toBe(5);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
         expect(wrapper.findAll("#conversion_text").length).toBe(0);

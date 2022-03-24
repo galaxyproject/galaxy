@@ -2,15 +2,22 @@ import abc
 import logging
 import os
 import re
-from typing import List, Optional
+from typing import (
+    List,
+    Optional,
+)
 
 import yaml
-from cryptography.fernet import Fernet, MultiFernet
+from cryptography.fernet import (
+    Fernet,
+    MultiFernet,
+)
 
 try:
     from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
     from custos.clients.utils.exceptions.CustosExceptions import KeyDoesNotExist
     from custos.transport.settings import CustosServerClientSettings
+
     custos_sdk_available = True
 except ImportError:
     custos_sdk_available = False
@@ -75,46 +82,49 @@ class Vault(abc.ABC):
 
 
 class NullVault(Vault):
-
     def read_secret(self, key: str) -> Optional[str]:
-        raise InvalidVaultConfigException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
+        raise InvalidVaultConfigException(
+            "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
+        )
 
     def write_secret(self, key: str, value: str) -> None:
-        raise InvalidVaultConfigException("No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml")
+        raise InvalidVaultConfigException(
+            "No vault configured. Make sure the vault_config_file setting is defined in galaxy.yml"
+        )
 
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
 
 
 class HashicorpVault(Vault):
-
     def __init__(self, config):
         if not hvac:
-            raise InvalidVaultConfigException("Hashicorp vault library 'hvac' is not available. Make sure hvac is installed.")
-        self.vault_address = config.get('vault_address')
-        self.vault_token = config.get('vault_token')
+            raise InvalidVaultConfigException(
+                "Hashicorp vault library 'hvac' is not available. Make sure hvac is installed."
+            )
+        self.vault_address = config.get("vault_address")
+        self.vault_token = config.get("vault_token")
         self.client = hvac.Client(url=self.vault_address, token=self.vault_token)
 
     def read_secret(self, key: str) -> Optional[str]:
         try:
             response = self.client.secrets.kv.read_secret_version(path=key)
-            return response['data']['data'].get('value')
+            return response["data"]["data"].get("value")
         except hvac.exceptions.InvalidPath:
             return None
 
     def write_secret(self, key: str, value: str) -> None:
-        self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={'value': value})
+        self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
 
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
 
 
 class DatabaseVault(Vault):
-
     def __init__(self, sa_session, config):
         self.sa_session = sa_session
-        self.encryption_keys = config.get('encryption_keys')
-        self.fernet_keys = [Fernet(key.encode('utf-8')) for key in self.encryption_keys]
+        self.encryption_keys = config.get("encryption_keys")
+        self.fernet_keys = [Fernet(key.encode("utf-8")) for key in self.encryption_keys]
 
     def _get_multi_fernet(self) -> MultiFernet:
         return MultiFernet(self.fernet_keys)
@@ -140,33 +150,36 @@ class DatabaseVault(Vault):
         key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
         if key_obj and key_obj.value:
             f = self._get_multi_fernet()
-            return f.decrypt(key_obj.value.encode('utf-8')).decode('utf-8')
+            return f.decrypt(key_obj.value.encode("utf-8")).decode("utf-8")
         return None
 
     def write_secret(self, key: str, value: str) -> None:
         f = self._get_multi_fernet()
-        token = f.encrypt(value.encode('utf-8'))
-        self._update_or_create(key=key, value=token.decode('utf-8'))
+        token = f.encrypt(value.encode("utf-8"))
+        self._update_or_create(key=key, value=token.decode("utf-8"))
 
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
 
 
 class CustosVault(Vault):
-
     def __init__(self, config):
         if not custos_sdk_available:
-            raise InvalidVaultConfigException("Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed.")
-        custos_settings = CustosServerClientSettings(custos_host=config.get('custos_host'),
-                                                     custos_port=config.get('custos_port'),
-                                                     custos_client_id=config.get('custos_client_id'),
-                                                     custos_client_sec=config.get('custos_client_sec'))
+            raise InvalidVaultConfigException(
+                "Custos sdk library 'custos-sdk' is not available. Make sure the custos-sdk is installed."
+            )
+        custos_settings = CustosServerClientSettings(
+            custos_host=config.get("custos_host"),
+            custos_port=config.get("custos_port"),
+            custos_client_id=config.get("custos_client_id"),
+            custos_client_sec=config.get("custos_client_sec"),
+        )
         self.client = ResourceSecretManagementClient(custos_settings)
 
     def read_secret(self, key: str) -> Optional[str]:
         try:
             response = self.client.get_kv_credential(key=key)
-            return response.get('value')
+            return response.get("value")
         except KeyDoesNotExist:
             return None
 
@@ -178,7 +191,6 @@ class CustosVault(Vault):
 
 
 class UserVaultWrapper(Vault):
-
     def __init__(self, vault: Vault, user):
         self.vault = vault
         self.user = user
@@ -213,7 +225,8 @@ class VaultKeyValidationWrapper(Vault):
         if not self.validate_key(key):
             raise InvalidVaultKeyException(
                 f"Vault key: {key} is invalid. Make sure that it is not empty, contains double slashes or contains"
-                "whitespace before or after the separator.")
+                "whitespace before or after the separator."
+            )
         return key
 
     def read_secret(self, key: str) -> Optional[str]:
@@ -247,8 +260,7 @@ class VaultKeyPrefixWrapper(Vault):
         raise NotImplementedError()
 
 
-class VaultFactory(object):
-
+class VaultFactory:
     @staticmethod
     def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
         if os.path.exists(vault_conf_yml):
@@ -267,13 +279,13 @@ class VaultFactory(object):
             vault = CustosVault(cfg)
         else:
             raise InvalidVaultConfigException(f"Unknown vault type: {vault_type}")
-        vault_prefix = cfg.get('path_prefix') or "/galaxy"
+        vault_prefix = cfg.get("path_prefix") or "/galaxy"
         return VaultKeyValidationWrapper(VaultKeyPrefixWrapper(vault, prefix=vault_prefix))
 
     @staticmethod
     def from_app(app) -> Vault:
         vault_config = VaultFactory.load_vault_config(app.config.vault_config_file)
         if vault_config:
-            return VaultFactory.from_vault_type(app, vault_config.get('type', None), vault_config)
+            return VaultFactory.from_vault_type(app, vault_config.get("type", None), vault_config)
         log.warning("No vault configured. We recommend defining the vault_config_file setting in galaxy.yml")
         return NullVault()

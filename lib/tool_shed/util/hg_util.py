@@ -23,12 +23,12 @@ from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
-INITIAL_CHANGELOG_HASH = '000000000000'
+INITIAL_CHANGELOG_HASH = "000000000000"
 
 
 def add_changeset(repo_path, path_to_filename_in_archive):
     try:
-        subprocess.check_output(['hg', 'add', path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(["hg", "add", path_to_filename_in_archive], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
         error_message = f"Error adding '{path_to_filename_in_archive}' to repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
@@ -37,10 +37,12 @@ def add_changeset(repo_path, path_to_filename_in_archive):
 
 
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
-    '''Create an un-versioned archive of a repository.'''
+    """Create an un-versioned archive of a repository."""
     repo_path = repository.repo_path(app)
     try:
-        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(
+            ["hg", "archive", "-r", changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo_path
+        )
     except Exception as e:
         error_message = f"Error attempting to archive revision '{changeset_revision}' of repository '{repository.name}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
@@ -51,18 +53,22 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
 
 def commit_changeset(repo_path, full_path_to_changeset, username, message):
     try:
-        subprocess.check_output(['hg', 'commit', '-u', username, '-m', message, full_path_to_changeset], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(
+            ["hg", "commit", "-u", username, "-m", message, full_path_to_changeset],
+            stderr=subprocess.STDOUT,
+            cwd=repo_path,
+        )
     except Exception as e:
         error_message = f"Error committing '{full_path_to_changeset}' to repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
-            if e.returncode == 1 and 'nothing changed' in unicodify(e.output):
+            if e.returncode == 1 and "nothing changed" in unicodify(e.output):
                 return
             error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
 
 
 def get_hgrc_path(repo_path):
-    return os.path.join(repo_path, '.hg', 'hgrc')
+    return os.path.join(repo_path, ".hg", "hgrc")
 
 
 def create_hgrc_file(app, repository):
@@ -74,16 +80,16 @@ def create_hgrc_file(app, repository):
     # in the Mercurial API.
     repo_path = repository.repo_path(app)
     hgrc_path = get_hgrc_path(repo_path)
-    with open(hgrc_path, 'w') as fp:
-        fp.write('[paths]\n')
-        fp.write('default = .\n')
-        fp.write('default-push = .\n')
-        fp.write('[web]\n')
-        fp.write(f'allow_push = {repository.user.username}\n')
-        fp.write(f'name = {repository.name}\n')
-        fp.write('push_ssl = false\n')
-        fp.write('[extensions]\n')
-        fp.write('hgext.purge=')
+    with open(hgrc_path, "w") as fp:
+        fp.write("[paths]\n")
+        fp.write("default = .\n")
+        fp.write("default-push = .\n")
+        fp.write("[web]\n")
+        fp.write(f"allow_push = {repository.user.username}\n")
+        fp.write(f"name = {repository.name}\n")
+        fp.write("push_ssl = false\n")
+        fp.write("[extensions]\n")
+        fp.write("hgext.purge=")
 
 
 def get_named_tmpfile_from_ctx(ctx, filename, dir):
@@ -103,10 +109,10 @@ def get_named_tmpfile_from_ctx(ctx, filename, dir):
                 fctx = None
                 continue
             if fctx:
-                fh = tempfile.NamedTemporaryFile('wb', prefix="tmp-toolshed-gntfc", dir=dir)
+                fh = tempfile.NamedTemporaryFile("wb", prefix="tmp-toolshed-gntfc", dir=dir)
                 tmp_filename = fh.name
                 fh.close()
-                fh = open(tmp_filename, 'wb')
+                fh = open(tmp_filename, "wb")
                 fh.write(fctx.data())
                 fh.close()
                 return tmp_filename
@@ -151,28 +157,29 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
             return "-1"
 
 
-def get_rev_label_changeset_revision_from_repository_metadata(app, repository_metadata, repository=None,
-                                                              include_date=True, include_hash=True):
+def get_rev_label_changeset_revision_from_repository_metadata(
+    app, repository_metadata, repository=None, include_date=True, include_hash=True
+):
     if repository is None:
         repository = repository_metadata.repository
     repo = repository.hg_repo
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
-        rev = '%04d' % ctx.rev()
+        rev = "%04d" % ctx.rev()
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
             if include_hash:
-                label = f"{str(ctx.rev())}:{changeset_revision} ({changeset_revision_date})"
+                label = f"{ctx.rev()}:{changeset_revision} ({changeset_revision_date})"
             else:
-                label = f"{str(ctx.rev())} ({changeset_revision_date})"
+                label = f"{ctx.rev()} ({changeset_revision_date})"
         else:
             if include_hash:
-                label = f"{str(ctx.rev())}:{changeset_revision}"
+                label = f"{ctx.rev()}:{changeset_revision}"
             else:
-                label = f"{str(ctx.rev())}"
+                label = f"{ctx.rev()}"
     else:
-        rev = '-1'
+        rev = "-1"
         if include_hash:
             label = f"-1:{changeset_revision}"
         else:
@@ -183,14 +190,12 @@ def get_rev_label_changeset_revision_from_repository_metadata(app, repository_me
 def get_revision_label_from_ctx(ctx, include_date=True, include_hash=True):
     if include_date:
         if include_hash:
-            return '%s:%s <i><font color="#666666">(%s)</font></i>' % \
-                (str(ctx.rev()), str(ctx), str(get_readable_ctx_date(ctx)))
+            return f'{ctx.rev()}:{ctx} <i><font color="#666666">({get_readable_ctx_date(ctx)})</font></i>'
         else:
-            return '%s <i><font color="#666666">(%s)</font></i>' % \
-                (str(ctx.rev()), str(get_readable_ctx_date(ctx)))
+            return f'{ctx.rev()} <i><font color="#666666">({get_readable_ctx_date(ctx)})</font></i>'
     else:
         if include_hash:
-            return f'{str(ctx.rev())}:{str(ctx)}'
+            return f"{ctx.rev()}:{ctx}"
         else:
             return str(ctx.rev())
 
@@ -202,23 +207,23 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     """
     ctx = get_changectx_for_changeset(repo, changeset_revision)
     if ctx:
-        rev = '%04d' % ctx.rev()
+        rev = "%04d" % ctx.rev()
         label = get_revision_label_from_ctx(ctx, include_date=include_date)
     else:
-        rev = '-1'
+        rev = "-1"
         label = f"-1:{changeset_revision}"
     return rev, label
 
 
 def remove_path(repo_path, selected_file):
-    cmd = ['hg', 'remove', '--force', selected_file]
+    cmd = ["hg", "remove", "--force", selected_file]
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
         error_message = f"Error removing path '{selected_file}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
             output = unicodify(e.output)
-            if 'is untracked' in output:
+            if "is untracked" in output:
                 # That's ok, happens if we add a new file or directory via tarball upload,
                 # just delete the file or dir on disk
                 selected_file_path = os.path.join(repo_path, selected_file)
@@ -236,9 +241,9 @@ def init_repository(repo_path):
     Create a new Mercurial repository in the given directory.
     """
     try:
-        subprocess.check_output(['hg', 'init'], stderr=subprocess.STDOUT, cwd=repo_path)
+        subprocess.check_output(["hg", "init"], stderr=subprocess.STDOUT, cwd=repo_path)
     except Exception as e:
-        error_message = f'Error initializing repository: {unicodify(e)}'
+        error_message = f"Error initializing repository: {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
             error_message += f"\nOutput was:\n{unicodify(e.output)}"
         raise Exception(error_message)
@@ -249,7 +254,9 @@ def changeset2rev(repo_path, changeset_revision):
     Return the revision number (as an int) corresponding to a specified changeset revision.
     """
     try:
-        rev = subprocess.check_output(['hg', 'id', '-r', changeset_revision, '-n'], stderr=subprocess.STDOUT, cwd=repo_path)
+        rev = subprocess.check_output(
+            ["hg", "id", "-r", changeset_revision, "-n"], stderr=subprocess.STDOUT, cwd=repo_path
+        )
     except Exception as e:
         error_message = f"Error looking for changeset '{changeset_revision}': {unicodify(e)}"
         if isinstance(e, subprocess.CalledProcessError):
@@ -259,29 +266,29 @@ def changeset2rev(repo_path, changeset_revision):
 
 
 __all__ = (
-    'add_changeset',
-    'archive_repository_revision',
-    'clone_repository',
-    'commit_changeset',
-    'copy_file_from_manifest',
-    'create_hgrc_file',
-    'get_changectx_for_changeset',
-    'get_config_from_disk',
-    'get_ctx_file_path_from_manifest',
-    'get_file_context_from_ctx',
-    'get_named_tmpfile_from_ctx',
-    'get_readable_ctx_date',
-    'get_repository_heads',
-    'get_reversed_changelog_changesets',
-    'get_revision_label',
-    'get_rev_label_changeset_revision_from_repository_metadata',
-    'get_revision_label_from_ctx',
-    'get_rev_label_from_changeset_revision',
-    'pull_repository',
-    'remove_path',
-    'reversed_lower_upper_bounded_changelog',
-    'reversed_upper_bounded_changelog',
-    'update_repository',
-    'init_repository',
-    'changeset2rev',
+    "add_changeset",
+    "archive_repository_revision",
+    "clone_repository",
+    "commit_changeset",
+    "copy_file_from_manifest",
+    "create_hgrc_file",
+    "get_changectx_for_changeset",
+    "get_config_from_disk",
+    "get_ctx_file_path_from_manifest",
+    "get_file_context_from_ctx",
+    "get_named_tmpfile_from_ctx",
+    "get_readable_ctx_date",
+    "get_repository_heads",
+    "get_reversed_changelog_changesets",
+    "get_revision_label",
+    "get_rev_label_changeset_revision_from_repository_metadata",
+    "get_revision_label_from_ctx",
+    "get_rev_label_from_changeset_revision",
+    "pull_repository",
+    "remove_path",
+    "reversed_lower_upper_bounded_changelog",
+    "reversed_upper_bounded_changelog",
+    "update_repository",
+    "init_repository",
+    "changeset2rev",
 )

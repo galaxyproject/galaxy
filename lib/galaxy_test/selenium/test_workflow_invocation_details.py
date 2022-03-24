@@ -1,10 +1,8 @@
-from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_WITH_OUTPUT_COLLECTION,
-)
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_OUTPUT_COLLECTION
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
@@ -16,7 +14,9 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
     def test_job_details(self):
         gx_selenium_context = self
         history_id = gx_selenium_context.dataset_populator.new_history()
-        gx_selenium_context.workflow_populator.run_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True)
+        gx_selenium_context.workflow_populator.run_workflow(
+            WORKFLOW_WITH_OUTPUT_COLLECTION, history_id=history_id, assert_ok=True, wait=True
+        )
         gx_selenium_context.navigate_to_invocations()
         invocations = gx_selenium_context.components.invocations
         invocations.invocations_table.wait_for_visible()
@@ -65,10 +65,13 @@ class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
         self.screenshot("invocations_job_table")
 
         invocations.step_job_information(order_index="1").wait_for_visible()
-        assert "collection_creates_pair" in invocations.step_job_information_tool_id(order_index="1").wait_for_visible().text
+        assert (
+            "collection_creates_pair"
+            in invocations.step_job_information_tool_id(order_index="1").wait_for_visible().text
+        )
 
         invocations.step_output_collection(order_index="1").wait_for_and_click()
         invocations.step_output_collection_toggle(order_index="1").wait_for_and_click()
         invocations.step_output_collection_element_identifier(element_identifier="forward").wait_for_and_click()
         datatype = invocations.step_output_collection_element_datatype(order_index="1").wait_for_text()
-        assert datatype == 'txt'
+        assert datatype == "txt"

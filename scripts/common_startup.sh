@@ -116,13 +116,12 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.0' 'virtualenv>=16'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.3' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
                 conda_activate
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
-            setup_gravity_state_dir
         else
             # If $GALAXY_VIRTUAL_ENV does not exist, and there is no conda available, attempt to create it.
             if [ -z "$GALAXY_PYTHON" ]; then
@@ -140,21 +139,16 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             echo "existing environment before starting Galaxy."
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
-                setup_gravity_state_dir
             else
-                vvers=16.7.9
-                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha=0d62c70883c0342d59c11d0ddac0d954d0431321a41ab20851facf2b222598f3
+                min_python_version=3.7
+                vurl="https://bootstrap.pypa.io/virtualenv/${min_python_version}/virtualenv.pyz"
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
-                # SSL certificates are not checked to prevent problems with messed
-                # up client cert environments. We verify the download using a known
-                # good sha256 sum instead.
                 echo "Fetching $vurl"
                 if command -v curl >/dev/null; then
-                    curl --insecure -L -o "$vsrc" "$vurl"
+                    curl -L -o "$vsrc" "$vurl"
                 elif command -v wget >/dev/null; then
-                    wget --no-check-certificate -O "$vsrc" "$vurl"
+                    wget -O "$vsrc" "$vurl"
                 else
                     "$GALAXY_PYTHON" -c "try:
     from urllib import urlretrieve
@@ -162,15 +156,12 @@ except:
     from urllib.request import urlretrieve
 urlretrieve('$vurl', '$vsrc')"
                 fi
-                echo "Verifying $vsrc checksum is $vsha"
-                "$GALAXY_PYTHON" -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
-                tar zxf "$vsrc" -C "$vtmp"
-                "$GALAXY_PYTHON" "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                "$GALAXY_PYTHON" "$vsrc" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
-                setup_gravity_state_dir
             fi
         fi
     fi
+    setup_gravity_state_dir
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -185,7 +176,7 @@ fi
 : ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
 : ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=19.0'
+    python -m pip install 'pip>=19.3'
 fi
 
 requirement_args="-r requirements.txt"
@@ -235,6 +226,10 @@ fi
 if [ -n "$VIRTUAL_ENV" ]; then
     if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
         echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
+            echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
+            rm -rf "${VIRTUAL_ENV}/lib/node_modules"
+        fi
         nodeenv -n "$NODE_VERSION" -p
     fi
 elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then

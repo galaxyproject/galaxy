@@ -17,6 +17,8 @@ def lint_output(tool_xml, lint_ctx):
     if len(outputs) > 1:
         lint_ctx.warn("Tool contains multiple output sections, behavior undefined.", node=outputs[1])
     num_outputs = 0
+    labels = set()
+    names = set()
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
             lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]", node=output)
@@ -26,7 +28,20 @@ def lint_output(tool_xml, lint_ctx):
             lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.", node=output)
             # TODO make this an error if there is no discover_datasets / from_work_dir (is this then still a problem)
         elif not is_valid_cheetah_placeholder(output.attrib["name"]):
-            lint_ctx.warn(f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', node=output)
+            lint_ctx.warn(
+                f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', node=output
+            )
+
+        name = output.attrib.get("name")
+        if name is not None:
+            if name in names:
+                lint_ctx.error(f"Tool output [{name}] has duplicated name", node=output)
+            names.add(name)
+
+        label = output.attrib.get("label", "${tool.name} on ${on_string}")
+        if label in labels:
+            lint_ctx.error(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
+        labels.add(label)
 
         format_set = False
         if __check_format(output, lint_ctx):
@@ -47,7 +62,10 @@ def lint_output(tool_xml, lint_ctx):
                 format_set = True
 
         if not format_set:
-            lint_ctx.warn(f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.", node=output)
+            lint_ctx.warn(
+                f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.",
+                node=output,
+            )
 
     # TODO: check for different labels in case of multiple outputs
     lint_ctx.info(f"{num_outputs} outputs found.", node=outputs[0])
@@ -60,7 +78,10 @@ def __check_format(node, lint_ctx, allow_ext=False):
     return true (node defines format/ext) / false (else)
     """
     if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
-        lint_ctx.warn(f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext", node=node)
+        lint_ctx.warn(
+            f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext",
+            node=node,
+        )
     if "format_source" in node.attrib:
         return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
@@ -70,7 +91,10 @@ def __check_format(node, lint_ctx, allow_ext=False):
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn(f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.", node=node)
+        lint_ctx.warn(
+            f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.",
+            node=node,
+        )
     return fmt is not None
 
 
@@ -82,7 +106,9 @@ def __check_pattern(node):
     """
     if node.tag != "discover_datasets":
         return False
-    if "from_tool_provided_metadata" in node.attrib and string_as_bool(node.attrib.get("from_tool_provided_metadata", "false")):
+    if "from_tool_provided_metadata" in node.attrib and string_as_bool(
+        node.attrib.get("from_tool_provided_metadata", "false")
+    ):
         return True
     if "pattern" not in node.attrib:
         return False

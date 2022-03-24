@@ -7,9 +7,10 @@ import webob.exc
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
+from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
 
-BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
+BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
     <inputs>
         <param type="text" name="param1" value="" />
@@ -21,15 +22,17 @@ BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
         <data name="out1" format="data" />
     </outputs>
 </tool>
-'''
+"""
 
 # Tool with a repeat parameter, to test state update.
-REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="text" name="param2" value="" />'''
-REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % '''<param type="data_collection" name="param2" collection_type="paired" />'''
+REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % """<param type="text" name="param2" value="" />"""
+REPEAT_COLLECTION_PARAM_CONTENTS = (
+    BASE_REPEAT_TOOL_CONTENTS % """<param type="data_collection" name="param2" collection_type="paired" />"""
+)
 
 
 class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
-    tool_action: 'MockAction'
+    tool_action: "MockAction"
 
     def setUp(self):
         self.setup_app()
@@ -60,7 +63,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         try:
             self.__handle_with_incoming(param1="moo")
         except Exception as e:
-            assert 'Error executing tool' in str(e)
+            assert "Error executing tool" in str(e)
 
     def test_execute_errors(self):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
@@ -68,7 +71,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         try:
             self.__handle_with_incoming(param1="moo")
         except Exception as e:
-            assert 'Test Error Message' in str(e)
+            assert "Test Error Message" in str(e)
 
     def test_redirect(self):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
@@ -89,9 +92,9 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
     def test_invalid_remap_job(self):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         try:
-            self.__handle_with_incoming(param1="moo", rerun_remap_job_id='123')
+            self.__handle_with_incoming(param1="moo", rerun_remap_job_id="123")
         except Exception as e:
-            assert 'invalid job' in str(e)
+            assert "invalid job" in str(e)
 
     def test_data_param_execute(self):
         self._init_tool(tools_support.SIMPLE_CAT_TOOL_CONTENTS)
@@ -112,18 +115,19 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         assert hda == state["param1"]
 
     def __handle_with_incoming(self, **kwds):
-        """ Execute tool.handle_input with incoming specified by kwds
+        """Execute tool.handle_input with incoming specified by kwds
         (optionally extending a previous state).
         """
         return self.tool.handle_input(trans=self.trans, incoming=kwds)
 
-    def __add_dataset(self, id, state='ok'):
+    def __add_dataset(self, id, state="ok"):
         hda = galaxy.model.HistoryDatasetAssociation()
         hda.id = id
         hda.dataset = galaxy.model.Dataset()
-        hda.dataset.state = 'ok'
+        hda.dataset.state = "ok"
 
         self.trans.sa_session.add(hda)
+        add_object_to_object_session(self.history, hda)
         self.history.datasets.append(hda)
         self.trans.sa_session.flush()
         return hda
@@ -145,7 +149,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
 
     def __assert_executed(self, vars):
         self.__assert_no_errors(vars)
-        assert len(vars['jobs']) > 0
+        assert len(vars["jobs"]) > 0
 
     def __assert_no_errors(self, vars):
         assert "job_errors" in vars
@@ -153,7 +157,6 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
 
 
 class MockAction(tools_support.MockActionI):
-
     def __init__(self, expected_trans):
         self.expected_trans = expected_trans
         self.execution_call_args = []
@@ -184,12 +187,15 @@ class MockAction(tools_support.MockActionI):
 
 
 class MockTrans:
-
     def __init__(self, app, history):
         self.app = app
         self.history = history
         self.user = None
-        self.history._active_datasets_and_roles = [hda for hda in self.app.model.context.query(galaxy.model.HistoryDatasetAssociation).all() if hda.active and hda.history == history]
+        self.history._active_datasets_and_roles = [
+            hda
+            for hda in self.app.model.context.query(galaxy.model.HistoryDatasetAssociation).all()
+            if hda.active and hda.history == history
+        ]
         self.workflow_building_mode = False
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
@@ -206,7 +212,6 @@ class MockTrans:
 
 
 class MockCollectionService:
-
     def __init__(self):
         self.collection_info = object()
 

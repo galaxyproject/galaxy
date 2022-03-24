@@ -248,13 +248,7 @@
                                         </span>
                                     </div>
                                     <div
-                                        class="
-                                            unpaired-filter
-                                            forward-unpaired-filter
-                                            float-left
-                                            search-input search-query
-                                            input-group
-                                        ">
+                                        class="unpaired-filter forward-unpaired-filter float-left search-input search-query input-group">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
@@ -307,13 +301,7 @@
                                         >
                                     </div>
                                     <div
-                                        class="
-                                            unpaired-filter
-                                            reverse-unpaired-filter
-                                            float-left
-                                            search-input search-query
-                                            input-group
-                                        ">
+                                        class="unpaired-filter reverse-unpaired-filter float-left search-input search-query input-group">
                                         <input
                                             type="text"
                                             :placeholder="filterTextPlaceholder"
