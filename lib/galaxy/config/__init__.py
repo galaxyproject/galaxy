@@ -618,7 +618,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     paths_to_check_against_root = {
         "auth_config_file",
         "build_sites_config_file",
-        "containers_config_file",
         "data_manager_config_file",
         "datatypes_config_file",
         "dependency_resolvers_config_file",
