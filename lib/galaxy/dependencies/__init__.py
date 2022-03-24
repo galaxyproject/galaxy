@@ -248,11 +248,6 @@ class ConditionalDependencies:
         install_set = {"auto", "True", "true", "polling", True}
         return self.config["watch_tools"] in install_set or self.config["watch_tool_data_dir"] in install_set
 
-    def check_docker(self):
-        return self.config.get("enable_beta_containers_interface", False) and (
-            "docker" in self.container_interface_types or "docker_swarm" in self.container_interface_types
-        )
-
     def check_python_gitlab(self):
         return "gitlab" in self.error_report_modules
 
