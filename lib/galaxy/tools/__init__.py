@@ -1781,6 +1781,7 @@ class Tool(Dictifiable):
         to the form or execute the tool (only if 'execute' was clicked and
         there were no errors).
         """
+        log.error(f"handle_input incoming {incoming}")
         request_context = proxy_work_context_for_history(trans, history=history)
         all_params, all_errors, rerun_remap_job_id, collection_info = self.expand_incoming(
             trans=trans, incoming=incoming, request_context=request_context, input_format=input_format
