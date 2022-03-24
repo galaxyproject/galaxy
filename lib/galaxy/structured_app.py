@@ -37,6 +37,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    import galaxy.managers.workflows
     from galaxy.tools.data import ToolDataTableManager
 
 
@@ -86,8 +87,8 @@ class MinimalManagerApp(MinimalApp):
     dataset_collection_manager: Any  # 'galaxy.managers.collections.DatasetCollectionManager'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
-    workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
+    workflow_manager: "galaxy.managers.workflows.WorkflowsManager"
+    workflow_contents_manager: "galaxy.managers.workflows.WorkflowContentsManager"
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
@@ -132,8 +133,8 @@ class StructuredApp(MinimalManagerApp):
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     history_manager: Any  # 'galaxy.managers.histories.HistoryManager'
     hda_manager: Any  # 'galaxy.managers.hdas.HDAManager'
-    workflow_manager: Any  # 'galaxy.managers.workflows.WorkflowsManager'
-    workflow_contents_manager: Any  # 'galaxy.managers.workflows.WorkflowContentsManager'
+    workflow_manager: "galaxy.managers.workflows.WorkflowsManager"
+    workflow_contents_manager: "galaxy.managers.workflows.WorkflowContentsManager"
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'

@@ -197,7 +197,7 @@ class WorkflowsManager:
 
         return True
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False):
+    def get_invocation(self, trans, decoded_invocation_id: int, eager=False):
         q = trans.sa_session.query(self.app.model.WorkflowInvocation)
         if eager:
             q = q.options(
@@ -215,9 +215,8 @@ class WorkflowsManager:
         self.check_security(trans, workflow_invocation, check_ownership=True, check_accessible=False)
         return workflow_invocation
 
-    def get_invocation_report(self, trans, invocation_id, **kwd):
-        decoded_workflow_invocation_id = trans.security.decode_id(invocation_id)
-        workflow_invocation = self.get_invocation(trans, decoded_workflow_invocation_id)
+    def get_invocation_report(self, trans, invocation_id: int, **kwd):
+        workflow_invocation = self.get_invocation(trans, invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
         invocation_markdown = kwd.get("invocation_markdown", None)

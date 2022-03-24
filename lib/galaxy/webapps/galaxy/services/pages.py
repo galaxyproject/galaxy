@@ -76,11 +76,11 @@ class PagesService(ServiceBase):
 
         return PageSummaryListResponse.parse_obj(out)
 
-    def create(self, trans, payload: CreatePagePayload) -> PageSummaryResponse:
+    def create(self, trans, payload: CreatePagePayload, *args, **kwargs) -> PageSummaryResponse:
         """
         Create a page and return Page summary
         """
-        page = self.manager.create(trans, payload.dict())
+        page = self.manager.create(trans, payload)
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)

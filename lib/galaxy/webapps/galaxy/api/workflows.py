@@ -990,7 +990,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         Get JSON summarizing invocation for reporting.
         """
         kwd["format"] = "json"
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
+        return self.workflow_manager.get_invocation_report(trans, self.decode_id(invocation_id), **kwd)
 
     @expose_api_raw
     def show_invocation_report_pdf(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
@@ -1002,7 +1002,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         kwd["format"] = "pdf"
         trans.response.set_content_type("application/pdf")
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
+        return self.workflow_manager.get_invocation_report(trans, self.decode_id(invocation_id), **kwd)
 
     def _generate_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
