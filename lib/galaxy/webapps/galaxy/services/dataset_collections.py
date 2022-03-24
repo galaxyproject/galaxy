@@ -113,7 +113,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
-        elif payload.instance_type == DatasetCollectionInstanceType.library:
+        elif payload.instance_type == DatasetCollectionInstanceType.library and payload.folder_id:
             library_folder = self.get_library_folder(trans, payload.folder_id, check_accessible=True)
             self.check_user_can_add_to_library_item(trans, library_folder, check_accessible=False)
             create_params["parent"] = library_folder
