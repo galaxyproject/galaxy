@@ -97,7 +97,7 @@ class FastAPIConfiguration:
         summary="Decode a given id",
         response_description="Decoded id",
     )
-    def decode_id(self, encoded_id: DecodedDatabaseIdField = EncodedIdPathParam) -> Dict[str, DecodedDatabaseIdField]:
+    def decode_id(self, encoded_id: DecodedDatabaseIdField = EncodedIdPathParam) -> Dict[str, int]:
         """Decode a given id."""
         return {"decoded_id": encoded_id}
 
