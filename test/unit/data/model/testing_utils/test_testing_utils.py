@@ -7,17 +7,13 @@ from contextlib import contextmanager
 import pytest
 from sqlalchemy import (
     Column,
-    create_engine,
     Index,
     Integer,
     select,
     UniqueConstraint,
 )
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import (
-    registry,
-    Session,
-)
+from sqlalchemy.orm import registry
 
 from galaxy.model import _HasTable
 from . import (
@@ -25,6 +21,7 @@ from . import (
     dbcleanup_wrapper,
     delete_from_database,
     get_stored_obj,
+    initialize_model,
     persist,
 )
 
@@ -178,23 +175,10 @@ class Bar(_HasTable):
 
 
 @pytest.fixture(scope="module")
-def engine():
-    """Create connection engine. (Fixture is module-scoped)."""
-    db_uri = "sqlite:///:memory:"  # We only need sqlite for these tests
-    return create_engine(db_uri)
-
-
-@pytest.fixture(scope="module")
-def init(engine):
-    """Create database objects. (Fixture is module-scoped)."""
-    mapper_registry.metadata.create_all(engine)
-
-
-@pytest.fixture
-def session(init, engine):
-    """Provides a basic session object, closed on exit."""
-    with Session(engine) as s:
-        yield s
+def init_model(engine):
+    """Create model objects in the engine's database."""
+    # Must use the same engine as the session fixture used by this module.
+    initialize_model(mapper_registry, engine)
 
 
 def _get_stored_instance_by_id(session, cls_, id):

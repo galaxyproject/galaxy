@@ -2,6 +2,8 @@ import os
 import uuid
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture
@@ -22,3 +24,15 @@ def mysql_url():
 @pytest.fixture
 def sqlite_memory_url():
     return "sqlite:///:memory:"
+
+
+@pytest.fixture(scope="module")
+def engine():
+    db_uri = "sqlite:///:memory:"
+    return create_engine(db_uri)
+
+
+@pytest.fixture
+def session(init_model, engine):
+    with Session(engine) as s:
+        yield s

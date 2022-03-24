@@ -1,21 +1,20 @@
 import pytest
 
 from galaxy.model import tool_shed_install as model
-from ...testing_utils import dbcleanup_wrapper
-
-# Fixtures yielding persisted instances of models, deleted from the database on test exit.
+from ...testing_utils import (
+    dbcleanup_wrapper,
+    initialize_model,
+)
 
 
 @pytest.fixture(scope="module")
 def init_model(engine):
-    """
-    This fixture initialized the models in the database. It should use the same
-    `engine` as the `session` used by the model fixtures defined in this module.
-    """
-    # `model` is defined in this module, which is why this fixture should not be
-    # factored out into conftest.py (Even though it would work, it would be very easy
-    # to overwrite the `model` variable by importing a different module as `model`.)
-    model.mapper_registry.metadata.create_all(engine)
+    """Create model objects in the engine's database."""
+    # Must use the same engine as the session fixture used by this module.
+    initialize_model(model.mapper_registry, engine)
+
+
+# Fixtures yielding persisted instances of models, deleted from the database on test exit.
 
 
 @pytest.fixture

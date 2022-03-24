@@ -22,6 +22,10 @@ skip_if_not_mysql_uri = pytest.mark.skipif(
 )
 
 
+def initialize_model(mapper_registry, engine):
+    mapper_registry.metadata.create_all(engine)
+
+
 def replace_database_in_url(url, database_name):
     """
     Substitute the database part of url for database_name.
