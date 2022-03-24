@@ -1,4 +1,4 @@
-from galaxy.containers.docker_model import DockerVolume
+from galaxy.tool_util.deps.container_volumes import DockerVolume
 
 
 def test_docker_volume_valid():
