@@ -495,6 +495,7 @@ class GalaxyInteractorApi:
     def run_tool(self, testdef, history_id, resource_parameters=None):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
+        log.error(f"run_tool self.uploads {self.uploads}")
         log.error(f"run_tool testdef.inputs {testdef.inputs}")
         resource_parameters = resource_parameters or {}
         inputs_tree = testdef.inputs.copy()
@@ -502,6 +503,7 @@ class GalaxyInteractorApi:
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
+                log.error(f"run_tool value {value} tcd {isinstance(value, TestCollectionDef)} in uploads {value in self.uploads}")
                 if isinstance(value, TestCollectionDef):
                     hdca_id = self._create_collection(history_id, value)
                     new_values = [dict(src="hdca", id=hdca_id)]
@@ -510,14 +512,16 @@ class GalaxyInteractorApi:
                 else:
                     new_values.append(value)
             inputs_tree[key] = new_values
-
+        log.error(f"run_tool inputs_tree {inputs_tree}")
         if resource_parameters:
             inputs_tree["__job_resource|__job_resource__select"] = "yes"
             for key, value in resource_parameters.items():
                 inputs_tree[f"__job_resource|{key}"] = value
+        log.error(f"run_tool inputs_tree {inputs_tree}")
 
         # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.items():
+            log.error(f"run_tool hack key {key} {value}")
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
