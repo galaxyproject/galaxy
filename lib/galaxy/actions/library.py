@@ -88,7 +88,7 @@ class LibraryActions:
     Mixin for controllers that provide library functionality.
     """
 
-    def _upload_dataset(self, trans, folder_id: str, replace_dataset: Optional[LibraryDataset] = None, **kwd):
+    def _upload_dataset(self, trans, folder_id: int, replace_dataset: Optional[LibraryDataset] = None, **kwd):
         # Set up the traditional tool state/params
         cntrller = "api"
         tool_id = "upload1"

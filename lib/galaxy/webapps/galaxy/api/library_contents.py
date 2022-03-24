@@ -334,7 +334,7 @@ class LibraryContentsController(
                 )
             return rval
 
-    def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
+    def _upload_library_dataset(self, trans, library_id: int, folder_id: int, **kwd):
         replace_id = kwd.get("replace_id", None)
         replace_dataset: Optional[LibraryDataset] = None
         upload_option = kwd.get("upload_option", "upload_file")
@@ -347,7 +347,7 @@ class LibraryContentsController(
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in ["", None, "None"]:
-            replace_dataset = trans.sa_session.query(LibraryDataset).get(trans.security.decode_id(replace_id))
+            replace_dataset = trans.sa_session.query(LibraryDataset).get(replace_id)
             self._check_access(trans, is_admin, replace_dataset, current_user_roles)
             self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
             library = replace_dataset.folder.parent_library
@@ -357,7 +357,7 @@ class LibraryContentsController(
             if not last_used_build:
                 last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
         else:
-            folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
+            folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder_id)
             self._check_access(trans, is_admin, folder, current_user_roles)
             self._check_add(trans, is_admin, folder, current_user_roles)
             library = folder.parent_library
@@ -377,7 +377,7 @@ class LibraryContentsController(
             return 400, message
         else:
             created_outputs_dict = self._upload_dataset(
-                trans, folder_id=trans.security.encode_id(folder.id), replace_dataset=replace_dataset, **kwd
+                trans, folder_id=folder.id, replace_dataset=replace_dataset, **kwd
             )
             if created_outputs_dict:
                 if type(created_outputs_dict) == str:
