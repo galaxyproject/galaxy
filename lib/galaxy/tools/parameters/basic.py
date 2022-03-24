@@ -938,6 +938,7 @@ class SelectToolParameter(ToolParameter):
         return {n: v for n, v, _ in self.get_options(trans, other_values)}
 
     def from_json(self, value, trans, other_values=None, require_legal_value=True):
+        log.error(f"from_json value {value} trans {trans} other_values {other_values} require_legal_value {require_legal_value}")
         other_values = other_values or {}
         try:
             legal_values = self.get_legal_values(trans, other_values, value)

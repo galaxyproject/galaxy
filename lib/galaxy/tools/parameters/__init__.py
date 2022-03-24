@@ -1,6 +1,7 @@
 """
 Classes encapsulating Galaxy tool parameters.
 """
+import logging
 
 from json import dumps
 
@@ -23,6 +24,8 @@ from .grouping import (
     Section,
     UploadDataset,
 )
+
+log = logging.getLogger(__name__)
 
 REPLACE_ON_TRUTHY = object()
 
@@ -507,6 +510,7 @@ def populate_state(
 def _populate_state_legacy(
     request_context, inputs, incoming, state, errors, prefix="", context=None, check=True, simple_errors=True
 ):
+    log.error(f"_populate_state_legacy inputs {inputs}")
     context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
@@ -622,6 +626,7 @@ def _get_incoming_value(incoming, key, default):
     Fetch value from incoming dict directly or check special nginx upload
     created variants of this key.
     """
+    log.error(f"_get_incoming_value incoming {incoming} key {key} default {default}")
     if f"__{key}__is_composite" in incoming:
         composite_keys = incoming[f"__{key}__keys"].split()
         value = dict()
