@@ -6,13 +6,11 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
-import { getFilterDict, mergeArray } from "./utilities";
+import { mergeArray } from "./utilities";
+import { getFilters, getQueryDict, testFilter } from "./filtering";
 
 const limit = 100;
 const queue = new LastQueue();
-
-// fields that can be used for text searches
-const validFields = new Set(["name", "history_content_type", "type", "format", "extension", "state", "hid", "tags"]);
 
 const state = {
     items: {},
@@ -24,6 +22,7 @@ const getters = {
         (state) =>
         ({ historyId, filterText, showDeleted, showHidden }) => {
             const itemArray = state.items[historyId] || [];
+            const filters = getFilters(filterText);
             const filtered = itemArray.filter((item) => {
                 if (!item) {
                     return false;
@@ -34,13 +33,8 @@ const getters = {
                 if (showHidden == item.visible) {
                     return false;
                 }
-                const filterDict = getFilterDict(filterText, validFields);
-                for (const [key, value] of Object.entries(filterDict)) {
-                    const itemValue = String(item[key]).toLowerCase();
-                    const filterValue = String(value).toLowerCase();
-                    if (!itemValue.includes(filterValue)) {
-                        return false;
-                    }
+                if (!testFilter(filters, item)) {
+                    return false;
                 }
                 return true;
             });
@@ -52,7 +46,7 @@ const getQueryString = (filterText, showDeleted, showHidden) => {
     const deleted = showDeleted ? "True" : "False";
     const visible = showHidden ? "False" : "True";
     const filterDict = {
-        ...getFilterDict(filterText, validFields),
+        ...getQueryDict(filterText),
         deleted: deleted,
         visible: visible,
     };

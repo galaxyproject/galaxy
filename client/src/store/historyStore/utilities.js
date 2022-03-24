@@ -20,26 +20,3 @@ export function mergeArray(id, payload, items, itemKey) {
         }
     }
 }
-
-/* Parses single text input into a dict of field->value pairs. */
-export function getFilterDict(filterText, validFields) {
-    const pairSplitRE = /(\w+=\w+)|(\w+="(\w|\s)+")/g;
-    const scrubQuotesRE = /'|"/g;
-    const result = {};
-    if (filterText.length == 0) {
-        return result;
-    }
-    let matches = filterText.match(pairSplitRE);
-    if (!matches && filterText.length > 0 && !filterText.includes("=")) {
-        matches = [`name=${filterText}`];
-    }
-    if (matches) {
-        matches.forEach((pair) => {
-            const [field, value] = pair.split("=");
-            if (validFields.has(field)) {
-                result[field] = value.replace(scrubQuotesRE, "");
-            }
-        });
-    }
-    return result;
-}
