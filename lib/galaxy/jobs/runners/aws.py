@@ -126,22 +126,22 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "map": int,
         },
         "job_queue": {
-            "default": None,
+            "default": "",
             "map": str,
             "required": True,
         },
         "job_role_arn": {
-            "default": None,
+            "default": "",
             "map": str,
             "required": True,
         },
         "efs_filesystem_id": {
-            "default": None,
+            "default": "",
             "map": str,
             "required": True,
         },
         "efs_mount_point": {
-            "default": None,
+            "default": "",
             "map": str,
             "required": True,
         },
@@ -156,7 +156,11 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         "auto_platform": {
             "default": False,
             "map": lambda x: x in ["true", "True", "TRUE"],
-        }
+        },
+        "ec2_host_volumes": {
+            "default": "",
+            "map": str,
+        },
     }
 
     FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
@@ -226,9 +230,54 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         return jd_arn
 
+    def _get_mount_volumes(self, destination_params):
+        volumes, mount_points = [], []
+        volumes.append(
+            {
+                "name": "efs_whole",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": destination_params.get("efs_filesystem_id"),
+                    "rootDirectory": "/",
+                    "transitEncryption": "ENABLED",
+                    "authorizationConfig": {"iam": "ENABLED"},
+                },
+            },
+        )
+        mount_points.append(
+            {
+                "containerPath": destination_params.get("efs_mount_point"),
+                "readOnly": False,
+                "sourceVolume": "efs_whole",
+            },
+        )
+        if destination_params.get("platform") == 'Fargate':   # Fargate doesn't support host volumes
+            return volumes, mount_points
+
+        ec2_host_volumes = destination_params.get("ec2_host_volumes")
+        if ec2_host_volumes:
+            for ix, vol in enumerate(ec2_host_volumes.split(",")):
+                vol = vol.strip()
+                vol_name = "host_vol_" + str(ix)
+                volumes.append(
+                    {
+                        "name": vol_name,
+                        "host": {"sourcePath": vol},
+                    },
+                )
+                mount_points.append(
+                    {
+                        "containerPath": vol,
+                        "readOnly": False,
+                        "sourceVolume": vol_name,
+                    },
+                )
+        return volumes, mount_points
+
     def _register_job_definition(self, jd_name, container_image, destination_params):
         LOGGER.debug(f"Registering a new job definition: {jd_name}.")
         platform = destination_params.get("platform")
+        volumes, mount_points = self._get_mount_volumes(destination_params)
+
         # TODO: support multi-node
         containerProperties = {
             "image": container_image,
@@ -237,24 +286,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             ],
             "jobRoleArn": destination_params.get("job_role_arn"),
             "executionRoleArn": destination_params.get("execute_role_arn") or destination_params.get("job_role_arn"),
-            "volumes": [
-                {
-                    "name": "efs_whole",
-                    "efsVolumeConfiguration": {
-                        "fileSystemId": destination_params.get("efs_filesystem_id"),
-                        "rootDirectory": "/",
-                        "transitEncryption": "ENABLED",
-                        "authorizationConfig": {"iam": "ENABLED"}
-                    }
-                },
-            ],
-            "mountPoints": [
-                {
-                    "containerPath": destination_params.get("efs_mount_point"),
-                    "readOnly": False,
-                    "sourceVolume": "efs_whole"
-                },
-            ],
+            "volumes": volumes,
+            "mountPoints": mount_points,
             "resourceRequirements": _add_resource_requirements(destination_params),
             "environment": _add_galaxy_environment_variables(
                 destination_params.get("vcpu"), destination_params.get("memory")
@@ -484,10 +517,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             job_queues = parsed_params.get("job_queue").split(",")  # type: ignore[union-attr]
             if len(job_queues) < 2:
                 raise AWSBatchRunnerException(
-                    "AWSBatchJobRunner needs TWO job queues ('Farget Queue, EC2 Qeueue')"
+                    "AWSBatchJobRunner needs to set TWO job queues ('Farget Queue, EC2 Qeueue')"
                     " when 'auto_platform' is enabled!"
                 )
             parsed_params["job_queue"] = job_queues[platform == "EC2"].strip()
+
+        if platform == "Fargate" and parsed_params.get("ec2_host_volumes") and not auto_platform:
+            raise AWSBatchRunnerException(
+                "AWSBatchJobRunner: param 'ec2_host_volumes' only works for EC2 platform"
+                " unless 'auto_platform' is enabled!"
+            )
 
         parsed_params["platform"] = platform
         return parsed_params
