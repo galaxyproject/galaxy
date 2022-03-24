@@ -258,10 +258,10 @@ class LibraryContentsController(
             raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
         folder_id = payload.pop("folder_id")
         _, folder_id = self._decode_library_content_id(folder_id)
+        folder_id = trans.security.decode_id(folder_id)
         # security is checked in the downstream controller
         parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
-        real_folder_id = trans.security.encode_id(parent.id)
 
         payload["tag_using_filenames"] = util.string_as_bool(payload.get("tag_using_filenames", None))
         payload["tags"] = util.listify(payload.get("tags", None))
@@ -276,11 +276,11 @@ class LibraryContentsController(
         if create_type == "file":
             if from_hda_id:
                 return self._copy_hda_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message
+                    trans, self.hda_manager, self.decode_id(from_hda_id), folder_id, ldda_message
                 )
             if from_hdca_id:
                 return self._copy_hdca_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message
+                    trans, self.hda_manager, self.decode_id(from_hdca_id), folder_id, ldda_message
                 )
 
         # check for extended metadata, store it and pop it out of the param
@@ -289,9 +289,9 @@ class LibraryContentsController(
 
         # Now create the desired content object, either file or folder.
         if create_type == "file":
-            status, output = self._upload_library_dataset(trans, library_id, real_folder_id, **payload)
+            status, output = self._upload_library_dataset(trans, library_id, folder_id, **payload)
         elif create_type == "folder":
-            status, output = self._create_folder(trans, real_folder_id, library_id, **payload)
+            status, output = self._create_folder(trans, folder_id, library_id, **payload)
         elif create_type == "collection":
             # Not delegating to library_common, so need to check access to parent
             # folder here.
