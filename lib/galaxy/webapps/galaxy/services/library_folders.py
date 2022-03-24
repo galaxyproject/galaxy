@@ -168,7 +168,7 @@ class LibraryFoldersService(ServiceBase):
             valid_add_roles = []
             invalid_add_roles_names = []
             for role_id in new_add_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
@@ -184,13 +184,13 @@ class LibraryFoldersService(ServiceBase):
             valid_manage_roles = []
             invalid_manage_roles_names = []
             for role_id in new_manage_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
                     valid_manage_roles.append(role)
                 else:
-                    invalid_manage_roles_names.append(role_id)
+                    invalid_manage_roles_names.append(trans.security.encode_id(role_id))
             if len(invalid_manage_roles_names) > 0:
                 log.warning(
                     f"The following roles could not be added to the manage folder permission: {str(invalid_manage_roles_names)}"
@@ -200,13 +200,13 @@ class LibraryFoldersService(ServiceBase):
             valid_modify_roles = []
             invalid_modify_roles_names = []
             for role_id in new_modify_roles_ids:
-                role = self.role_manager.get(trans, trans.security.decode_id(role_id, object_name="role"))
+                role = self.role_manager.get(trans, role_id)
                 #  Check whether role is in the set of allowed roles
                 valid_roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder)
                 if role in valid_roles:
                     valid_modify_roles.append(role)
                 else:
-                    invalid_modify_roles_names.append(role_id)
+                    invalid_modify_roles_names.append(trans.security.encode_id(role_id))
             if len(invalid_modify_roles_names) > 0:
                 log.warning(
                     f"The following roles could not be added to the modify folder permission: {str(invalid_modify_roles_names)}"
