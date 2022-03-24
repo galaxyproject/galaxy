@@ -20,6 +20,7 @@ from . import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,
+    get_stored_instance_by_id,
     get_stored_obj,
     initialize_model,
     persist,
@@ -37,7 +38,7 @@ def test_persist(session):
     assert instance_id == 1  # id was assigned
     assert instance not in session  # instance was expunged from session
 
-    stored_instance = _get_stored_instance_by_id(session, Foo, instance_id)
+    stored_instance = get_stored_instance_by_id(session, Foo, instance_id)
     assert stored_instance.id == instance.id  # instance can be retrieved by id
     assert stored_instance is not instance  # retrieved instance is not the same object
 
@@ -82,13 +83,13 @@ def test_delete_from_database_one_item(session):
     instance = Foo()
     id = persist(session, instance)  # store instance in database
 
-    stored_instance = _get_stored_instance_by_id(session, Foo, id)
+    stored_instance = get_stored_instance_by_id(session, Foo, id)
     assert stored_instance is not None  # instance is present in database
 
     delete_from_database(session, instance)  # delete instance from database
 
     with pytest.raises(NoResultFound):  # instance no longer present in database
-        stored_instance = _get_stored_instance_by_id(session, Foo, id)
+        stored_instance = get_stored_instance_by_id(session, Foo, id)
 
 
 def test_delete_from_database_multiple_items(session):
@@ -101,19 +102,19 @@ def test_delete_from_database_multiple_items(session):
     delete_from_database(session, [instance1, instance2])
 
     with pytest.raises(NoResultFound):
-        _get_stored_instance_by_id(session, Foo, id1)
+        get_stored_instance_by_id(session, Foo, id1)
     with pytest.raises(NoResultFound):
-        _get_stored_instance_by_id(session, Foo, id2)
+        get_stored_instance_by_id(session, Foo, id2)
 
 
 def test_dbcleanup_by_id(session):
     instance = Foo()
     with dbcleanup(session, instance) as instance_id:
-        stored_instance = _get_stored_instance_by_id(session, Foo, instance_id)
+        stored_instance = get_stored_instance_by_id(session, Foo, instance_id)
         assert stored_instance  # has been stored in the database
 
     with pytest.raises(NoResultFound):  # has been deleted from the database
-        _get_stored_instance_by_id(session, Foo, instance_id)
+        get_stored_instance_by_id(session, Foo, instance_id)
 
 
 def test_dbcleanup_by_where_clause(session):
@@ -121,11 +122,11 @@ def test_dbcleanup_by_where_clause(session):
     where_clause = Foo.__table__.c.id == 1
 
     with dbcleanup(session, instance, where_clause):
-        stored_instance = _get_stored_instance_by_id(session, Foo, where_clause)
+        stored_instance = get_stored_instance_by_id(session, Foo, where_clause)
         assert stored_instance  # has been stored in the database
 
     with pytest.raises(NoResultFound):  # has been deleted from the database
-        _get_stored_instance_by_id(session, Foo, stored_instance.id)
+        get_stored_instance_by_id(session, Foo, stored_instance.id)
 
 
 def test_dbcleanup_wrapper(session):
@@ -142,12 +143,12 @@ def test_dbcleanup_wrapper(session):
     # this will call dbcleanup_wrapper that stores instance in the database and returns a reference to it
     with managed(session, instance) as instance2:
         assert instance2 is instance  # instance2 should be a reference to instance
-        stored_instance = _get_stored_instance_by_id(session, Foo, instance.id)
+        stored_instance = get_stored_instance_by_id(session, Foo, instance.id)
         assert stored_instance  # has been stored in the database
 
     # on exit we expect the entity to be deleted from the database
     with pytest.raises(NoResultFound):  # has been deleted from the database
-        _get_stored_instance_by_id(session, Foo, instance.id)
+        get_stored_instance_by_id(session, Foo, instance.id)
 
 
 # Test utilities
@@ -179,8 +180,3 @@ def init_model(engine):
     """Create model objects in the engine's database."""
     # Must use the same engine as the session fixture used by this module.
     initialize_model(mapper_registry, engine)
-
-
-def _get_stored_instance_by_id(session, cls_, id):
-    statement = select(Foo).where(cls_.__table__.c.id == id)
-    return session.execute(statement).scalar_one()

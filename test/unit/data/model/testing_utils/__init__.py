@@ -122,6 +122,11 @@ def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
     return result.scalar_one()
 
 
+def get_stored_instance_by_id(session, cls_, id):
+    statement = select(cls_).where(cls_.__table__.c.id == id)
+    return session.execute(statement).scalar_one()
+
+
 def _get_default_where_clause(cls, obj_id):
     where_clause = cls.__table__.c.id == obj_id
     return where_clause

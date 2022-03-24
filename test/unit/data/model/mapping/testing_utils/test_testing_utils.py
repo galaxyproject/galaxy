@@ -18,6 +18,7 @@ from . import (
     has_unique_constraint,
 )
 from ...testing_utils import (
+    get_stored_instance_by_id,
     initialize_model,
     persist,
 )
@@ -44,9 +45,9 @@ def test_collection_consists_of_objects(session):
     persist(session, foo3)
 
     # retrieve objects from storage
-    stored_foo1 = _get_stored_instance_by_id(session, Foo, foo1.id)
-    stored_foo2 = _get_stored_instance_by_id(session, Foo, foo2.id)
-    stored_foo3 = _get_stored_instance_by_id(session, Foo, foo3.id)
+    stored_foo1 = get_stored_instance_by_id(session, Foo, foo1.id)
+    stored_foo2 = get_stored_instance_by_id(session, Foo, foo2.id)
+    stored_foo3 = get_stored_instance_by_id(session, Foo, foo3.id)
 
     # verify retrieved objects are not the same python objects as those we stored
     assert stored_foo1 is not foo1
@@ -97,8 +98,3 @@ def init_model(engine):
     """Create model objects in the engine's database."""
     # Must use the same engine as the session fixture used by this module.
     initialize_model(mapper_registry, engine)
-
-
-def _get_stored_instance_by_id(session, cls_, id):
-    statement = select(Foo).where(cls_.__table__.c.id == id)
-    return session.execute(statement).scalar_one()
