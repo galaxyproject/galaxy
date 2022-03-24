@@ -1708,6 +1708,7 @@ class Tool(Dictifiable):
             visit_input_values(self.inputs, values, callback)
 
     def expand_incoming(self, trans, incoming, request_context, input_format="legacy"):
+        log.error(f"expand_incoming incoming {incoming}")
         rerun_remap_job_id = None
         if "rerun_remap_job_id" in incoming:
             try:
@@ -1723,6 +1724,7 @@ class Tool(Dictifiable):
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
+        log.error(f"expand_incoming expanded_incomings {expanded_incomings}")
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
