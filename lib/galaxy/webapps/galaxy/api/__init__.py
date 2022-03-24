@@ -39,7 +39,6 @@ from galaxy import (
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
-    UserInvalidRunAsException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
@@ -129,11 +128,7 @@ def get_api_user(
     user = user_manager.by_api_key(api_key=api_key)
     if run_as:
         if user_manager.user_can_do_run_as(user):
-            try:
-                decoded_run_as_id = security.decode_id(run_as)
-            except Exception:
-                raise UserInvalidRunAsException
-            return user_manager.by_id(decoded_run_as_id)
+            return user_manager.by_id(run_as)
         else:
             raise UserCannotRunAsException
     return user
