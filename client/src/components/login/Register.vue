@@ -4,17 +4,32 @@
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
                 <b-alert v-html="registration_warning_message" :show="showRegistrationWarning" variant="info">
                 </b-alert>
-                <b-alert show variant="secondary">
-                    Create an account using an email address or use institutional login to create an account.
-                </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
-                    <b-card>
+                    <b-card no-body>
+                        <span v-if="enable_oidc">
+                            <b-card-header v-b-toggle.accordion-custos role="button">
+                                Register using institutional account
+                            </b-card-header>
+                            <b-collapse visible id="accordion-custos" role="tabpanel" accordion="registration_acc">
+                                <b-card-body>
+                                    <!-- OIDC login-->
+                                    Create a Galaxy account using an institutional account (e.g.:Google/JHU). This
+                                    will redirect you to your institutional login.
+                                    <external-login :login_page="true" />
+                                </b-card-body>
+                            </b-collapse>
+                        </span>
                         <b-card-header v-b-toggle.accordion-create role="button">
-                            Create a Galaxy account
+                            <span v-if="enable_oidc">Or, register with email</span>
+                            <span v-else>Create a Galaxy account</span>
                         </b-card-header>
-                        <b-collapse id="accordion-create" role="tabpanel">
+                        <b-collapse id="accordion-create" role="tabpanel" accordion="registration_acc">
                             <b-card-body>
+                                <span v-if="enable_oidc">
+                                    Create a Galaxy account with your email address.
+                                    <hr class="my-4" />
+                                </span>
                                 <b-form-group label="Email Address">
                                     <b-form-input name="email" type="text" v-model="email" />
                                 </b-form-group>
@@ -39,15 +54,6 @@
                                     <input name="subscribe" type="checkbox" v-model="subscribe" />
                                 </b-form-group>
                                 <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
-                            </b-card-body>
-                        </b-collapse>
-                        <b-card-header v-if="enable_oidc" v-b-toggle.accordion-custos role="button">
-                            Use institutional login to create a Galaxy account
-                        </b-card-header>
-                        <b-collapse id="accordion-custos" role="tabpanel">
-                            <b-card-body>
-                                <!-- OIDC login-->
-                                <external-login :login_page="false" />
                             </b-card-body>
                         </b-collapse>
                         <b-card-footer v-if="!isAdmin">
