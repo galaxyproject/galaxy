@@ -90,19 +90,19 @@ class WorkflowsManager:
                     trans.app.model.Workflow.uuid == workflow_uuid,
                 )
             )
-        elif by_stored_id:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                trans.app.model.StoredWorkflow.id == workflow_id
-            )
         else:
-            workflow_id = decode_id(self.app, workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                and_(
-                    trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
-                    trans.app.model.Workflow.id == workflow_id,
+            workflow_id = workflow_id if isinstance(workflow_id, int) else decode_id(self.app, workflow_id)
+            if by_stored_id:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    trans.app.model.StoredWorkflow.id == workflow_id
                 )
-            )
+            else:
+                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
+                    and_(
+                        trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
+                        trans.app.model.Workflow.id == workflow_id,
+                    )
+                )
         stored_workflow = workflow_query.options(
             joinedload("annotations"),
             joinedload("tags"),
