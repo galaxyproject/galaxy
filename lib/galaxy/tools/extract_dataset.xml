@@ -1,6 +1,6 @@
 <tool id="__EXTRACT_DATASET__"
       name="Extract dataset"
-      version="1.0.1"
+      version="1.0.2"
       tool_type="extract_element">
   <description></description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
@@ -36,7 +36,7 @@
     </conditional>
   </inputs>
   <outputs>
-    <data name="output" label="${on_string} (extracted element)" />
+    <data name="output" label="${on_string} (extracted element)" format_source="input" />
   </outputs>
   <help><![CDATA[
 
@@ -50,7 +50,18 @@ Extracts datasets from a collection based on either position or identifier.
 Description
 ===========
 
-The tool allow extracting datasets based on position (**The first dataset** and **Select by index** options) or name (**Select by element identifier** option). This tool effectively collapses the inner-most collection into a dataset. For nested collections (e.g a list of lists of lists: outer:middle:inner, extracting the inner dataset element) a new list is created where the selected element takes the position of the inner-most collection (so outer:middle, where middle is not a collection but the inner dataset element).
+The tool allow extracting datasets based on position (**The first dataset** and
+**Select by index** options) or name (**Select by element identifier** option)
+from a collection or a pair.
+
+If applied to nested collection, e.g. collection of pairs or collection of pairs,
+then the tool will be applied (in separate jobs) on the contained lists and
+produce a list. 
+That is, this tool effectively transforms the inner-most collection into a dataset. For
+nested collections (e.g a list of lists of lists: outer:middle:inner, where inner is a
+dataset element) a new list is created where the selected element
+takes the position of the inner-most collection (so outer:middle, where middle
+is not a collection but the inner dataset element).
 
 .. class:: warningmark 
 
