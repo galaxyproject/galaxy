@@ -1286,7 +1286,13 @@ class XYZ(GenericMolFile):
             # simple metadata
             with open(dataset.file_name) as f:
                 xyz_lines = f.readlines()
+            try:
                 blocks = self.read_blocks(xyz_lines)
+            except (IndexError, TypeError, ValueError) as e:
+                # file does not follow XYZ structure
+                log.error("Error finding metadata: %s", unicodify(e))
+                return
+
             dataset.metadata.number_of_molecules = len(blocks)
             dataset.metadata.atom_data = [block["atom_data"] for block in blocks]
             dataset.metadata.number_of_atoms = [block["number_of_atoms"] for block in blocks]
