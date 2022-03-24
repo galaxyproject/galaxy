@@ -447,16 +447,8 @@ class DatasetAssociationManager(base.ModelManager, secured.AccessibleManagerMixi
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         elif action == "set_permissions":
 
-            def to_role_id(encoded_role_id):
-                role_id = base.decode_id(self.app, encoded_role_id)
-                return role_id
-
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
-                if encoded_role_ids is not None:
-                    return list(map(to_role_id, encoded_role_ids))
-                else:
-                    return None
+                return kwd.get(role_type, kwd.get(f"{role_type}_ids[]"))
 
             access_roles = parameters_roles_or_none("access")
             manage_roles = parameters_roles_or_none("manage")
