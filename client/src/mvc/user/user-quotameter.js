@@ -3,6 +3,7 @@ import Backbone from "backbone";
 import _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import { getAppRoot } from "onload/loadConfig";
 
 var logNamespace = "user";
 //==============================================================================
@@ -22,6 +23,8 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             errorAtPercent: 100,
             quotaUrl: "https://galaxyproject.org/support/account-quotas/",
         },
+
+        storageDashboardUrl: `${getAppRoot()}storage`,
 
         /** Set up, accept options, and bind events */
         initialize: function (options) {
@@ -134,19 +137,18 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
                 ? `title="Using ${data.nice_total_disk_usage}. Click for details."`
                 : "";
             const using = `${_l("Using")} ${data.quota_percent}%`;
-            const quotaUrl = this.options.quotaUrl;
-            return `<div id="quota-meter" class="quota-meter progress">
+            return `<div id="quota-meter" class="quota-meter progress" style="cursor: pointer" onclick="location.href='${this.storageDashboardUrl}';">
     <div class="progress-bar" style="width: ${data.quota_percent}%"></div>
     <div class="quota-meter-text" data-placement="left" ${title}>
-        <a href="${quotaUrl}" target="_blank">${using}</a>
+        <a>${using}</a>
     </div>
 </div>`;
         },
 
         _templateUsage: function (data) {
             return [
-                '<div id="quota-meter" class="quota-meter" style="background-color: transparent">',
-                '<div class="quota-meter-text" data-placement="left" data-original-title="This value is recalculated when you log out." style="color: white">',
+                `<div id="quota-meter" class="quota-meter" style="background-color: transparent; cursor: pointer" onclick="location.href='${this.storageDashboardUrl}';">`,
+                '<div class="quota-meter-text" data-placement="left" data-original-title="Click for details." style="color: white">',
                 data.nice_total_disk_usage ? _l("Using ") + data.nice_total_disk_usage : "",
                 "</div>",
                 "</div>",

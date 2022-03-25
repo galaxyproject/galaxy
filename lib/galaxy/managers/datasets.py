@@ -237,7 +237,9 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
 
 
 # ============================================================================= AKA DatasetInstanceManager
-class DatasetAssociationManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetAssociationManager(
+    base.ModelManager, secured.AccessibleManagerMixin, secured.OwnableManagerMixin, deletable.PurgableManagerMixin
+):
     """
     DatasetAssociation/DatasetInstances are intended to be working
     proxies to a Dataset, associated with either a library or a

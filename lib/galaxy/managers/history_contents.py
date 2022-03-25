@@ -15,6 +15,8 @@ from sqlalchemy import (
     false,
     func,
     literal,
+    nullsfirst,
+    nullslast,
     sql,
     true,
 )
@@ -72,6 +74,7 @@ class HistoryContentsManager(base.SortableManager):
         "collection_id",
         "name",
         "state",
+        "size",
         "deleted",
         "purged",
         "visible",
@@ -133,14 +136,21 @@ class HistoryContentsManager(base.SortableManager):
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by using the given string"""
-        available = ["create_time", "extension", "hid", "history_id", "name", "update_time"]
+        available = ["create_time", "extension", "hid", "history_id", "name", "update_time", "size"]
         for attribute in available:
             attribute_dsc = f"{attribute}-dsc"
             attribute_asc = f"{attribute}-asc"
             if order_by_string in (attribute, attribute_dsc):
-                return desc(attribute)
+                order_by = desc(attribute)
+                if attribute == "size":
+                    return nullslast(order_by)
+                return order_by
             if order_by_string == attribute_asc:
-                return asc(attribute)
+                order_by = asc(attribute)
+                if attribute == "size":
+                    return nullsfirst(order_by)
+                return order_by
+
         if default:
             return self.parse_order_by(default)
         raise glx_exceptions.RequestParameterInvalidException(
@@ -348,6 +358,7 @@ class HistoryContentsManager(base.SortableManager):
         columns = self._contents_common_columns(
             component_class,
             history_content_type=literal("dataset"),
+            size=model.Dataset.file_size,
             state=model.Dataset.state,
             # do not have inner collections
             collection_id=literal(None),
@@ -373,6 +384,7 @@ class HistoryContentsManager(base.SortableManager):
             history_content_type=literal("dataset_collection"),
             # do not have datasets
             dataset_id=literal(None),
+            size=literal(None),
             state=model.DatasetCollection.populated_state,
             # TODO: should be purgable? fix
             purged=literal(False),

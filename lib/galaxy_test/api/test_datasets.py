@@ -1,4 +1,8 @@
 import textwrap
+from typing import (
+    Dict,
+    List,
+)
 
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -20,6 +24,42 @@ class DatasetsApiTestCase(ApiTestCase):
     def test_index(self):
         index_response = self._get("datasets")
         self._assert_status_code_is(index_response, 200)
+
+    def test_index_using_keys(self):
+        expected_keys = "id"
+        self.dataset_populator.new_dataset(self.history_id)
+        index_response = self._get(f"datasets?keys={expected_keys}")
+        self._assert_status_code_is(index_response, 200)
+        datasets = index_response.json()
+        for dataset in datasets:
+            assert len(dataset) == 1
+            self._assert_has_keys(dataset, "id")
+
+    def test_index_order_by_size(self):
+        num_datasets = 3
+        history_id = self.dataset_populator.new_history()
+        dataset_ids_ordered_by_size_asc = []
+        for index in range(num_datasets):
+            dataset_content = (index + 1) * "content"
+            hda = self.dataset_populator.new_dataset(history_id, content=dataset_content)
+            dataset_ids_ordered_by_size_asc.append(hda["id"])
+        dataset_ids_ordered_by_size = dataset_ids_ordered_by_size_asc[::-1]
+        self.dataset_populator.wait_for_history(history_id)
+
+        self._assert_history_datasets_ordered(
+            history_id, order_by="size", expected_ids_order=dataset_ids_ordered_by_size
+        )
+        self._assert_history_datasets_ordered(
+            history_id, order_by="size-asc", expected_ids_order=dataset_ids_ordered_by_size_asc
+        )
+
+    def _assert_history_datasets_ordered(self, history_id, order_by: str, expected_ids_order: List[str]):
+        datasets_response = self._get(f"histories/{history_id}/contents?v=dev&keys=size&order={order_by}")
+        self._assert_status_code_is(datasets_response, 200)
+        datasets = datasets_response.json()
+        assert len(datasets) == len(expected_ids_order)
+        for index, dataset in enumerate(datasets):
+            assert dataset["id"] == expected_ids_order[index]
 
     def test_search_datasets(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
@@ -218,3 +258,77 @@ class DatasetsApiTestCase(ApiTestCase):
             f"histories/{self.history_id}/contents/{hda_id}", data={"datatype": "invalid"}, json=True
         )
         self._assert_status_code_is(invalidly_updated_hda_response, 400)
+
+    def test_delete_batch(self):
+        num_datasets = 4
+        dataset_map: Dict[int, str] = {}
+        history_id = self.dataset_populator.new_history()
+        for index in range(num_datasets):
+            hda = self.dataset_populator.new_dataset(history_id)
+            dataset_map[index] = hda["id"]
+
+        expected_deleted_source_ids = [
+            {"id": dataset_map[1], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
+        ]
+        delete_payload = {"datasets": expected_deleted_source_ids}
+        deleted_result = self._delete_batch_with_payload(delete_payload)
+
+        assert deleted_result["success_count"] == len(expected_deleted_source_ids)
+        for deleted_source_id in expected_deleted_source_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{deleted_source_id['id']}").json()
+            assert dataset["deleted"] is True
+
+        expected_purged_source_ids = [
+            {"id": dataset_map[0], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
+        ]
+        purge_payload = {"purge": True, "datasets": expected_purged_source_ids}
+        deleted_result = self._delete_batch_with_payload(purge_payload)
+
+        assert deleted_result["success_count"] == len(expected_purged_source_ids)
+
+        for purged_source_id in expected_purged_source_ids:
+            dataset = self._get(f"histories/{history_id}/contents/{purged_source_id['id']}").json()
+            assert dataset["purged"] is True
+
+    def test_delete_batch_error(self):
+        num_datasets = 4
+        dataset_map: Dict[int, str] = {}
+
+        with self._different_user():
+            history_id = self.dataset_populator.new_history()
+            for index in range(num_datasets):
+                hda = self.dataset_populator.new_dataset(history_id)
+                dataset_map[index] = hda["id"]
+
+            # Trying to delete datasets of wrong type will error
+            expected_errored_source_ids = [
+                {"id": dataset_map[0], "src": "ldda"},
+                {"id": dataset_map[3], "src": "ldda"},
+            ]
+            delete_payload = {"datasets": expected_errored_source_ids}
+            deleted_result = self._delete_batch_with_payload(delete_payload)
+
+            assert deleted_result["success_count"] == 0
+            assert len(deleted_result["errors"]) == len(expected_errored_source_ids)
+
+        # Trying to delete datasets that we don't own will error
+        expected_errored_source_ids = [
+            {"id": dataset_map[1], "src": "hda"},
+            {"id": dataset_map[2], "src": "hda"},
+        ]
+        delete_payload = {"datasets": expected_errored_source_ids}
+        deleted_result = self._delete_batch_with_payload(delete_payload)
+
+        assert deleted_result["success_count"] == 0
+        assert len(deleted_result["errors"]) == len(expected_errored_source_ids)
+        for error in deleted_result["errors"]:
+            self._assert_has_keys(error, "dataset", "error_message")
+            self._assert_has_keys(error["dataset"], "id", "src")
+
+    def _delete_batch_with_payload(self, payload):
+        delete_response = self._delete("datasets", data=payload, json=True)
+        self._assert_status_code_is_ok(delete_response)
+        deleted_result = delete_response.json()
+        return deleted_result

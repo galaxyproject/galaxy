@@ -1323,13 +1323,16 @@ class JobSummary(JobBaseModel):
     )
 
 
-class DatasetJobInfo(Model):
+class DatasetSourceId(Model):
     id: EncodedDatabaseIdField = EncodedEntityIdField
     src: DatasetSourceType = Field(
         ...,
         title="Source",
         description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
     )
+
+
+class DatasetJobInfo(DatasetSourceId):
     uuid: UUID4 = UuidField
 
 

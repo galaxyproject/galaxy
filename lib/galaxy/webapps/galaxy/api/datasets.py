@@ -46,6 +46,8 @@ from galaxy.webapps.galaxy.services.datasets import (
     DatasetsService,
     DatasetStorageDetails,
     DatasetTextContentDetails,
+    DeleteDatasetBatchPayload,
+    DeleteDatasetBatchResult,
     RequestDataType,
 )
 from . import (
@@ -291,3 +293,19 @@ class FastAPIDatasets:
         extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 
         return self.service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
+
+    @router.delete(
+        "/api/datasets",
+        summary="Deletes or purges a batch of datasets.",
+    )
+    def delete_batch(
+        self,
+        trans=DependsOnTrans,
+        payload: DeleteDatasetBatchPayload = Body(...),
+    ) -> DeleteDatasetBatchResult:
+        """
+        Deletes or purges a batch of datasets.
+        **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
+        no other checks or restrictions are made.
+        """
+        return self.service.delete_batch(trans, payload)
