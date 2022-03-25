@@ -7,7 +7,7 @@ const datasetKeys = "id,name,size,update_time,hda_ldda";
 const isDataset = "q=history_content_type-eq&qv=dataset";
 const isDeleted = "q=deleted-eq&qv=True";
 const isNotPurged = "q=purged-eq&qv=False";
-const maxItemsToFetch = 5000;
+const maxItemsToFetch = 500;
 const discardedDatasetsQueryParams = `${isDataset}&${isDeleted}&${isNotPurged}&limit=${maxItemsToFetch}`;
 
 /**

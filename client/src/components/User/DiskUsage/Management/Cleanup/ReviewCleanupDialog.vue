@@ -2,7 +2,7 @@
     <b-modal id="review-cleanup-dialog" title-tag="h2" centered @show="onShowModal" v-model="showDialog" static>
         <template v-slot:modal-title>
             {{ title }}
-            <span class="text-primary h3">{{ totalItems }} items</span>
+            <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
         </template>
         <div>
             {{ captionText }}
@@ -43,6 +43,7 @@
             </template>
         </b-table>
         <template v-slot:modal-footer>
+            <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
             <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
             <b-button
                 :disabled="!hasItemsSelected"
@@ -134,6 +135,7 @@ export default {
             showDialog: false,
             items: [],
             selectedItems: [],
+            itemLimit: 500,
             confirmChecked: false,
             permanentlyDeleteText: _l("Permanently delete"),
             captionText: _l("To free up account space, review and select items to be permanently deleted or"),
@@ -229,6 +231,16 @@ export default {
         /** @returns {String} */
         confirmButtonVariant() {
             return this.confirmChecked ? "danger" : "";
+        },
+        /** @returns {Boolean} */
+        rowLimitReached() {
+            return this.totalRows >= this.itemLimit;
+        },
+        /** @returns {String} */
+        rowLimitReachedText() {
+            return _l(
+                `Displaying a maximum of ${this.itemLimit} items here. If there are more, you can rerun this operation after deleting some.`
+            );
         },
     },
     watch: {
