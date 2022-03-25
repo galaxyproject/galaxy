@@ -2332,8 +2332,9 @@ class DefaultDatasetToolParameter(DataToolParameter):
         return rval
 
     def get_history_context(self, trans):
-        # Allow selection of dataset also when building workflow
-        history = trans.history
+        # Allow selection of dataset also when building workflow.
+        # TODO: Replace with browse datasets button in workflow context.
+        history = getattr(trans, "history", None)
         if history is None:
             return None
         return history
