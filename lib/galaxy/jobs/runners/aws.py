@@ -471,7 +471,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             if spec.get("required") and not value:  # type: ignore[attr-defined]
                 check_required.append(k)
             mapper = spec.get("map")    # type: ignore[attr-defined]
-            parsed_params[k] = mapper(value)
+            parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
