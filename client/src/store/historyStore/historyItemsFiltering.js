@@ -6,7 +6,8 @@
  * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
  * create-time="March 12, 2022", create_time='March 12, 2022', create-time-lt="March 12, 2022", create-time-lt='March 12, 2022'.
  *
- * Currently, the following characters are not allowed in the VALUE field "=", "<" and ">".
+ * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
+ * Use quotations (", ') around values containing spaces.
  */
 
 /* Converts user input to backend compatible date. */
@@ -102,7 +103,10 @@ const validFilters = {
 };
 
 /* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
-const validAlias = { ">": "_gt", "<": "_lt" };
+const validAlias = [
+    [">", "_gt"],
+    ["<", "_lt"],
+];
 
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
@@ -116,11 +120,20 @@ export function getFilters(filterText) {
     let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
-            Object.entries(validAlias).forEach(([alias, suffix]) => {
-                pair = pair.replace(alias, `${suffix}=`);
-            });
-            const [field, value] = pair.split("=");
-            if (field && value) {
+            const elgRE = /(\S+)([=><])(.+)/g;
+            const elgMatch = elgRE.exec(pair);
+            if (elgMatch) {
+                let field = elgMatch[1];
+                const elg = elgMatch[2];
+                const value = elgMatch[3];
+                // replace alias for less and greater symbol
+                for (const [alias, substitute] of validAlias) {
+                    if (elg == alias) {
+                        field = `${field}${substitute}`;
+                        break;
+                    }
+                }
+                // replaces dashes with underscores in query field names
                 const normalizedField = field.replaceAll("-", "_");
                 if (validFilters[normalizedField]) {
                     result[normalizedField] = value.replace(scrubQuotesRE, "");
