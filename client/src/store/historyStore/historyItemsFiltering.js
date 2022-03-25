@@ -1,10 +1,12 @@
 /**
- * This module handles the filtering for content items. User specified filters are applied on the data available in the store and 
+ * This module handles the filtering for content items. User specified filters are applied on the data available in the store and
  * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY=VALUE pair
  * e.g. hid=61 in the history search field. Each query key has a default suffix defined e.g. hid=61 is equivalent to hid-eq=61.
- * Additionally, underscores and dashes in the QUERY are interchangeable. The same is true for " and ' in the VALUE. As such the
- * following items are equivalent: create-time="March 12, 2022", create_time='March 12, 2022', create-time-ge="March 12, 2022"
- * and create_time_ge='March 12, 2022'.
+ * Additionally, underscores and dashes in the QUERY are interchangeable. The same is true for quotations i.e. " and ' in the VALUE.
+ * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
+ * create-time="March 12, 2022", create_time='March 12, 2022', create-time-lt="March 12, 2022", create-time-lt='March 12, 2022'.
+ *
+ * Currently, the following characters are not allowed in the VALUE field "=", "<" and ">".
  */
 
 /* Converts user input to backend compatible date. */
@@ -78,7 +80,7 @@ function compare(attribute, variant, converter = null) {
 
 /* Valid filter fields and handlers which can be used for text searches. */
 const validFilters = {
-    create_time: compare("create_time", "ge", toDate),
+    create_time: compare("create_time", "le", toDate),
     create_time_ge: compare("create_time", "ge", toDate),
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
@@ -92,12 +94,15 @@ const validFilters = {
     name: contains("name"),
     state: equals("state"),
     tag: equals("tags", "tag"),
-    update_time: compare("update_time", "ge", toDate),
+    update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
     update_time_le: compare("update_time", "le", toDate),
     update_time_lt: compare("update_time", "lt", toDate),
 };
+
+/* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
+const validAlias = { _gt: ">", _lt: "<" };
 
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
@@ -107,6 +112,9 @@ export function getFilters(filterText) {
     if (filterText.length == 0) {
         return [];
     }
+    Object.entries(validAlias).forEach(([suffix, alias]) => {
+        filterText = filterText.replaceAll(alias, `${suffix}=`);
+    });
     let matches = filterText.match(pairSplitRE);
     if (!matches && filterText.length > 0 && !filterText.includes("=")) {
         matches = [`name=${filterText}`];

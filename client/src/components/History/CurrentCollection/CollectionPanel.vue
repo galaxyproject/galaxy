@@ -5,7 +5,7 @@
         v-if="dsc"
         :key="dsc.id"
         :id="dsc.id"
-        :contentsUrl="contentsUrl"
+        :contents-url="contentsUrl"
         :offset="offset"
         v-slot="{ loading, result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">

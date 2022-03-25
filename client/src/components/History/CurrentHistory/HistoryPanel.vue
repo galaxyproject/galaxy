@@ -1,11 +1,11 @@
 <template>
     <HistoryItemsProvider
         :key="history.id"
-        :historyId="historyId"
+        :history-id="historyId"
         :offset="offset"
-        :filterText="params.filterText"
-        :showDeleted="params.showDeleted"
-        :showHidden="params.showHidden"
+        :filter-text="params.filterText"
+        :show-deleted="params.showDeleted"
+        :show-hidden="params.showHidden"
         v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
