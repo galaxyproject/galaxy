@@ -3,6 +3,7 @@ import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapCacheActions } from "vuex-cache";
 import { mapActions, mapGetters } from "vuex";
+import { rethrowSimple } from "utils/simple-error";
 
 export const SimpleProviderMixin = {
     props: {
@@ -142,6 +143,7 @@ export const StoreProvider = (storeAction, storeGetter) => {
         data() {
             return {
                 loading: false,
+                error: null,
             };
         },
         created() {
@@ -151,8 +153,14 @@ export const StoreProvider = (storeAction, storeGetter) => {
             ...mapActions([storeAction]),
             async load() {
                 this.loading = true;
-                await this[storeAction]({ ...this.$attrs });
-                this.loading = false;
+                try {
+                    await this[storeAction]({ ...this.$attrs });
+                    this.error = null;
+                    this.loading = false;
+                } catch (error) {
+                    this.error = error;
+                    this.loading = false;
+                }
             },
         },
         computed: {
@@ -163,6 +171,7 @@ export const StoreProvider = (storeAction, storeGetter) => {
         },
         render() {
             return this.$scopedSlots.default({
+                error: this.error,
                 loading: this.loading,
                 result: this.result,
             });

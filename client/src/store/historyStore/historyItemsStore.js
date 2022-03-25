@@ -7,7 +7,7 @@ import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeArray } from "./utilities";
-import { getFilters, getQueryDict, testFilter } from "./filtering";
+import { getFilters, getQueryDict, testFilters } from "./filtering";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -33,7 +33,7 @@ const getters = {
                 if (showHidden == item.visible) {
                     return false;
                 }
-                if (!testFilter(filters, item)) {
+                if (!testFilters(filters, item)) {
                     return false;
                 }
                 return true;

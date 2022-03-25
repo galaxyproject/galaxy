@@ -1,15 +1,15 @@
 /* Set of filter comparison operations. */
 const filterOperation = {
-    equal(attribute) {
+    equal(attribute, query) {
         return {
             attribute,
-            query: `${attribute}-eq`,
+            query: query || `${attribute}-eq`,
             handler: (v, q) => {
                 return v == q;
             },
         };
     },
-    includes(attribute) {
+    contains(attribute) {
         return {
             attribute,
             query: `${attribute}-contains`,
@@ -26,9 +26,9 @@ const validFilters = {
     format: filterOperation.equal("format"),
     hid: filterOperation.equal("hid"),
     history_content_type: filterOperation.equal("history_content_type"),
-    name: filterOperation.includes("name"),
+    name: filterOperation.contains("name"),
     state: filterOperation.equal("state"),
-    tag: filterOperation.includes("tags"),
+    tag: filterOperation.equal("tags", "tag"),
     type: filterOperation.equal("type"),
 };
 
@@ -67,7 +67,7 @@ export function getQueryDict(filterText) {
 }
 
 /* Test if a value passes all filters. */
-export function testFilter(filters, item) {
+export function testFilters(filters, item) {
     for (const [key, value] of filters) {
         const filterValue = String(value).toLowerCase();
         const filterAttribute = validFilters[key].attribute;
