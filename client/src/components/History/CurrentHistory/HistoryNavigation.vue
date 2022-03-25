@@ -16,7 +16,11 @@
             </template>
 
             <b-dropdown-text>
-                <span>You have {{ histories.length }} histories.</span>
+                <div v-if="userHistoriesLoading">
+                    <b-spinner small v-if="userHistoriesLoading" />
+                    <span>Fetching histories from server</span>
+                </div>
+                <span v-else>You have {{ histories.length }} histories.</span>
             </b-dropdown-text>
 
             <b-dropdown-divider></b-dropdown-divider>
@@ -75,6 +79,7 @@ export default {
         histories: { type: Array, required: true },
         currentHistory: { type: History, required: true },
         title: { type: String, required: false, default: "Histories" },
+        userHistoriesLoading: { type: Boolean, required: false, default: false },
     },
     methods: {
         switchToLegacyHistoryPanel,
