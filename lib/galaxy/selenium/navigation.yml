@@ -237,7 +237,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     contents: '#current-history-panel .history-content'
-
+    contents_beta: '.history-index .content-item'
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'

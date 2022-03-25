@@ -446,7 +446,10 @@ class NavigatesGalaxy(HasDriver):
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
-            contents_elements = self.find_elements(self.navigation.history_panel.selectors.contents)
+            selector = self.navigation.history_panel.selectors.contents
+            if self.is_beta_history():
+                selector = self.navigation.history_panel.selectors.contents_beta
+            contents_elements = self.find_elements(selector)
             div_ids = [f"#{d.get_attribute('id')}" for d in contents_elements]
             template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
             message = template % (hid, ",".join(div_ids))
@@ -471,7 +474,8 @@ class NavigatesGalaxy(HasDriver):
                     raise
 
             attempt += 1
-            self.history_panel_refresh_click()
+            if not self.is_beta_history():
+                self.history_panel_refresh_click()
         return rval
 
     def history_panel_wait_for_history_loaded(self):
