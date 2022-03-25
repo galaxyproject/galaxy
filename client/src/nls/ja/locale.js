@@ -12,7 +12,6 @@ define({
     Visualization: "可視化",
     "New Track Browser": "新しい Track Browser",
     "Saved Visualizations": "保存された可視化",
-    "Interactive Environments": "インタラクティブ環境",
     Admin: "管理者",
     Help: "ヘルプ",
     Support: "サポート",

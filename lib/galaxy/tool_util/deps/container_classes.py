@@ -7,7 +7,6 @@ from abc import (
 from logging import getLogger
 from uuid import uuid4
 
-from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (
     asbool,
     in_directory,
@@ -16,6 +15,7 @@ from . import (
     docker_util,
     singularity_util,
 )
+from .container_volumes import DockerVolume
 from .requirements import (
     DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
     DEFAULT_CONTAINER_SHELL,

@@ -609,20 +609,6 @@ def populate_api_routes(webapp, app):
         controller="visualization",
         action="saved",
     )
-    # same with IE's
-    webapp.mapper.connect(
-        "interactive_environment_plugin",
-        "/plugins/interactive_environments/{visualization_name}/show",
-        controller="visualization",
-        action="render",
-    )
-    webapp.mapper.connect(
-        "saved_interactive_environment",
-        "/plugins/interactive_environments/{visualization_name}/saved",
-        controller="visualization",
-        action="saved",
-    )
-
     # Deprecated in favor of POST /api/workflows with 'workflow' in payload.
     webapp.mapper.connect(
         "import_workflow_deprecated",
