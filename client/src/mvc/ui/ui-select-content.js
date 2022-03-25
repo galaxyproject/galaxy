@@ -490,7 +490,7 @@ const View = Backbone.View.extend({
     /** Library datasets are displayed and selected together with history datasets,
         Dataset collection elements are displayed together with history dataset collections **/
     _patchValue: function (v) {
-        const patchTo = { ldda: "hda", dce: "hdca" };
+        const patchTo = { ldda: "hda", dda: "hda", dce: "hdca" };
         if (v.values) {
             _.each(v.values, (v) => {
                 this._patchValue(v);
