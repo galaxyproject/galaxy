@@ -21,6 +21,7 @@ export const state = {
     currentHistoryId: null,
     // histories for current user
     histories: {},
+    userHistoriesLoading: false,
 };
 
 export const mutations = {
@@ -39,6 +40,9 @@ export const mutations = {
     },
     setLoadedForUser(state, userId) {
         state.loadedForUser = userId;
+    },
+    setUserHistoriesLoading(state, isLoading) {
+        state.userHistoriesLoading = isLoading;
     },
 };
 
@@ -64,6 +68,9 @@ export const getters = {
     getHistoryById: (state) => (id) => {
         return id in state.histories ? state.histories[id] : null;
     },
+    userHistoriesLoading: (state) => {
+        return state.userHistoriesLoading;
+    },
 };
 
 // Holds promises for in-flight loads
@@ -78,6 +85,7 @@ export const actions = {
     },
     loadUserHistories({ dispatch, commit }) {
         if (!promises.load) {
+            commit("setUserHistoriesLoading", true);
             promises.load = getHistoryList()
                 .then((list) => {
                     commit("setHistories", list);
@@ -87,6 +95,7 @@ export const actions = {
                 })
                 .finally(() => {
                     promises.load = null;
+                    commit("setUserHistoriesLoading", false);
                 });
         }
     },
