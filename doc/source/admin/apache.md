@@ -3,8 +3,8 @@
 ```
 # Proxying Galaxy with Apache
 
-In a production environment, it is recommended to run Galaxy behind a proxy web server for performance and security 
-reasons. The proxy server sits between clients and your Galaxy server, relaying requests between them and offloading 
+In a production environment, it is recommended to run Galaxy behind a proxy web server for performance and security
+reasons. The proxy server sits between clients and your Galaxy server, relaying requests between them and offloading
 some of the more menial and resource-intensive tasks.
 
 [The Apache HTTP Server][apache] is a widely deployed and very featureful general purpose web server with mature
@@ -93,7 +93,7 @@ SSLStaplingResponderTimeout 5
 SSLStaplingReturnResponderErrors off
 SSLStaplingCache        shmcb:/var/run/ocsp(128000)
 
-<VirtualHost _default_:80> 
+<VirtualHost _default_:80>
     Redirect permanent / https://galaxy.example.org
 </VirtualHost>
 
@@ -148,7 +148,7 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
         ExpiresDefault "access plus 24 hours"
     </Location>
 
-    # serve visualization and interactive environment plugin static content
+    # serve visualization plugin static content
     <Directory "${galaxy_root}/config/plugins/(.+)/(.+)/static">
         AllowOverride None
         Require all granted

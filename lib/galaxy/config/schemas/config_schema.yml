@@ -709,17 +709,6 @@ mapping:
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
           path begin the path with '/'.  This is a comma-separated list.
 
-      interactive_environment_plugins_directory:
-        type: str
-        required: false
-        desc: |
-          Interactive environment plugins root directory: where to look for interactive
-          environment plugins.  By default none will be loaded.  Set to
-          config/plugins/interactive_environments to load Galaxy's stock plugins.
-          These will require Docker to be configured and have security considerations,
-          so proceed with caution. The path is relative to the Galaxy root dir.  To use
-          an absolute path begin the path with '/'.  This is a comma-separated list.
-
       tour_config_dir:
         type: str
         default: config/plugins/tours
@@ -1510,7 +1499,7 @@ mapping:
       terms_url:
         type: str
         required: false
-        per_host: true        
+        per_host: true
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
@@ -2515,13 +2504,6 @@ mapping:
           Please read the GDPR section under the special topics area of the
           admin documentation.
 
-      enable_beta_containers_interface:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable the new container interface for Interactive Environments
-
       enable_beta_workflow_modules:
         type: bool
         default: false
@@ -3472,15 +3454,6 @@ mapping:
         required: false
         desc: |
           Path to error reports configuration file.
-
-      containers_config_file:
-        type: str
-        default: 'containers_conf.yml'
-        path_resolves_to: config_dir
-        required: false
-        desc: |
-          Path to container interface configuration file. The containers interface is only used if
-          `enable_beta_containers_interface` config option is set.
 
       tool_destinations_config_file:
         type: str

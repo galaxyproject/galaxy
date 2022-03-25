@@ -32,7 +32,6 @@ from typing import (
 import yaml
 
 from galaxy.config.schema import AppSchema
-from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
@@ -619,7 +618,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     paths_to_check_against_root = {
         "auth_config_file",
         "build_sites_config_file",
-        "containers_config_file",
         "data_manager_config_file",
         "datatypes_config_file",
         "dependency_resolvers_config_file",
@@ -1057,11 +1055,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get("statsd_host", "")
 
-        ie_dirs = self.interactive_environment_plugins_directory
-        self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
-        if ie_dirs:
-            self.visualization_plugins_directory += f",{ie_dirs}"
-
         self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = self.dynamic_proxy_manage  # Set to false if being launched externally
 
@@ -1069,8 +1062,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.interactivetools_map = self._in_root_dir(
             kwargs.get("interactivetools_map", self._in_data_dir("interactivetools_map.sqlite"))
         )
-
-        self.containers_conf = parse_containers_config(self.containers_config_file)
 
         # Compliance/Policy variables
         self.redact_username_during_deletion = False

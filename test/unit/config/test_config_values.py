@@ -109,7 +109,6 @@ class ExpectedValues:
             "citation_cache_lock_dir": self._in_cache_dir("citations/locks"),
             "cluster_files_directory": self._in_data_dir("pbs"),
             "config_dir": self._in_config_dir(),
-            "containers_config_file": self._in_config_dir("containers_conf.yml"),
             "data_dir": self._in_data_dir(),
             "data_manager_config_file": self._in_config_dir("data_manager_conf.xml"),
             "datatypes_config_file": self._in_sample_dir("datatypes_conf.xml.sample"),

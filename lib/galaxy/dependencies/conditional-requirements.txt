@@ -6,7 +6,6 @@ sentry-sdk
 pbs_python
 drmaa
 statsd
-docker
 azure-storage==0.32.0
 python-irodsclient@https://github.com/kxk302/python-irodsclient/archive/refs/heads/main.zip
 python-ldap==3.4.0

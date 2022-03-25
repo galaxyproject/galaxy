@@ -26,8 +26,6 @@ define({
 
     "Saved Visualizations": "Visualizaciones Guardadas",
 
-    "Interactive Environments": "Entornos Interactivos",
-
     Admin: "Administración",
 
     Help: "Ayuda",
