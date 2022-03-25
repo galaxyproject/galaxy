@@ -3,7 +3,6 @@ import axios from "axios";
 import { prependPath } from "utils/redirect";
 import { mapCacheActions } from "vuex-cache";
 import { mapActions, mapGetters } from "vuex";
-import { rethrowSimple } from "utils/simple-error";
 
 export const SimpleProviderMixin = {
     props: {
