@@ -2302,6 +2302,11 @@ class DefaultDatasetToolParameter(DataToolParameter):
 
     def to_dict(self, trans, other_values=None):
         rval = super().to_dict(trans, other_values)
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            # Allow not selecting an input. Ideally this would be something the frontend
+            # knows from context.
+            rval["optional"] = True
+            rval["multiple"] = False
         if self.value and not is_runtime_value(self.value):
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)

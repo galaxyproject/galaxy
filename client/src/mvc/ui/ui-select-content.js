@@ -70,6 +70,15 @@ const Configurations = {
             batch: Batch.DISABLED,
         },
     ],
+    default_file: [
+        {
+            src: "hda",
+            icon: "fa-file-o",
+            tooltip: _l("Single dataset"),
+            multiple: false,
+            batch: Batch.DISABLED,
+        },
+    ],
     workflow_data_multiple: [
         {
             src: "hda",
