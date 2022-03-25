@@ -358,13 +358,11 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s/{id}",
         name="history_content_typed",
         summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
-        response_model_exclude_unset=True,
     )
     @router.get(
         "/api/histories/{history_id}/contents/{id}",
         name="history_content",
         summary="Return detailed information about an HDA within a history.",
-        response_model_exclude_unset=True,
         deprecated=True,
     )
     def show(
@@ -452,12 +450,10 @@ class FastAPIHistoryContents:
     @router.post(
         "/api/histories/{history_id}/contents/{type}s",
         summary="Create a new `HDA` or `HDCA` in the given History.",
-        response_model_exclude_unset=True,
     )
     @router.post(
         "/api/histories/{history_id}/contents",
         summary="Create a new `HDA` or `HDCA` in the given History.",
-        response_model_exclude_unset=True,
         deprecated=True,
     )
     def create(
@@ -531,12 +527,10 @@ class FastAPIHistoryContents:
     @router.put(
         "/api/histories/{history_id}/contents/{type}s/{id}",
         summary="Updates the values for the history content item with the given ``ID``.",
-        response_model_exclude_unset=True,
     )
     @router.put(
         "/api/histories/{history_id}/contents/{id}",
         summary="Updates the values for the history content item with the given ``ID``.",
-        response_model_exclude_unset=True,
         deprecated=True,
     )
     def update(
