@@ -57,7 +57,7 @@ future = "*"
 galaxy_sequence_utils = "*"
 gravity = ">=0.10.0"
 gunicorn = "*"
-gxformat2 = "*"
+gxformat2 = {git = "https://github.com/galaxyproject/gxformat2.git", branch = "master"}
 h5py = "*"
 importlib_resources = "*"
 isa-rwval = "*"
