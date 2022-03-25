@@ -142,30 +142,49 @@ export const StoreProvider = (storeAction, storeGetter) => {
         data() {
             return {
                 loading: false,
+                error: null,
             };
         },
         created() {
             this.load();
         },
-        methods: {
-            ...mapActions([storeAction]),
-            async load() {
-                this.loading = true;
-                await this[storeAction]({ ...this.$attrs });
-                this.loading = false;
-            },
-        },
         computed: {
             ...mapGetters([storeGetter]),
+            attributes() {
+                return this.toCamelCase(this.$attrs);
+            },
             result() {
-                return this[storeGetter]({ ...this.$attrs });
+                return this[storeGetter](this.attributes);
             },
         },
         render() {
             return this.$scopedSlots.default({
+                error: this.error,
                 loading: this.loading,
                 result: this.result,
             });
+        },
+        methods: {
+            ...mapActions([storeAction]),
+            async load() {
+                this.loading = true;
+                try {
+                    await this[storeAction](this.attributes);
+                    this.error = null;
+                    this.loading = false;
+                } catch (error) {
+                    this.error = error;
+                    this.loading = false;
+                }
+            },
+            toCamelCase(attributes) {
+                const result = {};
+                for (const key in attributes) {
+                    const newKey = key.replace(/-./g, (x) => x[1].toUpperCase());
+                    result[newKey] = attributes[key];
+                }
+                return result;
+            },
         },
     };
 };

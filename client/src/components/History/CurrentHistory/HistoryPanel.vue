@@ -1,10 +1,11 @@
 <template>
     <HistoryItemsProvider
         :key="history.id"
-        :historyId="historyId"
+        :history-id="historyId"
         :offset="offset"
-        :showDeleted="params.showDeleted"
-        :showHidden="params.showHidden"
+        :filter-text="params.filterText"
+        :show-deleted="params.showDeleted"
+        :show-hidden="params.showHidden"
         v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
@@ -136,6 +137,7 @@ export default {
             invisible: {},
             offset: 0,
             params: {
+                filterText: "",
                 showDeleted: false,
                 showHidden: false,
             },
@@ -152,10 +154,10 @@ export default {
             return this.history.id;
         },
         queryKey() {
-            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}`;
+            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}-${this.params.filterText}`;
         },
         queryDefault() {
-            return !this.params.showDeleted && !this.params.showHidden;
+            return !this.params.showDeleted && !this.params.showHidden && !this.params.filterText;
         },
     },
     methods: {

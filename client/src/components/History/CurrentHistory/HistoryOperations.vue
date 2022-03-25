@@ -181,10 +181,6 @@ export default {
         showBuildOptions() {
             return !this.params.showHidden && !this.params.showDeleted;
         },
-        hasHistoryFilters() {
-            const { showHidden, showDeleted, filterText } = this.params;
-            return showHidden || showDeleted || filterText;
-        },
         localParams: {
             get() {
                 return this.params;
