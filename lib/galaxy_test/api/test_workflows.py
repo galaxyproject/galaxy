@@ -3007,7 +3007,7 @@ data_input:
 
     def test_run_with_default_file_dataset_input(self):
         with self.dataset_populator.test_history() as history_id:
-            run_response = self._run_jobs(
+            run_response = self._run_workflow(
                 """
 class: GalaxyWorkflow
 inputs:
@@ -3038,7 +3038,7 @@ steps:
 
     def test_run_with_default_file_dataset_input_and_explicit_input(self):
         with self.dataset_populator.test_history() as history_id:
-            run_response = self._run_jobs(
+            run_response = self._run_workflow(
                 """
 class: GalaxyWorkflow
 inputs:
@@ -3073,7 +3073,7 @@ test_data:
 
     def test_run_with_default_file_in_step_inline(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(
+            self._run_workflow(
                 """
 class: GalaxyWorkflow
 steps:
