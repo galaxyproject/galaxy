@@ -67,7 +67,7 @@ h5py==3.6.0; python_version >= "3.7"
 humanfriendly==10.0; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0"
 idna==3.3; python_full_version >= "3.6.2" and python_version >= "3.7" and python_version < "4"
 importlib-metadata==4.11.3; python_version == "3.7" and (python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "3.8" or python_full_version >= "3.6.0" and python_version < "3.8" and python_version >= "3.7")
-importlib-resources==5.4.0; python_version >= "3.6"
+importlib-resources==5.6.0; python_version >= "3.7"
 isa-rwval==0.10.10
 isodate==0.6.1; python_version >= "3.7" and python_version < "4"
 jsonref==0.2; python_version >= "3.6"
@@ -154,7 +154,7 @@ tempita==0.5.2
 tenacity==8.0.1; python_version >= "3.6"
 tifffile==2021.11.2; python_version >= "3.7"
 tornado==6.1; python_version >= "3.5"
-tqdm==4.63.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
+tqdm==4.63.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.4.0"
 tuswsgi==0.5.4
 typing-extensions==4.1.1; python_version >= "3.6"
 tzlocal==2.1; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
