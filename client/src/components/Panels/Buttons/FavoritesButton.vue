@@ -1,15 +1,17 @@
 <template>
-    <a
+    <b-button
         class="panel-header-button-toolbox"
         @click="onFavorites"
         v-b-tooltip.hover
         :title="tooltipText"
         href="javascript:void(0)"
         role="button"
+        size="sm"
+        variant="link"
         aria-label="Show favorite tools">
         <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
         <font-awesome-icon v-else :icon="['far', 'star']" />
-    </a>
+    </b-button>
 </template>
 
 <script>

@@ -1,36 +1,38 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons">
-                    <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
-                    <panel-view-button
-                        :panel-views="panelViews"
-                        :current-panel-view="currentPanelView"
-                        @updatePanelView="updatePanelView"
-                        v-if="panelViews && Object.keys(panelViews).length > 1" />
-                </div>
-                <div class="panel-header-text" v-localize>Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h4 class="m-1" v-localize>Tools</h4>
+                    <div class="panel-header-buttons">
+                        <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
+                        <panel-view-button
+                            v-if="panelViews && Object.keys(panelViews).length > 1"
+                            :panel-views="panelViews"
+                            :current-panel-view="currentPanelView"
+                            @updatePanelView="updatePanelView" />
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
             <tool-search
                 :current-panel-view="currentPanelView"
-                :query="query"
                 :placeholder="titleSearchTools"
+                :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
             <upload-button />
-            <div class="py-2" v-if="hasResults">
+            <div class="pb-2" v-if="hasResults">
                 <b-button @click="onToggle" size="sm" class="w-100">
                     <span :class="buttonIcon" />
                     <span class="mr-1">{{ buttonText }}</span>
                 </b-button>
             </div>
-            <div class="py-2" v-else-if="queryTooShort">
+            <div class="pb-2" v-else-if="queryTooShort">
                 <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
-            <div class="py-2" v-else-if="queryFinished">
+            <div class="pb-2" v-else-if="queryFinished">
                 <b-badge class="alert-danger w-100">No results found!</b-badge>
             </div>
         </div>
@@ -146,8 +148,8 @@ export default {
         },
     },
     methods: {
-        onQuery(query) {
-            this.query = query;
+        onQuery(q) {
+            this.query = q;
             this.queryPending = true;
         },
         onResults(results) {

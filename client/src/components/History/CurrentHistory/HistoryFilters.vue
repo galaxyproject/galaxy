@@ -1,11 +1,11 @@
 <template>
     <b-input-group v-if="params">
-        <DebouncedInput v-model.trim="filterText" v-slot="{ value, input }">
+        <DebouncedInput v-model="filterText" v-slot="{ value, input }">
             <b-form-input
                 size="sm"
                 :value="value"
                 @input="input"
-                :placeholder="'Search Filter' | localize"
+                :placeholder="'search history' | localize"
                 data-description="filter text input" />
         </DebouncedInput>
         <b-input-group-append>
