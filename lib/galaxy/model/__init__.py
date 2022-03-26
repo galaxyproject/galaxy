@@ -1374,16 +1374,16 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         else:
             self.state = Job.states.DELETED
         self.info = "Job output deleted by user before job completed."
-        for dataset_assoc in self.output_datasets:
-            dataset = dataset_assoc.dataset
-            dataset.deleted = True
-            dataset.state = dataset.states.DISCARDED
-            for dataset in dataset.dataset.history_associations:
+        for jtoda in self.output_datasets:
+            output_hda = jtoda.dataset
+            output_hda.deleted = True
+            output_hda.state = output_hda.states.DISCARDED
+            for shared_hda in output_hda.dataset.history_associations:
                 # propagate info across shared datasets
-                dataset.deleted = True
-                dataset.blurb = "deleted"
-                dataset.peek = "Job deleted"
-                dataset.info = "Job output deleted by user before job completed"
+                shared_hda.deleted = True
+                shared_hda.blurb = "deleted"
+                shared_hda.peek = "Job deleted"
+                shared_hda.info = "Job output deleted by user before job completed"
 
     def mark_failed(self, info="Job execution failed", blurb=None, peek=None):
         """

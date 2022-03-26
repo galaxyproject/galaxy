@@ -317,8 +317,7 @@ class ToolEvaluator:
             wrapper = DatasetCollectionWrapper(job_working_directory, out_collection, **wrapper_kwds)
             param_dict[name] = wrapper
             # TODO: Handle nested collections...
-            output_def = tool.output_collections[name]
-            for element_identifier, output_def in output_def.outputs.items():
+            for element_identifier, output_def in tool.output_collections[name].outputs.items():
                 if not output_def.implicit:
                     dataset_wrapper = wrapper[element_identifier]
                     param_dict[output_def.name] = dataset_wrapper
