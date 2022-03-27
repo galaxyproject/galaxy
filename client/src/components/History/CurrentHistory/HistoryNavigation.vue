@@ -155,11 +155,7 @@
             </p>
         </b-modal>
 
-        <b-modal
-            id="delete-history-modal"
-            title="Delete History?"
-            title-tag="h2"
-            @ok="$emit('deleteHistory', history)">
+        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="$emit('deleteHistory', history)">
             <p v-localize>Really delete the current history?</p>
         </b-modal>
 
