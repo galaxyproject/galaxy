@@ -103,7 +103,6 @@ export default {
     },
     props: {
         invocation: Object,
-        orderedSteps: Array,
         workflowStep: Object,
         workflow: Object,
     },
@@ -120,10 +119,7 @@ export default {
     computed: {
         ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
         isReady() {
-            return this.invocationSteps.length > 0;
-        },
-        invocationSteps() {
-            return this.orderedSteps;
+            return this.invocation.steps.length > 0;
         },
         invocationStepId() {
             return this.step?.id;
@@ -132,7 +128,7 @@ export default {
             return this.workflowStep.type;
         },
         step() {
-            return this.invocationSteps[this.workflowStep.id];
+            return this.invocation.steps[this.workflowStep.id];
         },
         isDataStep() {
             return ["data_input", "data_collection_input"].includes(this.workflowStepType);
@@ -172,7 +168,7 @@ export default {
             this.expanded = !this.expanded;
         },
         labelForWorkflowStep(stepIndex) {
-            const invocationStep = this.invocationSteps[stepIndex];
+            const invocationStep = this.invocation.steps[stepIndex];
             const workflowStep = this.workflow.steps[stepIndex];
             const oneBasedStepIndex = stepIndex + 1;
             if (invocationStep && invocationStep.workflow_step_label) {

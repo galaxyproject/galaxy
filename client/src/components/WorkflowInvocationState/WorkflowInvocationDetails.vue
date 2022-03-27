@@ -42,7 +42,6 @@
                 <workflow-invocation-step
                     v-for="step in Object.values(workflow.steps)"
                     :invocation="invocation"
-                    :ordered-steps="orderedSteps"
                     :key="step.id"
                     :workflow="workflow"
                     :workflow-step="step" />
@@ -78,9 +77,6 @@ export default {
     },
     computed: {
         ...mapGetters(["getWorkflowByInstanceId"]),
-        orderedSteps() {
-            return [...this.invocation.steps].sort((a, b) => a.order_index - b.order_index);
-        },
         workflow() {
             return this.getWorkflowByInstanceId(this.invocation.workflow_id);
         },
@@ -88,7 +84,7 @@ export default {
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),
         dataInputStepLabel(key, input) {
-            const invocationStep = this.orderedSteps[key];
+            const invocationStep = this.invocation.steps[key];
             let label = invocationStep && invocationStep.workflow_step_label;
             if (!label) {
                 if (input.src === "hda" || input.src === "ldda") {

@@ -1167,8 +1167,6 @@ test_data:
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
-            # TODO: return steps sorted by order_index ? Why don't we do that ??
-            invocation["steps"].sort(key=lambda step: step["order_index"])
             failed_step = invocation["steps"][1]
             assert failed_step["jobs"][0]["state"] == "error"
             failed_hdca_id = failed_step["output_collections"]["list_output"]["id"]
@@ -1503,12 +1501,8 @@ outer_input:
                 step["subworkflow_invocation_id"] for step in steps if step["subworkflow_invocation_id"]
             ][0]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-            assert [step for step in subworkflow_invocation["steps"] if step["order_index"] == 0][0][
-                "workflow_step_label"
-            ] == "inner_input"
-            assert [step for step in subworkflow_invocation["steps"] if step["order_index"] == 1][0][
-                "workflow_step_label"
-            ] == "random_lines"
+            assert subworkflow_invocation["steps"][0]["workflow_step_label"] == "inner_input"
+            assert subworkflow_invocation["steps"][1]["workflow_step_label"] == "random_lines"
 
             bco = self.workflow_populator.get_biocompute_object(invocation_id)
             self.workflow_populator.validate_biocompute_object(bco)
@@ -4998,24 +4992,15 @@ steps: []
         self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
 
         invocation_steps = usage_details["steps"]
-        invocation_input_step, invocation_tool_step = None, None
-        for invocation_step in invocation_steps:
+        for step_index, invocation_step in enumerate(invocation_steps):
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
-            order_index = invocation_step["order_index"]
-            assert order_index in [0, 1]
-            if invocation_step["order_index"] == 0:
-                assert invocation_input_step is None
-                invocation_input_step = invocation_step
-            else:
-                assert invocation_tool_step is None
-                invocation_tool_step = invocation_step
-
-        assert invocation_input_step
-        assert invocation_tool_step
+            assert step_index == invocation_step["order_index"]
+        invocation_input_step = invocation_steps[0]
+        invocation_tool_step = invocation_steps[1]
 
         # Tool steps have non-null job_ids (deprecated though they may be)
-        assert invocation_input_step.get("job_id", None) is None
-        assert invocation_tool_step.get("job_id", None) is None
+        assert invocation_input_step.get("job_id") is None
+        assert invocation_tool_step.get("job_id") is None
         assert invocation_tool_step["state"] == "scheduled"
 
         usage_details = self._invocation_details(workflow_id, invocation_id, legacy_job_state="true")
@@ -5027,13 +5012,8 @@ steps: []
         invocation_tool_steps = []
         for invocation_step in invocation_steps:
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
-            order_index = invocation_step["order_index"]
-            assert order_index in [0, 1]
-            if invocation_step["order_index"] == 0:
-                assert invocation_input_step is None
-                invocation_input_step = invocation_step
-            else:
-                invocation_tool_steps.append(invocation_step)
+        invocation_input_step = invocation_steps[0]
+        invocation_tool_steps.extend(invocation_steps[1:])
 
         assert len(invocation_tool_steps) == 2
         assert invocation_tool_steps[0]["state"] == "ok"
