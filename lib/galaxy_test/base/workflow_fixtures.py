@@ -898,3 +898,19 @@ input_list:
       content: "0"
   name: example list
 """
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: 1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+"""

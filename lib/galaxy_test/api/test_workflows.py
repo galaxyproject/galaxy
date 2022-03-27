@@ -47,6 +47,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
@@ -3002,21 +3003,7 @@ data_input:
     def test_run_with_default_file_dataset_input(self):
         with self.dataset_populator.test_history() as history_id:
             run_response = self._run_workflow(
-                """
-class: GalaxyWorkflow
-inputs:
-  default_file_input:
-    default:
-      class: File
-      basename: a file
-      format: txt
-      location: 1.bed
-steps:
-  cat1:
-    tool_id: cat1
-    in:
-      input1: default_file_input
-""",
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
                 history_id=history_id,
                 wait=True,
                 assert_ok=True,
