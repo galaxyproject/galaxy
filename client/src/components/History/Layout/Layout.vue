@@ -2,9 +2,7 @@
     <section class="history-layout d-flex flex-column">
         <header>
             <!-- navigation bar at the top-->
-            <nav class="d-flex justify-content-between bg-secondary">
-                <slot name="navigation" />
-            </nav>
+            <slot name="navigation" />
 
             <!-- details about the thing you're looking at -->
             <div class="m-3 details">

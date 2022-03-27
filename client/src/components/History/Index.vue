@@ -14,8 +14,8 @@
                         <HistoryNavigation
                             v-on="handlers"
                             :histories="histories"
+                            :history="currentHistory"
                             :user-histories-loading="userHistoriesLoading"
-                            :current-history="currentHistory"
                             title="Histories" />
                     </template>
                 </CurrentHistory>

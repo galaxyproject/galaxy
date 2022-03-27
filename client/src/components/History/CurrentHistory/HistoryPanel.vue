@@ -26,7 +26,7 @@
                 <Layout>
                     <template v-slot:navigation>
                         <slot name="navigation" :history="history" />
-                        <HistoryMenu :history="history" v-on="$listeners" />
+                        <HistoryFilters class="content-operations-filters mx-3" :params.sync="params" />
                     </template>
 
                     <template v-slot:details>
@@ -110,7 +110,7 @@ import ToolHelpModal from "components/History/Modals/ToolHelpModal";
 import HistoryOperations from "./HistoryOperations";
 import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
-import HistoryMenu from "./HistoryMenu";
+import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
 
 export default {
@@ -122,8 +122,8 @@ export default {
         HistoryMessages,
         HistoryDetails,
         HistoryEmpty,
+        HistoryFilters,
         HistoryItemsProvider,
-        HistoryMenu,
         HistoryOperations,
         ToolHelpModal,
         ExpandedItems,

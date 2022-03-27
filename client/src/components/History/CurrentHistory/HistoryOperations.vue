@@ -13,16 +13,6 @@
                     <Icon icon="check-square" />
                 </b-button>
                 <b-button
-                    title="Search Items"
-                    class="rounded-0"
-                    size="sm"
-                    variant="link"
-                    :pressed="showFilter"
-                    @click="toggleFilter"
-                    data-description="content filter toggle">
-                    <Icon icon="search" />
-                </b-button>
-                <b-button
                     title="Collapse Items"
                     class="rounded-0"
                     size="sm"
@@ -104,10 +94,6 @@
             </b-button-group>
         </nav>
 
-        <transition name="shutterfade">
-            <history-filters v-if="showFilter" class="content-operations-filters p-2" :params.sync="localParams" />
-        </transition>
-
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
         </b-modal>
@@ -155,15 +141,9 @@ import {
     purgeAllDeletedContent,
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import HistoryFilters from "./HistoryFilters";
 
 export default {
-    mixins: [legacyNavigationMixin],
-    components: {
-        HistoryFilters,
-    },
     props: {
         history: { type: History, required: true },
         params: { type: Object, required: true },
@@ -171,11 +151,6 @@ export default {
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
-    },
-    data() {
-        return {
-            showFilter: false,
-        };
     },
     computed: {
         showBuildOptions() {
@@ -199,13 +174,6 @@ export default {
     methods: {
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
-        },
-        toggleFilter() {
-            if (!this.showFilter) {
-                this.showFilter = true;
-            } else if (!this.hasContentFilters) {
-                this.showFilter = false;
-            }
         },
 
         // History-wide bulk updates, does server query first to determine "selection"

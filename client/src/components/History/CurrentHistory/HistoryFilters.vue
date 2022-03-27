@@ -5,7 +5,7 @@
                 size="sm"
                 :value="value"
                 @input="input"
-                :placeholder="'search history' | localize"
+                :placeholder="'search datasets' | localize"
                 data-description="filter text input" />
         </DebouncedInput>
         <b-input-group-append>
