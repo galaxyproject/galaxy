@@ -7191,11 +7191,16 @@ class WorkflowStepInput(Base, RepresentById):
         self.workflow_step = workflow_step
         self.default_value_set = False
 
-    def copy(self, copied_step):
+    def copy(self, copied_step: WorkflowStep):
         copied_step_input = WorkflowStepInput(copied_step)
         copied_step_input.name = self.name
         copied_step_input.default_value = self.default_value
         copied_step_input.default_value_set = self.default_value_set
+        for association in self.step_input_default_dataset_associations:
+            copied_ddaa = WorkflowStepInputDefaultDatasetAssociation()
+            copied_ddaa.workflow_step_input = copied_step_input
+            copied_ddaa.default_dataset_association = association.default_dataset_association
+            copied_step_input.step_input_default_dataset_associations.append(copied_ddaa)
         copied_step_input.merge_type = self.merge_type
         copied_step_input.scatter_type = self.scatter_type
 

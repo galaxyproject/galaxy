@@ -3075,6 +3075,26 @@ steps:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chr1" in content
 
+    def test_run_shared_workflow_with_default_file(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT, publish=True)
+        with self._different_user(), self.dataset_populator.test_history() as history_id:
+            other_import_response = self.__import_workflow(workflow_id)
+            self._assert_status_code_is(other_import_response, 200)
+            other_id = other_import_response.json()["id"]
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                other_id,
+                history_id,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "dda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 1
+            assert dataset_details["file_ext"] == "txt"
+            assert "chr1" in dataset_details["peek"]
+
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(
