@@ -1472,7 +1472,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 workflow_step_input = step.get_or_add_input("default")
                 workflow_step_input.default_value_set = True
                 WorkflowStepInputDefaultDatasetAssociation(
-                    workflow_step_input=workflow_step_input, default_dataset_association=dda
+                    workflow_step_input=workflow_step_input,
+                    default_dataset_association=dda,
+                    name="default",
                 )
                 if not dry_run:
                     sa_session.add(workflow_step_input)

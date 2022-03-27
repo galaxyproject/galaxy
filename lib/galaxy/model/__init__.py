@@ -7200,6 +7200,7 @@ class WorkflowStepInput(Base, RepresentById):
             copied_ddaa = WorkflowStepInputDefaultDatasetAssociation()
             copied_ddaa.workflow_step_input = copied_step_input
             copied_ddaa.default_dataset_association = association.default_dataset_association
+            copied_ddaa.name = association.name
             copied_step_input.step_input_default_dataset_associations.append(copied_ddaa)
         copied_step_input.merge_type = self.merge_type
         copied_step_input.scatter_type = self.scatter_type
