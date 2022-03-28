@@ -20,6 +20,11 @@ function toLower(value) {
     return String(value).toLowerCase();
 }
 
+/* Converts user input to lower case and strips quotation marks. */
+function toLowerNoQuotes(value) {
+    return toLower(value).replaceAll("'", "");
+}
+
 /**
  * Checks if a query value is equal to the item value
  * @param {*} attribute of the content item
@@ -104,19 +109,30 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
+/* Default filters are set, unless explicitly specified by the user. */
+const defaultFilters = {
+    deleted: false,
+    visible: true,
+};
+
 /* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
 const validAlias = [
     [">", "_gt"],
     ["<", "_lt"],
 ];
 
+/* Check the value of a particular filter. */
+export function checkFilter(filterText, filterName, filterValue) {
+    const re = new RegExp(`${filterName}=(\\S+)`);
+    const reMatch = re.exec(filterText);
+    const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
+    return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
+}
+
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const result = {};
-    if (filterText.length == 0) {
-        return [];
-    }
     const matches = filterText.match(pairSplitRE);
     let hasMatches = false;
     if (matches) {
@@ -137,15 +153,21 @@ export function getFilters(filterText) {
                 // replaces dashes with underscores in query field names
                 const normalizedField = field.replaceAll("-", "_");
                 if (validFilters[normalizedField]) {
-                    result[normalizedField] = value.replaceAll("'", "");
+                    // removes quotation and applies lower-case to filter value
+                    result[normalizedField] = toLowerNoQuotes(value);
                     hasMatches = true;
                 }
             }
         });
     }
-    if (!hasMatches) {
+    if (!hasMatches && filterText.length > 0) {
         result["name"] = filterText;
     }
+    Object.entries(defaultFilters).forEach(([key, value]) => {
+        if (!result[key]) {
+            result[key] = value;
+        }
+    });
     return Object.entries(result);
 }
 

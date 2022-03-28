@@ -27,12 +27,6 @@ const getters = {
                 if (!item) {
                     return false;
                 }
-                /*if (showDeleted != item.deleted) {
-                    return false;
-                }
-                if (showHidden == item.visible) {
-                    return false;
-                }*/
                 if (!testFilters(filters, item)) {
                     return false;
                 }
@@ -43,15 +37,16 @@ const getters = {
 };
 
 const getQueryString = (filterText) => {
-    //const deleted = showDeleted ? "True" : "False";
-    //const visible = showHidden ? "False" : "True";
-    const filterDict = {
-        ...getQueryDict(filterText),
-        //deleted: deleted,
-        //visible: visible,
-    };
+    const filterDict = getQueryDict(filterText);
     const queryString = Object.entries(filterDict)
-        .map(([f, v]) => `q=${f}&qv=${v}`)
+        .map(([f, v]) => {
+            if (f == "deleted-eq" || f == "visible-eq") {
+                const pythonBool = String(v).toLowerCase() == "true" ? "True" : "False";
+                return `${f.substring(0, f.length - 3)}=${pythonBool}`;
+            } else {
+                return `q=${f}&qv=${v}`;
+            }
+        })
         .join("&");
     return queryString;
 };

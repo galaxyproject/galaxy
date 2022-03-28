@@ -142,11 +142,12 @@ import {
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
+import { checkFilter } from "store/historyStore/historyItemsFiltering";
 
 export default {
     props: {
         history: { type: History, required: true },
-        filterText: { type: String, default: null },
+        filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
@@ -154,10 +155,10 @@ export default {
     },
     computed: {
         showHidden() {
-            return this.filterText.includes("hidden=true");
+            return checkFilter(this.filterText, "visible", false);
         },
         showDeleted() {
-            return this.filterText.includes("deleted=true");
+            return checkFilter(this.filterText, "deleted", true);
         },
         showBuildOptions() {
             return !this.showHidden && !this.showDeleted;

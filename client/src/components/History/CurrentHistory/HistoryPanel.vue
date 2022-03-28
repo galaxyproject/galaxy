@@ -32,7 +32,7 @@
                         <HistoryMessages class="m-2" :history="history" />
                         <HistoryOperations
                             :history="history"
-                            :filter-text.sync="filterText"
+                            :filter-text="filterText"
                             :content-selection="selectedItems"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"

@@ -1,8 +1,8 @@
-import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
+import { checkFilter, getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
 
 const filterTexts = [
-    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first",
-    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=success extension=ext tag=first",
+    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False",
+    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=success extension=ext tag=first visible=true",
 ];
 describe("historyItemsFiltering", () => {
     test("parse default filter", () => {
@@ -11,6 +11,13 @@ describe("historyItemsFiltering", () => {
         expect(filters[0][1]).toBe("name of item");
         const queryDict = getQueryDict("name of item");
         expect(queryDict["name-contains"]).toBe("name of item");
+    });
+    test("parse check filter", () => {
+        expect(checkFilter(filterTexts[0], "tag", "first")).toBe(true);
+        expect(checkFilter(filterTexts[0], "tag", "second")).toBe(false);
+        expect(checkFilter(filterTexts[0], "deleted", "false")).toBe(true);
+        expect(checkFilter(filterTexts[0], "visible", true)).toBe(true);
+        expect(checkFilter(filterTexts[0], "visible", "false")).toBe(false);
     });
     test("parse filter text as entries", () => {
         filterTexts.forEach((filterText) => {
@@ -50,13 +57,15 @@ describe("historyItemsFiltering", () => {
         filterTexts.forEach((filterText) => {
             const filters = getFilters(filterText);
             const item = {
-                name: "contains the name of item.",
-                hid: 11,
                 create_time: "2021-06-01",
-                update_time: "2021-06-01",
-                state: "success",
                 extension: "ext",
+                deleted: false,
+                hid: 11,
+                name: "contains the name of item.",
+                state: "success",
                 tags: ["first", "second"],
+                update_time: "2021-06-01",
+                visible: true,
             };
             expect(testFilters(filters, { ...item })).toBe(true);
             expect(testFilters(filters, { ...item, hid: 10 })).toBe(false);
