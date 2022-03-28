@@ -6,7 +6,6 @@ from sqlalchemy import (
     Column,
     Index,
     Integer,
-    select,
     UniqueConstraint,
 )
 from sqlalchemy.orm import registry

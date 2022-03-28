@@ -9,7 +9,6 @@ from sqlalchemy import (
     Column,
     Index,
     Integer,
-    select,
     UniqueConstraint,
 )
 from sqlalchemy.exc import NoResultFound
