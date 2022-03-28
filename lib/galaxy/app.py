@@ -69,7 +69,10 @@ from galaxy.model.scoped_session import (
 )
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.model.tool_shed_install import mapping as install_mapping
-from galaxy.objectstore import build_object_store_from_config
+from galaxy.objectstore import (
+    build_object_store_from_config,
+    ObjectStore,
+)
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_local_control_task,
@@ -444,6 +447,7 @@ class MinimalGalaxyApplication(BasicSharedApp, ConfiguresGalaxyMixin, HaltableCo
         self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
         self.config.check()
         self._configure_object_store(fsmon=True)
+        self._register_singleton(ObjectStore, self.object_store)
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
