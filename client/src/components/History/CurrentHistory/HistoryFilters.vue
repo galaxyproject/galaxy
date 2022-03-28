@@ -31,29 +31,25 @@
         <div v-if="showAdvanced" class="mt-2">
             <small>Filter by name:</small>
             <b-form-input v-model="filterAdvanced['name=']" size="sm" placeholder="any name" />
-            <small>Filter by tag:</small>
+            <small class="mt-1">Filter by tag:</small>
+            <b-form-input v-model="filterAdvanced['extension=']" size="sm" placeholder="any extension" />
+            <small class="mt-1">Filter by item index:</small>
             <b-form-input v-model="filterAdvanced['tag=']" size="sm" placeholder="any tag" />
-            <small>Filter by item index:</small>
-            <b-form-group class="mb-1">
+            <small class="mt-1">Filter by state:</small>
+            <b-form-input v-model="filterAdvanced['state=']" size="sm" placeholder="any state" />
+            <small class="mt-1">Filter by extension:</small>
+            <b-form-group class="m-0">
                 <b-input-group>
                     <b-form-input v-model="filterAdvanced['hid>']" size="sm" placeholder="index greater" />
                     <b-form-input v-model="filterAdvanced['hid<']" size="sm" placeholder="index lower" />
                 </b-input-group>
             </b-form-group>
-            <small>Filter by creation date:</small>
-            <b-form-group class="mb-1">
+            <small class="mt-1">Filter by creation date:</small>
+            <b-form-group>
                 <b-input-group>
                     <b-form-input v-model="filterAdvanced['create_time>']" size="sm" placeholder="created after" />
                     <b-form-input v-model="filterAdvanced['create_time<']" size="sm" placeholder="created before" />
                 </b-input-group>
-            </b-form-group>
-            <b-form-group class="mb-1">
-                <small>Filter by state:</small>
-                <b-form-input v-model="filterAdvanced['state=']" size="sm" placeholder="any state" />
-            </b-form-group>
-            <b-form-group>
-                <small>Filter by extension:</small>
-                <b-form-input v-model="filterAdvanced['extension=']" size="sm" placeholder="any extension" />
             </b-form-group>
             <b-button class="mr-1" @click="onSearch" size="sm" variant="primary">
                 <icon icon="search" />
