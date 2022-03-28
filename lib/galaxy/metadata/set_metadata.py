@@ -17,6 +17,7 @@ import os
 import sys
 import traceback
 from pathlib import Path
+from typing import Optional
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -47,7 +48,10 @@ from galaxy.model import (
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
-from galaxy.objectstore import build_object_store_from_config
+from galaxy.objectstore import (
+    build_object_store_from_config,
+    ObjectStore,
+)
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
@@ -141,20 +145,24 @@ def get_object_store(tool_job_working_directory):
     return object_store
 
 
-def set_metadata_portable():
-    tool_job_working_directory = os.path.abspath(os.getcwd())
+def set_metadata_portable(
+    tool_job_working_directory=None,
+    datatypes_registry: Optional[galaxy.datatypes.registry.Registry] = None,
+    object_store: Optional[ObjectStore] = None,
+):
+    tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
     MetadataTempFile.tmp_dir = metadata_tmp_files_dir
 
     metadata_params = get_metadata_params(tool_job_working_directory)
-    datatypes_config = metadata_params["datatypes_config"]
-    job_metadata = metadata_params["job_metadata"]
+    datatypes_config = tool_job_working_directory / metadata_params["datatypes_config"]
+    job_metadata = tool_job_working_directory / metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
     max_discovered_files = metadata_params.get("max_discovered_files")
     outputs = metadata_params["outputs"]
 
-    datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
+    datatypes_registry = datatypes_registry or validate_and_load_datatypes_config(datatypes_config)
     tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
 
     def set_meta(new_dataset_instance, file_dict):
@@ -163,7 +171,7 @@ def set_metadata_portable():
         )
 
     try:
-        object_store = get_object_store(tool_job_working_directory=tool_job_working_directory)
+        object_store = object_store or get_object_store(tool_job_working_directory=tool_job_working_directory)
     except (FileNotFoundError, AssertionError):
         object_store = None
     extended_metadata_collection = bool(object_store)
@@ -201,7 +209,7 @@ def set_metadata_portable():
                 # We have a task splitting job
                 tool_stdout = b""
                 tool_stderr = b""
-                paths = Path(tool_job_working_directory).glob("task_*")
+                paths = tool_job_working_directory.glob("task_*")
                 for path in paths:
                     with open(path / "outputs" / "tool_stdout", "rb") as f:
                         task_stdout = f.read(MAX_STDIO_READ_BYTES)
@@ -239,19 +247,21 @@ def set_metadata_portable():
 
         # Load outputs.
         export_store = store.DirectoryModelExportStore(
-            "metadata/outputs_populated",
+            tool_job_working_directory / "metadata/outputs_populated",
             serialize_dataset_objects=True,
             for_edit=True,
             strip_metadata_files=False,
             serialize_jobs=True,
         )
     try:
-        import_model_store = store.imported_store_for_metadata("metadata/outputs_new", object_store=object_store)
+        import_model_store = store.imported_store_for_metadata(
+            tool_job_working_directory / "metadata/outputs_new", object_store=object_store
+        )
     except AssertionError:
         # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
         import_model_store = None
 
-    tool_script_file = os.path.join(tool_job_working_directory, "tool_script.sh")
+    tool_script_file = tool_job_working_directory / "tool_script.sh"
     job = None
     if import_model_store and export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
@@ -262,12 +272,15 @@ def set_metadata_portable():
         object_store,
         export_store,
         import_model_store,
-        os.path.join(tool_job_working_directory, "working"),
+        tool_job_working_directory / "working",
         final_job_state=final_job_state,
         max_discovered_files=max_discovered_files,
     )
 
     if extended_metadata_collection:
+        if not export_store:
+            # Can't happen, but type system doesn't know
+            raise Exception("export_store not built")
         # discover extra outputs...
         output_collections = {}
         for name, output_collection in metadata_params["output_collections"].items():
@@ -337,10 +350,10 @@ def set_metadata_portable():
             dataset = pickle.load(open(filename_in, "rb"))  # load DatasetInstance
         assert dataset is not None
 
-        filename_kwds = os.path.join(f"metadata/metadata_kwds_{output_name}")
-        filename_out = os.path.join(f"metadata/metadata_out_{output_name}")
-        filename_results_code = os.path.join(f"metadata/metadata_results_{output_name}")
-        override_metadata = os.path.join(f"metadata/metadata_override_{output_name}")
+        filename_kwds = tool_job_working_directory / f"metadata/metadata_kwds_{output_name}"
+        filename_out = tool_job_working_directory / f"metadata/metadata_out_{output_name}"
+        filename_results_code = tool_job_working_directory / f"metadata/metadata_results_{output_name}"
+        override_metadata = tool_job_working_directory / f"metadata/metadata_override_{output_name}"
         dataset_filename_override = output_dict["filename_override"]
         # Same block as below...
         set_meta_kwds = stringify_dictionary_keys(
@@ -395,6 +408,9 @@ def set_metadata_portable():
                     dataset.state = dataset.dataset.state = dataset_state
 
             if extended_metadata_collection:
+                if not object_store or not export_store:
+                    # Can't happen, but type system doesn't know
+                    raise Exception("object_store not built")
                 if not link_data_only and os.path.getsize(external_filename):
                     # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
                     # or a remote object store from its cache path.
