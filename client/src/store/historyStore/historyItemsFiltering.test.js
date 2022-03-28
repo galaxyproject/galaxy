@@ -1,8 +1,8 @@
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
 
 const filterTexts = [
-    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<\"2022-01-01\" state=success extension=ext tag=first",
-    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt=\"2021-01-01\" update_time-lt='2022-01-01' state=success extension=ext tag=first",
+    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first",
+    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=success extension=ext tag=first",
 ];
 describe("historyItemsFiltering", () => {
     test("parse default filter", () => {

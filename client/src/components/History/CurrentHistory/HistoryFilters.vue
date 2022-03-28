@@ -21,30 +21,34 @@
                 <b-button
                     size="sm"
                     :pressed="showAdvanced"
+                    :variant="showAdvanced ? 'info' : 'secondary'"
                     @click="onToggle"
                     data-description="show advanced filter toggle">
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
+                </b-button>
+                <b-button size="sm" @click="filterText = ''" data-description="show deleted filter toggle">
+                    <icon icon="times" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
         <div v-if="showAdvanced" class="mt-2">
             <small>Filter by name:</small>
             <b-form-input v-model="filterAdvanced['name=']" size="sm" placeholder="any name" />
-            <small class="mt-1">Filter by tag:</small>
+            <small class="mt-1">Filter by extension:</small>
             <b-form-input v-model="filterAdvanced['extension=']" size="sm" placeholder="any extension" />
-            <small class="mt-1">Filter by item index:</small>
+            <small class="mt-1">Filter by tag:</small>
             <b-form-input v-model="filterAdvanced['tag=']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
             <b-form-input v-model="filterAdvanced['state=']" size="sm" placeholder="any state" />
-            <small class="mt-1">Filter by extension:</small>
+            <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
                     <b-form-input v-model="filterAdvanced['hid>']" size="sm" placeholder="index greater" />
                     <b-form-input v-model="filterAdvanced['hid<']" size="sm" placeholder="index lower" />
                 </b-input-group>
             </b-form-group>
-            <small class="mt-1">Filter by creation date:</small>
+            <small class="mt-1">Filter by creation time:</small>
             <b-form-group>
                 <b-input-group>
                     <b-form-input v-model="filterAdvanced['create_time>']" size="sm" placeholder="created after" />
@@ -79,11 +83,11 @@ export default {
             filterAdvanced: {
                 "create_time>": null,
                 "create_time<": null,
-                extension: null,
+                "extension=": null,
                 "hid>": null,
                 "hid<": null,
                 "name=": null,
-                state: null,
+                "state=": null,
                 "tag=": null,
             },
         };

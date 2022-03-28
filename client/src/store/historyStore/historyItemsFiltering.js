@@ -2,12 +2,12 @@
  * This module handles the filtering for content items. User specified filters are applied on the data available in the store and
  * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY=VALUE pair
  * e.g. hid=61 in the history search field. Each query key has a default suffix defined e.g. hid=61 is equivalent to hid-eq=61.
- * Additionally, underscores and dashes in the QUERY are interchangeable. The same is true for quotations i.e. " and ' in the VALUE.
+ * Additionally, underscores and dashes in the QUERY are interchangeable. Quotation marks (') are only allowed in the VALUE.
  * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
- * create-time="March 12, 2022", create_time='March 12, 2022', create-time-lt="March 12, 2022", create-time-lt='March 12, 2022'.
+ * create_time='March 12, 2022', create-time-lt='March 12, 2022'.
  *
  * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
- * Use quotations (", ') around values containing spaces.
+ * Use quotations (') around values containing spaces.
  */
 
 /* Converts user input to backend compatible date. */
@@ -110,8 +110,7 @@ const validAlias = [
 
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
-    const pairSplitRE = /(\S+".*?")|(\S+'.*?')|(\S+)/g;
-    const scrubQuotesRE = /'|"/g;
+    const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const result = {};
     if (filterText.length == 0) {
         return [];
@@ -136,7 +135,7 @@ export function getFilters(filterText) {
                 // replaces dashes with underscores in query field names
                 const normalizedField = field.replaceAll("-", "_");
                 if (validFilters[normalizedField]) {
-                    result[normalizedField] = value.replace(scrubQuotesRE, "");
+                    result[normalizedField] = value.replaceAll("'", "");
                     hasMatches = true;
                 }
             }
