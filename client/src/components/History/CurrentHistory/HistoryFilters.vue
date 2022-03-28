@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-input-group class="mb-2">
+        <b-input-group>
             <DebouncedInput v-model="filterText" v-slot="{ value, input }">
                 <b-form-input
                     size="sm"
@@ -22,13 +22,18 @@
                     size="sm"
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
-                    @click="showAdvanced = !showAdvanced"
+                    @click="$emit('update:show-advanced', !showAdvanced)"
                     data-description="show advanced filter toggle">
-                    <span>...</span>
+                    <icon v-if="showAdvanced" icon="angle-double-up" />
+                    <icon v-else icon="angle-double-down" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
-        <div v-if="!showAdvanced">
+        <div v-if="showAdvanced" class="mt-2">
+            <small>Filter by name:</small>
+            <b-form-input size="sm" placeholder="any name" />
+            <small>Filter by tag:</small>
+            <b-form-input size="sm" placeholder="any tag" />
             <small>Filter by item index:</small>
             <b-form-group class="mb-1">
                 <b-input-group>
@@ -45,11 +50,11 @@
             </b-form-group>
             <b-form-group class="mb-1">
                 <small>Filter by state:</small>
-                <b-form-select value="select state" size="sm" :options="['select state', 'success', 'error']" />
+                <b-form-select value="any state" size="sm" :options="['any state', 'error', 'ok', 'paused']" />
             </b-form-group>
             <b-form-group>
                 <small>Filter by extension:</small>
-                <b-form-input size="sm" placeholder="extension" />
+                <b-form-input size="sm" placeholder="any extension" />
             </b-form-group>
             <b-button class="mr-1" size="sm" variant="primary">
                 <icon icon="search" />
@@ -72,11 +77,7 @@ export default {
     },
     props: {
         params: { type: Object, required: true },
-    },
-    data() {
-        return {
-            showAdvanced: false,
-        };
+        showAdvanced: { type: Boolean, default: false },
     },
     computed: {
         filterText: {

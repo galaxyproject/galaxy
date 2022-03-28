@@ -1,5 +1,5 @@
 <template>
-    <section data-description="edit details">
+    <section class="m-3 details" data-description="edit details">
         <b-button
             v-if="writeable"
             class="edit-button ml-1 float-right"
