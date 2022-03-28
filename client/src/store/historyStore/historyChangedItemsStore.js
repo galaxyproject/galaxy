@@ -7,7 +7,7 @@
  */
 import { urlData } from "utils/url";
 
-let fetching = false;
+let fetching = null;
 let lastDate = new Date();
 const limit = 100;
 const throttlePeriod = 3000;
@@ -25,20 +25,20 @@ const actions = {
         commit("saveDatasets", { payload });
         commit("saveHistoryItems", { historyId, payload });
         commit("saveCollectionObjects", { payload });
-        if (fetching) {
+        if (fetching == historyId) {
             setTimeout(() => {
                 dispatch("fetchHistoryChangedItems", { historyId });
             }, throttlePeriod);
         }
     },
     startHistoryChangedItems: ({ dispatch }, { historyId }) => {
-        if (!fetching) {
-            fetching = true;
+        if (fetching != historyId) {
+            fetching = historyId;
             dispatch("fetchHistoryChangedItems", { historyId });
         }
     },
     stopHistoryChangedItems: () => {
-        fetching = false;
+        fetching = null;
     },
 };
 
