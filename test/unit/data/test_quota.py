@@ -34,6 +34,23 @@ class CalculateUsageTestCase(BaseModelTestCase):
 
         assert u.calculate_disk_usage() == 10
 
+    def test_calculate_usage_default_dataset_association(self):
+        u = model.User(email="calc_usage_2@example.com", password="password")
+        stored_workflow = model.StoredWorkflow(user=u, name="DDA test")
+        workflow = model.Workflow()
+        workflow.stored_workflow = stored_workflow
+        step = model.WorkflowStep()
+        step.workflow = workflow
+        input_step = model.WorkflowStepInput(workflow_step=step)
+        input_step_dda = model.WorkflowStepInputDefaultDatasetAssociation()
+        d = model.Dataset()
+        d.total_size = 100
+        dda = model.DefaultDatasetAssociation(workflow=workflow, dataset=d)
+        input_step_dda.workflow_step_input = input_step
+        input_step_dda.default_dataset_association = dda
+        self.persist(d, dda, input_step_dda, input_step, step, workflow, stored_workflow, u)
+        assert u.calculate_disk_usage() == 100
+
 
 class QuotaTestCase(BaseModelTestCase):
     def setUp(self):

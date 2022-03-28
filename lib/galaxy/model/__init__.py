@@ -765,16 +765,22 @@ class User(Base, Dictifiable, RepresentById):
                 WHERE user_id = :id
                     AND NOT purged
             ),
-            per_hist_hdas AS (
+            per_parent_datasets AS (
                 SELECT DISTINCT dataset_id
                 FROM history_dataset_association
                 WHERE NOT purged
                     AND history_id IN (SELECT id FROM per_user_histories)
+                UNION
+                SELECT DISTINCT dataset_id
+                FROM default_dataset_association
+                JOIN workflow ON default_dataset_association.workflow_id = workflow.id
+                JOIN stored_workflow ON workflow.stored_workflow_id = workflow.id
+                WHERE stored_workflow.user_id = :id
             )
             SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
+            WHERE dataset.id IN (SELECT dataset_id FROM per_parent_datasets)
                 AND library_dataset_dataset_association.id IS NULL
         """
         )
