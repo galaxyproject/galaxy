@@ -31,6 +31,16 @@ repos:
     rev: 0.14.0
     hooks:
       - id: check-github-workflows
+  - repo: local
+    hooks:
+    -   id: eslint
+        name: client eslint
+        language: system
+        files: ^client/
+        entry: make client-eslint-precommit
+        'types': [javascript]
+        require_serial: false
+        minimum_pre_commit_version: '0'
 #  - repo: https://github.com/pycqa/isort
 #    rev: 5.10.1
 #    hooks:
