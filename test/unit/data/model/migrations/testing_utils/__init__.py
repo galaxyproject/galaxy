@@ -2,24 +2,11 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from sqlalchemy import create_engine
-from sqlalchemy.engine import (
-    Engine,
-    make_url,
-)
+from sqlalchemy.engine import make_url
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from galaxy.model.database_utils import create_database
 from ...testing_utils import DbUrl
-
-
-@contextmanager
-def disposing_engine(url: DbUrl) -> Iterator[Engine]:
-    """Context manager for engine that disposes of its connection pool on exit."""
-    engine = create_engine(url)
-    try:
-        yield engine
-    finally:
-        engine.dispose()
 
 
 @contextmanager

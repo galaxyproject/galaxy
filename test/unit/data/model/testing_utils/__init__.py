@@ -3,16 +3,21 @@ import uuid
 from contextlib import contextmanager
 from typing import (
     Callable,
+    Iterator,
     NewType,
     Optional,
 )
 
 import pytest
 from sqlalchemy import (
+    create_engine,
     delete,
     select,
 )
-from sqlalchemy.engine.url import make_url
+from sqlalchemy.engine import (
+    Engine,
+    make_url,
+)
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from galaxy.model.database_utils import sqlalchemy_engine
@@ -28,6 +33,16 @@ skip_if_not_mysql_uri = pytest.mark.skipif(
 )
 
 DbUrl = NewType("DbUrl", str)
+
+
+@contextmanager
+def disposing_engine(url: DbUrl) -> Iterator[Engine]:
+    """Context manager for engine that disposes of its connection pool on exit."""
+    engine = create_engine(url)
+    try:
+        yield engine
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture

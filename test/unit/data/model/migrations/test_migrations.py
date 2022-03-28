@@ -33,10 +33,12 @@ from galaxy.model.migrations import (
 from galaxy.model.migrations.scripts import LegacyManageDb
 from .testing_utils import (
     create_and_drop_database,
-    disposing_engine,
     drop_database,
 )
-from ..testing_utils import url_factory  # noqa: F401  (url_factory is a fixture we have to import explicitly)
+from ..testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
+    disposing_engine,
+    url_factory,
+)
 
 # Revision numbers from test versions directories
 GXY_REVISION_0 = "62695fac6cc0"  # oldest/base
