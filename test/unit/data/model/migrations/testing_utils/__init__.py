@@ -1,14 +1,6 @@
-import os
-import uuid
 from contextlib import contextmanager
-from typing import (
-    Callable,
-    Iterator,
-    NewType,
-    Optional,
-)
+from typing import Iterator
 
-import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.engine import (
     Engine,
@@ -17,29 +9,7 @@ from sqlalchemy.engine import (
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
 from galaxy.model.database_utils import create_database
-
-DbUrl = NewType("DbUrl", str)
-
-# Fixture and helper functions used to generate urls for postgresql and sqlite databases
-
-
-@pytest.fixture
-def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
-    """
-    Return a factory function that produces a database url with a unique database name.
-    If _get_connection_url() returns a value, the database is postgresql; otherwise, it's
-    sqlite (referring to a location witin the /tmp directory).
-    """
-
-    def url() -> DbUrl:
-        database = _generate_unique_database_name()
-        connection_url = _get_connection_url()
-        if connection_url:
-            return _make_postgres_db_url(DbUrl(connection_url), database)
-        else:
-            return _make_sqlite_db_url(tmp_directory, database)
-
-    return url
+from ...testing_utils import DbUrl
 
 
 @contextmanager
@@ -79,27 +49,8 @@ def drop_database(url: DbUrl) -> Iterator[None]:
             _drop_postgres_database(url)
 
 
-def _generate_unique_database_name() -> str:
-    return f"galaxytest_{uuid.uuid4().hex}"
-
-
-def _get_connection_url() -> Optional[str]:
-    return os.environ.get("GALAXY_TEST_DBURI")
-
-
 def _is_postgres(url: DbUrl) -> bool:
     return url.startswith("postgres")
-
-
-def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
-    path = os.path.join(tmpdir, database)
-    return DbUrl(f"sqlite:///{path}")
-
-
-def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
-    url = make_url(connection_url)
-    url = url.set(database=database)
-    return DbUrl(str(url))
 
 
 def _drop_postgres_database(url: DbUrl) -> None:

@@ -1,5 +1,11 @@
 import os
+import uuid
 from contextlib import contextmanager
+from typing import (
+    Callable,
+    NewType,
+    Optional,
+)
 
 import pytest
 from sqlalchemy import (
@@ -20,6 +26,27 @@ skip_if_not_postgres_uri = pytest.mark.skipif(
 skip_if_not_mysql_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_MYSQL_URI"), reason="GALAXY_TEST_CONNECT_MYSQL_URI not set"
 )
+
+DbUrl = NewType("DbUrl", str)
+
+
+@pytest.fixture
+def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
+    """
+    Return a factory function that produces a database url with a unique database name.
+    If _get_connection_url() returns a value, the database is postgresql; otherwise, it's
+    sqlite (referring to a location witin the /tmp directory).
+    """
+
+    def url() -> DbUrl:
+        database = _generate_unique_database_name()
+        connection_url = _get_connection_url()
+        if connection_url:
+            return _make_postgres_db_url(DbUrl(connection_url), database)
+        else:
+            return _make_sqlite_db_url(tmp_directory, database)
+
+    return url
 
 
 def initialize_model(mapper_registry, engine):
@@ -130,3 +157,22 @@ def get_stored_instance_by_id(session, cls_, id):
 def _get_default_where_clause(cls, obj_id):
     where_clause = cls.__table__.c.id == obj_id
     return where_clause
+
+
+def _generate_unique_database_name() -> str:
+    return f"galaxytest_{uuid.uuid4().hex}"
+
+
+def _get_connection_url() -> Optional[str]:
+    return os.environ.get("GALAXY_TEST_DBURI")
+
+
+def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
+    path = os.path.join(tmpdir, database)
+    return DbUrl(f"sqlite:///{path}")
+
+
+def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
+    url = make_url(connection_url)
+    url = url.set(database=database)
+    return DbUrl(str(url))
