@@ -106,7 +106,6 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command(PREPARE_DIRS)
 
-    for_pulsar = 'script_directory' in remote_command_params
     __handle_remote_command_line_building(commands_builder, job_wrapper, for_pulsar=for_pulsar)
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
