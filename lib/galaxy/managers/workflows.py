@@ -1552,12 +1552,13 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value = default
                     step_input.default_value_set = True
                     if not dry_run and isinstance(default, dict) and default.get("class") == "File" and archive:
-                        create_dda_from_step_default(
+                        dda = create_dda_from_step_default(
                             archive,
                             step_input=step_input,
                             sa_session=trans.sa_session,
                             object_store=trans.app.object_store,
                         )
+                        trans.user.adjust_total_disk_usage(dda.quota_amount(trans.user))
                         step.tool_inputs[input_name] = "step://default"
 
         if dry_run and step in trans.sa_session:
@@ -1716,10 +1717,12 @@ def create_dda_from_step_default(
     # Push output from cache to object store
     object_store.update_from_file(dda.dataset, file_name=dda.dataset.file_name)
     dda.datatype.set_meta(dda)
+    dda.set_total_size()
     dda.state = dda.states.OK
     sa_session.add(
         WorkflowStepInputDefaultDatasetAssociation(workflow_step_input=step_input, default_dataset_association=dda)
     )
+    return dda
 
 
 class RefactorRequest(RefactorActions):

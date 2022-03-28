@@ -3095,6 +3095,14 @@ steps:
             assert dataset_details["file_ext"] == "txt"
             assert "chr1" in dataset_details["peek"]
 
+    def test_workflow_default_file_counts_towards_quota(self):
+        current_user = self._get("users/current").json()
+        current_disk_usage = current_user["total_disk_usage"]
+        self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT, publish=True)
+        updated_user = self._get("users/current").json()
+        new_disk_usage = updated_user["total_disk_usage"]
+        assert new_disk_usage > current_disk_usage
+
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs(

@@ -4255,6 +4255,34 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
         return msg
 
+    def purge_usage_from_quota(self, user):
+        """Remove this HDA's quota_amount from user's quota."""
+        if user:
+            user.adjust_total_disk_usage(-self.quota_amount(user))
+
+    def quota_amount(self, user):
+        """
+        Return the disk space used for this HDA relevant to user quotas.
+
+        If the user has multiple instances of this dataset, it will not affect their
+        disk usage statistic.
+        """
+        rval = 0
+        # Anon users are handled just by their single history size.
+        if not user:
+            return rval
+        # Gets an HDA disk usage, if the user does not already
+        #   have an association of the same dataset
+        if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
+            for hda in self.dataset.history_associations:
+                if hda.id == self.id:
+                    continue
+                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
+                    break
+            else:
+                rval += self.get_total_size()
+        return rval
+
     def _serialize(self, id_encoder, serialization_options):
         metadata = _prepare_metadata_for_serialization(id_encoder, serialization_options, self.metadata)
         rval = dict_for(
@@ -4506,34 +4534,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         Return The access roles associated with this HDA's dataset.
         """
         return self.dataset.get_access_roles(security_agent)
-
-    def purge_usage_from_quota(self, user):
-        """Remove this HDA's quota_amount from user's quota."""
-        if user:
-            user.adjust_total_disk_usage(-self.quota_amount(user))
-
-    def quota_amount(self, user):
-        """
-        Return the disk space used for this HDA relevant to user quotas.
-
-        If the user has multiple instances of this dataset, it will not affect their
-        disk usage statistic.
-        """
-        rval = 0
-        # Anon users are handled just by their single history size.
-        if not user:
-            return rval
-        # Gets an HDA disk usage, if the user does not already
-        #   have an association of the same dataset
-        if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
-            for hda in self.dataset.history_associations:
-                if hda.id == self.id:
-                    continue
-                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
-                    break
-            else:
-                rval += self.get_total_size()
-        return rval
 
     def _serialize(self, id_encoder, serialization_options):
         rval = super()._serialize(id_encoder, serialization_options)
