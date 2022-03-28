@@ -6,7 +6,8 @@
  * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
  * create-time="March 12, 2022", create_time='March 12, 2022', create-time-lt="March 12, 2022", create-time-lt='March 12, 2022'.
  *
- * Currently, the following characters are not allowed in the VALUE field "=", "<" and ">".
+ * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
+ * Use quotations (", ') around values containing spaces.
  */
 
 /* Converts user input to backend compatible date. */
@@ -24,10 +25,10 @@ function toLower(value) {
  * @param {*} attribute of the content item
  * @param {*} query parameter if the attribute does not match the server query key
  */
-function equals(attribute, query = null) {
+function equals(attribute) {
     return {
         attribute,
-        query: query || `${attribute}-eq`,
+        query: `${attribute}-eq`,
         handler: (v, q) => {
             return toLower(v) == toLower(q);
         },
@@ -38,10 +39,10 @@ function equals(attribute, query = null) {
  * Checks if a query value is part of the item value
  * @param {*} attribute of the content item
  */
-function contains(attribute) {
+function contains(attribute, query = null) {
     return {
         attribute,
-        query: `${attribute}-contains`,
+        query: query || `${attribute}-contains`,
         handler: (v, q) => {
             return toLower(v).includes(toLower(q));
         },
@@ -93,7 +94,7 @@ const validFilters = {
     hid_lt: compare("hid", "lt"),
     name: contains("name"),
     state: equals("state"),
-    tag: equals("tags", "tag"),
+    tag: contains("tags", "tag"),
     update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
@@ -102,31 +103,47 @@ const validFilters = {
 };
 
 /* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
-const validAlias = { _gt: ">", _lt: "<" };
+const validAlias = [
+    [">", "_gt"],
+    ["<", "_lt"],
+];
 
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
-    const pairSplitRE = /(\S+=".*")|(\S+='.*')|(\S+=\S+)/g;
+    const pairSplitRE = /(\S+".*?")|(\S+'.*?')|(\S+)/g;
     const scrubQuotesRE = /'|"/g;
     const result = {};
     if (filterText.length == 0) {
         return [];
     }
-    Object.entries(validAlias).forEach(([suffix, alias]) => {
-        filterText = filterText.replaceAll(alias, `${suffix}=`);
-    });
-    let matches = filterText.match(pairSplitRE);
-    if (!matches && filterText.length > 0 && !filterText.includes("=")) {
-        matches = [`name=${filterText}`];
-    }
+    const matches = filterText.match(pairSplitRE);
+    let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
-            const [field, value] = pair.split("=");
-            const normalizedField = field.replaceAll("-", "_");
-            if (validFilters[normalizedField]) {
-                result[normalizedField] = value.replace(scrubQuotesRE, "");
+            const elgRE = /(\S+)([=><])(.+)/g;
+            const elgMatch = elgRE.exec(pair);
+            if (elgMatch) {
+                let field = elgMatch[1];
+                const elg = elgMatch[2];
+                const value = elgMatch[3];
+                // replace alias for less and greater symbol
+                for (const [alias, substitute] of validAlias) {
+                    if (elg == alias) {
+                        field = `${field}${substitute}`;
+                        break;
+                    }
+                }
+                // replaces dashes with underscores in query field names
+                const normalizedField = field.replaceAll("-", "_");
+                if (validFilters[normalizedField]) {
+                    result[normalizedField] = value.replace(scrubQuotesRE, "");
+                    hasMatches = true;
+                }
             }
         });
+    }
+    if (!hasMatches) {
+        result["name"] = filterText;
     }
     return Object.entries(result);
 }
