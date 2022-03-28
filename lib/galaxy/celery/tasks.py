@@ -1,9 +1,12 @@
 from galaxy import model
 from galaxy.celery import galaxy_task
+from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import ObjectStore
 from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.custom_logging import get_logger
 
@@ -27,6 +30,11 @@ def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
 def purge_hda(hda_manager: HDAManager, hda_id):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
+
+
+@galaxy_task(action="Set metadata for job")
+def set_job_metadata(tool_job_working_directory, datatypes_registry: DatatypesRegistry, object_store: ObjectStore):
+    set_metadata_portable(tool_job_working_directory, datatypes_registry=datatypes_registry, object_store=object_store)
 
 
 @galaxy_task(action="set dataset association metadata")
