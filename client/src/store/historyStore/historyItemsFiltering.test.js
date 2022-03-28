@@ -62,7 +62,7 @@ describe("historyItemsFiltering", () => {
             expect(testFilters(filters, { ...item, hid: 10 })).toBe(false);
             expect(testFilters(filters, { ...item, hid: 100 })).toBe(false);
             expect(testFilters(filters, { ...item, hid: 99 })).toBe(true);
-            expect(testFilters(filters, { ...item, status: "error" })).toBe(true);
+            expect(testFilters(filters, { ...item, state: "error" })).toBe(false);
             expect(testFilters(filters, { ...item, create_time: "2021-01-01" })).toBe(false);
             expect(testFilters(filters, { ...item, create_time: "2021-01-02" })).toBe(true);
             expect(testFilters(filters, { ...item, update_time: "2022-01-01" })).toBe(false);
