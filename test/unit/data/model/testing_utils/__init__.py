@@ -20,10 +20,7 @@ from sqlalchemy.engine import (
 )
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
-from galaxy.model.database_utils import (
-    create_database,
-    sqlalchemy_engine,
-)
+from galaxy.model.database_utils import create_database
 
 # GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
@@ -114,13 +111,8 @@ def drop_database(db_url, database):
 
     Used only for test purposes to cleanup after creating a test database.
     """
-    if db_url.startswith("postgresql") or db_url.startswith("mysql"):
-        with sqlalchemy_engine(db_url) as engine:
-            preparer = IdentifierPreparer(engine.dialect)
-            database = preparer.quote(database)
-            stmt = f"DROP DATABASE IF EXISTS {database}"
-            with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
-                conn.execute(stmt)
+    if _is_postgres(db_url) or _is_mysql(db_url):
+        _drop_database(db_url, database)
     else:
         url = make_url(db_url)
         os.remove(url.database)
@@ -203,14 +195,22 @@ def _is_postgres(url: DbUrl) -> bool:
     return url.startswith("postgres")
 
 
+def _is_mysql(url: DbUrl) -> bool:
+    return url.startswith("mysql")
+
+
 def _drop_postgres_database(url: DbUrl) -> None:
     db_url = make_url(url)
     database = db_url.database
     connection_url = db_url.set(database="postgres")
+    _drop_database(connection_url, database)
+
+
+def _drop_database(connection_url, database_name):
     engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
     preparer = IdentifierPreparer(engine.dialect)
-    database = preparer.quote(database)
-    stmt = f"DROP DATABASE IF EXISTS {database}"
+    database_name = preparer.quote(database_name)
+    stmt = f"DROP DATABASE IF EXISTS {database_name}"
     with engine.connect() as conn:
         conn.execute(stmt)
     engine.dispose()
