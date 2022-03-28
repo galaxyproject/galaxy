@@ -50,8 +50,10 @@ class ConditionalDependencies:
             for runner in runners.values():
                 if "load" in runner:
                     self.job_runners.append(runner.get("load"))
-                if "rules_module" in runner:
-                    self.job_rule_modules.append(runner.get("rules_module"))
+            environments = job_conf_dict.get("execution", {}).get("environments", {})
+            for env in environments.values():
+                if "rules_module" in env:
+                    self.job_rule_modules.append(env.get("rules_module"))
 
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
@@ -187,6 +189,9 @@ class ConditionalDependencies:
             or "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners
             or "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners
         )
+
+    def check_galaxycloudrunner(self):
+        return "galaxycloudrunner.rules" in self.job_rule_modules
 
     def check_total_perspective_vortex(self):
         return "vortex.rules" in self.job_rule_modules
