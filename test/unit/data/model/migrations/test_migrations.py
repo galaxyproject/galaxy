@@ -714,6 +714,7 @@ class AlembicManagerForTests(AlembicManager):
 def _get_paths_to_version_locations():
     # One does not simply use a relative path for both tests and package tests.
     basepath = os.path.abspath(os.path.dirname(__file__))
+    basepath = os.path.join(basepath, "testing_utils")
     basepath = os.path.join(basepath, "versions")
     path1 = os.path.join(basepath, "db1")
     path2 = os.path.join(basepath, "db2")
