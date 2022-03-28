@@ -3,9 +3,7 @@
         :key="history.id"
         :history-id="historyId"
         :offset="offset"
-        :filter-text="params.filterText"
-        :show-deleted="params.showDeleted"
-        :show-hidden="params.showHidden"
+        :filter-text="filterText"
         v-slot="{ loading, result: payload }">
         <ExpandedItems
             :scope-key="history.id"
@@ -27,14 +25,14 @@
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
                         class="content-operations-filters mx-3"
-                        :params.sync="params"
+                        :filter-text.sync="filterText"
                         :showAdvanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
                         <HistoryDetails :history="history" v-on="$listeners" />
                         <HistoryMessages class="m-2" :history="history" />
                         <HistoryOperations
                             :history="history"
-                            :params.sync="params"
+                            :filter-text.sync="filterText"
                             :content-selection="selectedItems"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
@@ -124,14 +122,10 @@ export default {
     },
     data() {
         return {
+            filterText: "",
             invisible: {},
             offset: 0,
             showAdvanced: false,
-            params: {
-                filterText: "",
-                showDeleted: false,
-                showHidden: false,
-            },
         };
     },
     watch: {
@@ -145,10 +139,10 @@ export default {
             return this.history.id;
         },
         queryKey() {
-            return `${this.historyId}-${this.params.showDeleted}-${this.params.showHidden}-${this.params.filterText}`;
+            return `${this.historyId}-${this.filterText}`;
         },
         queryDefault() {
-            return !this.params.showDeleted && !this.params.showHidden && !this.params.filterText;
+            return !this.filterText;
         },
     },
     methods: {

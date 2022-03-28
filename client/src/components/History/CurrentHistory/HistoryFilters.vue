@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-input-group>
-            <DebouncedInput v-model="filterText" v-slot="{ value, input }">
+            <DebouncedInput v-model="localFilter" v-slot="{ value, input }">
                 <b-form-input
                     size="sm"
                     :value="value"
@@ -12,14 +12,6 @@
             <b-input-group-append>
                 <b-button
                     size="sm"
-                    :pressed="showDeleted"
-                    :variant="showDeleted ? 'info' : 'secondary'"
-                    @click="showDeleted = !showDeleted"
-                    data-description="show deleted filter toggle">
-                    <icon icon="trash" />
-                </b-button>
-                <b-button
-                    size="sm"
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
                     @click="onToggle"
@@ -27,7 +19,7 @@
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" @click="filterText = ''" data-description="show deleted filter toggle">
+                <b-button size="sm" @click="onReset" data-description="show deleted filter toggle">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -75,7 +67,7 @@ export default {
         DebouncedInput,
     },
     props: {
-        params: { type: Object, required: true },
+        filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
     },
     data() {
@@ -93,40 +85,20 @@ export default {
         };
     },
     computed: {
-        filterText: {
+        localFilter: {
             get() {
-                return this.params.filterText;
+                return this.filterText;
             },
             set(newVal) {
-                const newParams = Object.assign({}, this.params);
-                newParams.filterText = newVal;
-                this.updateParams(newParams);
-            },
-        },
-        showDeleted: {
-            get() {
-                return this.params.showDeleted;
-            },
-            set(newFlag) {
-                const newParams = Object.assign({}, this.params);
-                newParams.showDeleted = newFlag;
-                this.updateParams(newParams);
-            },
-        },
-        showHidden: {
-            get() {
-                return this.params.showHidden;
-            },
-            set(newFlag) {
-                const newParams = Object.assign({}, this.params);
-                newParams.showHidden = newFlag;
-                this.updateParams(newParams);
+                this.updateFilter(newVal);
             },
         },
     },
     methods: {
+        onReset() {
+            this.updateFilter("");
+        },
         onSearch() {
-            const newParams = Object.assign({}, this.params);
             let newFilterText = "";
             Object.entries(this.filterAdvanced).filter(([key, value]) => {
                 if (value) {
@@ -136,15 +108,14 @@ export default {
                     newFilterText += `${key}'${value}'`;
                 }
             });
-            newParams.filterText = newFilterText;
-            this.updateParams(newParams);
             this.onToggle();
+            this.updateFilter(newFilterText);
         },
         onToggle() {
             this.$emit("update:show-advanced", !this.showAdvanced);
         },
-        updateParams(newParams) {
-            this.$emit("update:params", newParams);
+        updateFilter(newFilterText) {
+            this.$emit("update:filter-text", newFilterText);
         },
     },
 };

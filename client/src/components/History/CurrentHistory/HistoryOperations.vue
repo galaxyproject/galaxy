@@ -33,19 +33,19 @@
                     <b-dropdown-text>
                         <span v-localize>With {{ numSelected }} selected...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item v-if="params.showHidden" v-b-modal:show-selected-content>
+                    <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
                         <span v-localize>Unhide</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-else v-b-modal:hide-selected-content>
                         <span v-localize>Hide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-if="params.showDeleted" v-b-modal:restore-selected-content>
+                    <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content>
                         <span v-localize>Undelete</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-else v-b-modal:delete-selected-content>
                         <span v-localize>Delete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-if="!params.showDeleted" v-b-modal:purge-selected-content>
+                    <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content>
                         <span v-localize>Delete (permanently)</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetList" data-description="build list">
@@ -146,23 +146,21 @@ import { buildCollectionModal } from "components/History/adapters/buildCollectio
 export default {
     props: {
         history: { type: History, required: true },
-        params: { type: Object, required: true },
+        filterText: { type: String, default: null },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
     },
     computed: {
-        showBuildOptions() {
-            return !this.params.showHidden && !this.params.showDeleted;
+        showHidden() {
+            return this.filterText.includes("hidden=true");
         },
-        localParams: {
-            get() {
-                return this.params;
-            },
-            set(newVal) {
-                this.$emit("update:params", Object.assign({}, newVal));
-            },
+        showDeleted() {
+            return this.filterText.includes("deleted=true");
+        },
+        showBuildOptions() {
+            return !this.showHidden && !this.showDeleted;
         },
         numSelected() {
             return this.contentSelection.size || 0;
