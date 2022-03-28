@@ -225,8 +225,6 @@ class BaseJobRunner:
         include_metadata=False,
         include_work_dir_outputs=True,
         modify_command_for_container=True,
-        stdout_file=None,
-        stderr_file=None,
     ):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do"""
         job_id = job_wrapper.get_id_tag()
@@ -253,8 +251,6 @@ class BaseJobRunner:
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
                 modify_command_for_container=modify_command_for_container,
-                stdout_file=stdout_file,
-                stderr_file=stderr_file,
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job", job_id)
@@ -283,8 +279,6 @@ class BaseJobRunner:
         include_metadata=False,
         include_work_dir_outputs=True,
         modify_command_for_container=True,
-        stdout_file=None,
-        stderr_file=None,
     ):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
@@ -296,8 +290,6 @@ class BaseJobRunner:
             include_work_dir_outputs=include_work_dir_outputs,
             modify_command_for_container=modify_command_for_container,
             container=container,
-            stdout_file=stdout_file,
-            stderr_file=stderr_file,
         )
 
     def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):

@@ -9,11 +9,13 @@
     echo 'The bool is really true' 1>&2 &&
     echo 'This is a line of text.' > '$out_file1' &&
     cp '$out_file1' '$one' &&
-    cp '$out_file1' '$two'
+    cp '$out_file1' '$two' &&
+    sleep $sleepsecs
 #else
     echo 'The bool is not true' &&
     echo 'The bool is very not true' 1>&2 &&
     echo 'This is a different line of text.' > '$out_file1' &&
+    sleep $sleepsecs &&
     sh -c 'exit 2'
 #end if
 #if $failbool
@@ -23,6 +25,7 @@
 #end if
     ]]></command>
     <inputs>
+        <param name="sleepsecs" type="integer" value="0" label="Sleep this many seconds"/>
         <param name="thebool" type="boolean" label="The boolean property" />
         <param name="failbool" type="boolean" label="The failure property" checked="false" />
     </inputs>
