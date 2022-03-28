@@ -26,41 +26,61 @@
         </b-input-group>
         <div v-if="showAdvanced" class="mt-2">
             <small>Filter by name:</small>
-            <b-form-input v-model="filterAdvanced['name=']" size="sm" placeholder="any name" />
+            <b-form-input v-model="filterSetting['name=']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
-            <b-form-input v-model="filterAdvanced['extension=']" size="sm" placeholder="any extension" />
+            <b-form-input v-model="filterSetting['extension=']" size="sm" placeholder="any extension" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterAdvanced['tag=']" size="sm" placeholder="any tag" />
+            <b-form-input v-model="filterSetting['tag=']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterAdvanced['state=']" size="sm" placeholder="any state" />
+            <b-form-input v-model="filterSetting['state=']" size="sm" placeholder="any state" />
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterAdvanced['hid>']" size="sm" placeholder="index greater" />
-                    <b-form-input v-model="filterAdvanced['hid<']" size="sm" placeholder="index lower" />
+                    <b-form-input v-model="filterSetting['hid>']" size="sm" placeholder="index greater" />
+                    <b-form-input v-model="filterSetting['hid<']" size="sm" placeholder="index lower" />
                 </b-input-group>
             </b-form-group>
             <small class="mt-1">Filter by creation time:</small>
-            <b-form-group>
+            <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterAdvanced['create_time>']" size="sm" placeholder="created after" />
-                    <b-form-input v-model="filterAdvanced['create_time<']" size="sm" placeholder="created before" />
+                    <b-form-input v-model="filterSetting['create_time>']" size="sm" placeholder="created after" />
+                    <b-form-input v-model="filterSetting['create_time<']" size="sm" placeholder="created before" />
                 </b-input-group>
             </b-form-group>
-            <b-button class="mr-1" @click="onSearch" size="sm" variant="primary">
-                <icon icon="search" />
-                <span>{{ "Search" | localize }}</span>
-            </b-button>
-            <b-button size="sm" @click="onToggle">
-                <icon icon="redo" />
-                <span>{{ "Cancel" | localize }}</span>
-            </b-button>
+            <small>Show deleted:</small>
+            <b-form-checkbox v-model="filterSetting['deleted=']" size="sm" switch />
+            <small>Show visible:</small>
+            <b-form-checkbox v-model="filterSetting['visible=']" size="sm" switch />
+            <div class="mt-3">
+                <b-button class="mr-1" @click="onSearch" size="sm" variant="primary">
+                    <icon icon="search" />
+                    <span>{{ "Search" | localize }}</span>
+                </b-button>
+                <b-button size="sm" @click="onToggle">
+                    <icon icon="redo" />
+                    <span>{{ "Cancel" | localize }}</span>
+                </b-button>
+            </div>
         </div>
     </div>
 </template>
 
 <script>
 import DebouncedInput from "components/DebouncedInput";
+
+// available filter keys with operator and default setting
+const filterDefaults = {
+    "create_time>": "",
+    "create_time<": "",
+    "deleted=": false,
+    "extension=": "",
+    "hid>": "",
+    "hid<": "",
+    "name=": "",
+    "state=": "",
+    "tag=": "",
+    "visible=": true,
+};
 
 export default {
     components: {
@@ -72,16 +92,7 @@ export default {
     },
     data() {
         return {
-            filterAdvanced: {
-                "create_time>": null,
-                "create_time<": null,
-                "extension=": null,
-                "hid>": null,
-                "hid<": null,
-                "name=": null,
-                "state=": null,
-                "tag=": null,
-            },
+            filterSetting: { ...filterDefaults },
         };
     },
     computed: {
@@ -100,8 +111,8 @@ export default {
         },
         onSearch() {
             let newFilterText = "";
-            Object.entries(this.filterAdvanced).filter(([key, value]) => {
-                if (value) {
+            Object.entries(this.filterSetting).filter(([key, value]) => {
+                if (value !== filterDefaults[key]) {
                     if (newFilterText) {
                         newFilterText += " ";
                     }
