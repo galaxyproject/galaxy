@@ -116,7 +116,10 @@ export default {
                     if (newFilterText) {
                         newFilterText += " ";
                     }
-                    newFilterText += `${key}'${value}'`;
+                    if (String(value).includes(" ")) {
+                        value = `'${value}'`;
+                    }
+                    newFilterText += `${key}${value}`;
                 }
             });
             this.onToggle();
