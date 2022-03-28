@@ -3,9 +3,13 @@ on:
   push:
     paths:
       - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
   pull_request:
     paths:
       - '**.py'
+      - '.github/workflows/lint.yaml'
+      - lib/galaxy/dependencies/**
 concurrency:
   group: py-lint-${{ github.ref }}
   cancel-in-progress: true
