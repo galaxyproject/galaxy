@@ -364,10 +364,7 @@ class BaseJobRunner:
         # run the metadata setting script here
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
-        if (
-            job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]
-            and job_wrapper.job_io.output_paths
-        ):
+        if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]:
             lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
             venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
             external_metadata_script = job_wrapper.setup_external_metadata(
