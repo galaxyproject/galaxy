@@ -330,7 +330,7 @@ export default {
                     if (genericError) {
                         this.showError = true;
                         this.errorTitle = "Job submission failed.";
-                        this.errorContent = this.jobDef;
+                        this.errorContent = jobDef;
                     }
                 }
             );
