@@ -67,7 +67,6 @@ describe("historyItemsFiltering", () => {
             expect(testFilters(filters, { ...item, create_time: "2021-01-02" })).toBe(true);
             expect(testFilters(filters, { ...item, update_time: "2022-01-01" })).toBe(false);
             expect(testFilters(filters, { ...item, update_time: "2021-12-31" })).toBe(true);
-            expect(testFilters(filters, { ...item, status: "error" })).toBe(true);
             expect(testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
         });
     });
