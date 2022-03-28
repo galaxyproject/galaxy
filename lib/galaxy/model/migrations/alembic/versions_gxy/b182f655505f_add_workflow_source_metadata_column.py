@@ -31,5 +31,4 @@ def upgrade():
 
 
 def downgrade():
-    if column_exists(table_name, column_name):
-        drop_column(table_name, column_name)
+    drop_column(table_name, column_name)
