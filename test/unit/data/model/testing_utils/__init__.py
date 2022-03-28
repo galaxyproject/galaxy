@@ -20,7 +20,10 @@ from sqlalchemy.engine import (
 )
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
-from galaxy.model.database_utils import sqlalchemy_engine
+from galaxy.model.database_utils import (
+    create_database,
+    sqlalchemy_engine,
+)
 
 # GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
@@ -33,6 +36,33 @@ skip_if_not_mysql_uri = pytest.mark.skipif(
 )
 
 DbUrl = NewType("DbUrl", str)
+
+
+@contextmanager
+def create_and_drop_database(url: DbUrl) -> Iterator[None]:
+    """
+    Context manager that creates a database. If the database is postgresql, it is dropped on exit;
+    a sqlite database should be removed automatically by tempfile.
+    """
+    try:
+        create_database(url)
+        yield
+    finally:
+        if _is_postgres(url):
+            _drop_postgres_database(url)
+
+
+@contextmanager
+def drop_existing_database(url: DbUrl) -> Iterator[None]:
+    """
+    Context manager that ensures a postgres database identified by url is dropped on exit;
+    a sqlite database should be removed automatically by tempfile.
+    """
+    try:
+        yield
+    finally:
+        if _is_postgres(url):
+            _drop_postgres_database(url)
 
 
 @contextmanager
@@ -167,6 +197,23 @@ def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
 def get_stored_instance_by_id(session, cls_, id):
     statement = select(cls_).where(cls_.__table__.c.id == id)
     return session.execute(statement).scalar_one()
+
+
+def _is_postgres(url: DbUrl) -> bool:
+    return url.startswith("postgres")
+
+
+def _drop_postgres_database(url: DbUrl) -> None:
+    db_url = make_url(url)
+    database = db_url.database
+    connection_url = db_url.set(database="postgres")
+    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
+    preparer = IdentifierPreparer(engine.dialect)
+    database = preparer.quote(database)
+    stmt = f"DROP DATABASE IF EXISTS {database}"
+    with engine.connect() as conn:
+        conn.execute(stmt)
+    engine.dispose()
 
 
 def _get_default_where_clause(cls, obj_id):
