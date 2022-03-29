@@ -3,17 +3,18 @@
         <b-input
             class="search-query"
             size="sm"
-            :placeholder="placeholder"
+            autocomplete="off"
             v-model="queryInput"
+            :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
-            @keydown.esc="setQuery()" />
+            @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
-                @click="setQuery()"
+                @click="setQuery('')"
                 data-description="reset query">
                 <icon v-if="loading" icon="spinner" spin />
                 <icon v-else icon="times" />
@@ -26,7 +27,7 @@ export default {
     props: {
         query: {
             type: String,
-            default: null,
+            default: "",
         },
         loading: {
             type: Boolean,
