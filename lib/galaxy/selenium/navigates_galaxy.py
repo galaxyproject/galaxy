@@ -15,6 +15,7 @@ from functools import (
 )
 from typing import (
     cast,
+    Optional,
     Union,
 )
 
@@ -307,6 +308,43 @@ class NavigatesGalaxy(HasDriver):
     @retry_during_transitions
     def history_panel_name(self):
         return self.history_panel_name_element().text
+
+    def history_panel_collection_rename(self, hid: int, new_name: str, assert_old_name: Optional[str] = None):
+
+        collection_view = self.history_panel_expand_collection(hid)
+        if self.is_beta_history():
+            self.__beta_rename_collection(new_name)
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
+        else:
+            title_element = collection_view.title.wait_for_visible()
+            if assert_old_name is not None:
+                assert title_element.text == assert_old_name
+            title_element.click()
+            title_rename_element = collection_view.title_input.wait_for_visible()
+            title_rename_element.send_keys(new_name)
+            self.send_enter(title_rename_element)
+
+    def history_panel_expand_collection(self, collection_hid: int) -> SmartComponent:
+        self.history_panel_click_item_title(collection_hid)
+
+        collection_view = self.components.history_panel.collection_view
+        collection_view._.wait_for_present()
+        return collection_view
+
+    @edit_details
+    def __beta_rename_collection(self, new_name):
+        title_element = self.beta_history_element("name input").wait_for_clickable()
+        title_element.clear()
+        title_element.send_keys(new_name)
+
+    def history_panel_collection_name_element(self):
+        if self.is_beta_history():
+            title_element = self.beta_history_element("collection name display").wait_for_present()
+        else:
+            collection_view = self.components.history_panel.collection_view
+            collection_view._.wait_for_present()
+            title_element = collection_view.title.wait_for_visible()
+        return title_element
 
     def make_accessible_and_publishable(self):
         self.components.histories.sharing.make_accessible.wait_for_and_click()
