@@ -10,13 +10,13 @@
             <span>{{ workflow.name }}</span>
         </b-link>
         <font-awesome-icon
-            v-if="workflow.source_metadata?.trs_tool_id"
+            v-if="sourceType.includes('trs')"
             v-b-tooltip.hover
             :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`"
             icon="check"
             style="color: green" />
         <font-awesome-icon
-            v-if="workflow.source_metadata?.url"
+            v-if="sourceType == 'url'"
             v-b-tooltip.hover
             :title="`Imported from ${workflow.source_metadata.url}`"
             icon="link" />
@@ -122,6 +122,15 @@ export default {
             } else {
                 // TODO: add WorkflowHub
                 return null;
+            }
+        },
+        sourceType() {
+            if (this.workflow.source_metadata?.url) {
+                return "url";
+            } else if (this.workflow.source_metadata?.trs_server) {
+                return `trs_${this.workflow.source_metadata?.trs_server}`;
+            } else {
+                return "";
             }
         },
     },
