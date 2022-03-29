@@ -25,7 +25,7 @@
                 </b-button>
             </b-input-group-append>
         </b-input-group>
-        <div v-if="showAdvanced" class="mt-2">
+        <div v-if="showAdvanced" class="mt-2" description="advanced filters">
             <small>Filter by name:</small>
             <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
@@ -49,11 +49,11 @@
                 </b-input-group>
             </b-form-group>
             <small>Show deleted:</small>
-            <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch />
+            <b-form-checkbox v-model="filterSettings['deleted=']" size="sm" switch description="filter deleted" />
             <small>Show visible:</small>
-            <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch />
+            <b-form-checkbox v-model="filterSettings['visible=']" size="sm" switch description="filter visible" />
             <div class="mt-3">
-                <b-button class="mr-1" @click="onSearch" size="sm" variant="primary">
+                <b-button class="mr-1" @click="onSearch" size="sm" variant="primary" description="apply filters">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
