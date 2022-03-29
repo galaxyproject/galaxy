@@ -6,7 +6,7 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.custom_logging import get_logger
 
@@ -33,7 +33,7 @@ def purge_hda(hda_manager: HDAManager, hda_id):
 
 
 @galaxy_task(action="Set metadata for job")
-def set_job_metadata(tool_job_working_directory, datatypes_registry: DatatypesRegistry, object_store: ObjectStore):
+def set_job_metadata(tool_job_working_directory, datatypes_registry: DatatypesRegistry, object_store: BaseObjectStore):
     set_metadata_portable(tool_job_working_directory, datatypes_registry=datatypes_registry, object_store=object_store)
 
 
