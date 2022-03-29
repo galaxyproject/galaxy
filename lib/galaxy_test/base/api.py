@@ -5,6 +5,7 @@ from urllib.parse import (
     urljoin,
 )
 
+import pytest
 import requests
 
 from .api_asserts import (
@@ -22,6 +23,39 @@ from .api_util import (
     TEST_USER,
 )
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
+
+CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]
+DEFAULT_CELERY_BROKER = "memory://"
+DEFAULT_CELERY_BACKEND = "rpc://localhost"
+for prefix in CONFIG_PREFIXES:
+    CELERY_BROKER = os.environ.get(f"{prefix}CELERY_BROKER", DEFAULT_CELERY_BROKER)
+    if CELERY_BROKER != DEFAULT_CELERY_BROKER:
+        break
+    CELERY_BACKEND = os.environ.get(f"{prefix}CELERY_BACKEND", DEFAULT_CELERY_BACKEND)
+    if CELERY_BACKEND != DEFAULT_CELERY_BACKEND:
+        break
+
+
+@pytest.fixture(scope="session")
+def celery_config():
+    return {"broker_url": CELERY_BROKER, "result_backend": CELERY_BACKEND}
+
+
+class UsesCeleryTasks:
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["enable_celery_tasks"] = True
+        config["metadata_strategy"] = f'celery_{config.get("metadata_strategy", "directory")}'
+        config["celery_broker"] = CELERY_BROKER
+        config["celery_backend"] = CELERY_BACKEND
+
+    @pytest.fixture(autouse=True)
+    def _request_celery_app(self, celery_session_app, celery_config):
+        self._celery_app = celery_session_app
+
+    @pytest.fixture(autouse=True)
+    def _request_celery_worker(self, celery_session_worker, celery_config):
+        self._celery_worker = celery_session_worker
 
 
 class UsesApiTestCaseMixin:

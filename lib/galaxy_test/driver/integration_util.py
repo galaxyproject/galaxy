@@ -17,7 +17,10 @@ import pytest
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
@@ -81,7 +84,7 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
-class IntegrationInstance(UsesApiTestCaseMixin):
+class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
 
     _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.
@@ -154,15 +157,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         if not self._app.config.database_connection.startswith("post"):
             raise SkipTest("Test only valid for postgres")
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, galaxy_config_kwds):
-        """Extension point for subclasses to modify arguments used to configure Galaxy.
-
-        This method will be passed the keyword argument pairs used to call
-        Galaxy Config object and can modify the Galaxy instance created for
-        the test as needed.
-        """
-
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
 
@@ -170,31 +164,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     def temp_config_dir(cls, name):
         # realpath here to get around problems with symlinks being blocked.
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
-
-
-def setup_celery_includes():
-    from galaxy.celery import TASKS_MODULES
-
-    def celery_includes():
-        return TASKS_MODULES
-
-    return pytest.fixture(scope="session")(celery_includes)
-
-
-class UsesCeleryTasks:
-    @classmethod
-    def setup_celery_config(cls, config):
-        config["enable_celery_tasks"] = True
-        config["celery_broker"] = "memory://"
-        config["celery_backend"] = "cache+memory://"
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_app(self, celery_app):
-        self._celery_app = celery_app
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_worker(self, celery_worker):
-        self._celery_worker = celery_worker
 
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
