@@ -20,6 +20,11 @@ function toLower(value) {
     return String(value).toLowerCase();
 }
 
+/* Converts user input to python boolean. */
+function toBoolPython(value) {
+    return toLower(value) == "true" ? "True" : "False";
+}
+
 /* Converts user input to lower case and strips quotation marks. */
 function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
@@ -30,10 +35,11 @@ function toLowerNoQuotes(value) {
  * @param {*} attribute of the content item
  * @param {*} query parameter if the attribute does not match the server query key
  */
-function equals(attribute) {
+function equals(attribute, query = null, converter = null) {
     return {
         attribute,
-        query: `${attribute}-eq`,
+        converter,
+        query: query || `${attribute}-eq`,
         handler: (v, q) => {
             return toLower(v) == toLower(q);
         },
@@ -91,14 +97,14 @@ const validFilters = {
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
     create_time_lt: compare("create_time", "lt", toDate),
-    deleted: equals("deleted"),
+    deleted: equals("deleted", "deleted", toBoolPython),
     extension: equals("extension"),
     hid: equals("hid"),
     hid_ge: compare("hid", "ge"),
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),
     hid_lt: compare("hid", "lt"),
-    visible: equals("visible"),
+    visible: equals("visible", "visible", toBoolPython),
     name: contains("name"),
     state: equals("state"),
     tag: contains("tags", "tag"),

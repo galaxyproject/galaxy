@@ -38,17 +38,9 @@ const getters = {
 
 const getQueryString = (filterText) => {
     const filterDict = getQueryDict(filterText);
-    const queryString = Object.entries(filterDict)
-        .map(([f, v]) => {
-            if (f == "deleted-eq" || f == "visible-eq") {
-                const pythonBool = String(v).toLowerCase() == "true" ? "True" : "False";
-                return `${f.substring(0, f.length - 3)}=${pythonBool}`;
-            } else {
-                return `q=${f}&qv=${v}`;
-            }
-        })
+    return Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
-    return queryString;
 };
 
 const actions = {

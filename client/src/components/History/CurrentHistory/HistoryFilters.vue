@@ -101,7 +101,9 @@ export default {
                 return this.filterText;
             },
             set(newVal) {
-                this.updateFilter(newVal);
+                if (newVal !== this.filterText) {
+                    this.updateFilter(newVal);
+                }
             },
         },
     },
