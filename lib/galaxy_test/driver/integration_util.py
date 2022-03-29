@@ -17,7 +17,10 @@ import pytest
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
@@ -81,7 +84,7 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
-class IntegrationInstance(UsesApiTestCaseMixin):
+class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
 
     _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.

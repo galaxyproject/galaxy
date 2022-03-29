@@ -34,7 +34,10 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
 )
 from galaxy_test.base import populators
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
@@ -229,7 +232,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
         return SeleniumSessionWorkflowPopulator(self)
 
 
-class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True

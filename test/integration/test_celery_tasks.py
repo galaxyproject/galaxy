@@ -8,10 +8,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    UsesCeleryTasks,
-)
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 @shared_task
@@ -25,7 +22,7 @@ def process_page(request: CreatePagePayload):
     return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
-class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
+class CeleryTasksIntegrationTestCase(IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

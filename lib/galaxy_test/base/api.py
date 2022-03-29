@@ -45,6 +45,7 @@ class UsesCeleryTasks:
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["enable_celery_tasks"] = True
+        config["metadata_strategy"] = f'celery_{config.get("metadata_strategy", "directory")}'
         config["celery_broker"] = CELERY_BROKER
         config["celery_backend"] = CELERY_BACKEND
 
