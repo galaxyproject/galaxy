@@ -1,7 +1,6 @@
 /**
- * This is simple list management for the moment, but if I remember right we have plans for a more
- * abstracted selection scheme in the future for purposes of handling large bulk operations on the
- * server, this is a good place to implement that logic.
+ * This component deals with item selection inside a history.
+ * It allows to select individual items or perform a query selection.
  */
 
 export default {
@@ -13,16 +12,24 @@ export default {
         return {
             items: new Map(),
             showSelection: false,
+            totalItemsInQuery: 0,
         };
     },
     computed: {
         selectionSize() {
-            return this.items.size;
+            return this.isQuerySelection ? this.totalItemsInQuery : this.items.size;
+        },
+        isQuerySelection() {
+            return this.totalItemsInQuery !== this.items.size;
         },
     },
     methods: {
         setShowSelection(val) {
             this.showSelection = val;
+        },
+        selectAllInCurrentQuery(loadedItems = [], totalItemsInQuery) {
+            this.selectItems(loadedItems);
+            this.totalItemsInQuery = totalItemsInQuery;
         },
         isSelected(item) {
             const key = this.getItemKey(item);
@@ -33,6 +40,7 @@ export default {
             const newSelected = new Map(this.items);
             selected ? newSelected.set(key, item) : newSelected.delete(key);
             this.items = newSelected;
+            this.resetQuerySelection();
         },
         selectItems(items = []) {
             const newItems = [...this.items.values(), ...items];
@@ -41,9 +49,14 @@ export default {
                 return [key, item];
             });
             this.items = new Map(newEntries);
+            this.resetQuerySelection();
+        },
+        resetQuerySelection() {
+            this.totalItemsInQuery = this.items.size;
         },
         reset() {
             this.items = new Map();
+            this.resetQuerySelection();
         },
     },
     watch: {
@@ -67,7 +80,10 @@ export default {
         return this.$scopedSlots.default({
             selectedItems: this.items,
             showSelection: this.showSelection,
+            isQuerySelection: this.isQuerySelection,
+            selectionSize: this.selectionSize,
             setShowSelection: this.setShowSelection,
+            selectAllInCurrentQuery: this.selectAllInCurrentQuery,
             selectItems: this.selectItems,
             isSelected: this.isSelected,
             setSelected: this.setSelected,
