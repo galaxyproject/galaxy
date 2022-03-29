@@ -380,7 +380,8 @@ class BaseJobRunner:
                 # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                 kwds={"overwrite": True},
             )
-            if "celery" in job_wrapper.metadata_strategy:
+            metadata_strategy = job_wrapper.metadata_strategy
+            if "celery" in metadata_strategy:
                 if not self.app.config.enable_celery_tasks:
                     raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
                 if not self.app.config.celery_backend == "rpc://localhost":
@@ -389,7 +390,9 @@ class BaseJobRunner:
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
-                set_job_metadata.delay(job_wrapper.working_directory).get()
+                set_job_metadata.delay(
+                    job_wrapper.working_directory, extended_metadata_collection="extended" in metadata_strategy
+                ).get()
             else:
                 lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
