@@ -1,8 +1,8 @@
 import { checkFilter, getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
 
 const filterTexts = [
-    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False",
-    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=success extension=ext tag=first visible=true",
+    "name='name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state=success extension=ext tag=first deleted=False visible='TRUE'",
+    "name='name of item' hid_gt=10 hid-lt=100 create_time-gt='2021-01-01' update_time-lt='2022-01-01' state=sUccEss extension=EXT tag=FirsT deleted=false visible=true",
 ];
 describe("historyItemsFiltering", () => {
     test("parse default filter", () => {
@@ -38,6 +38,10 @@ describe("historyItemsFiltering", () => {
             expect(filters[6][1]).toBe("ext");
             expect(filters[7][0]).toBe("tag");
             expect(filters[7][1]).toBe("first");
+            expect(filters[8][0]).toBe("deleted");
+            expect(filters[8][1]).toBe("false");
+            expect(filters[9][0]).toBe("visible");
+            expect(filters[9][1]).toBe("true");
         });
     });
     test("parse filter text as query dictionary", () => {
@@ -51,6 +55,8 @@ describe("historyItemsFiltering", () => {
             expect(queryDict["state-eq"]).toBe("success");
             expect(queryDict["extension-eq"]).toBe("ext");
             expect(queryDict["tag"]).toBe("first");
+            expect(queryDict["deleted"]).toBe("False");
+            expect(queryDict["visible"]).toBe("True");
         });
     });
     test("validate filtering of a history item", () => {
@@ -77,6 +83,8 @@ describe("historyItemsFiltering", () => {
             expect(testFilters(filters, { ...item, update_time: "2022-01-01" })).toBe(false);
             expect(testFilters(filters, { ...item, update_time: "2021-12-31" })).toBe(true);
             expect(testFilters(filters, { ...item, tags: ["second"] })).toBe(false);
+            expect(testFilters(filters, { ...item, visible: false })).toBe(false);
+            expect(testFilters(filters, { ...item, deleted: true })).toBe(false);
         });
     });
 });
