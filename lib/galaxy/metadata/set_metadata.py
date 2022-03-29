@@ -149,6 +149,7 @@ def set_metadata_portable(
     tool_job_working_directory=None,
     datatypes_registry: Optional[galaxy.datatypes.registry.Registry] = None,
     object_store: Optional[ObjectStore] = None,
+    extended_metadata_collection: Optional[bool] = None,
 ):
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
@@ -174,7 +175,8 @@ def set_metadata_portable(
         object_store = object_store or get_object_store(tool_job_working_directory=tool_job_working_directory)
     except (FileNotFoundError, AssertionError):
         object_store = None
-    extended_metadata_collection = bool(object_store)
+    if extended_metadata_collection is None:
+        extended_metadata_collection = bool(object_store)
     job_context = None
     version_string = None
 

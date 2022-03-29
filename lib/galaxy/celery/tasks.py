@@ -57,9 +57,19 @@ def materialize(
     hda_manager.materialize(request)
 
 
-@galaxy_task(action="Set metadata for job")
-def set_job_metadata(tool_job_working_directory, datatypes_registry: DatatypesRegistry, object_store: BaseObjectStore):
-    set_metadata_portable(tool_job_working_directory, datatypes_registry=datatypes_registry, object_store=object_store)
+@galaxy_task(action="set metadata for job")
+def set_job_metadata(
+    tool_job_working_directory,
+    extended_metadata_collection: bool,
+    datatypes_registry: DatatypesRegistry,
+    object_store: BaseObjectStore,
+):
+    set_metadata_portable(
+        tool_job_working_directory,
+        datatypes_registry=datatypes_registry,
+        object_store=object_store,
+        extended_metadata_collection=extended_metadata_collection,
+    )
 
 
 @galaxy_task(action="set dataset association metadata")
