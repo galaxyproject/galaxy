@@ -18,7 +18,7 @@
                         <td v-if="Array.isArray(parameter.value)">
                             <JobParametersArrayValue :parameter_value="parameter.value" />
                         </td>
-                        <td v-else>
+                        <td v-else class="tool-parameter-value">
                             {{ parameter.value }}
                         </td>
                         <td v-if="anyNotes">
@@ -138,3 +138,13 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.tool-parameter-value {
+    overflow: auto;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 20;
+    -webkit-box-orient: vertical;
+}
+</style>
