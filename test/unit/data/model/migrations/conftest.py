@@ -3,15 +3,6 @@ import tempfile
 import pytest
 import sqlalchemy as sa
 
-# Helper fixtures
-
-
-@pytest.fixture(scope="module")
-def tmp_directory():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        yield tmp_dir
-
-
 # Fixtures: metadata containing one or more tables and representing database state.
 # Used to load a database with a given state.
 # Each state has 3 versions, distinguished by suffix:

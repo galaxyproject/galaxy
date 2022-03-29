@@ -1,4 +1,5 @@
 import os
+import tempfile
 import uuid
 
 import pytest
@@ -36,3 +37,9 @@ def engine():
 def session(init_model, engine):
     with Session(engine) as s:
         yield s
+
+
+@pytest.fixture(scope="module")
+def tmp_directory():
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        yield tmp_dir
