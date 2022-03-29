@@ -7,6 +7,12 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 from .. import formatting
 
@@ -23,14 +29,14 @@ class InstrumentPlugin(metaclass=ABCMeta):
     def plugin_type(self):
         """Short string providing labelling this plugin"""
 
-    def pre_execute_instrument(self, job_directory):
+    def pre_execute_instrument(self, job_directory: str) -> Optional[List[str]]:
         """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server prior to the job
         running.
         """
         return None
 
-    def post_execute_instrument(self, job_directory):
+    def post_execute_instrument(self, job_directory) -> Optional[List[str]]:
         """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server after the tool defined
         command is ran.
@@ -38,18 +44,18 @@ class InstrumentPlugin(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def job_properties(self, job_id, job_directory):
+    def job_properties(self, job_id, job_directory) -> Dict[str, Any]:
         """Collect properties for this plugin from specified job directory.
         This method will run on the Galaxy server and can assume files created
         in job_directory with pre_execute_instrument and
         post_execute_instrument are available.
         """
 
-    def _instrument_file_name(self, name):
+    def _instrument_file_name(self, name: str) -> str:
         """Provide a common pattern for naming files used by instrumentation
         plugins - to ease their staging out of remote job directories.
         """
         return f"{INSTRUMENT_FILE_PREFIX}_{self.plugin_type}_{name}"
 
-    def _instrument_file_path(self, job_directory, name):
+    def _instrument_file_path(self, job_directory: str, name: str) -> str:
         return os.path.join(job_directory, self._instrument_file_name(name))
