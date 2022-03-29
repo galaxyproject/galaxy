@@ -2,6 +2,10 @@
 import logging
 import numbers
 from collections import namedtuple
+from typing import (
+    Dict,
+    List,
+)
 
 from galaxy.util import (
     asbool,
@@ -71,7 +75,7 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
                 return title, nice_size(value)
             except ValueError:
                 pass
-        elif isinstance(value, numbers.Number) and value == int(value):
+        elif isinstance(value, (numbers.Integral, numbers.Real)) and value == int(value):
             value = int(value)
         return title, value
 
@@ -89,11 +93,11 @@ class CgroupPlugin(InstrumentPlugin):
         if params_str:
             params = [v.strip() for v in params_str.split(",")]
         else:
-            params = TITLES.keys()
+            params = list(TITLES.keys())
         self.params = params
 
     def post_execute_instrument(self, job_directory):
-        commands = []
+        commands: List[str] = []
         commands.append(self.__record_cgroup_cpu_usage(job_directory))
         commands.append(self.__record_cgroup_memory_usage(job_directory))
         return commands
@@ -117,7 +121,7 @@ class CgroupPlugin(InstrumentPlugin):
         return self._instrument_file_path(job_directory, "_metrics")
 
     def __read_metrics(self, path):
-        metrics = {}
+        metrics: Dict[str, str] = {}
         key = None
         with open(path) as infile:
             for line in infile:
