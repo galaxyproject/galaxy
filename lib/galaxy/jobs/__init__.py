@@ -1008,19 +1008,23 @@ class JobWrapper(HasResourceParameters):
     @property
     def external_output_metadata(self):
         if self.__external_output_metadata is None:
-            try:
-                metadata_strategy_override = self.get_destination_configuration("metadata_strategy", None)
-            except JobMappingException:
-                metadata_strategy_override = None
-            if self.__has_tasks:
-                metadata_strategy_override = "directory"
             self.__external_output_metadata = get_metadata_compute_strategy(
                 self.app.config,
                 self.job_id,
-                metadata_strategy_override=metadata_strategy_override,
+                metadata_strategy_override=self.metadata_strategy,
                 tool_id=self.tool.id,
             )
         return self.__external_output_metadata
+
+    @property
+    def metadata_strategy(self):
+        try:
+            metadata_strategy_override = self.get_destination_configuration("metadata_strategy", None)
+        except JobMappingException:
+            metadata_strategy_override = None
+        if self.__has_tasks:
+            metadata_strategy_override = "directory"
+        return metadata_strategy_override
 
     @property
     def remote_command_line(self):

@@ -196,6 +196,8 @@ class LocalJobRunner(BaseJobRunner):
 
     def _embed_metadata(self, job_wrapper):
         job_destination = job_wrapper.job_destination
+        if "celery" in job_wrapper.metadata_strategy:
+            return False
         embed_metadata = asbool(job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB))
         return embed_metadata
 
