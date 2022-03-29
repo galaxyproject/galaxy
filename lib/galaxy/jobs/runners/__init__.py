@@ -386,13 +386,16 @@ class BaseJobRunner:
                     raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
                 if not self.app.config.celery_backend == "rpc://localhost":
                     raise Exception(f"Boo, wrong celery backend {self.app.confg.celery_backend}")
-                from galaxy.celery.tasks import set_job_metadata
+                from galaxy.metadata.set_metadata import set_metadata_portable
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
-                set_job_metadata.delay(
-                    job_wrapper.working_directory, extended_metadata_collection="extended" in metadata_strategy
-                ).get()
+                set_metadata_portable(
+                    job_wrapper.working_directory,
+                    datatypes_registry=self.app.datatypes_registry,
+                    object_store=self.app.object_store,
+                    extended_metadata_collection="extended" in metadata_strategy,
+                )
             else:
                 lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
