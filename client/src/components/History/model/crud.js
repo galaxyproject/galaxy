@@ -1,38 +1,27 @@
-import { contentUpdate, getAllContentByFilter } from "./queries";
+import { bulkUpdate, getAllContentByFilter } from "./queries";
 
 /**
  * Content operations
  */
 
-export async function hideSelectedContent(history, type_ids) {
-    return await contentUpdate(history, type_ids, {
-        visible: false,
-    });
+export async function hideSelectedContent(history, type_ids, filterParams) {
+    return await bulkUpdate(history, "hide", type_ids, filterParams);
 }
 
-export async function unhideSelectedContent(history, type_ids) {
-    return await contentUpdate(history, type_ids, {
-        visible: true,
-    });
+export async function unhideSelectedContent(history, type_ids, filterParams) {
+    return await bulkUpdate(history, "unhide", type_ids, filterParams);
 }
 
-export async function deleteSelectedContent(history, type_ids) {
-    return await contentUpdate(history, type_ids, {
-        deleted: true,
-    });
+export async function deleteSelectedContent(history, type_ids, filterParams) {
+    return await bulkUpdate(history, "delete", type_ids, filterParams);
 }
 
-export async function undeleteSelectedContent(history, type_ids) {
-    return await contentUpdate(history, type_ids, {
-        deleted: false,
-    });
+export async function undeleteSelectedContent(history, type_ids, filterParams) {
+    return await bulkUpdate(history, "undelete", type_ids, filterParams);
 }
 
-export async function purgeSelectedContent(history, type_ids) {
-    return await contentUpdate(history, type_ids, {
-        deleted: true,
-        purged: true,
-    });
+export async function purgeSelectedContent(history, type_ids, filterParams) {
+    return await bulkUpdate(history, "purge", type_ids, filterParams);
 }
 
 export async function unhideAllHiddenContent(history) {

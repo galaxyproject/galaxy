@@ -150,6 +150,7 @@ export default {
         filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },
+        isQuerySelection: { type: Boolean, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
@@ -210,11 +211,15 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(fn) {
-            const items = Array.from(this.contentSelection.values());
-            const type_ids = items.map((o) => o.type_id);
-            await fn(this.history, type_ids);
-            this.$emit("hide-selection", items);
+            let type_ids = [];
+            if (!this.isQuerySelection) {
+                const items = Array.from(this.contentSelection.values());
+                type_ids = items.map((o) => o.type_id);
+            }
+
+            await fn(this.history, type_ids, this.params);
             this.$emit("reset-selection");
+            this.$emit("reload");
         },
 
         // collection creation, fires up a modal

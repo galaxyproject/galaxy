@@ -8,6 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
+import { getQueryDict } from "../../../store/historyStore/historyItemsFiltering";
 import { History } from "./History";
 
 // #region setup & utils
@@ -61,6 +62,22 @@ function pythonBooleanFormat(val) {
         return "False";
     }
     return val;
+}
+
+// TODO: remove this duplicated hack and use https://github.com/galaxyproject/galaxy/pull/13626 when merged
+function getFiltersAsQueryString(filterParams) {
+    const { filterText, showDeleted, showHidden } = filterParams;
+    const deleted = pythonBooleanFormat(showDeleted);
+    const visible = pythonBooleanFormat(!showHidden);
+    const filterDict = {
+        ...getQueryDict(filterText),
+        deleted: deleted,
+        visible: visible,
+    };
+    const queryString = Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
+        .join("&");
+    return queryString;
 }
 
 /**
@@ -272,23 +289,29 @@ export async function updateContentFields(content, newFields = {}) {
 }
 
 /**
- * Updates history item contents
+ * Performs an operation on a specific set of items or all the items
+ * matching the query params
  *
- * @param {*} history
- * @param {*} type_ids
- * @param {*} fields
+ * @param {Object} history The history that contains the items
+ * @param {String} operation The operation to perform on all items
+ * @param {String[]} type_ids The individual items to process as `history_content_type-id` strings
+ * @param {String} filterParams The filter query parameters
  */
-export async function contentUpdate(history, type_ids = [], fields = {}) {
+export async function bulkUpdate(history, operation, type_ids, filterParams) {
     const items = type_ids.map((type_id) => {
         const [history_content_type, id] = type_id.split("-");
-        return { id, type_id, history_content_type };
+        return { id, history_content_type };
     });
 
     const { id } = history;
-    const url = `/histories/${id}/contents`;
-    const payload = Object.assign({}, fields, { items });
+    const filterQuery = getFiltersAsQueryString(filterParams);
+    const url = `/histories/${id}/contents/bulk?${filterQuery}`;
+    const payload = {
+        operation,
+        items,
+    };
     const response = await api.put(url, payload);
-    console.debug("Submitted request to update selected content.", response);
+    console.debug(`Submitted request to ${operation} selected content in bulk.`, response);
     return doResponse(response);
 }
 

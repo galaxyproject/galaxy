@@ -38,12 +38,14 @@
                             :filter-text="filterText"
                             :content-selection="selectedItems"
                             :selection-size="selectionSize"
+                            :is-query-selection="isQuerySelection"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
                             @hide-selection="onHideSelection"
+                            @reset-selection="resetSelection"
                             @collapse-all="collapseAll" />
                         <transition name="shutterfade">
                             <HistorySelectionStatus

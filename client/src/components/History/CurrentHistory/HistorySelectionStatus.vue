@@ -32,7 +32,7 @@ export default {
         },
         /** @returns {Boolean} */
         canSelectAll() {
-            return !this.selectionMatchesQuery;
+            return this.queryMatchesItems && !this.selectionMatchesQuery;
         },
         /** @returns {Boolean} */
         selectAllOptionText() {
@@ -45,14 +45,15 @@ export default {
             if (this.isQuerySelection) {
                 return true;
             }
-            return this.hasFilters
-                ? this.numTotalItemsInCurrentSearch === this.selectionSize
-                : this.numTotalItemsInHistory === this.selectionSize;
+            return this.queryMatchesItems && this.totalItemsInQuery === this.selectionSize;
+        },
+        queryMatchesItems() {
+            return !isNaN(this.totalItemsInQuery);
         },
     },
     methods: {
         onSelectAllItemsInQuery() {
-            this.$emit("select-all", this.numTotalItemsInHistory);
+            this.$emit("select-all", this.totalItemsInQuery);
         },
         clearSelection() {
             this.$emit("clear-selection");
