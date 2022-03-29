@@ -6,6 +6,7 @@
                     size="sm"
                     :value="value"
                     @input="input"
+                    @keyup.esc="onReset"
                     :placeholder="'search datasets' | localize"
                     data-description="filter text input" />
             </DebouncedInput>
