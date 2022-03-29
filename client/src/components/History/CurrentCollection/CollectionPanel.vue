@@ -9,7 +9,7 @@
         :offset="offset"
         v-slot="{ loading, result: payload }">
         <ExpandedItems :scope-key="dsc.id" :get-item-key="(item) => item.id" v-slot="{ isExpanded, setExpanded }">
-            <section class="history-layout d-flex flex-column">
+            <section class="dataset-collection-panel d-flex flex-column">
                 <section>
                     <CollectionNavigation
                         :history="history"

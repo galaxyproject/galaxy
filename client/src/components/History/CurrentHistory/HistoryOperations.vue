@@ -78,7 +78,7 @@
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item @click="iframeRedirect('/dataset/copy_datasets')" data-description="copy datasets">
+                    <b-dropdown-item @click="onCopy" data-description="copy datasets">
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-b-modal:show-all-hidden-content>
@@ -143,7 +143,7 @@ import {
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter } from "store/historyStore/historyItemsFiltering";
-
+import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
         history: { type: History, required: true },
@@ -171,6 +171,9 @@ export default {
         },
     },
     methods: {
+        onCopy() {
+            iframeRedirect("/dataset/copy_datasets");
+        },
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
         },

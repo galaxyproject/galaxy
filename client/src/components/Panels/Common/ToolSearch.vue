@@ -2,6 +2,7 @@
     <b-input-group class="mb-3">
         <DebouncedInput v-model="localQuery" v-slot="{ value, input }">
             <b-form-input
+                class="search-query"
                 size="sm"
                 :value="value"
                 @input="input"
