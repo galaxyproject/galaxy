@@ -20,6 +20,7 @@ from fastapi import (
 )
 from starlette import status
 from starlette.responses import (
+    JSONResponse,
     Response,
     StreamingResponse,
 )
@@ -356,7 +357,8 @@ class FastAPIHistoryContents:
             filter_query_params,
         )
         if total_matches:
-            return Response(status_code=status.HTTP_204_NO_CONTENT, headers={"total_matches": f"{total_matches}"})
+            query_stats = {"total_matches": f"{total_matches}"}
+            return JSONResponse(items, headers=query_stats)
         return items
 
     @router.get(

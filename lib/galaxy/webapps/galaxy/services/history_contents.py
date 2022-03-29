@@ -935,12 +935,13 @@ class HistoriesContentsService(ServiceBase):
         history = self._get_history(trans, history_id)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
 
+        total_matches: Optional[int] = None
         if serialization_params.view == "count":
+            serialization_params.view = None
             total_matches = self.history_contents_manager.contents_count(
                 history,
                 filters=filters,
             )
-            return [], total_matches
 
         filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
@@ -960,7 +961,7 @@ class HistoriesContentsService(ServiceBase):
                 serialization_params=serialization_params,
             )
             for content in contents
-        ], None
+        ], total_matches
 
     def _serialize_legacy_content_item(
         self,

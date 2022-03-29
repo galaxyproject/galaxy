@@ -1123,7 +1123,7 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
 
     def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
         search_response = self._get(f"histories/{history_id}/contents?v=dev&view=count{search_query}")
-        self._assert_status_code_is(search_response, 204)
+        self._assert_status_code_is(search_response, 200)
         self._assert_total_matches_header_is(search_response, expected_total_matches)
 
     def _assert_total_matches_header_is(self, response, expected_total_matches: int):
