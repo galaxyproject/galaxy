@@ -129,10 +129,11 @@ export const JobProvider = {
 
 /**
  * Provider component interface to the actual stores i.e. history items and collection elements stores.
- * @param {String} This store action is executed when the consuming component e.g. the history panel, changes the provider props.
- * @param {String} This store getter passes its result to the slot of the corresponding provider.
+ * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
+ * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
+ * @param {String} queryStatsGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
  */
-export const StoreProvider = (storeAction, storeGetter) => {
+export const StoreProvider = (storeAction, storeGetter, queryStatsGetter = undefined) => {
     return {
         watch: {
             $attrs() {
@@ -149,12 +150,15 @@ export const StoreProvider = (storeAction, storeGetter) => {
             this.load();
         },
         computed: {
-            ...mapGetters([storeGetter]),
+            ...mapGetters([storeGetter, queryStatsGetter]),
             attributes() {
                 return this.toCamelCase(this.$attrs);
             },
             result() {
                 return this[storeGetter](this.attributes);
+            },
+            totalMatches() {
+                return queryStatsGetter ? this[queryStatsGetter]() : undefined;
             },
         },
         render() {
@@ -162,6 +166,7 @@ export const StoreProvider = (storeAction, storeGetter) => {
                 error: this.error,
                 loading: this.loading,
                 result: this.result,
+                totalMatches: this.totalMatches,
             });
         },
         methods: {
@@ -191,4 +196,4 @@ export const StoreProvider = (storeAction, storeGetter) => {
 
 export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
-export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems");
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getQueryStats");

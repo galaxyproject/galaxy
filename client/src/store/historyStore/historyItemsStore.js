@@ -5,9 +5,9 @@
 
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
-import { urlData } from "utils/url";
-import { mergeArray } from "./utilities";
+import { urlDataWithHeaders } from "utils/url";
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
+import { mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -15,6 +15,7 @@ const queue = new LastQueue();
 const state = {
     items: {},
     itemKey: "hid",
+    totalMatches: undefined,
 };
 
 const getters = {
@@ -34,6 +35,9 @@ const getters = {
             });
             return reverse(filtered);
         },
+    getQueryStats: (state) => () => {
+        return state.totalMatches;
+    },
 };
 
 const getQueryString = (filterText) => {
@@ -47,9 +51,13 @@ const actions = {
     fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
         const queryString = getQueryString(filterText);
+        const queryStats = "&view=count";
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
-        const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
-        await queue.enqueue(urlData, { url }).then((payload) => {
+        const url = `api/histories/${historyId}/contents?${params}&${queryString}${queryStats}`;
+        await queue.enqueue(urlDataWithHeaders, { url }).then((response) => {
+            const headers = response.headers;
+            commit("saveQueryStats", { headers });
+            const payload = response.data;
             commit("saveHistoryItems", { historyId, payload });
         });
     },
@@ -58,6 +66,10 @@ const actions = {
 const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
         mergeArray(historyId, payload, state.items, state.itemKey);
+    },
+    saveQueryStats: (state, { headers }) => {
+        const totalMatches = headers["total_matches"];
+        state.totalMatches = Number(totalMatches);
     },
 };
 
