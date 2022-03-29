@@ -365,8 +365,6 @@ class BaseJobRunner:
         # this is terminate-able when output dataset/job is deleted
         # so that long running set_meta()s can be canceled without having to reboot the server
         if job_wrapper.get_state() not in [model.Job.states.ERROR, model.Job.states.DELETED]:
-            lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
-            venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
             external_metadata_script = job_wrapper.setup_external_metadata(
                 output_fnames=job_wrapper.job_io.get_output_fnames(),
                 set_extension=True,
@@ -374,31 +372,44 @@ class BaseJobRunner:
                 # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                 kwds={"overwrite": False},
             )
-            external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
-            if resolve_requirements:
-                dependency_shell_commands = (
-                    self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
-                        job_directory=job_wrapper.working_directory
+            if "celery" in job_wrapper.metadata_strategy:
+                if not self.app.config.enable_celery_tasks:
+                    raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
+                if not self.app.config.celery_backend == "rpc://localhost":
+                    raise Exception(f"Boo, wrong celery backend {self.app.confg.celery_backend}")
+                from galaxy.celery.tasks import set_job_metadata
+
+                # We're synchronously waiting for a task here. This means we have to have a result backend.
+                # That is bad practice and also means this can never become part of another task.
+                set_job_metadata.delay(job_wrapper.working_directory).get()
+            else:
+                lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
+                venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
+                external_metadata_script = f"{lib_adjust} {venv} {external_metadata_script}"
+                if resolve_requirements:
+                    dependency_shell_commands = (
+                        self.app.datatypes_registry.set_external_metadata_tool.build_dependency_shell_commands(
+                            job_directory=job_wrapper.working_directory
+                        )
                     )
+                    if dependency_shell_commands:
+                        if isinstance(dependency_shell_commands, list):
+                            dependency_shell_commands = "&&".join(dependency_shell_commands)
+                        external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
+                log.debug(
+                    "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
                 )
-                if dependency_shell_commands:
-                    if isinstance(dependency_shell_commands, list):
-                        dependency_shell_commands = "&&".join(dependency_shell_commands)
-                    external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
-            log.debug(
-                "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
-            )
-            external_metadata_proc = subprocess.Popen(
-                args=external_metadata_script,
-                shell=True,
-                cwd=job_wrapper.working_directory,
-                env=os.environ,
-                preexec_fn=os.setpgrp,
-            )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid(
-                external_metadata_proc.pid, self.sa_session
-            )
-            external_metadata_proc.wait()
+                external_metadata_proc = subprocess.Popen(
+                    args=external_metadata_script,
+                    shell=True,
+                    cwd=job_wrapper.working_directory,
+                    env=os.environ,
+                    preexec_fn=os.setpgrp,
+                )
+                job_wrapper.external_output_metadata.set_job_runner_external_pid(
+                    external_metadata_proc.pid, self.sa_session
+                )
+                external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper, **kwds):

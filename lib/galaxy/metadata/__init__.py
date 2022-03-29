@@ -24,7 +24,7 @@ def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=Non
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         raise Exception("legacy metadata_strategy has been removed")
-    elif metadata_strategy == "extended" and tool_id != "__SET_METADATA__":
+    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)
