@@ -31,6 +31,23 @@ def test_job_metrics_format_core():
     )
 
 
+def test_job_metrics_format_cgroup():
+    _assert_format(
+        "cgroup",
+        "cpuacct.usage",
+        7265342042,
+        assert_title="CPU Time",
+        assert_value="7.265342042 seconds",
+    )
+    _assert_format(
+        "cgroup",
+        "memory.limit_in_bytes",
+        9223372036854771712,
+        assert_title="Memory limit on cgroup (MEM)",
+        assert_value="8.0 EB",
+    )
+
+
 def test_job_metrics_uname():
     _assert_format(
         "uname",
