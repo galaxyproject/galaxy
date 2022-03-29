@@ -6,6 +6,7 @@ import importlib.util
 import logging
 import os
 import pkgutil
+from pathlib import Path
 from string import Template
 from typing import (
     Dict,
@@ -130,7 +131,7 @@ class Registry:
             #           type="galaxy.datatypes.blast:BlastXml" />
             compressed_sniffers = {}
             handling_proprietary_datatypes = False
-            if isinstance(config, str):
+            if isinstance(config, (str, Path)):
                 # Parse datatypes_conf.xml
                 tree = galaxy.util.parse_xml(config)
                 root = tree.getroot()
