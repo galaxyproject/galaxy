@@ -15,6 +15,10 @@ from typing import (
 )
 
 from .. import formatting
+from ..safety import (
+    DEFAULT_SAFETY,
+    Safety,
+)
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 
@@ -23,6 +27,7 @@ class InstrumentPlugin(metaclass=ABCMeta):
     """Describes how to instrument job scripts and retrieve collected metrics."""
 
     formatter = formatting.JobMetricFormatter()
+    default_safety = DEFAULT_SAFETY
 
     @property
     @abstractmethod
@@ -50,6 +55,14 @@ class InstrumentPlugin(metaclass=ABCMeta):
         in job_directory with pre_execute_instrument and
         post_execute_instrument are available.
         """
+
+    def safety(self, metric_name: str) -> Safety:
+        """Return safety level of metric."""
+        # None of the plugins override this to dispatch on metric_name but on next
+        # iteration it would make sense to allow admins to expose particular env vars
+        # or to have cgroup keys we know are about runtime or memeory to be exposed
+        # at a safer level.
+        return self.default_safety
 
     def _instrument_file_name(self, name: str) -> str:
         """Provide a common pattern for naming files used by instrumentation

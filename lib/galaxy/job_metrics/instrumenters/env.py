@@ -8,6 +8,7 @@ from typing import (
 
 from . import InstrumentPlugin
 from .. import formatting
+from ..safety import Safety
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ class EnvPlugin(InstrumentPlugin):
     plugin_type = "env"
     formatter = EnvFormatter()
     variables: Optional[List[str]]
+    default_safety = Safety.UNSAFE
 
     def __init__(self, **kwargs):
         variables_str = kwargs.get("variables", None)

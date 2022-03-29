@@ -6,9 +6,12 @@ from typing import (
 from galaxy.job_metrics import (
     formatting,
     JobMetrics,
+    RawMetric,
 )
+from galaxy.job_metrics.safety import Safety
 
 TEST_JOBS_METRICS = JobMetrics()
+TEST_LINUX_OS = "Ubuntu Linux 21.10"
 
 
 def test_job_metrics_format_env():
@@ -52,10 +55,26 @@ def test_job_metrics_uname():
     _assert_format(
         "uname",
         "moo",
-        "Ubuntu Linux 21.10",
+        TEST_LINUX_OS,
         assert_title="Operating System",
-        assert_value="Ubuntu Linux 21.10",
+        assert_value=TEST_LINUX_OS,
     )
+
+
+def test_metrics_dictifiable():
+    test_metrics = [
+        RawMetric("galaxy_slots", "4", "core"),
+        RawMetric("uname", TEST_LINUX_OS, "uname"),
+        RawMetric("SSH_AUTH_SOCK", "/private/tmp/com.apple.launchd.Nw6gC2VOCr/Listeners", "env"),
+    ]
+    dictifiable_metrics = TEST_JOBS_METRICS.dictifiable_metrics(test_metrics, Safety.POTENTIALLY_SENSITVE)
+    _assert_metrics_of_type(dictifiable_metrics, ["core", "uname"])
+
+    dictifiable_metrics = TEST_JOBS_METRICS.dictifiable_metrics(test_metrics, Safety.SAFE)
+    _assert_metrics_of_type(dictifiable_metrics, ["core"])
+
+    dictifiable_metrics = TEST_JOBS_METRICS.dictifiable_metrics(test_metrics, Safety.UNSAFE)
+    _assert_metrics_of_type(dictifiable_metrics, ["core", "uname", "env"])
 
 
 def test_job_metric_formatting():
@@ -78,6 +97,12 @@ def test_job_metric_formatting():
     assert formatting.seconds_to_str(7260) == "2 hours and 1 minute"
     assert formatting.seconds_to_str(7320) == "2 hours and 2 minutes"
     assert formatting.seconds_to_str(36181) == "10 hours and 3 minutes"
+
+
+def _assert_metrics_of_type(metric_list, expected_types):
+    assert len(metric_list) == len(expected_types)
+    for dictifiable_metric, expected_type in zip(metric_list, expected_types):
+        assert dictifiable_metric.plugin == expected_type
 
 
 def _assert_format(

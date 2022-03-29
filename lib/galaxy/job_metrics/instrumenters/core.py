@@ -4,6 +4,7 @@ import time
 
 from . import InstrumentPlugin
 from .. import formatting
+from ..safety import Safety
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class CorePlugin(InstrumentPlugin):
 
     plugin_type = "core"
     formatter = CorePluginFormatter()
+    default_safety = Safety.SAFE
 
     def __init__(self, **kwargs):
         pass
