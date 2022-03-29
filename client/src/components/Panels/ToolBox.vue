@@ -5,7 +5,7 @@
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h4 class="m-1" v-localize>Tools</h4>
                     <div class="panel-header-buttons">
-                        <favorites-button :query="query" @onFavorites="onFavorites" v-if="isUser" />
+                        <favorites-button :query="query" @onFavorites="onQuery" v-if="isUser" />
                         <panel-view-button
                             v-if="panelViews && Object.keys(panelViews).length > 1"
                             :panel-views="panelViews"
@@ -157,9 +157,6 @@ export default {
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
             this.queryPending = false;
-        },
-        onFavorites(term) {
-            this.query = term;
         },
         onOpen(tool, evt) {
             if (tool.id === "upload1") {

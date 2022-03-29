@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <delayed-input class="mb-3" @onChange="onQuery" placeholder="Search Datasets" />
+            <delayed-input class="m-1 mb-3" @change="onQuery" placeholder="Search Datasets" />
             <b-table id="dataset-table" striped no-local-sorting @sort-changed="onSort" :fields="fields" :items="rows">
                 <template v-slot:cell(name)="row">
                     <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
