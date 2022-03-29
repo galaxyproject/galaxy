@@ -1,5 +1,5 @@
 <template>
-    <h6 v-if="collectionType" class="description py-1">
+    <h6 class="description mt-1">
         <span>a {{ collectionLabel | localize }}</span>
         <span v-if="elementCount == 1">with 1 item</span>
         <span v-else-if="elementCount > 1">with {{ elementCount }} items</span>

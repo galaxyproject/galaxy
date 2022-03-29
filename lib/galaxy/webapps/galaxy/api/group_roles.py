@@ -13,12 +13,7 @@ from galaxy.schema.schema import (
     GroupRoleListModel,
     GroupRoleModel,
 )
-from galaxy.web import (
-    expose_api,
-    require_admin,
-)
 from . import (
-    BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
@@ -83,48 +78,4 @@ class FastAPIGroupRoles:
         role_id: EncodedDatabaseIdField = RoleIDParam,
     ) -> GroupRoleModel:
         role = self.manager.delete(trans, role_id, group_id)
-        return group_role_to_model(trans, group_id, role)
-
-
-class GroupRolesAPIController(BaseGalaxyAPIController):
-    manager = depends(GroupRolesManager)
-
-    @require_admin
-    @expose_api
-    def index(self, trans: ProvidesAppContext, group_id: EncodedDatabaseIdField, **kwd):
-        """
-        GET /api/groups/{encoded_group_id}/roles
-        Displays a collection (list) of groups.
-        """
-        group_roles = self.manager.index(trans, group_id)
-        return GroupRoleListModel(__root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
-
-    @require_admin
-    @expose_api
-    def show(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField, **kwd):
-        """
-        GET /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Displays information about a group role.
-        """
-        role = self.manager.show(trans, id, group_id)
-        return group_role_to_model(trans, group_id, role)
-
-    @require_admin
-    @expose_api
-    def update(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField, **kwd):
-        """
-        PUT /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Adds a role to a group
-        """
-        role = self.manager.update(trans, id, group_id)
-        return group_role_to_model(trans, group_id, role)
-
-    @require_admin
-    @expose_api
-    def delete(self, trans: ProvidesAppContext, id: EncodedDatabaseIdField, group_id: EncodedDatabaseIdField, **kwd):
-        """
-        DELETE /api/groups/{encoded_group_id}/roles/{encoded_role_id}
-        Removes a role from a group
-        """
-        role = self.manager.delete(trans, id, group_id)
         return group_role_to_model(trans, group_id, role)

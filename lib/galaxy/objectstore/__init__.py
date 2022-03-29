@@ -1041,10 +1041,10 @@ class HierarchicalObjectStore(NestedObjectStore):
     @classmethod
     def parse_xml(clazz, config_xml):
         backends_list = []
-        for b in sorted(config_xml.find("backends"), key=lambda b: int(b.get("order"))):
-            store_type = b.get("type")
+        for backend in sorted(config_xml.find("backends"), key=lambda b: int(b.get("order"))):
+            store_type = backend.get("type")
             objectstore_class, _ = type_to_object_store_class(store_type)
-            backend_config_dict = objectstore_class.parse_xml(b)
+            backend_config_dict = objectstore_class.parse_xml(backend)
             backend_config_dict["type"] = store_type
             backends_list.append(backend_config_dict)
 

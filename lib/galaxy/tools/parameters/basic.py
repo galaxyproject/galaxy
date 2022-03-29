@@ -1374,13 +1374,13 @@ class ColumnListParameter(SelectToolParameter):
         Generate a select list containing the columns of the associated
         dataset (if found).
         """
-        # Get the value of the associated data reference (a dataset)
-        dataset = other_values.get(self.data_ref)
+        # Get the value of the associated data reference (one or more datasets)
+        datasets = other_values.get(self.data_ref)
         # Check if a dataset is selected
-        if not dataset:
+        if not datasets:
             return []
         column_list = None
-        for dataset in util.listify(dataset):
+        for dataset in util.listify(datasets):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()

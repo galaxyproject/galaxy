@@ -7,7 +7,7 @@
             </nav>
 
             <!-- details about the thing you're looking at -->
-            <div class="px-3 py-4 details">
+            <div class="m-3 details">
                 <slot name="details" />
             </div>
         </header>
@@ -33,20 +33,3 @@
         </section>
     </section>
 </template>
-
-<style lang="scss">
-.history-layout {
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        margin: 0;
-    }
-    .list-controls:empty,
-    .messages:empty {
-        display: none;
-    }
-}
-</style>

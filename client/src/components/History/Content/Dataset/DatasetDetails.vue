@@ -1,9 +1,10 @@
 <template>
-    <UrlDataProvider :url="dataUrl" auto-refresh v-slot="{ loading, result }">
+    <DatasetProvider :id="dataset.id" auto-refresh v-slot="{ loading, result }">
         <div v-if="!loading" class="dataset">
             <div class="p-2 details">
                 <div class="summary">
-                    <div v-if="result.misc_blurb" class="blurb">
+                    <div v-if="stateText" class="mb-1">{{ stateText }}</div>
+                    <div v-else-if="result.misc_blurb" class="blurb">
                         <span class="value">{{ result.misc_blurb }}</span>
                     </div>
                     <span v-if="result.file_ext" class="datatype">
@@ -24,28 +25,25 @@
                 <pre v-if="result.peek" class="dataset-peek p-1" v-html="result.peek" />
             </div>
         </div>
-    </UrlDataProvider>
+    </DatasetProvider>
 </template>
 
 <script>
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import STATES from "components/History/Content/contentStates";
+import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 
 export default {
     components: {
         DatasetActions,
-        UrlDataProvider,
+        DatasetProvider,
     },
     props: {
-        item: { type: Object, required: true },
+        dataset: { type: Object, required: true },
     },
     computed: {
-        dataset() {
-            return this.item.object || this.item;
-        },
-        dataUrl() {
-            const datasetId = this.dataset.id;
-            return `api/datasets/${datasetId}`;
+        stateText() {
+            return STATES[this.dataset.state] && STATES[this.dataset.state].text;
         },
     },
 };

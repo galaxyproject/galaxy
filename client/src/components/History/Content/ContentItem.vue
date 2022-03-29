@@ -1,14 +1,40 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded', clsStatus]"
+        :class="['content-item m-1 p-0 rounded', contentCls]"
         draggable
         :data-hid="id"
         :data-state="state"
         @dragstart="onDragStart">
         <div class="p-1 cursor-pointer" @click.stop="onClick">
-            <div class="clearfix overflow-hidden">
-                <div class="btn-group float-right">
+            <div class="d-flex justify-content-between">
+                <span class="p-1 font-weight-bold">
+                    <span v-if="selectable" class="selector">
+                        <icon
+                            v-if="selected"
+                            fixed-width
+                            size="lg"
+                            :icon="['far', 'check-square']"
+                            @click.stop="$emit('update:selected', false)" />
+                        <icon
+                            v-else
+                            fixed-width
+                            size="lg"
+                            :icon="['far', 'square']"
+                            @click.stop="$emit('update:selected', true)" />
+                    </span>
+                    <span v-if="hasStateIcon">
+                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                    </span>
+                    <span class="id hid">{{ id }}</span>
+                    <span>:</span>
+                    <span class="content-title name">{{ name }}</span>
+                    <CollectionDescription v-if="!isDataset" :item="item" />
+                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
+                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
+                    </div>
+                </span>
+                <span class="align-self-start btn-group">
                     <b-button
                         v-if="isDataset"
                         :disabled="displayDisabled"
@@ -58,29 +84,12 @@
                         @click.stop="$emit('unhide', item)">
                         <icon icon="unlock" />
                     </b-button>
-                </div>
-                <h5 class="float-left p-1 w-75 font-weight-bold">
-                    <div v-if="selectable" class="selector float-left mr-2">
-                        <span
-                            v-if="selected"
-                            class="fa fa-lg fa-check-square-o"
-                            @click.stop="$emit('update:selected', false)" />
-                        <span v-else class="fa fa-lg fa-square-o" @click.stop="$emit('update:selected', true)" />
-                    </div>
-                    <icon v-if="stateIcon" :icon="stateIcon" />
-                    <span class="id hid">{{ id }}</span>
-                    <span>:</span>
-                    <span class="content-title name">{{ name }}</span>
-                    <CollectionDescription v-if="!isDataset" :item="item" />
-                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
-                        <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
-                    </div>
-                </h5>
+                </span>
             </div>
         </div>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <div class="detail-animation-wrapper" :class="expandDataset ? '' : 'collapsed'">
-            <DatasetDetails v-if="expandDataset" @edit="onEdit" :item="item" />
+            <DatasetDetails v-if="expandDataset" @edit="onEdit" :dataset="item" />
         </div>
     </div>
 </template>
@@ -90,7 +99,7 @@ import { backboneRoute, useGalaxy, iframeRedirect } from "components/plugins/leg
 import { Nametag } from "components/Nametags";
 import CollectionDescription from "./Collection/CollectionDescription";
 import DatasetDetails from "./Dataset/DatasetDetails";
-import CONTENTSTATE from "./contentState";
+import STATES from "./contentStates";
 
 export default {
     components: {
@@ -112,20 +121,8 @@ export default {
         contentId() {
             return `dataset-${this.item.id}`;
         },
-        state() {
-            if (this.item.job_state_summary) {
-                for (const key of ["error", "failed", "paused", "upload", "running"]) {
-                    if (this.item.job_state_summary[key] > 0) {
-                        return key;
-                    }
-                }
-                return "ok";
-            } else {
-                return this.item.state;
-            }
-        },
-        clsStatus() {
-            const status = CONTENTSTATE[this.state] && CONTENTSTATE[this.state].status;
+        contentCls() {
+            const status = this.contentState && this.contentState.status;
             if (this.selected) {
                 return "alert-info";
             } else if (!status) {
@@ -133,6 +130,9 @@ export default {
             } else {
                 return `alert-${status}`;
             }
+        },
+        contentState() {
+            return STATES[this.state] && STATES[this.state];
         },
         displayButtonTitle() {
             if (this.item.purged) {
@@ -160,8 +160,20 @@ export default {
                 this.item.purged || ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state)
             );
         },
-        stateIcon() {
-            return CONTENTSTATE[this.state] && CONTENTSTATE[this.state].icon;
+        hasStateIcon() {
+            return this.contentState && this.contentState.icon;
+        },
+        state() {
+            if (this.item.job_state_summary) {
+                for (const key of ["error", "failed", "paused", "upload", "running"]) {
+                    if (this.item.job_state_summary[key] > 0) {
+                        return key;
+                    }
+                }
+                return "ok";
+            } else {
+                return this.item.state;
+            }
         },
     },
     methods: {
@@ -191,7 +203,7 @@ export default {
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
-                this.$emit("view-collection", this.item);
+                this.$emit("view-collection", this.item, this.name);
             }
         },
     },
@@ -203,12 +215,12 @@ export default {
 }
 .content-item {
     .name {
-        word-wrap: break-word;
+        word-break: break-all;
     }
 }
 .detail-animation-wrapper {
     overflow: hidden;
-    transition: max-height 0.5s ease-out;
+    transition: max-height 0.2s ease-out;
     height: auto;
     max-height: 400px;
 }

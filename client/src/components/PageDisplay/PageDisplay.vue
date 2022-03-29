@@ -1,14 +1,23 @@
 <template>
-    <markdown :markdown-config="markdownConfig" :export-link="exportUrl" @onEdit="onEdit" />
+    <config-provider v-slot="{ config, loading }">
+        <markdown
+            v-if="!loading"
+            :markdown-config="markdownConfig"
+            :enable_beta_markdown_export="config.enable_beta_markdown_export"
+            :export-link="exportUrl"
+            @onEdit="onEdit" />
+    </config-provider>
 </template>
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown.vue";
 
 export default {
     components: {
+        ConfigProvider,
         Markdown,
     },
     props: {

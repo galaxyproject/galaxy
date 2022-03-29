@@ -50,18 +50,10 @@ Advanced Configuration
 ----------------------------
 
 For more useful and manageable logging when running Galaxy with forking application stacks where multiple
-Galaxy server processes are forked after the Galaxy application is loaded, some extensions to standard Python
-:mod:`logging` are available in Galaxy:
-
-- Two custom fields (aka Python :class:`logging.LogRecord` attributes) identifying the uWSGI worker ID and mule ID can
-  be added to log messages: ``%(worker_id)s`` and ``%(mule_id)s``. These fields aid in associating log messages with the
-  Galaxy server processes that emitted them. They are included in the default log format (found in
-  :data:`galaxy.web.stack.UWSGIApplicationStack.log_format`) when using uWSGI and are available for use in custom log
-  formats.
-
-- A custom ``filename_template`` config option is available to :class:`logging.FileHandler` (or derivative class) log
-  handler definitions so that multiple file logging is possible. Without this custom option, all forked Galaxy server
-  processes would only be able to log to a single combined log file, which can be very difficult to work with.
+Galaxy server processes are forked after the Galaxy application is loaded, a custom ``filename_template`` config option
+is available to :class:`logging.FileHandler` (or derivative class) log handler definitions so that multiple file logging is possible.
+Without this custom option, all forked Galaxy server processes would only be able to log to a single combined log file,
+which can be very difficult to work with.
 
 YAML
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

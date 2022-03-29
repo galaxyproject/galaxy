@@ -476,7 +476,7 @@ def _order_load_path(path):
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
-        raw_config = ordered_load(f, merge_duplicate_keys=True)
+        raw_config = ordered_load(f)
         return raw_config
 
 

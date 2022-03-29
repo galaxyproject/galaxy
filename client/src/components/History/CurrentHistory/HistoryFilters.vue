@@ -8,7 +8,6 @@
                 :placeholder="'Search Filter' | localize"
                 data-description="filter text input" />
         </DebouncedInput>
-
         <b-input-group-append>
             <b-button
                 size="sm"

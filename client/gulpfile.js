@@ -38,8 +38,8 @@ const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PL
 const PATHS = {
     nodeModules: "./node_modules",
     pluginDirs: [
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
+        "../config/plugins/{visualizations,welcome_page}/*/static/**/*",
+        "../config/plugins/{visualizations,welcome_page}/*/*/static/**/*",
     ],
     pluginBuildModules: [
         `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
@@ -154,7 +154,7 @@ function forceBuildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);

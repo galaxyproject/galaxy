@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -461,6 +461,9 @@ galaxy:
   # <config_dir>.
   #file_sources_config_file: file_sources_conf.yml
 
+  # FileSource plugins described embedded into Galaxy's config.
+  #file_sources: null
+
   # Enable Galaxy to fetch containers registered with quay.io generated
   # from tool requirements resolved through Conda. These containers
   # (when available) have been generated using mulled -
@@ -600,15 +603,6 @@ galaxy:
   # To use an absolute path begin the path with '/'.  This is a
   # comma-separated list.
   #visualization_plugins_directory: config/plugins/visualizations
-
-  # Interactive environment plugins root directory: where to look for
-  # interactive environment plugins.  By default none will be loaded.
-  # Set to config/plugins/interactive_environments to load Galaxy's
-  # stock plugins. These will require Docker to be configured and have
-  # security considerations, so proceed with caution. The path is
-  # relative to the Galaxy root dir.  To use an absolute path begin the
-  # path with '/'.  This is a comma-separated list.
-  #interactive_environment_plugins_directory: null
 
   # Interactive tour directory: where to store interactive tour
   # definition files. Galaxy ships with several basic interface tours
@@ -1070,9 +1064,9 @@ galaxy:
   #logo_src_secondary: null
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
-  #helpsite_url: null
+  #helpsite_url: https://help.galaxyproject.org/
 
-  # The URL linked by the "Wiki" link in the "Help" menu.
+  # The URL linked by the "Community Hub" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
 
   # The URL linked for quota information in the UI.
@@ -1087,24 +1081,13 @@ galaxy:
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
 
-  # The URL linked by the "Search" link in the "Help" menu.
-  #search_url: https://galaxyproject.org/search/
-
-  # The URL linked by the "Mailing Lists" link in the "Help" menu.
-  #mailing_lists_url: https://galaxyproject.org/mailing-lists/
-
   # The URL linked by the "Videos" link in the "Help" menu.
-  #screencasts_url: https://vimeo.com/galaxyproject
+  #screencasts_url: https://www.youtube.com/c/galaxyproject
 
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
   #terms_url: null
-
-  # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-  # Galaxy Q&A site is under development; when the site is done, this
-  # URL will be set and uncommented.
-  #qa_url: null
 
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so
@@ -1727,9 +1710,6 @@ galaxy:
   # admin documentation.
   #enable_beta_gdpr: false
 
-  # Enable the new container interface for Interactive Environments
-  #enable_beta_containers_interface: false
-
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API. (The module state definitions may change and
   # workflows built using these modules may not function in the future.)
@@ -2301,6 +2281,12 @@ galaxy:
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
 
+  # Celery broker (if unset falls back to amqp_internal_connection).
+  #celery_broker: null
+
+  # If set, it will be the results backend for Celery.
+  #celery_backend: null
+
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
   # reason to disable it.
@@ -2356,13 +2342,6 @@ galaxy:
   # <config_dir>.
   #error_report_file: error_report.yml
 
-  # Path to container interface configuration file. The containers
-  # interface is only used if `enable_beta_containers_interface` config
-  # option is set.
-  # The value of this option will be resolved with respect to
-  # <config_dir>.
-  #containers_config_file: containers_conf.yml
-
   # Path to dynamic tool destinations configuration file.
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -2380,4 +2359,3 @@ galaxy:
 
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
-

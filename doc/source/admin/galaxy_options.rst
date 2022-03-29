@@ -676,6 +676,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~
+``file_sources``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    FileSource plugins described embedded into Galaxy's config.
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -960,22 +970,6 @@
     dir.  To use an absolute path begin the path with '/'.  This is a
     comma-separated list.
 :Default: ``config/plugins/visualizations``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactive_environment_plugins_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Interactive environment plugins root directory: where to look for
-    interactive environment plugins.  By default none will be loaded.
-    Set to config/plugins/interactive_environments to load Galaxy's
-    stock plugins. These will require Docker to be configured and have
-    security considerations, so proceed with caution. The path is
-    relative to the Galaxy root dir.  To use an absolute path begin
-    the path with '/'.  This is a comma-separated list.
-:Default: ``None``
 :Type: str
 
 
@@ -2004,7 +1998,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ``None``
+:Default: ``https://help.galaxyproject.org/``
 :Type: str
 
 
@@ -2013,7 +2007,7 @@
 ~~~~~~~~~~~~
 
 :Description:
-    The URL linked by the "Wiki" link in the "Help" menu.
+    The URL linked by the "Community Hub" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/``
 :Type: str
 
@@ -2059,33 +2053,13 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~
-``search_url``
-~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Search" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/search/``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~
-``mailing_lists_url``
-~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Mailing Lists" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/mailing-lists/``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``screencasts_url``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
     The URL linked by the "Videos" link in the "Help" menu.
-:Default: ``https://vimeo.com/galaxyproject``
+:Default: ``https://www.youtube.com/c/galaxyproject``
 :Type: str
 
 
@@ -2097,18 +2071,6 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~
-``qa_url``
-~~~~~~~~~~
-
-:Description:
-    The URL linked by the "Galaxy Q&A" link in the "Help" menu The
-    Galaxy Q&A site is under development; when the site is done, this
-    URL will be set and uncommented.
 :Default: ``None``
 :Type: str
 
@@ -3461,16 +3423,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_containers_interface``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable the new container interface for Interactive Environments
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_workflow_modules``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4660,6 +4612,26 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~
+``celery_broker``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Celery broker (if unset falls back to amqp_internal_connection).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``celery_backend``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If set, it will be the results backend for Celery.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~
 ``use_pbkdf2``
 ~~~~~~~~~~~~~~
@@ -4779,20 +4751,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-``containers_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Path to container interface configuration file. The containers
-    interface is only used if `enable_beta_containers_interface`
-    config option is set.
-    The value of this option will be resolved with respect to
-    <config_dir>.
-:Default: ``containers_conf.yml``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``tool_destinations_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4837,6 +4795,3 @@
     Display built-in converters in the tool panel.
 :Default: ``true``
 :Type: bool
-
-
-

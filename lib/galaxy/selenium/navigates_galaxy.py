@@ -1430,6 +1430,7 @@ class NavigatesGalaxy(HasDriver):
             tag_icon.wait_for_and_click()
 
         input_element = tag_area_input.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         for tag in tags:
             input_element.send_keys(tag)
@@ -1881,10 +1882,11 @@ class NavigatesGalaxy(HasDriver):
     def open_history_editor(self, scope=".history-index"):
         if self.is_beta_history():
             panel = self.components.history_panel.editor.selector(scope=scope)
-            toggle = panel.toggle
-            toggle.wait_for_and_click()
-            editor = panel.form
-            editor.wait_for_present()
+            if panel.name_input.is_absent:
+                toggle = panel.toggle
+                toggle.wait_for_and_click()
+                editor = panel.form
+                editor.wait_for_present()
 
     def close_history_editor(self, scope=".history-index"):
         if self.is_beta_history():

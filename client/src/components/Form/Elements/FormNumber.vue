@@ -34,12 +34,12 @@ export default {
             validator: (prop) => ["integer", "float"].includes(prop.toLowerCase()),
         },
         min: {
-            type: Number,
+            type: [Number, String],
             required: false,
             default: undefined,
         },
         max: {
-            type: Number,
+            type: [Number, String],
             required: false,
             default: undefined,
         },

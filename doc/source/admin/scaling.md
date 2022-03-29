@@ -26,14 +26,19 @@ The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which 
 ## Application Servers
 
 It is possible to run the Galaxy server in many different ways, including under different web application frameworks, or
-as a standalone server with no web stack. Prior to the 18.01 release, Galaxy (by default)
-used the [Python Paste][paste] web stack, and ran in a single process. Between the 18.01 release and the 22.01 release
-[uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default application server. Starting with the 22.01 release the default application server is
-[Gunicorn][Gunicorn]. For information about uWSGI in the Galaxy context please consult the version of this document that is
-appropriate to your Galaxy release.
+as a standalone server with no web stack.
 
-Gunicorn is able to serve ASGI applications. Galaxy can act as an ASGI web application since release 21.01,
-and we will drop support for being run as a WSGI application via uWSGI in Galaxy release 22.05.
+Starting with the 22.01 release the default application server is [Gunicorn][Gunicorn].
+Gunicorn serves Galaxy as an ASGI web application.
+
+### Historical note
+
+Prior to the 18.01 release, Galaxy (by default) used the [Python Paste][paste] web stack, and ran in a single process.
+Between the 18.01 release and the 22.01 release, [uWSGI](https://uwsgi-docs.readthedocs.io/) was used as the default
+application server.
+In release 22.05 we dropped support for running Galaxy as a WSGI application via uWSGI or paste.
+For more information about this, please consult the version of this document that is
+appropriate to your Galaxy release.
 
 [Gunicorn]: https://gunicorn.org/
 [paste]: https://paste.readthedocs.io/
@@ -73,14 +78,6 @@ Referred to in this documentation as the **Gunicorn + Webless** strategy.
 
 By default, handler assignment will occur using the **Database Transaction Isolation** or **Database SKIP LOCKED**
 methods (see below).
-
-### uWSGI for web serving with Mules as job handlers
-
-This strategy is deprecated and will be removed in Galaxy release 22.05.
-You can consult the documentation for older versions of Galaxy for details.
-
-If you're upgrading Galaxy to release 22.01 or newer we recommend you set up the
-**Gunicorn + Webless** strategy above.
 
 ## Job Handler Assignment Methods
 
@@ -126,7 +123,7 @@ assignment method.
 
 ### Choosing an Assignment Method
 
-Prior to Galaxy 19.01, the most common deployment strategies (e.g. **uWSGI + Webless**) assigned handlers using what is
+Prior to Galaxy 19.01, the most common deployment strategies assigned handlers using what is
 now (since 19.01) referred to as *Database Preassignment*.  Although still a fallback option when the database
 does not support *Database SKIP LOCKED* or *Database Transaction Isolation*, preassignment has a few drawbacks:
 

@@ -107,8 +107,8 @@ class EdamToolPanelView(ToolPanelView):
             }
             new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
-            for (term, tool_id, key, val, val_name) in operations[term].values():
-                populate_section(term, tool_id, key, val, val_name)
+            for tuple_ in operations[term].values():
+                populate_section(*tuple_)
 
         for term in sorted(topics.keys(), key=lambda x: self._sort_edam_key(x)):
             if len(topics[term].keys()) == 0:
@@ -125,8 +125,8 @@ class EdamToolPanelView(ToolPanelView):
             }
             new_panel[f"label_{term}"] = ToolSectionLabel(label_dict)
 
-            for (term, tool_id, key, val, val_name) in topics[term].values():
-                populate_section(term, tool_id, key, val, val_name)
+            for tuple_ in topics[term].values():
+                populate_section(*tuple_)
 
         section = new_panel.get_or_create_section("uncategorized", "Uncategorized")
         for (tool_id, key, val, val_name) in uncategorized:

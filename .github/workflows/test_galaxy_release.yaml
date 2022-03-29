@@ -2,11 +2,15 @@ name: Test Galaxy release script
 on:
   push:
     paths:
+      - '.github/workflows/test_galaxy_release.yaml'
+      - lib/galaxy/dependencies/**
       - lib/galaxy/version.py
       - scripts/release.sh
       - test/release.sh
   pull_request:
     paths:
+      - '.github/workflows/test_galaxy_release.yaml'
+      - lib/galaxy/dependencies/**
       - lib/galaxy/version.py
       - scripts/release.sh
       - test/release.sh

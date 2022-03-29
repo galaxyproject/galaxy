@@ -732,7 +732,7 @@ class JobHandlerQueue(Monitors):
                 # History is job.state_history
                 started = None
                 finished = None
-                for history in sorted(job.state_history, key=lambda history: history.update_time):
+                for history in sorted(job.state_history, key=lambda h: h.update_time):
                     if history.state == "running":
                         started = history.create_time
                     elif history.state == "ok":

@@ -12,7 +12,6 @@ from sqlalchemy import or_
 from galaxy import (
     exceptions,
     model,
-    util,
 )
 from galaxy.managers import hdas
 from galaxy.managers.context import (
@@ -54,7 +53,7 @@ class FastAPIJobs:
     job_search: JobSearch = depends(JobSearch)
     hda_manager: hdas.HDAManager = depends(hdas.HDAManager)
 
-    @router.get("/api/job/{id}")
+    @router.get("/api/jobs/{id}")
     def show(
         self,
         id: EncodedDatabaseIdField,
@@ -229,26 +228,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             out.append(j)
 
         return out
-
-    @expose_api_anonymous
-    def show(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        show( trans, id )
-        * GET /api/jobs/{id}:
-            return jobs for current user
-
-        :type   id: string
-        :param  id: Specific job id
-
-        :type   full: boolean
-        :param  full: whether to return extra information
-
-        :rtype:     dictionary
-        :returns:   dictionary containing full description of job data
-        """
-        job = self.__get_job(trans, id)
-        full_output = util.asbool(kwd.get("full", "false"))
-        return view_show_job(trans, job, full_output)
 
     @expose_api
     def common_problems(self, trans: ProvidesUserContext, id, **kwd):

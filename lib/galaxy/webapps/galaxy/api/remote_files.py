@@ -19,9 +19,7 @@ from galaxy.schema.remote_files import (
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
-from galaxy.web import expose_api
 from . import (
-    BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
@@ -75,6 +73,11 @@ class FastAPIRemoteFiles:
         summary="Displays remote files available to the user.",
         response_description="A list with details about the remote files available to the user.",
     )
+    @router.get(
+        "/api/ftp_files",
+        deprecated=True,
+        summary="Displays remote files available to the user. Please use /api/remote_files instead.",
+    )
     async def index(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
@@ -97,44 +100,3 @@ class FastAPIRemoteFiles:
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         return self.manager.get_files_source_plugins(user_ctx)
-
-
-class RemoteFilesAPIController(BaseGalaxyAPIController):
-    manager: RemoteFilesManager = depends(RemoteFilesManager)
-
-    @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/remote_files/
-
-        Displays remote files.
-
-        :param  target:      target to load available datasets from, defaults to ftpdir
-            possible values: ftpdir, userdir, importdir
-        :type   target:      str
-
-        :param  format:      requested format of data, defaults to flat
-            possible values: flat, jstree
-
-        :returns:   list of available files
-        :rtype:     list
-        """
-        # If set, target must be one of 'ftpdir' (default), 'userdir', 'importdir'
-        target = kwd.get("target", "ftpdir")
-        format = kwd.get("format", None)
-        recursive = kwd.get("recursive", None)
-        disable = kwd.get("disable", None)
-
-        return self.manager.index(trans, target, format, recursive, disable)
-
-    @expose_api
-    def plugins(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/remote_files/plugins
-
-        Display plugin information for each of the gxfiles:// URI targets available.
-
-        :returns:   list of configured plugins
-        :rtype:     list
-        """
-        return self.manager.get_files_source_plugins(trans)
