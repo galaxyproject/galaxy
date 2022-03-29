@@ -13,6 +13,15 @@ collect the output of these from a job directory.
 import collections
 import logging
 import os
+from abc import (
+    ABCMeta,
+    abstractmethod,
+)
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 from galaxy import util
 from galaxy.util import plugin_config
@@ -70,7 +79,21 @@ class JobMetrics:
         return plugin_config.plugins_dict(galaxy.job_metrics.instrumenters, "plugin_type")
 
 
-class NullJobInstrumenter:
+class JobInstrumenterI(metaclass=ABCMeta):
+    @abstractmethod
+    def pre_execute_commands(self, job_directory: str) -> Optional[str]:
+        return None
+
+    @abstractmethod
+    def post_execute_commands(self, job_directory: str) -> Optional[str]:
+        return None
+
+    @abstractmethod
+    def collect_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+        return {}
+
+
+class NullJobInstrumenter(JobInstrumenterI):
     def pre_execute_commands(self, job_directory):
         return None
 
@@ -84,7 +107,7 @@ class NullJobInstrumenter:
 NULL_JOB_INSTRUMENTER = NullJobInstrumenter()
 
 
-class JobInstrumenter:
+class JobInstrumenter(JobInstrumenterI):
     def __init__(self, plugin_classes, plugins_source, **kwargs):
         self.extra_kwargs = kwargs
         self.plugin_classes = plugin_classes
@@ -127,7 +150,7 @@ class JobInstrumenter:
         return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
 
     @staticmethod
-    def from_file(plugin_classes, conf_file, **kwargs):
+    def from_file(plugin_classes, conf_file, **kwargs) -> "JobInstrumenterI":
         if not conf_file or not os.path.exists(conf_file):
             return NULL_JOB_INSTRUMENTER
         plugins_source = plugin_config.plugin_source_from_path(conf_file)
