@@ -4,18 +4,21 @@
         :history-id="historyId"
         :offset="offset"
         :filter-text="filterText"
-        v-slot="{ loading, result: payload }">
+        v-slot="{ loading, result: payload, totalMatches }">
         <ExpandedItems
             :scope-key="history.id"
             :get-item-key="(item) => item.type_id"
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
             <SelectedItems
-                :scope-key="history.id"
+                :scope-key="queryKey"
                 :get-item-key="(item) => item.type_id"
                 v-slot="{
                     selectedItems,
                     showSelection,
+                    isQuerySelection,
+                    selectionSize,
                     setShowSelection,
+                    selectAllInCurrentQuery,
                     selectItems,
                     isSelected,
                     setSelected,
@@ -26,7 +29,7 @@
                     <HistoryFilters
                         class="content-operations-filters mx-3"
                         :filter-text.sync="filterText"
-                        :showAdvanced.sync="showAdvanced" />
+                        :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
                         <HistoryDetails :history="history" v-on="$listeners" />
                         <HistoryMessages class="m-2" :history="history" />
@@ -34,15 +37,25 @@
                             :history="history"
                             :filter-text="filterText"
                             :content-selection="selectedItems"
+                            :selection-size="selectionSize"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
                             :has-matches="hasMatches(payload)"
                             @update:content-selection="selectItems"
                             @update:show-selection="setShowSelection"
-                            @reset-selection="resetSelection"
                             @hide-selection="onHideSelection"
-                            @select-all="selectItems(payload)"
                             @collapse-all="collapseAll" />
+                        <transition name="shutterfade">
+                            <HistorySelectionStatus
+                                v-if="showSelection"
+                                class="p-2"
+                                :has-filters="hasFilters"
+                                :is-query-selection="isQuerySelection"
+                                :selection-size="selectionSize"
+                                :total-items-in-query="totalMatches"
+                                @select-all="selectAllInCurrentQuery(payload, totalMatches)"
+                                @clear-selection="resetSelection" />
+                        </transition>
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
@@ -101,6 +114,7 @@ import HistoryDetails from "./HistoryDetails";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
+import HistorySelectionStatus from "./HistorySelectionStatus";
 
 export default {
     components: {
@@ -116,6 +130,7 @@ export default {
         ToolHelpModal,
         ExpandedItems,
         SelectedItems,
+        HistorySelectionStatus,
     },
     props: {
         history: { type: History, required: true },
@@ -143,6 +158,9 @@ export default {
         },
         queryDefault() {
             return !this.filterText;
+        },
+        hasFilters() {
+            return !this.queryDefault;
         },
     },
     methods: {

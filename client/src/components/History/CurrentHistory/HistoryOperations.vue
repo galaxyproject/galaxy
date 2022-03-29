@@ -88,7 +88,7 @@
                         <span v-localize>Delete All Hidden Content</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-b-modal:purge-all-deleted-content>
-                        <span v-localize>Purge All Hidden Content</span>
+                        <span v-localize>Permanently Delete All Deleted Content</span>
                     </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
@@ -149,6 +149,7 @@ export default {
         history: { type: History, required: true },
         filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
+        selectionSize: { type: Number, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
@@ -164,7 +165,7 @@ export default {
             return !this.showHidden && !this.showDeleted;
         },
         numSelected() {
-            return this.contentSelection.size || 0;
+            return this.selectionSize;
         },
         hasSelection() {
             return this.numSelected > 0;
