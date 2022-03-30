@@ -84,7 +84,7 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> Any:
+def depends(dep_type: Type[T]) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
