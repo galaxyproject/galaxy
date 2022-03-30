@@ -163,7 +163,7 @@ export default {
             return checkFilter(this.filterText, "deleted", true);
         },
         showBuildOptions() {
-            return !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
         },
         numSelected() {
             return this.selectionSize;
