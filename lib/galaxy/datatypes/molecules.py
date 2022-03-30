@@ -802,6 +802,7 @@ class Cell(GenericMolFile):
     """
 
     file_ext = "cell"
+    meta_error = False
     MetadataElement(
         name="atom_data",
         default=[],
@@ -864,16 +865,15 @@ class Cell(GenericMolFile):
         """
         Find Atom IDs for metadata.
         """
-        # CELL file can only have one molecule
-        dataset.metadata.number_of_molecules = 1
-
+        self.meta_error = False
         if ase_io:
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, format="castep-cell")
-            except ValueError as e:
-                log.error("Could not read CELL structure data: %s", unicodify(e))
-                raise
+            except Exception as e:
+                log.warning('%s, set_meta Exception during ASE read: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
             try:
                 atom_data = [
@@ -883,9 +883,12 @@ class Cell(GenericMolFile):
                 pbc = ase_data.get_pbc()
                 lattice_parameters = ase_data.get_cell().cellpar()
             except Exception as e:
-                log.error("Error finding metadata: %s", unicodify(e))
-                raise
+                log.warning('%s, set_meta Exception during ASE metadata collection: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
+            # CELL file can only have one molecule
+            dataset.metadata.number_of_molecules = 1
             dataset.metadata.atom_data = atom_data
             dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             dataset.metadata.chemical_formula = chemical_formula
@@ -919,11 +922,15 @@ class Cell(GenericMolFile):
                     symbol = atom[0].lower().capitalize()
                     position = [float(i) for i in atom[1:4]]
                     atom_data.append(symbol + str(position))
+
+                # CELL file can only have one molecule
+                dataset.metadata.number_of_molecules = 1
                 dataset.metadata.atom_data = atom_data
                 dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
             except Exception as e:
-                log.error("Error finding atom_data: %s", unicodify(e))
-                raise
+                log.warning('%s, set_meta Exception during simple metadata collection: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -939,7 +946,9 @@ class Cell(GenericMolFile):
     def get_dataset_info(self, metadata):
         info = ""  # default to empty info
 
-        if ase_io:
+        if self.meta_error:
+            info = "Error finding metadata. The file may be formatted incorrectly."
+        elif ase_io:
             # enhanced info
             info_list = []
             info_list.append(f"Chemical formula:\n{metadata.chemical_formula}")
@@ -968,6 +977,7 @@ class CIF(GenericMolFile):
     """
 
     file_ext = "cif"
+    meta_error = False
     MetadataElement(
         name="data_block_names",
         default=[],
@@ -1048,14 +1058,15 @@ class CIF(GenericMolFile):
         """
         Find Atom IDs for metadata.
         """
-
+        self.meta_error = False
         if ase_io:
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
-            except ValueError as e:
-                log.error("Could not read CIF structure data: %s", unicodify(e))
-                raise
+            except Exception as e:
+                log.warning('%s, set_meta Exception during ASE read: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
             atom_data = []
             chemical_formula = []
@@ -1075,8 +1086,9 @@ class CIF(GenericMolFile):
                     is_periodic.append(p)
                     lattice_parameters.append(list(block.get_cell().cellpar()))
             except Exception as e:
-                log.error("Error finding metadata: %s", unicodify(e))
-                raise
+                log.warning('%s, set_meta Exception during ASE metadata collection: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
             dataset.metadata.number_of_molecules = len(ase_data)
             dataset.metadata.atom_data = atom_data
@@ -1105,7 +1117,9 @@ class CIF(GenericMolFile):
     def get_dataset_info(self, metadata):
         info = ""  # default to empty info
 
-        if ase_io:
+        if self.meta_error:
+            info = "Error finding metadata. The file may be formatted incorrectly."
+        elif ase_io:
             # enhanced info
             info_list = []
             if metadata.number_of_molecules == 1:
@@ -1139,6 +1153,7 @@ class XYZ(GenericMolFile):
     """
 
     file_ext = "xyz"
+    meta_error = False
     MetadataElement(
         name="atom_data",
         default=[],
@@ -1246,14 +1261,16 @@ class XYZ(GenericMolFile):
         """
         Find Atom IDs for metadata.
         """
+        self.meta_error = False
         if ase_io:
             # enhanced metadata
             try:
                 # ASE recommend always parsing as extended xyz
                 ase_data = ase_io.read(dataset.file_name, index=":", format="extxyz")
-            except ValueError as e:
-                log.error("Could not read XYZ structure data: %s", unicodify(e))
-                raise
+            except Exception as e:
+                log.warning('%s, set_meta Exception during ASE read: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
             atom_data = []
             chemical_formula = []
@@ -1273,8 +1290,9 @@ class XYZ(GenericMolFile):
                     is_periodic.append(p)
                     lattice_parameters.append(list(block.get_cell().cellpar()))
             except Exception as e:
-                log.error("Error finding metadata: %s", unicodify(e))
-                raise
+                log.warning('%s, set_meta Exception during ASE metadata collection: %s', self, unicodify(e))
+                self.meta_error = True
+                return
 
             dataset.metadata.number_of_molecules = len(ase_data)
             dataset.metadata.atom_data = atom_data
@@ -1290,7 +1308,8 @@ class XYZ(GenericMolFile):
                 blocks = self.read_blocks(xyz_lines)
             except (IndexError, TypeError, ValueError) as e:
                 # file does not follow XYZ structure
-                log.error("Error finding metadata: %s", unicodify(e))
+                log.warning('%s, set_meta Exception during simple metadata collection: %s', self, unicodify(e))
+                self.meta_error = True
                 return
 
             dataset.metadata.number_of_molecules = len(blocks)
@@ -1310,7 +1329,9 @@ class XYZ(GenericMolFile):
     def get_dataset_info(self, metadata):
         info = ""  # default to empty info
 
-        if ase_io:
+        if self.meta_error:
+            info = "Error finding metadata. The file may be formatted incorrectly."
+        elif ase_io:
             # enhanced info
             info_list = []
             if metadata.number_of_molecules == 1:
