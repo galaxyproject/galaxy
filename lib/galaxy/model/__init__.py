@@ -4356,14 +4356,16 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # This deletes the old dataset, so make sure to only call this on new things
         # in the history (e.g. during job finishing).
         old_dataset = self.dataset
-        self._metadata = None
         if self.extension == "data":
+            self._metadata = None
             self.extension = other_hda.extension
             self.metadata = other_hda.metadata
         else:
             # keep current extension and regenerate metadata
-            print ("#############################TODO: HOW DO WE ^?")
-            print (self._metadata)
+            print("#############################TODO: ^")
+            datatype = self.extension
+            print(datatype)
+
             pass  # TODO
         self.info = other_hda.info
         self.blurb = other_hda.blurb
