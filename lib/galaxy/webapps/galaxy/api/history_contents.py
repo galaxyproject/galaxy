@@ -312,11 +312,10 @@ class FastAPIHistoryContents:
         name="history_contents",
         summary="Returns the contents of the given history.",
         responses={
-            200: {"model": List[AnyHistoryContentItem]},
-            204: {
+            200: {
+                "model": List[AnyHistoryContentItem],
                 "description": (
-                    "When using `v=dev&view=count` instead of the contents"
-                    " a header with the `total_matches` of the search is returned"
+                    "When using `v=dev&view=count` the `total_matches` of the search is returned in the headers"
                 ),
                 "headers": {
                     "total_matches": {
@@ -342,9 +341,8 @@ class FastAPIHistoryContents:
         - The contents can be filtered and queried using the appropriate parameters.
         - The amount of information returned for each item can be customized.
 
-        When using the special serialization view `count`, instead of returning the items
-        that match the search, no content (204) is returned and the header value `total_matches`
-        will contain the number of items that match the search query.
+        When using the special serialization view `count`, the header value `total_matches`
+        will contain the number of items that match the search query without any pagination.
 
         **Note**: Anonymous users are allowed to get their current history contents.
         """
