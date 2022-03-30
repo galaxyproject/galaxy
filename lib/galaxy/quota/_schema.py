@@ -30,14 +30,16 @@ class QuotaOperation(str, Enum):
     SUBTRACT = "-"
 
 
-class DefaultQuotaTypes(str, Enum):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation.types at some point?
-    UNREGISTERED = 'unregistered'
-    REGISTERED = 'registered'
+class DefaultQuotaTypes(
+    str, Enum
+):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation.types at some point?
+    UNREGISTERED = "unregistered"
+    REGISTERED = "registered"
 
 
 class DefaultQuotaValues(str, Enum):
-    UNREGISTERED = 'unregistered'
-    REGISTERED = 'registered'
+    UNREGISTERED = "unregistered"
+    REGISTERED = "registered"
     NO = "no"
 
 
@@ -61,7 +63,7 @@ QuotaOperationField = Field(
         "- `=` : The quota is exactly the amount specified"
         "- `+` : The amount specified will be added to the amounts of the user's other associated quota definitions"
         "- `-` : The amount specified will be subtracted from the amounts of the user's other associated quota definitions"
-    )
+    ),
 )
 
 
@@ -74,7 +76,7 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
             "The type of the default quota. Either one of:\n"
             " - `registered`: the associated quota will affect registered users.\n"
             " - `unregistered`: the associated quota will affect unregistered users.\n"
-        )
+        ),
     )
 
 
@@ -98,6 +100,7 @@ class GroupQuota(BaseModel):
 
 class QuotaBase(BaseModel):
     """Base model containing common fields for Quotas."""
+
     model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
     id: EncodedDatabaseIdField = Field(
         ...,
@@ -109,6 +112,7 @@ class QuotaBase(BaseModel):
 
 class QuotaSummary(QuotaBase):
     """Contains basic information about a Quota"""
+
     url: str = Field(
         ...,
         title="URL",
@@ -120,7 +124,7 @@ class QuotaSummary(QuotaBase):
 class QuotaSummaryList(BaseModel):
     __root__: List[QuotaSummary] = Field(
         default=[],
-        title='List with summary information of Quotas.',
+        title="List with summary information of Quotas.",
     )
 
 
@@ -214,7 +218,7 @@ class UpdateQuotaParams(BaseModel):
         description=(
             "One of (``+``, ``-``, ``=``). If you wish to change this value,"
             " you must also provide the ``amount``, otherwise it will not take effect."
-        )
+        ),
     )
     default: Optional[DefaultQuotaValues] = Field(
         default=None,

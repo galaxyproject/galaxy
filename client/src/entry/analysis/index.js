@@ -5,7 +5,7 @@ import MvcHistoryPanel from "entry/panels/history-panel";
 import Page from "layout/page";
 
 // Vue adapter emulates current features of backbone history panel
-import { HistoryPanelProxy } from "components/History";
+import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
 import { isBetaHistoryOpen } from "components/History/adapters/betaToggle";
 
 addInitialization((Galaxy, { options = {} }) => {

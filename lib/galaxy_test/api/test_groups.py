@@ -1,14 +1,15 @@
+from typing import Optional
+
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
 class GroupsApiTestCase(ApiTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def test_create_valid(self, group_name: str = None):
+    def test_create_valid(self, group_name: Optional[str] = None):
         payload = self._build_valid_group_payload(group_name)
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
@@ -103,7 +104,7 @@ class GroupsApiTestCase(ApiTestCase):
         if assert_id is not None:
             assert group["id"] == assert_id
 
-    def _build_valid_group_payload(self, name: str = None):
+    def _build_valid_group_payload(self, name: Optional[str] = None):
         name = name or self.dataset_populator.get_random_name()
         user_id = self.dataset_populator.user_id()
         role_id = self.dataset_populator.user_private_role_id()

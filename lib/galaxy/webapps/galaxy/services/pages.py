@@ -4,12 +4,8 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.managers import (
-    base,
-)
-from galaxy.managers.markdown_util import (
-    internal_galaxy_markdown_to_pdf,
-)
+from galaxy.managers import base
+from galaxy.managers.markdown_util import internal_galaxy_markdown_to_pdf
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
@@ -87,7 +83,7 @@ class PagesService(ServiceBase):
         """
         page = self.manager.create(trans, payload.dict())
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
-        rval['content'] = page.latest_revision.content
+        rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
         return PageSummary.parse_obj(rval)
 
@@ -95,7 +91,7 @@ class PagesService(ServiceBase):
         """
         Deletes a page (or marks it as deleted)
         """
-        page = base.get_object(trans, id, 'Page', check_ownership=True)
+        page = base.get_object(trans, id, "Page", check_ownership=True)
 
         # Mark a page as deleted
         page.deleted = True
@@ -109,10 +105,10 @@ class PagesService(ServiceBase):
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
+        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
-        rval['content'] = page.latest_revision.content
-        rval['content_format'] = page.latest_revision.content_format
+        rval["content"] = page.latest_revision.content
+        rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
         return PageDetails.parse_obj(rval)
 
@@ -125,7 +121,7 @@ class PagesService(ServiceBase):
         :rtype: dict
         :returns: Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        page = base.get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
+        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         if page.latest_revision.content_format != PageContentFormat.markdown.value:
             raise exceptions.RequestParameterInvalidException("PDF export only allowed for Markdown based pages")
         internal_galaxy_markdown = page.latest_revision.content

@@ -47,29 +47,29 @@ class InstallEnvironment:
         for path in paths:
             self.env_shell_file_paths.append(str(path))
 
-    def build_command(self, command, action_type='shell_command'):
+    def build_command(self, command, action_type="shell_command"):
         """
         Build command line for execution from simple command, but
         configuring environment described by this object.
         """
         env_cmds = self.environment_commands(action_type)
-        return '\n'.join(env_cmds + [command])
+        return "\n".join(env_cmds + [command])
 
     def close_file_descriptor(self, fd):
         """Attempt to close a file descriptor."""
         start_timer = time.time()
-        error = ''
+        error = ""
         while True:
             try:
                 fd.close()
                 break
             except OSError as e:
                 # Undoubtedly close() was called during a concurrent operation on the same file object.
-                log.debug(f'Error closing file descriptor: {str(e)}')
-                time.sleep(.5)
+                log.debug(f"Error closing file descriptor: {e}")
+                time.sleep(0.5)
                 current_wait_time = time.time() - start_timer
                 if current_wait_time >= 600:
-                    error = f'Error closing file descriptor: {str(e)}'
+                    error = f"Error closing file descriptor: {e}"
                     break
         return error
 
@@ -79,14 +79,14 @@ class InstallEnvironment:
         is printed and saved to that thread's queue. The calling thread can then retrieve the data using
         thread.stdout and thread.stderr.
         """
-        stdout_logger = logging.getLogger('install_environment.STDOUT')
-        stderr_logger = logging.getLogger('install_environment.STDERR')
-        for line in iter(stdout.readline, b''):
+        stdout_logger = logging.getLogger("install_environment.STDOUT")
+        stderr_logger = logging.getLogger("install_environment.STDERR")
+        for line in iter(stdout.readline, b""):
             output = unicodify(line).rstrip()
             stdout_logger.debug(output)
             stdout_queue.put(output)
         stdout_queue.put(None)
-        for line in iter(stderr.readline, b''):
+        for line in iter(stderr.readline, b""):
             output = unicodify(line).rstrip()
             stderr_logger.debug(output)
             stderr_queue.put(output)
@@ -98,21 +98,21 @@ class InstallEnvironment:
         for env_shell_file_path in self.env_shell_file_paths:
             if os.path.exists(env_shell_file_path):
                 for env_setting in open(env_shell_file_path):
-                    cmds.append(env_setting.strip('\n'))
+                    cmds.append(env_setting.strip("\n"))
             else:
-                log.debug(f'Invalid file {str(env_shell_file_path)} specified, ignoring {str(action_type)} action.')
+                log.debug(f"Invalid file {env_shell_file_path} specified, ignoring {action_type} action.")
         return cmds
 
-    def environment_dict(self, action_type='template_command'):
+    def environment_dict(self, action_type="template_command"):
         env_vars = dict()
         for env_shell_file_path in self.env_shell_file_paths:
             if os.path.exists(env_shell_file_path):
                 for env_setting in open(env_shell_file_path):
-                    env_string = env_setting.split(';')[0]
-                    env_name, env_path = env_string.split('=')
+                    env_string = env_setting.split(";")[0]
+                    env_name, env_path = env_string.split("=")
                     env_vars[env_name] = env_path
             else:
-                log.debug(f'Invalid file {str(env_shell_file_path)} specified, ignoring template_command action.')
+                log.debug(f"Invalid file {env_shell_file_path} specified, ignoring template_command action.")
         return env_vars
 
     def handle_command(self, tool_dependency, cmd, return_output=False, job_name=""):
@@ -123,11 +123,19 @@ class InstallEnvironment:
         stdout = output.stdout
         stderr = output.stderr
         if len(stdout) > DATABASE_MAX_STRING_SIZE:
-            log.warning(f"Length of stdout > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database.")
-            stdout = shrink_string_by_size(stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            log.warning(
+                f"Length of stdout > {DATABASE_MAX_STRING_SIZE_PRETTY}, so only a portion will be saved in the database."
+            )
+            stdout = shrink_string_by_size(
+                stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
+            )
         if len(stderr) > DATABASE_MAX_STRING_SIZE:
-            log.warning(f"Length of stderr > {str(DATABASE_MAX_STRING_SIZE_PRETTY)}, so only a portion will be saved in the database.")
-            stderr = shrink_string_by_size(stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            log.warning(
+                f"Length of stderr > {DATABASE_MAX_STRING_SIZE_PRETTY}, so only a portion will be saved in the database."
+            )
+            stderr = shrink_string_by_size(
+                stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
+            )
         if output.return_code not in [0]:
             status = self.app.install_model.ToolDependency.installation_status.ERROR
             if stderr:
@@ -136,12 +144,12 @@ class InstallEnvironment:
                 error_message = unicodify(stdout)
             else:
                 # We have a problem if there was no stdout and no stderr.
-                error_message = "Unknown error occurred executing shell command %s, return_code: %s" % \
-                    (str(cmd), str(output.return_code))
-            set_tool_dependency_attributes(self.app,
-                                           tool_dependency=tool_dependency,
-                                           status=status,
-                                           error_message=error_message)
+                error_message = (
+                    f"Unknown error occurred executing shell command {cmd}, return_code: {output.return_code}"
+                )
+            set_tool_dependency_attributes(
+                self.app, tool_dependency=tool_dependency, status=status, error_message=error_message
+            )
         if return_output:
             return output
         return output.return_code
@@ -162,15 +170,17 @@ class InstallEnvironment:
             llog_name += f":{job_name}"
         llog = logging.getLogger(llog_name)
         # Print the command we're about to execute, ``set -x`` style.
-        llog.debug(f"+ {str(command)}")
+        llog.debug(f"+ {command}")
         # Launch the command as subprocess.  A bufsize of 1 means line buffered.
-        process_handle = subprocess.Popen(str(command),
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE,
-                                          bufsize=1,
-                                          close_fds=False,
-                                          shell=True,
-                                          cwd=state.env['lcwd'])
+        process_handle = subprocess.Popen(
+            str(command),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            bufsize=1,
+            close_fds=False,
+            shell=True,
+            cwd=state.env["lcwd"],
+        )
         pid = process_handle.pid
         # Launch the asynchronous readers of the process' stdout and stderr.
         stdout_queue = queue.Queue()
@@ -181,11 +191,9 @@ class InstallEnvironment:
         stderr_reader.start()
         # Place streamed stdout and stderr into a threaded IPC queue target so it can
         # be printed and stored for later retrieval when generating the INSTALLATION.log.
-        stdio_thread = threading.Thread(target=self.enqueue_output,
-                                        args=(process_handle.stdout,
-                                              stdout_queue,
-                                              process_handle.stderr,
-                                              stderr_queue))
+        stdio_thread = threading.Thread(
+            target=self.enqueue_output, args=(process_handle.stdout, stdout_queue, process_handle.stderr, stderr_queue)
+        )
         thread_lock = threading.Lock()
         thread_lock.acquire()
         stdio_thread.start()
@@ -218,11 +226,13 @@ class InstallEnvironment:
                     stderr_queue.task_done()
                     break
             # Sleep a bit before asking the readers again.
-            time.sleep(.1)
+            time.sleep(0.1)
             current_wait_time = time.time() - start_timer
             if stdout_queue.empty() and stderr_queue.empty() and current_wait_time > NO_OUTPUT_TIMEOUT:
-                err_msg = "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n" % \
-                          (pid, NO_OUTPUT_TIMEOUT)
+                err_msg = (
+                    "\nShutting down process id %s because it generated no output for the defined timeout period of %.1f seconds.\n"
+                    % (pid, NO_OUTPUT_TIMEOUT)
+                )
                 stderr_reader.lines.append(err_msg)
                 process_handle.kill()
                 break
@@ -235,8 +245,8 @@ class InstallEnvironment:
         # Close subprocess' file descriptors.
         self.close_file_descriptor(process_handle.stdout)
         self.close_file_descriptor(process_handle.stderr)
-        stdout = '\n'.join(stdout_reader.lines)
-        stderr = '\n'.join(stderr_reader.lines)
+        stdout = "\n".join(stdout_reader.lines)
+        stderr = "\n".join(stderr_reader.lines)
         # Handle error condition (deal with stdout being None, too)
         output = _AttributeString(stdout.strip() if stdout else "")
         errors = _AttributeString(stderr.strip() if stderr else "")
@@ -248,16 +258,16 @@ class InstallEnvironment:
 
     def log_results(self, command, fabric_AttributeString, file_path):
         """Write attributes of fabric.operations._AttributeString to a specified log file."""
-        mode = 'a' if os.path.exists(file_path) else 'w'
+        mode = "a" if os.path.exists(file_path) else "w"
         with open(file_path, mode) as logfile:
             logfile.write("\n#############################################\n")
             logfile.write(command)
-            logfile.write('\nSTDOUT\n')
+            logfile.write("\nSTDOUT\n")
             logfile.write(fabric_AttributeString.stdout)
             logfile.write("\n#############################################\n")
             logfile.write("\n#############################################\n")
             logfile.write(command)
-            logfile.write('\nSTDERR\n')
+            logfile.write("\nSTDERR\n")
             logfile.write(fabric_AttributeString.stderr)
             logfile.write("\n#############################################\n")
 

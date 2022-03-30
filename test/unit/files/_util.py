@@ -54,23 +54,23 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
         email=TEST_EMAIL,
         user_ftp_dir=user_ftp_dir,
         preferences={
-            'webdav|password': 'secret1234',
-            'dropbox|access_token': os.environ.get('GALAXY_TEST_DROPBOX_ACCESS_TOKEN'),
-            'googledrive|client_id': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID'),
-            'googledrive|client_secret': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET'),
-            'googledrive|access_token': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN'),
-            'googledrive|refresh_token': os.environ.get('GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN'),
-            'googlecloudstorage|project': os.environ.get('GALAXY_TEST_GCS_PROJECT'),
-            'googlecloudstorage|bucket_name': os.environ.get('GALAXY_TEST_GCS_BUCKET'),
-            'googlecloudstorage|client_id': os.environ.get('GALAXY_TEST_GCS_CLIENT_ID'),
-            'googlecloudstorage|client_secret': os.environ.get('GALAXY_TEST_GCS_CLIENT_SECRET'),
-            'googlecloudstorage|access_token': os.environ.get('GALAXY_TEST_GCS_ACCESS_TOKEN'),
-            'googlecloudstorage|refresh_token': os.environ.get('GALAXY_TEST_GCS_REFRESH_TOKEN'),
-            'onedata|provider_host': os.environ.get('GALAXY_TEST_ONEDATA_PROVIDER_HOST'),
-            'onedata|access_token': os.environ.get('GALAXY_TEST_ONEDATA_ACCESS_TOKEN'),
-            'basespace|client_id': os.environ.get('GALAXY_TEST_ONEDATA_CLIENT_ID'),
-            'basespace|client_secret': os.environ.get('GALAXY_TEST_ONEDATA_CLIENT_SECRET'),
-            'basespace|access_token': os.environ.get('GALAXY_TEST_ONEDATA_ACCESS_TOKEN'),
+            "webdav|password": "secret1234",
+            "dropbox|access_token": os.environ.get("GALAXY_TEST_DROPBOX_ACCESS_TOKEN"),
+            "googledrive|client_id": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_CLIENT_ID"),
+            "googledrive|client_secret": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET"),
+            "googledrive|access_token": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN"),
+            "googledrive|refresh_token": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN"),
+            "googlecloudstorage|project": os.environ.get("GALAXY_TEST_GCS_PROJECT"),
+            "googlecloudstorage|bucket_name": os.environ.get("GALAXY_TEST_GCS_BUCKET"),
+            "googlecloudstorage|client_id": os.environ.get("GALAXY_TEST_GCS_CLIENT_ID"),
+            "googlecloudstorage|client_secret": os.environ.get("GALAXY_TEST_GCS_CLIENT_SECRET"),
+            "googlecloudstorage|access_token": os.environ.get("GALAXY_TEST_GCS_ACCESS_TOKEN"),
+            "googlecloudstorage|refresh_token": os.environ.get("GALAXY_TEST_GCS_REFRESH_TOKEN"),
+            "onedata|provider_host": os.environ.get("GALAXY_TEST_ONEDATA_PROVIDER_HOST"),
+            "onedata|access_token": os.environ.get("GALAXY_TEST_ONEDATA_ACCESS_TOKEN"),
+            "basespace|client_id": os.environ.get("GALAXY_TEST_ONEDATA_CLIENT_ID"),
+            "basespace|client_secret": os.environ.get("GALAXY_TEST_ONEDATA_CLIENT_SECRET"),
+            "basespace|access_token": os.environ.get("GALAXY_TEST_ONEDATA_ACCESS_TOKEN"),
         },
         role_names=role_names or set(),
         group_names=group_names or set(),
@@ -81,7 +81,7 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
 
 def realize_to_temp_file(file_sources, uri, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
-    with tempfile.NamedTemporaryFile(mode='r') as temp:
+    with tempfile.NamedTemporaryFile(mode="r") as temp:
         file_source_path.file_source.realize_to(file_source_path.path, temp.name, user_context=user_context)
         with open(temp.name) as f:
             realized_contents = f.read()
@@ -122,7 +122,7 @@ def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Ex
 
 def write_from(file_sources, uri, content, user_context=None):
     file_source_path = file_sources.get_file_source_path(uri)
-    with tempfile.NamedTemporaryFile(mode='w') as f:
+    with tempfile.NamedTemporaryFile(mode="w") as f:
         f.write(content)
         f.flush()
         file_source_path.file_source.write_from(file_source_path.path, f.name, user_context=user_context)

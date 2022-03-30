@@ -61,7 +61,7 @@ class odict(UserDict):
         try:
             key = self._keys[-1]
         except IndexError:
-            raise KeyError('dictionary is empty')
+            raise KeyError("dictionary is empty")
         val = self[key]
         del self[key]
         return (key, val)

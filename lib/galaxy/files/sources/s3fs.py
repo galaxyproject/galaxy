@@ -1,7 +1,11 @@
 import functools
 import logging
 import os
-from typing import Any, Dict, List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 try:
     import s3fs
@@ -17,14 +21,14 @@ log = logging.getLogger(__name__)
 
 
 class S3FsFilesSource(BaseFilesSource):
-    plugin_type = 's3fs'
+    plugin_type = "s3fs"
 
     def __init__(self, **kwd):
         if s3fs is None:
             raise Exception("Package s3fs unavailable but required for this file source plugin.")
         props = self._parse_common_config_opts(kwd)
-        self._bucket = props.pop("bucket", '')
-        self._endpoint_url = props.pop('endpoint_url', None)
+        self._bucket = props.pop("bucket", "")
+        self._endpoint_url = props.pop("endpoint_url", None)
         assert self._endpoint_url or self._bucket
         self._props = props
 
@@ -58,7 +62,7 @@ class S3FsFilesSource(BaseFilesSource):
 
     def _open_fs(self, user_context=None):
         if self._endpoint_url:
-            self._props.update({'client_kwargs': {'endpoint_url': self._endpoint_url}})
+            self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
         fs = s3fs.S3FileSystem(**self._props)
         return fs
 
@@ -87,4 +91,4 @@ class S3FsFilesSource(BaseFilesSource):
         return effective_props
 
 
-__all__ = ('S3FsFilesSource',)
+__all__ = ("S3FsFilesSource",)

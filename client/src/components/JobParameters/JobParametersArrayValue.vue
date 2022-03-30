@@ -1,22 +1,21 @@
 <template>
     <div>
         <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-            <generic-history-content v-if="['hda', 'hdca'].includes(elVal.src)" :data_item="elVal" />
+            <generic-history-item
+                v-if="['hda', 'hdca'].includes(elVal.src)"
+                :item-id="elVal.id"
+                :item-src="elVal.src" />
             <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
         </div>
     </div>
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import GenericHistoryContent from "components/History/ContentItem/GenericContentItem/GenericHistoryContent";
-
-Vue.use(BootstrapVue);
+import GenericHistoryItem from "components/History/Content/GenericItem";
 
 export default {
     components: {
-        GenericHistoryContent,
+        GenericHistoryItem,
     },
     props: {
         parameter_value: {

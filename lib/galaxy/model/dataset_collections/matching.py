@@ -2,14 +2,14 @@ from galaxy import exceptions
 from galaxy.util import bunch
 from .structure import (
     get_structure,
-    leaf
+    leaf,
 )
 
 CANNOT_MATCH_ERROR_MESSAGE = "Cannot match collection types."
 
 
 class CollectionsToMatch:
-    """ Structure representing a set of collections that need to be matched up
+    """Structure representing a set of collections that need to be matched up
     when running tools (possibly workflows in the future as well).
     """
 
@@ -31,7 +31,7 @@ class CollectionsToMatch:
 
 
 class MatchingCollections:
-    """ Structure holding the result of matching a list of collections
+    """Structure holding the result of matching a list of collections
     together. This class being different than the class above and being
     created in the DatasetCollectionManager layer may seem like
     overkill but I suspect in the future plugins will be subtypable for
@@ -94,11 +94,15 @@ class MatchingCollections:
         matching_collections = MatchingCollections()
         for input_key, to_match in sorted(collections_to_match.items()):
             hdca = to_match.hdca
-            collection_type_description = collection_type_descriptions.for_collection_type(hdca.collection.collection_type)
+            collection_type_description = collection_type_descriptions.for_collection_type(
+                hdca.collection.collection_type
+            )
             subcollection_type = to_match.subcollection_type
 
             if to_match.linked:
-                matching_collections.__attempt_add_to_linked_match(input_key, hdca, collection_type_description, subcollection_type)
+                matching_collections.__attempt_add_to_linked_match(
+                    input_key, hdca, collection_type_description, subcollection_type
+                )
             else:
                 structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
                 matching_collections.unlinked_structures.append(structure)

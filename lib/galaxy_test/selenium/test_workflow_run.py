@@ -112,7 +112,8 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def test_step_parameter_inputs(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.open_in_workflow_run("""
+        self.open_in_workflow_run(
+            """
 class: GalaxyWorkflow
 inputs:
   input_int: integer
@@ -124,7 +125,8 @@ steps:
     in:
       inttest: input_int
       files_0|file: input_data
-""")
+"""
+        )
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
         input_element = input_div_element.find_element_by_css_selector("input")
@@ -190,6 +192,34 @@ steps:
 
     @selenium_test
     @managed_history
+    def test_execution_with_text_default_value_connected_to_restricted_select(self):
+        self.open_in_workflow_run(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    optional: true
+    default: ex2
+    restrictOnConnections: true
+    type: text
+steps:
+  multi_select:
+    tool_id: multi_select
+    in:
+      select_ex:
+        source: text_param
+"""
+        )
+        element = self.components.workflow_run.input_select_field(label="text_param").wait_for_present()
+        assert element.text == "Ex2"
+        self.workflow_run_submit()
+        history_id = self.current_history_id()
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+        assert content == "ex2"
+
+    @selenium_test
+    @managed_history
     def test_execution_with_rules(self):
         history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_RULES_1)
         self.open_in_workflow_run(WORKFLOW_WITH_RULES_1)
@@ -228,19 +258,6 @@ steps:
         history_id = self.current_history_id()
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
-    @selenium_test
-    def test_simple_workflow_run_form_validation_required_text_param(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  text_input: text
-steps: []
-""")
-        self.simplified_workflow_run_by_id(workflow_id)
-        run_button = self.components.workflow_run.run_workflow.wait_for_visible()
-        assert run_button.get_attribute('disabled') == 'true'
-        self.components.workflow_run.validation_error.wait_for_visible()
-
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_run_with_name(name)
@@ -266,9 +283,6 @@ steps: []
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.workflow_click_option(".workflow-run")
-
-    def simplified_workflow_run_by_id(self, workflow_id):
-        self.get(f"workflows/run?id={workflow_id}&simplified_workflow_run_ui=prefer")
 
     def _assert_has_3_lines_after_run(self, hid):
         if self.is_beta_history():

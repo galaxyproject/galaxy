@@ -24,10 +24,11 @@ from ..exceptions.error_codes import (
 
 class MessageException(Exception):
     """Most generic Galaxy exception - indicates merely that some exceptional condition happened."""
+
     # status code to be set when used with API.
     status_code: int = 400
     # Error code information embedded into API json responses.
-    err_code: ErrorCode = error_codes_by_name['UNKNOWN']
+    err_code: ErrorCode = error_codes_by_name["UNKNOWN"]
 
     def __init__(self, err_msg=None, type="info", **extra_error_info):
         self.err_msg = err_msg or self.err_code.default_error_message
@@ -52,14 +53,15 @@ class ItemDeletionException(MessageException):
 
 
 class ObjectInvalid(Exception):
-    """ Accessed object store ID is invalid """
+    """Accessed object store ID is invalid"""
+
 
 # Please keep the exceptions ordered by status code
 
 
 class ActionInputError(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_REQUEST_INVALID_PARAMETER']
+    err_code = error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
 
     def __init__(self, err_msg, type="error"):
         super().__init__(err_msg, type)
@@ -67,57 +69,57 @@ class ActionInputError(MessageException):
 
 class DuplicatedSlugException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_SLUG_DUPLICATE']
+    err_code = error_codes_by_name["USER_SLUG_DUPLICATE"]
 
 
 class DuplicatedIdentifierException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_IDENTIFIER_DUPLICATE']
+    err_code = error_codes_by_name["USER_IDENTIFIER_DUPLICATE"]
 
 
 class ObjectAttributeInvalidException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_OBJECT_ATTRIBUTE_INVALID']
+    err_code = error_codes_by_name["USER_OBJECT_ATTRIBUTE_INVALID"]
 
 
 class ObjectAttributeMissingException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_OBJECT_ATTRIBUTE_MISSING']
+    err_code = error_codes_by_name["USER_OBJECT_ATTRIBUTE_MISSING"]
 
 
 class MalformedId(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['MALFORMED_ID']
+    err_code = error_codes_by_name["MALFORMED_ID"]
 
 
 class UserInvalidRunAsException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_INVALID_RUN_AS']
+    err_code = error_codes_by_name["USER_INVALID_RUN_AS"]
 
 
 class MalformedContents(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['MALFORMED_CONTENTS']
+    err_code = error_codes_by_name["MALFORMED_CONTENTS"]
 
 
 class UnknownContentsType(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['UNKNOWN_CONTENTS_TYPE']
+    err_code = error_codes_by_name["UNKNOWN_CONTENTS_TYPE"]
 
 
 class RequestParameterMissingException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_REQUEST_MISSING_PARAMETER']
+    err_code = error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"]
 
 
 class ToolMetaParameterException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_TOOL_META_PARAMETER_PROBLEM']
+    err_code = error_codes_by_name["USER_TOOL_META_PARAMETER_PROBLEM"]
 
 
 class ToolMissingException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_TOOL_MISSING_PROBLEM']
+    err_code = error_codes_by_name["USER_TOOL_MISSING_PROBLEM"]
 
     def __init__(self, err_msg=None, type="info", tool_id=None, **extra_error_info):
         super().__init__(err_msg, type, **extra_error_info)
@@ -126,103 +128,105 @@ class ToolMissingException(MessageException):
 
 class RequestParameterInvalidException(MessageException):
     status_code = 400
-    err_code = error_codes_by_name['USER_REQUEST_INVALID_PARAMETER']
+    err_code = error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"]
 
 
 class ToolInputsNotReadyException(MessageException):
     status_code = 400
-    error_code = error_codes_by_name['TOOL_INPUTS_NOT_READY']
+    error_code = error_codes_by_name["TOOL_INPUTS_NOT_READY"]
 
 
 class RealUserRequiredException(MessageException):
     status_code = 400
-    error_code = error_codes_by_name['REAL_USER_REQUIRED']
+    error_code = error_codes_by_name["REAL_USER_REQUIRED"]
 
 
 class AuthenticationFailed(MessageException):
     status_code = 401
-    err_code = error_codes_by_name['USER_AUTHENTICATION_FAILED']
+    err_code = error_codes_by_name["USER_AUTHENTICATION_FAILED"]
 
 
 class AuthenticationRequired(MessageException):
     status_code = 403
     # TODO: as 401 and send WWW-Authenticate: ???
-    err_code = error_codes_by_name['USER_NO_API_KEY']
+    err_code = error_codes_by_name["USER_NO_API_KEY"]
 
 
 class ItemAccessibilityException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['USER_CANNOT_ACCESS_ITEM']
+    err_code = error_codes_by_name["USER_CANNOT_ACCESS_ITEM"]
 
 
 class ItemOwnershipException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['USER_DOES_NOT_OWN_ITEM']
+    err_code = error_codes_by_name["USER_DOES_NOT_OWN_ITEM"]
 
 
 class ConfigDoesNotAllowException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['CONFIG_DOES_NOT_ALLOW']
+    err_code = error_codes_by_name["CONFIG_DOES_NOT_ALLOW"]
 
 
 class InsufficientPermissionsException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['INSUFFICIENT_PERMISSIONS']
+    err_code = error_codes_by_name["INSUFFICIENT_PERMISSIONS"]
 
 
 class UserCannotRunAsException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['USER_CANNOT_RUN_AS']
+    err_code = error_codes_by_name["USER_CANNOT_RUN_AS"]
 
 
 class AdminRequiredException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['ADMIN_REQUIRED']
+    err_code = error_codes_by_name["ADMIN_REQUIRED"]
 
 
 class UserActivationRequiredException(MessageException):
     status_code = 403
-    err_code = error_codes_by_name['USER_ACTIVATION_REQUIRED']
+    err_code = error_codes_by_name["USER_ACTIVATION_REQUIRED"]
 
 
 class ObjectNotFound(MessageException):
-    """ Accessed object was not found """
+    """Accessed object was not found"""
+
     status_code = 404
-    err_code = error_codes_by_name['USER_OBJECT_NOT_FOUND']
+    err_code = error_codes_by_name["USER_OBJECT_NOT_FOUND"]
 
 
 class DeprecatedMethod(MessageException):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later
     """
+
     status_code = 404
     # TODO:?? 410 Gone?
-    err_code = error_codes_by_name['DEPRECATED_API_CALL']
+    err_code = error_codes_by_name["DEPRECATED_API_CALL"]
 
 
 class Conflict(MessageException):
     status_code = 409
-    err_code = error_codes_by_name['CONFLICT']
+    err_code = error_codes_by_name["CONFLICT"]
 
 
 class ConfigurationError(Exception):
     status_code = 500
-    err_code = error_codes_by_name['CONFIG_ERROR']
+    err_code = error_codes_by_name["CONFIG_ERROR"]
 
 
 class InconsistentDatabase(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['INCONSISTENT_DATABASE']
+    err_code = error_codes_by_name["INCONSISTENT_DATABASE"]
 
 
 class InternalServerError(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['INTERNAL_SERVER_ERROR']
+    err_code = error_codes_by_name["INTERNAL_SERVER_ERROR"]
 
 
 class ToolExecutionError(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['TOOL_EXECUTION_ERROR']
+    err_code = error_codes_by_name["TOOL_EXECUTION_ERROR"]
 
     def __init__(self, err_msg, type="error", job=None):
         super().__init__(err_msg, type)
@@ -231,56 +235,24 @@ class ToolExecutionError(MessageException):
 
 class NotImplemented(MessageException):
     status_code = 501
-    err_code = error_codes_by_name['NOT_IMPLEMENTED']
+    err_code = error_codes_by_name["NOT_IMPLEMENTED"]
 
 
 class InvalidFileFormatError(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['INVALID_FILE_FORMAT']
+    err_code = error_codes_by_name["INVALID_FILE_FORMAT"]
 
 
 class ReferenceDataError(MessageException):
     status_code = 500
-    err_code = error_codes_by_name['REFERENCE_DATA_ERROR']
+    err_code = error_codes_by_name["REFERENCE_DATA_ERROR"]
 
 
 class ServerNotConfiguredForRequest(MessageException):
     # A bit like ConfigDoesNotAllowException but it has nothing to do with the user of the
     # request being "forbidden". It just isn't configured.
     status_code = 501
-    err_code = error_codes_by_name['SERVER_NOT_CONFIGURED_FOR_REQUEST']
-
-
-# non-web exceptions
-
-class ContainerCLIError(Exception):
-    def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
-                 command=None, subprocess_command=None, **kwargs):
-        super().__init__(msg)
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
-        self.command = command
-        self.subprocess_command = subprocess_command
-
-
-class ContainerNotFound(Exception):
-    def __init__(self, msg=None, container_id=None, **kwargs):
-        super().__init__(msg)
-        self.container_id = container_id
-
-
-class ContainerImageNotFound(Exception):
-    def __init__(self, msg=None, image=None, **kwargs):
-        super().__init__(msg)
-        self.image = image
-
-
-class ContainerRunError(Exception):
-    def __init__(self, msg=None, image=None, command=None, **kwargs):
-        super().__init__(msg)
-        self.image = image
-        self.command = command
+    err_code = error_codes_by_name["SERVER_NOT_CONFIGURED_FOR_REQUEST"]
 
 
 class HandlerAssignmentError(Exception):

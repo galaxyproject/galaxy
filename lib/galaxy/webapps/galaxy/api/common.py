@@ -20,20 +20,20 @@ from galaxy.schema.schema import UpdateDatasetPermissionsPayload
 
 SerializationViewQueryParam: Optional[str] = Query(
     None,
-    title='View',
-    description='View to be passed to the serializer',
+    title="View",
+    description="View to be passed to the serializer",
 )
 
 SerializationKeysQueryParam: Optional[str] = Query(
     None,
-    title='Keys',
-    description='Comma-separated list of keys to be passed to the serializer',
+    title="Keys",
+    description="Comma-separated list of keys to be passed to the serializer",
 )
 
 SerializationDefaultViewQueryParam: Optional[str] = Query(
     None,
-    title='Default View',
-    description='The item view that will be used in case no particular view was specified.',
+    title="Default View",
+    description="The item view that will be used in case no particular view was specified.",
 )
 
 
@@ -45,7 +45,7 @@ def parse_serialization_params(
 ) -> SerializationParams:
     key_list = None
     if keys:
-        key_list = keys.split(',')
+        key_list = keys.split(",")
     return SerializationParams(view=view, keys=key_list, default_view=default_view)
 
 

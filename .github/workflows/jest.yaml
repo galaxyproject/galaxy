@@ -3,9 +3,11 @@ on:
   push:
     paths:
       - 'client/**'
+      - '.github/workflows/jest.yaml'
   pull_request:
     paths:
       - 'client/**'
+      - '.github/workflows/jest.yaml'
 concurrency:
   group: client-${{ github.ref }}
   cancel-in-progress: true
@@ -14,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [14]
+        node: [16]
     steps:
     - uses: actions/checkout@v2
     - name: Setup node

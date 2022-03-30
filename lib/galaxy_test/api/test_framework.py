@@ -4,10 +4,9 @@ from ._framework import ApiTestCase
 
 
 class ApiFrameworkTestCase(ApiTestCase):
-
     def test_default_xframe_options(self):
         get_response = self._get("licenses")
-        assert get_response.headers['x-frame-options'] == "SAMEORIGIN"
+        assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
 
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):
@@ -15,8 +14,9 @@ class ApiFrameworkTestCase(ApiTestCase):
         post_data = dict(name="TestHistory1")
         # Normal user cannot run_as...
         create_response = self._post(
-            "histories", data=post_data,
-            headers={'run-as': run_as_user["id"]},
+            "histories",
+            data=post_data,
+            headers={"run-as": run_as_user["id"]},
         )
         self._assert_status_code_is(create_response, 403)
 
@@ -24,8 +24,10 @@ class ApiFrameworkTestCase(ApiTestCase):
         post_data = dict(name="TestHistory1")
         # admin user can run_as, but this user doesn't exist, expect 400.
         create_response = self._post(
-            "histories", data=post_data,
-            headers={'run-as': "another_user"}, admin=True,
+            "histories",
+            data=post_data,
+            headers={"run-as": "another_user"},
+            admin=True,
         )
         self._assert_status_code_is(create_response, 400)
 
@@ -35,7 +37,9 @@ class ApiFrameworkTestCase(ApiTestCase):
         # Use run_as with admin user and for another user just created, this
         # should work.
         create_response = self._post(
-            "histories", data=post_data,
-            headers={'run-as': run_as_user["id"]}, admin=True,
+            "histories",
+            data=post_data,
+            headers={"run-as": run_as_user["id"]},
+            admin=True,
         )
         self._assert_status_code_is(create_response, 200)

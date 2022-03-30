@@ -7,7 +7,11 @@ import tempfile
 import zlib
 from collections import defaultdict
 from threading import Lock
-from typing import Dict, List, Tuple
+from typing import (
+    Dict,
+    List,
+    Tuple,
+)
 
 from sqlalchemy.orm import defer
 from sqlitedict import SqliteDict
@@ -18,27 +22,25 @@ from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
-
 log = logging.getLogger(__name__)
 
 CURRENT_TOOL_CACHE_VERSION = 0
 
 
 def encoder(obj):
-    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode('utf-8')))
+    return sqlite3.Binary(zlib.compress(json.dumps(obj).encode("utf-8")))
 
 
 def decoder(obj):
-    return json.loads(zlib.decompress(bytes(obj)).decode('utf-8'))
+    return json.loads(zlib.decompress(bytes(obj)).decode("utf-8"))
 
 
 class ToolDocumentCache:
-
     def __init__(self, cache_dir):
         self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
-        self.cache_file = os.path.join(self.cache_dir, 'cache.sqlite')
+        self.cache_file = os.path.join(self.cache_dir, "cache.sqlite")
         self.writeable_cache_file = None
         self._cache = None
         self.disabled = False
@@ -47,18 +49,18 @@ class ToolDocumentCache:
     def close(self):
         self._cache and self._cache.close()
 
-    def _get_cache(self, flag='r', create_if_necessary=False):
+    def _get_cache(self, flag="r", create_if_necessary=False):
         try:
             if create_if_necessary and not os.path.exists(self.cache_file):
                 # Create database if necessary using 'c' flag
-                self._cache = SqliteDict(self.cache_file, flag='c', encode=encoder, decode=decoder, autocommit=False)
-                if flag == 'r':
+                self._cache = SqliteDict(self.cache_file, flag="c", encode=encoder, decode=decoder, autocommit=False)
+                if flag == "r":
                     self._cache.flag = flag
             else:
                 cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
                 self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
         except sqlite3.OperationalError:
-            log.warning('Tool document cache unavailable')
+            log.warning("Tool document cache unavailable")
             self._cache = None
             self.disabled = True
 
@@ -67,7 +69,7 @@ class ToolDocumentCache:
         return os.access(self.cache_file, os.W_OK)
 
     def reopen_ro(self):
-        self._get_cache(flag='r')
+        self._get_cache(flag="r")
         self.writeable_cache_file = None
 
     def get(self, config_file):
@@ -78,20 +80,22 @@ class ToolDocumentCache:
             return None
         if not tool_document:
             return None
-        if tool_document.get('tool_cache_version') != CURRENT_TOOL_CACHE_VERSION:
+        if tool_document.get("tool_cache_version") != CURRENT_TOOL_CACHE_VERSION:
             return None
         if self.cache_file_is_writeable:
-            for path, modtime in tool_document['paths_and_modtimes'].items():
+            for path, modtime in tool_document["paths_and_modtimes"].items():
                 if os.path.getmtime(path) != modtime:
                     return None
         return tool_document
 
     def _make_writable(self):
         if not self.writeable_cache_file:
-            self.writeable_cache_file = tempfile.NamedTemporaryFile(dir=self.cache_dir, suffix='cache.sqlite.tmp', delete=False)
+            self.writeable_cache_file = tempfile.NamedTemporaryFile(
+                dir=self.cache_dir, suffix="cache.sqlite.tmp", delete=False
+            )
             if os.path.exists(self.cache_file):
                 shutil.copy(self.cache_file, self.writeable_cache_file.name)
-            self._get_cache(flag='c')
+            self._get_cache(flag="c")
 
     def persist(self):
         if self.writeable_cache_file:
@@ -104,10 +108,10 @@ class ToolDocumentCache:
             if self.cache_file_is_writeable:
                 self._make_writable()
                 to_persist = {
-                    'document': tool_source.to_string(),
-                    'macro_paths': tool_source.macro_paths,
-                    'paths_and_modtimes': tool_source.paths_and_modtimes(),
-                    'tool_cache_version': CURRENT_TOOL_CACHE_VERSION,
+                    "document": tool_source.to_string(),
+                    "macro_paths": tool_source.macro_paths,
+                    "paths_and_modtimes": tool_source.paths_and_modtimes(),
+                    "tool_cache_version": CURRENT_TOOL_CACHE_VERSION,
                 }
                 try:
                     self._cache[config_file] = to_persist
@@ -165,7 +169,9 @@ class ToolCache:
         try:
             with self._lock:
                 persist_tool_document_cache = False
-                paths_to_cleanup = {(path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
+                paths_to_cleanup = {
+                    (path, tool) for path, tool in self._tools_by_path.items() if self._should_cleanup(path)
+                }
                 for config_filename, tool in paths_to_cleanup:
                     tool.remove_from_cache()
                     persist_tool_document_cache = True
@@ -219,7 +225,7 @@ class ToolCache:
         return self._removed_tools_by_path.get(config_filename)
 
     def get_tool_by_id(self, tool_id):
-        """Get the tool with the id `tool_id` from the cache if the tool is up to date. """
+        """Get the tool with the id `tool_id` from the cache if the tool is up to date."""
         return self.get_tool(self._tool_paths_by_id.get(tool_id))
 
     def expire_tool(self, tool_id):
@@ -260,7 +266,6 @@ class ToolCache:
 
 
 class ToolHash:
-
     def __init__(self, path, modtime=None, lazy_hash=False):
         self.path = path
         self.modtime = modtime or os.path.getmtime(path)
@@ -279,6 +284,7 @@ class ToolShedRepositoryCache:
     """
     Cache installed ToolShedRepository objects.
     """
+
     local_repositories: List[ToolConfRepository]
     repositories: List[ToolShedRepository]
     repos_by_tuple: Dict[Tuple[str, str, str], List[ToolConfRepository]]
@@ -298,15 +304,21 @@ class ToolShedRepositoryCache:
         self.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     def _build(self):
-        self.repositories = self.session.query(ToolShedRepository).options(
-            defer(ToolShedRepository.metadata_)
-        ).all()
+        self.repositories = self.session.query(ToolShedRepository).options(defer(ToolShedRepository.metadata_)).all()
         repos_by_tuple = defaultdict(list)
         for repository in self.repositories + self.local_repositories:
             repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
         self.repos_by_tuple = repos_by_tuple
 
-    def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
+    def get_installed_repository(
+        self,
+        tool_shed=None,
+        name=None,
+        owner=None,
+        installed_changeset_revision=None,
+        changeset_revision=None,
+        repository_id=None,
+    ):
         if repository_id:
             repos = [repo for repo in self.repositories if repo.id == repository_id]
             if repos:

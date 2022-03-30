@@ -5,12 +5,11 @@ import yaml
 from galaxy.util import parse_xml
 from galaxy.util.submodules import import_submodules
 
-
-PluginConfigSource = collections.namedtuple('PluginConfigSource', ['type', 'source'])
+PluginConfigSource = collections.namedtuple("PluginConfigSource", ["type", "source"])
 
 
 def plugins_dict(module, plugin_type_identifier):
-    """ Walk through all classes in submodules of module and find ones labelled
+    """Walk through all classes in submodules of module and find ones labelled
     with specified plugin_type_identifier and throw in a dictionary to allow
     constructions from plugins by these types later on.
     """
@@ -25,7 +24,7 @@ def plugins_dict(module, plugin_type_identifier):
     return plugin_dict
 
 
-def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=('type',), dict_to_list_key=None):
+def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=("type",), dict_to_list_key=None):
     if extra_kwds is None:
         extra_kwds = {}
     if plugin_source.type == "xml":
@@ -100,13 +99,13 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_key
 
 def plugin_source_from_path(path):
     if path.endswith(".yaml") or path.endswith(".yml") or path.endswith(".yaml.sample") or path.endswith(".yml.sample"):
-        return PluginConfigSource('dict', __read_yaml(path))
+        return PluginConfigSource("dict", __read_yaml(path))
     else:
-        return PluginConfigSource('xml', parse_xml(path, remove_comments=True).getroot())
+        return PluginConfigSource("xml", parse_xml(path, remove_comments=True).getroot())
 
 
 def plugin_source_from_dict(as_dict):
-    return PluginConfigSource('dict', as_dict)
+    return PluginConfigSource("dict", as_dict)
 
 
 def __read_yaml(path):

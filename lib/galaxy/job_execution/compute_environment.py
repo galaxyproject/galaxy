@@ -9,13 +9,13 @@ from galaxy.model import Job
 
 
 class ComputeEnvironment(metaclass=ABCMeta):
-    """ Definition of the job as it will be run on the (potentially) remote
+    """Definition of the job as it will be run on the (potentially) remote
     compute server.
     """
 
     @abstractmethod
     def output_names(self):
-        """ Output unqualified filenames defined by job. """
+        """Output unqualified filenames defined by job."""
 
     @abstractmethod
     def input_path_rewrite(self, dataset):
@@ -43,11 +43,11 @@ class ComputeEnvironment(metaclass=ABCMeta):
 
     @abstractmethod
     def working_directory(self):
-        """ Job working directory (potentially remote) """
+        """Job working directory (potentially remote)"""
 
     @abstractmethod
     def config_directory(self):
-        """ Directory containing config files (potentially remote) """
+        """Directory containing config files (potentially remote)"""
 
     @abstractmethod
     def env_config_directory(self):
@@ -55,20 +55,19 @@ class ComputeEnvironment(metaclass=ABCMeta):
 
     @abstractmethod
     def sep(self):
-        """ os.path.sep for the platform this job will execute in.
-        """
+        """os.path.sep for the platform this job will execute in."""
 
     @abstractmethod
     def new_file_path(self):
-        """ Absolute path to dump new files for this job on compute server. """
+        """Absolute path to dump new files for this job on compute server."""
 
     @abstractmethod
     def tool_directory(self):
-        """ Absolute path to tool files for this job on compute server. """
+        """Absolute path to tool files for this job on compute server."""
 
     @abstractmethod
     def version_path(self):
-        """ Location of the version file for the underlying tool. """
+        """Location of the version file for the underlying tool."""
 
     @abstractmethod
     def home_directory(self):
@@ -88,7 +87,6 @@ class ComputeEnvironment(metaclass=ABCMeta):
 
 
 class SimpleComputeEnvironment:
-
     def config_directory(self):
         return os.path.join(self.working_directory(), "configs")  # type: ignore[attr-defined]
 
@@ -97,7 +95,7 @@ class SimpleComputeEnvironment:
 
 
 class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
-    """ Default ComputeEnvironment for job and task wrapper to pass
+    """Default ComputeEnvironment for job and task wrapper to pass
     to ToolEvaluator - valid when Galaxy and compute share all the relevant
     file systems.
     """

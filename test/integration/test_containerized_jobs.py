@@ -5,9 +5,7 @@ import os
 import unittest
 
 from galaxy.util.commands import which
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
@@ -38,7 +36,6 @@ class MulledJobTestCases:
 
 
 class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
-
     @classmethod
     def setUpClass(cls):
         skip_if_container_type_unavailable(cls)
@@ -65,8 +62,8 @@ def skip_if_container_type_unavailable(cls):
 class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
-    build_mulled_resolver = 'build_mulled'
-    container_type = 'docker'
+    build_mulled_resolver = "build_mulled"
+    container_type = "docker"
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -107,44 +104,58 @@ class DockerizedJobsIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert not job_env.home.endswith('/home')
+        assert not job_env.home.endswith("/home")
 
     def test_container_job_environment_explicit_shared_home(self):
         job_env = self._run_and_get_environment_properties("job_environment_explicit_shared_home")
 
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert not job_env.home.endswith('/home')
+        assert not job_env.home.endswith("/home")
 
     def test_container_job_environment_explicit_isolated_home(self):
         job_env = self._run_and_get_environment_properties("job_environment_explicit_isolated_home")
 
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert job_env.home.endswith('/home')
+        assert job_env.home.endswith("/home")
 
     def test_build_mulled(self):
-        if not which('docker'):
+        if not which("docker"):
             raise unittest.SkipTest("Docker not found on PATH, required for building images via involucro")
         resolver_type = self.build_mulled_resolver
-        tool_ids = ['mulled_example_multi_1']
+        tool_ids = ["mulled_example_multi_1"]
         endpoint = "dependency_resolvers/toolbox/install"
-        data = {'tool_ids': json.dumps(tool_ids), 'resolver_type': resolver_type, 'container_type': self.container_type, 'include_containers': True}
+        data = {
+            "tool_ids": json.dumps(tool_ids),
+            "resolver_type": resolver_type,
+            "container_type": self.container_type,
+            "include_containers": True,
+        }
         create_response = self._post(endpoint, data=data, admin=True)
         self._assert_status_code_is(create_response, 200)
-        create_response = self._get("dependency_resolvers/toolbox", data={'tool_ids': tool_ids, 'container_type': self.container_type, 'include_containers': True, 'index_by': 'tools'}, admin=True)
+        create_response = self._get(
+            "dependency_resolvers/toolbox",
+            data={
+                "tool_ids": tool_ids,
+                "container_type": self.container_type,
+                "include_containers": True,
+                "index_by": "tools",
+            },
+            admin=True,
+        )
         response = create_response.json()
         assert len(response) == 1
-        status = response[0]['status']
-        assert status[0]['model_class'] == 'ContainerDependency'
-        assert status[0]['dependency_type'] == self.container_type
-        assert status[0]['container_description']['identifier'].startswith('quay.io/local/mulled-v2-')
+        status = response[0]["status"]
+        assert status[0]["model_class"] == "ContainerDependency"
+        assert status[0]["dependency_type"] == self.container_type
+        assert status[0]["container_description"]["identifier"].startswith("quay.io/local/mulled-v2-")
 
 
 class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
-    container_type = 'docker'
+    container_type = "docker"
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
 
     @classmethod
@@ -155,13 +166,15 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
         disable_dependency_resolution(config)
         container_resolvers_config_path = os.path.join(cls.jobs_directory, "container_resolvers.yml")
         with open(container_resolvers_config_path, "w") as f:
-            f.write("""
+            f.write(
+                """
 - type: mapping
   mappings:
     - container_type: docker
       tool_id: mulled_example_broken_no_requirements
       identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
-""")
+"""
+            )
         config["container_resolvers_config_file"] = container_resolvers_config_path
 
     @classmethod
@@ -182,28 +195,31 @@ class MappingContainerResolverTestCase(integration_util.IntegrationTestCase):
 
 
 class InlineContainerConfigurationTestCase(MappingContainerResolverTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
-        container_resolvers_config = [{
-            'type': 'mapping',
-            'mappings': [{
-                'container_type': 'docker',
-                'tool_id': 'mulled_example_broken_no_requirements',
-                'identifier': 'quay.io/biocontainers/bwa:0.7.15--0',
-            }],
-        }]
+        container_resolvers_config = [
+            {
+                "type": "mapping",
+                "mappings": [
+                    {
+                        "container_type": "docker",
+                        "tool_id": "mulled_example_broken_no_requirements",
+                        "identifier": "quay.io/biocontainers/bwa:0.7.15--0",
+                    }
+                ],
+            }
+        ]
         config["container_resolvers"] = container_resolvers_config
 
 
 class InlineJobEnvironmentContainerResolverTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
-    container_type = 'docker'
+    container_type = "docker"
     job_config_file = DOCKERIZED_JOB_CONFIG_FILE
 
     @classmethod
@@ -237,5 +253,5 @@ class InlineJobEnvironmentContainerResolverTestCase(integration_util.Integration
 class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
 
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
-    build_mulled_resolver = 'build_mulled_singularity'
-    container_type = 'singularity'
+    build_mulled_resolver = "build_mulled_singularity"
+    container_type = "singularity"

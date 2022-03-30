@@ -177,16 +177,20 @@ export default {
     },
     methods: {
         toggleNotifications() {
-            Notification.requestPermission().then(function (permission) {
-                //If the user accepts, let's create a notification
-                if (permission === "granted") {
-                    new Notification("Notifications enabled", {
-                        icon: "static/favicon.ico",
-                    });
-                } else {
-                    alert("Notifications disabled, please re-enable through browser settings.");
-                }
-            });
+            if (window.Notification) {
+                Notification.requestPermission().then(function (permission) {
+                    //If the user accepts, let's create a notification
+                    if (permission === "granted") {
+                        new Notification("Notifications enabled", {
+                            icon: "static/favicon.ico",
+                        });
+                    } else {
+                        alert("Notifications disabled, please re-enable through browser settings.");
+                    }
+                });
+            } else {
+                alert("Notifications are not supported by this browser.");
+            }
         },
         openManageCustomBuilds() {
             const Galaxy = getGalaxyInstance();

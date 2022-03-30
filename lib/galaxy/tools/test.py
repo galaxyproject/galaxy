@@ -1,7 +1,10 @@
 import logging
 import os
 import os.path
-from typing import List, Tuple
+from typing import (
+    List,
+    Tuple,
+)
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
@@ -15,8 +18,10 @@ from galaxy.util import (
 try:
     from nose.tools import nottest
 except ImportError:
+
     def nottest(x):
         return x
+
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ def parse_tests(tool, tests_source):
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
     tests = []
-    for i, raw_test_dict in enumerate(raw_tests_dict.get('tests', [])):
+    for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         test = description_from_tool_object(tool, i, raw_test_dict)
         tests.append(test)
     return tests
@@ -40,12 +45,14 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
     required_data_tables: List[str] = []
     required_loc_files: List[str] = []
 
-    num_outputs = raw_test_dict.get('expect_num_outputs', None)
+    num_outputs = raw_test_dict.get("expect_num_outputs", None)
     if num_outputs:
         num_outputs = int(num_outputs)
 
     try:
-        processed_inputs = _process_raw_inputs(tool, tool.inputs, raw_test_dict["inputs"], required_files, required_data_tables, required_loc_files)
+        processed_inputs = _process_raw_inputs(
+            tool, tool.inputs, raw_test_dict["inputs"], required_files, required_data_tables, required_loc_files
+        )
         processed_test_dict = {
             "inputs": processed_inputs,
             "outputs": raw_test_dict["outputs"],
@@ -80,7 +87,9 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
     return ToolTestDescription(processed_test_dict)
 
 
-def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=None):
+def _process_raw_inputs(
+    tool, tool_inputs, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=None
+):
     """
     Recursively expand flat list of inputs into "tree" form of flat list
     (| using to nest to new levels) structure and expand dataset
@@ -98,7 +107,15 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
             case = _matching_case_for_value(tool, value, case_value)
             if case:
                 for input_name, input_value in case.inputs.items():
-                    case_inputs = _process_raw_inputs(tool, {input_name: input_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=cond_context)
+                    case_inputs = _process_raw_inputs(
+                        tool,
+                        {input_name: input_value},
+                        raw_inputs,
+                        required_files,
+                        required_data_tables,
+                        required_loc_files,
+                        parent_context=cond_context,
+                    )
                     expanded_inputs.update(case_inputs)
                 if not value.type == "text":
                     expanded_case_value = _split_if_str(case.value)
@@ -110,13 +127,23 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                     # as a new instance with value defined and hence enter
                     # an infinite loop - hence the "case_value is not None"
                     # check.
-                    processed_value = _process_simple_value(value.test_param, expanded_case_value, required_data_tables, required_loc_files)
+                    processed_value = _process_simple_value(
+                        value.test_param, expanded_case_value, required_data_tables, required_loc_files
+                    )
                     expanded_inputs[case_context.for_state()] = processed_value
         elif isinstance(value, galaxy.tools.parameters.grouping.Section):
             context = ParamContext(name=value.name, parent_context=parent_context)
             assert value.inputs
             for r_value in value.inputs.values():
-                expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
+                expanded_input = _process_raw_inputs(
+                    tool,
+                    {context.for_state(): r_value},
+                    raw_inputs,
+                    required_files,
+                    required_data_tables,
+                    required_loc_files,
+                    parent_context=context,
+                )
                 if expanded_input:
                     expanded_inputs.update(expanded_input)
         elif isinstance(value, galaxy.tools.parameters.grouping.Repeat):
@@ -126,7 +153,15 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                 updated = False
                 assert value.inputs
                 for r_value in value.inputs.values():
-                    expanded_input = _process_raw_inputs(tool, {context.for_state(): r_value}, raw_inputs, required_files, required_data_tables, required_loc_files, parent_context=context)
+                    expanded_input = _process_raw_inputs(
+                        tool,
+                        {context.for_state(): r_value},
+                        raw_inputs,
+                        required_files,
+                        required_data_tables,
+                        required_loc_files,
+                        parent_context=context,
+                    )
                     if expanded_input:
                         expanded_inputs.update(expanded_input)
                         updated = True
@@ -149,8 +184,8 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                         _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
                     processed_value = param_value
                 elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
-                    assert 'collection' in param_extra
-                    collection_def = param_extra['collection']
+                    assert "collection" in param_extra
+                    collection_def = param_extra["collection"]
                     for input_dict in collection_def.collect_inputs():
                         name = input_dict["name"]
                         value = input_dict["value"]
@@ -158,7 +193,9 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, required_
                         require_file(name, value, attributes, required_files)
                     processed_value = collection_def
                 else:
-                    processed_value = _process_simple_value(value, param_value, required_data_tables, required_loc_files)
+                    processed_value = _process_simple_value(
+                        value, param_value, required_data_tables, required_loc_files
+                    )
                 expanded_inputs[context.for_state()] = processed_value
     return expanded_inputs
 
@@ -172,7 +209,7 @@ def _process_simple_value(param, param_value, required_data_tables, required_loc
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            for (text, opt_value, _) in getattr(param, 'static_options', []):
+            for (text, opt_value, _) in getattr(param, "static_options", []):
                 if param_value == opt_value:
                     found_value = True
                 if value_for_text is None and param_value == text:
@@ -187,6 +224,7 @@ def _process_simple_value(param, param_value, required_data_tables, required_loc
             else:
                 processed_value = param_value
             return processed_value
+
         # Do replacement described above for lists or singleton
         # values.
         if isinstance(param_value, list):
@@ -213,12 +251,14 @@ def _matching_case_for_value(tool, cond, declared_value):
 
         def matches_declared_value(case_value):
             return _process_bool_param_value(test_param, case_value) == query_value
+
     elif isinstance(test_param, galaxy.tools.parameters.basic.SelectToolParameter):
         if declared_value is not None:
             # Test case supplied explicit value to check against.
 
             def matches_declared_value(case_value):
                 return case_value == declared_value
+
         elif test_param.static_options:
             # No explicit value in test case, not much to do if options are dynamic but
             # if static options are available can find the one specified as default or
@@ -233,6 +273,7 @@ def _matching_case_for_value(tool, cond, declared_value):
 
             def matches_declared_value(case_value):
                 return case_value == default_option
+
         else:
             # No explicit value for this param and cannot determine a
             # default - give up. Previously this would just result in a key
@@ -253,7 +294,7 @@ def _matching_case_for_value(tool, cond, declared_value):
 
 def _add_uploaded_dataset(name, value, extra, input_parameter, required_files):
     if value is None:
-        assert input_parameter.optional, f'{name} is not optional. You must provide a valid filename.'
+        assert input_parameter.optional, f"{name} is not optional. You must provide a valid filename."
         return value
     return require_file(name, value, extra, required_files)
 
@@ -286,21 +327,20 @@ def _process_bool_param_value(param, param_value):
 def require_file(name, value, extra, required_files):
     if (value, extra) not in required_files:
         required_files.append((value, extra))  # these files will be uploaded
-    name_change = [att for att in extra.get('edit_attributes', []) if att.get('type') == 'name']
+    name_change = [att for att in extra.get("edit_attributes", []) if att.get("type") == "name"]
     if name_change:
-        name_change = name_change[-1].get('value')  # only the last name change really matters
+        name_change = name_change[-1].get("value")  # only the last name change really matters
         value = name_change  # change value for select to renamed uploaded file for e.g. composite dataset
     else:
-        for end in ['.zip', '.gz']:
+        for end in [".zip", ".gz"]:
             if value.endswith(end):
-                value = value[:-len(end)]
+                value = value[: -len(end)]
                 break
         value = os.path.basename(value)  # if uploading a file in a path other than root of test-data
     return value
 
 
 class ParamContext:
-
     def __init__(self, name, index=None, parent_context=None):
         self.parent_context = parent_context
         self.name = name
@@ -349,7 +389,6 @@ class ParamContext:
 
 
 class RootParamContext:
-
     def __init__(self):
         pass
 

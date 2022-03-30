@@ -61,27 +61,28 @@ class FilterQueryParams(BaseModel):
 
 class SerializationParams(BaseModel):
     """Contains common parameters for customizing model serialization."""
+
     view: Optional[str] = Field(
         default=None,
-        title='View',
+        title="View",
         description=(
-            'The name of the view used to serialize this item. '
-            'This will return a predefined set of attributes of the item.'
+            "The name of the view used to serialize this item. "
+            "This will return a predefined set of attributes of the item."
         ),
-        example="summary"
+        example="summary",
     )
     keys: Optional[List[str]] = Field(
         default=None,
-        title='Keys',
+        title="Keys",
         description=(
-            'List of keys (name of the attributes) that will be returned in addition '
-            'to the ones included in the `view`.'
+            "List of keys (name of the attributes) that will be returned in addition "
+            "to the ones included in the `view`."
         ),
     )
     default_view: Optional[str] = Field(
         default=None,
-        title='Default View',
-        description='The item view that will be used in case none was specified.',
+        title="Default View",
+        description="The item view that will be used in case none was specified.",
     )
 
 

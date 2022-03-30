@@ -3,6 +3,7 @@ import json
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+
 TEST_TOOL_IDS = [
     "job_properties",
     "multi_output",
@@ -41,7 +42,6 @@ TEST_TOOL_IDS = [
 
 
 class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -61,17 +61,13 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
             "elements": [element],
         }
         targets = json.dumps([target])
-        upload_content = 'abcdef'
-        payload = {
-            "history_id": history_id,
-            "targets": targets,
-            "__files": {"files_0|file_data": upload_content}
-        }
+        upload_content = "abcdef"
+        payload = {"history_id": history_id, "targets": targets, "__files": {"files_0|file_data": upload_content}}
         new_dataset = self.dataset_populator.fetch(payload, assert_ok=True).json()["outputs"][0]
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_content(
             history_id=history_id,
-            dataset_id=new_dataset['id'],
+            dataset_id=new_dataset["id"],
         )
         assert content == upload_content
 

@@ -2,7 +2,6 @@
 """
 import logging
 
-
 log = logging.getLogger(__name__)
 
 
@@ -33,7 +32,6 @@ leaf = Leaf()
 
 
 class BaseTree:
-
     def __init__(self, collection_type_description):
         self.collection_type_description = collection_type_description
 
@@ -75,8 +73,12 @@ class Tree(BaseTree):
         for element in dataset_collection.elements:
             if collection_type_description.has_subcollections():
                 child_collection = element.child_collection
-                subcollection_type_description = collection_type_description.subcollection_type_description()  # Type description of children
-                tree = Tree.for_dataset_collection(child_collection, collection_type_description=subcollection_type_description)
+                subcollection_type_description = (
+                    collection_type_description.subcollection_type_description()
+                )  # Type description of children
+                tree = Tree.for_dataset_collection(
+                    child_collection, collection_type_description=subcollection_type_description
+                )
                 children.append((element.element_identifier, tree))
             else:
                 children.append((element.element_identifier, leaf))
@@ -87,6 +89,7 @@ class Tree(BaseTree):
 
     def _walk_collections(self, collection_dict):
         for index, (_identifier, substructure) in enumerate(self.children):
+
             def element(collection):
                 return collection[index]
 
@@ -158,7 +161,9 @@ def tool_output_to_structure(get_sliced_input_collection_structure, tool_output,
         else:
             # Can't pre-compute the structure in this case, see if we can find a collection type.
             if collection_type is None and tool_output.structure.collection_type_source:
-                collection_type = get_sliced_input_collection_structure(tool_output.structure.collection_type_source).collection_type_description.collection_type
+                collection_type = get_sliced_input_collection_structure(
+                    tool_output.structure.collection_type_source
+                ).collection_type_description.collection_type
 
             if not collection_type:
                 raise Exception(f"Failed to determine collection type for mapping over output {tool_output.name}")
@@ -178,9 +183,15 @@ def dict_map(func, input_dict):
 
 def get_structure(dataset_collection_instance, collection_type_description, leaf_subcollection_type=None):
     if leaf_subcollection_type:
-        collection_type_description = collection_type_description.effective_collection_type_description(leaf_subcollection_type)
-        if hasattr(dataset_collection_instance, 'child_collection'):
-            collection_type_description = collection_type_description.collection_type_description_factory.for_collection_type(leaf_subcollection_type)
+        collection_type_description = collection_type_description.effective_collection_type_description(
+            leaf_subcollection_type
+        )
+        if hasattr(dataset_collection_instance, "child_collection"):
+            collection_type_description = (
+                collection_type_description.collection_type_description_factory.for_collection_type(
+                    leaf_subcollection_type
+                )
+            )
             return UninitializedTree(collection_type_description)
 
     collection = dataset_collection_instance.collection

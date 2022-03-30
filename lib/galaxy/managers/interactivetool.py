@@ -3,21 +3,18 @@ import sqlite3
 
 from sqlalchemy import or_
 
-
 from galaxy import (
     exceptions,
-    model
+    model,
 )
 from galaxy.util.filelock import FileLock
 
-
 log = logging.getLogger(__name__)
 
-DATABASE_TABLE_NAME = 'gxitproxy'
+DATABASE_TABLE_NAME = "gxitproxy"
 
 
 class InteractiveToolSqlite:
-
     def __init__(self, sqlite_filename, encode_id):
         self.sqlite_filename = sqlite_filename
         self.encode_id = encode_id
@@ -27,22 +24,22 @@ class InteractiveToolSqlite:
             conn = sqlite3.connect(self.sqlite_filename)
             try:
                 c = conn.cursor()
-                select = f'''SELECT token, host, port, info
+                select = f"""SELECT token, host, port, info
                             FROM {DATABASE_TABLE_NAME}
-                            WHERE key=? and key_type=?'''
-                c.execute(select, (key, key_type,))
+                            WHERE key=? and key_type=?"""
+                c.execute(
+                    select,
+                    (
+                        key,
+                        key_type,
+                    ),
+                )
                 try:
                     token, host, port, info = c.fetchone()
                 except TypeError:
-                    log.warning('get(): invalid key: %s key_type %s', key, key_type)
+                    log.warning("get(): invalid key: %s key_type %s", key, key_type)
                     return None
-                return dict(
-                    key=key,
-                    key_type=key_type,
-                    token=token,
-                    host=host,
-                    port=port,
-                    info=info)
+                return dict(key=key, key_type=key_type, token=token, host=host, port=port, info=info)
             finally:
                 conn.close()
 
@@ -60,7 +57,8 @@ class InteractiveToolSqlite:
                 c = conn.cursor()
                 try:
                     # Create table
-                    c.execute('''CREATE TABLE %s
+                    c.execute(
+                        """CREATE TABLE %s
                                  (key text,
                                   key_type text,
                                   token text,
@@ -68,22 +66,35 @@ class InteractiveToolSqlite:
                                   port integer,
                                   info text,
                                   PRIMARY KEY (key, key_type)
-                                  )''' % (DATABASE_TABLE_NAME))
+                                  )"""
+                        % (DATABASE_TABLE_NAME)
+                    )
                 except Exception:
                     pass
-                delete = f'''DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?'''
-                c.execute(delete, (key, key_type,))
-                insert = '''INSERT INTO %s
+                delete = f"""DELETE FROM {DATABASE_TABLE_NAME} WHERE key=? and key_type=?"""
+                c.execute(
+                    delete,
+                    (
+                        key,
+                        key_type,
+                    ),
+                )
+                insert = """INSERT INTO %s
                             (key, key_type, token, host, port, info)
-                            VALUES (?, ?, ?, ?, ?, ?)''' % (DATABASE_TABLE_NAME)
-                c.execute(insert,
-                          (key,
-                           key_type,
-                           token,
-                           host,
-                           port,
-                           info,
-                           ))
+                            VALUES (?, ?, ?, ?, ?, ?)""" % (
+                    DATABASE_TABLE_NAME
+                )
+                c.execute(
+                    insert,
+                    (
+                        key,
+                        key_type,
+                        token,
+                        host,
+                        port,
+                        info,
+                    ),
+                )
                 conn.commit()
             finally:
                 conn.close()
@@ -94,12 +105,12 @@ class InteractiveToolSqlite:
         with external resources. Remove entries that match all provided key=values
         """
         assert kwd, ValueError("You must provide some values to key upon")
-        delete = f'DELETE FROM {DATABASE_TABLE_NAME} WHERE'
+        delete = f"DELETE FROM {DATABASE_TABLE_NAME} WHERE"
         value_list = []
         for i, (key, value) in enumerate(kwd.items()):
             if i != 0:
-                delete += ' and'
-            delete += f' {key}=?'
+                delete += " and"
+            delete += f" {key}=?"
             value_list.append(value)
         with FileLock(self.sqlite_filename):
             conn = sqlite3.connect(self.sqlite_filename)
@@ -107,22 +118,26 @@ class InteractiveToolSqlite:
                 c = conn.cursor()
                 try:
                     # Delete entry
-                    # NB: This does not invalidate in-memory caches used by uwsgi (if any)
                     c.execute(delete, tuple(value_list))
                 except Exception as e:
-                    log.debug('Error removing entry (%s): %s', delete, e)
+                    log.debug("Error removing entry (%s): %s", delete, e)
                 conn.commit()
             finally:
                 conn.close()
 
     def save_entry_point(self, entry_point):
-        """Convenience method to easily save an entry_point.
-        """
-        return self.save(self.encode_id(entry_point.id), entry_point.__class__.__name__.lower(), entry_point.token, entry_point.host, entry_point.port, None)
+        """Convenience method to easily save an entry_point."""
+        return self.save(
+            self.encode_id(entry_point.id),
+            entry_point.__class__.__name__.lower(),
+            entry_point.token,
+            entry_point.host,
+            entry_point.port,
+            None,
+        )
 
     def remove_entry_point(self, entry_point):
-        """Convenience method to easily remove an entry_point.
-        """
+        """Convenience method to easily remove an entry_point."""
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
@@ -142,13 +157,21 @@ class InteractiveToolManager:
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
         for entry in entry_points:
-            ep = self.model.InteractiveToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'], requires_domain=entry['requires_domain'])
+            ep = self.model.InteractiveToolEntryPoint(
+                job=job,
+                tool_port=entry["port"],
+                entry_url=entry["url"],
+                name=entry["name"],
+                requires_domain=entry["requires_domain"],
+            )
             self.sa_session.add(ep)
         if flush:
             self.sa_session.flush()
 
     def configure_entry_point(self, job, tool_port=None, host=None, port=None, protocol=None):
-        return self.configure_entry_points(job, {tool_port: dict(tool_port=tool_port, host=host, port=port, protocol=protocol)})
+        return self.configure_entry_points(
+            job, {tool_port: dict(tool_port=tool_port, host=host, port=port, protocol=protocol)}
+        )
 
     def configure_entry_points(self, job, ports_dict):
         # There can be multiple entry points that reference the same tool port (could have different entry URLs)
@@ -160,9 +183,9 @@ class InteractiveToolManager:
                 log.error("Did not find port to assign to InteractiveToolEntryPoint by tool port: %s.", ep.tool_port)
                 not_configured.append(ep)
             else:
-                ep.host = port_dict['host']
-                ep.port = port_dict['port']
-                ep.protocol = port_dict['protocol']
+                ep.host = port_dict["host"]
+                ep.port = port_dict["port"]
+                ep.protocol = port_dict["protocol"]
                 ep.configured = True
                 self.sa_session.add(ep)
                 self.save_entry_point(ep)
@@ -182,13 +205,17 @@ class InteractiveToolManager:
         if job and tool:
             self.create_entry_points(job, tool, entry_points)
         else:
-            log.warning('Called InteractiveToolManager.create_interactivetool, but job (%s) or tool (%s) is None', job, tool)
+            log.warning(
+                "Called InteractiveToolManager.create_interactivetool, but job (%s) or tool (%s) is None", job, tool
+            )
 
     def get_nonterminal_for_user_by_trans(self, trans):
         if trans.user:
             jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
         else:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.session_id == trans.get_galaxy_session().id)
+            jobs = trans.sa_session.query(trans.app.model.Job).filter(
+                trans.app.model.Job.session_id == trans.get_galaxy_session().id
+            )
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -200,8 +227,13 @@ class InteractiveToolManager:
                         t.append(filter_func(obj))
                     query = query.filter(or_(*t))
             return query
-        jobs = build_and_apply_filters(jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s)
-        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs]))
+
+        jobs = build_and_apply_filters(
+            jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s
+        )
+        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(
+            trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs])
+        )
 
     def can_access_job(self, trans, job):
         if job:
@@ -230,7 +262,7 @@ class InteractiveToolManager:
         self.remove_entry_point(entry_point)
         job = entry_point.job
         if not job.finished:
-            log.debug('Stopping Job: %s for InteractiveToolEntryPoint: %s', job, entry_point)
+            log.debug("Stopping Job: %s for InteractiveToolEntryPoint: %s", job, entry_point)
             job.mark_stopped(trans.app.config.track_jobs_in_database)
             # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
             self.job_manager.stop(job)
@@ -253,11 +285,13 @@ class InteractiveToolManager:
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
-            protocol = trans.request.host_url.split('//', 1)[0]
+            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
+                request_host = self.app.config.interactivetools_proxy_host
+            protocol = trans.request.host_url.split("//", 1)[0]
             if entry_point.requires_domain:
-                rval = f'{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/'
+                rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"
                 if entry_point.entry_url:
-                    rval = '{}/{}'.format(rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                    rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
             else:
                 rval = self.get_entry_point_path(trans, entry_point)
 
@@ -269,8 +303,8 @@ class InteractiveToolManager:
         entry_point_prefix = self.app.config.interactivetools_prefix
         entry_point_token = entry_point.token
         if self.app.config.interactivetools_shorten_url:
-            return f'{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}'
-        return f'{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}'
+            return f"{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}"
+        return f"{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
         entry_point_encoded_id = trans.security.encode_id(entry_point.id)
@@ -280,13 +314,13 @@ class InteractiveToolManager:
         if not entry_point.requires_domain:
             rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
             if self.app.config.interactivetools_shorten_url:
-                rval = f'/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/'
+                rval = f"/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/"
             else:
-                rval = f'/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/'
+                rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
         if entry_point.entry_url:
             rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
         if rval[0] != "/":
-            rval = f'/{rval}'
+            rval = f"/{rval}"
         return rval
 
     def access_entry_point_target(self, trans, entry_point_id):
@@ -295,7 +329,9 @@ class InteractiveToolManager:
             if entry_point.active:
                 return self.target_if_active(trans, entry_point)
             elif entry_point.deleted:
-                raise exceptions.MessageException('InteractiveTool has ended. You will have to start a new one.')
+                raise exceptions.MessageException("InteractiveTool has ended. You will have to start a new one.")
             else:
-                raise exceptions.MessageException('InteractiveTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
+                raise exceptions.MessageException(
+                    "InteractiveTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page."
+                )
         raise exceptions.ItemAccessibilityException("You do not have access to this InteractiveTool entry point.")

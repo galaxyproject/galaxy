@@ -1,7 +1,28 @@
-import { dateMixin, ModelBase } from "./ModelBase";
+import moment from "moment";
 import { scrubModelProps } from "utils/safeAssign";
 
-export class History extends dateMixin(ModelBase) {
+export class History {
+    constructor(doc = {}) {
+        try {
+            this.loadProps(doc);
+        } catch (err) {
+            console.debug("Unable to load history props.", doc);
+            throw err;
+        }
+    }
+
+    loadProps(raw = {}) {
+        Object.assign(this, raw);
+    }
+
+    get createDate() {
+        return moment.utc(this.create_time);
+    }
+
+    get updateDate() {
+        return moment.utc(this.update_time);
+    }
+
     // not deleted
     get active() {
         return !this.deleted && !this.purged;

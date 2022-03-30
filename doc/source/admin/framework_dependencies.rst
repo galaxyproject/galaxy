@@ -77,15 +77,6 @@ source code has been cloned to ``/srv/galaxy/server``.
     $ . /srv/galaxy/venv/bin/activate
     (venv)$
 
-Next, in ``galaxy.yml``, set the ``virtualenv`` option in the ``uwsgi`` section to point to your new virtualenv:
-
-.. code-block:: yaml
-
-    ---
-    uwsgi:
-        #...
-        virtualenv: /srv/galaxy/venv
-
 Install dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -190,89 +181,26 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
 .. _conda-forge: https://conda-forge.org/
 .. _Bioconda: https://bioconda.github.io/
 
-uWSGI
-^^^^^
-
-``run.sh`` should automatically set ``--virtualenv`` on uWSGI's command line. However, you can override this using the
-``virtualenv`` option in the ``uwsgi`` section of ``galaxy.yml`` as described in the `Managing dependencies manually`_
-section.
-
-Unpinned dependencies
-^^^^^^^^^^^^^^^^^^^^^
-
-.. danger::
-
-    Unpinned dependencies may be useful for development but should not be used in production. Please do not install
-    unpinned dependencies unless you know what you're doing. While the :doc:`Galaxy Committers </project/organization>`
-    will do their best to keep dependencies updated, they cannot provide support for problems arising from unpinned
-    dependencies.
-
-Galaxy's dependencies can be installed either "pinned" (they will be installed at exact versions specified for your
-Galaxy release) or "unpinned" (the latest versions of all dependencies will be installed unless there are known
-incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
-
-1. Using pinned versions insures that the prebuilt wheels will be installed, and no
-   compilation will be necessary.
-
-2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
-   pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
-   are released while the Galaxy release receives fewer updates.
-
-3. Pinning furthers Galaxy's goal of reproducibility as differing dependency versions could result in non-reproducible
-   behavior.
-
-If you would like to install unpinned versions of Galaxy's dependencies, install dependencies using the `unpinned
-requirements file`_, and then instruct Galaxy to start without attempting to fetch wheels:
-
-.. code-block:: console
-
-    (venv)$ pip install -r lib/galaxy/dependencies/requirements.txt
-    (venv)$ deactivate
-    $ sh run.sh --no-create-venv --skip-wheels
-
-You may be able to save yourself some compiling by adding the argument ``--index-url
-https://wheels.galaxyproject.org/simple/`` to ``pip install``, but it is possible to install all of Galaxy's
-dependencies directly from PyPI_.
-
-.. _unpinned requirements file: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
-.. _PyPI: https://pypi.org
-
 
 Adding additional Galaxy dependencies
 -------------------------------------
 
-New packages can be added to Galaxy, or the versions of existing packages can be updated, using `pipenv`_ and `Starforge`_, Galaxy's Docker-based build system.
+New packages can be added to Galaxy, or the versions of existing packages can be updated, using `poetry`_ and `Starforge Recipes`_, Galaxy's Docker-based build system.
 
-The process is still under development and will be streamlined and automated over time. For the time being, please use
-the following process to add new packages and have their wheels built:
+The process is still under development and will be streamlined and automated over time.
+If wheels exist on PyPI for all supported platforms and python versions you can skip
+to step 3 in the process below.
 
-1. Install `Starforge`_ (e.g. with ``pip install starforge`` or ``python setup.py install`` from the source). You will
-   also need to have Docker installed on your system.
+1. Clone https://github.com/galaxyproject/starforge-recipes/ and add or edit the wheel you would like to build under the wheels/ directory.
 
-2. Obtain `wheels.yml`_ (this file will most likely be moved in to Galaxy in the future) and add/modify the wheel
-   definition.
+2. Submit a pull request to `Starforge Recipes`_.
 
-3. Use ``starforge wheel --wheels-config=wheels.yml <wheel-name>`` to build the wheel. If the wheel includes C
-   extensions, you will probably want to also use the ``--no-qemu`` flag to prevent Starforge from attempting to build
-   on Mac OS X using QEMU/KVM.
+3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.dev-dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
+4. Run `make update-dependencies` to update the requirements file in `lib/galaxy/dependencies`_.
+5. Submit a pull request to Galaxy with your changes.
 
-4. If the wheel build is successful, submit a pull request to `Starforge`_ with your changes to `wheels.yml`_.
-
-5. A :doc:`Galaxy Committers group </project/organization>` member will need to trigger an automated build of the wheel
-   changes in your pull request. Galaxy's Jenkins_ service will build these changes using Starforge.
-
-6. If the pull request is merged, submit a pull request to Galaxy modifying the files in `lib/galaxy/dependencies`_ as
-   appropriate.
-
-You may attempt to skip directly to step 4 and let the Starforge wheel PR builder build your wheels for you. This is
-especially useful if you are simply updating an existing wheel's version. However, if you are adding a new C extension
-wheel that is not simple to build, you may need to go through many iterations of updating the PR and having a
-:doc:`Galaxy Committers group </project/organization>` member triggering builds
-before wheels are successfully built. You can avoid this cycle by performing
-steps 1-3 locally.
-
-.. _pipenv: https://pipenv.readthedocs.io/
-.. _Starforge: https://github.com/galaxyproject/starforge/
+.. _poetry: https://python-poetry.org/
+.. _Starforge Recipes: https://github.com/galaxyproject/starforge-recipes/
 .. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
 .. _Jenkins: https://jenkins.galaxyproject.org/

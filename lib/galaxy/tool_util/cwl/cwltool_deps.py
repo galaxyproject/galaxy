@@ -13,11 +13,11 @@ import requests
 
 try:
     from cwltool import (
-        main,
-        workflow,
         job,
-        process,
+        main,
         pathmapper,
+        process,
+        workflow,
     )
 except ImportError:
     main = None  # type: ignore[assignment]
@@ -43,14 +43,8 @@ except ImportError:
 
 try:
     from cwltool import load_tool
-    from cwltool.load_tool import (
-        default_loader,
-        resolve_and_validate_document,
-    )
 except ImportError:
-    default_loader = None  # type: ignore[assignment]
     load_tool = None  # type: ignore[assignment]
-    resolve_and_validate_document = None  # type: ignore[assignment]
 
 
 try:
@@ -59,9 +53,22 @@ except ImportError:
     command_line_tool = None  # type: ignore[assignment]
 
 try:
-    from cwltool.load_tool import resolve_and_validate_document
+    from cwltool.load_tool import (
+        default_loader,
+        resolve_and_validate_document,
+    )
 except ImportError:
+    default_loader = None  # type: ignore[assignment]
     resolve_and_validate_document = None  # type: ignore[assignment]
+
+try:
+    from cwltool.utils import (
+        normalizeFilesDirs,
+        visit_class,
+    )
+except ImportError:
+    visit_class = None  # type: ignore[assignment]
+    normalizeFilesDirs = None  # type: ignore[assignment]
 
 try:
     import shellescape
@@ -74,10 +81,12 @@ try:
         ref_resolver,
         sourceline,
     )
+    from schema_salad.utils import yaml_no_ts
 except ImportError:
     schema_salad = None  # type: ignore[assignment]
     ref_resolver = None  # type: ignore[assignment]
     sourceline = None  # type: ignore[assignment]
+    yaml_no_ts = None  # type: ignore[assignment]
 
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
@@ -106,22 +115,25 @@ def ensure_cwltool_available():
 
 
 __all__ = (
-    'default_loader',
-    'ensure_cwltool_available',
-    'getdefault',
-    'load_tool',
-    'LoadingContext',
-    'main',
-    'needs_shell_quoting',
-    'pathmapper',
-    'process',
-    'ref_resolver',
-    'relink_initialworkdir',
-    'resolve_and_validate_document',
-    'RuntimeContext',
-    'schema_salad',
-    'shellescape',
-    'sourceline',
-    'StdFsAccess',
-    'workflow',
+    "default_loader",
+    "ensure_cwltool_available",
+    "getdefault",
+    "load_tool",
+    "LoadingContext",
+    "main",
+    "needs_shell_quoting",
+    "normalizeFilesDirs",
+    "pathmapper",
+    "process",
+    "ref_resolver",
+    "relink_initialworkdir",
+    "resolve_and_validate_document",
+    "RuntimeContext",
+    "schema_salad",
+    "shellescape",
+    "sourceline",
+    "StdFsAccess",
+    "visit_class",
+    "workflow",
+    "yaml_no_ts",
 )

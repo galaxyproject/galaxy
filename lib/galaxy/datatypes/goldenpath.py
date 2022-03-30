@@ -16,8 +16,9 @@ from .tabular import Tabular
 @build_sniff_from_prefix
 class GoldenPath(Tabular):
     """Class describing NCBI's Golden Path assembly format"""
-    edam_format = 'format_3693'
-    file_ext = 'agp'
+
+    edam_format = "format_3693"
+    file_ext = "agp"
 
     def set_meta(self, dataset, **kwd):
         # AGPFile reads and validates entire file.
@@ -44,21 +45,40 @@ class GoldenPath(Tabular):
         """
         found_non_comment_lines = False
         try:
-            for line in iter_headers(file_prefix, '\t', comment_designator='#'):
+            for line in iter_headers(file_prefix, "\t", comment_designator="#"):
                 if line:
                     if len(line) != 9:
                         return False
-                    assert line[4] in ['A', 'D', 'F', 'G', 'O', 'P', 'W', 'N', 'U']
+                    assert line[4] in ["A", "D", "F", "G", "O", "P", "W", "N", "U"]
                     ostensible_numbers = line[1:3]
-                    if line[4] in ['U', 'N']:
+                    if line[4] in ["U", "N"]:
                         ostensible_numbers.append(line[5])
-                        assert line[6] in ['scaffold', 'contig', 'centromere', 'short_arm', 'heterochromatin', 'telomere', 'repeat']
-                        assert line[7] in ['yes', 'no']
-                        assert line[8] in ['na', 'paired-ends', 'align_genus', 'align_xgenus', 'align_trnscript', 'within_clone', 'clone_contig', 'map', 'strobe', 'unspecified']
+                        assert line[6] in [
+                            "scaffold",
+                            "contig",
+                            "centromere",
+                            "short_arm",
+                            "heterochromatin",
+                            "telomere",
+                            "repeat",
+                        ]
+                        assert line[7] in ["yes", "no"]
+                        assert line[8] in [
+                            "na",
+                            "paired-ends",
+                            "align_genus",
+                            "align_xgenus",
+                            "align_trnscript",
+                            "within_clone",
+                            "clone_contig",
+                            "map",
+                            "strobe",
+                            "unspecified",
+                        ]
                     else:
                         ostensible_numbers.extend([line[6], line[7]])
-                        assert line[8] in ['+', '-', '?', '0', 'na']
-                    if line[4] == 'U':
+                        assert line[8] in ["+", "-", "?", "0", "na"]
+                    if line[4] == "U":
                         assert int(line[5]) == 100
                     assert all(map(lambda x: str(x).isnumeric() and int(x) > 0, ostensible_numbers))
                     found_non_comment_lines = True
@@ -131,7 +151,7 @@ class AGPFile:
 
         line_number = 0
         in_body = False
-        with open(self.fname, "r") as f:
+        with open(self.fname) as f:
             for line in f:
                 line_number += 1
                 line = line.rstrip("\n")
@@ -192,19 +212,17 @@ class AGPFile:
 
     @property
     def num_lines(self):
-        """ Calculate the number of lines in the current state of the AGP file. """
+        """Calculate the number of lines in the current state of the AGP file."""
         return len(self._comment_lines) + sum(obj.num_lines for obj in self._objects)
 
     def iterate_objs(self):
-        """ Iterate over the objects of the AGP file. """
-        for obj in self._objects:
-            yield obj
+        """Iterate over the objects of the AGP file."""
+        yield from self._objects
 
     def iterate_lines(self):
-        """ Iterate over the non-comment lines of AGP file. """
+        """Iterate over the non-comment lines of AGP file."""
         for obj in self.iterate_objs():
-            for j in obj.iterate_lines():
-                yield j
+            yield from obj.iterate_lines()
 
 
 class AGPObject:
@@ -271,18 +289,21 @@ class AGPObject:
         # Check that the object intervals are sequential
         if self.obj_intervals:
             if self.obj_intervals[-1][1] != agp_line.obj_beg - 1:
-                raise AGPError(self.fname, agp_line.line_number, f"some positions in {agp_line.obj} are not accounted for or overlapping")
+                raise AGPError(
+                    self.fname,
+                    agp_line.line_number,
+                    f"some positions in {agp_line.obj} are not accounted for or overlapping",
+                )
 
         self.previous_pid = agp_line.pid
         self.obj_intervals.append((agp_line.obj_beg - 1, agp_line.obj_end))
         self._agp_lines.append(agp_line)
 
     def iterate_lines(self):
-        for i in self._agp_lines:
-            yield i
+        yield from self._agp_lines
 
 
-class AGPLine(object, metaclass=abc.ABCMeta):
+class AGPLine(metaclass=abc.ABCMeta):
     """
     An abstract base class representing a single AGP file line. Inheriting subclasses should
     override or implement new methods to check the validity of a single AFP line. Validity
@@ -312,27 +333,29 @@ class AGPLine(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def __str__(self):
-        """ Return the tab delimited AGP line"""
+        """Return the tab delimited AGP line"""
         pass
 
     @abc.abstractmethod
     def __iter__(self):
-        """ Return the AGP line's iterator"""
+        """Return the AGP line's iterator"""
         pass
 
     @abc.abstractmethod
     def _validate_numerics(self):
-        """ Ensure all numeric fields and positive integers. """
+        """Ensure all numeric fields and positive integers."""
         pass
 
     @abc.abstractmethod
     def _validate_strings(self):
-        """ Ensure all text fields are strings. """
+        """Ensure all text fields are strings."""
         pass
 
     def _validate_obj_coords(self):
         if self.obj_beg > self.obj_end:
-            raise AGPError(self.fname, self.line_number, f"object_beg ({self.obj_beg}) must be <= object_end ({self.obj_end})")
+            raise AGPError(
+                self.fname, self.line_number, f"object_beg ({self.obj_beg}) must be <= object_end ({self.obj_end})"
+            )
 
     def _validate_component_type(self):
         if self.comp_type not in self.allowed_comp_types:
@@ -340,7 +363,7 @@ class AGPLine(object, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def _validate_line(self):
-        """ Final remaining validations specific to the gap or sequence AGP lines. """
+        """Final remaining validations specific to the gap or sequence AGP lines."""
         pass
 
 
@@ -353,38 +376,44 @@ class AGPSeqLine(AGPLine):
     allowed_comp_types = {"A", "D", "F", "G", "O", "P", "W"}
     allowed_orientations = {"+", "-", "?", "0", "na"}
 
-    def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type, comp, comp_beg, comp_end, orientation):
+    def __init__(
+        self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type, comp, comp_beg, comp_end, orientation
+    ):
         self.comp = comp
         self.comp_beg = comp_beg
         self.comp_end = comp_end
         self.orientation = orientation
 
         # Set the object attributes and perform superclass-defined validations
-        super(AGPSeqLine, self).__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
+        super().__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
 
         self.is_gap = False
-        self.seqdict = dict(obj=str(self.obj),
-                            obj_beg=int(self.obj_beg),
-                            obj_end=int(self.obj_end),
-                            pid=int(self.pid),
-                            comp_type=str(self.comp_type),
-                            comp=str(self.comp),
-                            comp_beg=int(self.comp_beg),
-                            comp_end=int(self.comp_end),
-                            orientation=str(self.orientation))
+        self.seqdict = dict(
+            obj=str(self.obj),
+            obj_beg=int(self.obj_beg),
+            obj_end=int(self.obj_end),
+            pid=int(self.pid),
+            comp_type=str(self.comp_type),
+            comp=str(self.comp),
+            comp_beg=int(self.comp_beg),
+            comp_end=int(self.comp_end),
+            orientation=str(self.orientation),
+        )
 
     def __str__(self):
-        return "\t".join([
-            self.obj,
-            str(self.obj_beg),
-            str(self.obj_end),
-            str(self.pid),
-            self.comp_type,
-            self.comp,
-            str(self.comp_beg),
-            str(self.comp_end),
-            self.orientation
-        ])
+        return "\t".join(
+            [
+                self.obj,
+                str(self.obj_beg),
+                str(self.obj_end),
+                str(self.pid),
+                self.comp_type,
+                self.comp,
+                str(self.comp_beg),
+                str(self.comp_end),
+                self.orientation,
+            ]
+        )
 
     def __iter__(self):
         for key in self.seqdict:
@@ -403,21 +432,23 @@ class AGPSeqLine(AGPLine):
             raise AGPError(self.fname, self.line_number, "encountered an invalid non-integer numeric AGP field")
 
         # Ensure that all numeric values are positive
-        if not all([
-            self.obj_beg > 0,
-            self.obj_end > 0,
-            self.pid > 0,
-            self.comp_beg > 0,
-            self.comp_end > 0
-        ]):
+        if not all([self.obj_beg > 0, self.obj_end > 0, self.pid > 0, self.comp_beg > 0, self.comp_end > 0]):
             raise AGPError(self.fname, self.line_number, "encountered an invalid zero or negative numeric AGP field.")
 
         # Check the coordinates
         if self.comp_beg > self.comp_end:
-            raise AGPError(self.fname, self.line_number, f"component_beg ({self.comp_beg}) must be <= component_end ({self.comp_end})")
+            raise AGPError(
+                self.fname,
+                self.line_number,
+                f"component_beg ({self.comp_beg}) must be <= component_end ({self.comp_end})",
+            )
 
         if self.obj_end - (self.obj_beg - 1) != self.comp_end - (self.comp_beg - 1):
-            raise AGPError(self.fname, self.line_number, f"object coordinates ({self.obj_beg}, {self.obj_end}) and component coordinates ({self.comp_beg}, {self.comp_end}) do not have the same length")
+            raise AGPError(
+                self.fname,
+                self.line_number,
+                f"object coordinates ({self.obj_beg}, {self.obj_end}) and component coordinates ({self.comp_beg}, {self.comp_end}) do not have the same length",
+            )
 
     def _validate_strings(self):
         try:
@@ -442,46 +473,68 @@ class AGPGapLine(AGPLine):
     allowed_comp_types = {"N", "U"}
     allowed_linkage_types = {"yes", "no"}
     allowed_gap_types = {
-        "scaffold", "contig", "centromere", "short_arm", "heterochromatin", "telomere", "repeat", "contamination"
+        "scaffold",
+        "contig",
+        "centromere",
+        "short_arm",
+        "heterochromatin",
+        "telomere",
+        "repeat",
+        "contamination",
     }
     allowed_evidence_types = {
-        "na", "paired-ends", "align_genus", "align_xgenus",
-        "align_trnscpt", "within_clone", "clone_contig", "map",
-        "pcr", "proximity_ligation", "strobe", "unspecified"
+        "na",
+        "paired-ends",
+        "align_genus",
+        "align_xgenus",
+        "align_trnscpt",
+        "within_clone",
+        "clone_contig",
+        "map",
+        "pcr",
+        "proximity_ligation",
+        "strobe",
+        "unspecified",
     }
 
-    def __init__(self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type, gap_len, gap_type, linkage, linkage_evidence):
+    def __init__(
+        self, fname, line_number, obj, obj_beg, obj_end, pid, comp_type, gap_len, gap_type, linkage, linkage_evidence
+    ):
         self.gap_len = gap_len
         self.gap_type = gap_type
         self.linkage = linkage
         self.linkage_evidence = linkage_evidence
 
         # Set the object attributes and perform superclass-defined validations
-        super(AGPGapLine, self).__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
+        super().__init__(fname, line_number, obj, obj_beg, obj_end, pid, comp_type)
 
         self.is_gap = True
-        self.gapdict = dict(obj=str(self.obj),
-                            obj_beg=int(self.obj_beg),
-                            obj_end=int(self.obj_end),
-                            pid=int(self.pid),
-                            comp_type=str(self.comp_type),
-                            gap_len=int(self.gap_len),
-                            gap_type=str(self.gap_type),
-                            linkage=str(self.linkage),
-                            linkage_evidence=str(self.linkage_evidence))
+        self.gapdict = dict(
+            obj=str(self.obj),
+            obj_beg=int(self.obj_beg),
+            obj_end=int(self.obj_end),
+            pid=int(self.pid),
+            comp_type=str(self.comp_type),
+            gap_len=int(self.gap_len),
+            gap_type=str(self.gap_type),
+            linkage=str(self.linkage),
+            linkage_evidence=str(self.linkage_evidence),
+        )
 
     def __str__(self):
-        return "\t".join([
-            self.obj,
-            str(self.obj_beg),
-            str(self.obj_end),
-            str(self.pid),
-            self.comp_type,
-            str(self.gap_len),
-            self.gap_type,
-            self.linkage,
-            self.linkage_evidence
-        ])
+        return "\t".join(
+            [
+                self.obj,
+                str(self.obj_beg),
+                str(self.obj_end),
+                str(self.pid),
+                self.comp_type,
+                str(self.gap_len),
+                self.gap_type,
+                self.linkage,
+                self.linkage_evidence,
+            ]
+        )
 
     def __iter__(self):
         for key in self.gapdict:
@@ -499,17 +552,16 @@ class AGPGapLine(AGPLine):
             raise AGPError(self.fname, self.line_number, "encountered an invalid non-integer numeric AGP field")
 
         # Ensure that all numeric values are positive
-        if not all([
-            self.obj_beg > 0,
-            self.obj_end > 0,
-            self.pid > 0,
-            self.gap_len > 0
-        ]):
+        if not all([self.obj_beg > 0, self.obj_end > 0, self.pid > 0, self.gap_len > 0]):
             raise AGPError(self.fname, self.line_number, "encountered an invalid negative numeric AGP field")
 
         # Make sure the coordinates match
         if self.obj_end - (self.obj_beg - 1) != self.gap_len:
-            raise AGPError(self.fname, self.line_number, f"object coordinates ({self.obj_beg}, {self.obj_end}) and gap length ({self.gap_len}) are not the same length")
+            raise AGPError(
+                self.fname,
+                self.line_number,
+                f"object coordinates ({self.obj_beg}, {self.obj_end}) and gap length ({self.gap_len}) are not the same length",
+            )
 
     def _validate_strings(self):
         try:
@@ -522,9 +574,13 @@ class AGPGapLine(AGPLine):
             raise AGPError(self.fname, self.line_number, "encountered an invalid type for an AGP text field")
 
     def _validate_line(self):
-        """ Validation specific to AGP gap lines. """
+        """Validation specific to AGP gap lines."""
         if self.comp_type == "U" and self.gap_len != 100:
-            raise AGPError(self.fname, self.line_number, f"invalid gap length for component type 'U': {self.gap_len} (should be 100)")
+            raise AGPError(
+                self.fname,
+                self.line_number,
+                f"invalid gap length for component type 'U': {self.gap_len} (should be 100)",
+            )
 
         if self.gap_type not in AGPGapLine.allowed_gap_types:
             raise AGPError(self.fname, self.line_number, f"invalid gap type: {self.gap_type}")
@@ -542,7 +598,11 @@ class AGPGapLine(AGPLine):
                 raise AGPError(self.fname, self.line_number, "invalid 'scaffold' gap without linkage evidence")
 
             if self.linkage_evidence != "na":
-                raise AGPError(self.fname, self.line_number, f"linkage evidence must be 'na' when not asserting linkage. Got {self.linkage_evidence}")
+                raise AGPError(
+                    self.fname,
+                    self.line_number,
+                    f"linkage evidence must be 'na' when not asserting linkage. Got {self.linkage_evidence}",
+                )
         else:
             if "na" in all_evidence:
                 raise AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")

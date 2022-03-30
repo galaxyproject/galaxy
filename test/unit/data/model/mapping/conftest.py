@@ -1,11 +1,14 @@
 import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.orm import (
+    scoped_session,
+    sessionmaker,
+)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def engine():
-    db_uri = 'sqlite:///:memory:'
+    db_uri = "sqlite:///:memory:"
     return create_engine(db_uri)
 
 

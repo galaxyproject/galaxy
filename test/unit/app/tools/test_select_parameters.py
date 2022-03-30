@@ -8,44 +8,46 @@ from .util import BaseParameterTestCase
 
 
 class SelectToolParameterTestCase(BaseParameterTestCase):
-
     def test_validated_values(self):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
+        self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
             self.param.from_json("42", self.trans, {"input_bam": model.HistoryDatasetAssociation()})
             assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_validated_values_missing_dependency(self):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
+        self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
             self.param.from_json("42", self.trans)
             assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_unvalidated_values(self):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
+        self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
         assert self.param.from_json("42", self.trans) == "42"
 
     def test_validated_datasets(self):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
+        self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
             self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": None})
             assert str(exc_info.value) == "parameter 'my_name': requires a value, but no legal values defined"
 
     def test_unvalidated_datasets(self):
-        self.options_xml = '''<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>'''
+        self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
-        assert isinstance(self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": basic.RuntimeValue()}), model.HistoryDatasetAssociation)
+        assert isinstance(
+            self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": basic.RuntimeValue()}),
+            model.HistoryDatasetAssociation,
+        )
 
     def test_filter_param_value(self):
-        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>'''
+        self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="0" /></options>"""
         assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testname1"})
         assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testname2"})
         assert len(self.param.get_options(self.trans, {"input_bam": "testname3"})) == 0
 
     def test_filter_param_value2(self):
         # Same test as above, but filtering on a different column.
-        self.options_xml = '''<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>'''
+        self.options_xml = """<options from_data_table="test_table"><filter type="param_value" ref="input_bam" column="1" /></options>"""
         assert ("testname1", "testpath1", False) in self.param.get_options(self.trans, {"input_bam": "testpath1"})
         assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testpath2"})
         assert len(self.param.get_options(self.trans, {"input_bam": "testpath3"})) == 0
@@ -85,7 +87,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
             data_ref_text = ""
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_bam"'
-            template_xml = '''<param name="my_name" type="%s" %s %s %s>%s</param>'''
+            template_xml = """<param name="my_name" type="%s" %s %s %s>%s</param>"""
             param_str = template_xml % (self.type, data_ref_text, multi_text, optional_text, options_text)
             self._param = self._parameter_for(xml=param_str)
 
@@ -93,7 +95,6 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
 
 
 class MockToolDataTable:
-
     def __init__(self):
         self.columns = dict(
             name=0,

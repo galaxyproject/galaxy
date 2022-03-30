@@ -1,8 +1,8 @@
 import tempfile
 
 import pytest
+from a2wsgi import WSGIMiddleware
 from fastapi.applications import FastAPI
-from fastapi.middleware.wsgi import WSGIMiddleware
 from fastapi.testclient import TestClient
 
 from galaxy.util.bunch import Bunch
@@ -11,22 +11,23 @@ from galaxy.web.framework.base import (
     send_file,
 )
 
-CONTENT = 'content'
+CONTENT = "content"
 
 
 def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None):
-
     def wsgi_application(env, start_response):
         trans = Bunch(
             response=Response(),
-            app=Bunch(config=Bunch(nginx_x_accel_redirect_base=nginx_x_accel_redirect_base, apache_xsendfile=apache_xsendfile))
+            app=Bunch(
+                config=Bunch(nginx_x_accel_redirect_base=nginx_x_accel_redirect_base, apache_xsendfile=apache_xsendfile)
+            ),
         )
-        trans.response.headers['content-length'] = len(CONTENT)
-        trans.response.set_content_type('application/octet-stream')
+        trans.response.headers["content-length"] = len(CONTENT)
+        trans.response.set_content_type("application/octet-stream")
         return send_file(start_response, trans, fh)
 
     app = FastAPI()
-    app.mount('/test/send_file', WSGIMiddleware(wsgi_application))
+    app.mount("/test/send_file", WSGIMiddleware(wsgi_application))
     return app
 
 
@@ -40,22 +41,22 @@ def test_file_handle():
 
 
 def test_sendfile_nginx(test_file_handle):
-    app = setup_fastAPI(test_file_handle, nginx_x_accel_redirect_base='/base')
+    app = setup_fastAPI(test_file_handle, nginx_x_accel_redirect_base="/base")
     client = TestClient(app)
     response = client.get("/test/send_file")
     assert response.status_code == 200
-    assert response.headers['x-accel-redirect'] == f"/base{test_file_handle.name}"
-    assert 'content-length' not in response.headers
+    assert response.headers["x-accel-redirect"] == f"/base{test_file_handle.name}"
+    assert "content-length" not in response.headers
     assert not response.content
 
 
 def test_sendfile_apache(test_file_handle):
-    app = setup_fastAPI(test_file_handle, apache_xsendfile='/base')
+    app = setup_fastAPI(test_file_handle, apache_xsendfile="/base")
     client = TestClient(app)
     response = client.get("/test/send_file")
     assert response.status_code == 200
-    assert response.headers['X-Sendfile'] == test_file_handle.name
-    assert 'content-length' not in response.headers
+    assert response.headers["X-Sendfile"] == test_file_handle.name
+    assert "content-length" not in response.headers
     assert not response.content
 
 
@@ -64,7 +65,7 @@ def test_sendfile_in_process(test_file_handle):
     client = TestClient(app)
     response = client.get("/test/send_file")
     assert response.status_code == 200
-    assert 'X-Sendfile' not in response.headers
-    assert 'x-accel-redirect' not in response.headers
-    assert response.headers['content-length'] == str(len(CONTENT))
-    assert response.content.decode() == 'content'
+    assert "X-Sendfile" not in response.headers
+    assert "x-accel-redirect" not in response.headers
+    assert response.headers["content-length"] == str(len(CONTENT))
+    assert response.content.decode() == "content"

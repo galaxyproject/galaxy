@@ -17,48 +17,52 @@ log = logging.getLogger(__name__)
 def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
     processed_dependency_links = processed_dependency_links or []
     encoder = app.security.encode_id
-    value_mapper = {'repository_id': encoder, 'id': encoder, 'user_id': encoder}
-    metadata = metadata_entry.to_dict(value_mapper=value_mapper, view='element')
+    value_mapper = {"repository_id": encoder, "id": encoder, "user_id": encoder}
+    metadata = metadata_entry.to_dict(value_mapper=value_mapper, view="element")
     db = app.model.session
     returned_dependencies = []
     required_metadata = get_dependencies_for_metadata_revision(app, metadata)
     if required_metadata is None:
         return metadata
     for dependency_metadata in required_metadata:
-        dependency_dict = dependency_metadata.to_dict(value_mapper=value_mapper, view='element')
-        dependency_link = (metadata['id'], dependency_dict['id'])
+        dependency_dict = dependency_metadata.to_dict(value_mapper=value_mapper, view="element")
+        dependency_link = (metadata["id"], dependency_dict["id"])
         if dependency_link in processed_dependency_links:
             continue
         processed_dependency_links.append(dependency_link)
-        repository = db.query(app.model.Repository).get(app.security.decode_id(dependency_dict['repository_id']))
-        dependency_dict['repository'] = repository.to_dict(value_mapper=value_mapper)
+        repository = db.query(app.model.Repository).get(app.security.decode_id(dependency_dict["repository_id"]))
+        dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
-            dependency_dict['tools'] = dependency_metadata.metadata['tools']
-        dependency_dict['repository_dependencies'] = []
-        if dependency_dict['includes_tool_dependencies']:
-            dependency_dict['tool_dependencies'] = repository.get_tool_dependencies(app, dependency_dict['changeset_revision'])
-        if dependency_dict['has_repository_dependencies']:
-            dependency_dict['repository_dependencies'] = get_all_dependencies(app, dependency_metadata, processed_dependency_links)
+            dependency_dict["tools"] = dependency_metadata.metadata["tools"]
+        dependency_dict["repository_dependencies"] = []
+        if dependency_dict["includes_tool_dependencies"]:
+            dependency_dict["tool_dependencies"] = repository.get_tool_dependencies(
+                app, dependency_dict["changeset_revision"]
+            )
+        if dependency_dict["has_repository_dependencies"]:
+            dependency_dict["repository_dependencies"] = get_all_dependencies(
+                app, dependency_metadata, processed_dependency_links
+            )
         else:
-            dependency_dict['repository_dependencies'] = []
+            dependency_dict["repository_dependencies"] = []
         returned_dependencies.append(dependency_dict)
     return returned_dependencies
 
 
 def get_current_repository_metadata_for_changeset_revision(app, repository, changeset_revision):
     encoded_repository_id = app.security.encode_id(repository.id)
-    repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                        encoded_repository_id,
-                                                                        changeset_revision)
+    repository_metadata = get_repository_metadata_by_changeset_revision(app, encoded_repository_id, changeset_revision)
     if repository_metadata:
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead"
     # in the repository changelog.
-    updated_changeset_revision = get_next_downloadable_changeset_revision(app, repository, after_changeset_revision=changeset_revision)
+    updated_changeset_revision = get_next_downloadable_changeset_revision(
+        app, repository, after_changeset_revision=changeset_revision
+    )
     if updated_changeset_revision and updated_changeset_revision != changeset_revision:
-        repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                            encoded_repository_id,
-                                                                            updated_changeset_revision)
+        repository_metadata = get_repository_metadata_by_changeset_revision(
+            app, encoded_repository_id, updated_changeset_revision
+        )
         if repository_metadata:
             return repository_metadata
     return None
@@ -66,21 +70,23 @@ def get_current_repository_metadata_for_changeset_revision(app, repository, chan
 
 def get_dependencies_for_metadata_revision(app, metadata):
     dependencies = []
-    for _shed, name, owner, changeset, _prior, _ in metadata['repository_dependencies']:
+    for _shed, name, owner, changeset, _prior, _ in metadata["repository_dependencies"]:
         required_repository = get_repository_by_name_and_owner(app, name, owner)
         updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:
             continue
-        metadata_entry = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(required_repository.id), updated_changeset)
+        metadata_entry = get_repository_metadata_by_changeset_revision(
+            app, app.security.encode_id(required_repository.id), updated_changeset
+        )
         dependencies.append(metadata_entry)
     return dependencies
 
 
 def get_latest_changeset_revision(app, repository):
     repository_tip = repository.tip()
-    repository_metadata = get_repository_metadata_by_changeset_revision(app,
-                                                                        app.security.encode_id(repository.id),
-                                                                        repository_tip)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), repository_tip
+    )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
@@ -91,7 +97,9 @@ def get_latest_changeset_revision(app, repository):
 
 def get_latest_downloadable_changeset_revision(app, repository):
     repository_tip = repository.tip()
-    repository_metadata = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), repository_tip)
+    repository_metadata = get_repository_metadata_by_changeset_revision(
+        app, app.security.encode_id(repository.id), repository_tip
+    )
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
     changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
@@ -108,9 +116,7 @@ def get_latest_repository_metadata(app, decoded_repository_id, downloadable=Fals
         changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
     else:
         changeset_revision = get_latest_changeset_revision(app, repository)
-    return get_repository_metadata_by_changeset_revision(app,
-                                                         app.security.encode_id(repository.id),
-                                                         changeset_revision)
+    return get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), changeset_revision)
 
 
 def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, downloadable=True):
@@ -198,15 +204,16 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
     if repository_metadata is not None:
         metadata = repository_metadata.metadata
         if metadata:
-            repository_dependencies_dict = metadata.get('repository_dependencies', None)
+            repository_dependencies_dict = metadata.get("repository_dependencies", None)
             if repository_dependencies_dict is not None:
-                repository_dependency_tups = repository_dependencies_dict.get('repository_dependencies', None)
+                repository_dependency_tups = repository_dependencies_dict.get("repository_dependencies", None)
                 if repository_dependency_tups is not None:
                     # The value of repository_dependency_tups is a list of repository dependency tuples like this:
                     # ['http://localhost:9009', 'package_samtools_0_1_18', 'devteam', 'ef37fc635cb9', 'False', 'False']
                     for repository_dependency_tup in repository_dependency_tups:
-                        toolshed, name, owner, changeset_revision, pir, oicct = \
-                            parse_repository_dependency_tuple(repository_dependency_tup)
+                        toolshed, name, owner, changeset_revision, pir, oicct = parse_repository_dependency_tuple(
+                            repository_dependency_tup
+                        )
                         repository = get_repository_by_name_and_owner(app, name, owner)
                         if repository:
                             if deprecated_only:
@@ -215,8 +222,10 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                             else:
                                 dependency_tups.append(repository_dependency_tup)
                         else:
-                            log.debug("Cannot locate repository %s owned by %s for inclusion in repository dependency tups." %
-                                (name, owner))
+                            log.debug(
+                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups."
+                                % (name, owner)
+                            )
     return dependency_tups
 
 
@@ -226,10 +235,16 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
     sa_session = app.model.session
-    all_metadata_records = sa_session.query(app.model.RepositoryMetadata) \
-                                     .filter(and_(app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
-                                                  app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
-                                     .all()
+    all_metadata_records = (
+        sa_session.query(app.model.RepositoryMetadata)
+        .filter(
+            and_(
+                app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
+                app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision,
+            )
+        )
+        .all()
+    )
     if len(all_metadata_records) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
@@ -295,28 +310,28 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
         if changeset != upper_bound_changeset_revision:
             changeset_hashes.append(str(repo[changeset]))
     if changeset_hashes:
-        changeset_hashes_str = ','.join(changeset_hashes)
+        changeset_hashes_str = ",".join(changeset_hashes)
         return changeset_hashes_str
-    return ''
+    return ""
 
 
 def is_downloadable(metadata_dict):
     # NOTE: although repository README files are considered Galaxy utilities, they have no
     # effect on determining if a revision is installable.  See the comments in the
     # compare_readme_files() method.
-    if 'datatypes' in metadata_dict:
+    if "datatypes" in metadata_dict:
         # We have proprietary datatypes.
         return True
-    if 'repository_dependencies' in metadata_dict:
+    if "repository_dependencies" in metadata_dict:
         # We have repository_dependencies.
         return True
-    if 'tools' in metadata_dict:
+    if "tools" in metadata_dict:
         # We have tools.
         return True
-    if 'tool_dependencies' in metadata_dict:
+    if "tool_dependencies" in metadata_dict:
         # We have tool dependencies, and perhaps only tool dependencies!
         return True
-    if 'workflows' in metadata_dict:
+    if "workflows" in metadata_dict:
         # We have exported workflows.
         return True
     return False

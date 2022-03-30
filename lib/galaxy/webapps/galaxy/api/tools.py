@@ -1,9 +1,21 @@
 import logging
 import os
-from json import dumps, loads
-from typing import Any, cast, Dict, Optional
+from json import (
+    dumps,
+    loads,
+)
+from typing import (
+    Any,
+    cast,
+    Dict,
+    Optional,
+)
 
-from galaxy import exceptions, util, web
+from galaxy import (
+    exceptions,
+    util,
+    web,
+)
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -21,7 +33,10 @@ from galaxy.web import (
 from galaxy.web.framework.decorators import expose_api_raw
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from . import BaseGalaxyAPIController, depends
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
@@ -30,13 +45,14 @@ log = logging.getLogger(__name__)
 # provides access via a different API endpoint.
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
-SEARCH_RESERVED_TERMS_FAVORITES = ['#favs', '#favorites', '#favourites']
+SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
     RESTful controller for interactions with tools.
     """
+
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
     hdca_manager: DatasetCollectionManager = depends(DatasetCollectionManager)
@@ -59,19 +75,19 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
 
         # Read params.
-        in_panel = util.string_as_bool(kwds.get('in_panel', 'True'))
-        trackster = util.string_as_bool(kwds.get('trackster', 'False'))
-        q = kwds.get('q', '')
-        tool_id = kwds.get('tool_id', '')
-        tool_help = util.string_as_bool(kwds.get('tool_help', 'False'))
+        in_panel = util.string_as_bool(kwds.get("in_panel", "True"))
+        trackster = util.string_as_bool(kwds.get("trackster", "False"))
+        q = kwds.get("q", "")
+        tool_id = kwds.get("tool_id", "")
+        tool_help = util.string_as_bool(kwds.get("tool_help", "False"))
         view = kwds.get("view", None)
 
         # Find whether to search.
         if q:
             if trans.user and q in SEARCH_RESERVED_TERMS_FAVORITES:
-                if 'favorites' in trans.user.preferences:
-                    favorites = loads(trans.user.preferences['favorites'])
-                    hits = favorites['tools']
+                if "favorites" in trans.user.preferences:
+                    favorites = loads(trans.user.preferences["favorites"])
+                    hits = favorites["tools"]
                 else:
                     hits = None
             else:
@@ -96,7 +112,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view)
+            return self.app.toolbox.to_dict(
+                trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view
+            )
         except exceptions.MessageException:
             raise
         except Exception:
@@ -115,9 +133,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 link_details - if true, hyperlink to the tool is returned
                 tool_version - if provided return this tool version
         """
-        io_details = util.string_as_bool(kwd.get('io_details', False))
-        link_details = util.string_as_bool(kwd.get('link_details', False))
-        tool_version = kwd.get('tool_version')
+        io_details = util.string_as_bool(kwd.get("io_details", False))
+        link_details = util.string_as_bool(kwd.get("link_details", False))
+        tool_version = kwd.get("tool_version")
         tool = self._get_tool(id, user=trans.user, tool_version=tool_version)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
@@ -128,13 +146,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Returns a tool model including dynamic parameters and updated values, repeats block etc.
         """
         kwd = _kwd_or_payload(kwd)
-        tool_version = kwd.get('tool_version')
-        history_id = kwd.pop('history_id', None)
+        tool_version = kwd.get("tool_version")
+        history_id = kwd.pop("history_id", None)
         history = None
         if history_id:
-            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_owned(
+                self.decode_id(history_id), trans.user, current_history=trans.history
+            )
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
-        return tool.to_json(trans, kwd.get('inputs', kwd), history=history)
+        return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
 
     @web.require_admin
     @expose_api
@@ -143,7 +163,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
         """
         kwd = _kwd_or_payload(kwd)
-        tool_version = kwd.get('tool_version', None)
+        tool_version = kwd.get("tool_version", None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         path = tool.test_data_path(kwd.get("filename"))
         if path:
@@ -156,7 +176,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
         """
-        tool_version = kwd.get('tool_version', None)
+        tool_version = kwd.get("tool_version", None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         filename = kwd.get("filename")
         if filename is None:
@@ -165,7 +185,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         if path:
             if os.path.isfile(path):
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-                return open(path, mode='rb')
+                return open(path, mode="rb")
             elif os.path.isdir(path):
                 # Set upstream_mod_zip to false, otherwise tool data must be among allowed internal routes
                 archive = ZipstreamWrapper(
@@ -218,7 +238,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         set as '*' to get tests for all configured versions.
         """
         kwd = _kwd_or_payload(kwd)
-        tool_version = kwd.get('tool_version', None)
+        tool_version = kwd.get("tool_version", None)
         if tool_version == "*":
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
@@ -239,11 +259,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        trans.app.queue_worker.send_control_task('reload_tool', noop_self=True, kwargs={'tool_id': id})
+        trans.app.queue_worker.send_control_task("reload_tool", noop_self=True, kwargs={"tool_id": id})
         message, status = trans.app.toolbox.reload_tool_by_id(id)
-        if status == 'error':
+        if status == "error":
             raise exceptions.MessageException(message)
-        return {'message': message}
+        return {"message": message}
 
     @web.require_admin
     @expose_api
@@ -288,7 +308,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         tool = self._get_tool(id, user=trans.user)
         tool._view.install_dependencies(tool.requirements, **kwds)
-        if kwds.get('build_dependency_cache'):
+        if kwds.get("build_dependency_cache"):
             tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
         # _view.install_dependencies should return a dict with stdout, stderr and success status
@@ -344,7 +364,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             return x.to_dict()
 
         tool = self._get_tool(id, user=trans.user)
-        if hasattr(tool, 'lineage'):
+        if hasattr(tool, "lineage"):
             lineage_dict = tool.lineage.to_dict()
         else:
             lineage_dict = None
@@ -397,31 +417,33 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :return type: dict
         """
         panel_view = view or self.app.config.default_panel_view
-        tool_name_boost = self.app.config.get('tool_name_boost', 9)
-        tool_id_boost = self.app.config.get('tool_id_boost', 9)
-        tool_section_boost = self.app.config.get('tool_section_boost', 3)
-        tool_description_boost = self.app.config.get('tool_description_boost', 2)
-        tool_label_boost = self.app.config.get('tool_label_boost', 1)
-        tool_stub_boost = self.app.config.get('tool_stub_boost', 5)
-        tool_help_boost = self.app.config.get('tool_help_boost', 0.5)
-        tool_search_limit = self.app.config.get('tool_search_limit', 20)
-        tool_enable_ngram_search = self.app.config.get('tool_enable_ngram_search', False)
-        tool_ngram_minsize = self.app.config.get('tool_ngram_minsize', 3)
-        tool_ngram_maxsize = self.app.config.get('tool_ngram_maxsize', 4)
+        tool_name_boost = self.app.config.get("tool_name_boost", 9)
+        tool_id_boost = self.app.config.get("tool_id_boost", 9)
+        tool_section_boost = self.app.config.get("tool_section_boost", 3)
+        tool_description_boost = self.app.config.get("tool_description_boost", 2)
+        tool_label_boost = self.app.config.get("tool_label_boost", 1)
+        tool_stub_boost = self.app.config.get("tool_stub_boost", 5)
+        tool_help_boost = self.app.config.get("tool_help_boost", 0.5)
+        tool_search_limit = self.app.config.get("tool_search_limit", 20)
+        tool_enable_ngram_search = self.app.config.get("tool_enable_ngram_search", False)
+        tool_ngram_minsize = self.app.config.get("tool_ngram_minsize", 3)
+        tool_ngram_maxsize = self.app.config.get("tool_ngram_maxsize", 4)
 
-        results = self.app.toolbox_search.search(q=q,
-                                                 panel_view=panel_view,
-                                                 tool_name_boost=tool_name_boost,
-                                                 tool_id_boost=tool_id_boost,
-                                                 tool_section_boost=tool_section_boost,
-                                                 tool_description_boost=tool_description_boost,
-                                                 tool_label_boost=tool_label_boost,
-                                                 tool_stub_boost=tool_stub_boost,
-                                                 tool_help_boost=tool_help_boost,
-                                                 tool_search_limit=tool_search_limit,
-                                                 tool_enable_ngram_search=tool_enable_ngram_search,
-                                                 tool_ngram_minsize=tool_ngram_minsize,
-                                                 tool_ngram_maxsize=tool_ngram_maxsize)
+        results = self.app.toolbox_search.search(
+            q=q,
+            panel_view=panel_view,
+            tool_name_boost=tool_name_boost,
+            tool_id_boost=tool_id_boost,
+            tool_section_boost=tool_section_boost,
+            tool_description_boost=tool_description_boost,
+            tool_label_boost=tool_label_boost,
+            tool_stub_boost=tool_stub_boost,
+            tool_help_boost=tool_help_boost,
+            tool_search_limit=tool_search_limit,
+            tool_enable_ngram_search=tool_enable_ngram_search,
+            tool_ngram_minsize=tool_ngram_minsize,
+            tool_ngram_maxsize=tool_ngram_maxsize,
+        )
         return results
 
     @expose_api_anonymous_and_sessionless
@@ -429,7 +451,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool = self._get_tool(id, user=trans.user)
         rval = []
         for citation in tool.citations:
-            rval.append(citation.to_dict('bibtex'))
+            rval.append(citation.to_dict("bibtex"))
         return rval
 
     @expose_api
@@ -458,13 +480,15 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             ],
             "batch": input_src == "hdca",
         }
-        history_id = payload.get('history_id')
+        history_id = payload.get("history_id")
         if history_id:
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         else:
             if input_src == "hdca":
-                target_history = self.hdca_manager.get_dataset_collection_instance(trans, instance_type='history', id=input_id).history
+                target_history = self.hdca_manager.get_dataset_collection_instance(
+                    trans, instance_type="history", id=input_id
+                ).history
             elif input_src == "hda":
                 decoded_id = trans.app.security.decode_id(input_id)
                 target_history = self.hda_manager.get_accessible(decoded_id, trans.user).history
@@ -473,7 +497,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
 
         # Make the target datatype available to the converter
-        params['__target_datatype__'] = target_type
+        params["__target_datatype__"] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
         return self._handle_inputs_output_to_api_response(trans, converter, target_history, vars)
 
@@ -486,7 +510,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     @web.legacy_expose_api_raw
     def download(self, trans: GalaxyWebTransaction, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
-        trans.response.set_content_type('application/x-gzip')
+        trans.response.set_content_type("application/x-gzip")
         download_file = open(tool_tarball, "rb")
         trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
@@ -495,16 +519,17 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def raw_tool_source(self, trans: GalaxyWebTransaction, id, **kwds):
         """Returns tool source. ``language`` is included in the response header."""
         if not trans.app.config.enable_tool_source_display and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException("Only administrators may display tool sources on this Galaxy server.")
-        tool = self._get_tool(id, user=trans.user, tool_version=kwds.get('tool_version'))
-        trans.response.headers['language'] = tool.tool_source.language
+            raise exceptions.InsufficientPermissionsException(
+                "Only administrators may display tool sources on this Galaxy server."
+            )
+        tool = self._get_tool(id, user=trans.user, tool_version=kwds.get("tool_version"))
+        trans.response.headers["language"] = tool.tool_source.language
         return tool.tool_source.to_string()
 
     @expose_api_anonymous
     def fetch(self, trans: GalaxyWebTransaction, payload, **kwd):
-        """Adapt clean API to tool-constrained API.
-        """
-        request_version = '1'
+        """Adapt clean API to tool-constrained API."""
+        request_version = "1"
         if "history_id" not in payload:
             raise exceptions.RequestParameterMissingException("history_id must be specified")
         history_id = payload.pop("history_id")
@@ -513,7 +538,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         for key, value in payload.items():
             if key == "key":
                 continue
-            if key.startswith('files_') or key.startswith('__files_'):
+            if key.startswith("files_") or key.startswith("__files_"):
                 files_payload[key] = value
                 continue
             clean_payload[key] = value
@@ -521,12 +546,12 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         clean_payload["check_content"] = trans.app.config.check_upload_content
         request = dumps(clean_payload)
         create_payload = {
-            'tool_id': "__DATA_FETCH__",
-            'history_id': history_id,
-            'inputs': {
-                'request_version': request_version,
-                'request_json': request,
-                'file_count': str(len(files_payload))
+            "tool_id": "__DATA_FETCH__",
+            "history_id": history_id,
+            "inputs": {
+                "request_version": request_version,
+                "request_json": request,
+                "file_count": str(len(files_payload)),
             },
         }
         create_payload.update(files_payload)
@@ -557,7 +582,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException(f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint.")
+            raise exceptions.RequestParameterInvalidException(
+                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
@@ -565,14 +592,14 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def _create(self, trans: GalaxyWebTransaction, payload, **kwd):
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
-        action = payload.get('action')
-        if action == 'rerun':
+        action = payload.get("action")
+        if action == "rerun":
             raise Exception("'rerun' action has been deprecated")
 
         # Get tool.
-        tool_version = payload.get('tool_version')
-        tool_id = payload.get('tool_id')
-        tool_uuid = payload.get('tool_uuid')
+        tool_version = payload.get("tool_version")
+        tool_id = payload.get("tool_id")
+        tool_uuid = payload.get("tool_uuid")
         get_kwds = dict(
             tool_id=tool_id,
             tool_uuid=tool_uuid,
@@ -584,19 +611,21 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool:
             log.debug(f"Not found tool with kwds [{get_kwds}]")
-            raise exceptions.ToolMissingException('Tool not found.')
+            raise exceptions.ToolMissingException("Tool not found.")
         if not tool.allow_user_access(trans.user):
-            raise exceptions.ItemAccessibilityException('Tool not accessible.')
+            raise exceptions.ItemAccessibilityException("Tool not accessible.")
         if trans.app.config.user_activation_on:
             if not trans.user:
                 log.warning("Anonymous user attempts to execute tool, but account activation is turned on.")
             elif not trans.user.active:
-                log.warning(f"User \"{trans.user.email}\" attempts to execute tool, but account activation is turned on and user account is not active.")
+                log.warning(
+                    f'User "{trans.user.email}" attempts to execute tool, but account activation is turned on and user account is not active.'
+                )
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get('history_id')
+        history_id = payload.get("history_id")
         if history_id:
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
@@ -604,13 +633,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             target_history = None
 
         # Set up inputs.
-        inputs = payload.get('inputs', {})
+        inputs = payload.get("inputs", {})
         if not isinstance(inputs, dict):
             raise exceptions.RequestParameterInvalidException(f"inputs invalid {inputs}")
 
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
-            if k.startswith('files_') or k.startswith('__files_'):
+            if k.startswith("files_") or k.startswith("__files_"):
                 inputs[k] = v
 
         # for inputs that are coming from the Library, copy them into the history
@@ -624,21 +653,25 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # use_cached_job can be passed in via the top-level payload or among the tool inputs.
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
-        use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
+        use_cached_job = payload.get("use_cached_job", False) or util.string_as_bool(
+            inputs.get("use_cached_job", "false")
+        )
 
-        input_format = str(payload.get('input_format', 'legacy'))
+        input_format = str(payload.get("input_format", "legacy"))
 
-        vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format)
+        vars = tool.handle_input(
+            trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format
+        )
 
         new_pja_flush = False
-        for job in vars.get('jobs', []):
-            if inputs.get('send_email_notification', False):
+        for job in vars.get("jobs", []):
+            if inputs.get("send_email_notification", False):
                 # Unless an anonymous user is invoking this via the API it
                 # should never be an option, but check and enforce that here
                 if trans.user is None:
                     raise exceptions.ToolExecutionError("Anonymously run jobs cannot send an email notification.")
                 else:
-                    job_email_action = PostJobAction('EmailAction')
+                    job_email_action = PostJobAction("EmailAction")
                     job.add_post_job_action(job_email_action)
                     new_pja_flush = True
 
@@ -649,42 +682,48 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
     def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars.get('out_data', [])
-        rval: Dict[str, Any] = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
-        rval['produces_entry_points'] = tool.produces_entry_points
-        job_errors = vars.get('job_errors', [])
+        output_datasets = vars.get("out_data", [])
+        rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
+        rval["produces_entry_points"] = tool.produces_entry_points
+        job_errors = vars.get("job_errors", [])
         if job_errors:
             # If we are here - some jobs were successfully executed but some failed.
-            rval['errors'] = job_errors
+            rval["errors"] = job_errors
 
-        outputs = rval['outputs']
+        outputs = rval["outputs"]
         # TODO:?? poss. only return ids?
         for output_name, output in output_datasets:
             output_dict = output.to_dict()
             # add the output name back into the output data structure
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs
-            output_dict['output_name'] = output_name
+            output_dict["output_name"] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        for job in vars.get('jobs', []):
-            rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
+        for job in vars.get("jobs", []):
+            rval["jobs"].append(self.encode_all_ids(trans, job.to_dict(view="collection"), recursive=True))
 
-        for output_name, collection_instance in vars.get('output_collections', []):
+        for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(
-                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+                collection_instance,
+                security=trans.security,
+                url_builder=trans.url_builder,
+                parent=history,
             )
-            output_dict['output_name'] = output_name
-            rval['output_collections'].append(output_dict)
+            output_dict["output_name"] = output_name
+            rval["output_collections"].append(output_dict)
 
-        for output_name, collection_instance in vars.get('implicit_collections', {}).items():
+        for output_name, collection_instance in vars.get("implicit_collections", {}).items():
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(
-                collection_instance, security=trans.security, url_builder=trans.url_builder, parent=history,
+                collection_instance,
+                security=trans.security,
+                url_builder=trans.url_builder,
+                parent=history,
             )
-            output_dict['output_name'] = output_name
-            rval['implicit_collections'].append(output_dict)
+            output_dict["output_name"] = output_name
+            rval["implicit_collections"].append(output_dict)
 
         return rval
 
@@ -696,17 +735,19 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             new_value = self._patch_library_dataset(trans, v, target_history)
             if new_value:
                 v = new_value
-            elif isinstance(v, dict) and 'values' in v:
-                for index, value in enumerate(v['values']):
+            elif isinstance(v, dict) and "values" in v:
+                for index, value in enumerate(v["values"]):
                     patched = self._patch_library_dataset(trans, value, target_history)
                     if patched:
-                        v['values'][index] = patched
+                        v["values"][index] = patched
             inputs[k] = v
 
     def _patch_library_dataset(self, trans: GalaxyWebTransaction, v, target_history):
-        if isinstance(v, dict) and 'id' in v and v.get('src') == 'ldda':
-            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
-            if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
+        if isinstance(v, dict) and "id" in v and v.get("src") == "ldda":
+            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v["id"]))
+            if trans.user_is_admin or trans.app.security_agent.can_access_dataset(
+                trans.get_current_user_roles(), ldda.dataset
+            ):
                 return ldda.to_history_dataset_association(target_history, add_to_history=True)
 
     #
@@ -722,6 +763,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
-    if 'payload' in kwd:
-        kwd = cast(Dict[str, Any], kwd.get('payload'))
+    if "payload" in kwd:
+        kwd = cast(Dict[str, Any], kwd.get("payload"))
     return kwd

@@ -1,12 +1,15 @@
 import logging
 import sys
-from inspect import getfullargspec, getmembers
+from inspect import (
+    getfullargspec,
+    getmembers,
+)
 
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive', 'size']
+assertion_module_names = ["text", "tabular", "xml", "hdf5", "archive", "size"]
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
@@ -20,7 +23,7 @@ for assertion_module_name in assertion_module_names:
         __import__(full_assertion_module_name)
         assertion_module = sys.modules[full_assertion_module_name]
     except Exception:
-        log.exception('Failed to load assertion module: %s', assertion_module_name)
+        log.exception("Failed to load assertion module: %s", assertion_module_name)
         continue
     for member, value in getmembers(assertion_module):
         if member.startswith("assert_"):
@@ -28,8 +31,8 @@ for assertion_module_name in assertion_module_names:
 
 
 def verify_assertions(data, assertion_description_list):
-    """ This function takes a list of assertions and a string to check
-    these assertions against. """
+    """This function takes a list of assertions and a string to check
+    these assertions against."""
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 

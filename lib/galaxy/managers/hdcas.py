@@ -14,13 +14,15 @@ from galaxy.managers import (
     deletable,
     hdas,
     secured,
-    taggable
+    taggable,
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.structured_app import MinimalManagerApp, StructuredApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from galaxy.util.zipstream import ZipstreamWrapper
-
 
 log = logging.getLogger(__name__)
 
@@ -48,17 +50,19 @@ def set_collection_attributes(dataset_element, *payload):
 
 # TODO: to DatasetCollectionInstanceManager
 class HDCAManager(
-        base.ModelManager,
-        secured.AccessibleManagerMixin,
-        secured.OwnableManagerMixin,
-        deletable.PurgableManagerMixin,
-        taggable.TaggableManagerMixin,
-        annotatable.AnnotatableManagerMixin):
+    base.ModelManager,
+    secured.AccessibleManagerMixin,
+    secured.OwnableManagerMixin,
+    deletable.PurgableManagerMixin,
+    taggable.TaggableManagerMixin,
+    annotatable.AnnotatableManagerMixin,
+):
     """
     Interface/service object for interacting with HDCAs.
     """
+
     model_class = model.HistoryDatasetCollectionAssociation
-    foreign_key_name = 'history_dataset_collection_association'
+    foreign_key_name = "history_dataset_collection_association"
 
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
     annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
@@ -79,10 +83,10 @@ class HDCAManager(
         """
         returned = []
         # lots of nesting going on within the nesting
-        collection = content.collection if hasattr(content, 'collection') else content
-        this_parents = (content, ) + parents
+        collection = content.collection if hasattr(content, "collection") else content
+        this_parents = (content,) + parents
         for element in collection.elements:
-            next_parents = (element, ) + this_parents
+            next_parents = (element,) + this_parents
             if element.is_collection:
                 processed_list = self.map_datasets(element.child_collection, fn, *next_parents)
                 returned.extend(processed_list)
@@ -108,28 +112,21 @@ class DCESerializer(base.ModelSerializer):
         self.hda_serializer = hdas.HDASerializer(app)
         self.dc_serializer = DCSerializer(app, dce_serializer=self)
 
-        self.default_view = 'summary'
-        self.add_view('summary', [
-            'id', 'model_class',
-            'element_index',
-            'element_identifier',
-            'element_type',
-            'object'
-        ])
+        self.default_view = "summary"
+        self.add_view("summary", ["id", "model_class", "element_index", "element_identifier", "element_type", "object"])
 
     def add_serializers(self):
         super().add_serializers()
-        self.serializers.update({
-            'model_class': lambda *a, **c: 'DatasetCollectionElement',
-            'object': self.serialize_object
-        })
+        self.serializers.update(
+            {"model_class": lambda *a, **c: "DatasetCollectionElement", "object": self.serialize_object}
+        )
 
     def serialize_object(self, item, key, **context):
         if item.hda:
-            return self.hda_serializer.serialize_to_view(item.hda, view='summary', **context)
+            return self.hda_serializer.serialize_to_view(item.hda, view="summary", **context)
         if item.child_collection:
-            return self.dc_serializer.serialize_to_view(item.child_collection, view='detailed', **context)
-        return 'object'
+            return self.dc_serializer.serialize_to_view(item.child_collection, view="detailed", **context)
+        return "object"
 
 
 class DCSerializer(base.ModelSerializer):
@@ -141,32 +138,41 @@ class DCSerializer(base.ModelSerializer):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
-        self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'create_time',
-            'update_time',
-            'collection_type',
-            'populated_state',
-            'populated_state_message',
-            'element_count',
-        ])
-        self.add_view('detailed', [
-            'populated',
-            'elements',
-        ], include_keys_from='summary')
+        self.default_view = "summary"
+        self.add_view(
+            "summary",
+            [
+                "id",
+                "create_time",
+                "update_time",
+                "collection_type",
+                "populated_state",
+                "populated_state_message",
+                "element_count",
+            ],
+        )
+        self.add_view(
+            "detailed",
+            [
+                "populated",
+                "elements",
+            ],
+            include_keys_from="summary",
+        )
 
     def add_serializers(self):
         super().add_serializers()
-        self.serializers.update({
-            'model_class': lambda *a, **c: 'DatasetCollection',
-            'elements': self.serialize_elements,
-        })
+        self.serializers.update(
+            {
+                "model_class": lambda *a, **c: "DatasetCollection",
+                "elements": self.serialize_elements,
+            }
+        )
 
     def serialize_elements(self, item, key, **context):
         returned = []
         for element in item.elements:
-            serialized = self.dce_serializer.serialize_to_view(element, view='summary', **context)
+            serialized = self.dce_serializer.serialize_to_view(element, view="summary", **context)
             returned.append(serialized)
         return returned
 
@@ -175,25 +181,34 @@ class DCASerializer(base.ModelSerializer):
     """
     Base (abstract) Serializer class for HDCAs and LDCAs.
     """
+
     app: StructuredApp
 
     def __init__(self, app: StructuredApp, dce_serializer=None):
         super().__init__(app)
         self.dce_serializer = dce_serializer or DCESerializer(app)
 
-        self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'create_time', 'update_time',
-            'collection_type',
-            'populated_state',
-            'populated_state_message',
-            'element_count',
-        ])
-        self.add_view('detailed', [
-            'populated',
-            'elements',
-        ], include_keys_from='summary')
+        self.default_view = "summary"
+        self.add_view(
+            "summary",
+            [
+                "id",
+                "create_time",
+                "update_time",
+                "collection_type",
+                "populated_state",
+                "populated_state_message",
+                "element_count",
+            ],
+        )
+        self.add_view(
+            "detailed",
+            [
+                "populated",
+                "elements",
+            ],
+            include_keys_from="summary",
+        )
 
     def add_serializers(self):
         super().add_serializers()
@@ -201,14 +216,14 @@ class DCASerializer(base.ModelSerializer):
         self.dc_serializer = DCSerializer(self.app)
         # then set the serializers to point to it for those attrs
         collection_keys = [
-            'create_time',
-            'update_time',
-            'collection_type',
-            'populated',
-            'populated_state',
-            'populated_state_message',
-            'elements',
-            'element_count',
+            "create_time",
+            "update_time",
+            "collection_type",
+            "populated",
+            "populated_state",
+            "populated_state_message",
+            "elements",
+            "element_count",
         ]
         for key in collection_keys:
             self.serializers[key] = self._proxy_to_dataset_collection(key=key)
@@ -221,13 +236,10 @@ class DCASerializer(base.ModelSerializer):
             return lambda i, k, **c: self.dc_serializer.serialize(i.collection, [k], **c)[k]
         if serializer:
             return lambda i, k, **c: serializer(i.collection, key or k, **c)
-        raise TypeError('kwarg serializer or key needed')
+        raise TypeError("kwarg serializer or key needed")
 
 
-class HDCASerializer(
-        DCASerializer,
-        taggable.TaggableSerializerMixin,
-        annotatable.AnnotatableSerializerMixin):
+class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatable.AnnotatableSerializerMixin):
     """
     Serializer for HistoryDatasetCollectionAssociations.
     """
@@ -236,87 +248,68 @@ class HDCASerializer(
         super().__init__(app)
         self.hdca_manager = HDCAManager(app)
 
-        self.default_view = 'summary'
-        self.add_view('summary', [
-            'id',
-            'type_id',
-            'name',
-            'history_id', 'hid',
-            'history_content_type',
-
-            'collection_type',
-            'populated_state',
-            'populated_state_message',
-            'element_count',
-
-            'job_source_id',
-            'job_source_type',
-
-            'name',
-            'type_id',
-            'deleted',
-            # 'purged',
-            'visible',
-            'type', 'url',
-            'create_time', 'update_time',
-            'tags',  # TODO: detail view only (maybe),
-            'contents_url'
-        ])
-        self.add_view('detailed', [
-            'populated',
-            'elements'
-        ], include_keys_from='summary')
-
-        # fields for new beta web client, there is no summary/detailed split any more
-        self.add_view('betawebclient', [
-            # common to hda
-            'create_time',
-            'deleted',
-            'hid',
-            'history_content_type',
-            'history_id',
-            'id',
-            'name',
-            'tags',
-            'type',
-            'type_id',
-            'update_time',
-            'url',
-            'visible',
-            # hdca only
-            'collection_id',
-            'collection_type',
-            'contents_url',
-            'element_count',
-            'job_source_id',
-            'job_source_type',
-            'job_state_summary',
-            'populated',
-            'populated_state',
-            'populated_state_message',
-            'elements_datatypes',
-        ])
+        self.default_view = "summary"
+        self.add_view(
+            "summary",
+            [
+                "id",
+                "type_id",
+                "name",
+                "history_id",
+                "collection_id",
+                "hid",
+                "history_content_type",
+                "collection_type",
+                "populated_state",
+                "populated_state_message",
+                "element_count",
+                "job_source_id",
+                "job_source_type",
+                "job_state_summary",
+                "name",
+                "type_id",
+                "deleted",
+                "visible",
+                "type",
+                "url",
+                "create_time",
+                "update_time",
+                "tags",
+                "contents_url",
+            ],
+        )
+        self.add_view(
+            "detailed",
+            [
+                "populated",
+                "elements",
+                "elements_datatypes",
+            ],
+            include_keys_from="summary",
+        )
 
     def add_serializers(self):
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         serializers: Dict[str, base.Serializer] = {
-            'model_class': lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
+            "model_class": lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
-            'type': lambda item, key, **context: 'collection',
+            "type": lambda item, key, **context: "collection",
             # part of a history and container
-            'history_id': self.serialize_id,
-            'history_content_type': lambda item, key, **context: self.hdca_manager.model_class.content_type,
-            'type_id': self.serialize_type_id,
-            'job_source_id': self.serialize_id,
-            'url': lambda item, key, **context: self.url_for('history_content_typed',
-                                                             history_id=self.app.security.encode_id(item.history_id),
-                                                             id=self.app.security.encode_id(item.id),
-                                                             type=self.hdca_manager.model_class.content_type),
-            'contents_url': self.generate_contents_url,
-            'job_state_summary': self.serialize_job_state_summary,
-            'elements_datatypes': self.serialize_elements_datatypes,
+            "history_id": self.serialize_id,
+            "history_content_type": lambda item, key, **context: self.hdca_manager.model_class.content_type,
+            "type_id": self.serialize_type_id,
+            "job_source_id": self.serialize_id,
+            "url": lambda item, key, **context: self.url_for(
+                "history_content_typed",
+                history_id=self.app.security.encode_id(item.history_id),
+                id=self.app.security.encode_id(item.id),
+                type=self.hdca_manager.model_class.content_type,
+            ),
+            "contents_url": self.generate_contents_url,
+            "job_state_summary": self.serialize_job_state_summary,
+            "elements_datatypes": self.serialize_elements_datatypes,
         }
         self.serializers.update(serializers)
 
@@ -324,16 +317,13 @@ class HDCASerializer(
         encode_id = self.app.security.encode_id
         trans = context.get("trans")
         url_for = trans.url_builder if trans and trans.url_builder else self.url_for
-        contents_url = url_for('contents_dataset_collection',
-            hdca_id=encode_id(item.id),
-            parent_id=encode_id(item.collection_id))
+        contents_url = url_for(
+            "contents_dataset_collection", hdca_id=encode_id(item.id), parent_id=encode_id(item.collection_id)
+        )
         return contents_url
 
     def serialize_job_state_summary(self, item, key, **context):
-        states = item.job_state_summary.__dict__.copy()
-        del states['_sa_instance_state']
-        del states['hdca_id']
-        return states
+        return item.job_state_summary_dict
 
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]

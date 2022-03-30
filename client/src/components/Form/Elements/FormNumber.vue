@@ -34,12 +34,12 @@ export default {
             validator: (prop) => ["integer", "float"].includes(prop.toLowerCase()),
         },
         min: {
-            type: Number,
+            type: [Number, String],
             required: false,
             default: undefined,
         },
         max: {
-            type: Number,
+            type: [Number, String],
             required: false,
             default: undefined,
         },
@@ -51,7 +51,7 @@ export default {
             dismissCountDown: 0,
             errorMessage: "",
             fractionWarning: "This output doesn't allow fractions!",
-            decimalPlaces: this.isInteger ? 0 : this.getNumberOfDecimals(this.value),
+            decimalPlaces: this.type.toLowerCase() === "integer" ? 0 : this.getNumberOfDecimals(this.value),
         };
     },
     computed: {

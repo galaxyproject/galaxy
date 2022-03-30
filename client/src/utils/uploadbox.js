@@ -15,7 +15,7 @@ function submitPayload(payload, cnf) {
             cnf.success(response.data);
         })
         .catch((error) => {
-            cnf.error(error.response.data.err_msg);
+            cnf.error(error.response?.data.err_msg || "Request failed.");
         });
 }
 

@@ -55,8 +55,8 @@ def main():
     # pick off options
 
     args = sys.argv[1:]
-    seq_file2 = open(args.pop(-1), 'w')
-    seq_file1 = open(args.pop(-1), 'w')
+    seq_file2 = open(args.pop(-1), "w")
+    seq_file1 = open(args.pop(-1), "w")
     lav_out = args.pop(-1)
     axt_in = args.pop(-1)
     while len(args) > 0:
@@ -102,25 +102,32 @@ def main():
 
     # read the alignments
 
-    out = bx.align.lav.Writer(open(lav_out, 'w'),
-                              attributes={"name_format_1": primaryFile,
-                                          "name_format_2": secondaryFile})
+    out = bx.align.lav.Writer(
+        open(lav_out, "w"), attributes={"name_format_1": primaryFile, "name_format_2": secondaryFile}
+    )
 
     axtsRead = 0
     axtsWritten = 0
     for axtBlock in bx.align.axt.Reader(
-            open(axt_in), species_to_lengths=speciesToLengths, species1=primary,
-            species2=secondary, support_ids=True):
+        open(axt_in), species_to_lengths=speciesToLengths, species1=primary, species2=secondary, support_ids=True
+    ):
         axtsRead += 1
         out.write(axtBlock)
         primary_c = axtBlock.get_component_by_src_start(primary)
         secondary_c = axtBlock.get_component_by_src_start(secondary)
 
-        print(">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size), file=seq_file1)
+        print(
+            ">%s_%s_%s_%s" % (primary_c.src, secondary_c.strand, primary_c.start, primary_c.start + primary_c.size),
+            file=seq_file1,
+        )
         print(primary_c.text, file=seq_file1)
         print(file=seq_file1)
 
-        print(">%s_%s_%s_%s" % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size), file=seq_file2)
+        print(
+            ">%s_%s_%s_%s"
+            % (secondary_c.src, secondary_c.strand, secondary_c.start, secondary_c.start + secondary_c.size),
+            file=seq_file2,
+        )
         print(secondary_c.text, file=seq_file2)
         print(file=seq_file2)
         axtsWritten += 1

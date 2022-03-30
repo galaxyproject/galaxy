@@ -11,7 +11,6 @@ from galaxy.workflow.modules import module_factory
 
 
 class MockTrans:
-
     def __init__(self):
         self.app = MockApp()
         self.sa_session = self.app.model.context
@@ -29,24 +28,16 @@ class MockTrans:
     @property
     def user(self):
         if self._user is None:
-            self._user = model.User(
-                email="testworkflows@bx.psu.edu",
-                password="password"
-            )
+            self._user = model.User(email="testworkflows@bx.psu.edu", password="password")
         return self._user
 
 
 class MockApp:
-
     def __init__(self):
         self.config = bunch.Bunch(
             tool_secret="awesome_secret",
         )
-        self.model = mapping.init(
-            "/tmp",
-            "sqlite:///:memory:",
-            create_tables=True
-        )
+        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
         self.toolbox = MockToolbox()
         self.datatypes_registry = MockDatatypesRegistry()
         self.security = IdEncodingHelper(id_secret="testing")
@@ -54,7 +45,6 @@ class MockApp:
 
 
 class MockDatatypesRegistry:
-
     def __init__(self):
         pass
 
@@ -67,7 +57,6 @@ class MockDatatypesRegistry:
 
 
 class MockToolbox:
-
     def __init__(self):
         self.tools = {}
 
@@ -128,11 +117,11 @@ def yaml_to_model(has_dict, id_offset=100):
                 value = inputs
             if key == "workflow_outputs":
                 value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
-            if key == 'collection_type':
-                key = 'tool_inputs'
-                value = {'collection_type': value}
+            if key == "collection_type":
+                key = "tool_inputs"
+                value = {"collection_type": value}
             setattr(workflow_step, key, value)
-        if workflow_step.type != 'tool':
+        if workflow_step.type != "tool":
             module = module_factory.from_workflow_step(trans, workflow_step)
             module.save_to_step(workflow_step)
         workflow.steps.append(workflow_step)

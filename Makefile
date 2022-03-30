@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=22.01
+RELEASE_CURR:=22.05
 RELEASE_UPSTREAM:=upstream
 TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
@@ -38,8 +38,12 @@ docs-develop: ## Fast doc generation and more warnings (for development)
 setup-venv:
 	if [ ! -f $(VENV)/bin/activate ]; then bash scripts/common_startup.sh --dev-wheels; fi
 
-diff-format:
-	$(IN_VENV) darker -r $(TARGET_BRANCH)
+diff-format:  ## Format Python code changes since last commit
+	$(IN_VENV) darker .
+
+format:  ## Format Python code base
+	$(IN_VENV) isort .
+	$(IN_VENV) black .
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
@@ -59,9 +63,6 @@ open-docs: docs _open-docs ## generate Sphinx HTML documentation and open in bro
 
 open-project: ## open project on github
 	$(OPEN_RESOURCE) $(PROJECT_URL)
-
-uwsgi-rebuild-validation: ## rebuild uwsgi_config.yml kwalify schema against latest uwsgi master.
-	$(CONFIG_MANAGE) build_uwsgi_yaml
 
 tool-shed-config-validate: ## validate tool shed YAML configuration file
 	$(CONFIG_MANAGE) validate tool_shed

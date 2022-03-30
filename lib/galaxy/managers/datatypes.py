@@ -18,9 +18,7 @@ from galaxy.datatypes.registry import Registry
 
 
 def view_index(
-    datatypes_registry: Registry,
-    extension_only: Optional[bool] = True,
-    upload_only: Optional[bool] = True
+    datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
 ) -> Union[List[DatatypeDetails], List[str]]:
     if extension_only:
         if upload_only:
@@ -30,7 +28,7 @@ def view_index(
     else:
         rval = []
         for datatype_info_dict in datatypes_registry.datatype_info_dicts:
-            if upload_only and not datatype_info_dict.get('display_in_upload'):
+            if upload_only and not datatype_info_dict.get("display_in_upload"):
                 continue
             rval.append(datatype_info_dict)
         return rval
@@ -60,20 +58,18 @@ def view_mapping(datatypes_registry: Registry) -> DatatypesMap:
 
 
 def view_types_and_mapping(
-    datatypes_registry: Registry,
-    extension_only: Optional[bool] = True,
-    upload_only: Optional[bool] = True
+    datatypes_registry: Registry, extension_only: Optional[bool] = True, upload_only: Optional[bool] = True
 ) -> DatatypesCombinedMap:
     return DatatypesCombinedMap(
         datatypes=view_index(datatypes_registry, extension_only, upload_only),
-        datatypes_mapping=view_mapping(datatypes_registry)
+        datatypes_mapping=view_mapping(datatypes_registry),
     )
 
 
 def view_sniffers(datatypes_registry: Registry) -> List[str]:
     rval: List[str] = []
     for sniffer_elem in datatypes_registry.sniffer_elems:
-        datatype = sniffer_elem.get('type')
+        datatype = sniffer_elem.get("type")
         if datatype is not None:
             rval.append(datatype)
     return rval
@@ -83,17 +79,24 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     converters = []
     for (source_type, targets) in datatypes_registry.datatype_converters.items():
         for target_type in targets:
-            converters.append({
-                'source': source_type,
-                'target': target_type,
-                'tool_id': targets[target_type].id,
-            })
+            converters.append(
+                {
+                    "source": source_type,
+                    "target": target_type,
+                    "tool_id": targets[target_type].id,
+                }
+            )
     return parse_obj_as(DatatypeConverterList, converters)
 
 
-def view_edam_formats(datatypes_registry: Registry) -> Dict[str, str]:
-    return datatypes_registry.edam_formats
-
-
-def view_edam_data(datatypes_registry: Registry) -> Dict[str, str]:
-    return datatypes_registry.edam_data
+__all__ = (
+    "DatatypeConverterList",
+    "DatatypeDetails",
+    "DatatypesCombinedMap",
+    "DatatypesMap",
+    "view_index",
+    "view_mapping",
+    "view_types_and_mapping",
+    "view_sniffers",
+    "view_converters",
+)

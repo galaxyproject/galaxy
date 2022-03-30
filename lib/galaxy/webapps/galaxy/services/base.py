@@ -59,7 +59,7 @@ class ServiceBase:
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
 
         The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""
-        ORDER_BY_SEP_CHAR = ','
+        ORDER_BY_SEP_CHAR = ","
         if order_by_query and ORDER_BY_SEP_CHAR in order_by_query:
             return [manager.parse_order_by(o) for o in order_by_query.split(ORDER_BY_SEP_CHAR)]
         return manager.parse_order_by(order_by_query)
@@ -74,7 +74,9 @@ class ServiceBase:
         """
         Convenience method to get a model object with the specified checks.
         """
-        return get_object(trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
+        return get_object(
+            trans, id, class_name, check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted
+        )
 
     def check_user_is_authenticated(self, trans: ProvidesUserContext):
         """Raises an exception if the request is anonymous."""
