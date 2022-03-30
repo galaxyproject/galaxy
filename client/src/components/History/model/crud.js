@@ -1,4 +1,4 @@
-import { bulkUpdate, getAllContentByFilter } from "./queries";
+import { bulkUpdate } from "./queries";
 
 /**
  * Content operations
@@ -25,31 +25,19 @@ export async function purgeSelectedContent(history, type_ids, filterParams) {
 }
 
 export async function unhideAllHiddenContent(history) {
-    const filter = { visible: false };
-    const selection = await getAllContentByFilter(history, filter);
-    if (selection.length) {
-        const type_ids = selection.map((c) => c.type_id);
-        return await unhideSelectedContent(history, type_ids);
-    }
-    return [];
+    const type_ids = [];
+    const filterParams = { filterText: "", showDeleted: false, showHidden: true };
+    return await unhideSelectedContent(history, type_ids, filterParams);
 }
 
 export async function deleteAllHiddenContent(history) {
-    const filter = { visible: false };
-    const selection = await getAllContentByFilter(history, filter);
-    if (selection.length) {
-        const type_ids = selection.map((c) => c.type_id);
-        return await deleteSelectedContent(history, type_ids);
-    }
-    return [];
+    const type_ids = [];
+    const filterParams = { filterText: "", showDeleted: false, showHidden: true };
+    return await deleteSelectedContent(history, type_ids, filterParams);
 }
 
 export async function purgeAllDeletedContent(history) {
-    const filter = { deleted: true, purged: false };
-    const selection = await getAllContentByFilter(history, filter);
-    if (selection.length) {
-        const type_ids = selection.map((c) => c.type_id);
-        return await purgeSelectedContent(history, type_ids);
-    }
-    return [];
+    const type_ids = [];
+    const filterParams = { filterText: "", showDeleted: true, showHidden: false };
+    return await purgeSelectedContent(history, type_ids, filterParams);
 }
