@@ -557,7 +557,7 @@ class BaseDatasetPopulator(BasePopulator):
         return wait_on_state(lambda: self.get_job_details(job_id, full=True), desc="job state", assert_ok=assert_ok, timeout=timeout)
 
     def get_job_details(self, job_id: str, full: bool = False) -> Response:
-        return self._get(f"jobs/{job_id}?full={full}")
+        return self._get(f"jobs/{job_id}", {"full": full})
 
     def cancel_history_jobs(self, history_id: str, wait=True) -> None:
         active_jobs = self.active_history_jobs(history_id)

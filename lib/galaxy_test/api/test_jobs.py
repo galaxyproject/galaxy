@@ -205,25 +205,50 @@ steps:
 
     @uses_test_history(require_new=True)
     def test_show(self, history_id):
-        # Create HDA to ensure at least one job exists...
-        self.__history_with_new_dataset(history_id)
-
-        jobs_response = self._get("jobs")
-        first_job = jobs_response.json()[0]
+        job_properties_tool_run = self.dataset_populator.run_tool(
+            tool_id="job_properties",
+            inputs={},
+            history_id=history_id,
+        )
+        first_job = self.__jobs_index()[0]
         self._assert_has_key(first_job, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
-        job_id = first_job["id"]
-        show_jobs_response = self._get(f"jobs/{job_id}")
+        job_id = job_properties_tool_run["jobs"][0]["id"]
+        show_jobs_response = self.dataset_populator.get_job_details(job_id)
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
-        show_jobs_response = self._get(f"jobs/{job_id}", {"full": True})
+        show_jobs_response = self.dataset_populator.get_job_details(job_id, full=True)
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
-        self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time', 'stdout', 'stderr', 'job_messages')
+        self._assert_has_key(
+            job_details,
+            "create_time",
+            "exit_code",
+            "id",
+            "job_messages",
+            "job_stderr",
+            "job_stdout",
+            "state",
+            "stderr",
+            "stdout",
+            "tool_stderr",
+            "tool_stdout",
+            "update_time",
+        )
+
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        show_jobs_response = self.dataset_populator.get_job_details(job_id, full=True)
+        job_details = show_jobs_response.json()
+        assert "The bool is not true\n" not in job_details["job_stdout"]
+        assert "The bool is very not true\n" not in job_details["job_stderr"]
+        assert job_details["tool_stdout"] == "The bool is not true\n"
+        assert job_details["tool_stderr"] == "The bool is very not true\n"
+        assert "The bool is not true\n" in job_details["stdout"]
+        assert "The bool is very not true\n" in job_details["stderr"]
 
     @uses_test_history(require_new=True)
     def test_show_security(self, history_id):
