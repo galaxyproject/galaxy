@@ -37,7 +37,7 @@
 
             <b-dropdown-item @click="backboneRoute('/histories/list')">
                 <Icon fixed-width class="mr-1" icon="list" />
-                <span v-localize>View Saved Histories</span>
+                <span v-localize>Show Histories List</span>
             </b-dropdown-item>
 
             <b-dropdown-item
