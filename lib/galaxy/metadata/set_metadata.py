@@ -158,7 +158,7 @@ def set_metadata_portable(
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
-    if not is_celery_task:
+    if not is_celery_task and not extended_metadata_collection:
         # Legacy handling for datatypes that don't pass metadata_tmp_files_dir from set_meta kwargs
         # to MetadataTempFile constructor. Remove is we ever remove TS datatypes.
         MetadataTempFile.tmp_dir = metadata_tmp_files_dir
@@ -174,7 +174,8 @@ def set_metadata_portable(
     tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
 
     def set_meta(new_dataset_instance, file_dict):
-        set_meta_kwds["metadata_tmp_files_dir"] = metadata_tmp_files_dir
+        if not extended_metadata_collection:
+            set_meta_kwds["metadata_tmp_files_dir"] = metadata_tmp_files_dir
         set_meta_with_tool_provided(
             new_dataset_instance,
             file_dict,
