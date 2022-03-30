@@ -7,13 +7,13 @@ from typing import (
 )
 
 from . import InstrumentPlugin
-from .. import formatting
+from ..formatting import JobMetricFormatter
 from ..safety import Safety
 
 log = logging.getLogger(__name__)
 
 
-class EnvFormatter(formatting.JobMetricFormatter):
+class EnvFormatter(JobMetricFormatter):
     pass
 
 
@@ -34,7 +34,7 @@ class EnvPlugin(InstrumentPlugin):
         else:
             self.variables = None
 
-    def pre_execute_instrument(self, job_directory):
+    def pre_execute_instrument(self, job_directory: str):
         """Use env to dump all environment variables to a file."""
         return f"env > '{self.__env_file(job_directory)}'"
 
