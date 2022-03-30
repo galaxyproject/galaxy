@@ -12,6 +12,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from .. import formatting
@@ -21,6 +22,7 @@ from ..safety import (
 )
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
+InstrumentableT = Optional[Union[str, List[str]]]
 
 
 class InstrumentPlugin(metaclass=ABCMeta):
@@ -34,14 +36,14 @@ class InstrumentPlugin(metaclass=ABCMeta):
     def plugin_type(self):
         """Short string providing labelling this plugin"""
 
-    def pre_execute_instrument(self, job_directory: str) -> Optional[List[str]]:
+    def pre_execute_instrument(self, job_directory: str) -> InstrumentableT:
         """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server prior to the job
         running.
         """
         return None
 
-    def post_execute_instrument(self, job_directory) -> Optional[List[str]]:
+    def post_execute_instrument(self, job_directory: str) -> InstrumentableT:
         """Optionally return one or more commands to instrument job. These
         commands will be executed on the compute server after the tool defined
         command is ran.
@@ -49,7 +51,7 @@ class InstrumentPlugin(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def job_properties(self, job_id, job_directory) -> Dict[str, Any]:
+    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
         """Collect properties for this plugin from specified job directory.
         This method will run on the Galaxy server and can assume files created
         in job_directory with pre_execute_instrument and
