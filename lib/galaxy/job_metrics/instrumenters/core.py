@@ -1,7 +1,11 @@
 """The module describes the ``core`` job metrics plugin."""
 import logging
 import time
-from typing import Any
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from . import InstrumentPlugin
 from ..formatting import (
@@ -47,19 +51,19 @@ class CorePlugin(InstrumentPlugin):
     def __init__(self, **kwargs):
         pass
 
-    def pre_execute_instrument(self, job_directory):
+    def pre_execute_instrument(self, job_directory: str) -> List[str]:
         commands = []
         commands.append(self.__record_galaxy_slots_command(job_directory))
         commands.append(self.__record_galaxy_memory_mb_command(job_directory))
         commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "start"))
         return commands
 
-    def post_execute_instrument(self, job_directory):
+    def post_execute_instrument(self, job_directory: str) -> List[str]:
         commands = []
         commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "end"))
         return commands
 
-    def job_properties(self, job_id, job_directory):
+    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
 
