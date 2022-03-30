@@ -139,6 +139,8 @@ if TYPE_CHECKING:
     from galaxy.managers.jobs import JobSearch
     from galaxy.tools.actions.metadata import SetMetadataToolAction
 
+import time
+
 log = logging.getLogger(__name__)
 
 REQUIRES_JS_RUNTIME_MESSAGE = (
@@ -2768,6 +2770,22 @@ class ExpressionTool(Tool):
                         break
                 if copy_object is None:
                     raise Exception("Failed to find dataset output.")
+                
+                # TODO if (coming from force_to_dataype tool): 
+                print ("before",  out_data[key]._metadata)
+
+                param_dict = {"input1": out_data[key]}
+                metaJob, *_ = self.app.toolbox.get_tool("__SET_METADATA__").tool_action.execute_via_app(
+                    self.app.toolbox.get_tool("__SET_METADATA__"), self.app, job.session_id, copy_object.history_id, job.user, incoming=param_dict, overwrite=False
+                )
+                
+                self.app.job_manager.enqueue(job=metaJob, tool=self.app.toolbox.get_tool("__SET_METADATA__"))
+                time.sleep(45)
+                self.app.toolbox.get_tool("__SET_METADATA__").exec_after_process(self.app, {"input1": out_data[key]}, None, param_dict, metaJob)
+
+
+                print ("after",  out_data[key]._metadata)
+
                 out_data[key].copy_from(copy_object)
 
     def parse_environment_variables(self, tool_source):
