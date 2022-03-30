@@ -76,7 +76,6 @@ from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
-    DeleteHistoryContentResult,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentItem,
@@ -726,7 +725,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         serialization_params: SerializationParams,
         contents_type: HistoryContentType,
         payload: DeleteHistoryContentPayload,
-    ) -> DeleteHistoryContentResult:
+    ):
         """
         Delete the history content with the given ``id`` and specified type (defaults to dataset)
 
@@ -735,10 +734,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         if contents_type == HistoryContentType.dataset:
             return self.__delete_dataset(trans, id, payload.purge, serialization_params)
         elif contents_type == HistoryContentType.dataset_collection:
-            self.dataset_collection_manager.delete(
+            async_result = self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
             )
-            return DeleteHistoryContentResult(id=id, deleted=True)
+            return {"id": id, "deleted": True, "async_result": async_result is not None}
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
 
@@ -1034,12 +1033,15 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
         self.hda_manager.error_if_uploading(hda)
 
+        async_result = None
         if purge:
-            self.hda_manager.purge(hda)
+            async_result = self.hda_manager.purge(hda)
         else:
             self.hda_manager.delete(hda)
         serialization_params.default_view = "detailed"
-        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+        rval = self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+        rval["async_result"] = async_result is not None
+        return rval
 
     def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)

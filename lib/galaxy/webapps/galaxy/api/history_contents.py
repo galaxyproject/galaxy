@@ -102,6 +102,17 @@ ContentTypeQueryParam = Query(
     example=HistoryContentType.dataset,
 )
 
+CONTENT_DELETE_RESPONSES = {
+    200: {
+        "description": "Request has been executed.",
+        "model": DeleteHistoryContentResult,
+    },
+    202: {
+        "description": "Request accepted, processing will finish later.",
+        "model": DeleteHistoryContentResult,
+    },
+}
+
 
 def get_index_query_params(
     v: Optional[str] = Query(  # Should this be deprecated at some point and directly use the latest version by default?
@@ -675,13 +686,16 @@ class FastAPIHistoryContents:
     @router.delete(
         "/api/histories/{history_id}/contents/{type}s/{id}",
         summary="Delete the history content with the given ``ID`` and specified type.",
+        responses=CONTENT_DELETE_RESPONSES,
     )
     @router.delete(
         "/api/histories/{history_id}/contents/{id}",
         summary="Delete the history dataset with the given ``ID``.",
+        responses=CONTENT_DELETE_RESPONSES,
     )
     def delete(
         self,
+        response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         id: EncodedDatabaseIdField = HistoryItemIDPathParam,
@@ -700,7 +714,7 @@ class FastAPIHistoryContents:
             deprecated=True,
         ),
         payload: DeleteHistoryContentPayload = Body(None),
-    ) -> DeleteHistoryContentResult:
+    ):
         """
         Delete the history content with the given ``ID`` and specified type (defaults to dataset).
 
@@ -718,6 +732,9 @@ class FastAPIHistoryContents:
             contents_type=type,
             payload=payload,
         )
+        async_result = rval.pop("async_result", None)
+        if async_result:
+            response.status_code = status.HTTP_202_ACCEPTED
         return rval
 
     @router.get(

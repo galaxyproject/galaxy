@@ -407,7 +407,7 @@ class DatasetCollectionManager:
         )
         dataset_collection_instance.deleted = True
         trans.sa_session.add(dataset_collection_instance)
-
+        async_result = None
         if recursive:
             for dataset in dataset_collection_instance.collection.dataset_instances:
                 try:
@@ -421,9 +421,10 @@ class DatasetCollectionManager:
                     dataset.deleted = True
 
                 if purge and not dataset.purged:
-                    self.hda_manager.purge(dataset)
+                    async_result = self.hda_manager.purge(dataset)
 
         trans.sa_session.flush()
+        return async_result
 
     def update(self, trans, instance_type, id, payload):
         dataset_collection_instance = self.get_dataset_collection_instance(

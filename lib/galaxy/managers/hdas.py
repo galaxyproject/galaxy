@@ -191,7 +191,7 @@ class HDAManager(
         if self.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import purge_hda
 
-            purge_hda.delay(hda_id=hda.id)
+            return purge_hda.delay(hda_id=hda.id)
         else:
             self._purge(hda, flush=flush)
 
