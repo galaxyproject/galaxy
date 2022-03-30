@@ -35,7 +35,7 @@ describe("HistoryFilters", () => {
             }
         });
         const searchButton = wrapper.findAll("[description='apply filters']");
-        searchButton.trigger("click");
+        await searchButton.trigger("click");
         const emitted = wrapper.emitted();
         expect(emitted["update:show-advanced"][0][0]).toEqual(false);
         const filterValidation = [
