@@ -1040,13 +1040,15 @@ class VcfGz(BaseVcf, binary.Binary):
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
         super().set_meta(dataset, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
         if not index_file:
-            index_file = dataset.metadata.spec["tabix_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec["tabix_index"].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
 
         try:
             pysam.tabix_index(

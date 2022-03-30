@@ -86,7 +86,11 @@ def set_validated_state(dataset_instance):
 
 
 def set_meta_with_tool_provided(
-    dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size
+    dataset_instance,
+    file_dict,
+    set_meta_kwds,
+    datatypes_registry,
+    max_metadata_value_size,
 ):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
     # then call set_meta, then set metadata attributes from tool again.
@@ -151,10 +155,13 @@ def set_metadata_portable(
     object_store: Optional[ObjectStore] = None,
     extended_metadata_collection: Optional[bool] = None,
 ):
+    is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
-    MetadataTempFile.tmp_dir = metadata_tmp_files_dir
-
+    if not is_celery_task:
+        # Legacy handling for datatypes that don't pass metadata_tmp_files_dir from set_meta kwargs
+        # to MetadataTempFile constructor. Remove is we ever remove TS datatypes.
+        MetadataTempFile.tmp_dir = metadata_tmp_files_dir
     metadata_params = get_metadata_params(tool_job_working_directory)
     datatypes_config = tool_job_working_directory / metadata_params["datatypes_config"]
     job_metadata = tool_job_working_directory / metadata_params["job_metadata"]
@@ -167,8 +174,13 @@ def set_metadata_portable(
     tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
 
     def set_meta(new_dataset_instance, file_dict):
+        set_meta_kwds["metadata_tmp_files_dir"] = metadata_tmp_files_dir
         set_meta_with_tool_provided(
-            new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size
+            new_dataset_instance,
+            file_dict,
+            set_meta_kwds,
+            datatypes_registry,
+            max_metadata_value_size,
         )
 
     try:
