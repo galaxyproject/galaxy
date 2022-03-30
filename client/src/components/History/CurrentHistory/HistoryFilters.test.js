@@ -15,9 +15,9 @@ describe("HistoryFilters", () => {
                 icon: { template: "<div></div> " },
             },
         });
-        expect(wrapper.findAll("[description='advanced filters']").length).toBe(0);
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
         await wrapper.setProps({ showAdvanced: true });
-        expect(wrapper.findAll("[description='advanced filters']").length).toBe(1);
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(true);
         const filterInputs = {
             "[placeholder='any name']": "name-filter",
             "[placeholder='any extension']": "ext-filter",
@@ -34,7 +34,7 @@ describe("HistoryFilters", () => {
                 filterInput.setValue(value);
             }
         });
-        const searchButton = wrapper.findAll("[description='apply filters']");
+        const searchButton = wrapper.find("[description='apply filters']");
         await searchButton.trigger("click");
         const emitted = wrapper.emitted();
         expect(emitted["update:show-advanced"][0][0]).toEqual(false);
