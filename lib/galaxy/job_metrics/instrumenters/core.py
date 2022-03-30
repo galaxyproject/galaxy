@@ -1,9 +1,14 @@
 """The module describes the ``core`` job metrics plugin."""
 import logging
 import time
+from typing import Any
 
 from . import InstrumentPlugin
-from .. import formatting
+from ..formatting import (
+    FormattedMetric,
+    JobMetricFormatter,
+    seconds_to_str,
+)
 from ..safety import Safety
 
 log = logging.getLogger(__name__)
@@ -15,19 +20,19 @@ END_EPOCH_KEY = "end_epoch"
 RUNTIME_SECONDS_KEY = "runtime_seconds"
 
 
-class CorePluginFormatter(formatting.JobMetricFormatter):
-    def format(self, key, value):
+class CorePluginFormatter(JobMetricFormatter):
+    def format(self, key: str, value: Any) -> FormattedMetric:
         value = int(value)
         if key == GALAXY_SLOTS_KEY:
-            return ("Cores Allocated", "%d" % value)
+            return FormattedMetric("Cores Allocated", "%d" % value)
         elif key == GALAXY_MEMORY_MB_KEY:
-            return ("Memory Allocated (MB)", "%d" % value)
+            return FormattedMetric("Memory Allocated (MB)", "%d" % value)
         elif key == RUNTIME_SECONDS_KEY:
-            return ("Job Runtime (Wall Clock)", formatting.seconds_to_str(value))
+            return FormattedMetric("Job Runtime (Wall Clock)", seconds_to_str(value))
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
-            return (title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(value)))
+            return FormattedMetric(title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(value)))
 
 
 class CorePlugin(InstrumentPlugin):
