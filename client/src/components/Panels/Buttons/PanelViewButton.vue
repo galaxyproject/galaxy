@@ -12,8 +12,10 @@
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
-        <b-dropdown-divider></b-dropdown-divider>
-        <b-dropdown-group v-for="group in groupedPanelViews" :key="group.type" :id="group.type" :header="group.title">
+        <b-dropdown-group v-for="group in groupedPanelViews" :key="group.type" :id="group.type">
+            <template v-slot:header>
+                <small class="font-weight-bold">{{ group.title }}</small>
+            </template>
             <PanelViewMenuItem
                 v-for="(panelView, key) in group.panelViews"
                 :key="key"
@@ -21,7 +23,7 @@
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
         </b-dropdown-group>
-        <b-dropdown-divider v-if="groupedPanelViews.length > 0"></b-dropdown-divider>
+        <b-dropdown-divider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
@@ -35,10 +37,10 @@
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
 const groupsDefinitions = [
-    { type: "ontology", title: "... by Ontology" },
-    { type: "activity", title: "... for Activity" },
-    { type: "publication", title: "... from Publication" },
-    { type: "training", title: "... for Training" },
+    { type: "ontology", title: "...by Ontology" },
+    { type: "activity", title: "...for Activity" },
+    { type: "publication", title: "...from Publication" },
+    { type: "training", title: "...for Training" },
 ];
 
 export default {

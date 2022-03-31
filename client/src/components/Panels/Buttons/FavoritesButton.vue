@@ -7,21 +7,13 @@
         v-b-tooltip.hover
         :title="tooltipText"
         @click="onFavorites">
-        <font-awesome-icon v-if="toggle" :icon="['fas', 'star']" />
-        <font-awesome-icon v-else :icon="['far', 'star']" />
+        <icon v-if="toggle" :icon="['fas', 'star']" />
+        <icon v-else :icon="['far', 'star']" />
     </b-button>
 </template>
 
 <script>
 import _l from "utils/localization";
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar } from "@fortawesome/free-regular-svg-icons";
-import { faStar as faStarSolid } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faStar);
-library.add(faStarSolid);
 
 export default {
     name: "FavoritesButton",
@@ -30,7 +22,6 @@ export default {
             type: String,
         },
     },
-    components: { FontAwesomeIcon },
     data() {
         return {
             searchKey: "#favorites",
@@ -38,9 +29,6 @@ export default {
             tooltipUntoggle: "Clear",
             toggle: false,
         };
-    },
-    directives: {
-        "v-b-tooltip": VBTooltip,
     },
     watch: {
         query() {
