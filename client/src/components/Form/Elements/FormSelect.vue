@@ -11,23 +11,25 @@
         <b-row align-v="center">
             <b-col v-if=" display == 'radio'">
                 <b-form-group>                    
-                    <!-- Select multiple from checkboxes -->
+                    <!-- Select single from radio -->
+                    <b-form-radio-group
+                        v-model="currentValue"
+                        :options="optArray"
+                        text-field="label"
+                        stacked>
+                    </b-form-radio-group>
+                </b-form-group>
+            </b-col>
+            <b-col v-else-if="display == 'checkboxes'">
+             <!-- Select multiple from checkboxes -->
+                <b-form-group>
                     <b-form-checkbox-group
-                        v-if="multiple"
                         v-model="currentValue"
                         :options="optArray"
                         value-field="value"
                         text-field="label"
                         stacked>
                     </b-form-checkbox-group>
-                    <!-- Select single from radio -->
-                    <b-form-radio-group
-                        v-else
-                        v-model="currentValue"
-                        :options="optArray"
-                        text-field="label"
-                        stacked>
-                    </b-form-radio-group>
                 </b-form-group>
             </b-col>
             <b-col v-else>
@@ -123,21 +125,36 @@ export default {
                 // If there's a defaultValue set, find it in the array and use that.
                 // If there's no default value set, use the first item in the array with 'default' set to true.
                 // Lastly, just default to the first element in the array.
-                if(this.multiple) { 
+                if(this.multiple || this.display == "checkboxes") { 
+                    this.multiple = true
+                    console.log(this.value)
                     if (this.value !== "") {
                         let selected = [];
                         if (this.value == null) {
                             return
                         }
+                        // A string is returned if single, but an array if zero or multiple
+                        console.log(this.value)
+                        if (! Array.isArray(this.value)) {
+                            this.value = [this.value]
+                        }
                         for(var i = 0; i < this.value.length; i++){
-                            // checkboxes expects a value, multiselect expects an object
-                            if (this.display == "radio") {
+                            if (this.display == "checkboxes") {
                                 selected.push(this.optArray.find((element) => element.value == this.value[i]).value);
                             } else {
                                 selected.push(this.optArray.find((element) => element.value == this.value[i]));
                             }
                         }
                         return selected
+                        // else {
+                        //     // checkboxes expects a value, multiselect expects an object
+                        //     if (this.display == "checkboxes") {
+                        //         selected.push(this.optArray.find((element) => element.value == this.value).value);
+                        //     } else {
+                        //         selected.push(this.optArray.find((element) => element.value == this.value[i]));
+                        //     }
+                        // }
+                        // return selected
                     // If 'value' is not provided from the wrapper, move to default value
                     } else if (this.defaultValue !== "") {
                         let selected = [];
@@ -186,19 +203,16 @@ export default {
                 }
             },
             set(val) {
-                if (this.multiple){
-                    if (this.display == "radio"){
-                        this.$emit("input", val);
-                    } else {
-                        let values = [];
-                        for(var i = 0; i < val.length; i++){
-                            values.push(val[i].value);
-                        }
-                        this.$emit("input", values);
+                // Checkbox is mutliple, but not automatically set. If it IS set, this prevents the multiple from overriding the checkbox
+                if (this.multiple && this.display != "checkboxes"){
+                    let values = [];
+                    for(var i = 0; i < val.length; i++){
+                        values.push(val[i].value);
                     }
+                    this.$emit("input", values);
                 }
                 else {
-                    if (this.display == "radio"){
+                    if (this.display == "radio" || this.display == "checkboxes"){
                         this.$emit("input", val);
                     } else {
                         this.$emit("input", val.value);
