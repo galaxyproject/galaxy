@@ -43,13 +43,6 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        data-description="switch to multi history view"
-                        @click="redirect('/history/view_multiple')">
-                        <Icon fixed-width class="mr-1" icon="columns" />
-                        <span v-localize>Show Histories Side-by-Side</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
                         data-description="switch to legacy history view"
                         @click="switchToLegacyHistoryPanel">
                         <Icon fixed-width class="mr-1" icon="arrow-up" />
@@ -100,6 +93,13 @@
                         data-description="show structure">
                         <Icon fixed-width icon="code-branch" class="mr-1" />
                         <span v-localize>Show Structure</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        data-description="switch to multi history view"
+                        @click="redirect('/history/view_multiple')">
+                        <Icon fixed-width class="mr-1" icon="columns" />
+                        <span v-localize>Show Histories Side-by-Side</span>
                     </b-dropdown-item>
 
                     <b-dropdown-divider></b-dropdown-divider>
