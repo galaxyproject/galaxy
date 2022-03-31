@@ -13,16 +13,6 @@
                     <Icon icon="check-square" />
                 </b-button>
                 <b-button
-                    title="Search Items"
-                    class="rounded-0"
-                    size="sm"
-                    variant="link"
-                    :pressed="showFilter"
-                    @click="toggleFilter"
-                    data-description="content filter toggle">
-                    <Icon icon="search" />
-                </b-button>
-                <b-button
                     title="Collapse Items"
                     class="rounded-0"
                     size="sm"
@@ -43,19 +33,19 @@
                     <b-dropdown-text>
                         <span v-localize>With {{ numSelected }} selected...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item v-if="params.showHidden" v-b-modal:show-selected-content>
+                    <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content>
                         <span v-localize>Unhide</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-else v-b-modal:hide-selected-content>
                         <span v-localize>Hide</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-if="params.showDeleted" v-b-modal:restore-selected-content>
+                    <b-dropdown-item v-if="showDeleted" v-b-modal:restore-selected-content>
                         <span v-localize>Undelete</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-else v-b-modal:delete-selected-content>
                         <span v-localize>Delete</span>
                     </b-dropdown-item>
-                    <b-dropdown-item v-if="!params.showDeleted" v-b-modal:purge-selected-content>
+                    <b-dropdown-item v-if="!showDeleted" v-b-modal:purge-selected-content>
                         <span v-localize>Delete (permanently)</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-if="showBuildOptions" @click="buildDatasetList" data-description="build list">
@@ -88,7 +78,7 @@
                     <b-dropdown-text id="history-op-all-content">
                         <span v-localize>With entire history...</span>
                     </b-dropdown-text>
-                    <b-dropdown-item @click="iframeRedirect('/dataset/copy_datasets')" data-description="copy datasets">
+                    <b-dropdown-item @click="onCopy" data-description="copy datasets">
                         <span v-localize>Copy Datasets</span>
                     </b-dropdown-item>
                     <b-dropdown-item v-b-modal:show-all-hidden-content>
@@ -103,10 +93,6 @@
                 </b-dropdown>
             </b-button-group>
         </nav>
-
-        <transition name="shutterfade">
-            <history-filters v-if="showFilter" class="content-operations-filters p-2" :params.sync="localParams" />
-        </transition>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
@@ -155,39 +141,27 @@ import {
     purgeAllDeletedContent,
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import HistoryFilters from "./HistoryFilters";
-
+import { checkFilter } from "store/historyStore/historyItemsFiltering";
+import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
-    mixins: [legacyNavigationMixin],
-    components: {
-        HistoryFilters,
-    },
     props: {
         history: { type: History, required: true },
-        params: { type: Object, required: true },
+        filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
         showSelection: { type: Boolean, required: true },
         hasMatches: { type: Boolean, required: true },
         expandedCount: { type: Number, required: false, default: 0 },
     },
-    data() {
-        return {
-            showFilter: false,
-        };
-    },
     computed: {
-        showBuildOptions() {
-            return !this.params.showHidden && !this.params.showDeleted;
+        showHidden() {
+            return checkFilter(this.filterText, "visible", false);
         },
-        localParams: {
-            get() {
-                return this.params;
-            },
-            set(newVal) {
-                this.$emit("update:params", Object.assign({}, newVal));
-            },
+        showDeleted() {
+            return checkFilter(this.filterText, "deleted", true);
+        },
+        showBuildOptions() {
+            return !this.showHidden && !this.showDeleted;
         },
         numSelected() {
             return this.contentSelection.size || 0;
@@ -197,15 +171,11 @@ export default {
         },
     },
     methods: {
+        onCopy() {
+            iframeRedirect("/dataset/copy_datasets");
+        },
         toggleSelection() {
             this.$emit("update:show-selection", !this.showSelection);
-        },
-        toggleFilter() {
-            if (!this.showFilter) {
-                this.showFilter = true;
-            } else if (!this.hasContentFilters) {
-                this.showFilter = false;
-            }
         },
 
         // History-wide bulk updates, does server query first to determine "selection"

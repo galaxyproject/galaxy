@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="ml-1 mt-1">
         <b-button size="sm" variant="link" @click="close">
             <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span>History</span>
         </b-button>

@@ -1,42 +1,37 @@
 <template>
-    <div class="search-input">
+    <b-input-group>
         <b-input
             class="search-query"
-            :placeholder="placeholder"
+            size="sm"
+            autocomplete="off"
             v-model="queryInput"
+            :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
-            @keydown.esc="setQuery()" />
-        <font-awesome-icon v-if="loading" class="search-clear" icon="spinner" spin />
-        <font-awesome-icon
-            v-else
-            v-b-tooltip.hover
-            :title="titleClearSearch"
-            class="search-clear"
-            icon="times-circle"
-            @click="setQuery()" />
-    </div>
+            @keydown.esc="setQuery('')" />
+        <b-input-group-append>
+            <b-button
+                class="search-clear"
+                size="sm"
+                :title="titleClear | l"
+                @click="setQuery('')"
+                data-description="reset query">
+                <icon v-if="loading" icon="spinner" spin />
+                <icon v-else icon="times" />
+            </b-button>
+        </b-input-group-append>
+    </b-input-group>
 </template>
 <script>
-import _l from "utils/localization";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faSpinner);
-library.add(faTimesCircle);
-
 export default {
-    components: {
-        FontAwesomeIcon,
-    },
     props: {
         query: {
             type: String,
+            default: "",
         },
         loading: {
             type: Boolean,
+            default: false,
         },
         placeholder: {
             type: String,
@@ -52,7 +47,7 @@ export default {
             queryInput: null,
             queryTimer: null,
             queryCurrent: null,
-            titleClearSearch: _l("clear search (esc)"),
+            titleClear: "clear search (esc)",
         };
     },
     watch: {
@@ -80,7 +75,7 @@ export default {
             this.clearTimer();
             if (this.queryCurrent !== this.queryInput || this.queryCurrent !== queryNew) {
                 this.queryCurrent = this.queryInput = queryNew;
-                this.$emit("onChange", this.queryCurrent);
+                this.$emit("change", this.queryCurrent);
             }
         },
     },

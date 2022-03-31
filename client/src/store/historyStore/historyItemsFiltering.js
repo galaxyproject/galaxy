@@ -2,12 +2,12 @@
  * This module handles the filtering for content items. User specified filters are applied on the data available in the store and
  * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY=VALUE pair
  * e.g. hid=61 in the history search field. Each query key has a default suffix defined e.g. hid=61 is equivalent to hid-eq=61.
- * Additionally, underscores and dashes in the QUERY are interchangeable. The same is true for quotations i.e. " and ' in the VALUE.
+ * Additionally, underscores and dashes in the QUERY are interchangeable. Quotation marks (') are only allowed in the VALUE.
  * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
- * create-time="March 12, 2022", create_time='March 12, 2022', create-time-lt="March 12, 2022", create-time-lt='March 12, 2022'.
+ * create_time='March 12, 2022', create-time-lt='March 12, 2022'.
  *
  * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
- * Use quotations (", ') around values containing spaces.
+ * Use quotations (') around values containing spaces.
  */
 
 /* Converts user input to backend compatible date. */
@@ -20,15 +20,26 @@ function toLower(value) {
     return String(value).toLowerCase();
 }
 
+/* Converts user input to python boolean. */
+function toBoolPython(value) {
+    return toLower(value) == "true" ? "True" : "False";
+}
+
+/* Converts user input to lower case and strips quotation marks. */
+function toLowerNoQuotes(value) {
+    return toLower(value).replaceAll("'", "");
+}
+
 /**
  * Checks if a query value is equal to the item value
  * @param {*} attribute of the content item
  * @param {*} query parameter if the attribute does not match the server query key
  */
-function equals(attribute) {
+function equals(attribute, query = null, converter = null) {
     return {
         attribute,
-        query: `${attribute}-eq`,
+        converter,
+        query: query || `${attribute}-eq`,
         handler: (v, q) => {
             return toLower(v) == toLower(q);
         },
@@ -86,12 +97,14 @@ const validFilters = {
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
     create_time_lt: compare("create_time", "lt", toDate),
+    deleted: equals("deleted", "deleted", toBoolPython),
     extension: equals("extension"),
     hid: equals("hid"),
     hid_ge: compare("hid", "ge"),
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),
     hid_lt: compare("hid", "lt"),
+    visible: equals("visible", "visible", toBoolPython),
     name: contains("name"),
     state: equals("state"),
     tag: contains("tags", "tag"),
@@ -102,20 +115,30 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
+/* Default filters are set, unless explicitly specified by the user. */
+const defaultFilters = {
+    deleted: false,
+    visible: true,
+};
+
 /* Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
 const validAlias = [
     [">", "_gt"],
     ["<", "_lt"],
 ];
 
+/* Check the value of a particular filter. */
+export function checkFilter(filterText, filterName, filterValue) {
+    const re = new RegExp(`${filterName}=(\\S+)`);
+    const reMatch = re.exec(filterText);
+    const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
+    return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
+}
+
 /* Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
-    const pairSplitRE = /(\S+".*?")|(\S+'.*?')|(\S+)/g;
-    const scrubQuotesRE = /'|"/g;
+    const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const result = {};
-    if (filterText.length == 0) {
-        return [];
-    }
     const matches = filterText.match(pairSplitRE);
     let hasMatches = false;
     if (matches) {
@@ -136,15 +159,21 @@ export function getFilters(filterText) {
                 // replaces dashes with underscores in query field names
                 const normalizedField = field.replaceAll("-", "_");
                 if (validFilters[normalizedField]) {
-                    result[normalizedField] = value.replace(scrubQuotesRE, "");
+                    // removes quotation and applies lower-case to filter value
+                    result[normalizedField] = toLowerNoQuotes(value);
                     hasMatches = true;
                 }
             }
         });
     }
-    if (!hasMatches) {
+    if (!hasMatches && filterText.length > 0) {
         result["name"] = filterText;
     }
+    Object.entries(defaultFilters).forEach(([key, value]) => {
+        if (!result[key]) {
+            result[key] = value;
+        }
+    });
     return Object.entries(result);
 }
 

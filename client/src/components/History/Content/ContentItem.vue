@@ -30,7 +30,7 @@
                     <span>:</span>
                     <span class="content-title name">{{ name }}</span>
                     <CollectionDescription v-if="!isDataset" :item="item" />
-                    <div v-if="!expandDataset && item.tags && item.tags.length > 0" class="nametags">
+                    <div v-if="item.tags && item.tags.length > 0" class="nametags">
                         <Nametag v-for="tag in item.tags" :key="tag" :tag="tag" />
                     </div>
                 </span>

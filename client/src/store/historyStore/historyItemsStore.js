@@ -20,17 +20,11 @@ const state = {
 const getters = {
     getHistoryItems:
         (state) =>
-        ({ historyId, filterText, showDeleted, showHidden }) => {
+        ({ historyId, filterText }) => {
             const itemArray = state.items[historyId] || [];
             const filters = getFilters(filterText);
             const filtered = itemArray.filter((item) => {
                 if (!item) {
-                    return false;
-                }
-                if (showDeleted != item.deleted) {
-                    return false;
-                }
-                if (showHidden == item.visible) {
                     return false;
                 }
                 if (!testFilters(filters, item)) {
@@ -42,24 +36,17 @@ const getters = {
         },
 };
 
-const getQueryString = (filterText, showDeleted, showHidden) => {
-    const deleted = showDeleted ? "True" : "False";
-    const visible = showHidden ? "False" : "True";
-    const filterDict = {
-        ...getQueryDict(filterText),
-        deleted: deleted,
-        visible: visible,
-    };
-    const queryString = Object.entries(filterDict)
+const getQueryString = (filterText) => {
+    const filterDict = getQueryDict(filterText);
+    return Object.entries(filterDict)
         .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
-    return queryString;
 };
 
 const actions = {
-    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText, showDeleted, showHidden }) => {
+    fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
-        const queryString = getQueryString(filterText, showDeleted, showHidden);
+        const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
         await queue.enqueue(urlData, { url }).then((payload) => {
