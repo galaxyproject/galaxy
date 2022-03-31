@@ -47,6 +47,7 @@ export default {
             }
             return this.queryMatchesItems && this.totalItemsInQuery === this.selectionSize;
         },
+        /** @returns {Boolean} */
         queryMatchesItems() {
             return !isNaN(this.totalItemsInQuery);
         },

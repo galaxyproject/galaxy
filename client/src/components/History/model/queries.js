@@ -36,15 +36,13 @@ const doResponse = (response) => {
 /**
  * Legacy query string rendering. (generates q/qv syntax queries).
  * TODO: remove these converters when the api is modernized.
- *
- * @param {Object} fields Object with parameters to pass to our dumb api
  */
-
-function buildLegacyQueryString(fields = {}) {
-    const badParams = buildLegacyParam(fields);
-    return Object.keys(badParams)
-        .map((key) => `q=${key}&qv=${badParams[key]}`)
+function buildLegacyQueryStringFrom(filters) {
+    const filterDict = getQueryDictFromFilters(filters);
+    const queryString = Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
+    return queryString;
 }
 
 function buildLegacyParam(fields = {}) {
@@ -62,14 +60,6 @@ function pythonBooleanFormat(val) {
         return "False";
     }
     return val;
-}
-
-function buildLegacyQueryStringFrom(filters) {
-    const filterDict = getQueryDictFromFilters(filters);
-    const queryString = Object.entries(filterDict)
-        .map(([f, v]) => `q=${f}&qv=${v}`)
-        .join("&");
-    return queryString;
 }
 
 /**
@@ -221,23 +211,6 @@ export async function setCurrentHistoryOnServer(history_id) {
 /**
  * Content Queries
  */
-
-/**
- * Generic content query function originally intended to help with bulk updates
- * so we don't have to go through the legacy /history endpoints and
- * can stay in the /api as much as possible.
- *
- * @param {*} history
- * @param {*} filterParams
- */
-export async function getAllContentByFilter(history, filterParams = {}) {
-    const { id } = history;
-    const strFilter = buildLegacyQueryString(filterParams);
-    const params = { v: "dev", view: "summary", keys: "file_size,accessible,creating_job,job_source_id" };
-    const url = `/histories/${id}/contents?${strFilter}`;
-    const response = await api.get(url, { params });
-    return doResponse(response);
-}
 
 /**
  * Given a content object, retrieve the detailed dataset or collection

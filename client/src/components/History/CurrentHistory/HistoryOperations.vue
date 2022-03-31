@@ -188,15 +188,12 @@ export default {
         // History-wide bulk updates, does server query first to determine "selection"
         async unhideAll(evt) {
             await unhideAllHiddenContent(this.history);
-            this.$emit("reload");
         },
         async deleteAllHidden(evt) {
             await deleteAllHiddenContent(this.history);
-            this.$emit("reload");
         },
         async purgeAllDeleted(evt) {
             await purgeAllDeletedContent(this.history);
-            this.$emit("reload");
         },
 
         // Selected content manipulation, hide/show/delete/purge
@@ -220,7 +217,6 @@ export default {
             const filters = getFilters(this.filterText);
             await fn(this.history, filters, items);
             this.$emit("reset-selection");
-            this.$emit("reload");
         },
         getExplicitlySelectedItems() {
             if (this.isQuerySelection) {

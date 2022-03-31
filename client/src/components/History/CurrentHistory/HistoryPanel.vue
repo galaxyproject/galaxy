@@ -1,12 +1,12 @@
 <template>
     <HistoryItemsProvider
-        :key="history.id"
+        :key="historyId"
         :history-id="historyId"
         :offset="offset"
         :filter-text="filterText"
         v-slot="{ loading, result: payload, totalMatches }">
         <ExpandedItems
-            :scope-key="history.id"
+            :scope-key="historyId"
             :get-item-key="(item) => item.type_id"
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }">
             <SelectedItems
@@ -152,15 +152,19 @@ export default {
         },
     },
     computed: {
+        /** @returns {String} */
         historyId() {
             return this.history.id;
         },
+        /** @returns {String} */
         queryKey() {
             return `${this.historyId}-${this.filterText}`;
         },
+        /** @returns {Boolean} */
         queryDefault() {
             return !this.filterText;
         },
+        /** @returns {Boolean} */
         hasFilters() {
             return !this.queryDefault;
         },
