@@ -1755,8 +1755,8 @@ class ToolModule(WorkflowModule):
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
                         temp = iteration_elements[prefixed_name]
-                        if hasattr(temp, 'element_identifier') and temp.element_identifier:
-                            replacement.element_identifier = temp.element_identifier  # type: ignore[attr-defined]
+                        if hasattr(temp, "element_identifier") and temp.element_identifier:
+                            replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
                     else:
                         # If collection - just use element model object.
                         replacement = iteration_elements[prefixed_name]

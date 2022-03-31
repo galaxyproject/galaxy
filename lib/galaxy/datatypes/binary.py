@@ -19,8 +19,10 @@ from typing import Optional
 import h5py
 import numpy as np
 import pysam
-import pysam.bcftools
-from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
+from bx.seq.twobit import (
+    TWOBIT_MAGIC_NUMBER,
+    TWOBIT_MAGIC_NUMBER_SWAP,
+)
 
 from galaxy import util
 from galaxy.datatypes import metadata
