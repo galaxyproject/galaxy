@@ -245,13 +245,15 @@ export class UploadQueue {
                 }
             });
         }
+        // Returns last added file index.
+        return this.nextIndex - 1;
     }
 
     // Remove file from queue
-    remove(index) {
+    remove(index, fileSetKey) {
         // Removes the item identified by index.
         // Returns true if an item was removed, and false otherwise.
-        return this.queue.delete(index);
+        return this.queue.delete(index) && this.fileSet.delete(fileSetKey);
     }
 
     get size() {
