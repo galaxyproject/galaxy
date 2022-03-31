@@ -14,6 +14,7 @@ const View = Backbone.View.extend({
     _panelids: ["left", "right"],
 
     initialize: function (options) {
+        console.log(options);
         this.config = _.defaults(options.config || {}, {
             message_box_visible: false,
             message_box_content: "",

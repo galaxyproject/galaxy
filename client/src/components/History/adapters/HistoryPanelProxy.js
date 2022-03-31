@@ -12,49 +12,36 @@ import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
-import { History } from "mvc/history/history-model";
 import "./HistoryPanelProxy.scss";
 import store from "store";
 
-// bypass polling while using the beta panel, skips contents loading
-const FakeHistoryViewModel = CurrentHistoryView.CurrentHistoryView.extend({
-    loadHistory: function (historyId, options) {
-        this.setModel(new History({ id: historyId }));
-        this.trigger("loading");
-        options.view = "dev-detailed";
-        return this.model.fetch(options);
-    },
-});
-
 // extend existing current history panel
-export const HistoryPanelProxy = Backbone.View.extend({
-    initialize(page, options) {
+export default class HistoryPanelProxy {
+    constructor(page, options) {
         const Galaxy = getGalaxyInstance();
-
+        Galaxy.currHistoryPanel = this;
         this.userIsAnonymous = Galaxy.user.isAnonymous();
-        this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;
+        this.purgeAllowed = this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;
         this.root = options.root;
-
-        // fake view of the current history
-        this.historyView = new FakeHistoryViewModel({
-            fakeHistoryViewModel: true,
-            className: `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`,
-            purgeAllowed: this.allow_user_dataset_purge,
-            linkTarget: "galaxy_main",
-        });
-
-        // add history panel to Galaxy object
-        // Galaxy.currHistoryPanel = genericProxy("Galaxy.currHistoryPanel", this.historyView);
-        Galaxy.currHistoryPanel = this.historyView;
-        Galaxy.currHistoryPanel.listenToGalaxy(Galaxy);
-
+        this.fakeHistoryViewModel = true;
+        this.className = `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`;
+        this.linkTarget = "galaxy_main";
         this.model = new Backbone.Model({});
-        this.setElement("<div/>");
-        this.historyView.setElement(this.$el);
-        this.historyView.connectToQuotaMeter(Galaxy.quotaMeter);
-        // this.historyView.loadCurrentHistory();
-
-        // fetch to update the quota meter adding 'current' for any anon-user's id
+    }
+    refreshContents() {
+        console.log("refresh contents called.");
+    }
+    render() {
+        const container = document.createElement("div");
+        $("#right > .unified-panel-header").remove();
+        $("#right > .unified-panel-controls").remove();
+        $("#right > .unified-panel-body").remove();
+        $("#right").addClass("beta").prepend(container);
+        const mountFn = mountVueComponent(HistoryIndex);
+        console.log(mountFn({}, container));
+    }
+    listeners() {
+        /*/ fetch to update the quota meter adding 'current' for any anon-user's id
         Galaxy.listenTo(this.historyView, "history-size-change", () => {
             Galaxy.user.fetch({
                 url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
@@ -71,27 +58,6 @@ export const HistoryPanelProxy = Backbone.View.extend({
                     panel.setModel(new History({ id: history.id }));
                 }
             }
-        );
-    },
-    render() {
-        // Hack: For now, remove unused "unified-panel" elements until we can
-        // completely re-work the layout container. Unfortunately the
-        // layout/page and sidepanel views are super-rigid and expect an
-        // explicit header and controls element that I'd rather be managed by by
-        // the component, so I'm just chopping those elements out manually.
-
-        // TODO: Rework layout/page and sidepanel to avoid this arrangement
-        $("#right > .unified-panel-header").remove();
-        $("#right > .unified-panel-controls").remove();
-        $("#right > .unified-panel-body").remove();
-        $("#right").addClass("beta").prepend(this.$el);
-
-        const container = this.$el[0];
-        const mountHistory = mountVueComponent(HistoryIndex);
-        mountHistory({}, container);
-
-        return this;
-    },
-});
-
-export default HistoryPanelProxy;
+        );*/
+    }
+}
