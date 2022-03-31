@@ -12,6 +12,7 @@ import urllib.parse
 from collections import namedtuple
 from typing import (
     Any,
+    BinaryIO,
     List,
     Optional,
 )
@@ -61,6 +62,7 @@ def output_properties(
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
+    f: BinaryIO
     if path is not None:
         properties["path"] = path
         f = open(path, "rb")
