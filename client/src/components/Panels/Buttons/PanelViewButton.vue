@@ -1,6 +1,5 @@
 <template>
     <b-dropdown
-        no-caret
         right
         role="button"
         title="Show panel options"
@@ -9,10 +8,6 @@
         class="tool-panel-dropdown"
         size="sm"
         v-b-tooltip.hover>
-        <template v-slot:button-content>
-            <span class="fa fa-list" />
-            <!-- Maybe cog? -->
-        </template>
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
