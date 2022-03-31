@@ -142,7 +142,7 @@ import {
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter } from "store/historyStore/historyItemsFiltering";
+import { checkFilter, getFilters } from "store/historyStore/historyItemsFiltering";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
@@ -156,18 +156,23 @@ export default {
         expandedCount: { type: Number, required: false, default: 0 },
     },
     computed: {
+        /** @returns {Boolean} */
         showHidden() {
             return checkFilter(this.filterText, "visible", false);
         },
+        /** @returns {Boolean} */
         showDeleted() {
             return checkFilter(this.filterText, "deleted", true);
         },
+        /** @returns {Boolean} */
         showBuildOptions() {
             return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
         },
+        /** @returns {Number} */
         numSelected() {
             return this.selectionSize;
         },
+        /** @returns {Boolean} */
         hasSelection() {
             return this.numSelected > 0;
         },
@@ -211,15 +216,20 @@ export default {
             this.runOnSelection(purgeSelectedContent);
         },
         async runOnSelection(fn) {
-            let type_ids = [];
-            if (!this.isQuerySelection) {
-                const items = Array.from(this.contentSelection.values());
-                type_ids = items.map((o) => o.type_id);
-            }
-
-            await fn(this.history, type_ids, this.params);
+            const items = this.getExplicitlySelectedItems();
+            const filters = getFilters(this.filterText);
+            await fn(this.history, filters, items);
             this.$emit("reset-selection");
             this.$emit("reload");
+        },
+        getExplicitlySelectedItems() {
+            if (this.isQuerySelection) {
+                return []; // No explicit items allowed in query selection
+            }
+            const items = Array.from(this.contentSelection.values()).map((item) => {
+                return { id: item.id, history_content_type: item.history_content_type };
+            });
+            return items;
         },
 
         // collection creation, fires up a modal

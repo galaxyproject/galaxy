@@ -8,7 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
-import { getQueryDict } from "../../../store/historyStore/historyItemsFiltering";
+import { getQueryDictFromFilters } from "../../../store/historyStore/historyItemsFiltering";
 import { History } from "./History";
 
 // #region setup & utils
@@ -64,16 +64,8 @@ function pythonBooleanFormat(val) {
     return val;
 }
 
-// TODO: remove this duplicated hack and use https://github.com/galaxyproject/galaxy/pull/13626 when merged
-function getFiltersAsQueryString(filterParams) {
-    const { filterText, showDeleted, showHidden } = filterParams;
-    const deleted = pythonBooleanFormat(showDeleted);
-    const visible = pythonBooleanFormat(!showHidden);
-    const filterDict = {
-        ...getQueryDict(filterText),
-        deleted: deleted,
-        visible: visible,
-    };
+function buildLegacyQueryStringFrom(filters) {
+    const filterDict = getQueryDictFromFilters(filters);
     const queryString = Object.entries(filterDict)
         .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
@@ -290,21 +282,18 @@ export async function updateContentFields(content, newFields = {}) {
 
 /**
  * Performs an operation on a specific set of items or all the items
- * matching the query params
+ * matching the filters.
+ * If a specific set of items is provided, the filters are ignored, otherwise
+ * the filters will determine which items are processed.
  *
  * @param {Object} history The history that contains the items
  * @param {String} operation The operation to perform on all items
- * @param {String[]} type_ids The individual items to process as `history_content_type-id` strings
- * @param {String} filterParams The filter query parameters
+ * @param {Object} filters The filter query parameters
+ * @param {Object[]} items The set of items to process as `{ id, history_content_type }`
  */
-export async function bulkUpdate(history, operation, type_ids, filterParams) {
-    const items = type_ids.map((type_id) => {
-        const [history_content_type, id] = type_id.split("-");
-        return { id, history_content_type };
-    });
-
+export async function bulkUpdate(history, operation, filters, items = []) {
     const { id } = history;
-    const filterQuery = getFiltersAsQueryString(filterParams);
+    const filterQuery = buildLegacyQueryStringFrom(filters);
     const url = `/histories/${id}/contents/bulk?${filterQuery}`;
     const payload = {
         operation,
