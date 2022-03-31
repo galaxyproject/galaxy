@@ -1436,7 +1436,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_click_copy_elements(self):
         if self.is_beta_history():
-            self.use_bootstrap_dropdown(option="copy datasets", menu="history action menu")
+            self.use_bootstrap_dropdown(option="copy datasets", menu="history options")
         else:
             self.click_history_option("Copy Datasets")
 
