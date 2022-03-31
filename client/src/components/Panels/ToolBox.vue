@@ -5,12 +5,14 @@
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h4 class="m-1" v-localize>Tools</h4>
                     <div class="panel-header-buttons">
-                        <favorites-button :query="query" @onFavorites="onQuery" v-if="isUser" />
-                        <panel-view-button
-                            v-if="panelViews && Object.keys(panelViews).length > 1"
-                            :panel-views="panelViews"
-                            :current-panel-view="currentPanelView"
-                            @updatePanelView="updatePanelView" />
+                        <b-button-group>
+                            <favorites-button :query="query" @onFavorites="onQuery" v-if="isUser" />
+                            <panel-view-button
+                                v-if="panelViews && Object.keys(panelViews).length > 1"
+                                :panel-views="panelViews"
+                                :current-panel-view="currentPanelView"
+                                @updatePanelView="updatePanelView" />
+                        </b-button-group>
                     </div>
                 </nav>
             </div>

@@ -10,6 +10,8 @@
                     data-description="create new history"
                     size="sm"
                     variant="link"
+                    v-b-tooltip.bottom.hover
+                    title="Create new history"
                     @click="$emit('createNewHistory')">
                     <Icon fixed-width icon="plus" />
                 </b-button>
@@ -18,6 +20,8 @@
                     data-description="show saved histories"
                     size="sm"
                     variant="link"
+                    v-b-tooltip.bottom.hover
+                    title="Show saved histories"
                     @click="backboneRoute('/histories/list')">
                     <Icon fixed-width icon="list" />
                 </b-button>
@@ -26,8 +30,9 @@
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
+                    v-b-tooltip.bottom.hover
+                    title="Show history options"
                     data-description="history menu">
-
                     <b-dropdown-text>
                         <div v-if="userHistoriesLoading">
                             <b-spinner small v-if="userHistoriesLoading" />
@@ -116,7 +121,6 @@
                         <Icon fixed-width class="mr-1" icon="arrow-up" />
                         <span v-localize>Return to legacy panel</span>
                     </b-dropdown-item>
-
                 </b-dropdown>
             </b-button-group>
         </nav>

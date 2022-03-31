@@ -3,11 +3,10 @@
         no-caret
         right
         role="button"
-        title="Panel Views"
+        title="Show panel options"
         variant="link"
         aria-label="View all tool panel configurations"
-        class="tool-panel-dropdown float-right"
-        toggle-class="panel-header-button-toolbox float-right"
+        class="tool-panel-dropdown"
         size="sm"
         v-b-tooltip.hover>
         <template v-slot:button-content>
