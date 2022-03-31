@@ -7,7 +7,7 @@
                     <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                         <b-card no-body header="Welcome to Galaxy, please log in">
                             <b-card-body>
-                                <div>
+                                <div v-if="!auto_redirect">
                                     <!-- standard internal galaxy login -->
                                     <b-form-group label="Public Name or Email Address">
                                         <b-form-input name="login" type="text" v-model="login" />
@@ -29,8 +29,8 @@
                                 </div>
                             </b-card-body>
                             <b-card-footer>
-                                Don't have an account?
-                                <span v-if="allowUserCreation">
+                                <span v-if="!auto_redirect">Don't have an account?</span>
+                                <span v-if="allowUserCreation && !auto_redirect">
                                     <a
                                         id="register-toggle"
                                         href="javascript:void(0)"
@@ -38,6 +38,10 @@
                                         @click.prevent="toggleLogin"
                                         >Register here.</a
                                     >
+                                </span>
+                                <span v-else-if="auto_redirect">
+                                    You have been auto-redirected to OIDC authentication and login. Please contact an 
+                                    administrator for assistance on non OIDC/institutional registration.
                                 </span>
                                 <span v-else>
                                     Registration for this Galaxy instance is disabled. Please contact an administrator
@@ -112,6 +116,7 @@ export default {
             redirect: galaxy.params.redirect,
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
+            oidc_auto_redirect: galaxy.config.oidc_auto_redirect,
         };
     },
     computed: {
@@ -121,6 +126,9 @@ export default {
         confirmURL() {
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
+        },
+        auto_redirect() {
+            return this.enable_oidc && this.oidc_auto_redirect;
         },
     },
     methods: {

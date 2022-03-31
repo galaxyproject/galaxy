@@ -7,29 +7,58 @@
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
                     <b-card no-body>
+                        <!-- OIDC login-->
                         <span v-if="enable_oidc">
                             <b-card-header v-b-toggle.accordion-custos role="button">
                                 Register using institutional account
                             </b-card-header>
                             <b-collapse visible id="accordion-custos" role="tabpanel" accordion="registration_acc">
                                 <b-card-body>
-                                    <!-- OIDC login-->
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This
                                     will redirect you to your institutional login.
                                     <external-login :login_page="true" />
                                 </b-card-body>
                             </b-collapse>
-                        </span>
-                        <b-card-header v-b-toggle.accordion-create role="button">
-                            <span v-if="enable_oidc">Or, register with email</span>
-                            <span v-else>Create a Galaxy account</span>
-                        </b-card-header>
-                        <b-collapse id="accordion-create" role="tabpanel" accordion="registration_acc">
-                            <b-card-body>
-                                <span v-if="enable_oidc">
+                            <b-card-header v-b-toggle.accordion-create role="button">
+                                Or, register with email
+                            </b-card-header>
+                            <b-collapse id="accordion-create" role="tabpanel" accordion="registration_acc">
+                                <b-card-body>
                                     Create a Galaxy account with your email address.
                                     <hr class="my-4" />
-                                </span>
+                                    <b-form-group label="Email Address">
+                                        <b-form-input name="email" type="text" v-model="email" />
+                                    </b-form-group>
+                                    <b-form-group label="Password">
+                                        <b-form-input name="password" type="password" v-model="password" />
+                                    </b-form-group>
+                                    <b-form-group label="Confirm password">
+                                        <b-form-input name="confirm" type="password" v-model="confirm" />
+                                    </b-form-group>
+                                    <b-form-group label="Public name">
+                                        <b-form-input name="username" type="text" v-model="username" />
+                                        <b-form-text
+                                            >Your public name is an identifier that will be used to generate addresses for
+                                            information you share publicly. Public names must be at least three characters in
+                                            length and contain only lower-case letters, numbers, dots, underscores, and dashes
+                                            ('.', '_', '-').</b-form-text
+                                        >
+                                    </b-form-group>
+                                    <b-form-group
+                                        v-if="mailing_join_addr && server_mail_configured"
+                                        label="Subscribe to mailing list">
+                                        <input name="subscribe" type="checkbox" v-model="subscribe" />
+                                    </b-form-group>
+                                    <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
+                                </b-card-body>
+                            </b-collapse>
+                        </span>
+                        <!-- Non OIDC (Normal) login-->
+                        <span v-else>
+                            <b-card-header>
+                                Create a Galaxy account
+                            </b-card-header>
+                            <b-card-body>
                                 <b-form-group label="Email Address">
                                     <b-form-input name="email" type="text" v-model="email" />
                                 </b-form-group>
@@ -55,7 +84,7 @@
                                 </b-form-group>
                                 <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
                             </b-card-body>
-                        </b-collapse>
+                        </span>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"

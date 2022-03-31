@@ -2630,6 +2630,13 @@ mapping:
         desc: |
           Enables and disables OpenID Connect (OIDC) support.
 
+      oidc_auto_redirect:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables and disables auto-redirect to OpenID Connect (OIDC) login.
+
       oidc_config_file:
         type: str
         default: oidc_config.xml

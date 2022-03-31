@@ -155,6 +155,7 @@ class ConfigSerializer(base.ModelSerializer):
             "use_remote_user": _defaults_to(None),  # schema default is False; or config.single_user
             "single_user": _config_is_truthy,
             "enable_oidc": _use_config,
+            "oidc_auto_redirect": _use_config,
             "oidc": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
