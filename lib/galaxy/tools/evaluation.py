@@ -272,8 +272,6 @@ class ToolEvaluator:
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets):
-        # TODO: Update this method for dataset collections? Need to test. -John.
-
         # FIXME: when self.check_values==True, input datasets are being wrapped
         #        twice (above and below, creating 2 separate
         #        DatasetFilenameWrapper objects - first is overwritten by
