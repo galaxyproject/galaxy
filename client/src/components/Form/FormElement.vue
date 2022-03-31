@@ -29,8 +29,19 @@
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
-                :type="type" />
-            <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
+                :type="type"
+                v-model="currentValue"
+                :id="id" />
+            <FormSelect
+                v-else-if="type == 'select'"
+                v-model="currentValue"
+                :id="id"
+                :options="attrs.options"
+                :default-value="attrs.default_value"
+                :multiple="attrs.multiple"
+                :display="attrs.display"
+                :optional="attrs.optional" />
+            <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
                 v-else-if="backbonejs"
@@ -56,6 +67,7 @@ import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
+import FormSelect from "./Elements/FormSelect";
 
 export default {
     components: {
@@ -64,6 +76,7 @@ export default {
         FormInput,
         FormNumber,
         FormColor,
+        FormSelect,
         FormParameter,
         FormDirectory,
     },
