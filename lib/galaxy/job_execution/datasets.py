@@ -68,7 +68,7 @@ class DatasetPathRewriter(metaclass=ABCMeta):
         """
 
 
-class NullDatasetPathRewriter:
+class NullDatasetPathRewriter(DatasetPathRewriter):
     """Used by default for jobwrapper, do not rewrite anything."""
 
     def rewrite_dataset_path(self, dataset, dataset_type):
@@ -76,7 +76,7 @@ class NullDatasetPathRewriter:
         return None
 
 
-class OutputsToWorkingDirectoryPathRewriter:
+class OutputsToWorkingDirectoryPathRewriter(DatasetPathRewriter):
     """Rewrites all paths to place them in the specified working
     directory for normal jobs when Galaxy is configured with
     app.config.outputs_to_working_directory. Job runner base class
@@ -100,7 +100,7 @@ class OutputsToWorkingDirectoryPathRewriter:
             return None
 
 
-class TaskPathRewriter:
+class TaskPathRewriter(DatasetPathRewriter):
     """Rewrites all paths to place them in the specified working
     directory for TaskWrapper. TaskWrapper is responsible for putting
     them there and pulling them out.
@@ -117,8 +117,10 @@ class TaskPathRewriter:
         return os.path.join(self.working_directory, os.path.basename(job_file_name))
 
 
-def get_path_rewriter(outputs_to_working_directory, working_directory, outputs_directory, is_task):
-    job_dataset_path_rewriter = (
+def get_path_rewriter(
+    outputs_to_working_directory, working_directory, outputs_directory, is_task
+) -> DatasetPathRewriter:
+    job_dataset_path_rewriter: DatasetPathRewriter = (
         OutputsToWorkingDirectoryPathRewriter(working_directory, outputs_directory)
         if outputs_to_working_directory
         else NullDatasetPathRewriter()

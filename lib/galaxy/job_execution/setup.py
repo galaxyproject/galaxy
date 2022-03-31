@@ -18,6 +18,7 @@ from galaxy.files import (
 )
 from galaxy.job_execution.datasets import (
     DatasetPath,
+    DatasetPathRewriter,
     get_path_rewriter,
 )
 from galaxy.model import (
@@ -122,7 +123,7 @@ class JobIO(Dictifiable):
         self.tool_source_class = tool_source_class
         self._output_paths: Optional[OutputPaths] = None
         self._output_hdas_and_paths: Optional[OutputHdasAndType] = None
-        self._dataset_path_rewriter = None
+        self._dataset_path_rewriter: Optional[DatasetPathRewriter] = None
 
     @classmethod
     def from_json(cls, path, sa_session):
@@ -151,7 +152,7 @@ class JobIO(Dictifiable):
         return ConfiguredFileSources.from_dict(self.file_sources_dict)
 
     @property
-    def dataset_path_rewriter(self):
+    def dataset_path_rewriter(self) -> DatasetPathRewriter:
         if self._dataset_path_rewriter is None:
             self._dataset_path_rewriter = get_path_rewriter(
                 outputs_to_working_directory=self.outputs_to_working_directory,
@@ -159,6 +160,7 @@ class JobIO(Dictifiable):
                 outputs_directory=self.outputs_directory,
                 is_task=self.is_task,
             )
+        assert self._dataset_path_rewriter is not None
         return self._dataset_path_rewriter
 
     @property
@@ -173,7 +175,7 @@ class JobIO(Dictifiable):
             self.compute_outputs()
         return cast(OutputHdasAndType, self._output_hdas_and_paths)
 
-    def get_input_dataset_fnames(self, ds: DatasetInstance):
+    def get_input_dataset_fnames(self, ds: DatasetInstance) -> List[str]:
         filenames = [ds.file_name]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
@@ -182,7 +184,7 @@ class JobIO(Dictifiable):
                 filenames.append(value.file_name)
         return filenames
 
-    def get_input_fnames(self):
+    def get_input_fnames(self) -> List[str]:
         job = self.job
         filenames = []
         for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
@@ -190,7 +192,7 @@ class JobIO(Dictifiable):
                 filenames.extend(self.get_input_dataset_fnames(da.dataset))
         return filenames
 
-    def get_input_paths(self):
+    def get_input_paths(self) -> List[DatasetPath]:
         job = self.job
         paths = []
         for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
@@ -198,7 +200,7 @@ class JobIO(Dictifiable):
                 paths.append(self.get_input_path(da.dataset))
         return paths
 
-    def get_input_path(self, dataset: DatasetInstance):
+    def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
         real_path = dataset.file_name
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
         return DatasetPath(
@@ -210,10 +212,10 @@ class JobIO(Dictifiable):
             object_store_id=dataset.dataset.object_store_id,
         )
 
-    def get_output_basenames(self):
+    def get_output_basenames(self) -> List[str]:
         return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
-    def get_output_fnames(self):
+    def get_output_fnames(self) -> OutputPaths:
         return self.output_paths
 
     def get_output_path(self, dataset):
@@ -228,10 +230,10 @@ class JobIO(Dictifiable):
     def get_mutable_output_fnames(self):
         return [dsp for dsp in self.output_paths if dsp.mutable]
 
-    def get_output_hdas_and_fnames(self):
+    def get_output_hdas_and_fnames(self) -> OutputHdasAndType:
         return self.output_hdas_and_paths
 
-    def compute_outputs(self):
+    def compute_outputs(self) -> None:
         dataset_path_rewriter = self.dataset_path_rewriter
 
         job = self.job
@@ -256,7 +258,7 @@ class JobIO(Dictifiable):
             self._output_paths.append(dsp)
             self._output_hdas_and_paths["output_file"] = (special.fda, dsp)
 
-    def get_output_file_id(self, file):
+    def get_output_file_id(self, file: str) -> Optional[int]:
         for dp in self.output_paths:
             if self.outputs_to_working_directory and os.path.basename(dp.false_path) == file:
                 return dp.dataset_id
@@ -265,14 +267,14 @@ class JobIO(Dictifiable):
         return None
 
 
-def ensure_configs_directory(work_dir):
+def ensure_configs_directory(work_dir: str) -> str:
     configs_dir = os.path.join(work_dir, "configs")
     if not os.path.exists(configs_dir):
         safe_makedirs(configs_dir)
     return configs_dir
 
 
-def create_working_directory_for_job(object_store, job):
+def create_working_directory_for_job(object_store, job) -> str:
     object_store.create(job, base_dir="job_work", dir_only=True, obj_dir=True)
     working_directory = object_store.get_filename(job, base_dir="job_work", dir_only=True, obj_dir=True)
     return working_directory

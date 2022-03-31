@@ -18,6 +18,10 @@ from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
+from galaxy.structured_app import (
+    BasicSharedApp,
+    MinimalToolApp,
+)
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -85,12 +89,15 @@ class ToolEvaluator:
     tool inputs in an isolated, testable manner.
     """
 
-    def __init__(self, app, tool, job, local_working_directory):
+    app: MinimalToolApp
+    job: model.Job
+
+    def __init__(self, app: MinimalToolApp, tool, job, local_working_directory):
         self.app = app
         self.job = job
         self.tool = tool
         self.local_working_directory = local_working_directory
-        self.file_sources_dict = {}
+        self.file_sources_dict: Dict[str, Any] = {}
         self.param_dict: Dict[str, Any] = {}
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []
@@ -529,7 +536,7 @@ class ToolEvaluator:
             environment_variable_template = environment_variable_def["template"]
             inject = environment_variable_def.get("inject")
             if inject == "api_key":
-                if self._user:
+                if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
 
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
