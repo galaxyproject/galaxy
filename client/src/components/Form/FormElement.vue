@@ -1,4 +1,65 @@
-<script setup>
+<template>
+    <div v-show="!isHidden" :id="elementId" :class="['ui-form-element section-row', cls]">
+        <div v-if="hasError" class="ui-form-error">
+            <span class="fa fa-exclamation mr-1" />
+            <span class="ui-form-error-text" v-html="error" />
+        </div>
+        <div class="ui-form-title">
+            <div v-if="collapsible || connectable">
+                <span v-if="collapsible && !connected" class="ui-form-collapsible-icon icon" @click="onCollapse">
+                    <span v-if="collapsed" :class="collapsedEnableIcon" :title="collapsedEnableText" />
+                    <span v-else :class="collapsedDisableIcon" :title="collapsedDisableText" />
+                </span>
+                <span v-if="connectable" class="ui-form-connected-icon icon" @click="onConnect">
+                    <span v-if="connected" :class="connectedEnableIcon" :title="connectedEnableText" />
+                    <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
+                </span>
+                <span class="ui-form-title-text ml-1">
+                    {{ title }}
+                </span>
+            </div>
+            <span v-else class="ui-form-title-text">{{ title }}</span>
+        </div>
+        <div v-if="showField" class="ui-form-field" :data-label="title">
+            <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
+            <FormHidden v-else-if="isHiddenType" :id="id" v-model="currentValue" :info="attrs['info']" />
+            <FormNumber
+                v-else-if="type == 'integer' || type == 'float'"
+                :id="id"
+                v-model="currentValue"
+                :max="attrs.max"
+                :min="attrs.min"
+                :type="type"
+                v-model="currentValue"
+                :id="id" />
+            <FormSelect
+                v-else-if="type == 'select'"
+                v-model="currentValue"
+                :id="id"
+                :options="attrs.options"
+                :default-value="attrs.default_value"
+                :multiple="attrs.multiple"
+                :display="attrs.display"
+                :optional="attrs.optional" />
+            <FormColor v-else-if="type == 'color'" v-model="currentValue" :id="id" />
+            <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
+            <FormParameter
+                v-else-if="backbonejs"
+                :id="id"
+                ref="params"
+                v-model="currentValue"
+                :data-label="title"
+                :type="type"
+                :attributes="attrs" />
+            <FormInput v-else :id="id" v-model="currentValue" :area="attrs['area']" />
+        </div>
+        <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
+        <span v-if="!!helpText" class="ui-form-info form-text text-muted" v-html="helpText" />
+    </div>
+</template>
+
+<script>
+import _ from "underscore";
 import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
@@ -6,84 +67,91 @@ import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed, useAttrs } from "vue";
+import FormSelect from "./Elements/FormSelect";
 
-const props = defineProps({
-    id: {
-        type: String,
-        default: "identifier",
+export default {
+    components: {
+        FormBoolean,
+        FormHidden,
+        FormInput,
+        FormNumber,
+        FormColor,
+        FormSelect,
+        FormParameter,
+        FormDirectory,
     },
-    type: {
-        type: String,
-        default: null,
-    },
-    value: {
-        default: null,
-    },
-    title: {
-        type: String,
-        default: null,
-    },
-    refreshOnChange: {
-        type: Boolean,
-        default: false,
-    },
-    help: {
-        type: String,
-        default: null,
-    },
-    error: {
-        type: String,
-        default: null,
-    },
-    backbonejs: {
-        type: Boolean,
-        default: false,
-    },
-    disabled: {
-        type: Boolean,
-        default: false,
-    },
-    attributes: {
-        type: Object,
-        default: null,
-    },
-    collapsedEnableText: {
-        type: String,
-        default: "Enable",
-    },
-    collapsedDisableText: {
-        type: String,
-        default: "Disable",
-    },
-    collapsedEnableIcon: {
-        type: String,
-        default: "far fa-caret-square-down",
-    },
-    collapsedDisableIcon: {
-        type: String,
-        default: "far fa-caret-square-up",
-    },
-    connectedEnableText: {
-        type: String,
-        default: "Remove connection from module.",
-    },
-    connectedDisableText: {
-        type: String,
-        default: "Add connection to module.",
-    },
-    connectedEnableIcon: {
-        type: String,
-        default: "fa fa-times",
-    },
-    connectedDisableIcon: {
-        type: String,
-        default: "fa fa-arrows-alt-h",
-    },
-    workflowBuildingMode: {
-        type: Boolean,
-        default: false,
+    props: {
+        id: {
+            type: String,
+            default: "identifer",
+        },
+        type: {
+            type: String,
+            default: "",
+        },
+        value: {
+            default: null,
+        },
+        title: {
+            type: String,
+            default: null,
+        },
+        refreshOnChange: {
+            type: Boolean,
+            default: false,
+        },
+        help: {
+            type: String,
+            default: null,
+        },
+        error: {
+            type: String,
+            default: null,
+        },
+        backbonejs: {
+            type: Boolean,
+            default: false,
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+        attributes: {
+            type: Object,
+            default: null,
+        },
+        collapsedEnableText: {
+            type: String,
+            default: "Enable",
+        },
+        collapsedDisableText: {
+            type: String,
+            default: "Disable",
+        },
+        collapsedEnableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-down",
+        },
+        collapsedDisableIcon: {
+            type: String,
+            default: "fa fa-caret-square-o-up",
+        },
+        connectedEnableText: {
+            type: String,
+            default: "Remove connection from module.",
+        },
+        connectedDisableText: {
+            type: String,
+            default: "Add connection to module.",
+        },
+        connectedEnableIcon: {
+            type: String,
+            default: "fa fa fa-times",
+        },
+        connectedDisableIcon: {
+            type: String,
+            default: "fa fa-arrows-h",
+        },
     },
 });
 
