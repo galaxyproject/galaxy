@@ -1791,6 +1791,9 @@ galaxy:
   # Enables and disables OpenID Connect (OIDC) support.
   #enable_oidc: false
 
+  # Enables and disables auto-redirect to (OIDC) login.
+  #oidc_auto_redirect: false
+
   # Sets the path to OIDC configuration file.
   # The value of this option will be resolved with respect to
   # <config_dir>.

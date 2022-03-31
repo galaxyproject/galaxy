@@ -28,7 +28,7 @@ export const getUserPreferencesModel = (user_id) => {
         external_ids: {
             title: _l("Manage Third-Party Identities"),
             id: "manage-third-party-identities",
-            description: _l("Connect or disconnect access to your third-party identities."),
+            description: _l("Connect or disconnect access to your third-party identities/email addresses."),
             icon: "fa-id-card-o",
             submitTitle: "Disconnect identity",
             submitIcon: "fa-trash",

@@ -7,7 +7,7 @@
             <div class="cilogon" v-if="cilogonListShow">
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
-                    <b-form-group label="Use existing institutional login">
+                    <b-form-group label="Use institutional login">
                         <multiselect
                             placeholder="Select your institution"
                             v-model="selected"
