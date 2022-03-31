@@ -17,11 +17,6 @@
                         <Icon fixed-width class="mr-1" icon="folder" />
                     </template>
 
-                    <b-dropdown-item v-b-modal.history-selector-modal>
-                        <Icon fixed-width class="mr-1" icon="exchange-alt" />
-                        <span v-localize>Change History</span>
-                    </b-dropdown-item>
-
                     <b-dropdown-item data-description="create new history" @click="$emit('createNewHistory')">
                         <Icon fixed-width class="mr-1" icon="plus" />
                         <span v-localize>Create a New History</span>
@@ -134,13 +129,6 @@
             </b-button-group>
         </nav>
 
-        <!-- modals -->
-        <HistorySelectorModal
-            id="history-selector-modal"
-            :histories="histories"
-            :current-history="history"
-            @selectHistory="$emit('setCurrentHistory', $event)" />
-
         <CopyHistoryModal id="copy-history-modal" :history="history" />
 
         <b-modal
@@ -174,13 +162,11 @@ import { History } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyHistoryModal from "components/History/Modals/CopyModal";
-import HistorySelectorModal from "components/History/Modals/HistorySelectorModal";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
         CopyHistoryModal,
-        HistorySelectorModal,
     },
     props: {
         histories: { type: Array, required: true },
