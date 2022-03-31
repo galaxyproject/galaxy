@@ -17,16 +17,6 @@
                         <Icon fixed-width class="mr-1" icon="folder" />
                     </template>
 
-                    <b-dropdown-text>
-                        <div v-if="userHistoriesLoading">
-                            <b-spinner small v-if="userHistoriesLoading" />
-                            <span>Fetching histories from server</span>
-                        </div>
-                        <span v-else>You have {{ histories.length }} histories.</span>
-                    </b-dropdown-text>
-
-                    <b-dropdown-divider></b-dropdown-divider>
-
                     <b-dropdown-item v-b-modal.history-selector-modal>
                         <Icon fixed-width class="mr-1" icon="exchange-alt" />
                         <span v-localize>Change History</span>
@@ -60,6 +50,16 @@
                         <Icon fixed-width icon="cog" />
                         <span class="sr-only">Operations on the current history</span>
                     </template>
+
+                    <b-dropdown-text>
+                        <div v-if="userHistoriesLoading">
+                            <b-spinner small v-if="userHistoriesLoading" />
+                            <span>Fetching histories from server</span>
+                        </div>
+                        <span v-else>You have {{ histories.length }} histories.</span>
+                    </b-dropdown-text>
+
+                    <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item v-b-modal:copy-history-modal>
                         <Icon fixed-width icon="copy" class="mr-1" />
