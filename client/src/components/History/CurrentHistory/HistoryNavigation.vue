@@ -6,45 +6,27 @@
         <nav class="d-flex justify-content-between mx-3 my-2">
             <h4 class="m-1">History</h4>
             <b-button-group>
-                <b-dropdown
+                <b-button
+                    data-description="create new history"
                     size="sm"
                     variant="link"
-                    :text="title | l"
-                    toggle-class="text-decoration-none"
-                    class="histories-operation-menu"
-                    data-description="histories operation menu">
-                    <template v-slot:button-content>
-                        <Icon fixed-width class="mr-1" icon="folder" />
-                    </template>
+                    @click="$emit('createNewHistory')">
+                    <Icon fixed-width icon="plus" />
+                </b-button>
 
-                    <b-dropdown-item data-description="create new history" @click="$emit('createNewHistory')">
-                        <Icon fixed-width class="mr-1" icon="plus" />
-                        <span v-localize>Create a New History</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item @click="backboneRoute('/histories/list')">
-                        <Icon fixed-width class="mr-1" icon="list" />
-                        <span v-localize>Show Saved Histories</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        data-description="switch to legacy history view"
-                        @click="switchToLegacyHistoryPanel">
-                        <Icon fixed-width class="mr-1" icon="arrow-up" />
-                        <span v-localize>Return to legacy panel</span>
-                    </b-dropdown-item>
-                </b-dropdown>
+                <b-button
+                    data-description="show saved histories"
+                    size="sm"
+                    variant="link"
+                    @click="backboneRoute('/histories/list')">
+                    <Icon fixed-width icon="list" />
+                </b-button>
 
                 <b-dropdown
                     size="sm"
                     variant="link"
-                    text="Histories"
                     toggle-class="text-decoration-none"
                     data-description="history menu">
-                    <template v-slot:button-content>
-                        <Icon fixed-width icon="cog" />
-                        <span class="sr-only">Operations on the current history</span>
-                    </template>
 
                     <b-dropdown-text>
                         <div v-if="userHistoriesLoading">
@@ -125,6 +107,16 @@
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>
+
+                    <b-dropdown-divider></b-dropdown-divider>
+
+                    <b-dropdown-item
+                        data-description="switch to legacy history view"
+                        @click="switchToLegacyHistoryPanel">
+                        <Icon fixed-width class="mr-1" icon="arrow-up" />
+                        <span v-localize>Return to legacy panel</span>
+                    </b-dropdown-item>
+
                 </b-dropdown>
             </b-button-group>
         </nav>
