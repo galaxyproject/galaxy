@@ -1980,6 +1980,25 @@ class GroupRoleListModel(BaseModel):
     __root__: List[GroupRoleModel]
 
 
+# Users -----------------------------------------------------------------
+
+UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserEmailField = Field(title="Email", description="Email of the user")
+UserDescriptionField = Field(title="Description", description="Description of the user")
+
+# Group_Users -----------------------------------------------------------------
+
+
+class GroupUserModel(BaseModel):
+    id: EncodedDatabaseIdField = UserIdField
+    email: str = UserEmailField
+    url: RelativeUrl = RelativeUrlField
+
+
+class GroupUserListModel(BaseModel):
+    __root__: List[GroupUserModel]
+
+
 # Libraries -----------------------------------------------------------------
 
 

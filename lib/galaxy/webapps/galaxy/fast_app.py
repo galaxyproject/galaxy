@@ -45,6 +45,10 @@ api_tags_metadata = [
         "name": "group_roles",
         "description": "Operations with group roles.",
     },
+    {
+        "name": "group_users",
+        "description": "Operations with group users.",
+    },
     {"name": "histories"},
     {"name": "libraries"},
     {"name": "folders"},

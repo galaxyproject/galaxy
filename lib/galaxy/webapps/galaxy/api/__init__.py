@@ -5,6 +5,7 @@ import inspect
 from typing import (
     Any,
     AsyncGenerator,
+    Callable,
     cast,
     Optional,
     Type,
@@ -253,25 +254,43 @@ class BaseGalaxyAPIController(BaseAPIController):
 class Router(InferringRouter):
     """A FastAPI Inferring Router tailored to Galaxy."""
 
+    def wrap_with_alias(self, method: Callable, *args, alias: Optional[str] = None, **kwd):
+        """
+        Wraps FastAPI methods with additional alias keyword and require_admin handling.
+
+        @router.get("/api/thing", alias="/api/deprecated_thing") will then create
+        routes for /api/thing and /api/deprecated_thing.
+        """
+        kwd = self._handle_galaxy_kwd(kwd)
+        decorated_route = method(*args, **kwd)
+        if alias:
+            redecorated_route = method(alias, **kwd)
+
+            def dec(f):
+                return decorated_route(redecorated_route(f))
+
+            return dec
+        return decorated_route
+
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
-        return super().get(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().get, *args, **kwd)
 
     def patch(self, *args, **kwd):
         """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
-        return super().patch(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().patch, *args, **kwd)
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""
-        return super().put(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().put, *args, **kwd)
 
     def post(self, *args, **kwd):
         """Extend FastAPI.post to accept a require_admin Galaxy flag."""
-        return super().post(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().post, *args, **kwd)
 
     def delete(self, *args, **kwd):
         """Extend FastAPI.delete to accept a require_admin Galaxy flag."""
-        return super().delete(*args, **self._handle_galaxy_kwd(kwd))
+        return self.wrap_with_alias(super().delete, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -280,6 +299,7 @@ class Router(InferringRouter):
                 kwd["dependencies"].append(AdminUserRequired)
             else:
                 kwd["dependencies"] = [AdminUserRequired]
+
         return kwd
 
     @property
