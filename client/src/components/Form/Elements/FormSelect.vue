@@ -9,19 +9,15 @@
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
-            <b-col v-if=" display == 'radio'">
-                <b-form-group>                    
+            <b-col v-if="display == 'radio'">
+                <b-form-group>
                     <!-- Select single from radio -->
-                    <b-form-radio-group
-                        v-model="currentValue"
-                        :options="optArray"
-                        text-field="label"
-                        stacked>
+                    <b-form-radio-group v-model="currentValue" :options="optArray" text-field="label" stacked>
                     </b-form-radio-group>
                 </b-form-group>
             </b-col>
             <b-col v-else-if="display == 'checkboxes'">
-             <!-- Select multiple from checkboxes -->
+                <!-- Select multiple from checkboxes -->
                 <b-form-group>
                     <b-form-checkbox-group
                         v-model="currentValue"
@@ -43,8 +39,7 @@
                     deselect-label=""
                     select-label=""
                     track-by="value"
-                    label="label"
-                    > 
+                    label="label">
                 </multiselect>
                 <!-- Single select from drop down -->
                 <multiselect
@@ -54,9 +49,8 @@
                     deselect-label=""
                     select-label=""
                     label="label"
-                    track-by="value"
-                    > 
-                    {{ currentValue }} 
+                    track-by="value">
+                    {{ currentValue }}
                 </multiselect>
             </b-col>
         </b-row>
@@ -98,7 +92,7 @@ export default {
             type: Boolean,
             required: false,
             default: null,
-        }
+        },
     },
     data() {
         return {
@@ -121,7 +115,7 @@ export default {
                     label: "Nothing selected",
                     value: null,
                     default: false,
-                })
+                });
             }
             return formattedOptions;
         },
@@ -131,33 +125,33 @@ export default {
                 // If there's a defaultValue set, find it in the array and use that.
                 // If there's no default value set, use the first item in the array with 'default' set to true.
                 // Lastly, just default to the first element in the array.
-                if(this.multiple || this.display == "checkboxes") { 
-                    this.multiple = true
+                if (this.multiple || this.display == "checkboxes") {
+                    this.multiple = true;
                     if (this.value !== "") {
                         let selected = [];
                         if (this.value == null) {
-                            return
+                            return;
                         }
                         // A string is returned if single, but an array if zero or multiple
-                        if (! Array.isArray(this.value)) {
-                            this.value = [this.value]
+                        if (!Array.isArray(this.value)) {
+                            this.value = [this.value];
                         }
-                        for(var i = 0; i < this.value.length; i++){
+                        for (var i = 0; i < this.value.length; i++) {
                             if (this.display == "checkboxes") {
                                 selected.push(this.optArray.find((element) => element.value == this.value[i]).value);
                             } else {
                                 selected.push(this.optArray.find((element) => element.value == this.value[i]));
                             }
                         }
-                        return selected
+                        return selected;
                     } else if (this.defaultValue !== "") {
                         let selected = [];
                         // Create list from default selected values
-                        for(var i = 0; i < this.defaultValue.length; i++){
+                        for (var i = 0; i < this.defaultValue.length; i++) {
                             selected.push(this.optArray.find((element) => element.value === this.defaultValue[i]));
                         }
                         return selected;
-                    // Return null if value is optional
+                        // Return null if value is optional
                     } else {
                         // Try to find a value labeled default in the options
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
@@ -169,22 +163,22 @@ export default {
                         return this.optArray[0];
                     }
 
-                // If single select
+                    // If single select
                 } else {
                     // If value provided, use value
                     if (this.value !== "") {
                         if (this.value == null) {
-                            return
+                            return;
                         }
-                        if (this.display == 'radio') { 
+                        if (this.display == "radio") {
                             return this.optArray.find((element) => element.value === this.value).value;
                         } else {
                             return this.optArray.find((element) => element.value === this.value);
                         }
-                    // if no value provided, use default value
+                        // if no value provided, use default value
                     } else if (this.defaultValue !== "") {
                         return this.optArray.find((element) => element.default === this.defaultValue);
-                    // If no default value provided and optional is selected, return null
+                        // If no default value provided and optional is selected, return null
                     } else {
                         for (let i = 0, len = this.optArray.length; i < len; i++) {
                             if (this.optArray[i].default) {
@@ -198,15 +192,14 @@ export default {
             },
             set(val) {
                 // Checkbox is mutliple, but not automatically set. If it IS set, this prevents the multiple from overriding the checkbox
-                if (this.multiple && this.display != "checkboxes"){
+                if (this.multiple && this.display != "checkboxes") {
                     let values = [];
-                    for(var i = 0; i < val.length; i++){
+                    for (var i = 0; i < val.length; i++) {
                         values.push(val[i].value);
                     }
                     this.$emit("input", values);
-                }
-                else {
-                    if (this.display == "radio" || this.display == "checkboxes"){
+                } else {
+                    if (this.display == "radio" || this.display == "checkboxes") {
                         this.$emit("input", val);
                     } else {
                         this.$emit("input", val.value);
