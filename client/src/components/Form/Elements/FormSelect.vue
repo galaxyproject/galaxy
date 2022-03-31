@@ -51,7 +51,6 @@
                     v-else
                     v-model="currentValue"
                     :options="optArray"
-                    :allow-empty="true"
                     deselect-label=""
                     select-label=""
                     label="label"
@@ -117,6 +116,13 @@ export default {
                     default: this.options[i][2],
                 };
             }
+            if (this.multiple == false && this.optional == true) {
+                formattedOptions.unshift({
+                    label: "Nothing selected",
+                    value: null,
+                    default: false,
+                })
+            }
             return formattedOptions;
         },
         currentValue: {
@@ -127,14 +133,12 @@ export default {
                 // Lastly, just default to the first element in the array.
                 if(this.multiple || this.display == "checkboxes") { 
                     this.multiple = true
-                    console.log(this.value)
                     if (this.value !== "") {
                         let selected = [];
                         if (this.value == null) {
                             return
                         }
                         // A string is returned if single, but an array if zero or multiple
-                        console.log(this.value)
                         if (! Array.isArray(this.value)) {
                             this.value = [this.value]
                         }
@@ -146,16 +150,6 @@ export default {
                             }
                         }
                         return selected
-                        // else {
-                        //     // checkboxes expects a value, multiselect expects an object
-                        //     if (this.display == "checkboxes") {
-                        //         selected.push(this.optArray.find((element) => element.value == this.value).value);
-                        //     } else {
-                        //         selected.push(this.optArray.find((element) => element.value == this.value[i]));
-                        //     }
-                        // }
-                        // return selected
-                    // If 'value' is not provided from the wrapper, move to default value
                     } else if (this.defaultValue !== "") {
                         let selected = [];
                         // Create list from default selected values
