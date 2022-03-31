@@ -376,7 +376,7 @@ export default {
             this.collection.models.forEach((upload) => {
                 allHids.push.apply(allHids, upload.get("hids"));
             });
-            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
+            const models = allHids.map((hid) => Galaxy.currHistoryPanel.getByHid(hid));
             return models;
         },
         getRequestUrl: function (items, history_id) {

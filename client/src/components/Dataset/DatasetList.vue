@@ -151,7 +151,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             this.services
                 .setHistory(item.history_id)
-                .then((history) => {
+                .then(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 })
                 .catch((error) => {

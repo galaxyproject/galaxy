@@ -13,7 +13,7 @@ import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
 import "./HistoryPanelProxy.scss";
-import store from "store";
+// import store from "store";
 
 // extend existing current history panel
 export default class HistoryPanelProxy {
@@ -27,9 +27,37 @@ export default class HistoryPanelProxy {
         this.className = `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`;
         this.linkTarget = "galaxy_main";
         this.model = new Backbone.Model({});
+        this.model.UPDATE_DELAY = 1000;
     }
     refreshContents() {
-        console.log("refresh contents called.");
+        console.log("refreshContents called.");
+    }
+    loadCurrentHistory() {
+        console.log("loadCurrentHistory called.");
+    }
+    switchToHistory(historyId) {
+        console.log("switchToHistory called.", historyId);
+    }
+    on(name, callback, context) {
+        console.log("on called.", name);
+    }
+    off(name, callback, context) {
+        console.log("off called.", name);
+    }
+    createCollection(type, models, flag) {
+        // calls build collection?
+        console.log("createCollection called.");
+    }
+    getAll() {
+        console.log("getAll called.");
+        return [];
+    }
+    buildCollection(rules, selection, flag) {
+        console.log("buildCollection called.");
+    }
+    getByHid(hid) {
+        console.log("getByHid called.");
+        return {};
     }
     render() {
         const container = document.createElement("div");
