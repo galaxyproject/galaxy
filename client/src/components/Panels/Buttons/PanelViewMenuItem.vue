@@ -13,8 +13,6 @@ const types_to_icons = {
     activity: "project-diagram",
     publication: "newspaper",
     training: "graduation-cap",
-    selected: "check",
-    fallback: "eye",
 };
 
 export default {
@@ -35,9 +33,9 @@ export default {
         icon() {
             const viewType = this.panelView.view_type;
             if (this.isSelected) {
-                return types_to_icons.selected;
+                return "check";
             } else {
-                return types_to_icons[viewType] || types_to_icons.fallback;
+                return types_to_icons[viewType] || "eye";
             }
         },
         isSelected() {

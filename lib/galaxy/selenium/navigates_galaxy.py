@@ -1419,8 +1419,6 @@ class NavigatesGalaxy(HasDriver):
         if not self.is_beta_history():
             self.components.history_panel.new_history_button.wait_for_and_click()
         else:
-            dropdown = self.beta_history_element("histories operation menu")
-            dropdown.wait_for_and_click()
             option = self.beta_history_element("create new history")
             option.wait_for_and_click()
 
@@ -1531,7 +1529,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_show_structure(self):
         if self.is_beta_history():
-            self.use_bootstrap_dropdown(option="show structure", menu="history menu")
+            self.use_bootstrap_dropdown(option="show structure", menu="history options")
         else:
             self.click_history_option(self.components.history_panel.options_show_history_structure)
 

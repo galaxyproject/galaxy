@@ -283,7 +283,7 @@ history_panel:
       selector: '//button[@title="Edit attributes"]'
     new_history_button: '.history-new-button'
     multi_view_button: '.history-view-multi-button'
-    histories_operation_menu: '.histories-operation-menu'
+    histories_operation_menu: '[data-description="history options"]'
     multi_view_button_beta: '[data-description="switch to multi history view"]'
 
     pagination_pages: '.list-pagination .pages'
