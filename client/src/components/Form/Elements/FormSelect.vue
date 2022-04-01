@@ -126,37 +126,37 @@ export default {
                 // If there's no default value set, use the first item in the array with 'default' set to true.
                 // Lastly, just default to the first element in the array.
                 if (this.multiple || this.display == "checkboxes") {
-                    this.multiple = true;
                     if (this.value !== "") {
-                        let selected = [];
+                        const selected = [];
                         if (this.value == null) {
                             return;
                         }
+                        let array_val = this.value;
                         // A string is returned if single, but an array if zero or multiple
                         if (!Array.isArray(this.value)) {
-                            this.value = [this.value];
+                            array_val = [this.value];
                         }
-                        for (var i = 0; i < this.value.length; i++) {
+                        for (var i = 0; i < array_val.length; i++) {
                             if (this.display == "checkboxes") {
-                                selected.push(this.optArray.find((element) => element.value == this.value[i]).value);
+                                selected.push(this.optArray.find((element) => element.value == array_val[i]).value);
                             } else {
-                                selected.push(this.optArray.find((element) => element.value == this.value[i]));
+                                selected.push(this.optArray.find((element) => element.value == array_val[i]));
                             }
                         }
                         return selected;
                     } else if (this.defaultValue !== "") {
-                        let selected = [];
+                        const selected = [];
                         // Create list from default selected values
-                        for (var i = 0; i < this.defaultValue.length; i++) {
-                            selected.push(this.optArray.find((element) => element.value === this.defaultValue[i]));
+                        for (var n = 0; n < this.defaultValue.length; n++) {
+                            selected.push(this.optArray.find((element) => element.value === this.defaultValue[n]));
                         }
                         return selected;
                         // Return null if value is optional
                     } else {
                         // Try to find a value labeled default in the options
-                        for (let i = 0, len = this.optArray.length; i < len; i++) {
-                            if (this.optArray[i].default) {
-                                return this.optArray[i];
+                        for (let x = 0, len = this.optArray.length; x < len; x++) {
+                            if (this.optArray[x].default) {
+                                return this.optArray[x];
                             }
                         }
                         // Else return first value
@@ -193,7 +193,7 @@ export default {
             set(val) {
                 // Checkbox is mutliple, but not automatically set. If it IS set, this prevents the multiple from overriding the checkbox
                 if (this.multiple && this.display != "checkboxes") {
-                    let values = [];
+                    const values = [];
                     for (var i = 0; i < val.length; i++) {
                         values.push(val[i].value);
                     }
