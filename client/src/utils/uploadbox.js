@@ -91,12 +91,33 @@ export function submitUpload(config) {
         cnf.error(data.error_message);
         return;
     }
-    if (!data.files.length) {
-        // No files attached, don't need to use TUS uploader
-        return submitPayload(data, cnf);
+
+    if (isPasted(data)) {
+        if (data.targets.length && data.targets[0].elements.length) {
+            const pasted_item = data.targets[0].elements[0];
+            if (!isUrl(pasted_item)) {
+                ensureEOF(pasted_item);
+            }
+            // No files attached, don't need to use TUS uploader
+            return submitPayload(data, cnf);
+        }
     }
     const tusEndpoint = `${getAppRoot()}api/upload/resumable_upload/`;
     tusUpload(data, 0, tusEndpoint, cnf);
+}
+
+function isPasted(data) {
+    return !data.files.length;
+}
+
+function isUrl(pasted_item) {
+    return pasted_item.src == "url";
+}
+
+function ensureEOF(pasted_item) {
+    if (pasted_item.paste_content && !pasted_item.paste_content.endsWith("\n")) {
+        pasted_item.paste_content += "\n";
+    }
 }
 
 (($) => {
