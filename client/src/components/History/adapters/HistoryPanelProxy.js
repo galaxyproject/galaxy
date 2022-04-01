@@ -1,18 +1,12 @@
 /**
- * This is a backbone view adapter for a Vue component. It's just
- * a Vue mount function with the interface of a backbone view so
- * that it can fit into the existing backbone layout scheme.
+ * This is an adapter for the History component. It's required since the previous
+ * history provided the same interface for other components.
  */
-
+import $ from "jquery";
+import store from "store";
+import { getGalaxyInstance } from "app";
 import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
-
-// mvc nonsense
-import $ from "jquery";
-import { getGalaxyInstance } from "app";
-import Backbone from "backbone";
-// import CurrentHistoryView from "mvc/history/history-view-edit-current";
-import store from "store";
 
 // extend existing current history panel
 export default class HistoryPanelProxy {
