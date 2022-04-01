@@ -7,6 +7,10 @@ import store from "store";
 import { getGalaxyInstance } from "app";
 import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
+import ListCollectionCreatorModal from "components/Collections/ListCollectionCreatorModal";
+import RuleBasedCollectionCreatorModal from "components/Collections/RuleBasedCollectionCreatorModal";
+import PairCollectionCreatorModal from "components/Collections/PairCollectionCreatorModal";
+import PairedListCollectionCreatorModal from "components/Collections/PairedListCollectionCreatorModal";
 
 // extend existing current history panel
 export default class HistoryPanelProxy {
@@ -31,16 +35,32 @@ export default class HistoryPanelProxy {
     off(name, callback, context) {
         console.log("off called.", name);
     }
-    createCollection(type, models, flag) {
-        // calls build collection?
-        console.log("createCollection called.");
+    createCollection(collectionType, models, hideSourceItems) {
+        console.log("createCollection called.", models);
+    }
+    buildCollection(collectionType, selection, hideSourceItems) {
+        const defaultHideSourceItems = hideSourceItems || true;
+        var createModalFunc;
+        if (collectionType == "list") {
+            createModalFunc = ListCollectionCreatorModal.createListCollection;
+        } else if (collectionType == "paired") {
+            createModalFunc = PairCollectionCreatorModal.createPairCollection;
+        } else if (collectionType == "list:paired") {
+            createModalFunc = PairedListCollectionCreatorModal.createPairedListCollection;
+        } else if (collectionType.startsWith("rules")) {
+            createModalFunc = RuleBasedCollectionCreatorModal.createCollectionViaRules;
+        } else {
+            console.warn(`Unknown collectionType encountered ${collectionType}`);
+        }
+        createModalFunc(selection, defaultHideSourceItems)
+            .then(() => {
+                console.debug("Successfully build collection.");
+            })
+            .catch(() => {});
     }
     getAll() {
         console.log("getAll called.");
         return [];
-    }
-    buildCollection(rules, selection, flag) {
-        console.log("buildCollection called.");
     }
     getByHid(hid) {
         console.log("getByHid called.");
