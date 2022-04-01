@@ -15,7 +15,7 @@ const queue = new LastQueue();
 const state = {
     items: {},
     itemKey: "hid",
-    totalMatches: undefined,
+    totalMatchesCount: undefined,
 };
 
 const getters = {
@@ -35,8 +35,8 @@ const getters = {
             });
             return reverse(filtered);
         },
-    getQueryStats: (state) => () => {
-        return state.totalMatches;
+    getTotalMatchesCount: (state) => () => {
+        return state.totalMatchesCount;
     },
 };
 
@@ -69,7 +69,7 @@ const mutations = {
     },
     saveQueryStats: (state, { headers }) => {
         const totalMatches = headers["total_matches"];
-        state.totalMatches = Number(totalMatches);
+        state.totalMatchesCount = Number(totalMatches);
     },
 };
 

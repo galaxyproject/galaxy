@@ -4,7 +4,7 @@
         :history-id="historyId"
         :offset="offset"
         :filter-text="filterText"
-        v-slot="{ loading, result: payload, totalMatches }">
+        v-slot="{ loading, result: payload, count: totalItemsInQuery }">
         <ExpandedItems
             :scope-key="historyId"
             :get-item-key="(item) => item.type_id"
@@ -53,8 +53,8 @@
                             :has-filters="hasFilters"
                             :is-query-selection="isQuerySelection"
                             :selection-size="selectionSize"
-                            :total-items-in-query="totalMatches"
-                            @select-all="selectAllInCurrentQuery(payload, totalMatches)"
+                            :total-items-in-query="totalItemsInQuery"
+                            @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
                             @clear-selection="resetSelection" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">

@@ -1,8 +1,8 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { mapCacheActions } from "vuex-cache";
 import { mapActions, mapGetters } from "vuex";
+import { mapCacheActions } from "vuex-cache";
 
 export const SimpleProviderMixin = {
     props: {
@@ -131,9 +131,9 @@ export const JobProvider = {
  * Provider component interface to the actual stores i.e. history items and collection elements stores.
  * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
  * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
- * @param {String} queryStatsGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
+ * @param {String} storeCountGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
  */
-export const StoreProvider = (storeAction, storeGetter, queryStatsGetter = undefined) => {
+export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
     return {
         watch: {
             $attrs() {
@@ -150,15 +150,15 @@ export const StoreProvider = (storeAction, storeGetter, queryStatsGetter = undef
             this.load();
         },
         computed: {
-            ...mapGetters([storeGetter, queryStatsGetter]),
+            ...mapGetters([storeGetter, storeCountGetter]),
             attributes() {
                 return this.toCamelCase(this.$attrs);
             },
             result() {
                 return this[storeGetter](this.attributes);
             },
-            totalMatches() {
-                return queryStatsGetter ? this[queryStatsGetter]() : undefined;
+            count() {
+                return storeCountGetter ? this[storeCountGetter]() : undefined;
             },
         },
         render() {
@@ -166,7 +166,7 @@ export const StoreProvider = (storeAction, storeGetter, queryStatsGetter = undef
                 error: this.error,
                 loading: this.loading,
                 result: this.result,
-                totalMatches: this.totalMatches,
+                count: this.count,
             });
         },
         methods: {
@@ -196,4 +196,4 @@ export const StoreProvider = (storeAction, storeGetter, queryStatsGetter = undef
 
 export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
-export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getQueryStats");
+export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getTotalMatchesCount");
