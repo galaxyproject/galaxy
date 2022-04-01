@@ -208,6 +208,7 @@ export function fetchMenu(options = {}) {
                 title: _l("Galaxy Version: " + Galaxy.config.version_major),
                 url: versionUserDocumentationUrl,
                 target: "_blank",
+                tooltip: `${options.version_major} ${options.version_minor}`,
             },
             {
                 title: _l("Terms and Conditions"),

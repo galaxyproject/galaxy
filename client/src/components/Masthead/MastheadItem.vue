@@ -37,6 +37,7 @@
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :href="formatUrl(item.url)"
+                :title="item.tooltip ? item.tooltip : false"
                 :key="`item-${idx}`"
                 :target="item.target || '_parent'"
                 role="menuitem"
