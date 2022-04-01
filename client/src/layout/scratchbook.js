@@ -73,7 +73,7 @@ export default Backbone.View.extend({
                 name: Galaxy.currHistoryPanel.model.get("name"),
                 dataset_ids: [],
             };
-            Galaxy.currHistoryPanel.getAll().each((model) => {
+            Galaxy.currHistoryPanel.collection.each((model) => {
                 if (!model.get("deleted") && model.get("visible")) {
                     self.history_cache[history_id].dataset_ids.push(model.get("id"));
                 }

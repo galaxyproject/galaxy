@@ -18,6 +18,22 @@ export default class HistoryPanelProxy {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = this;
         this.model = new Backbone.Model({});
+        this.collection = {
+            constructor(models) {
+                // returns selection parsed to build collection
+                return [];
+            },
+            each() {
+                return [];
+            },
+            getByHid(hid) {},
+            on(name, callback, context) {
+                console.log("on called.", name);
+            },
+            off(name, callback, context) {
+                console.log("off called.", name);
+            },
+        };
     }
     refreshContents() {
         // to be removed after disabling legacy history
@@ -29,14 +45,8 @@ export default class HistoryPanelProxy {
         this.model.id = historyId;
         store.dispatch("betaHistory/loadCurrentHistory");
     }
-    on(name, callback, context) {
-        console.log("on called.", name);
-    }
-    off(name, callback, context) {
-        console.log("off called.", name);
-    }
     createCollection(collectionType, models, hideSourceItems) {
-        console.log("createCollection called.", models);
+        console.log("createCollection called.", collectionType, models);
     }
     buildCollection(collectionType, selection, hideSourceItems) {
         const defaultHideSourceItems = hideSourceItems || true;
