@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 from galaxy import model
 from galaxy.celery import galaxy_task
 from galaxy.config import GalaxyAppConfiguration
@@ -7,6 +10,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.metadata import PortableDirectoryMetadataGenerator
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
@@ -23,6 +27,8 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.tools.data_fetch import do_fetch
 from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
@@ -64,12 +70,23 @@ def set_job_metadata(
     datatypes_registry: DatatypesRegistry,
     object_store: BaseObjectStore,
 ):
+    log.error("set_job_metatdata, %s", tool_job_working_directory)
     set_metadata_portable(
         tool_job_working_directory,
         datatypes_registry=datatypes_registry,
         object_store=object_store,
         extended_metadata_collection=extended_metadata_collection,
     )
+
+
+@galaxy_task(action="Create metadata setup")
+def create_metadata_setup(tool_job_working_directory, job_id, sa_session: galaxy_scoped_session):
+    log.error("workign dir in create_metadata_setup is %s", tool_job_working_directory)
+    job_metadata = os.path.join(tool_job_working_directory, "galaxy.json")
+    PortableDirectoryMetadataGenerator(job_id=job_id).setup_external_metadata(
+        {}, {}, sa_session=sa_session, tmp_dir=tool_job_working_directory, job_metadata=job_metadata
+    )
+    return tool_job_working_directory
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -81,6 +98,24 @@ def set_metadata(
     elif model_class == "LibraryDatasetDatasetAssociation":
         dataset = ldda_manager.by_id(dataset_id)
     dataset.datatype.set_meta(dataset)
+
+
+@galaxy_task
+def setup_fetch_data(job_id: int, app: MinimalManagerApp, sa_session: galaxy_scoped_session):
+    sa_session.query(model.Job).get(job_id)
+    # TODO: split up JobWrapper some more so we can share the setup_metdata logic and finish logic.
+    # JobWrapper(job, queue)
+
+
+@galaxy_task(action="Run fetch_data")
+def fetch_data(
+    tool_job_working_directory,
+    request_path,
+    datatypes_registry: DatatypesRegistry,
+):
+    working_directory = Path(tool_job_working_directory) / "working"
+    do_fetch(request_path=request_path, working_directory=str(working_directory), registry=datatypes_registry)
+    return tool_job_working_directory
 
 
 @galaxy_task(ignore_result=True, action="setting up export history job")

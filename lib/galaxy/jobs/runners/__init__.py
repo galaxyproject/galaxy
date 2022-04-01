@@ -159,9 +159,10 @@ class BaseJobRunner:
     def put(self, job_wrapper):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
-        job_wrapper.enqueue()
-        self.mark_as_queued(job_wrapper)
-        log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+        queue_job = job_wrapper.enqueue()
+        if queue_job:
+            self.mark_as_queued(job_wrapper)
+            log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
 
     def mark_as_queued(self, job_wrapper):
         self.work_queue.put((self.queue_job, job_wrapper))

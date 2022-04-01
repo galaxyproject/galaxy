@@ -44,22 +44,23 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = _arg_parser().parse_args(argv)
-
     registry = Registry()
     registry.load_datatypes(root_dir=args.galaxy_root, config=args.datatypes_registry)
+    do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
 
-    request_path = args.request
+
+def do_fetch(request_path: str, working_directory: str, registry: Registry):
     assert os.path.exists(request_path)
     with open(request_path) as f:
         request = json.load(f)
 
-    working_directory = args.working_directory or os.getcwd()
     allow_failed_collections = request.get("allow_failed_collections", False)
     upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections)
     galaxy_json = _request_to_galaxy_json(upload_config, request)
     galaxy_json_path = os.path.join(working_directory, "galaxy.json")
     with open(galaxy_json_path, "w") as f:
         json.dump(galaxy_json, f)
+    return working_directory
 
 
 def _request_to_galaxy_json(upload_config, request):
@@ -266,7 +267,7 @@ def _fetch_target(upload_config, target):
                 requested_ext=requested_ext,
                 name=name,
                 tmp_prefix="data_fetch_upload_",
-                tmp_dir=".",
+                tmp_dir=upload_config.working_directory,
                 check_content=check_content,
                 link_data_only=link_data_only,
                 in_place=in_place,
@@ -541,7 +542,7 @@ class UploadConfig:
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
 
-        self.__workdir = os.path.abspath(".")
+        self.__workdir = os.path.abspath(working_directory)
         self.__upload_count = 0
 
     def get_option(self, item, key):

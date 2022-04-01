@@ -965,7 +965,7 @@ class JobWrapper(HasResourceParameters):
 
     is_task = False
 
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False, app=None):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
@@ -1598,7 +1598,35 @@ class JobWrapper(HasResourceParameters):
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
+        if job.tool_id == "__DATA_FETCH__":
+            # Move into task
+            import pathlib
+
+            request_json = pathlib.Path(self.working_directory) / "request.json"
+            request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))
+            request_json.write_text(json.loads(request_json_value))
+            from galaxy.celery.tasks import (
+                fetch_data,
+                set_job_metadata,
+            )
+
+            self.change_state(model.Job.states.RUNNING, flush=False, job=job)
+            self.sa_session.flush()
+            self.setup_external_metadata(
+                output_fnames=self.job_io.get_output_fnames(),
+                set_extension=True,
+                tmp_dir=self.working_directory,
+                # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
+                kwds={"overwrite": False},
+            )
+            (
+                fetch_data.s(self.working_directory, str(request_json))
+                | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)
+            )().get()
+            self.finish(tool_stdout="", tool_stderr="")
+            return False
         self.sa_session.flush()
+        return True
 
     def _set_object_store_ids(self, job):
         if job.object_store_id:
@@ -1740,7 +1768,6 @@ class JobWrapper(HasResourceParameters):
         )
 
         # default post job setup
-        self.sa_session.expunge_all()
         job = self.get_job()
 
         def fail(message=job.info, exception=None):
@@ -2543,7 +2570,6 @@ class TaskWrapper(JobWrapper):
             % (self.task_id, self.job_id, tool_exit_code if tool_exit_code is not None else -256)
         )
         # default post job setup_external_metadata
-        self.sa_session.expunge_all()
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:

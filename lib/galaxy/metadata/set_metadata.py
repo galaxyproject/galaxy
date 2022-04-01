@@ -158,19 +158,20 @@ def set_metadata_portable(
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
     metadata_tmp_files_dir = os.path.join(tool_job_working_directory, "metadata")
-    if not is_celery_task and not extended_metadata_collection:
-        # Legacy handling for datatypes that don't pass metadata_tmp_files_dir from set_meta kwargs
-        # to MetadataTempFile constructor. Remove is we ever remove TS datatypes.
-        MetadataTempFile.tmp_dir = metadata_tmp_files_dir
     metadata_params = get_metadata_params(tool_job_working_directory)
-    datatypes_config = tool_job_working_directory / metadata_params["datatypes_config"]
+    if not is_celery_task:
+        if not extended_metadata_collection:
+            # Legacy handling for datatypes that don't pass metadata_tmp_files_dir from set_meta kwargs
+            # to MetadataTempFile constructor. Remove if we ever remove TS datatypes.
+            MetadataTempFile.tmp_dir = metadata_tmp_files_dir
+        datatypes_config = tool_job_working_directory / metadata_params["datatypes_config"]
+        datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
     job_metadata = tool_job_working_directory / metadata_params["job_metadata"]
     provided_metadata_style = metadata_params.get("provided_metadata_style")
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0
     max_discovered_files = metadata_params.get("max_discovered_files")
     outputs = metadata_params["outputs"]
 
-    datatypes_registry = datatypes_registry or validate_and_load_datatypes_config(datatypes_config)
     tool_provided_metadata = load_job_metadata(job_metadata, provided_metadata_style)
 
     def set_meta(new_dataset_instance, file_dict):
@@ -237,10 +238,13 @@ def set_metadata_portable(
             else:
                 wdc = os.listdir(tool_job_working_directory)
                 odc = os.listdir(outputs_directory)
-                error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
-                error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-                log.warn(f"{error_desc}. {error_extra}")
-                raise Exception(error_desc)
+                if not is_celery_task:
+                    error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
+                    error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
+                    log.warn(f"{error_desc}. {error_extra}")
+                    raise Exception(error_desc)
+                else:
+                    tool_stdout = tool_stderr = b""
 
         job_id_tag = metadata_params["job_id_tag"]
 
