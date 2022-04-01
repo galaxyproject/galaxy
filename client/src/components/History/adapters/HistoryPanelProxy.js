@@ -12,7 +12,6 @@ import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
-import "./HistoryPanelProxy.scss";
 // import store from "store";
 
 // extend existing current history panel
