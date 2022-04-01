@@ -47,17 +47,15 @@
                             @hide-selection="onHideSelection"
                             @reset-selection="resetSelection"
                             @collapse-all="collapseAll" />
-                        <transition name="shutterfade">
-                            <HistorySelectionStatus
-                                v-if="showSelection"
-                                class="p-2"
-                                :has-filters="hasFilters"
-                                :is-query-selection="isQuerySelection"
-                                :selection-size="selectionSize"
-                                :total-items-in-query="totalMatches"
-                                @select-all="selectAllInCurrentQuery(payload, totalMatches)"
-                                @clear-selection="resetSelection" />
-                        </transition>
+                        <HistorySelectionStatus
+                            v-if="showSelection"
+                            class="p-2"
+                            :has-filters="hasFilters"
+                            :is-query-selection="isQuerySelection"
+                            :selection-size="selectionSize"
+                            :total-items-in-query="totalMatches"
+                            @select-all="selectAllInCurrentQuery(payload, totalMatches)"
+                            @clear-selection="resetSelection" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
                         <div>
