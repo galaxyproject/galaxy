@@ -11,31 +11,25 @@ import HistoryIndex from "components/History/Index";
 import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
-import CurrentHistoryView from "mvc/history/history-view-edit-current";
-// import store from "store";
+// import CurrentHistoryView from "mvc/history/history-view-edit-current";
+import store from "store";
 
 // extend existing current history panel
 export default class HistoryPanelProxy {
-    constructor(page, options) {
+    constructor() {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = this;
-        this.userIsAnonymous = Galaxy.user.isAnonymous();
-        this.purgeAllowed = this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;
-        this.root = options.root;
-        this.fakeHistoryViewModel = true;
-        this.className = `fake ${CurrentHistoryView.CurrentHistoryView.prototype.className} middle`;
-        this.linkTarget = "galaxy_main";
         this.model = new Backbone.Model({});
-        this.model.UPDATE_DELAY = 1000;
     }
     refreshContents() {
-        console.log("refreshContents called.");
+        // to be removed after disabling legacy history
     }
     loadCurrentHistory() {
-        console.log("loadCurrentHistory called.");
+        this.switchToHistory(this.model.id);
     }
     switchToHistory(historyId) {
-        console.log("switchToHistory called.", historyId);
+        this.model.id = historyId;
+        store.dispatch("betaHistory/loadCurrentHistory");
     }
     on(name, callback, context) {
         console.log("on called.", name);

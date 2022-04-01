@@ -85,13 +85,9 @@ export default Backbone.View.extend({
     handle_refresh: function (refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                if (isBetaHistoryOpen()) {
-                    store.dispatch("betaHistory/loadCurrentHistory");
-                } else {
-                    const Galaxy = getGalaxyInstance();
-                    if (Galaxy && Galaxy.currHistoryPanel) {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
+                const Galaxy = getGalaxyInstance();
+                if (Galaxy && Galaxy.currHistoryPanel) {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
             }
         }
