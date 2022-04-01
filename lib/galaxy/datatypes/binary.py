@@ -2901,39 +2901,27 @@ class NcbiTaxonomySQlite(SQlite):
             )
 
 
+@build_sniff_from_prefix
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
 
     file_ext = "xlsx"
     compressed = True
 
-    def sniff(self, filename):
+    def sniff_prefix(self, sniff_prefix):
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
-        try:
-            if zipfile.is_zipfile(filename):
-                tempzip = zipfile.ZipFile(filename)
-                if (
-                    "[Content_Types].xml" in tempzip.namelist()
-                    and tempzip.read("[Content_Types].xml").find(
-                        b"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"
-                    )
-                    != -1
-                ):
-                    return True
-            return False
-        except Exception:
-            return False
+        return sniff_prefix.mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
+@build_sniff_from_prefix
 class ExcelXls(Binary):
     """Class describing an Excel (xls) file"""
 
     file_ext = "excel.xls"
     edam_format = "format_3468"
 
-    def sniff(self, filename):
-        mime_type = subprocess.check_output(["file", "--mime-type", filename])
-        return b"application/vnd.ms-excel" in mime_type
+    def sniff_prefix(self, sniff_prefix):
+        return sniff_prefix.mime_type == self.get_mime()
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
