@@ -249,9 +249,10 @@ export class UploadQueue {
         return this.nextIndex - 1;
     }
 
-    // Remove file from queue
-    remove(index, fileSetKey) {
-        // Removes the item identified by index.
+    // Remove file from queue and file set by index
+    remove(index) {
+        const file = this.queue.get(index);
+        const fileSetKey = file.name + file.size;
         // Returns true if an item was removed, and false otherwise.
         return this.queue.delete(index) && this.fileSet.delete(fileSetKey);
     }

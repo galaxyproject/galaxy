@@ -242,8 +242,7 @@ export default {
             } else {
                 this.counterAnnounce--;
             }
-            const fileSetKey = model.get("file_path") + model.get("file_size");
-            this.uploadbox.remove(model.id, fileSetKey);
+            this.uploadbox.remove(model.id);
             this._updateStateForCounters();
         },
         /** Show remote files dialog or FTP files */
