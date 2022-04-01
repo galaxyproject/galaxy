@@ -31,6 +31,8 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "venn",
 ];
 
+const PLUGIN_BASE_DIR = process.env.GALAXY_PLUGIN_DIR || "../config/plugins/";
+
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
@@ -38,11 +40,11 @@ const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PL
 const PATHS = {
     nodeModules: "./node_modules",
     pluginDirs: [
-        "../config/plugins/{visualizations,welcome_page}/*/static/**/*",
-        "../config/plugins/{visualizations,welcome_page}/*/*/static/**/*",
+        path.join(PLUGIN_BASE_DIR, "{visualizations,welcome_page}/*/static/**/*"),
+        path.join(PLUGIN_BASE_DIR, "{visualizations,welcome_page}/*/*/static/**/*"),
     ],
     pluginBuildModules: [
-        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
+        path.join(PLUGIN_BASE_DIR, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
     ],
     stagedLibraries: {
         // This is a stepping stone towards having all this staged
@@ -90,8 +92,8 @@ function buildPlugins(callback, forceRebuild) {
     /*
      * Walk pluginBuildModules glob and attempt to build modules.
      * */
-    PATHS.pluginBuildModules.map((build_module) => {
-        glob(build_module, {}, (er, files) => {
+    PATHS.pluginBuildModules.map((buildModule) => {
+        glob(buildModule, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
                 const f = path.join(process.cwd(), file).slice(0, -12);
@@ -102,7 +104,7 @@ function buildPlugins(callback, forceRebuild) {
                     "plugin_build_hash.txt"
                 );
 
-                if (!!forceRebuild) {
+                if (forceRebuild) {
                     skipBuild = false;
                 } else {
                     if (fs.existsSync(hashFilePath)) {
@@ -163,7 +165,7 @@ const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
-        `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`,
+        path.join(PLUGIN_BASE_DIR, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
     ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
