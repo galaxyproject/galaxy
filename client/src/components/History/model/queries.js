@@ -47,19 +47,9 @@ function buildLegacyQueryStringFrom(filters) {
 
 function buildLegacyParam(fields = {}) {
     return Object.keys(fields).reduce((result, key) => {
-        result[key] = pythonBooleanFormat(fields[key]);
+        result[key] = fields[key];
         return result;
     }, {});
-}
-
-function pythonBooleanFormat(val) {
-    if (val === true) {
-        return "True";
-    }
-    if (val === false) {
-        return "False";
-    }
-    return val;
 }
 
 /**

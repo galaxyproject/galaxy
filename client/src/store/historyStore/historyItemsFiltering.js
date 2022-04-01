@@ -20,9 +20,9 @@ function toLower(value) {
     return String(value).toLowerCase();
 }
 
-/** Converts user input to python boolean. */
-function toBoolPython(value) {
-    return toLower(value) == "true" ? "True" : "False";
+/** Converts user input to boolean. */
+function toBool(value) {
+    return toLower(value) == "true";
 }
 
 /** Converts user input to lower case and strips quotation marks. */
@@ -97,14 +97,14 @@ const validFilters = {
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
     create_time_lt: compare("create_time", "lt", toDate),
-    deleted: equals("deleted", "deleted", toBoolPython),
+    deleted: equals("deleted", "deleted", toBool),
     extension: equals("extension"),
     hid: equals("hid"),
     hid_ge: compare("hid", "ge"),
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),
     hid_lt: compare("hid", "lt"),
-    visible: equals("visible", "visible", toBoolPython),
+    visible: equals("visible", "visible", toBool),
     name: contains("name"),
     state: equals("state"),
     tag: contains("tags", "tag"),

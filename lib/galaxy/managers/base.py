@@ -1252,9 +1252,9 @@ def parse_bool(bool_string: Union[str, bool]) -> bool:
     Parse a boolean from a string.
     """
     # Be strict here to remove complexity of options (but allow already parsed).
-    if bool_string in ("True", True):
+    if bool_string in ("True", "true", True):
         return True
-    if bool_string in ("False", False):
+    if bool_string in ("False", "false", False):
         return False
     raise ValueError(f"invalid boolean: {bool_string}")
 
