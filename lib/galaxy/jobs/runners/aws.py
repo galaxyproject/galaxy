@@ -1,5 +1,6 @@
 import functools
 import hashlib
+import json
 import logging
 import os
 import re
@@ -215,8 +216,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         container_image = self._find_container(job_wrapper).container_id
         h = hashlib.new("sha256")
         h.update(smart_str(container_image))
-        for k, v in destination_params.items():
-            h.update(smart_str(k + str(v)))
+        s = json.dumps(destination_params, sorted=True)
+        h.update(smart_str(s))
         queue_name = destination_params.get("job_queue").rsplit("/", 1)[-1]
 
         jd_name = f"galaxy_tool__{tool_id}__{h.hexdigest()}__{queue_name}"
