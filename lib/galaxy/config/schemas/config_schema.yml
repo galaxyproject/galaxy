@@ -2711,13 +2711,17 @@ mapping:
 
       simplified_workflow_run_ui_target_history:
         type: str
-        default: 'current'
-        enum: ['current', 'new']
+        default: 'prefer_current'
+        enum: ['current', 'new', 'prefer_current', 'prefer_new']
         required: false
         per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
-          be sent to the 'current' history or a 'new' history.
+          be sent to the 'current' history or a 'new' history. If the user should be presented
+          and option between these - set this to 'prefer_current' or 'prefer_new' to display
+          a runtime setting with the corresponding default. The default is to provide the
+          user this option and default it to the current history (the traditional behavior
+          of Galaxy for years) - this corresponds to the setting 'prefer_current'.
 
       simplified_workflow_run_ui_job_cache:
         type: str

@@ -1302,9 +1302,8 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
-        assert_ok: bool = True,
         inputs_by: str = "step_index",
-    ):
+    ) -> Response:
         if inputs is None:
             inputs = {}
 
@@ -1319,12 +1318,22 @@ class BaseWorkflowPopulator(BasePopulator):
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = inputs_by
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
-        if assert_ok:
-            api_asserts.assert_status_code_is(invocation_response, 200)
-            invocation_id = invocation_response.json()["id"]
-            return invocation_id
-        else:
-            return invocation_response
+        return invocation_response
+
+    def invoke_workflow_and_assert_ok(
+        self,
+        workflow_id: str,
+        history_id: Optional[str] = None,
+        inputs: Optional[dict] = None,
+        request: Optional[dict] = None,
+        inputs_by: str = "step_index",
+    ) -> str:
+        invocation_response = self.invoke_workflow(
+            workflow_id, history_id=history_id, inputs=inputs, request=request, inputs_by=inputs_by
+        )
+        api_asserts.assert_status_code_is(invocation_response, 200)
+        invocation_id = invocation_response.json()["id"]
+        return invocation_id
 
     def invoke_workflow_and_wait(
         self,
@@ -1332,15 +1341,10 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
-        assert_ok: bool = True,
-    ):
-        invoke_return = self.invoke_workflow(
-            workflow_id, history_id=history_id, inputs=inputs, request=request, assert_ok=assert_ok
-        )
-        if assert_ok:
-            invocation_id = invoke_return
-        else:
-            invocation_id = invoke_return.json()["id"]
+    ) -> Response:
+        invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
+        invoke_return.raise_for_status()
+        invocation_id = invoke_return.json()["id"]
 
         if history_id is None and request:
             history_id = request.get("history_id")
@@ -1348,7 +1352,7 @@ class BaseWorkflowPopulator(BasePopulator):
             history_id = request["history"]
             if history_id.startswith("hist_id="):
                 history_id = history_id[len("hist_id=") :]
-        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
         return invoke_return
 
     def workflow_report_json(self, workflow_id: str, invocation_id: str) -> dict:
@@ -2141,7 +2145,15 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
-def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+LoadDataDictResponseT = Tuple[Dict[str, Any], Dict[str, Any], bool]
+
+
+def load_data_dict(
+    history_id: str,
+    test_data: Dict[str, Any],
+    dataset_populator: BaseDatasetPopulator,
+    dataset_collection_populator: BaseDatasetCollectionPopulator,
+) -> LoadDataDictResponseT:
     """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):
