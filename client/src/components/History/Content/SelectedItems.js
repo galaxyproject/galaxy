@@ -3,10 +3,13 @@
  * It allows to select individual items or perform a query selection.
  */
 
+import { getFilters, testFilters } from "store/historyStore/historyItemsFiltering";
+
 export default {
     props: {
         scopeKey: { type: String, required: true },
         getItemKey: { type: Function, required: true },
+        filterText: { type: String, required: true },
     },
     data() {
         return {
@@ -22,6 +25,9 @@ export default {
         isQuerySelection() {
             return this.totalItemsInQuery !== this.items.size;
         },
+        currentFilters() {
+            return getFilters(this.filterText);
+        },
     },
     methods: {
         setShowSelection(val) {
@@ -32,6 +38,9 @@ export default {
             this.totalItemsInQuery = totalItemsInQuery;
         },
         isSelected(item) {
+            if (this.isQuerySelection) {
+                return testFilters(this.currentFilters, item);
+            }
             const key = this.getItemKey(item);
             return this.items.has(key);
         },

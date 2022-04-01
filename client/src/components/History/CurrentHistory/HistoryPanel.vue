@@ -12,6 +12,7 @@
             <SelectedItems
                 :scope-key="queryKey"
                 :get-item-key="(item) => item.type_id"
+                :filter-text="filterText"
                 v-slot="{
                     selectedItems,
                     showSelection,
