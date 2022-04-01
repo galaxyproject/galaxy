@@ -95,8 +95,8 @@ function buildPlugins(callback, forceRebuild) {
         glob(buildModule, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
-                const pluginDir = file.slice(0, -12);
-                const pluginName = path.dirname(file).split(path.sep).pop();
+                const pluginDir = path.dirname(file)
+                const pluginName = pluginDir.split(path.sep).pop();
 
                 const hashFilePath = path.join(
                     pluginDir,
