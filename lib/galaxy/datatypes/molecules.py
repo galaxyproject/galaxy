@@ -944,8 +944,6 @@ class Cell(GenericMolFile):
             dataset.blurb = "file purged from disk"
 
     def get_dataset_info(self, metadata):
-        info = ""  # default to empty info
-
         if self.meta_error:
             info = "Error finding metadata. The file may be formatted incorrectly."
         elif ase_io:
@@ -1327,8 +1325,6 @@ class XYZ(GenericMolFile):
             dataset.blurb = "file purged from disk"
 
     def get_dataset_info(self, metadata):
-        info = ""  # default to empty info
-
         if self.meta_error:
             info = "Error finding metadata. The file may be formatted incorrectly."
         elif ase_io:
@@ -1339,7 +1335,7 @@ class XYZ(GenericMolFile):
                 if metadata.is_periodic[0]:
                     info_list.append("Periodic:\nYes")
                     info_list.append(
-                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
+                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
                     )
                 else:
                     info_list.append("Periodic:\nNo")
