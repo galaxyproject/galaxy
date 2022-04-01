@@ -30,22 +30,12 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "nora",
     "venn",
 ];
-
-const PLUGIN_BASE_DIR = process.env.GALAXY_PLUGIN_DIR || "../config/plugins/";
-
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
-
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
 const PATHS = {
+    pluginBaseDir: process.env.GALAXY_PLUGIN_DIR || "../config/plugins/",
     nodeModules: "./node_modules",
-    pluginDirs: [
-        path.join(PLUGIN_BASE_DIR, "{visualizations,welcome_page}/*/static/**/*"),
-        path.join(PLUGIN_BASE_DIR, "{visualizations,welcome_page}/*/*/static/**/*"),
-    ],
-    pluginBuildModules: [
-        path.join(PLUGIN_BASE_DIR, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
-    ],
     stagedLibraries: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
@@ -60,6 +50,15 @@ const PATHS = {
         underscore: ["underscore.js", "underscore.js"],
     },
 };
+
+PATHS.pluginDirs = [
+    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/static/**/*"),
+    path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/*/static/**/*"),
+];
+
+PATHS.pluginBuildModules = [
+    path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`),
+];
 
 function stageLibs(callback) {
     Object.keys(PATHS.stagedLibraries).forEach((lib) => {
@@ -96,10 +95,11 @@ function buildPlugins(callback, forceRebuild) {
         glob(buildModule, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
-                const f = path.join(process.cwd(), file).slice(0, -12);
+                const pluginDir = file.slice(0, -12);
                 const pluginName = path.dirname(file).split(path.sep).pop();
+
                 const hashFilePath = path.join(
-                    f,
+                    pluginDir,
                     DIST_PLUGIN_BUILD_IDS.indexOf(pluginName) > -1 ? "dist" : "static",
                     "plugin_build_hash.txt"
                 );
@@ -109,10 +109,14 @@ function buildPlugins(callback, forceRebuild) {
                 } else {
                     if (fs.existsSync(hashFilePath)) {
                         skipBuild =
-                            child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hashFilePath})`, "--", f], {
-                                stdio: "inherit",
-                                shell: true,
-                            }).status === 0;
+                            child_process.spawnSync(
+                                "git",
+                                ["diff", "--quiet", `$(cat ${hashFilePath})`, "--", pluginDir],
+                                {
+                                    stdio: "inherit",
+                                    shell: true,
+                                }
+                            ).status === 0;
                     } else {
                         console.log(`No build hashfile detected for ${pluginName}, generating now.`);
                     }
@@ -126,16 +130,15 @@ function buildPlugins(callback, forceRebuild) {
                         "yarn",
                         ["install", "--production=false", "--network-timeout=300000", "--check-files"],
                         {
-                            cwd: f,
+                            cwd: pluginDir,
                             stdio: "inherit",
                             shell: true,
                         }
                     );
                     console.log(`Building ${pluginName}`);
-
                     if (
-                        child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true }).status ===
-                        0
+                        child_process.spawnSync("yarn", ["build"], { cwd: pluginDir, stdio: "inherit", shell: true })
+                            .status === 0
                     ) {
                         console.log(`Successfully built, saving build state to ${hashFilePath}`);
                         child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
@@ -165,7 +168,7 @@ const pluginsRebuild = series(forceBuildPlugins, cleanPlugins, stagePlugins);
 
 function watchPlugins() {
     const BUILD_PLUGIN_WATCH_GLOB = [
-        path.join(PLUGIN_BASE_DIR, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
+        path.join(PATHS.pluginBaseDir, `{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/**/*`),
     ];
     watch(BUILD_PLUGIN_WATCH_GLOB, { queue: false }, plugins);
 }
