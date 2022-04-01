@@ -866,7 +866,10 @@ class Cell(GenericMolFile):
         Find Atom IDs for metadata.
         """
         self.meta_error = False
-        if ase_io:
+        if ase_io is None:
+            # Don't have optional dependency, can't set advanced values
+            return
+        else:
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, format="castep-cell")
@@ -898,40 +901,6 @@ class Cell(GenericMolFile):
                 dataset.metadata.is_periodic = 1 if pbc.any() else 0
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-        else:
-            # simple metadata
-            with open(dataset.file_name) as f:
-                cell = f.read()
-            try:
-                # atom position data follows this pattern:
-                # %BLOCK POSITIONS(_FRAC|_ABS)
-                # [position data, one line per atom]
-                # %ENDBLOCK POSITIONS(_FRAC|_ABS)
-                block = (
-                    re.search(
-                        r"\n%BLOCK POSITIONS([\s\S]*?)\n%ENDBLOCK POSITIONS",
-                        cell,
-                        flags=re.IGNORECASE,
-                    )
-                    .group(1)
-                    .split("\n")[1:]
-                )
-                atom_data = []
-                for atom in block:
-                    atom = atom.split()
-                    symbol = atom[0].lower().capitalize()
-                    position = [float(i) for i in atom[1:4]]
-                    atom_data.append(symbol + str(position))
-
-                # CELL file can only have one molecule
-                dataset.metadata.number_of_molecules = 1
-                dataset.metadata.atom_data = atom_data
-                dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
-            except Exception as e:
-                log.warning('%s, set_meta Exception during simple metadata collection: %s', self, unicodify(e))
-                self.meta_error = True
-                return
-
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -953,12 +922,12 @@ class Cell(GenericMolFile):
             if metadata.is_periodic:
                 info_list.append("Periodic:\nYes")
                 info_list.append(
-                    f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters])}"
+                    f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters])}"
                 )
             else:
                 info_list.append("Periodic:\nNo")
             info_list.append(f"Atoms in file:\n{metadata.number_of_atoms}")
-            info += "\n--\n".join(info_list)
+            info = "\n--\n".join(info_list)
         else:
             info = """
 Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
@@ -1057,7 +1026,10 @@ class CIF(GenericMolFile):
         Find Atom IDs for metadata.
         """
         self.meta_error = False
-        if ase_io:
+        if ase_io is None:
+            # Don't have optional dependency, can't set advanced values
+            return
+        else:
             # enhanced metadata
             try:
                 ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
@@ -1094,12 +1066,6 @@ class CIF(GenericMolFile):
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
-        else:
-            # simple metadata
-            # it's difficult to get the atom symbols/positions from the CIF file
-            # as extra atom data may also be included, and we can't rely on any particular column ordering
-            # so atom_data will not be set in this case
-            dataset.metadata.number_of_molecules = count_special_lines(r"^data_", dataset.file_name)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1113,8 +1079,6 @@ class CIF(GenericMolFile):
             dataset.blurb = "file purged from disk"
 
     def get_dataset_info(self, metadata):
-        info = ""  # default to empty info
-
         if self.meta_error:
             info = "Error finding metadata. The file may be formatted incorrectly."
         elif ase_io:
@@ -1125,7 +1089,7 @@ class CIF(GenericMolFile):
                 if metadata.is_periodic[0]:
                     info_list.append("Periodic:\nYes")
                     info_list.append(
-                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x,2)) for x in metadata.lattice_parameters[0]])}"
+                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
                     )
                 else:
                     info_list.append("Periodic:\nNo")
@@ -1260,7 +1224,10 @@ class XYZ(GenericMolFile):
         Find Atom IDs for metadata.
         """
         self.meta_error = False
-        if ase_io:
+        if ase_io is None:
+            # Don't have optional dependency, can't set advanced values
+            return
+        else:
             # enhanced metadata
             try:
                 # ASE recommend always parsing as extended xyz
@@ -1298,21 +1265,6 @@ class XYZ(GenericMolFile):
             dataset.metadata.chemical_formula = chemical_formula
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
-        else:
-            # simple metadata
-            with open(dataset.file_name) as f:
-                xyz_lines = f.readlines()
-            try:
-                blocks = self.read_blocks(xyz_lines)
-            except (IndexError, TypeError, ValueError) as e:
-                # file does not follow XYZ structure
-                log.warning('%s, set_meta Exception during simple metadata collection: %s', self, unicodify(e))
-                self.meta_error = True
-                return
-
-            dataset.metadata.number_of_molecules = len(blocks)
-            dataset.metadata.atom_data = [block["atom_data"] for block in blocks]
-            dataset.metadata.number_of_atoms = [block["number_of_atoms"] for block in blocks]
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
