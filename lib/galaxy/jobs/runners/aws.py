@@ -156,12 +156,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "auto_platform": {
             "default": False,
-            "map": lambda x: x in ["true", "True", "TRUE"],
+            "map": lambda x: x.lower() == "true",
         },
         "ec2_host_volumes": {
             "default": "",
             "map": str,
         },
+        "privileged": {
+            "default": False,
+            "map": lambda x: x.lower() == "true",
+        }
     }
 
     FARGATE_VCPUS = [0.25, 0.5, 1, 2, 4]
@@ -291,17 +295,18 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "mountPoints": mount_points,
             "resourceRequirements": _add_resource_requirements(destination_params),
             "environment": _add_galaxy_environment_variables(
-                destination_params.get("vcpu"), destination_params.get("memory")
+                destination_params.get("vcpu"), destination_params.get("memory"),
             ),
             "user": "%d:%d" % (os.getuid(), os.getgid()),
-            "logConfiguration": {"logDriver": "awslogs"}
+            "privileged": destination_params.get("privileged"),
+            "logConfiguration": {"logDriver": "awslogs"},
         }
         if platform == "FARGATE":
             containerProperties.update(
                 {
                     "networkConfiguration": {"assignPublicIp": "ENABLED"},
                     "fargatePlatformConfiguration": {"platformVersion": destination_params.get("fargate_version")},
-                    "logConfiguration": {"logDriver": "awslogs"}
+                    "logConfiguration": {"logDriver": "awslogs"},
                 }
             )
 
