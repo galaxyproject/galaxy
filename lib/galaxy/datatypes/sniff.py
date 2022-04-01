@@ -302,7 +302,7 @@ def is_column_based(fname_or_file_prefix, sep="\t", skip=0):
     return count >= 2
 
 
-def guess_ext(fname, sniff_order, is_binary=False):
+def guess_ext(fname, sniff_order, is_binary=None):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -626,7 +626,7 @@ def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix]) -> FilePre
     return filename_or_file_prefix
 
 
-def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order, is_binary=False):
+def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order, is_binary=None):
     """Run through sniffers specified by sniff_order, return None of None match."""
     file_prefix = _get_file_prefix(filename_or_file_prefix)
     fname = file_prefix.filename
@@ -640,6 +640,8 @@ def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_orde
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
         """
+        if is_binary is not None and is_binary != datatype.is_binary:
+            continue
         try:
             if hasattr(datatype, "sniff_prefix"):
                 datatype_compressed = getattr(datatype, "compressed", False)
@@ -655,8 +657,6 @@ def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_orde
                 if datatype.sniff_prefix(file_prefix):
                     file_ext = datatype.file_ext
                     break
-            elif is_binary and not datatype.is_binary:
-                continue
             elif datatype.sniff(fname):
                 file_ext = datatype.file_ext
                 break
@@ -846,11 +846,6 @@ def handle_uploaded_dataset_file_internal(
         guessed_ext = ext
         if ext in AUTO_DETECT_EXTENSIONS:
             guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
-            guessed_datatype = datatypes_registry.get_datatype_by_extension(guessed_ext)
-            if not is_binary and guessed_datatype.is_binary:
-                # It's possible to have a datatype that is binary but not within the first 1024 bytes,
-                # so check_binary might return a false negative. This is for instance true for PDF files
-                is_binary = True
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
