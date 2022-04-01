@@ -181,15 +181,8 @@ export function getFilters(filterText) {
  * @param {String} filterText The raw filter text
  */
 export function getQueryDict(filterText) {
-    const filters = getFilters(filterText);
-    return getQueryDictFromFilters(filters);
-}
-
-/** Returns a dictionary with query key and values.
- * @param {*} filters An array of [key, value] pairs with filter keys and values.
- */
-export function getQueryDictFromFilters(filters) {
     const queryDict = {};
+    const filters = getFilters(filterText);
     for (const [key, value] of filters) {
         const query = validFilters[key].query;
         const converter = validFilters[key].converter;

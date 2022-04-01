@@ -25,19 +25,16 @@ export async function purgeSelectedContent(history, filters, items) {
 }
 
 export async function unhideAllHiddenContent(history) {
-    const filters = [["visible", false]];
+    const filters = { visible: false };
     return await unhideSelectedContent(history, filters);
 }
 
 export async function deleteAllHiddenContent(history) {
-    const filters = [
-        ["deleted", false],
-        ["visible", false],
-    ];
+    const filters = { deleted: false, visible: false };
     return await deleteSelectedContent(history, filters);
 }
 
 export async function purgeAllDeletedContent(history) {
-    const filters = [["deleted", true]];
+    const filters = { deleted: true };
     return await purgeSelectedContent(history, filters);
 }

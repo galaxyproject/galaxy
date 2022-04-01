@@ -8,7 +8,6 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
-import { getQueryDictFromFilters } from "../../../store/historyStore/historyItemsFiltering";
 import { History } from "./History";
 
 // #region setup & utils
@@ -37,9 +36,8 @@ const doResponse = (response) => {
  * Legacy query string rendering. (generates q/qv syntax queries).
  * TODO: remove these converters when the api is modernized.
  */
-function buildLegacyQueryStringFrom(filters) {
-    const filterDict = getQueryDictFromFilters(filters);
-    const queryString = Object.entries(filterDict)
+function buildQueryStringFrom(filters) {
+    const queryString = Object.entries(filters)
         .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
     return queryString;
@@ -256,7 +254,7 @@ export async function updateContentFields(content, newFields = {}) {
  */
 export async function bulkUpdate(history, operation, filters, items = []) {
     const { id } = history;
-    const filterQuery = buildLegacyQueryStringFrom(filters);
+    const filterQuery = buildQueryStringFrom(filters);
     const url = `/histories/${id}/contents/bulk?${filterQuery}`;
     const payload = {
         operation,

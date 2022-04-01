@@ -142,7 +142,7 @@ import {
 } from "components/History/model";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter, getFilters } from "store/historyStore/historyItemsFiltering";
+import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
@@ -214,7 +214,7 @@ export default {
         },
         async runOnSelection(fn) {
             const items = this.getExplicitlySelectedItems();
-            const filters = getFilters(this.filterText);
+            const filters = getQueryDict(this.filterText);
             await fn(this.history, filters, items);
             this.$emit("reset-selection");
         },
