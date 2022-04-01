@@ -2,10 +2,7 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import FormSelect from "./FormSelect";
 import Multiselect from "vue-multiselect";
-import { BFormRadioGroup } from "bootstrap-vue";
-import Vue from "vue";
 import flushPromises from "flush-promises";
-import { min } from "underscore";
 
 const localVue = getLocalVue();
 
