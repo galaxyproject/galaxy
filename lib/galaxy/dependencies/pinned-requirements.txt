@@ -35,7 +35,7 @@ circus==0.17.1
 click-didyoumean==0.3.0; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.7"
 click-plugins==1.1.1; python_version >= "3.7"
 click-repl==0.2.0; python_version >= "3.7"
-click==8.0.4; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.7"
+click==8.1.2; python_full_version >= "3.6.2" and python_full_version < "4.0.0" and python_version >= "3.7"
 cloudauthz==0.6.0
 cloudbridge==3.0.0
 colorama==0.4.4; python_version >= "3.7" and python_full_version < "3.0.0" and platform_system == "Windows" or platform_system == "Windows" and python_version >= "3.7" and python_full_version >= "3.5.0"
@@ -53,7 +53,7 @@ ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or pyth
 edam-ontology==1.25.2
 fabric3==1.14.post1
 fastapi-utils==0.2.1; python_version >= "3.6" and python_version < "4.0"
-fastapi==0.75.0; python_full_version >= "3.6.1"
+fastapi==0.75.1; python_full_version >= "3.6.1"
 fs==2.4.15
 funcsigs==1.0.2
 future==0.18.2; (python_version >= "2.6" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
@@ -116,7 +116,7 @@ pyparsing==3.0.7; python_version >= "3.6"
 pyreadline3==3.4.1; sys_platform == "win32" and python_version >= "3.8" and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0")
 pyreadline==2.1; sys_platform == "win32" and python_version < "3.8" and (python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0")
 pyrsistent==0.18.1; python_version >= "3.7"
-pysam==0.18.0
+pysam==0.19.0
 python-dateutil==2.8.2; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.3.0")
 python-jose==3.3.0
 python-multipart==0.0.5
@@ -143,7 +143,7 @@ sniffio==1.2.0; python_version >= "3.7" and python_full_version >= "3.6.2"
 social-auth-core==4.0.3
 sortedcontainers==2.4.0
 sqlalchemy-migrate==0.13.0
-sqlalchemy==1.4.32; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
+sqlalchemy==1.4.34; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.6.0")
 sqlitedict==2.0.0
 sqlparse==0.4.2; python_version >= "3.5"
 starlette-context==0.3.3; python_version >= "3.7"
