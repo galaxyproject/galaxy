@@ -257,7 +257,7 @@ export default {
             const models = this.getUploadedModels();
             const selection = new Galaxy.currHistoryPanel.collection.constructor(models);
             // I'm building the selection wrong because I need to set this historyId directly.
-            selection.historyId = Galaxy.currHistoryPanel.collection.historyId;
+            selection.historyId = Galaxy.currHistoryPanel.model.id;
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
             this.counterRunning = 0;
             this._updateStateForCounters();
