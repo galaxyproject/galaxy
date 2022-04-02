@@ -253,8 +253,7 @@ export class UploadQueue {
     remove(index) {
         const file = this.queue.get(index);
         const fileSetKey = file.name + file.size;
-        // Returns true if an item was removed, and false otherwise.
-        return this.queue.delete(index) && this.fileSet.delete(fileSetKey);
+        this.queue.delete(index) && this.fileSet.delete(fileSetKey);
     }
 
     get size() {
