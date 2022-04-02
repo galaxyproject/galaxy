@@ -100,6 +100,9 @@ for license in SPDX_LICENSES["licenses"]:
 
 class LicensesManager:
 
+    
+
+
     def __init__(self):
         by_index = {}
         for spdx_license in self.index():
@@ -114,7 +117,8 @@ class LicensesManager:
         return SPDX_LICENSES["licenses"]
 
     def get(self, uri):
-        if uri not in self._by_index:
+  
+        if uri in self._by_index:
             return self._by_index[uri]
         else:
             log.warning(f"Unknown license URI encountered [{uri}]")
