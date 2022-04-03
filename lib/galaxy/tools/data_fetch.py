@@ -63,7 +63,7 @@ def do_fetch(request_path: str, working_directory: str, registry: Registry):
     return working_directory
 
 
-def _request_to_galaxy_json(upload_config, request):
+def _request_to_galaxy_json(upload_config: "UploadConfig", request):
     targets = request.get("targets", [])
     fetched_targets = []
 
@@ -74,7 +74,7 @@ def _request_to_galaxy_json(upload_config, request):
     return {"__unnamed_outputs": fetched_targets}
 
 
-def _fetch_target(upload_config, target):
+def _fetch_target(upload_config: "UploadConfig", target):
     destination = target.get("destination", None)
     assert destination, "No destination defined."
 
@@ -161,7 +161,9 @@ def _fetch_target(upload_config, target):
                 name=name,
             )
             primary_file = stream_to_file(
-                StringIO(datatype.generate_primary_file(dataset_bunch)), prefix="upload_auto_primary_file", dir="."
+                StringIO(datatype.generate_primary_file(dataset_bunch)),
+                prefix="upload_auto_primary_file",
+                dir=upload_config.working_directory,
             )
             extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
@@ -557,7 +559,7 @@ class UploadConfig:
             return getattr(self, key)
 
     def __new_dataset_path(self):
-        path = "gxupload_%d" % self.__upload_count
+        path = os.path.join(self.working_directory, f"gxupload_{self.__upload_count}")
         self.__upload_count += 1
         return path
 
