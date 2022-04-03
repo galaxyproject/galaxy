@@ -137,6 +137,8 @@ class Cel(Binary):
     http://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
     """
 
+    # cel 3 is a text format
+    is_binary = "maybe"
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -207,6 +209,8 @@ class MashSketch(Binary):
     """
 
     file_ext = "msh"
+    # example data is actually text, maybe text would be a better base
+    is_binary = "maybe"
 
 
 class CompressedArchive(Binary):

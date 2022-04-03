@@ -663,7 +663,7 @@ def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_orde
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
         """
-        if file_prefix.binary != datatype.is_binary:
+        if file_prefix.binary != datatype.is_binary and not datatype.is_binary == "maybe":
             continue
         try:
             if hasattr(datatype, "sniff_prefix"):

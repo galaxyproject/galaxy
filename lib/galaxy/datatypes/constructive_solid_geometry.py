@@ -723,6 +723,7 @@ class GmshMsh(Binary):
     """Gmsh Mesh File"""
 
     file_ext = "gmsh.msh"
+    is_binary = "maybe"
     MetadataElement(name="version", default=None, desc="version", readonly=True, visible=True)
     MetadataElement(name="format", default=None, desc="format", readonly=True, visible=True)
 
