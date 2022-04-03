@@ -1619,6 +1619,7 @@ class JobWrapper(HasResourceParameters):
                 # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
                 kwds={"overwrite": False},
             )
+            self.prepare()
             (
                 fetch_data.s(self.working_directory, str(request_json))
                 | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)

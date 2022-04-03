@@ -436,6 +436,7 @@ class ToolEvaluator:
             # Conditionally create empty output:
             # - may already exist (e.g. symlink output)
             # - parent directory might not exist (e.g. Pulsar)
+            # TODO: put into JobIO, needed for fetch_data tasks
             if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
                 open(output_path, "w").close()
 
