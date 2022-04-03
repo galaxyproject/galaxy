@@ -574,6 +574,9 @@ class FilePrefix:
         file_magic = magic.detect_from_content(contents_header_bytes)
         self.encoding = file_magic.encoding
         self.mime_type = file_magic.mime_type
+        self.compressed_mime_type = None
+        if compressed_format:
+            self.compressed_mime_type = magic.detect_from_filename(filename).mime_type
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes

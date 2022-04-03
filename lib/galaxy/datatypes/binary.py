@@ -2910,7 +2910,7 @@ class Xlsx(Binary):
 
     def sniff_prefix(self, sniff_prefix):
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
-        return sniff_prefix.mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return sniff_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 @build_sniff_from_prefix
