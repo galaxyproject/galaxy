@@ -66,8 +66,9 @@ class MinimalToolApp(BasicApp):
     sa_session: Union[galaxy_scoped_session, SessionlessContext]
     datatypes_registry: Registry
     object_store: ObjectStore
-    tool_data_table_manager: "ToolDataTableManager"
+    tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
+    security: IdEncodingHelper
 
 
 class MinimalApp(BasicSharedApp):
