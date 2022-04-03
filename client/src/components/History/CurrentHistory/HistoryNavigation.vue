@@ -17,12 +17,12 @@
                 </b-button>
 
                 <b-button
+                    v-b-modal.history-selector-modal
                     data-description="show saved histories"
                     size="sm"
                     variant="link"
                     v-b-tooltip.bottom.hover
-                    title="Show saved histories"
-                    @click="backboneRoute('/histories/list')">
+                    title="Show saved histories">
                     <Icon fixed-width icon="list" />
                 </b-button>
 
@@ -125,6 +125,12 @@
             </b-button-group>
         </nav>
 
+        <HistorySelectorModal
+            id="history-selector-modal"
+            :histories="histories"
+            :current-history="history"
+            @selectHistory="$emit('setCurrentHistory', $event)" />
+
         <CopyHistoryModal id="copy-history-modal" :history="history" />
 
         <b-modal
@@ -158,11 +164,13 @@ import { History } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyHistoryModal from "components/History/Modals/CopyModal";
+import HistorySelectorModal from "components/History/Modals/HistorySelectorModal";
 
 export default {
     mixins: [legacyNavigationMixin],
     components: {
         CopyHistoryModal,
+        HistorySelectorModal,
     },
     props: {
         histories: { type: Array, required: true },
