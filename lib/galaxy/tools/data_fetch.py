@@ -194,7 +194,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
                     extra_files_path,
                     key,
                     writable_file.is_binary,
-                    ".",
+                    upload_config.working_directory,
                     f"{os.path.basename(extra_files_path)}_",
                     composite_item,
                 )
@@ -399,14 +399,14 @@ def _bagit_to_items(directory):
     return items
 
 
-def _decompress_target(upload_config, target):
+def _decompress_target(upload_config: "UploadConfig", target):
     elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
     # by default Galaxy will check for a directory with a single file and interpret that
     # as the new root for expansion, this is a good user experience for uploading single
     # files in a archive but not great from an API perspective. Allow disabling by setting
     # fuzzy_root to False to literally interpret the target.
     fuzzy_root = target.get("fuzzy_root", True)
-    temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir="."))
+    temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir=upload_config.working_directory))
     cf = CompressedFile(elements_from_path)
     result = cf.extract(temp_directory)
     return result if fuzzy_root else temp_directory
