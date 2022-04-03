@@ -865,7 +865,7 @@ def handle_uploaded_dataset_file_internal(
         is_binary = file_prefix.binary
         guessed_ext = ext
         if ext in AUTO_DETECT_EXTENSIONS:
-            guessed_ext = guess_ext(file_prefix, sniff_order=datatypes_registry.sniff_order)
+            guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
