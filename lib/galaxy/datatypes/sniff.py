@@ -727,6 +727,7 @@ class HandleCompressedFileResponse(NamedTuple):
     ext: str
     uncompressed_path: str
     compressed_type: Optional[str]
+    is_compressed: Optional[bool]
 
 
 def handle_compressed_file(
@@ -786,6 +787,7 @@ def handle_compressed_file(
                 try:
                     for chunk in file_reader(compressed_file, CHUNK_SIZE):
                         if not chunk:
+                            is_compressed = False
                             break
                         uncompressed.write(chunk)
                 except OSError as e:
@@ -802,7 +804,7 @@ def handle_compressed_file(
             uncompressed_path = filename
     elif not is_compressed or not check_content:
         is_valid = True
-    return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type)
+    return HandleCompressedFileResponse(is_valid, ext, uncompressed_path, compressed_type, is_compressed)
 
 
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
@@ -844,7 +846,7 @@ def handle_uploaded_dataset_file_internal(
     convert_to_posix_lines: Optional[bool] = None,
     convert_spaces_to_tabs: Optional[bool] = None,
 ) -> HandleUploadedDatasetFileInternalResponse:
-    is_valid, ext, converted_path, compressed_type = handle_compressed_file(
+    is_valid, ext, converted_path, compressed_type, is_compressed = handle_compressed_file(
         file_prefix,
         datatypes_registry,
         ext=ext,
@@ -867,7 +869,7 @@ def handle_uploaded_dataset_file_internal(
         if ext in AUTO_DETECT_EXTENSIONS:
             guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
 
-        if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
+        if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             convert_fxn = convert_function(convert_to_posix_lines, convert_spaces_to_tabs)
             line_count, _converted_path, converted_newlines, converted_spaces = convert_fxn(
