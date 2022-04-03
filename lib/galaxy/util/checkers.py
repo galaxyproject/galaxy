@@ -196,7 +196,7 @@ def check_image(file_path: str):
 
 
 COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
-    "gz": check_gzip,
+    "gzip": check_gzip,
     "bz2": check_bz2,
     "zip": check_zip,
 }

@@ -879,7 +879,7 @@ def handle_uploaded_dataset_file_internal(
                 assert _converted_path
                 converted_path = _converted_path
             if ext in AUTO_DETECT_EXTENSIONS:
-                ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+                ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
         else:
             ext = guessed_ext
 
@@ -902,7 +902,7 @@ class Decompress(Protocol):
         ...
 
 
-DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gz=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):
