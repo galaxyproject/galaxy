@@ -26,8 +26,8 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_open()
         self._workflow_import_from_url()
         self.workflow_index_click_option("View")
-        title = self.wait_for_selector(".page-body h3")
-        assert "TestWorkflow1" in title.text
+        title_item = self.components.workflow_show.title.wait_for_visible()
+        assert "TestWorkflow1" in title_item.text
         self.screenshot("workflow_manage_view")
         # TODO: Test display of steps...
 

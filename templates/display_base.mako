@@ -77,7 +77,7 @@
 </%def>
 
 <%def name="render_item_header( item )">
-    <h3>${get_item_name( item )| h}</h3>
+    <h3 class="item_name">${get_item_name( item )| h}</h3>
     %if hasattr( item, "annotation") and item.annotation is not None:
         <div class="annotation">Annotation: ${item.annotation}</div>
     %endif

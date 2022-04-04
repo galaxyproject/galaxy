@@ -619,6 +619,10 @@ workflow_editor:
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
 
+workflow_show:
+  selectors:
+    title: 'h3.item_name'
+
 invocations:
   selectors:
     invocations_table: '.invocations-list table'
