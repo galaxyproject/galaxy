@@ -622,6 +622,7 @@ workflow_editor:
 workflow_show:
   selectors:
     title: 'h3.item_name'
+    annotation: '.page-item-header .annotation'
 
 invocations:
   selectors:

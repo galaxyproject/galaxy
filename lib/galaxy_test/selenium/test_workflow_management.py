@@ -5,6 +5,10 @@ from .framework import (
     SeleniumTestCase,
 )
 
+EXAMPLE_WORKFLOW_URL_1 = (
+    "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
+)
+
 
 class WorkflowManagementTestCase(SeleniumTestCase):
 
@@ -25,9 +29,15 @@ class WorkflowManagementTestCase(SeleniumTestCase):
     def test_view(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
+        self.workflow_index_click_option("View external link")
+        assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
+        self.driver.back()
         self.workflow_index_click_option("View")
+        workflow_show = self.components.workflow_show
         title_item = self.components.workflow_show.title.wait_for_visible()
         assert "TestWorkflow1" in title_item.text
+        annotation_item = workflow_show.annotation.wait_for_visible()
+        assert "simple workflow" in annotation_item.text
         self.screenshot("workflow_manage_view")
         # TODO: Test display of steps...
 
@@ -89,7 +99,6 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.assertEqual(len(self.workflow_index_table_elements()), n)
 
     @skip_if_github_down
-    def _workflow_import_from_url(self):
+    def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
         self.workflow_index_click_import()
-        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/release_19.09/test/base/data/test_workflow_1.ga"
         self.workflow_import_submit_url(url)
