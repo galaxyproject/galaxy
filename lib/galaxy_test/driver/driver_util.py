@@ -254,7 +254,6 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        simplified_workflow_run_ui="off",
     )
     if default_shed_tool_data_table_config:
         config["shed_tool_data_table_config"] = default_shed_tool_data_table_config
@@ -933,6 +932,8 @@ class GalaxyTestDriver(TestDriver):
 
         self.testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
 
+        default_tool_conf: Optional[str]
+        datatypes_conf_override: Optional[str]
         if getattr(config_object, "framework_tool_and_types", False):
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
             datatypes_conf_override = FRAMEWORK_DATATYPES_CONF
@@ -976,8 +977,8 @@ class GalaxyTestDriver(TestDriver):
                 if callable(galaxy_config):
                     galaxy_config = galaxy_config()
                 if galaxy_config is None:
-                    setup_galaxy_config_kwds = dict(
-                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
+                    galaxy_config = setup_galaxy_config(
+                        galaxy_db_path,
                         use_test_file_dir=not self.testing_shed_tools,
                         default_install_db_merged=True,
                         default_tool_conf=self.default_tool_conf,
@@ -988,8 +989,8 @@ class GalaxyTestDriver(TestDriver):
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
                         use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False),
                         allow_tool_conf_override=self.allow_tool_conf_override,
+                        allow_path_paste=getattr(config_object, "allow_path_paste", False),
                     )
-                    galaxy_config = setup_galaxy_config(galaxy_db_path, **setup_galaxy_config_kwds)
 
                     isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
                     if isolate_galaxy_config:

@@ -88,7 +88,7 @@ def depends(dep_type: Type[T]) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
-    return GalaxyTypeDepends(_do_resolve, dep_type)
+    return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
 
 def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManager:

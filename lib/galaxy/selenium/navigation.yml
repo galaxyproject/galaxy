@@ -237,7 +237,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     contents: '#current-history-panel .history-content'
-
+    contents_beta: '.history-index .content-item'
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
@@ -528,6 +528,11 @@ workflow_run:
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
     validation_error: ".validation-error"
+    expand_form_link: '.workflow-expand-form-link'
+    expanded_form: '.workflow-expanded-form'
+    new_history_target_link: '.workflow-new-history-target-link'
+    runtime_setting_button: '.workflow-run-settings'
+    runtime_setting_target: '.workflow-run-settings-target'
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'

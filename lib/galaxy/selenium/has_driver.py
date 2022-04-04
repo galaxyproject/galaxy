@@ -169,8 +169,11 @@ class HasDriver:
     def send_enter(self, element):
         element.send_keys(Keys.ENTER)
 
-    def send_escape(self, element):
-        element.send_keys(Keys.ESCAPE)
+    def send_escape(self, element=None):
+        if element is None:
+            self.action_chains().send_keys(Keys.ESCAPE)
+        else:
+            element.send_keys(Keys.ESCAPE)
 
     def send_backspace(self, element):
         element.send_keys(Keys.BACKSPACE)
