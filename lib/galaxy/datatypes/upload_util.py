@@ -44,7 +44,7 @@ def handle_upload(
     multi_file_zip = False
 
     # Does the first 1MB look like binary content?
-    file_prefix = sniff.FilePrefix(path)
+    file_prefix = sniff.FilePrefix(path, auto_decompress=auto_decompress)
     is_binary = file_prefix.binary
 
     converted_newlines, converted_spaces = False, False

@@ -45,6 +45,7 @@ import magic  # isort:skip
 log = logging.getLogger(__name__)
 
 SNIFF_PREFIX_BYTES = int(os.environ.get("GALAXY_SNIFF_PREFIX_BYTES", None) or 2**20)
+BINARY_MIMETYPES = {"application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
 
 
 def get_test_fname(fname):
@@ -306,7 +307,7 @@ def is_column_based(fname_or_file_prefix, sep="\t", skip=0):
     return count >= 2
 
 
-def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_binary=None):
+def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_binary=None, auto_decompress=True):
     """
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
@@ -518,10 +519,7 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> guess_ext(fname, sniff_order)  # It's a VCF but is sniffed as tabular because of the limit on the number of header lines we read
     'tabular'
     """
-    if not isinstance(fname_or_file_prefix, FilePrefix):
-        file_prefix = FilePrefix(fname_or_file_prefix)
-    else:
-        file_prefix = fname_or_file_prefix
+    file_prefix = _get_file_prefix(fname_or_file_prefix, auto_decompress=auto_decompress)
     file_ext = run_sniffers_raw(file_prefix, sniff_order)
 
     # Ugly hack for tsv vs tabular sniffing, we want to prefer tabular
@@ -546,7 +544,7 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
 
 
 class FilePrefix:
-    def __init__(self, filename):
+    def __init__(self, filename, auto_decompress=True):
         non_utf8_error = None
         compressed_format = None
         contents_header_bytes = None
@@ -557,8 +555,16 @@ class FilePrefix:
         # of returning a StringIO directly in string_io() return an object that reads the contents and
         # populates contents_header while providing a StringIO-like interface until the file is read
         # but then would fallback to native string_io()
+        if auto_decompress:
+            # None allows all known compresseion formats
+            compressed_formats = None
+        else:
+            # Don't allow compressed formats
+            compressed_formats = []
         try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
+            compressed_format, f = compression_utils.get_fileobj_raw(
+                filename, "rb", compressed_formats=compressed_formats
+            )
             try:
                 contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
                 truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
@@ -586,7 +592,9 @@ class FilePrefix:
     @property
     def binary(self):
         if self._is_binary is None:
-            self._is_binary = self.mime_type == "application/pdf" or is_binary(self.contents_header_bytes)
+            self._is_binary = bool({self.mime_type, self.compressed_mime_type} & BINARY_MIMETYPES) or is_binary(
+                self.contents_header_bytes
+            )
             if not self._is_binary and self.non_utf8_error and self.encoding == "binary":
                 # Try harder ... if we have a non-utf-8 error, the file could be latin-1 encoded,
                 # but magic would recognize this and set the encoding appropriately
@@ -643,15 +651,14 @@ class FilePrefix:
         return self.contents_header_bytes.startswith(test_bytes)
 
 
-def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix]) -> FilePrefix:
+def _get_file_prefix(filename_or_file_prefix: Union[str, FilePrefix], auto_decompress: bool = True) -> FilePrefix:
     if not isinstance(filename_or_file_prefix, FilePrefix):
-        return FilePrefix(filename_or_file_prefix)
+        return FilePrefix(filename_or_file_prefix, auto_decompress=auto_decompress)
     return filename_or_file_prefix
 
 
-def run_sniffers_raw(filename_or_file_prefix: Union[str, FilePrefix], sniff_order):
+def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
     """Run through sniffers specified by sniff_order, return None of None match."""
-    file_prefix = _get_file_prefix(filename_or_file_prefix)
     fname = file_prefix.filename
     file_ext = None
     for datatype in sniff_order:
@@ -812,7 +819,7 @@ def handle_compressed_file(
 
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
-    file_prefix = FilePrefix(filename)
+    file_prefix = FilePrefix(filename, auto_decompress=kwds.get("auto_decompress", True))
     return handle_uploaded_dataset_file_internal(file_prefix, *args, **kwds)[0]
 
 
@@ -870,7 +877,9 @@ def handle_uploaded_dataset_file_internal(
         is_binary = file_prefix.binary
         guessed_ext = ext
         if ext in AUTO_DETECT_EXTENSIONS:
-            guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order)
+            guessed_ext = guess_ext(
+                converted_path, sniff_order=datatypes_registry.sniff_order, auto_decompress=auto_decompress
+            )
 
         if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
