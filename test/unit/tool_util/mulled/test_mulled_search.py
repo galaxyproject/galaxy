@@ -34,12 +34,21 @@ def test_conda_search():
 
 
 @external_dependency_management
-def test_github_search():
+def test_github_recipe_present():
     t = GitHubSearch()
-    search1 = t.process_json(t.get_json("adsfasdf"), "adsfasdf")
-    search2 = t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
-    assert search1 == []
-    assert {'path': 'recipes/bioconductor-gosemsim/meta.yaml', 'name': 'meta.yaml'} in search2
+
+    search_string2expected = {
+        "adsfasdf": False,
+        "bioconductor-gosemsim": True,
+    }
+    for search_string, expected in search_string2expected.items():
+        try:
+            is_recipe_present = t.recipe_present(search_string)
+        except Exception as e:
+            if "API rate limit" in str(e):
+                pytest.skip("Hitting GitHub API rate limit")
+            raise
+        assert is_recipe_present is expected
 
 
 @external_dependency_management
