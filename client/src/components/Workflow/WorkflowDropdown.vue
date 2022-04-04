@@ -9,6 +9,17 @@
             <font-awesome-icon icon="caret-down" />
             <span>{{ workflow.name }}</span>
         </b-link>
+        <font-awesome-icon
+            v-if="sourceType.includes('trs')"
+            v-b-tooltip.hover
+            :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`"
+            icon="check"
+            style="color: green" />
+        <font-awesome-icon
+            v-if="sourceType == 'url'"
+            v-b-tooltip.hover
+            :title="`Imported from ${workflow.source_metadata.url}`"
+            icon="link" />
         <p v-if="workflow.description">{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="onCopy">
@@ -44,6 +55,10 @@
             <a class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span>View</span>
+            </a>
+            <a v-if="sourceLabel" class="dropdown-item" :href="sourceUrl">
+                <span class="fa fa-globe fa-fw mr-1" />
+                <span>{{ sourceLabel }}</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
@@ -84,6 +99,39 @@ export default {
             return `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                 this.workflow.slug
             }`;
+        },
+        sourceUrl() {
+            if (this.workflow.source_metadata?.url) {
+                return this.workflow.source_metadata.url;
+            } else if (this.workflow.source_metadata?.trs_server) {
+                if (this.workflow.source_metadata?.trs_server == "dockstore") {
+                    return `https://dockstore.org/workflows${this.workflow.source_metadata.trs_tool_id.slice(9)}`;
+                } else {
+                    // TODO: add WorkflowHub
+                    return null;
+                }
+            } else {
+                return null;
+            }
+        },
+        sourceLabel() {
+            if (this.workflow.source_metadata?.url) {
+                return "View external link";
+            } else if (this.workflow.source_metadata?.trs_server == "dockstore") {
+                return "View on Dockstore";
+            } else {
+                // TODO: add WorkflowHub
+                return null;
+            }
+        },
+        sourceType() {
+            if (this.workflow.source_metadata?.url) {
+                return "url";
+            } else if (this.workflow.source_metadata?.trs_server) {
+                return `trs_${this.workflow.source_metadata?.trs_server}`;
+            } else {
+                return "";
+            }
         },
     },
     created() {
