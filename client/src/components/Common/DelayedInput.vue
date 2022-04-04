@@ -2,7 +2,7 @@
     <b-input-group>
         <b-input
             class="search-query"
-            id="tool-input"
+            ref="toolInput"
             size="sm"
             autocomplete="off"
             v-model="queryInput"
@@ -81,7 +81,7 @@ export default {
         },
         clearBox() {
             this.setQuery("");
-            document.getElementById("tool-input").focus();
+            this.$refs.toolInput.focus();
         },
     },
 };
