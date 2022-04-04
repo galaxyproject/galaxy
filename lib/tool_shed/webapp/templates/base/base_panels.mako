@@ -1,6 +1,7 @@
 <!DOCTYPE HTML>
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
+
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
@@ -21,6 +22,8 @@
     <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
         'bootstrap-tour',
+    )}
+    ${h.dist_css(
         'base'
     )}
 </%def>
@@ -117,7 +120,7 @@
 
 ## Document
 <html>
-    <!--base_panels.mako-->
+    <!-- toolshed webapp base_panels.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -137,7 +140,9 @@
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
 
+        <!-- stylesheets -->
         ${self.stylesheets()}
+        <!-- stylesheets -->
 
         ## Normally, we'd put all the javascripts at the bottom of the <body>
         ## but during this transitional period we need access to the config
