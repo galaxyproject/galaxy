@@ -138,7 +138,7 @@ class Cel(Binary):
     """
 
     # cel 3 is a text format
-    is_binary = "maybe"
+    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -210,7 +210,7 @@ class MashSketch(Binary):
 
     file_ext = "msh"
     # example data is actually text, maybe text would be a better base
-    is_binary = "maybe"
+    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
 
 
 class CompressedArchive(Binary):
