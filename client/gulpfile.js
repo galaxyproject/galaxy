@@ -34,7 +34,7 @@ const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
 const PATHS = {
-    pluginBaseDir: process.env.GALAXY_PLUGIN_DIR || "../config/plugins/",
+    pluginBaseDir: process.env.GALAXY_PLUGIN_PATH || "../config/plugins/",
     nodeModules: "./node_modules",
     stagedLibraries: {
         // This is a stepping stone towards having all this staged

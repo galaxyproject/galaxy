@@ -255,6 +255,10 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
     fi
+    # We need galaxy config here, ensure it's set.
+    set_galaxy_config_file_var
+    # Set plugin path
+    GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
     # Build client
     cd client
     if yarn install $YARN_INSTALL_OPTS; then
