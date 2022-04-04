@@ -555,16 +555,8 @@ class FilePrefix:
         # of returning a StringIO directly in string_io() return an object that reads the contents and
         # populates contents_header while providing a StringIO-like interface until the file is read
         # but then would fallback to native string_io()
-        if auto_decompress:
-            # None allows all known compresseion formats
-            compressed_formats = None
-        else:
-            # Don't allow compressed formats
-            compressed_formats = []
         try:
-            compressed_format, f = compression_utils.get_fileobj_raw(
-                filename, "rb", compressed_formats=compressed_formats
-            )
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
             try:
                 contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
                 truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
@@ -574,6 +566,7 @@ class FilePrefix:
         except UnicodeDecodeError as e:
             non_utf8_error = e
 
+        self.auto_decompress = auto_decompress
         self.truncated = truncated
         self.filename = filename
         self.non_utf8_error = non_utf8_error
@@ -581,8 +574,11 @@ class FilePrefix:
         self.encoding = file_magic.encoding
         self.mime_type = file_magic.mime_type
         self.compressed_mime_type = None
+        self.compressed_encoding = None
         if compressed_format:
-            self.compressed_mime_type = magic.detect_from_filename(filename).mime_type
+            compressed_magic = magic.detect_from_filename(filename)
+            self.compressed_mime_type = compressed_magic.mime_type
+            self.compressed_encoding = compressed_magic.encoding
         self.compressed_format = compressed_format
         self.contents_header = contents_header
         self.contents_header_bytes = contents_header_bytes
@@ -595,7 +591,13 @@ class FilePrefix:
             self._is_binary = bool({self.mime_type, self.compressed_mime_type} & BINARY_MIMETYPES) or is_binary(
                 self.contents_header_bytes
             )
-            if not self._is_binary and self.non_utf8_error and self.encoding == "binary":
+            if (
+                not self._is_binary
+                and self.encoding == "binary"
+                and self.non_utf8_error
+                or not self.auto_decompress
+                and self.compressed_encoding == "binary"
+            ):
                 # Try harder ... if we have a non-utf-8 error, the file could be latin-1 encoded,
                 # but magic would recognize this and set the encoding appropriately
                 self._is_binary = True
@@ -670,17 +672,23 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
         from this function after all other datatypes in sniff_order have not been
         successfully discovered.
         """
-        if file_prefix.binary != datatype.is_binary and not datatype.is_binary == "maybe":
+        datatype_compressed = getattr(datatype, "compressed", False)
+        if datatype_compressed and not file_prefix.compressed_format:
             continue
+        if not datatype_compressed and file_prefix.compressed_format:
+            continue
+        if file_prefix.binary != datatype.is_binary and not datatype.is_binary == "maybe":
+            # Binary detection doesn't match datatype ...
+            compressed_data_for_compressed_text_datatype = (
+                file_prefix.binary and file_prefix.compressed_format and datatype_compressed and not datatype.is_binary
+            )
+            if not compressed_data_for_compressed_text_datatype:
+                # ... and mismatch is not due to compressed text data for a compressed text datatype
+                continue
         try:
             if hasattr(datatype, "sniff_prefix"):
-                datatype_compressed = getattr(datatype, "compressed", False)
-                if datatype_compressed and not file_prefix.compressed_format:
-                    continue
-                if not datatype_compressed and file_prefix.compressed_format:
-                    continue
                 if file_prefix.compressed_format and getattr(datatype, "compressed_format", None):
-                    # In this case go a step further and compare the compressed format detected
+                    # Compare the compressed format detected
                     # to the expected.
                     if file_prefix.compressed_format != datatype.compressed_format:
                         continue
@@ -748,7 +756,6 @@ def handle_compressed_file(
     tmp_dir: Optional[str] = None,
     in_place: bool = False,
     check_content: bool = True,
-    auto_decompress: bool = True,
 ) -> HandleCompressedFileResponse:
     """
     Check uploaded files for compression, check compressed file contents, and uncompress if necessary.
@@ -789,7 +796,7 @@ def handle_compressed_file(
             datatype = datatypes_registry.get_datatype_by_extension(ext)
             keep_compressed = getattr(datatype, "compressed", False)
     # don't waste time decompressing if we sniff invalid contents
-    if is_compressed and is_valid and auto_decompress and not keep_compressed:
+    if is_compressed and is_valid and file_prefix.auto_decompress and not keep_compressed:
         assert compressed_type  # Tell type checker is_compressed will only be true if compressed_type is also set.
         with tempfile.NamedTemporaryFile(prefix=tmp_prefix, dir=tmp_dir, delete=False) as uncompressed:
             with DECOMPRESSION_FUNCTIONS[compressed_type](filename) as compressed_file:
@@ -797,7 +804,6 @@ def handle_compressed_file(
                 try:
                     for chunk in file_reader(compressed_file, CHUNK_SIZE):
                         if not chunk:
-                            is_compressed = False
                             break
                         uncompressed.write(chunk)
                 except OSError as e:
@@ -807,6 +813,8 @@ def handle_compressed_file(
                             compressed_type, util.unicodify(e)
                         )
                     )
+                finally:
+                    is_compressed = False
         uncompressed_path = uncompressed.name
         if in_place:
             # Replace the compressed file with the uncompressed file
@@ -819,7 +827,7 @@ def handle_compressed_file(
 
 def handle_uploaded_dataset_file(filename, *args, **kwds) -> str:
     """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
-    file_prefix = FilePrefix(filename, auto_decompress=kwds.get("auto_decompress", True))
+    file_prefix = FilePrefix(filename)
     return handle_uploaded_dataset_file_internal(file_prefix, *args, **kwds)[0]
 
 
@@ -851,7 +859,6 @@ def handle_uploaded_dataset_file_internal(
     in_place: bool = False,
     check_content: bool = True,
     is_binary: Optional[bool] = None,
-    auto_decompress: bool = True,
     uploaded_file_ext: Optional[str] = None,
     convert_to_posix_lines: Optional[bool] = None,
     convert_spaces_to_tabs: Optional[bool] = None,
@@ -864,7 +871,6 @@ def handle_uploaded_dataset_file_internal(
         tmp_dir=tmp_dir,
         in_place=in_place,
         check_content=check_content,
-        auto_decompress=auto_decompress,
     )
     converted_newlines = False
     converted_spaces = False
@@ -877,8 +883,11 @@ def handle_uploaded_dataset_file_internal(
         is_binary = file_prefix.binary
         guessed_ext = ext
         if ext in AUTO_DETECT_EXTENSIONS:
+            # TODO: skip this if we haven't actually converted the dataset
             guessed_ext = guess_ext(
-                converted_path, sniff_order=datatypes_registry.sniff_order, auto_decompress=auto_decompress
+                converted_path,
+                sniff_order=datatypes_registry.sniff_order,
+                auto_decompress=file_prefix.auto_decompress,
             )
 
         if not is_binary and not is_compressed and (convert_to_posix_lines or convert_spaces_to_tabs):
