@@ -34,7 +34,6 @@ const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
 
 const PATHS = {
-    pluginBaseDir: process.env.GALAXY_PLUGIN_PATH || "../config/plugins/",
     nodeModules: "./node_modules",
     stagedLibraries: {
         // This is a stepping stone towards having all this staged
@@ -50,6 +49,11 @@ const PATHS = {
         underscore: ["underscore.js", "underscore.js"],
     },
 };
+
+PATHS.pluginBaseDir =
+    (process.env.GALAXY_PLUGIN_PATH && process.env.GALAXY_PLUGIN_PATH !== "None"
+        ? process.env.GALAXY_PLUGIN_PATH
+        : undefined) || "../config/plugins/";
 
 PATHS.pluginDirs = [
     path.join(PATHS.pluginBaseDir, "{visualizations,welcome_page}/*/static/**/*"),
@@ -95,7 +99,7 @@ function buildPlugins(callback, forceRebuild) {
         glob(buildModule, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
-                const pluginDir = path.dirname(file)
+                const pluginDir = path.dirname(file);
                 const pluginName = pluginDir.split(path.sep).pop();
 
                 const hashFilePath = path.join(
