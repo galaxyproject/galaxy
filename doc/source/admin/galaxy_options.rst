@@ -4175,6 +4175,21 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy workflow handler process runs one thread responsible
+    for checking the state of active workflow invocations.  This
+    thread operates in a loop and sleeps for the given number of
+    seconds at the end of each iteration. This can be decreased if
+    extremely high job throughput is necessary, but doing so can
+    increase CPU usage of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~
