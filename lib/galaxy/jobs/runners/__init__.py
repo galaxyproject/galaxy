@@ -9,6 +9,7 @@ import sys
 import threading
 import time
 import traceback
+import typing
 from queue import (
     Empty,
     Queue,
@@ -43,6 +44,12 @@ from galaxy.util import (
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
+
+if typing.TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobDestination,
+        JobWrapper,
+    )
 
 log = get_logger(__name__)
 
@@ -520,7 +527,7 @@ class BaseJobRunner:
             if job_state.job_wrapper.cleanup_job == "always":
                 job_state.cleanup()
 
-    def mark_as_resubmitted(self, job_state, info=None):
+    def mark_as_resubmitted(self, job_state: "JobState", info=None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
@@ -531,7 +538,7 @@ class BaseJobRunner:
             stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True
         )
 
-    def _finish_or_resubmit_job(self, job_state, job_stdout, job_stderr, job_id=None, external_job_id=None):
+    def _finish_or_resubmit_job(self, job_state: "JobState", job_stdout, job_stderr, job_id=None, external_job_id=None):
         job_wrapper = job_state.job_wrapper
         try:
             job = job_state.job_wrapper.get_job()
@@ -610,7 +617,7 @@ class JobState:
 
     runner_states = runner_states
 
-    def __init__(self, job_wrapper, job_destination):
+    def __init__(self, job_wrapper: "JobWrapper", job_destination: "JobDestination"):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
