@@ -1620,10 +1620,14 @@ class JobWrapper(HasResourceParameters):
                 kwds={"overwrite": False},
             )
             self.prepare()
-            (
-                fetch_data.s(self.working_directory, str(request_json))
-                | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)
-            )().get()
+            try:
+                (
+                    fetch_data.s(self.working_directory, str(request_json))
+                    | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)
+                )().get()
+            except Exception as e:
+                # TODO ... error handler on task / chain level ?
+                self.fail(message=str(e))
             self.finish(tool_stdout="", tool_stderr="")
             return False
         self.sa_session.flush()
