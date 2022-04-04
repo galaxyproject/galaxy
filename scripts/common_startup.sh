@@ -262,7 +262,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Build client
     cd client
     if yarn install $YARN_INSTALL_OPTS; then
-        if ! yarn run build-production-maps; then
+        if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; yarn run build-production-maps;) then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1
         fi
