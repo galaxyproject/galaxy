@@ -80,7 +80,7 @@ export default {
             }
         },
         clearBox() {
-            this.setQuery('');
+            this.setQuery("");
             document.getElementById("tool-input").focus();
         },
     },
