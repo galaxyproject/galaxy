@@ -14,7 +14,9 @@ from functools import (
     wraps,
 )
 from typing import (
+    Any,
     cast,
+    Dict,
     Optional,
     Union,
 )
@@ -444,7 +446,10 @@ class NavigatesGalaxy(HasDriver):
         try:
             self.history_item_wait_for(history_item_selector, allowed_force_refreshes)
         except self.TimeoutException as e:
-            contents_elements = self.find_elements(self.navigation.history_panel.selectors.contents)
+            selector = self.navigation.history_panel.selectors.contents
+            if self.is_beta_history():
+                selector = self.navigation.history_panel.selectors.contents_beta
+            contents_elements = self.find_elements(selector)
             div_ids = [f"#{d.get_attribute('id')}" for d in contents_elements]
             template = "Failed waiting on history item %d to become visible, visible datasets include [%s]."
             message = template % (hid, ",".join(div_ids))
@@ -469,7 +474,8 @@ class NavigatesGalaxy(HasDriver):
                     raise
 
             attempt += 1
-            self.history_panel_refresh_click()
+            if not self.is_beta_history():
+                self.history_panel_refresh_click()
         return rval
 
     def history_panel_wait_for_history_loaded(self):
@@ -849,8 +855,7 @@ class NavigatesGalaxy(HasDriver):
         with self.rule_builder_rule_editor("sort") as editor_element:
             column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
             self.select2_set_value(column_elem, column_label)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_add_regex_groups(self, column_label, group_count, regex, screenshot_name):
         rule_builder = self.components.rule_builder
@@ -871,8 +876,7 @@ class NavigatesGalaxy(HasDriver):
             filter_input.clear()
             filter_input.send_keys(f"{group_count}")
 
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_add_regex_replacement(self, column_label, regex, replacement, screenshot_name=None):
         rule_builder = self.components.rule_builder
@@ -893,8 +897,7 @@ class NavigatesGalaxy(HasDriver):
             filter_input.clear()
             filter_input.send_keys(f"{replacement}")
 
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_add_value(self, value, screenshot_name=None):
         rule_builder = self.components.rule_builder
@@ -904,8 +907,7 @@ class NavigatesGalaxy(HasDriver):
             filter_input.clear()
             filter_input.send_keys(value)
 
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_remove_columns(self, column_labels, screenshot_name=None):
         rule_builder = self.components.rule_builder
@@ -914,8 +916,7 @@ class NavigatesGalaxy(HasDriver):
             column_elem = filter_editor_element.find_element_by_css_selector(".rule-column-selector")
             for column_label in column_labels:
                 self.select2_set_value(column_elem, column_label)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_concatenate_columns(self, column_label_1, column_label_2, screenshot_name=None):
         rule_builder = self.components.rule_builder
@@ -925,8 +926,7 @@ class NavigatesGalaxy(HasDriver):
             self.select2_set_value(column_elems[0], column_label_1)
             column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
             self.select2_set_value(column_elems[1], column_label_2)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_split_columns(self, column_labels_1, column_labels_2, screenshot_name=None):
         rule_builder = self.components.rule_builder
@@ -944,8 +944,7 @@ class NavigatesGalaxy(HasDriver):
                 self.select2_set_value(column_elems[1], column_label_2, clear_value=clear)
                 clear = False
 
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     def rule_builder_swap_columns(self, column_label_1, column_label_2, screenshot_name):
         rule_builder = self.components.rule_builder
@@ -955,8 +954,7 @@ class NavigatesGalaxy(HasDriver):
             self.select2_set_value(column_elems[0], column_label_1)
             column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
             self.select2_set_value(column_elems[1], column_label_2)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
 
     @contextlib.contextmanager
     def rule_builder_rule_editor(self, rule_type):
@@ -976,8 +974,7 @@ class NavigatesGalaxy(HasDriver):
         if mapping_type != "list-identifiers" or not isinstance(column_label, list):
             mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
             self.select2_set_value(mapping_elem, column_label)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
         else:
             assert len(column_label) > 0
             column_labels = column_label
@@ -986,8 +983,7 @@ class NavigatesGalaxy(HasDriver):
                     rule_builder.mapping_add_column(mapping_type=mapping_type).wait_for_and_click()
                 mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
                 self.select2_set_value(mapping_elem, column_label)
-            if screenshot_name:
-                self.screenshot(screenshot_name)
+            self.screenshot_if(screenshot_name)
         rule_builder.mapping_ok.wait_for_and_click()
 
     def rule_builder_set_source(self, json):
@@ -1280,8 +1276,25 @@ class NavigatesGalaxy(HasDriver):
             tag_area.send_keys(tag)
             self.send_enter(tag_area)
 
+    def workflow_run_with_name(self, name: str):
+        self.workflow_index_open()
+        self.workflow_index_search_for(name)
+        self.workflow_click_option(".workflow-run")
+
+    def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
+        workflow_run = self.components.workflow_run
+        for label, value in inputs.items():
+            input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
+            self.select2_set_value(input_div_element, "%d: " % value["hid"])
+
     def workflow_run_submit(self):
-        self.wait_for_and_click_selector("button.btn-primary")
+        self.components.workflow_run.run_workflow.wait_for_and_click()
+
+    def workflow_run_ensure_expanded(self):
+        workflow_run = self.components.workflow_run
+        if workflow_run.expanded_form.is_absent:
+            workflow_run.expand_form_link.wait_for_and_click()
+            workflow_run.expanded_form.wait_for_visible()
 
     def workflow_create_new(self, annotation=None, clear_placeholder=False):
         self.workflow_index_open()
@@ -1322,8 +1335,7 @@ class NavigatesGalaxy(HasDriver):
         self.tool_set_value("title", name)
         self.tool_set_value("slug", slug)
         self.tool_set_value("content_format", content_format, expected_type="select")
-        if screenshot_name:
-            self.screenshot(screenshot_name)
+        self.screenshot_if(screenshot_name)
         # Sometimes 'submit' button not yet hooked up?
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components.pages.submit.wait_for_and_click()
