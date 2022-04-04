@@ -2,6 +2,7 @@
     <b-input-group>
         <b-input
             class="search-query"
+            id="tool-input"
             size="sm"
             autocomplete="off"
             v-model="queryInput"
@@ -14,7 +15,7 @@
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
-                @click="setQuery('')"
+                @click="clearBox"
                 data-description="reset query">
                 <icon v-if="loading" icon="spinner" spin />
                 <icon v-else icon="times" />
@@ -77,6 +78,10 @@ export default {
                 this.queryCurrent = this.queryInput = queryNew;
                 this.$emit("change", this.queryCurrent);
             }
+        },
+        clearBox() {
+            this.setQuery('');
+            document.getElementById("tool-input").focus();
         },
     },
 };
