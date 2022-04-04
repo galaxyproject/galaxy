@@ -2458,7 +2458,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     published = Column(Boolean, index=True, default=False)
 
     datasets = relationship(
-        "HistoryDatasetAssociation", back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
+        "HistoryDatasetAssociation", back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
     )
     exports = relationship(
         "JobExportHistoryArchive",
@@ -4324,7 +4324,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
         self.hid = hid
         # Relationships
-        add_object_to_object_session(self, history)
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
@@ -9566,7 +9565,7 @@ mapper_registry.map_imperatively(
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates="dataset"),
         creating_job_associations=relationship(JobToOutputDatasetAssociation, back_populates="dataset"),
-        history=relationship(History, back_populates="datasets"),
+        history=relationship(History, back_populates="datasets", cascade_backrefs=False),
         implicitly_converted_datasets=relationship(
             ImplicitlyConvertedDatasetAssociation,
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),
