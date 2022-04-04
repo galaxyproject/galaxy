@@ -1,7 +1,6 @@
 <!DOCTYPE HTML>
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
-
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
@@ -140,9 +139,7 @@
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
 
-        <!-- stylesheets -->
         ${self.stylesheets()}
-        <!-- stylesheets -->
 
         ## Normally, we'd put all the javascripts at the bottom of the <body>
         ## but during this transitional period we need access to the config
