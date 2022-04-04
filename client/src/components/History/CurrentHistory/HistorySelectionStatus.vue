@@ -10,7 +10,7 @@
         <b-alert show :variant="selectionAlertVariant" class="mb-0 p-2">
             <div v-if="!hasSelection">No items selected</div>
             <div v-else>
-                <div v-if="isQuerySelection">
+                <div v-if="selectionMatchesQuery">
                     <div v-if="hasFilters">
                         All <b>{{ totalItemsInQuery }}</b> items that match the filters are selected
                     </div>
@@ -35,7 +35,6 @@
 export default {
     props: {
         hasFilters: { type: Boolean, required: true },
-        isQuerySelection: { type: Boolean, required: true },
         selectionSize: { type: Number, required: true },
         totalItemsInQuery: { type: Number, required: true },
     },

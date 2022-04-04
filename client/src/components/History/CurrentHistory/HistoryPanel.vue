@@ -52,7 +52,6 @@
                             v-if="showSelection"
                             class="p-2"
                             :has-filters="hasFilters"
-                            :is-query-selection="isQuerySelection"
                             :selection-size="selectionSize"
                             :total-items-in-query="totalItemsInQuery"
                             @select-all="selectAllInCurrentQuery(payload, totalItemsInQuery)"
