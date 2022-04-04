@@ -18,12 +18,12 @@
 
                 <b-button
                     v-b-modal.history-selector-modal
-                    data-description="show saved histories"
+                    data-description="switch to another history"
                     size="sm"
                     variant="link"
                     v-b-tooltip.bottom.hover
-                    title="Show saved histories">
-                    <Icon fixed-width icon="list" />
+                    title="Switch to history">
+                    <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 
                 <b-dropdown
