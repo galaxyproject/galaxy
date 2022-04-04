@@ -390,10 +390,14 @@ class BaseJobRunner:
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
                 # That is bad practice and also means this can never become part of another task.
-                set_job_metadata.delay(
-                    job_wrapper.working_directory,
-                    extended_metadata_collection="extended" in metadata_strategy,
-                ).get()
+                try:
+                    set_job_metadata.delay(
+                        job_wrapper.working_directory,
+                        extended_metadata_collection="extended" in metadata_strategy,
+                    ).get()
+                except Exception:
+                    log.exception()
+                    return
             else:
                 lib_adjust = GALAXY_LIB_ADJUST_TEMPLATE % job_wrapper.galaxy_lib_dir
                 venv = GALAXY_VENV_TEMPLATE % job_wrapper.galaxy_virtual_env
