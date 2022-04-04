@@ -1628,6 +1628,8 @@ class JobWrapper(HasResourceParameters):
             except Exception as e:
                 # TODO ... error handler on task / chain level ?
                 self.fail(message=str(e))
+            # Reset the Null Metadata. That would normally happen because the finish context rebuilds another JobWrapper instance.
+            self.tool_provided_job_metadata = None
             self.finish(tool_stdout="", tool_stderr="")
             return False
         self.sa_session.flush()
