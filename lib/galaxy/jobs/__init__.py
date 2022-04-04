@@ -971,7 +971,7 @@ class JobWrapper(HasResourceParameters):
         self.user_id = job.user_id
         self.tool = queue.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
         self.queue = queue
-        self.app = queue.app
+        self.app: MinimalManagerApp = queue.app
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []

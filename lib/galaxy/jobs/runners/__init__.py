@@ -625,6 +625,7 @@ class JobState:
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
+        self.runner_state = None
 
         self.redact_email_in_job_name = True
         if self.job_wrapper:
