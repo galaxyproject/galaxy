@@ -1023,6 +1023,7 @@ class BcfUncompressed(BaseBcf):
     """
 
     file_ext = "bcf_uncompressed"
+    compressed = False
 
     def sniff(self, filename):
         try:
