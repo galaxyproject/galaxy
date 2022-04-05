@@ -9,18 +9,19 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from fastapi import (
     Body,
     Depends,
+    Header,
     Path,
     Query,
     Request,
 )
 from starlette import status
 from starlette.responses import (
-    JSONResponse,
     Response,
     StreamingResponse,
 )
@@ -43,6 +44,7 @@ from galaxy.schema.schema import (
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
     HistoryContentsResult,
+    HistoryContentsWithStatsResult,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -313,14 +315,17 @@ class FastAPIHistoryContents:
         summary="Returns the contents of the given history.",
         responses={
             200: {
-                "model": List[AnyHistoryContentItem],
-                "description": (
-                    "When using `v=dev&view=count` the `total_matches` of the search is returned in the headers"
-                ),
-                "headers": {
-                    "total_matches": {
-                        "description": "The number of items that match the search query",
-                        "schema": {"type": "integer"},
+                "description": ("The contents of the history that match the query."),
+                "content": {
+                    "application/json": {
+                        "schema": {  # HistoryContentsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsResult"
+                        },
+                    },
+                    HistoryContentsWithStatsResult.__accept_type__: {
+                        "schema": {  # HistoryContentsWithStatsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsWithStatsResult"
+                        },
                     },
                 },
             },
@@ -334,29 +339,25 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ):
+        accept: str = Header(default="application/json", include_in_schema=False),
+    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
 
         - The contents can be filtered and queried using the appropriate parameters.
         - The amount of information returned for each item can be customized.
 
-        When using the special serialization view `count`, the header value `total_matches`
-        will contain the number of items that match the search query without any pagination.
-
         **Note**: Anonymous users are allowed to get their current history contents.
         """
-        items, total_matches = self.service.index(
+        items = self.service.index(
             trans,
             history_id,
             index_params,
             legacy_params,
             serialization_params,
             filter_query_params,
+            accept,
         )
-        if total_matches:
-            query_stats = {"total_matches": f"{total_matches}"}
-            return JSONResponse(items, headers=query_stats)
         return items
 
     @router.get(

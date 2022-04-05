@@ -5,7 +5,7 @@
 
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
-import { urlDataWithHeaders } from "utils/url";
+import { urlData } from "utils/url";
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
 import { mergeArray } from "./utilities";
 
@@ -51,13 +51,13 @@ const actions = {
     fetchHistoryItems: async ({ commit, dispatch }, { historyId, offset, filterText }) => {
         dispatch("startHistoryChangedItems", { historyId: historyId });
         const queryString = getQueryString(filterText);
-        const queryStats = "&view=count";
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
-        const url = `api/histories/${historyId}/contents?${params}&${queryString}${queryStats}`;
-        await queue.enqueue(urlDataWithHeaders, { url }).then((response) => {
-            const headers = response.headers;
-            commit("saveQueryStats", { headers });
-            const payload = response.data;
+        const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
+        const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
+        await queue.enqueue(urlData, { url, headers }).then((data) => {
+            const stats = data.stats;
+            commit("saveQueryStats", { stats });
+            const payload = data.contents;
             commit("saveHistoryItems", { historyId, payload });
         });
     },
@@ -67,9 +67,8 @@ const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
         mergeArray(historyId, payload, state.items, state.itemKey);
     },
-    saveQueryStats: (state, { headers }) => {
-        const totalMatches = headers["total_matches"];
-        state.totalMatchesCount = Number(totalMatches);
+    saveQueryStats: (state, { stats }) => {
+        state.totalMatchesCount = stats.total_matches;
     },
 };
 

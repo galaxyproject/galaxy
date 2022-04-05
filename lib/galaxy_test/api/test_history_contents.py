@@ -1122,13 +1122,15 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
             )
 
     def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
-        search_response = self._get(f"histories/{history_id}/contents?v=dev&view=count{search_query}")
+        headers = {"accept": "application/vnd.galaxy.history.contents.stats+json"}
+        search_response = self._get(f"histories/{history_id}/contents?v=dev{search_query}", headers=headers)
         self._assert_status_code_is(search_response, 200)
-        self._assert_total_matches_header_is(search_response, expected_total_matches)
+        self._assert_total_matches_is(search_response.json(), expected_total_matches)
 
-    def _assert_total_matches_header_is(self, response, expected_total_matches: int):
-        assert response.headers["total_matches"]
-        assert int(response.headers["total_matches"]) == expected_total_matches
+    def _assert_total_matches_is(self, response, expected_total_matches: int):
+        assert response["stats"]
+        assert response["stats"]["total_matches"]
+        assert response["stats"]["total_matches"] == expected_total_matches
 
     def _create_test_history_contents(self, history_id) -> Tuple[List[str], List[str], List[Any]]:
         """Creates 3 collections (pairs) and their corresponding datasets (6 in total)

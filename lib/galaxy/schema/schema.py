@@ -2493,6 +2493,14 @@ class HistoryContentsArchiveDryRunResult(BaseModel):
     __root__: List[List[str]]  # List[Tuple[str, str]]
 
 
+class HistoryContentStats(BaseModel):
+    total_matches: int = Field(
+        ...,
+        title="Total Matches",
+        description=("The total number of items that match the search query without any pagination"),
+    )
+
+
 class ContentsNearStats(BaseModel):
     """Stats used by the `contents_near` endpoint."""
 
@@ -2519,11 +2527,31 @@ class ContentsNearStats(BaseModel):
 
 
 class HistoryContentsResult(Model):
-    """Collection of history content items.
+    """List of history content items.
     Can contain different views and kinds of items.
     """
 
     __root__: List[AnyHistoryContentItem]
+
+
+class HistoryContentsWithStatsResult(BaseModel):
+    """Includes stats with items counting"""
+
+    stats: HistoryContentStats = Field(
+        ...,
+        title="Stats",
+        description=("Contains counting stats for the query."),
+    )
+    contents: List[AnyHistoryContentItem] = Field(
+        ...,
+        title="Contents",
+        description=(
+            "The items matching the search query. Only the items fitting in the current page limit will be returned."
+        ),
+    )
+
+    # This field is ignored and contains the content type associated with this model
+    __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
 class ContentsNearResult(BaseModel):

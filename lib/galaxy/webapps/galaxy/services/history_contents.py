@@ -10,7 +10,6 @@ from typing import (
     List,
     Optional,
     Set,
-    Tuple,
     Union,
 )
 
@@ -75,6 +74,9 @@ from galaxy.schema.schema import (
     HistoryContentItemOperation,
     HistoryContentsArchiveDryRunResult,
     HistoryContentSource,
+    HistoryContentsResult,
+    HistoryContentStats,
+    HistoryContentsWithStatsResult,
     HistoryContentType,
     JobSourceType,
     Model,
@@ -220,14 +222,15 @@ class HistoriesContentsService(ServiceBase):
         legacy_params: LegacyHistoryContentsIndexParams,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
+        accept: str,
+    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of contents (HDAs and HDCAs) for the history with the given ``ID``.
 
         .. note:: Anonymous users are allowed to get their current history contents.
         """
         if params.v == "dev":
-            return self.__index_v2(trans, history_id, params, serialization_params, filter_query_params)
+            return self.__index_v2(trans, history_id, params, serialization_params, filter_query_params, accept)
         return self.__index_legacy(trans, history_id, legacy_params)
 
     def show(
@@ -907,7 +910,7 @@ class HistoriesContentsService(ServiceBase):
         trans,
         history_id: EncodedDatabaseIdField,
         legacy_params: LegacyHistoryContentsIndexParams,
-    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
+    ) -> HistoryContentsResult:
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
         legacy_params_dict = legacy_params.dict(exclude_defaults=True)
@@ -915,10 +918,11 @@ class HistoriesContentsService(ServiceBase):
         if ids:
             legacy_params_dict["ids"] = self.decode_ids(ids)
         contents = history.contents_iter(**legacy_params_dict)
-        return [
+        items = [
             self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))
             for content in contents
-        ], None
+        ]
+        return HistoryContentsResult.construct(__root__=items)
 
     def __index_v2(
         self,
@@ -927,7 +931,8 @@ class HistoriesContentsService(ServiceBase):
         params: HistoryContentsIndexParams,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
-    ) -> Tuple[List[AnyHistoryContentItem], Optional[int]]:
+        accept: str,
+    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Latests implementation of the `index` action.
         Allows additional filtering of contents and custom serialization.
@@ -936,12 +941,6 @@ class HistoriesContentsService(ServiceBase):
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
 
         total_matches: Optional[int] = None
-        if serialization_params.view == "count":
-            serialization_params.view = None
-            total_matches = self.history_contents_manager.contents_count(
-                history,
-                filters=filters,
-            )
 
         filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
@@ -953,7 +952,7 @@ class HistoriesContentsService(ServiceBase):
             order_by=order_by,
             serialization_params=serialization_params,
         )
-        return [
+        items = [
             self._serialize_content_item(
                 trans,
                 content,
@@ -961,7 +960,15 @@ class HistoriesContentsService(ServiceBase):
                 serialization_params=serialization_params,
             )
             for content in contents
-        ], total_matches
+        ]
+        if accept == HistoryContentsWithStatsResult.__accept_type__:
+            total_matches = self.history_contents_manager.contents_count(
+                history,
+                filters=filters,
+            )
+            stats = HistoryContentStats.construct(total_matches=total_matches)
+            return HistoryContentsWithStatsResult.construct(contents=items, stats=stats)
+        return HistoryContentsResult.construct(__root__=items)
 
     def _serialize_legacy_content_item(
         self,
