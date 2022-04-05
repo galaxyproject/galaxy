@@ -14,11 +14,12 @@
             v-b-tooltip.hover
             :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`"
             icon="check"
-            style="color: green" />
+            class="workflow-trs-icon" />
         <font-awesome-icon
             v-if="sourceType == 'url'"
             v-b-tooltip.hover
             :title="`Imported from ${workflow.source_metadata.url}`"
+            class="workflow-external-link"
             icon="link" />
         <p v-if="workflow.description">{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
@@ -188,3 +189,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.workflow-trs-icon {
+    color: green;
+}
+</style>

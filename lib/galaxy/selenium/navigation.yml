@@ -492,6 +492,8 @@ workflows:
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
+    external_link: '.workflow-external-link'
+    trs_icon: '.workflow-trs-icon'
 
 trs_search:
   selectors:
@@ -618,6 +620,11 @@ workflow_editor:
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
     modal_button_continue: '.modal-footer .btn'
+
+workflow_show:
+  selectors:
+    title: 'h3.item_name'
+    annotation: '.page-item-header .annotation'
 
 invocations:
   selectors:
