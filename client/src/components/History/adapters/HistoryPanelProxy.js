@@ -5,8 +5,7 @@
  */
 
 import { mountVueComponent } from "utils/mountVueComponent";
-import CurrentHistoryPanel from "../CurrentHistoryPanel";
-// import { genericProxy } from "utils/proxy";
+import HistoryIndex from "components/History/Index";
 
 // mvc nonsense
 import $ from "jquery";
@@ -88,7 +87,7 @@ export const HistoryPanelProxy = Backbone.View.extend({
         $("#right").addClass("beta").prepend(this.$el);
 
         const container = this.$el[0];
-        const mountHistory = mountVueComponent(CurrentHistoryPanel);
+        const mountHistory = mountVueComponent(HistoryIndex);
         mountHistory({}, container);
 
         return this;

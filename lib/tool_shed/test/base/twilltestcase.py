@@ -235,7 +235,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             url += f"?{urlencode(params, doseq=doseq)}"
         new_url = tc.go(url)
         return_code = tc.browser.code
-        assert return_code in allowed_codes, "Invalid HTTP return code %s, allowed codes: %s" % (
+        assert return_code in allowed_codes, "Invalid HTTP return code {}, allowed codes: {}".format(
             return_code,
             ", ".join(str(code) for code in allowed_codes),
         )
@@ -333,10 +333,9 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
 
     def check_galaxy_repository_db_status(self, repository_name, owner, expected_status):
         installed_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, owner)
-        assert installed_repository.status == expected_status, "Status in database is %s, expected %s" % (
-            installed_repository.status,
-            expected_status,
-        )
+        assert (
+            installed_repository.status == expected_status
+        ), f"Status in database is {installed_repository.status}, expected {expected_status}"
 
     def check_galaxy_repository_tool_panel_section(self, repository, expected_tool_panel_section):
         metadata = repository.metadata_
@@ -353,11 +352,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             tool_panel_section = self.get_tool_panel_section_from_api(metadata)
         assert (
             tool_panel_section == expected_tool_panel_section
-        ), "Expected to find tool panel section *%s*, but instead found *%s*\nMetadata: %s\n" % (
-            expected_tool_panel_section,
-            tool_panel_section,
-            metadata,
-        )
+        ), f"Expected to find tool panel section *{expected_tool_panel_section}*, but instead found *{tool_panel_section}*\nMetadata: {metadata}\n"
 
     def check_installed_repository_tool_dependencies(
         self, installed_repository, strings_displayed=None, strings_not_displayed=None, dependencies_installed=False
@@ -398,7 +393,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         else:
             assert (
                 len(self.get_repository_metadata_revisions(repository)) > 0
-            ), "Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s." % (
+            ), "Repository tip is not a metadata revision: Repository tip - {}, metadata revisions - {}.".format(
                 self.get_repository_tip(repository),
                 ", ".join(self.get_repository_metadata_revisions(repository)),
             )
@@ -1224,7 +1219,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
             self.submit_form(form=form, button=submit_button, **kwds)
         self.check_for_strings(post_submit_strings_displayed, strings_not_displayed)
         repository_ids = self.initiate_installation_process(new_tool_panel_section_label=new_tool_panel_section_label)
-        log.debug(f"Waiting for the installation of repository IDs: {str(repository_ids)}")
+        log.debug(f"Waiting for the installation of repository IDs: {repository_ids}")
         self.wait_for_repository_installation(repository_ids)
 
     def load_citable_url(
@@ -1463,7 +1458,7 @@ class ShedTwillTestCase(DrivenFunctionalTestCase):
         form_id = form.attrib.get("id")
         controls = [control for control in form.inputs if str(control.name) == field_name]
         if len(controls) > 0:
-            log.debug(f"Setting field {field_name} of form {form_id} to {str(field_value)}.")
+            log.debug(f"Setting field {field_name} of form {form_id} to {field_value}.")
             tc.formvalue(form_id, field_name, str(field_value))
             kwd[field_name] = str(field_value)
         else:

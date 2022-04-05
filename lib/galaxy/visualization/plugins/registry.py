@@ -189,11 +189,8 @@ class VisualizationsRegistry:
 
         # default class
         plugin_class = vis_plugins.VisualizationPlugin
-        # jupyter, etc
-        if config["plugin_type"] == "interactive_environment":
-            plugin_class = vis_plugins.InteractiveEnvironmentPlugin
         # js only
-        elif config["entry_point"]["type"] == "script":
+        if config["entry_point"]["type"] == "script":
             plugin_class = vis_plugins.ScriptVisualizationPlugin
         # js only using charts environment
         elif config["entry_point"]["type"] == "chart":

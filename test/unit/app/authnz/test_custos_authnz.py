@@ -344,7 +344,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.test_nonce_hash = self.test_nonce_hash + "Z"
 
         # self.custos_authnz._fetch_token = fetch_token
-        with self.assertRaisesRegex(Exception, "^Nonce mismatch!$"):
+        with self.assertRaisesRegex(Exception, "^Nonce mismatch"):
             self.custos_authnz.callback(
                 state_token="xxx",
                 authz_code=self.test_code,

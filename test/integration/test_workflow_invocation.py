@@ -37,7 +37,7 @@ steps:
             )
             # should fail and return both tool ids since version 0.0.1 of compose_text_param does not exist
             invocation_response = self.workflow_populator.invoke_workflow(
-                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": True}
+                workflow_id, history_id=history_id, request={"require_exact_tool_versions": True}
             )
             self._assert_status_code_is(invocation_response, 400)
             self.assertEqual(
@@ -46,7 +46,7 @@ steps:
             )
             # should fail but return only the tool_id of non_existent tool as another version of compose_text_param is installed
             invocation_response = self.workflow_populator.invoke_workflow(
-                workflow_id, history_id=history_id, assert_ok=False, request={"require_exact_tool_versions": False}
+                workflow_id, history_id=history_id, request={"require_exact_tool_versions": False}
             )
             self._assert_status_code_is(invocation_response, 400)
             self.assertEqual(

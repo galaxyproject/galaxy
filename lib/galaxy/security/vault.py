@@ -260,7 +260,7 @@ class VaultKeyPrefixWrapper(Vault):
         raise NotImplementedError()
 
 
-class VaultFactory(object):
+class VaultFactory:
     @staticmethod
     def load_vault_config(vault_conf_yml: str) -> Optional[dict]:
         if os.path.exists(vault_conf_yml):

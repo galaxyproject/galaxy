@@ -64,7 +64,7 @@ class _SpalnDb(Data):
                     % (fn, fn, composite_file.get("description"), opt_text)
                 )
             else:
-                rval.append('<li><a href="%s" type="application/binary">%s</a>%s</li>' % (fn, fn, opt_text))
+                rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
@@ -141,7 +141,7 @@ class _SpalnDb(Data):
             msg = title
         # Galaxy assumes HTML for the display of composite datatypes,
         return (
-            smart_str("<html><head><title>%s</title></head><body><pre>%s</pre></body></html>" % (title, msg)),
+            smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"),
             headers,
         )
 

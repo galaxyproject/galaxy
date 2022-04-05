@@ -124,7 +124,3 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
 
     app = wrap_if_allowed(app, stack, XForwardedHostMiddleware)
     return app
-
-
-def uwsgi_app():
-    return galaxy.webapps.base.webapp.build_native_uwsgi_app(app_factory, "reports")

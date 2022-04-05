@@ -1,5 +1,6 @@
 <template>
     <div>
+        <job-details-provider v-on:update:result="updateJob" auto-refresh :jobid="job_id" />
         <h3>Job Information</h3>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -72,10 +73,10 @@
 </template>
 
 <script>
-import { mapCacheActions } from "vuex-cache";
 import { getAppRoot } from "onload/loadConfig";
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
+import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
@@ -85,6 +86,7 @@ export default {
     components: {
         CodeRow,
         DecodedId,
+        JobDetailsProvider,
         UtcDate,
         CopyToClipboard,
     },
@@ -98,26 +100,27 @@ export default {
             default: false,
         },
     },
-    created: function () {
-        this.fetchJob(this.job_id);
+    data() {
+        return {
+            job: null,
+        };
     },
     computed: {
-        job: function () {
-            return this.$store.getters.job(this.job_id);
-        },
         runTime: function () {
             return formatDuration(
                 intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
             );
         },
         jobIsTerminal() {
-            return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
+            return this.job && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
         },
     },
     methods: {
-        ...mapCacheActions(["fetchJob"]),
         getAppRoot() {
             return getAppRoot();
+        },
+        updateJob(job) {
+            this.job = job;
         },
     },
 };

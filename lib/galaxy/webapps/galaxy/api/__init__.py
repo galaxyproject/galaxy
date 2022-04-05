@@ -84,11 +84,11 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> Any:
+def depends(dep_type: Type[T]) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
-    return GalaxyTypeDepends(_do_resolve, dep_type)
+    return cast(T, GalaxyTypeDepends(_do_resolve, dep_type))
 
 
 def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManager:
@@ -256,6 +256,10 @@ class Router(InferringRouter):
     def get(self, *args, **kwd):
         """Extend FastAPI.get to accept a require_admin Galaxy flag."""
         return super().get(*args, **self._handle_galaxy_kwd(kwd))
+
+    def patch(self, *args, **kwd):
+        """Extend FastAPI.patch to accept a require_admin Galaxy flag."""
+        return super().patch(*args, **self._handle_galaxy_kwd(kwd))
 
     def put(self, *args, **kwd):
         """Extend FastAPI.put to accept a require_admin Galaxy flag."""

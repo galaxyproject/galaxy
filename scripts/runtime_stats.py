@@ -100,11 +100,11 @@ def parse_arguments():
 
     args.source = args.source.lower()
     if args.source not in ("metrics", "history"):
-        print("ERROR: Data source `%s` unknown, valid source are: %s" % (args.source, ", ".join(DATA_SOURCES)))
+        print("ERROR: Data source `{}` unknown, valid source are: {}".format(args.source, ", ".join(DATA_SOURCES)))
 
     app_properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**app_properties)
-    uri = args.config.get_database_url(config)
+    uri = config.database_connection
 
     names = {"database": "dbname", "username": "user"}
     args.connect_args = url.make_url(uri).translate_connect_args(**names)

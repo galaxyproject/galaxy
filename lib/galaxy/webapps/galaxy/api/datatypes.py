@@ -18,17 +18,11 @@ from galaxy.managers.datatypes import (
     DatatypesCombinedMap,
     DatatypesMap,
     view_converters,
-    view_edam_data,
-    view_edam_formats,
     view_index,
     view_mapping,
     view_sniffers,
-    view_types_and_mapping,
 )
-from galaxy.util import asbool
-from galaxy.web import expose_api_anonymous_and_sessionless
 from . import (
-    BaseGalaxyAPIController,
     depends,
     Router,
 )
@@ -129,58 +123,3 @@ class FastAPIDatatypes:
     async def edam_data(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM data."""
         return self.datatypes_registry.edam_data
-
-
-class DatatypesController(BaseGalaxyAPIController):
-    datatypes_registry: Registry = depends(Registry)
-
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans, **kwd):
-        """
-        GET /api/datatypes
-        Return an object containing upload datatypes.
-        """
-        extension_only = asbool(kwd.get("extension_only", True))
-        upload_only = asbool(kwd.get("upload_only", True))
-        return view_index(self.datatypes_registry, extension_only, upload_only)
-
-    @expose_api_anonymous_and_sessionless
-    def mapping(self, trans, **kwd):
-        """
-        GET /api/datatypes/mapping
-        Return a dictionary of class to class mappings.
-        """
-        return view_mapping(self.datatypes_registry)
-
-    @expose_api_anonymous_and_sessionless
-    def types_and_mapping(self, trans, **kwd):
-        """
-        GET /api/datatypes/types_and_mapping
-
-        Combine the datatype information from (/api/datatypes) and the
-        mapping information from (/api/datatypes/mapping) into a single
-        response.
-        """
-        extension_only = asbool(kwd.get("extension_only", True))
-        upload_only = asbool(kwd.get("upload_only", True))
-        return view_types_and_mapping(self.datatypes_registry, extension_only, upload_only)
-
-    @expose_api_anonymous_and_sessionless
-    def sniffers(self, trans, **kwd):
-        """
-        GET /api/datatypes/sniffers
-        Return a list of sniffers.
-        """
-        return view_sniffers(self.datatypes_registry)
-
-    @expose_api_anonymous_and_sessionless
-    def converters(self, trans, **kwd):
-        return view_converters(self.datatypes_registry)
-
-    @expose_api_anonymous_and_sessionless
-    def edam_formats(self, trans, **kwds):
-        return view_edam_formats(self.datatypes_registry)
-
-    @expose_api_anonymous_and_sessionless
-    def edam_data(self, trans, **kwds):
-        return view_edam_data(self.datatypes_registry)

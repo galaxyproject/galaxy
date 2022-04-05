@@ -11,6 +11,7 @@ import urllib.parse
 import zipfile
 from json import dumps
 from logging import getLogger
+from typing import Optional
 
 import requests
 from packaging.version import parse as parse_version
@@ -810,7 +811,12 @@ class GalaxyInteractorApi:
         return urllib.parse.urljoin(f"{self.api_url}/", path)
 
     def _prepare_request_params(
-        self, data=None, files=None, as_json: bool = False, params: dict = None, headers: dict = None
+        self,
+        data=None,
+        files=None,
+        as_json: bool = False,
+        params: Optional[dict] = None,
+        headers: Optional[dict] = None,
     ):
         """Handle some Galaxy conventions and work around requests issues.
 

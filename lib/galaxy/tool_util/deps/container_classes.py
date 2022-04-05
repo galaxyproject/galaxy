@@ -7,7 +7,6 @@ from abc import (
 from logging import getLogger
 from uuid import uuid4
 
-from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (
     asbool,
     in_directory,
@@ -16,6 +15,7 @@ from . import (
     docker_util,
     singularity_util,
 )
+from .container_volumes import DockerVolume
 from .requirements import (
     DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
     DEFAULT_CONTAINER_SHELL,
@@ -25,6 +25,7 @@ log = getLogger(__name__)
 
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
+TRAP_KILL_CONTAINER = "trap _on_exit EXIT"
 
 LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r"""
 python << EOF
@@ -349,7 +350,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
 _on_exit() {{
   {kill_command} &> /dev/null
 }}
-trap _on_exit 0
+{TRAP_KILL_CONTAINER}
 {cache_command}
 {run_command}"""
 

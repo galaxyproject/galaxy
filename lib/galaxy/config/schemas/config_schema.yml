@@ -20,7 +20,6 @@ desc: |
 
   Config hackers are encouraged to check there before asking for help.
 mapping:
-  uwsgi: !include uwsgi_schema.yml
   galaxy:
     type: map
     required: true
@@ -502,6 +501,13 @@ mapping:
         desc: |
           Configured FileSource plugins.
 
+      file_sources:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          FileSource plugins described embedded into Galaxy's config.
+
       enable_mulled_containers:
         type: bool
         default: true
@@ -702,17 +708,6 @@ mapping:
           Visualizations config directory: where to look for individual visualization
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
           path begin the path with '/'.  This is a comma-separated list.
-
-      interactive_environment_plugins_directory:
-        type: str
-        required: false
-        desc: |
-          Interactive environment plugins root directory: where to look for interactive
-          environment plugins.  By default none will be loaded.  Set to
-          config/plugins/interactive_environments to load Galaxy's stock plugins.
-          These will require Docker to be configured and have security considerations,
-          so proceed with caution. The path is relative to the Galaxy root dir.  To use
-          an absolute path begin the path with '/'.  This is a comma-separated list.
 
       tour_config_dir:
         type: str
@@ -1231,11 +1226,19 @@ mapping:
         desc: |
           Enable InteractiveTools.
 
+      interactivetools_upstream_proxy:
+        type: bool
+        default: true
+        required: false
+        desc:
+          Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy.
+          `interactivetools_upstream_proxy` should only be set to false in development.
+
       interactivetools_proxy_host:
         type: str
         required: false
         desc: |
-          Proxy host - assumed to just be hosted on the same hostname and port as
+          Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
           Galaxy by default.
 
       interactivetools_base_path:
@@ -1386,14 +1389,12 @@ mapping:
         required: false
         desc: |
           URL (with schema http/https) of the Galaxy instance as accessible
-          within your local network - if specified used as a default by pulsar
-          file staging and Jupyter Docker container for communicating back with
+          within your local network. This URL is used as a default by pulsar
+          file staging and Interactive Tool containers for communicating back with
           Galaxy via the API.
 
-          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-          for Mac and your Galaxy instance runs on port 8080 this should be
-          'http://host.docker.internal:8080'.  For more details see
-          https://docs.docker.com/docker-for-mac/networking/
+          If you plan to run Interactive Tools make sure the docker container
+          can reach this URL. For more details see `job_conf.xml.interactivetools`.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1443,7 +1444,8 @@ mapping:
 
       helpsite_url:
         type: str
-        required: false
+        required: true
+        default: https://help.galaxyproject.org/
         per_host: true
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
@@ -1454,7 +1456,7 @@ mapping:
         required: false
         per_host: true
         desc: |
-          The URL linked by the "Wiki" link in the "Help" menu.
+          The URL linked by the "Community Hub" link in the "Help" menu.
 
       quota_url:
         type: str
@@ -1486,25 +1488,9 @@ mapping:
         desc: |
           The URL linked by the "Galaxy Version" link in the "Help" menu.
 
-      search_url:
-        type: str
-        default: https://galaxyproject.org/search/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Search" link in the "Help" menu.
-
-      mailing_lists_url:
-        type: str
-        default: https://galaxyproject.org/mailing-lists/
-        required: false
-        per_host: true
-        desc: |
-          The URL linked by the "Mailing Lists" link in the "Help" menu.
-
       screencasts_url:
         type: str
-        default: https://vimeo.com/galaxyproject
+        default: https://www.youtube.com/c/galaxyproject
         required: false
         per_host: true
         desc: |
@@ -1513,18 +1499,10 @@ mapping:
       terms_url:
         type: str
         required: false
-        per_host: true        
+        per_host: true
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
           as on the user registration and login forms and in the activation emails.
-
-      qa_url:
-        type: str
-        required: false
-        desc: |
-          The URL linked by the "Galaxy Q&A" link in the "Help" menu
-          The Galaxy Q&A site is under development; when the site is done, this URL
-          will be set and uncommented.
 
       static_enabled:
         type: bool
@@ -2526,13 +2504,6 @@ mapping:
           Please read the GDPR section under the special topics area of the
           admin documentation.
 
-      enable_beta_containers_interface:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable the new container interface for Interactive Environments
-
       enable_beta_workflow_modules:
         type: bool
         default: false
@@ -2740,13 +2711,17 @@ mapping:
 
       simplified_workflow_run_ui_target_history:
         type: str
-        default: 'current'
-        enum: ['current', 'new']
+        default: 'prefer_current'
+        enum: ['current', 'new', 'prefer_current', 'prefer_new']
         required: false
         per_host: true
         desc: |
           When the simplified workflow run form is rendered, should the invocation outputs
-          be sent to the 'current' history or a 'new' history.
+          be sent to the 'current' history or a 'new' history. If the user should be presented
+          and option between these - set this to 'prefer_current' or 'prefer_new' to display
+          a runtime setting with the corresponding default. The default is to provide the
+          user this option and default it to the current history (the traditional behavior
+          of Galaxy for years) - this corresponds to the setting 'prefer_current'.
 
       simplified_workflow_run_ui_job_cache:
         type: str
@@ -3392,6 +3367,18 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_broker:
+        type: str
+        required: false
+        desc: |
+          Celery broker (if unset falls back to amqp_internal_connection).
+
+      celery_backend:
+        type: str
+        required: false
+        desc: |
+          If set, it will be the results backend for Celery.
+
       use_pbkdf2:
         type: bool
         default: true
@@ -3472,15 +3459,6 @@ mapping:
         desc: |
           Path to error reports configuration file.
 
-      containers_config_file:
-        type: str
-        default: 'containers_conf.yml'
-        path_resolves_to: config_dir
-        required: false
-        desc: |
-          Path to container interface configuration file. The containers interface is only used if
-          `enable_beta_containers_interface` config option is set.
-
       tool_destinations_config_file:
         type: str
         default: 'tool_destinations.yml'
@@ -3505,3 +3483,9 @@ mapping:
         required: false
         desc: |
           Vault config file.
+
+      display_builtin_converters:
+        type: bool
+        default: true
+        required: false
+        desc: Display built-in converters in the tool panel.

@@ -6,9 +6,9 @@ from galaxy.tool_shed.util import (
     hg_util,
 )
 from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import (
     create_tool_from_source,
-    get_tool_source,
     parameters,
 )
 from galaxy.tools.parameters import dynamic_options

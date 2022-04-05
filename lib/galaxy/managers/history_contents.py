@@ -15,11 +15,13 @@ from sqlalchemy import (
     false,
     func,
     literal,
+    nullsfirst,
+    nullslast,
     sql,
     true,
 )
 from sqlalchemy.orm import (
-    eagerload,
+    joinedload,
     undefer,
 )
 
@@ -72,6 +74,7 @@ class HistoryContentsManager(base.SortableManager):
         "collection_id",
         "name",
         "state",
+        "size",
         "deleted",
         "purged",
         "visible",
@@ -133,14 +136,21 @@ class HistoryContentsManager(base.SortableManager):
     # order_by parsing - similar to FilterParser but not enough yet to warrant a class?
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by using the given string"""
-        available = ["create_time", "extension", "hid", "history_id", "name", "update_time"]
+        available = ["create_time", "extension", "hid", "history_id", "name", "update_time", "size"]
         for attribute in available:
             attribute_dsc = f"{attribute}-dsc"
             attribute_asc = f"{attribute}-asc"
             if order_by_string in (attribute, attribute_dsc):
-                return desc(attribute)
+                order_by = desc(attribute)
+                if attribute == "size":
+                    return nullslast(order_by)
+                return order_by
             if order_by_string == attribute_asc:
-                return asc(attribute)
+                order_by = asc(attribute)
+                if attribute == "size":
+                    return nullsfirst(order_by)
+                return order_by
+
         if default:
             return self.parse_order_by(default)
         raise glx_exceptions.RequestParameterInvalidException(
@@ -348,6 +358,7 @@ class HistoryContentsManager(base.SortableManager):
         columns = self._contents_common_columns(
             component_class,
             history_content_type=literal("dataset"),
+            size=model.Dataset.file_size,
             state=model.Dataset.state,
             # do not have inner collections
             collection_id=literal(None),
@@ -373,6 +384,7 @@ class HistoryContentsManager(base.SortableManager):
             history_content_type=literal("dataset_collection"),
             # do not have datasets
             dataset_id=literal(None),
+            size=literal(None),
             state=model.DatasetCollection.populated_state,
             # TODO: should be purgable? fix
             purged=literal(False),
@@ -406,10 +418,10 @@ class HistoryContentsManager(base.SortableManager):
             self._session()
             .query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(undefer("_metadata"))
-            .options(eagerload("dataset.actions"))
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(undefer(component_class._metadata))
+            .options(joinedload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
+            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
         return {row.id: row for row in query.all()}
 
@@ -422,9 +434,9 @@ class HistoryContentsManager(base.SortableManager):
             self._session()
             .query(component_class)
             .filter(component_class.id.in_(id_list))
-            .options(eagerload("collection"))
-            .options(eagerload("tags"))
-            .options(eagerload("annotations"))
+            .options(joinedload(component_class.collection))
+            .options(joinedload(component_class.tags))
+            .options(joinedload(component_class.annotations))
         )
 
         # This will conditionally join a potentially costly job_state summary
@@ -432,7 +444,7 @@ class HistoryContentsManager(base.SortableManager):
         # should really be a property of the manager class instance
         if serialization_params and serialization_params.keys:
             if "job_state_summary" in serialization_params.keys:
-                query = query.options(eagerload("job_state_summary"))
+                query = query.options(joinedload(component_class.job_state_summary))
 
         return {row.id: row for row in query.all()}
 

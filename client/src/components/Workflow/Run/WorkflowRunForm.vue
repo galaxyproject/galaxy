@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" :user="user" v-slot="{ currentHistoryId }">
-            <div v-if="currentHistoryId">
+            <div v-if="currentHistoryId" class="workflow-expanded-form">
                 <div class="h4 clearfix mb-3">
                     <b>Workflow: {{ model.name }}</b>
                     <ButtonSpinner

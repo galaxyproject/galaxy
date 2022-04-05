@@ -208,10 +208,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
         else:
             assert (
                 current_datatypes == base_datatypes_count
-            ), "Installing emboss added new datatypes, current datatypes: %s, original datatypes: %s" % (
-                str(current_datatypes),
-                str(base_datatypes_count),
-            )
+            ), f"Installing emboss added new datatypes, current datatypes: {current_datatypes}, original datatypes: {base_datatypes_count}"
 
     def test_0015_uninstall_emboss_repository(self):
         """Uninstall the emboss repository."""

@@ -151,13 +151,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job_wrapper=job_wrapper,
             job_destination=job_wrapper.job_destination,
         )
+        # Kubernetes doesn't really produce meaningful "job stdout", but file needs to be present
+        with open(ajs.output_file, "w"):
+            pass
+        with open(ajs.error_file, "w"):
+            pass
 
         if not self.prepare_job(
             job_wrapper,
             include_metadata=False,
             modify_command_for_container=False,
-            stdout_file=ajs.output_file,
-            stderr_file=ajs.error_file,
         ):
             return
 

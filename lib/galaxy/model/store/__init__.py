@@ -30,6 +30,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.model.metadata import MetadataCollection
+from galaxy.model.orm.util import (
+    add_object_to_object_session,
+    add_object_to_session,
+    get_object_session,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -267,8 +272,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if attribute in dataset_attrs["dataset"]:
                             setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
                     self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
-                    # TODO: Once we have a test...
-                    #    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
+                    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                     if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                         dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
                     if job:
@@ -582,6 +586,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             self._session_add(dc)
             return dc
 
+        history_sa_session = get_object_session(history)
         for collection_attrs in collections_attrs:
             if "collection" in collection_attrs:
                 dc = import_collection(collection_attrs["collection"])
@@ -597,6 +602,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                     self._attach_raw_id_if_editing(hdca, collection_attrs)
 
+                    add_object_to_session(hdca, history_sa_session)
                     hdca.history = history
                     if new_history and self.trust_hid(collection_attrs):
                         hdca.hid = collection_attrs["hid"]
@@ -730,6 +736,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         #
         jobs_attrs = self.jobs_properties()
         # Create each job.
+        history_sa_session = get_object_session(history)
         for job_attrs in jobs_attrs:
             if "id" in job_attrs and not self.sessionless:
                 # only thing we allow editing currently is associations for incoming jobs.
@@ -743,6 +750,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_job = model.Job()
             imported_job.id = job_attrs.get("id")
             imported_job.user = self.user
+            add_object_to_session(imported_job, history_sa_session)
             imported_job.history = history
             imported_job.imported = True
             imported_job.tool_id = job_attrs["tool_id"]
@@ -776,9 +784,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             icj.jobs = []
             for order_index, job in enumerate(icj_attrs["jobs"]):
                 icja = model.ImplicitCollectionJobsJobAssociation()
+                add_object_to_object_session(icja, icj)
                 icja.implicit_collection_jobs = icj
                 if job in object_import_tracker.jobs_by_key:
-                    icja.job = object_import_tracker.jobs_by_key[job]
+                    job_instance = object_import_tracker.jobs_by_key[job]
+                    add_object_to_object_session(icja, job_instance)
+                    icja.job = job_instance
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
@@ -1115,6 +1126,10 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                 else:
                     raise NotImplementedError()
                 new_obj = obj.copy()
+                if not new_id and self.import_options.allow_edit:
+                    # We may not have exported all job parameters, such as dces,
+                    # but we shouldn't set the object_id to none in that case.
+                    new_id = obj["id"]
                 new_obj["id"] = new_id
                 return (k, new_obj)
 
@@ -1463,7 +1478,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sa_session.query(model.HistoryDatasetAssociation)
             .filter(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
-            .options(joinedload("dataset").joinedload("actions"))
+            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(model.Dataset.actions))
             .order_by(model.HistoryDatasetAssociation.hid)
             .filter(model.Dataset.purged == expression.false())
         )

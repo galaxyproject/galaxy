@@ -653,10 +653,11 @@ class HistoryContentsApiTestCase(ApiTestCase):
         contents_response = self._get(f"histories/{self.history_id}/contents?v=dev&keys=job_state_summary&view=summary")
         self._assert_status_code_is(contents_response, 200)
         contents = contents_response.json()
-        for c in filter(lambda c: c["history_content_type"] == "dataset_collection", contents):
-            assert isinstance(c, dict)
-            assert "job_state_summary" in c
-            assert isinstance(c["job_state_summary"], dict)
+        for c in contents:
+            if c["history_content_type"] == "dataset_collection":
+                assert isinstance(c, dict)
+                assert "job_state_summary" in c
+                assert isinstance(c["job_state_summary"], dict)
 
     def _get_content(self, history_id, update_time):
         return self._get(f"/api/histories/{history_id}/contents/near/100/100?update_time-gt={update_time}").json()
@@ -830,7 +831,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
 
     def _assert_collection_has_expected_elements_datatypes(self, history_id, collection_name, expected_datatypes):
         contents_response = self._get(
-            f"histories/{history_id}/contents?v=dev&view=betawebclient&q=name-eq&qv={collection_name}"
+            f"histories/{history_id}/contents?v=dev&view=detailed&q=name-eq&qv={collection_name}"
         )
         self._assert_status_code_is(contents_response, 200)
         collection = contents_response.json()[0]

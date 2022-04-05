@@ -141,12 +141,9 @@ class TagAttributeHandler:
             else:
                 package_name = elem.get("name", "")
                 package_version = elem.get("version", "")
-                error_message += "Version %s of the %s package cannot be installed because " % (
-                    str(package_version),
-                    str(package_name),
-                )
-                error_message += "the recipe for installing the package is missing either an "
-                error_message += "&lt;actions&gt; tag set or an &lt;actions_group&gt; tag set."
+                error_message += f"Version {package_version} of the {package_name} package cannot be "
+                error_message += "installed because the recipe for installing the package is missing "
+                error_message += "either an &lt;actions&gt; tag set or an &lt;actions_group&gt; tag set."
             if error_message and error_message not in message:
                 message += error_message
             if altered:

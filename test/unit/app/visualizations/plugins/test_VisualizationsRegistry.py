@@ -2,11 +2,8 @@
 Test lib/galaxy/visualization/plugins/registry.
 """
 import os
-import re
 import unittest
-from typing import Dict
 
-from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import (
     clean_multiline_string,
@@ -136,87 +133,6 @@ class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
 
         mock_app_dir.remove()
         template_cache_dir
-
-    def test_interactive_environ_plugin_load(self):
-        """ """
-        jupyter_config = clean_multiline_string(
-            """\
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE interactive_environment SYSTEM "../../interactive_environments.dtd">
-        <interactive_environment name="Jupyter">
-            <data_sources>
-                <data_source>
-                    <model_class>HistoryDatasetAssociation</model_class>
-                    <test type="isinstance" test_attr="datatype" result_type="datatype">tabular.Tabular</test>
-                    <test type="isinstance" test_attr="datatype" result_type="datatype">data.Text</test>
-                    <to_param param_attr="id">dataset_id</to_param>
-                </data_source>
-            </data_sources>
-            <params>
-                <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
-            </params>
-            <template>jupyter.mako</template>
-        </interactive_environment>
-        """
-        )
-
-        templates: Dict[str, str] = {}
-        mock_app_dir_config = {
-            "plugins": {
-                "jupyter": {
-                    "config": {"jupyter.xml": jupyter_config},
-                    "templates": templates,
-                },
-            },
-        }
-
-        # going to use a fake template here to simplify testing
-        jupyter_template = "${ ie_request }-${ get_api_key() }"
-        templates["jupyter.mako"] = jupyter_template
-        # so that we don't create a cached version of that fake template in the real mako caches
-        #   we'll set up a cache in the temp dir
-        mock_app_dir_config["caches"] = {}
-        # and make sure the vis reg uses that
-        mock_app_dir = galaxy_mock.MockDir(mock_app_dir_config)
-        mock_app = galaxy_mock.MockApp(root=mock_app_dir.root_path)
-        plugin_mgr = VisualizationsRegistry(
-            mock_app, directories_setting="plugins", template_cache_dir=os.path.join(mock_app_dir.root_path, "caches")
-        )
-
-        # ...then start testing
-        expected_plugins_path = os.path.join(mock_app_dir.root_path, "plugins")
-        expected_plugin_names = ["jupyter"]
-
-        self.assertEqual(plugin_mgr.base_url, "visualizations")
-        self.assertEqual(plugin_mgr.directories, [expected_plugins_path])
-        self.assertEqual(sorted(plugin_mgr.plugins.keys()), expected_plugin_names)
-
-        jupyter = plugin_mgr.plugins["jupyter"]
-        config = jupyter.config
-
-        self.assertEqual(jupyter.name, "jupyter")
-        self.assertEqual(config.get("plugin_type"), "interactive_environment")
-
-        # get_api_key needs a user, fill_template a trans
-        user = model.User(email="blah@bler.blah", password="dockerDockerDOCKER")
-        trans = galaxy_mock.MockTrans(user=user)
-        # use a mock request factory - this will be written into the filled template to show it was used
-        jupyter.INTENV_REQUEST_FACTORY = lambda t, p: "mock"
-
-        # should return the (new) api key for the above user (see the template above)
-        response = jupyter._render({}, trans=trans)
-        response.strip()
-        self.assertIsInstance(response, str)
-        self.assertTrue("-" in response)
-        ie_request, api_key = response.split("-")
-
-        self.assertEqual(ie_request, "mock")
-
-        match = re.match(r"[a-f0-9]{32}", api_key)
-        assert match
-        self.assertEqual(match.span(), (0, 32))
-
-        mock_app_dir.remove()
 
     def test_script_entry(self):
         """"""

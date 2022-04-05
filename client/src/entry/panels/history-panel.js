@@ -72,7 +72,7 @@ const HistoryPanel = Backbone.View.extend({
 
         this.model = new Backbone.Model({
             // define components
-            cls: "history-right-panel history-details",
+            cls: "history-right-panel details",
             title: _l("History"),
             buttons: panelHeaderButtons,
         });

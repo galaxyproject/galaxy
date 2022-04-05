@@ -18,6 +18,10 @@ import galaxy.model.mapping as mapping
 from galaxy import model
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.orm.util import (
+    add_object_to_object_session,
+    get_object_session,
+)
 from galaxy.model.security import GalaxyRBACAgent
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -82,6 +86,7 @@ class MappingTests(BaseModelTestCase):
             annotated_association.annotation = "Test Annotation"
             annotated_association.user = u
             for key, value in kwds.items():
+                add_object_to_object_session(annotated_association, value)
                 setattr(annotated_association, key, value)
             self.persist(annotated_association)
             self.expunge()
@@ -90,6 +95,7 @@ class MappingTests(BaseModelTestCase):
             assert stored_annotation.user.email == "annotator@example.com"
 
         sw = model.StoredWorkflow()
+        add_object_to_object_session(sw, u)
         sw.user = u
         self.persist(sw)
         persist_and_check_annotation(model.StoredWorkflowAnnotationAssociation, stored_workflow=sw)
@@ -99,6 +105,7 @@ class MappingTests(BaseModelTestCase):
         self.persist(workflow)
 
         ws = model.WorkflowStep()
+        add_object_to_object_session(ws, workflow)
         ws.workflow = workflow
         self.persist(ws)
         persist_and_check_annotation(model.WorkflowStepAnnotationAssociation, workflow_step=ws)
@@ -152,6 +159,7 @@ class MappingTests(BaseModelTestCase):
             assert stored_rating.user.email == user_email
 
         sw = model.StoredWorkflow()
+        add_object_to_object_session(sw, u)
         sw.user = u
         self.persist(sw)
         persist_and_check_rating(model.StoredWorkflowRatingAssociation, sw)
@@ -433,9 +441,9 @@ class MappingTests(BaseModelTestCase):
         q = c2._get_nested_collection_attributes(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
-        assert [(r.keys()) for r in q] == [
-            ["element_identifier_0", "element_identifier_1", "extension", "state"],
-            ["element_identifier_0", "element_identifier_1", "extension", "state"],
+        assert [(r._fields) for r in q] == [
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
         assert q.all() == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
         q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
@@ -801,8 +809,16 @@ class MappingTests(BaseModelTestCase):
 
         def workflow_from_steps(steps):
             stored_workflow = model.StoredWorkflow()
+            add_object_to_object_session(stored_workflow, user)
             stored_workflow.user = user
             workflow = model.Workflow()
+
+            if steps:
+                for step in steps:
+                    if get_object_session(step):
+                        add_object_to_object_session(workflow, step)
+                        break
+
             workflow.steps = steps
             workflow.stored_workflow = stored_workflow
             return workflow
@@ -816,6 +832,7 @@ class MappingTests(BaseModelTestCase):
         workflow_step_2 = model.WorkflowStep()
         workflow_step_2.order_index = 1
         workflow_step_2.type = "subworkflow"
+        add_object_to_object_session(workflow_step_2, child_workflow)
         workflow_step_2.subworkflow = child_workflow
 
         workflow_step_1.get_or_add_input("moo1")
@@ -830,6 +847,7 @@ class MappingTests(BaseModelTestCase):
         annotation = model.WorkflowStepAnnotationAssociation()
         annotation.annotation = "Test Step Annotation"
         annotation.user = user
+        add_object_to_object_session(annotation, workflow_step_1)
         annotation.workflow_step = workflow_step_1
         self.persist(annotation)
 
@@ -840,9 +858,11 @@ class MappingTests(BaseModelTestCase):
 
         workflow_invocation = model.WorkflowInvocation()
         workflow_invocation.uuid = invocation_uuid
+        add_object_to_object_session(workflow_invocation, h1)
         workflow_invocation.history = h1
 
         workflow_invocation_step1 = model.WorkflowInvocationStep()
+        add_object_to_object_session(workflow_invocation_step1, workflow_invocation)
         workflow_invocation_step1.workflow_invocation = workflow_invocation
         workflow_invocation_step1.workflow_step = workflow_step_1
 
@@ -850,6 +870,7 @@ class MappingTests(BaseModelTestCase):
         workflow_invocation.attach_subworkflow_invocation_for_step(workflow_step_2, subworkflow_invocation)
 
         workflow_invocation_step2 = model.WorkflowInvocationStep()
+        add_object_to_object_session(workflow_invocation_step2, workflow_invocation)
         workflow_invocation_step2.workflow_invocation = workflow_invocation
         workflow_invocation_step2.workflow_step = workflow_step_2
 
@@ -857,6 +878,7 @@ class MappingTests(BaseModelTestCase):
 
         d1 = self.new_hda(h1, name="1")
         workflow_request_dataset = model.WorkflowRequestToInputDatasetAssociation()
+        add_object_to_object_session(workflow_request_dataset, workflow_invocation)
         workflow_request_dataset.workflow_invocation = workflow_invocation
         workflow_request_dataset.workflow_step = workflow_step_1
         workflow_request_dataset.dataset = d1

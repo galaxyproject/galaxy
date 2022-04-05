@@ -39,42 +39,6 @@ def test_galaxy_routes():
         id="testtoolshed.g2.bx.psu.edu/devteam/tool1",
     )
 
-    test_webapp.assert_maps("/api/datatypes/sniffers", controller="datatypes", action="sniffers")
-
-    test_webapp.assert_maps("/api/histories/123/contents/456", controller="history_contents", action="show")
-
-    test_webapp.assert_maps(
-        "/api/histories/123/contents/456",
-        method="PUT",
-        controller="history_contents",
-        action="update",
-    )
-
-    # Test differeniating datasets and datasets collections
-    # in history contents.
-    test_webapp.assert_maps(
-        "/api/histories/123/contents/datasets/456",
-        method="PUT",
-        controller="history_contents",
-        action="update",
-        type="dataset",
-    )
-
-    test_webapp.assert_maps(
-        "/api/histories/123/contents/dataset_collections/456",
-        method="PUT",
-        controller="history_contents",
-        action="update",
-        type="dataset_collection",
-    )
-
-    assert_url_is(url_for("history_content", history_id="123", id="456"), "/api/histories/123/contents/456")
-
-    assert_url_is(
-        url_for("history_content_typed", history_id="123", id="456", type="dataset"),
-        "/api/histories/123/contents/datasets/456",
-    )
-
     test_webapp.assert_maps("/api/dependency_resolvers", controller="tool_dependencies", action="index")
 
     test_webapp.assert_maps(

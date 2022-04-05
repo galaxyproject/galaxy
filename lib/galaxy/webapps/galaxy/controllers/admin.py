@@ -621,7 +621,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         keys = set()
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
-        for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dtype: dtype.get("extension")):
+        for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dt: dt.get("extension")):
             attrib = dict(dtype.attrib)
             datatypes.append(attrib)
             keys |= set(attrib.keys())

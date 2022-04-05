@@ -59,8 +59,7 @@ class VisualizationsConfigParser:
         """
         returned = {}
 
-        # main tag specifies plugin type (visualization or
-        # interactive_enviornment).
+        # main tag specifies plugin type (visualization or other).
         returned["plugin_type"] = xml_tree.tag
 
         # a text display name for end user links

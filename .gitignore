@@ -129,6 +129,7 @@ test/unit/**.log
 .vscode
 client/**/jsconfig.json
 vetur.config.js
+.pre-commit-config.yaml
 
 # Chrom len files
 *.len

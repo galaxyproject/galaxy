@@ -412,7 +412,7 @@ class AdminToolshed(AdminGalaxy):
                         return trans.response.send_redirect(url)
             else:
                 return trans.show_error_message(
-                    f"Cannot locate installed tool shed repository with encoded id <b>{str(repository_id)}</b>."
+                    f"Cannot locate installed tool shed repository with encoded id <b>{repository_id}</b>."
                 )
         else:
             return trans.show_error_message(
@@ -462,10 +462,7 @@ class AdminToolshed(AdminGalaxy):
                 tool_dependencies = tool_dependency_util.create_tool_dependency_objects(
                     trans.app, repository, relative_install_dir, set_status=False
                 )
-                message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % (
-                    escape(str(repository.name)),
-                    updating_to_changeset_revision,
-                )
+                message = f"The installed repository named '{escape(str(repository.name))}' has been updated to change set revision '{updating_to_changeset_revision}'.  "
                 self.initiate_tool_dependency_installation(trans, tool_dependencies, message=message, status=status)
         # Handle tool dependencies check box.
         if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
@@ -1483,10 +1480,7 @@ class AdminToolshed(AdminGalaxy):
                         status=status,
                     )
                     return self.install_tool_dependencies_with_update(trans, **new_kwd)
-                message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % (
-                    name,
-                    latest_changeset_revision,
-                )
+                message = f"The installed repository named '{name}' has been updated to change set revision '{latest_changeset_revision}'.  "
         else:
             message = (
                 f"The latest changeset revision could not be retrieved for the installed repository named '{name}'.  "

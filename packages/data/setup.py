@@ -13,45 +13,48 @@ SOURCE_DIR = "galaxy"
 
 _version_re = re.compile(r"__version__\s+=\s+(.*)")
 
-with open("%s/project_galaxy_data.py" % SOURCE_DIR, "rb") as f:
-    init_contents = f.read().decode("utf-8")
+project_short_name = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py") as f:
+    init_contents = f.read()
 
-    def get_var(var_name):
-        pattern = re.compile(r"%s\s+=\s+(.*)" % var_name)
-        match = pattern.search(init_contents).group(1)
-        return str(ast.literal_eval(match))
 
-    version = get_var("__version__")
-    PROJECT_NAME = get_var("PROJECT_NAME")
-    PROJECT_URL = get_var("PROJECT_URL")
-    PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
-    PROJECT_EMAIL = get_var("PROJECT_EMAIL")
-    PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
+def get_var(var_name):
+    pattern = re.compile(rf"{var_name}\s+=\s+(.*)")
+    match = pattern.search(init_contents).group(1)
+    return str(ast.literal_eval(match))
+
+
+version = get_var("__version__")
+PROJECT_NAME = get_var("PROJECT_NAME")
+PROJECT_URL = get_var("PROJECT_URL")
+PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
+PROJECT_EMAIL = get_var("PROJECT_EMAIL")
+PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
 PACKAGES = [
-    "galaxy",
-    "galaxy.datatypes",
-    "galaxy.datatypes.converters",
-    "galaxy.datatypes.dataproviders",
-    "galaxy.datatypes.display_applications",
-    "galaxy.datatypes.util",
-    "galaxy.datatypes.test",
-    "galaxy.model",
-    "galaxy.model.dataset_collections",
-    "galaxy.model.dataset_collections.types",
-    "galaxy.model.migrate",
-    "galaxy.model.migrate.triggers",
-    "galaxy.model.migrate.versions",
-    "galaxy.model.orm",
-    "galaxy.model.store",
-    "galaxy.model.tool_shed_install",
-    "galaxy.model.tool_shed_install.migrate",
-    "galaxy.model.tool_shed_install.migrate.versions",
-    "galaxy.model.unittest_utils",
-    "galaxy.model.view",
-    "galaxy.quota",
-    "galaxy.security",
+    'galaxy',
+    'galaxy.datatypes',
+    'galaxy.datatypes.converters',
+    'galaxy.datatypes.dataproviders',
+    'galaxy.datatypes.display_applications',
+    'galaxy.datatypes.util',
+    'galaxy.datatypes.test',
+    'galaxy.model',
+    'galaxy.model.dataset_collections',
+    'galaxy.model.dataset_collections.types',
+    'galaxy.model.migrations',
+    'galaxy.model.migrations.alembic',
+    'galaxy.model.migrations.alembic.versions_gxy',
+    'galaxy.model.migrations.alembic.versions_tsi',
+    'galaxy.model.orm',
+    'galaxy.model.store',
+    'galaxy.model.tool_shed_install',
+    'galaxy.model.triggers',
+    'galaxy.model.unittest_utils',
+    'galaxy.model.view',
+    'galaxy.quota',
+    'galaxy.security',
 ]
 ENTRY_POINTS = """
         [console_scripts]

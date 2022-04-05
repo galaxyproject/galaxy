@@ -38,8 +38,8 @@ const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PL
 const PATHS = {
     nodeModules: "./node_modules",
     pluginDirs: [
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments,welcome_page}/*/*/static/**/*",
+        "../config/plugins/{visualizations,welcome_page}/*/static/**/*",
+        "../config/plugins/{visualizations,welcome_page}/*/*/static/**/*",
     ],
     pluginBuildModules: [
         `../config/plugins/{visualizations,welcome_page}/{${PLUGIN_BUILD_IDS.join(",")}}/package.json`,
@@ -130,8 +130,18 @@ function buildPlugins(callback, forceRebuild) {
                         }
                     );
                     console.log(`Building ${pluginName}`);
-                    child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true });
-                    child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
+
+                    if (
+                        child_process.spawnSync("yarn", ["build"], { cwd: f, stdio: "inherit", shell: true }).status ===
+                        0
+                    ) {
+                        console.log(`Successfully built, saving build state to ${hashFilePath}`);
+                        child_process.exec(`(git rev-parse HEAD 2>/dev/null || echo \`\`) > ${hashFilePath}`);
+                    } else {
+                        console.error(
+                            `Error building ${pluginName}, not saving build state.  Please report this issue to the Galaxy Team.`
+                        );
+                    }
                 }
             });
         });
@@ -144,7 +154,7 @@ function forceBuildPlugins(callback) {
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments,welcome_page}/*"], { force: true });
+    return del(["../static/plugins/{visualizations,welcome_page}/*"], { force: true });
 }
 
 const client = parallel(fonts, stageLibs);

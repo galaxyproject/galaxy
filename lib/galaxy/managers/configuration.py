@@ -15,12 +15,12 @@ from typing import (
     List,
 )
 
-from galaxy.app import StructuredApp
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
@@ -137,8 +137,6 @@ class ConfigSerializer(base.ModelSerializer):
             "terms_url": _use_config,
             "myexperiment_target_url": _use_config,
             "wiki_url": _use_config,
-            "search_url": _use_config,
-            "mailing_lists": _defaults_to(self.app.config.mailing_lists_url),
             "screencasts_url": _use_config,
             "citation_url": _use_config,
             "support_url": _use_config,

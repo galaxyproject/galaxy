@@ -13,20 +13,23 @@ SOURCE_DIR = "galaxy"
 
 _version_re = re.compile(r"__version__\s+=\s+(.*)")
 
-with open("%s/project_galaxy_job_execution.py" % SOURCE_DIR, "rb") as f:
-    init_contents = f.read().decode("utf-8")
+project_short_name = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+with open(f"{SOURCE_DIR}/project_galaxy_{project_short_name}.py") as f:
+    init_contents = f.read()
 
-    def get_var(var_name):
-        pattern = re.compile(r"%s\s+=\s+(.*)" % var_name)
-        match = pattern.search(init_contents).group(1)
-        return str(ast.literal_eval(match))
 
-    version = get_var("__version__")
-    PROJECT_NAME = get_var("PROJECT_NAME")
-    PROJECT_URL = get_var("PROJECT_URL")
-    PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
-    PROJECT_EMAIL = get_var("PROJECT_EMAIL")
-    PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
+def get_var(var_name):
+    pattern = re.compile(rf"{var_name}\s+=\s+(.*)")
+    match = pattern.search(init_contents).group(1)
+    return str(ast.literal_eval(match))
+
+
+version = get_var("__version__")
+PROJECT_NAME = get_var("PROJECT_NAME")
+PROJECT_URL = get_var("PROJECT_URL")
+PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
+PROJECT_EMAIL = get_var("PROJECT_EMAIL")
+PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = "tests"
 PACKAGES = [
@@ -76,7 +79,6 @@ setup(
     package_dir=PACKAGE_DIR,
     include_package_data=True,
     install_requires=requirements,
-    extras_require={},
     license="AFL",
     zip_safe=False,
     keywords="galaxy",

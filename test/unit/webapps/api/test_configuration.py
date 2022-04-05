@@ -1,4 +1,4 @@
-from galaxy.webapps.galaxy.api.configuration import parse_serialization_params
+from galaxy.webapps.galaxy.api.common import parse_serialization_params
 
 
 def test_parse_serialization_params():

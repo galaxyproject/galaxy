@@ -180,6 +180,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             item["annotations"] = [x.annotation for x in wf.annotations]
             item["url"] = url_for("workflow", id=encoded_id)
             item["owner"] = wf.user.username
+            item["source_metadata"] = wf.latest_workflow.source_metadata
             item["number_of_steps"] = wf.latest_workflow.step_count
             item["show_in_tool_panel"] = False
             if user is not None:
@@ -360,10 +361,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     trs_server = payload.get("trs_server")
                     trs_tool_id = payload.get("trs_tool_id")
                     trs_version_id = payload.get("trs_version_id")
+                    import_source = None
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
+                        import_source = "URL"
                     except Exception:
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
             elif hasattr(archive_file, "file"):
@@ -371,11 +374,12 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
                     archive_data = util.unicodify(uploaded_file.read())
+                    import_source = "uploaded file"
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
-            return self.__api_import_from_archive(trans, archive_data, "uploaded file", payload=payload)
+            return self.__api_import_from_archive(trans, archive_data, import_source, payload=payload)
 
         if "from_history_id" in payload:
             from_history_id = payload.get("from_history_id")
@@ -581,6 +585,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
 
             if "published" in workflow_dict and stored_workflow.published != workflow_dict["published"]:
                 stored_workflow.published = workflow_dict["published"]
+                trans.sa_session.flush()
+
+            if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
+                stored_workflow.importable = workflow_dict["importable"]
                 trans.sa_session.flush()
 
             if "annotation" in workflow_dict and not steps_updated:

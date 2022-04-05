@@ -150,10 +150,9 @@ class TestRepositoryDependency(BaseTest):
     def test_columns(self, session, cls_, repository):
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
-        obj = cls_()
+        obj = cls_(repository.id)
         obj.create_time = create_time
         obj.update_time = update_time
-        obj.repository = repository
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -163,8 +162,7 @@ class TestRepositoryDependency(BaseTest):
             assert stored_obj.tool_shed_repository_id == repository.id
 
     def test_relationships(self, session, cls_, repository):
-        obj = cls_()
-        obj.repository = repository
+        obj = cls_(repository.id)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -313,8 +311,7 @@ def repository_repository_dependency_association(session):
 
 @pytest.fixture
 def repository_dependency(session, repository):
-    instance = model.RepositoryDependency()
-    instance.repository = repository
+    instance = model.RepositoryDependency(repository.id)
     yield from dbcleanup_wrapper(session, instance)
 
 

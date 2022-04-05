@@ -185,3 +185,9 @@ class ShedToolDataTableManager:
 
 # For backwards compatibility with exisiting data managers
 ToolDataTableManager = ShedToolDataTableManager
+
+
+__all__ = (
+    "ToolDataTableManager",
+    "ShedToolDataTableManager",
+)

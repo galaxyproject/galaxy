@@ -17,6 +17,8 @@ def lint_output(tool_xml, lint_ctx):
     if len(outputs) > 1:
         lint_ctx.warn("Tool contains multiple output sections, behavior undefined.", node=outputs[1])
     num_outputs = 0
+    labels = set()
+    names = set()
     for output in list(outputs[0]):
         if output.tag not in ["data", "collection"]:
             lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]", node=output)
@@ -29,6 +31,17 @@ def lint_output(tool_xml, lint_ctx):
             lint_ctx.warn(
                 f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', node=output
             )
+
+        name = output.attrib.get("name")
+        if name is not None:
+            if name in names:
+                lint_ctx.error(f"Tool output [{name}] has duplicated name", node=output)
+            names.add(name)
+
+        label = output.attrib.get("label", "${tool.name} on ${on_string}")
+        if label in labels:
+            lint_ctx.error(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
+        labels.add(label)
 
         format_set = False
         if __check_format(output, lint_ctx):

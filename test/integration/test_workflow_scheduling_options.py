@@ -87,8 +87,7 @@ steps:
             inputs = {
                 "0": {"src": "hdca", "id": hdca1["id"]},
             }
-            invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, inputs)
-            self.workflow_populator.wait_for_workflow(history_id, workflow_id, invocation_id)
+            self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual(
                 "a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0)

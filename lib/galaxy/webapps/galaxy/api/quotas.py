@@ -6,10 +6,6 @@ import logging
 from fastapi import Path
 from fastapi.param_functions import Body
 
-from galaxy import (
-    util,
-    web,
-)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.quota._schema import (
     CreateQuotaParams,
@@ -22,7 +18,6 @@ from galaxy.quota._schema import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.galaxy.services.quotas import QuotasService
 from . import (
-    BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
     Router,
@@ -143,71 +138,4 @@ class FastAPIQuota:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Restores a previously deleted quota."""
-        return self.service.undelete(trans, id)
-
-
-class QuotaAPIController(BaseGalaxyAPIController):
-
-    service: QuotasService = depends(QuotasService)
-
-    @web.require_admin
-    @web.expose_api
-    def index(self, trans, deleted="False", **kwd):
-        """
-        GET /api/quotas
-        GET /api/quotas/deleted
-        Displays a collection (list) of quotas.
-        """
-        deleted = util.string_as_bool(deleted)
-        return self.service.index(trans, deleted)
-
-    @web.require_admin
-    @web.expose_api
-    def show(self, trans, id, deleted="False", **kwd):
-        """
-        GET /api/quotas/{encoded_quota_id}
-        GET /api/quotas/deleted/{encoded_quota_id}
-        Displays information about a quota.
-        """
-        deleted = util.string_as_bool(deleted)
-        return self.service.show(trans, id, deleted)
-
-    @web.require_admin
-    @web.expose_api
-    def create(self, trans, payload, **kwd):
-        """
-        POST /api/quotas
-        Creates a new quota.
-        """
-        params = CreateQuotaParams(**payload)
-        return self.service.create(trans, params)
-
-    @web.require_admin
-    @web.expose_api
-    def update(self, trans, id, payload, **kwd):
-        """
-        PUT /api/quotas/{encoded_quota_id}
-        Modifies a quota.
-        """
-        params = UpdateQuotaParams(**payload)
-        return self.service.update(trans, id, params)
-
-    @web.require_admin
-    @web.expose_api
-    def delete(self, trans, id, **kwd):
-        """
-        DELETE /api/quotas/{encoded_quota_id}
-        Deletes a quota
-        """
-        # a request body is optional here
-        payload = DeleteQuotaPayload(**kwd.get("payload", {}))
-        return self.service.delete(trans, id, payload)
-
-    @web.require_admin
-    @web.expose_api
-    def undelete(self, trans, id, **kwd):
-        """
-        POST /api/quotas/deleted/{encoded_quota_id}/undelete
-        Undeletes a quota
-        """
         return self.service.undelete(trans, id)

@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool tests."""
+import typing
 from inspect import (
     Parameter,
     signature,
@@ -118,12 +119,16 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 if attrib not in assert_function_sig.parameters:
                     lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
                     continue
-                if assert_function_sig.parameters[attrib].annotation is not Parameter.empty:
+                annotation = assert_function_sig.parameters[attrib].annotation
+                annotation = _handle_optionals(annotation)
+                if annotation is not Parameter.empty:
                     try:
-                        assert_function_sig.parameters[attrib].annotation(a.attrib[attrib])
+                        annotation(a.attrib[attrib])
+                    except TypeError:
+                        raise Exception(f"Faild to instantiate {attrib} for {assert_function_name}")
                     except ValueError:
                         lint_ctx.error(
-                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{assert_function_sig.parameters[attrib].annotation.__name__}' got '{a.attrib[attrib]}'",
+                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{annotation.__name__}' got '{a.attrib[attrib]}'",
                             node=a,
                         )
             # check missing required attributes
@@ -139,6 +144,13 @@ def _check_asserts(test_idx, assertions, lint_ctx):
             if a.tag == "has_size":
                 if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
                     lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
+
+
+def _handle_optionals(annotation):
+    as_dict = annotation.__dict__
+    if "__origin__" in as_dict and as_dict["__origin__"] == typing.Union:
+        return as_dict["__args__"][0]
+    return annotation
 
 
 def _collect_output_names(tool_xml):

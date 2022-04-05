@@ -14,7 +14,6 @@ define({
     "New Track Browser": "创建 Track Browser",
     "Saved Visualizations": "已保存的可视化",
     "Create Visualization": "创建可视化",
-    "Interactive Environments": "交互式环境",
     Admin: "管理员",
     Help: "帮助",
     Support: "支持",

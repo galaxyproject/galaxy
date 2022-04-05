@@ -10,7 +10,6 @@ from sqlalchemy import (
     desc,
 )
 from sqlalchemy.orm import (
-    eagerload,
     joinedload,
     lazyload,
     undefer,
@@ -174,8 +173,8 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
             .join("user")
             .options(
                 lazyload("latest_workflow"),
-                eagerload("user").load_only("username"),
-                eagerload("annotations"),
+                joinedload("user").load_only("username"),
+                joinedload("annotations"),
                 undefer("average_rating"),
             )
         )
@@ -484,7 +483,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         stored = self.get_stored_workflow(trans, id)
         if new_annotation:
             # Sanitize annotation before adding it.
-            new_annotation = sanitize_html(new_annotation or "")
+            new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
             trans.sa_session.flush()
             return new_annotation
@@ -639,7 +638,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation or "")
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
             # Persist
             session = trans.sa_session
@@ -668,7 +667,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             workflow.stored_workflow = stored_workflow
             stored_workflow.latest_workflow = workflow
             # Add annotation.
-            workflow_annotation = sanitize_html(workflow_annotation or "")
+            workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
 
             # Persist
@@ -994,96 +993,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             )
         workflow_canvas.add_steps()
         return workflow_canvas.finish()
-
-
-def _build_workflow_on_str(instance_ds_names):
-    # Returns suffix for new histories based on multi input iteration
-    num_multi_inputs = len(instance_ds_names)
-    if num_multi_inputs == 0:
-        return ""
-    elif num_multi_inputs == 1:
-        return f" on {instance_ds_names[0]}"
-    else:
-        return f" on {', '.join(instance_ds_names[0:-1])} and {instance_ds_names[-1]}"
-
-
-def _expand_multiple_inputs(kwargs):
-    (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = _split_inputs(kwargs)
-
-    # Build up every combination of inputs to be run together.
-    input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
-    input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
-
-    # Input name that are multiply specified
-    multi_input_keys = list(matched_multi_inputs.keys()) + list(multiplied_multi_inputs.keys())
-
-    for input_combo in input_combos:
-        for key, value in input_combo.items():
-            kwargs[key] = value
-        yield (kwargs, multi_input_keys)
-
-
-def _extend_with_matched_combos(single_inputs, multi_inputs):
-    if len(multi_inputs) == 0:
-        return [single_inputs]
-
-    matched_multi_inputs = []
-
-    first_multi_input_key = next(iter(multi_inputs.keys()))
-    first_multi_value = multi_inputs.get(first_multi_input_key)
-
-    for value in first_multi_value:
-        new_inputs = _copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
-        matched_multi_inputs.append(new_inputs)
-
-    for multi_input_key, multi_input_values in multi_inputs.items():
-        if multi_input_key == first_multi_input_key:
-            continue
-        if len(multi_input_values) != len(first_multi_value):
-            raise Exception(
-                "Failed to match up multi-select inputs, must select equal number of data files in each multiselect"
-            )
-        for index, value in enumerate(multi_input_values):
-            matched_multi_inputs[index][multi_input_key] = value
-    return matched_multi_inputs
-
-
-def _extend_with_multiplied_combos(input_combos, multi_inputs):
-    combos = input_combos
-
-    for multi_input_key, multi_input_value in multi_inputs.items():
-        iter_combos = []
-
-        for combo in combos:
-            for input_value in multi_input_value:
-                iter_combos.append(_copy_and_extend_inputs(combo, multi_input_key, input_value))
-
-        combos = iter_combos
-    return combos
-
-
-def _copy_and_extend_inputs(inputs, key, value):
-    new_inputs = dict(inputs)
-    new_inputs[key] = value
-    return new_inputs
-
-
-def _split_inputs(kwargs):
-    """ """
-    input_keys = [a for a in kwargs if a.endswith("|input")]
-    single_inputs = {}
-    matched_multi_inputs = {}
-    multiplied_multi_inputs = {}
-    for input_key in input_keys:
-        input_val = kwargs[input_key]
-        if isinstance(input_val, list):
-            input_base = input_key[: -len("|input")]
-            mode_key = f"{input_base}|multi_mode"
-            mode = kwargs.get(mode_key, "matched")
-            if mode == "matched":
-                matched_multi_inputs[input_key] = input_val
-            else:
-                multiplied_multi_inputs[input_key] = input_val
-        else:
-            single_inputs[input_key] = input_val
-    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)

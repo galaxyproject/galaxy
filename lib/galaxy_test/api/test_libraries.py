@@ -56,13 +56,13 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 403)
         # Anons can't update libs
         data = dict(name="ChangedName", description="ChangedDescription", synopsis="ChangedSynopsis")
-        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=False, anon=True)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=False, anon=True, json=True)
         self._assert_status_code_is(create_response, 403)
 
     def test_update(self):
         library = self.library_populator.new_library("UpdateTestLibrary")
         data = dict(name="ChangedName", description="ChangedDescription", synopsis="ChangedSynopsis")
-        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=True)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, "name", "description", "synopsis")
@@ -76,11 +76,11 @@ class LibrariesApiTestCase(ApiTestCase):
         role_id = self.library_populator.user_private_role_id()
         data = dict(name="ChangedName", description="ChangedDescription", synopsis="ChangedSynopsis")
         # User has no permission by default
-        create_response = self._patch(f"libraries/{library['id']}", data=data)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, json=True)
         self._assert_status_code_is(create_response, 403)
         # Grant modify permission
         self.library_populator.set_modify_permission(library_id, role_id)
-        create_response = self._patch(f"libraries/{library['id']}", data=data)
+        create_response = self._patch(f"libraries/{library['id']}", data=data, json=True)
         self._assert_status_code_is(create_response, 200)
         library = create_response.json()
         self._assert_has_keys(library, "name", "description", "synopsis")
@@ -414,7 +414,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset_update_time == container_update_time, container_fetch_response
 
     def _patch_library_dataset(self, library_dataset_id, data):
-        create_response = self._patch(f"libraries/datasets/{library_dataset_id}", data=data)
+        create_response = self._patch(f"libraries/datasets/{library_dataset_id}", data=data, json=True)
         self._assert_status_code_is(create_response, 200)
         ld = create_response.json()
         library_id = ld["parent_library_id"]
@@ -441,7 +441,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset", wait=True).json()
         data = {"file_ext": "nonexisting_type"}
-        create_response = self._patch(f"libraries/datasets/{ld['id']}", data=data)
+        create_response = self._patch(f"libraries/datasets/{ld['id']}", data=data, json=True)
         self._assert_status_code_is(create_response, 400)
         assert "This Galaxy does not recognize the datatype of:" in create_response.json()["err_msg"]
 

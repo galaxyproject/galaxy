@@ -49,7 +49,7 @@ export class Services {
         }
     }
     async createNewLibrary(name, description, synopsis, onSucess, onError) {
-        const url = `${this.root}api/libraries/`;
+        const url = `${this.root}api/libraries`;
         try {
             const response = axios
                 .post(url, {

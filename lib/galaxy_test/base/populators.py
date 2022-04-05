@@ -72,7 +72,6 @@ from gxformat2 import (
     ImporterGalaxyInterface,
 )
 from gxformat2._yaml import ordered_load
-from pkg_resources import resource_string
 from requests.models import Response
 
 from galaxy.tool_util.client.staging import InteractorStaging
@@ -86,18 +85,18 @@ from galaxy.tool_util.verify.wait import wait_on as tool_util_wait_on
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     galaxy_root_path,
-    unicodify,
 )
+from galaxy.util.resources import resource_string
 from . import api_asserts
 from .api import ApiTestInteractor
 
 CWL_TOOL_DIRECTORY = os.path.join(galaxy_root_path, "test", "functional", "tools", "cwl_tools")
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
+workflow_str = resource_string(__package__, "data/test_workflow_1.ga")
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = unicodify(resource_string(__name__, "data/test_workflow_2.ga"))
+workflow_random_x2_str = resource_string(__package__, "data/test_workflow_2.ga")
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -1078,6 +1077,36 @@ class BaseDatasetPopulator(BasePopulator):
             timeout=timeout,
         )
 
+    def new_page(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, Any]:
+        page_response = self.new_page_raw(slug=slug, title=title, content_format=content_format, content=content)
+        page_response.raise_for_status()
+        return page_response.json()
+
+    def new_page_raw(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Response:
+        page_request = self.new_page_payload(slug=slug, title=title, content_format=content_format, content=content)
+        page_response = self._post("pages", page_request, json=True)
+        return page_response
+
+    def new_page_payload(
+        self, slug: str = "mypage", title: str = "MY PAGE", content_format: str = "html", content: Optional[str] = None
+    ) -> Dict[str, str]:
+        if content is None:
+            if content_format == "html":
+                content = "<p>Page!</p>"
+            else:
+                content = "*Page*\n\n"
+        request = dict(
+            slug=slug,
+            title=title,
+            content=content,
+            content_format=content_format,
+        )
+        return request
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
@@ -1135,7 +1164,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def load_workflow_from_resource(self, name: str, filename: Optional[str] = None) -> dict:
         if filename is None:
             filename = f"data/{name}.ga"
-        content = unicodify(resource_string(__name__, filename))
+        content = resource_string(__package__, filename)
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name: str, **create_kwds) -> str:
@@ -1272,9 +1301,8 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
-        assert_ok: bool = True,
         inputs_by: str = "step_index",
-    ):
+    ) -> Response:
         if inputs is None:
             inputs = {}
 
@@ -1289,12 +1317,22 @@ class BaseWorkflowPopulator(BasePopulator):
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = inputs_by
         invocation_response = self.invoke_workflow_raw(workflow_id, request)
-        if assert_ok:
-            api_asserts.assert_status_code_is(invocation_response, 200)
-            invocation_id = invocation_response.json()["id"]
-            return invocation_id
-        else:
-            return invocation_response
+        return invocation_response
+
+    def invoke_workflow_and_assert_ok(
+        self,
+        workflow_id: str,
+        history_id: Optional[str] = None,
+        inputs: Optional[dict] = None,
+        request: Optional[dict] = None,
+        inputs_by: str = "step_index",
+    ) -> str:
+        invocation_response = self.invoke_workflow(
+            workflow_id, history_id=history_id, inputs=inputs, request=request, inputs_by=inputs_by
+        )
+        api_asserts.assert_status_code_is(invocation_response, 200)
+        invocation_id = invocation_response.json()["id"]
+        return invocation_id
 
     def invoke_workflow_and_wait(
         self,
@@ -1302,15 +1340,10 @@ class BaseWorkflowPopulator(BasePopulator):
         history_id: Optional[str] = None,
         inputs: Optional[dict] = None,
         request: Optional[dict] = None,
-        assert_ok: bool = True,
-    ):
-        invoke_return = self.invoke_workflow(
-            workflow_id, history_id=history_id, inputs=inputs, request=request, assert_ok=assert_ok
-        )
-        if assert_ok:
-            invocation_id = invoke_return
-        else:
-            invocation_id = invoke_return.json()["id"]
+    ) -> Response:
+        invoke_return = self.invoke_workflow(workflow_id, history_id=history_id, inputs=inputs, request=request)
+        invoke_return.raise_for_status()
+        invocation_id = invoke_return.json()["id"]
 
         if history_id is None and request:
             history_id = request.get("history_id")
@@ -1318,7 +1351,7 @@ class BaseWorkflowPopulator(BasePopulator):
             history_id = request["history"]
             if history_id.startswith("hist_id="):
                 history_id = history_id[len("hist_id=") :]
-        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+        self.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=True)
         return invoke_return
 
     def workflow_report_json(self, workflow_id: str, invocation_id: str) -> dict:
@@ -2111,7 +2144,15 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
         return create_response
 
 
-def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
+LoadDataDictResponseT = Tuple[Dict[str, Any], Dict[str, Any], bool]
+
+
+def load_data_dict(
+    history_id: str,
+    test_data: Dict[str, Any],
+    dataset_populator: BaseDatasetPopulator,
+    dataset_collection_populator: BaseDatasetCollectionPopulator,
+) -> LoadDataDictResponseT:
     """Load a dictionary as inputs to a workflow (test data focused)."""
 
     def open_test_data(test_dict, mode="rb"):

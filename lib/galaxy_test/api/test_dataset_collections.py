@@ -285,7 +285,6 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = {
             "history_id": self.history_id,
             "targets": json.dumps(targets),
-            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
@@ -308,7 +307,6 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         payload = {
             "history_id": self.history_id,
             "targets": json.dumps(targets),
-            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         self.dataset_populator.fetch(payload, assert_ok=False, wait=True)
         hdca = self._assert_one_collection_created_in_history()

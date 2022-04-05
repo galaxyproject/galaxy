@@ -525,11 +525,17 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.license = data.get("license")
         workflow.creator_metadata = data.get("creator")
 
-        if "license" in data:
-            workflow.license = data["license"]
-
-        if "creator" in data:
-            workflow.creator_metadata = data["creator"]
+        if hasattr(workflow_state_resolution_options, "archive_source"):
+            if workflow_state_resolution_options.archive_source:
+                source_metadata = {}
+                if workflow_state_resolution_options.archive_source == "trs_tool":
+                    source_metadata["trs_tool_id"] = workflow_state_resolution_options.trs_tool_id
+                    source_metadata["trs_version_id"] = workflow_state_resolution_options.trs_version_id
+                    source_metadata["trs_server"] = workflow_state_resolution_options.trs_server
+                elif not workflow_state_resolution_options.archive_source.startswith("file://"):  # URL import
+                    source_metadata["url"] = workflow_state_resolution_options.archive_source
+                workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
+                workflow.source_metadata = source_metadata
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -855,6 +861,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["report"] = workflow.reports_config or {}
         data["license"] = workflow.license
         data["creator"] = workflow.creator_metadata
+        data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
 
         output_label_index = set()
@@ -1094,6 +1101,8 @@ class WorkflowContentsManager(UsesAnnotations):
             data["creator"] = workflow.creator_metadata
         if workflow.license:
             data["license"] = workflow.license
+        if workflow.source_metadata:
+            data["source_metadata"] = workflow.source_metadata
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
@@ -1286,6 +1295,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["annotation"] = self.get_item_annotation_str(sa_session, stored.user, stored)
         item["license"] = workflow.license
         item["creator"] = workflow.creator_metadata
+        item["source_metadata"] = workflow.source_metadata
         steps = {}
         steps_to_order_index = {}
         for step in workflow.steps:
@@ -1643,6 +1653,12 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     tool_panel_section_id: str = ""
     tool_panel_section_mapping: Dict = {}
     shed_tool_conf: Optional[str] = None
+
+    # for workflows imported by archive source
+    archive_source: str = ""
+    trs_tool_id: str = ""
+    trs_version_id: str = ""
+    trs_server: str = ""
 
     @property
     def is_importable(self):

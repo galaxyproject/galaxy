@@ -576,8 +576,8 @@ class GalaxyRBACAgent(RBACAgent):
         ):
             return True
         if search_downward:
-            for folder in folder.active_folders:
-                return self.has_accessible_folders(trans, folder, user, roles, search_downward=search_downward)
+            for active_folder in folder.active_folders:
+                return self.has_accessible_folders(trans, active_folder, user, roles, search_downward=search_downward)
         return False
 
     def has_accessible_library_datasets(self, trans, folder, user, roles, search_downward=True):

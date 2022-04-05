@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from starlette_context import context as request_context
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
-from galaxy.webapps.galaxy.fast_app import add_request_id_middleware
+from galaxy.webapps.base.api import add_request_id_middleware
 
 app = FastAPI()
 GX_APP = None

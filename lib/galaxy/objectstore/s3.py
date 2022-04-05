@@ -626,7 +626,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound("objectstore.empty, object does not exist: %s, kwargs: %s" % (str(obj), str(kwargs)))
+            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -723,7 +723,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound("objectstore.get_filename, no cache_path: %s, kwargs: %s" % (str(obj), str(kwargs)))
+        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -748,9 +748,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # Update the file on S3
             self._push_to_os(rel_path, source_file)
         else:
-            raise ObjectNotFound(
-                "objectstore.update_from_file, object does not exist: %s, kwargs: %s" % (str(obj), str(kwargs))
-            )
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):

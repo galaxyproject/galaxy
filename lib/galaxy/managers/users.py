@@ -412,6 +412,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return self.app.quota_agent.get_quota_nice_size(user)
         return self.app.quota_agent.get_percent(user=user)
 
+    def quota_bytes(self, user):
+        return self.app.quota_agent.get_quota(user=user)
+
     def tags_used(self, user, tag_models=None):
         """
         Return a list of distinct 'user_tname:user_value' strings that the
@@ -660,6 +663,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "nice_total_disk_usage",
                 "quota_percent",
                 "quota",
+                "quota_bytes",
                 "deleted",
                 "purged",
                 # 'active',
@@ -686,6 +690,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "total_disk_usage": lambda i, k, **c: float(i.total_disk_usage),
                 "quota_percent": lambda i, k, **c: self.user_manager.quota(i),
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
+                "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
                 "tags_used": lambda i, k, **c: self.user_manager.tags_used(i),
             }
         )

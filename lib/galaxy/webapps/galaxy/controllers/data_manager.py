@@ -26,7 +26,7 @@ class DataManager(BaseUIController):
         status = kwd.get("status", "info")
         data_managers = []
         for data_manager_id, data_manager in sorted(
-            trans.app.data_managers.data_managers.items(), key=lambda data_manager: data_manager[1].name
+            trans.app.data_managers.data_managers.items(), key=lambda dm: dm[1].name
         ):
             data_managers.append(
                 {

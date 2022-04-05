@@ -5,6 +5,7 @@ import inspect
 import logging
 import os
 import random
+import re
 import socket
 import string
 import time
@@ -17,6 +18,7 @@ from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
+from apispec import APISpec
 from babel import Locale
 from babel.support import Translations
 from sqlalchemy import (
@@ -40,12 +42,12 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web.framework import (
     base,
     helpers,
     url_for,
 )
-from galaxy.web_stack import get_app_kwds
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -100,6 +102,62 @@ class WebApplication(base.WebApplication):
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
         # Security helper
         self.security = galaxy_app.security
+
+    def build_apispec(self):
+        """
+        Traverse all route paths starting with "api" and create an APISpec instance.
+        """
+        # API specification builder
+        apispec = APISpec(
+            title=self.name,
+            version=VERSION,
+            openapi_version="3.0.2",
+        )
+        RE_URL = re.compile(
+            r"""
+            (?::\(|{)
+                (\w*)
+                (?::.*)?
+            (?:\)|})""",
+            re.X,
+        )
+        DEFAULT_API_RESOURCE_NAMES = ("index", "create", "new", "update", "edit", "show", "delete")
+        for rule in self.mapper.matchlist:
+            if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
+                continue
+            # Try to replace routes various ways to encode variables with simple swagger {form}
+            swagger_path = "/%s" % RE_URL.sub(r"{\1}", rule.routepath)
+            controller = rule.defaults.get("controller", "")
+            action = rule.defaults.get("action", "")
+            # Get the list of methods for the route
+            methods = []
+            if rule.conditions:
+                m = rule.conditions.get("method", [])
+                methods = type(m) is str and [m] or m
+            # Find the controller class
+            if controller not in self.api_controllers:
+                # Only happens when removing a controller after porting to FastAPI.
+                raise Exception(f"No controller class found for '{controller}', remove from buildapp.py ?")
+            controller_class = self.api_controllers[controller]
+            if not hasattr(controller_class, action):
+                if action not in DEFAULT_API_RESOURCE_NAMES:
+                    # There's a manually specified action that points to a function that doesn't exist anymore
+                    raise Exception(
+                        f"No action found for {action} in class {controller_class}, remove from buildapp.py ?"
+                    )
+                continue
+            action_method = getattr(controller_class, action)
+            operations = {}
+            # Add methods that have routes but are not documents
+            for method in methods:
+                if method.lower() not in operations:
+                    operations[method.lower()] = {
+                        "description": f"This route has not yet been ported to FastAPI. The documentation may not be complete.\n{action_method.__doc__}",
+                        "tags": ["undocumented"],
+                    }
+            # Store the swagger path
+            apispec.path(path=swagger_path, operations=operations)
+        return apispec
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
@@ -1032,16 +1090,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
 def default_url_path(path):
     return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
-
-
-def build_native_uwsgi_app(paste_factory, config_section):
-    """uwsgi can load paste factories with --ini-paste, but this builds non-paste uwsgi apps.
-
-    In particular these are useful with --yaml or --json for config."""
-    # TODO: just move this to a classmethod on stack?
-    app_kwds = get_app_kwds(config_section)
-    uwsgi_app = paste_factory({}, load_app_kwds=app_kwds)
-    return uwsgi_app
 
 
 def build_url_map(app, global_conf, **local_conf):
