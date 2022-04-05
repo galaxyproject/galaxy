@@ -87,6 +87,18 @@ def validate_and_normalize_targets(trans, payload):
             raise RequestParameterInvalidException("in_place cannot be set in the upload request")
 
         src = item["src"]
+        if src == "pasted":
+            if item.get("url") is not None:
+                raise RequestParameterInvalidException(
+                    "Cannot specify a 'url' when fetching data with pasted content 'src'"
+                )
+            if "paste_content" not in item:
+                raise RequestParameterInvalidException("src of type 'pasted' requires paste_content field")
+        else:
+            if "paste_content" in item:
+                raise RequestParameterInvalidException(
+                    "'paste_content' field can only be specified with src of type 'pasted'"
+                )
 
         # Check link_data_only can only be set for certain src types and certain elements_from types.
         _handle_invalid_link_data_only_elements_type(item)

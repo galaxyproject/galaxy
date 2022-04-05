@@ -1,14 +1,19 @@
 """The module describes the ``env`` job metrics plugin."""
 import logging
 import re
+from typing import (
+    List,
+    Optional,
+)
 
 from . import InstrumentPlugin
-from .. import formatting
+from ..formatting import JobMetricFormatter
+from ..safety import Safety
 
 log = logging.getLogger(__name__)
 
 
-class EnvFormatter(formatting.JobMetricFormatter):
+class EnvFormatter(JobMetricFormatter):
     pass
 
 
@@ -19,16 +24,17 @@ class EnvPlugin(InstrumentPlugin):
 
     plugin_type = "env"
     formatter = EnvFormatter()
+    variables: Optional[List[str]]
+    default_safety = Safety.UNSAFE
 
     def __init__(self, **kwargs):
         variables_str = kwargs.get("variables", None)
         if variables_str:
-            variables = [v.strip() for v in variables_str.split(",")]
+            self.variables = [v.strip() for v in variables_str.split(",")]
         else:
-            variables = None
-        self.variables = variables
+            self.variables = None
 
-    def pre_execute_instrument(self, job_directory):
+    def pre_execute_instrument(self, job_directory: str):
         """Use env to dump all environment variables to a file."""
         return f"env > '{self.__env_file(job_directory)}'"
 
