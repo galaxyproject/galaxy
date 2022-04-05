@@ -53,7 +53,18 @@
                     </div>
                 </div>
                 <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-                    <ZoomControl :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
+                    <b-button
+                        v-else
+                        class="reset-wheel"
+                        @click="resetWheel"
+                        variant="light"
+                        title="Show Zoom Buttons"
+                        size="sm"
+                        aria-label="Show Zoom Buttons"
+                        v-b-tooltip.hover>
+                        Zoom Controls
+                    </b-button>
                     <div id="canvas-viewport">
                         <div ref="canvas" id="canvas-container">
                             <WorkflowNode
@@ -260,6 +271,8 @@ export default {
             messageIsError: false,
             version: this.initialVersion,
             showInPanel: "attributes",
+            isWheeled: false,
+            canvasManager: null,
         };
     },
     computed: {
@@ -277,6 +290,12 @@ export default {
         },
         hasActiveNodeTool() {
             return this.activeNode && this.activeNode.type == "tool";
+        },
+        checkWheeled() {
+            if (this.canvasManager != null) {
+                return this.canvasManager.isWheeled;
+            }
+            return this.isWheeled;
         },
     },
     created() {
@@ -528,6 +547,10 @@ export default {
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
         },
+        resetWheel() {
+            this.zoomLevel = this.canvasManager.zoomLevel;
+            this.canvasManager.isWheeled = false;
+        },
         onSave(hideProgress = false) {
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
@@ -637,5 +660,12 @@ export default {
 <style scoped>
 .workflow-markdown-editor {
     right: 0px !important;
+}
+.reset-wheel {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    cursor: pointer;
+    z-index: 1002;
 }
 </style>
