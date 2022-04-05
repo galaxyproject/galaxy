@@ -323,7 +323,7 @@ class CwlPopulator:
             # workflows as well, and then make it the default. Or decide they are safe.
             "allow_tool_state_corrections": True,
         }
-        invocation_id = self.workflow_populator.invoke_workflow(
+        invocation_id = self.workflow_populator.invoke_workflow_and_assert_ok(
             workflow_id, history_id=history_id, inputs=job, request=request, inputs_by="name"
         )
         return CwlWorkflowRun(self.dataset_populator, self.workflow_populator, history_id, workflow_id, invocation_id)
