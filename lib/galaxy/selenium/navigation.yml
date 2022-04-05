@@ -493,6 +493,7 @@ workflows:
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
     external_link: '.workflow-external-link'
+    trs_icon: '.workflow-trs-icon'
 
 trs_search:
   selectors:
