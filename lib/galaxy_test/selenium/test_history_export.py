@@ -43,7 +43,7 @@ class HistoryExportTestCase(SeleniumTestCase):
 
     def select_export_to_file(self):
         if self.is_beta_history():
-            self.use_bootstrap_dropdown(option="export to file", menu="history menu")
+            self.use_bootstrap_dropdown(option="export to file", menu="history options")
         else:
             self.click_history_options()
             self.components.history_panel.options_show_export_history_to_file.wait_for_and_click()
