@@ -1598,7 +1598,7 @@ class JobWrapper(HasResourceParameters):
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
-        if job.tool_id == "__DATA_FETCH__":
+        if self.app.config.enable_celery_tasks and job.tool_id == "__DATA_FETCH__":
             # Move into task
             import pathlib
 
