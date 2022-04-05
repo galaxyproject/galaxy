@@ -32,6 +32,10 @@ class WorkflowManagementTestCase(SeleniumTestCase):
         self.workflow_index_click_option("View external link")
         assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
         self.driver.back()
+        self.components.workflows.external_link.wait_for_visible()
+        # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
+        # title_element = external_link_icon.find_element_by_tag_name("title")
+        # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
         self.workflow_index_click_option("View")
         workflow_show = self.components.workflow_show
         title_item = self.components.workflow_show.title.wait_for_visible()

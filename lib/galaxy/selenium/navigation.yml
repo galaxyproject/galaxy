@@ -492,6 +492,7 @@ workflows:
     save_button: '#workflow-save-button'
     search_box: "#workflow-search"
     workflow_table: "#workflow-table"
+    external_link: '.workflow-external-link'
 
 trs_search:
   selectors:
