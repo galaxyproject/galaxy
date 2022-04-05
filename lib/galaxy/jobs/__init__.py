@@ -1622,7 +1622,7 @@ class JobWrapper(HasResourceParameters):
             self.prepare()
             try:
                 (
-                    fetch_data.s(self.working_directory, str(request_json))
+                    fetch_data.s(self.working_directory, str(request_json), self.job_io.file_sources_dict)
                     | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)
                 )().get()
             except Exception as e:

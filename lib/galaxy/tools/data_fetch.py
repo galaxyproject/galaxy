@@ -49,13 +49,13 @@ def main(argv=None):
     do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
 
 
-def do_fetch(request_path: str, working_directory: str, registry: Registry):
+def do_fetch(request_path: str, working_directory: str, registry: Registry, file_sources_dict: Optional[Dict] = None):
     assert os.path.exists(request_path)
     with open(request_path) as f:
         request = json.load(f)
 
     allow_failed_collections = request.get("allow_failed_collections", False)
-    upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections)
+    upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections, file_sources_dict)
     galaxy_json = _request_to_galaxy_json(upload_config, request)
     galaxy_json_path = os.path.join(working_directory, "galaxy.json")
     with open(galaxy_json_path, "w") as f:
@@ -465,7 +465,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     if src == "url":
         url = item.get("url")
         try:
-            path = stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
+            path = stream_url_to_file(url, file_sources=upload_config.file_sources)
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 
@@ -509,30 +509,25 @@ def _arg_parser():
     return parser
 
 
-_file_sources = None
+def get_file_sources(working_directory, file_sources_as_dict=None):
+    from galaxy.files import ConfiguredFileSources
 
-
-def get_file_sources(working_directory):
-    global _file_sources
-    if _file_sources is None:
-        from galaxy.files import ConfiguredFileSources
-
-        file_sources = None
+    file_sources = None
+    if file_sources_as_dict is None:
         file_sources_path = os.path.join(working_directory, "file_sources.json")
         if os.path.exists(file_sources_path):
             file_sources_as_dict = None
             with open(file_sources_path) as f:
                 file_sources_as_dict = json.load(f)
-            if file_sources_as_dict is not None:
-                file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
-        if file_sources is None:
-            ConfiguredFileSources.from_dict(None)
-        _file_sources = file_sources
-    return _file_sources
+    if file_sources_as_dict is not None:
+        file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+    if file_sources is None:
+        ConfiguredFileSources.from_dict(None)
+    return file_sources
 
 
 class UploadConfig:
-    def __init__(self, request, registry, working_directory, allow_failed_collections):
+    def __init__(self, request, registry, working_directory, allow_failed_collections, file_sources_dict=None):
         self.registry = registry
         self.working_directory = working_directory
         self.allow_failed_collections = allow_failed_collections
@@ -543,9 +538,17 @@ class UploadConfig:
         self.validate_hashes = request.get("validate_hashes", False)
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
+        self.file_sources_dict = file_sources_dict
+        self._file_sources = None
 
         self.__workdir = os.path.abspath(working_directory)
         self.__upload_count = 0
+
+    @property
+    def file_sources(self):
+        if self._file_sources is None:
+            self._file_sources = get_file_sources(self.working_directory, file_sources_as_dict=self.file_sources_dict)
+        return self._file_sources
 
     def get_option(self, item, key):
         """Return item[key] if specified otherwise use default from UploadConfig.

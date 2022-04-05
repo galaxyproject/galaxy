@@ -111,10 +111,16 @@ def setup_fetch_data(job_id: int, app: MinimalManagerApp, sa_session: galaxy_sco
 def fetch_data(
     tool_job_working_directory,
     request_path,
+    file_sources_dict,
     datatypes_registry: DatatypesRegistry,
 ):
     working_directory = Path(tool_job_working_directory) / "working"
-    do_fetch(request_path=request_path, working_directory=str(working_directory), registry=datatypes_registry)
+    do_fetch(
+        request_path=request_path,
+        working_directory=str(working_directory),
+        registry=datatypes_registry,
+        file_sources_dict=file_sources_dict,
+    )
     return tool_job_working_directory
 
 
