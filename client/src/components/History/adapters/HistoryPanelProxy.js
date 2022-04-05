@@ -3,6 +3,7 @@
  * history provided the same interface for other components.
  */
 import $ from "jquery";
+import Backbone from "backbone";
 import store from "store";
 import { getGalaxyInstance } from "app";
 import { mountVueComponent } from "utils/mountVueComponent";
@@ -58,10 +59,10 @@ export default class HistoryPanelProxy {
     buildCollection(collectionType, selection, hideSourceItems) {
         const selectionModel = {
             values() {
-                return selection;
+                return selection.models;
             },
         };
-        buildCollectionModal(collectionType, this.model.id, selectionModel, hideSourceItems);
+        buildCollectionModal(collectionType, selection.historyId, selectionModel, hideSourceItems);
     }
     render() {
         const container = document.createElement("div");
