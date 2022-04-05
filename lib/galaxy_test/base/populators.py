@@ -1213,7 +1213,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def wait_for_invocation(
         self, workflow_id: str, invocation_id: str, timeout: timeout_type = DEFAULT_TIMEOUT, assert_ok: bool = True
     ):
-        url = f"workflows/{workflow_id}/usage/{invocation_id}"
+        url = f"invocations/{invocation_id}"
 
         def workflow_state():
             return self._get(url)
