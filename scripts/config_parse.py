@@ -1,8 +1,9 @@
-import yaml
-import sys
-import os
 import argparse
+import os
 import pprint
+import sys
+
+import yaml
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 from galaxy.config import GalaxyAppConfiguration
