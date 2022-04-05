@@ -673,7 +673,7 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
         successfully discovered.
         """
         datatype_compressed = getattr(datatype, "compressed", False)
-        if datatype_compressed and (not file_prefix.compressed_format or datatype.file_ext.endswith(".tar")):
+        if datatype_compressed and not file_prefix.compressed_format and not datatype.file_ext.endswith(".tar"):
             # we don't auto-detect tar as compressed
             continue
         if not datatype_compressed and file_prefix.compressed_format:
