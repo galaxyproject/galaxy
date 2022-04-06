@@ -16,7 +16,7 @@ There is some built-in `Gunicorn <https://docs.gunicorn.org/en/stable/instrument
    gravity:
       ...
       gunicorn:
-        gunicorn_extra_args: `--statsd-host 127.0.0.1:8125 --statsd-prefix=gunicorn`
+        extra_args: `--statsd-host 127.0.0.1:8125 --statsd-prefix=gunicorn`
       ...
 
 API / Route Timing Statistics

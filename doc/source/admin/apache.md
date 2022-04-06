@@ -219,7 +219,7 @@ previous section:
       gunicorn:
         # ...
         bind: /srv/galaxy/var/gunicorn.sock
-        gunicorn_extra_args: '--forwarded-allow-ips="*"'
+        extra_args: '--forwarded-allow-ips="*"'
     galaxy:
         # ...
         galaxy_url_prefix: /galaxy
