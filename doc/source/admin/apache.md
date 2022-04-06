@@ -105,6 +105,9 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
     # Enable HSTS
     Header always set Strict-Transport-Security "max-age=15552000; includeSubdomains"
 
+    # Preserve Host, needed for uploads
+    ProxyPreserveHost on
+
     # use a variable for convenience
     Define galaxy_root /srv/galaxy/server
 
