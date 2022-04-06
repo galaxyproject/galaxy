@@ -285,14 +285,6 @@ def postfork_setup():
 def populate_api_routes(webapp, app):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
-    webapp.mapper.resource(
-        "user",
-        "users",
-        controller="group_users",
-        name_prefix="group_",
-        path_prefix="/api/groups/{group_id}",
-        parent_resources=dict(member_name="group", collection_name="groups"),
-    )
     _add_item_tags_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
