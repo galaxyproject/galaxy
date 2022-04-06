@@ -123,7 +123,8 @@
         </b-modal>
 
         <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
-            <p v-localize>"Really delete all deleted datasets permanently? This cannot be undone.</p>
+            <p v-localize>Really permanently delete all deleted datasets?</p>
+            <p><strong class="text-danger" v-localize>Warning, this operation cannot be undone.</strong></p>
         </b-modal>
     </section>
 </template>
