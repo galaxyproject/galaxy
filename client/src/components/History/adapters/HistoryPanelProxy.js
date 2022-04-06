@@ -56,13 +56,15 @@ export default class HistoryPanelProxy {
         this.model.id = historyId;
         store.dispatch("betaHistory/loadHistoryById", historyId);
     }
-    buildCollection(collectionType, selection, hideSourceItems) {
-        const selectionModel = {
-            values() {
-                return selection.models;
-            },
-        };
-        buildCollectionModal(collectionType, selection.historyId, selectionModel, hideSourceItems);
+    buildCollection(collectionType, selection, hideSourceItems, keep = false) {
+        const selectionContent = keep
+            ? selection
+            : {
+                  values() {
+                      return selection.models;
+                  },
+              };
+        buildCollectionModal(collectionType, this.model.id, selectionContent, hideSourceItems, keep);
     }
     render() {
         const container = document.createElement("div");
