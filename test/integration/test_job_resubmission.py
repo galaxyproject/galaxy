@@ -50,6 +50,8 @@ class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = JOB_RESUBMISSION_JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
+        config["job_runner_monitor_sleep"] = 1
+        config["job_handler_monitor_sleep"] = 1
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
