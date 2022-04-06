@@ -514,8 +514,7 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
                 raise
         time.sleep(sleep_amount)
     else:
-        template = "Test HTTP server on host %s and port %s did not return '200 OK' after 10 tries"
-        message = template % (host, port)
+        message = f"Test HTTP server on host {host} and port {port} did not return '200 OK' after {sleep_tries} tries"
         raise Exception(message)
 
 

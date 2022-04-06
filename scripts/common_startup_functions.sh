@@ -57,10 +57,6 @@ parse_common_args() {
                 add_pid_arg=1
                 shift
                 ;;
-            --wait)
-                wait_arg_set=1
-                shift
-                ;;
             "")
                 break
                 ;;

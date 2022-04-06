@@ -189,6 +189,9 @@ client-dev-server: node-deps ## Starts a webpack dev server for client developme
 client-test: node-deps  ## Run JS unit tests
 	cd client && yarn run test
 
+client-eslint-precommit: node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
+	cd client && yarn run eslint-precommit
+
 client-eslint: node-deps # Run client linting
 	cd client && yarn run eslint
 

@@ -18,7 +18,7 @@ describe("ZoomControl", () => {
         await buttons.at(0).trigger("click");
         expect(wrapper.emitted().onZoom[0][0]).toBe(9);
         await buttons.at(1).trigger("click");
-        expect(wrapper.emitted().onZoom[1][0]).toBe(10);
+        expect(wrapper.emitted().onZoom[1][0]).toBe(7);
         await buttons.at(2).trigger("click");
         expect(wrapper.emitted().onZoom[2][0]).toBe(11);
     });
