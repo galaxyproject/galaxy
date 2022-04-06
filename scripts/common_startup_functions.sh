@@ -129,7 +129,7 @@ setup_gravity_state_dir() {
         echo "Setting \$GRAVITY_STATE_DIR in ${GALAXY_VIRTUAL_ENV}/bin/activate"
         echo '' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
         echo '# Galaxy Gravity per-instance state directory configured by Galaxy common_startup.sh' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
-        echo "GRAVITY_STATE_DIR='$(pwd)/database/gravity'" >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
+        echo "GRAVITY_STATE_DIR=\${GRAVITY_STATE_DIR:-'$(pwd)/database/gravity'}" >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
         echo 'export GRAVITY_STATE_DIR' >> "${GALAXY_VIRTUAL_ENV}/bin/activate"
     fi
 }
