@@ -43,13 +43,6 @@ function buildQueryStringFrom(filters) {
     return queryString;
 }
 
-function buildLegacyParam(fields = {}) {
-    return Object.keys(fields).reduce((result, key) => {
-        result[key] = fields[key];
-        return result;
-    }, {});
-}
-
 /**
  * Some of the current endpoints don't accept JSON, so we need to
  * do some massaging to send in old form post data.
@@ -201,19 +194,6 @@ export async function setCurrentHistoryOnServer(history_id) {
  */
 
 /**
- * Given a content object, retrieve the detailed dataset or collection
- * object by looking at the url prop of the content
- * @param {Object} content Content object
- * @param {Object} params key/value search parameters
- */
-export async function getContentDetails(content, params = {}) {
-    const { history_id, id, history_content_type } = content;
-    const url = `/histories/${history_id}/contents/${history_content_type}s/${id}`;
-    const response = await api.get(url, { params });
-    return doResponse(response);
-}
-
-/**
  * Deletes item from history
  *
  * @param {Object} content Content object
@@ -282,14 +262,6 @@ export async function createDatasetCollection(history, inputs = {}) {
     const payload = Object.assign({}, defaults, inputs);
     const url = `/histories/${history.id}/contents`;
     const response = await api.post(url, payload);
-    return doResponse(response);
-}
-
-export async function deleteDatasetCollection(collection, recursive = false, purge = false) {
-    const { history_id, id } = collection;
-    const url = `/histories/${history_id}/contents/dataset_collections/${id}`;
-    const params = buildLegacyParam({ recursive, purge });
-    const response = await api.delete(url, { params });
     return doResponse(response);
 }
 
