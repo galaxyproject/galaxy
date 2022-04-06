@@ -541,6 +541,13 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         )
 
         self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))
+        # Load security policy.
+        self.security_agent = self.model.security_agent
+        self.host_security_agent = galaxy.model.security.HostAgent(
+            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
+        )
+        # Load quota management.
+        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
@@ -649,13 +656,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self[ToursRegistry] = tour_registry  # type: ignore[misc]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
-        # Load security policy.
-        self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.model.security.HostAgent(
-            model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
-        )
-        # Load quota management.
-        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
         # Heartbeat for thread profiling
         self.heartbeat = None
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))

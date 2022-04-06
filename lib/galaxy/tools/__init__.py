@@ -288,6 +288,13 @@ def create_tool_from_source(app, tool_source, config_file=None, **kwds):
     return tool
 
 
+def create_tool_from_representation(
+    app, raw_tool_source: str, tool_dir: str, tool_source_class="XmlToolSource"
+) -> "Tool":
+    tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
+    return create_tool_from_source(app, tool_source=tool_source, tool_dir=tool_dir)
+
+
 class ToolBox(BaseGalaxyToolBox):
     """A derivative of AbstractToolBox with knowledge about Tool internals -
     how to construct them, action types, dependency management, etc....
@@ -1046,14 +1053,20 @@ class Tool(Dictifiable):
         self.required_files = required_files
 
         self.citations = self._parse_citations(tool_source)
-        ontology_data = expand_ontology_data(
-            tool_source,
-            self.all_ids,
-            self.app.biotools_metadata_source,
-        )
-        self.xrefs = ontology_data.xrefs
-        self.edam_operations = ontology_data.edam_operations
-        self.edam_topics = ontology_data.edam_topics
+        biotools_metadata_source = getattr(self.app, "biotools_metadata_source", None)
+        if biotools_metadata_source:
+            ontology_data = expand_ontology_data(
+                tool_source,
+                self.all_ids,
+                self.app.biotools_metadata_source,
+            )
+            self.xrefs = ontology_data.xrefs
+            self.edam_operations = ontology_data.edam_operations
+            self.edam_topics = ontology_data.edam_topics
+        else:
+            self.xrefs = []
+            self.edam_operations = None
+            self.edam_topics = None
 
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes

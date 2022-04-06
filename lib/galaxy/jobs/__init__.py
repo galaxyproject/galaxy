@@ -957,7 +957,7 @@ class HasResourceParameters:
         return resource_params
 
 
-class JobWrapper(HasResourceParameters):
+class MinimalJobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -965,13 +965,12 @@ class JobWrapper(HasResourceParameters):
 
     is_task = False
 
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False, app=None):
+    def __init__(self, job: model.Job, app: MinimalManagerApp, use_persisted_destination: bool = False, tool=None):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
-        self.tool = queue.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
-        self.queue = queue
-        self.app: MinimalManagerApp = queue.app
+        self.app: MinimalManagerApp = app
+        self.tool = tool
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []
@@ -991,12 +990,10 @@ class JobWrapper(HasResourceParameters):
         # resolved
         self._job_io = None
         self.tool_provided_job_metadata = None
-        self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
             self.params = loads(job.params)
-        if use_persisted_destination:
-            self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
         self.__has_tasks = bool(job.tasks)
@@ -1156,18 +1153,9 @@ class JobWrapper(HasResourceParameters):
     get_job_runner = get_job_runner_url
 
     @property
-    def job_destination(self):
-        """Return the JobDestination that this job will use to run.  This will
-        either be a configured destination, a randomly selected destination if
-        the configured destination was a tag, or a dynamically generated
-        destination from the dynamic runner.
-
-        Calling this method for the first time causes the dynamic runner to do
-        its calculation, if any.
-
-        :returns: ``JobDestination``
-        """
-        return self.job_runner_mapper.get_job_destination(self.params)
+    def job_destination(self) -> JobDestination:
+        """Subclassses can return a configured job destination."""
+        return JobDestination()
 
     @property
     def galaxy_url(self):
@@ -1248,8 +1236,9 @@ class JobWrapper(HasResourceParameters):
             self.environment_variables,
         ) = tool_evaluator.build()
         job.command_line = self.command_line
-        self.interactivetools = tool_evaluator.populate_interactivetools()
-        self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
+        if hasattr(self.app, "interactivetool_manager"):
+            self.interactivetools = tool_evaluator.populate_interactivetools()
+            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
@@ -1548,24 +1537,6 @@ class JobWrapper(HasResourceParameters):
         log.warning("set_runner() is deprecated, use set_job_destination()")
         self.set_job_destination(self.job_destination, external_id)
 
-    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
-        """
-        Persist job destination params in the database for recovery.
-
-        self.job_destination is not used because a runner may choose to rewrite
-        parts of the destination (e.g. the params).
-        """
-        if job is None:
-            job = self.get_job()
-        log.debug(f"({job.id}) Persisting job destination (destination id: {job_destination.id})")
-        job.destination_id = job_destination.id
-        job.destination_params = job_destination.params
-        job.job_runner_name = job_destination.runner
-        job.job_runner_external_id = external_id
-        self.sa_session.add(job)
-        if flush:
-            self.sa_session.flush()
-
     def set_external_id(self, external_id, job=None, flush=True):
         if job is None:
             job = self.get_job()
@@ -1598,42 +1569,12 @@ class JobWrapper(HasResourceParameters):
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
-        if self.app.config.enable_celery_tasks and job.tool_id == "__DATA_FETCH__":
-            # Move into task
-            import pathlib
-
-            request_json = pathlib.Path(self.working_directory) / "request.json"
-            request_json_value = next(iter(p.value for p in job.parameters if p.name == "request_json"))
-            request_json.write_text(json.loads(request_json_value))
-            from galaxy.celery.tasks import (
-                fetch_data,
-                set_job_metadata,
-            )
-
-            self.change_state(model.Job.states.RUNNING, flush=False, job=job)
-            self.sa_session.flush()
-            self.setup_external_metadata(
-                output_fnames=self.job_io.get_output_fnames(),
-                set_extension=True,
-                tmp_dir=self.working_directory,
-                # We don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-                kwds={"overwrite": False},
-            )
-            self.prepare()
-            try:
-                (
-                    fetch_data.s(self.working_directory, str(request_json), self.job_io.file_sources_dict)
-                    | set_job_metadata.s(extended_metadata_collection="extended" in self.metadata_strategy)
-                )().get()
-            except Exception as e:
-                # TODO ... error handler on task / chain level ?
-                self.fail(message=str(e))
-            # Reset the Null Metadata. That would normally happen because the finish context rebuilds another JobWrapper instance.
-            self.tool_provided_job_metadata = None
-            self.finish(tool_stdout="", tool_stderr="")
-            return False
         self.sa_session.flush()
         return True
+
+    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
+        """Subclasses should implement this to persist a destination, if necessary."""
+        pass
 
     def _set_object_store_ids(self, job):
         if job.object_store_id:
@@ -2451,6 +2392,48 @@ class JobWrapper(HasResourceParameters):
                 container_info=container.container_info,
             )
             self.sa_session.add(cont)
+            self.sa_session.flush()
+
+
+class JobWrapper(MinimalJobWrapper):
+    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False, app=None):
+        super().__init__(job, app=queue.app, use_persisted_destination=use_persisted_destination)
+        self.queue = queue
+        self.tool = self.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
+        self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
+        if use_persisted_destination:
+            self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+
+    @property
+    def job_destination(self):
+        """Return the JobDestination that this job will use to run.  This will
+        either be a configured destination, a randomly selected destination if
+        the configured destination was a tag, or a dynamically generated
+        destination from the dynamic runner.
+
+        Calling this method for the first time causes the dynamic runner to do
+        its calculation, if any.
+
+        :returns: ``JobDestination``
+        """
+        return self.job_runner_mapper.get_job_destination(self.params)
+
+    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
+        """
+        Persist job destination params in the database for recovery.
+
+        self.job_destination is not used because a runner may choose to rewrite
+        parts of the destination (e.g. the params).
+        """
+        if job is None:
+            job = self.get_job()
+        log.debug(f"({job.id}) Persisting job destination (destination id: {job_destination.id})")
+        job.destination_id = job_destination.id
+        job.destination_params = job_destination.params
+        job.job_runner_name = job_destination.runner
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
             self.sa_session.flush()
 
 

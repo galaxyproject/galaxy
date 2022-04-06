@@ -5,6 +5,7 @@ collections from matched collections.
 """
 import collections
 import logging
+import typing
 from abc import abstractmethod
 from typing import (
     Dict,
@@ -26,6 +27,9 @@ from galaxy.tools.actions import (
 )
 from galaxy.tools.parameters.basic import is_runtime_value
 
+if typing.TYPE_CHECKING:
+    from galaxy.tools import Tool
+
 log = logging.getLogger(__name__)
 
 SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
@@ -42,9 +46,9 @@ MappingParameters = collections.namedtuple("MappingParameters", ["param_template
 
 def execute(
     trans,
-    tool,
+    tool: "Tool",
     mapping_params,
-    history,
+    history: model.History,
     rerun_remap_job_id=None,
     collection_info=None,
     workflow_invocation_uuid=None,
@@ -121,10 +125,11 @@ def execute(
             execution_tracker.record_error(result)
 
     tool_action = tool.tool_action
-    if hasattr(tool_action, "check_inputs_ready"):
+    check_inputs_ready = getattr(tool_action, "check_inputs_ready", None)
+    if check_inputs_ready:
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
-            tool_action.check_inputs_ready(
+            check_inputs_ready(
                 tool,
                 trans,
                 params,
@@ -163,6 +168,23 @@ def execute(
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
+        if tool_id == "__DATA_FETCH__" and tool.app.config.enable_celery_tasks:
+            job_id = job2.id
+            from galaxy.celery.tasks import (
+                fetch_data,
+                finish_job,
+                set_job_metadata,
+                setup_fetch_data,
+            )
+
+            raw_tool_source = tool.tool_source.to_string()
+            (
+                setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
+                | fetch_data.s()
+                | set_job_metadata.s(extended_metadata_collection="extended" in tool.app.config.metadata_strategy)
+                | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
+            )()
+            continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
     trans.sa_session.flush()
