@@ -1246,6 +1246,10 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")
 
+    def contains_non_orm_filter(self, filters: List[ParsedFilter]) -> bool:
+        """Whether the list of filters contains any non-orm filter."""
+        return any(filter.filter_type == "function" for filter in filters)
+
 
 def parse_bool(bool_string: Union[str, bool]) -> bool:
     """

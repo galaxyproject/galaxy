@@ -940,7 +940,12 @@ class HistoriesContentsService(ServiceBase):
         history = self._get_history(trans, history_id)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
 
-        total_matches: Optional[int] = None
+        stats_requested = accept == HistoryContentsWithStatsResult.__accept_type__
+        if stats_requested and self.history_contents_filters.contains_non_orm_filter(filters):
+            non_orm_filter_keys = [*self.history_contents_filters.fn_filter_parsers]
+            raise exceptions.RequestParameterInvalidException(
+                f"Invalid filter found. When requesting stats, please avoid filtering by {non_orm_filter_keys}"
+            )
 
         filter_query_params.order = filter_query_params.order or "hid-asc"
         order_by = self.build_order_by(self.history_contents_manager, filter_query_params.order)
@@ -961,7 +966,7 @@ class HistoriesContentsService(ServiceBase):
             )
             for content in contents
         ]
-        if accept == HistoryContentsWithStatsResult.__accept_type__:
+        if stats_requested:
             total_matches = self.history_contents_manager.contents_count(
                 history,
                 filters=filters,

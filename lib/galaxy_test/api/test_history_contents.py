@@ -1121,9 +1121,26 @@ class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
                 expected_total_matches=len(datasets_ids),
             )
 
-    def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
+    def test_index_with_stats_fails_with_non_orm_filters(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._create_test_history_contents(history_id)
+
+            invalid_filter_keys_with_stats = ["genome_build", "data_type", "annotation"]
+
+            for filter_key in invalid_filter_keys_with_stats:
+                response = self._get_contents_with_stats(
+                    history_id,
+                    search_query=f"&q={filter_key}-contains&qv=anything",
+                )
+                self._assert_status_code_is(response, 400)
+
+    def _get_contents_with_stats(self, history_id: str, search_query: str = ""):
         headers = {"accept": "application/vnd.galaxy.history.contents.stats+json"}
         search_response = self._get(f"histories/{history_id}/contents?v=dev{search_query}", headers=headers)
+        return search_response
+
+    def _test_index_total_matches(self, history_id: str, expected_total_matches: int, search_query: str = ""):
+        search_response = self._get_contents_with_stats(history_id, search_query)
         self._assert_status_code_is(search_response, 200)
         self._assert_total_matches_is(search_response.json(), expected_total_matches)
 
