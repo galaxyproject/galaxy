@@ -4,6 +4,7 @@
             v-if="!loading"
             :markdown-config="markdownConfig"
             :enable_beta_markdown_export="config.enable_beta_markdown_export"
+            :download-endpoint="stsUrl(config)"
             :export-link="exportUrl"
             @onEdit="onEdit" />
     </config-provider>
@@ -50,6 +51,9 @@ export default {
     methods: {
         onEdit() {
             window.location = this.editUrl;
+        },
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
         async getContent() {
             try {

@@ -153,6 +153,7 @@
     "ignore-loader": "^0.1.2",
     "imports-loader": "^3.1.1",
     "jest": "^27.4.7",
+    "jest-location-mock": "^1.0.9",
     "jest-raw-loader": "^1.0.1",
     "jest-transform-yaml": "1.0.0",
     "json-loader": "^0.5.7",
