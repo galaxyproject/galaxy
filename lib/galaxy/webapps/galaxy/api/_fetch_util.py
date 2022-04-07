@@ -19,7 +19,6 @@ from galaxy.util import relpath
 log = logging.getLogger(__name__)
 
 VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca", "hdas"]
-ELEMENTS_FROM_TYPE = ["archive", "bagit", "bagit_archive", "directory"]
 # These elements_from cannot be sym linked to because they only exist during upload.
 ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
 
@@ -40,13 +39,7 @@ def validate_and_normalize_targets(trans, payload):
     for target in targets:
         destination = get_required_item(target, "destination", "Each target must specify a 'destination'")
         destination_type = get_required_item(destination, "type", "Each target destination must specify a 'type'")
-        if "object_id" in destination:
-            raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
 
-        if destination_type not in VALID_DESTINATION_TYPES:
-            template = "Invalid target destination type [%s] encountered, must be one of %s"
-            msg = template % (destination_type, VALID_DESTINATION_TYPES)
-            raise RequestParameterInvalidException(msg)
         if destination_type == "library":
             library_name = get_required_item(destination, "name", "Must specify a library name")
             description = destination.get("description", "")
@@ -67,8 +60,6 @@ def validate_and_normalize_targets(trans, payload):
     payload["check_content"] = trans.app.config.check_upload_content
 
     def check_src(item):
-        if "object_id" in item:
-            raise RequestParameterInvalidException("object_id not allowed to appear in the request.")
 
         validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
 
@@ -82,9 +73,6 @@ def validate_and_normalize_targets(trans, payload):
                 item["src"] = "path"
                 item["path"] = url[len("file://") :]
                 del item["url"]
-
-        if "in_place" in item:
-            raise RequestParameterInvalidException("in_place cannot be set in the upload request")
 
         src = item["src"]
         if src == "pasted":
@@ -100,13 +88,7 @@ def validate_and_normalize_targets(trans, payload):
                     "'paste_content' field can only be specified with src of type 'pasted'"
                 )
 
-        # Check link_data_only can only be set for certain src types and certain elements_from types.
         _handle_invalid_link_data_only_elements_type(item)
-        if src not in ["path", "server_dir"]:
-            _handle_invalid_link_data_only_type(item)
-        elements_from = item.get("elements_from", None)
-        if elements_from and elements_from not in ELEMENTS_FROM_TYPE:
-            raise RequestParameterInvalidException("Invalid elements_from/items_from found in request")
 
         if src == "path" or (src == "url" and item["url"].startswith("file:")):
             # Validate is admin, leave alone.
@@ -194,12 +176,6 @@ def validate_and_normalize_targets(trans, payload):
 
     replace_request_syntax_sugar(targets)
     _for_each_src(check_src, targets)
-
-
-def _handle_invalid_link_data_only_type(item):
-    link_data_only = item.get("link_data_only", False)
-    if link_data_only:
-        raise RequestParameterInvalidException(f"link_data_only is invalid for src type [{item.get('src')}]")
 
 
 def _handle_invalid_link_data_only_elements_type(item):

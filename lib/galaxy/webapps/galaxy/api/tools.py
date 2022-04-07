@@ -22,6 +22,7 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
+from galaxy.schema.fetch_data import FetchDataPayload
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -36,6 +37,7 @@ from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from . import (
     BaseGalaxyAPIController,
     depends,
+    Router,
 )
 from ._fetch_util import validate_and_normalize_targets
 
@@ -46,6 +48,9 @@ log = logging.getLogger(__name__)
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
+
+
+router = Router(tags=["tools"])
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -526,9 +531,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         trans.response.headers["language"] = tool.tool_source.language
         return tool.tool_source.to_string()
 
-    @expose_api_anonymous
-    def fetch(self, trans: GalaxyWebTransaction, payload, **kwd):
+    # @router.post("/api/fetch", summary="Post content to upload into History Dataset")
+    @expose_api
+    def fetch(self, trans: GalaxyWebTransaction, payload: FetchDataPayload, **kwd):
         """Adapt clean API to tool-constrained API."""
+        payload = FetchDataPayload(**payload).dict()
         request_version = "1"
         if "history_id" not in payload:
             raise exceptions.RequestParameterMissingException("history_id must be specified")
