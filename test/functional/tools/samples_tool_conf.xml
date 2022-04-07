@@ -28,6 +28,7 @@
   <tool file="multi_output_assign_primary.xml" />
   <tool file="multi_output_assign_primary_ext_dbkey.xml" />
   <tool file="multi_output_recurse.xml" />
+  <tool file="multi_output_recurse_collection.xml" />
   <tool file="tool_provided_metadata_1.xml" />
   <tool file="tool_provided_metadata_2.xml" />
   <tool file="tool_provided_metadata_3.xml" />
