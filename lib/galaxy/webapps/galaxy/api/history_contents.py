@@ -431,16 +431,26 @@ class FastAPIHistoryContents:
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
     )
+    def download_history_dataset_collection(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
+    ):
+        """Download the content of a history dataset collection as a `zip` archive
+        while maintaining approximate collection structure.
+        """
+        archive = self.service.get_dataset_collection_archive_for_download(trans, id)
+        return StreamingResponse(archive.get_iterator(), headers=archive.get_headers())
+
     @router.get(
-        "/api/dataset_collection/{id}/download",
+        "/api/dataset_collections/{id}/download",
         summary="Download the content of a dataset collection as a `zip` archive.",
         response_class=StreamingResponse,
-        tags=["dataset collections"],
     )
     def download_dataset_collection(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
         id: EncodedDatabaseIdField = HistoryHDCAIDPathParam,
     ):
         """Download the content of a history dataset collection as a `zip` archive
