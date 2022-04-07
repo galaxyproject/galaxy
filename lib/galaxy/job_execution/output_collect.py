@@ -603,10 +603,9 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
                     new_parent_paths = parent_paths[:]
                     new_parent_paths.append(filename)
                     # The current directory is already validated, so use that as the next job_working_directory when recursing
-                    for match in walk_over_extra_files(
+                    matches.extend(walk_over_extra_files(
                         filename, extra_file_collector, directory, matchable, parent_paths=new_parent_paths
-                    ):
-                        yield match
+                    ))
             else:
                 match = extra_file_collector.match(matchable, filename, path=path, parent_paths=parent_paths)
                 if match:
