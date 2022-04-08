@@ -223,6 +223,9 @@ class DatabaseStateCache:
     def is_database_empty(self) -> bool:
         return not bool(self.db_metadata.tables)
 
+    def contains_only_kombu_tables(self) -> bool:
+        return metadata_contains_only_kombu_tables(self.db_metadata)
+
     def has_alembic_version_table(self) -> bool:
         return ALEMBIC_TABLE in self.db_metadata.tables
 
@@ -246,6 +249,14 @@ class DatabaseStateCache:
         if self.has_sqlalchemymigrate_version_table():
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
+
+
+def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
+    """
+    Return True if metadata contains exactly 2 tables: kombu_message and kombu_queue.
+    (ref: https://github.com/galaxyproject/galaxy/issues/13689)
+    """
+    return len(metadata.tables) == 2 and "kombu_message" in metadata.tables and "kombu_queue" in metadata.tables
 
 
 def verify_databases_via_script(
@@ -352,7 +363,7 @@ class DatabaseStateVerifier:
         return False
 
     def _handle_empty_database(self) -> bool:
-        if self.is_new_database or self._is_database_empty():
+        if self.is_new_database or self._is_database_empty() or self._contains_only_kombu_tables():
             self._initialize_database()
             return True
         return False
@@ -449,6 +460,9 @@ class DatabaseStateVerifier:
 
     def _is_database_empty(self) -> bool:
         return self.db_state.is_database_empty()
+
+    def _contains_only_kombu_tables(self) -> bool:
+        return self.db_state.contains_only_kombu_tables()
 
     def _has_alembic_version_table(self) -> bool:
         return self.db_state.has_alembic_version_table()
