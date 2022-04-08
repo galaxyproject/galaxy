@@ -16,6 +16,7 @@ const state = {
     items: {},
     itemKey: "hid",
     totalMatchesCount: undefined,
+    latestCreateTime: new Date(),
 };
 
 const getters = {
@@ -49,6 +50,7 @@ const getters = {
             }
             console.debug("getHistoryItemByHid failed. Hid not found.", historyId, hid);
         },
+    getLatestCreateTime: (state) => () => state.latestCreateTime,
 };
 
 const getQueryString = (filterText) => {
@@ -76,7 +78,18 @@ const actions = {
 
 const mutations = {
     saveHistoryItems: (state, { historyId, payload }) => {
+        // merges incoming payload into existing state
         mergeArray(historyId, payload, state.items, state.itemKey);
+
+        // keep track of latest create time for items
+        payload.forEach((item) => {
+            if (item.state == "ok") {
+                const itemCreateTime = new Date(item.create_time);
+                if (itemCreateTime > state.latestCreateTime) {
+                    state.latestCreateTime = itemCreateTime;
+                }
+            }
+        });
     },
     saveQueryStats: (state, { stats }) => {
         state.totalMatchesCount = stats.total_matches;

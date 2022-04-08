@@ -20,6 +20,7 @@ export default class HistoryPanelProxy {
         this.collection = {
             constructor(models) {
                 this.models = models;
+                this.unwatch = null;
             },
             each(callback) {
                 const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: "" });
@@ -27,11 +28,22 @@ export default class HistoryPanelProxy {
                     callback(new Backbone.Model(model));
                 });
             },
-            on(name, callback, context) {
-                console.log("on called.", name);
+            on(name, callback) {
+                this.off();
+                this.unwatch = store.watch(
+                    (state, getters) => getters.getLatestCreateTime(),
+                    () => {
+                        callback();
+                        console.debug("History change watcher detected a change.", name);
+                    }
+                );
+                console.debug("History change watcher enabled.", name);
             },
-            off(name, callback, context) {
-                console.log("off called.", name);
+            off(name) {
+                if (this.unwatch) {
+                    this.unwatch();
+                    console.debug("History change watcher disabled.", name);
+                }
             },
         };
 
