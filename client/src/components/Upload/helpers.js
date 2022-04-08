@@ -60,13 +60,27 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 default:
                     console.error("Unknown file_mode", item);
             }
-            return {
-                src: src,
-                url: url,
-                paste_content: pasteContent,
-                name: fileName,
-                ...elem,
-            };
+            if (src == "pasted") {
+                return {
+                    src: src,
+                    paste_content: pasteContent,
+                    name: fileName,
+                    ...elem,
+                };
+            } else if (src == "url") {
+                return {
+                    src: src,
+                    name: fileName,
+                    url: url,
+                    ...elem,
+                };
+            } else {
+                return {
+                    src: src,
+                    name: fileName,
+                    ...elem,
+                };
+            }
         })
         .filter((item) => item)
         .flat();

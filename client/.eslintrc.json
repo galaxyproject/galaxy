@@ -1,4 +1,5 @@
 {
+    "root": true,
     "extends": [
         "eslint:recommended",
         "plugin:vue/strongly-recommended"
@@ -13,7 +14,7 @@
     },
     "parserOptions": {
         "parser": "@babel/eslint-parser",
-        "sourceType": "module"
+        "babelOptions": { "configFile": "./babel.config.json" }
     },
     "rules": {
         // Standard rules

@@ -78,6 +78,8 @@ class TrsImportTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)
+        self.components.workflows.trs_icon.wait_for_visible()
+        self.screenshot("workflow_imported_via_dockstore_search")
 
     def test_import_by_search_workflowhub(self):
         self.trs_search()
