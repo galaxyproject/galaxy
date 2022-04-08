@@ -260,12 +260,12 @@ export default {
             this.collection.models.forEach((model) => {
                 const outputs = model.get("outputs");
                 if (outputs) {
-                    Object.entries(outputs).forEach(( output ) => {
-                        const outputDetails = output[1]
+                    Object.entries(outputs).forEach((output) => {
+                        const outputDetails = output[1];
                         models[outputDetails.id] = outputDetails;
                     });
                 } else {
-                    console.debug("Warning, upload response does not contain outputs.",  model);
+                    console.debug("Warning, upload response does not contain outputs.", model);
                 }
             });
             const selection = new Galaxy.currHistoryPanel.collection.constructor(Object.values(models));

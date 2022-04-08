@@ -20,7 +20,7 @@ export async function buildCollectionModal(
     history_id,
     selectedContent,
     hideSourceItems = true,
-    keep = false
+    fromRulesInput = false
 ) {
     // select legacy function
     let createFunc;
@@ -36,7 +36,7 @@ export async function buildCollectionModal(
         throw new Error(`Unknown collectionType encountered ${collectionType}`);
     }
     // pull up cached content by type_ids;
-    if (keep) {
+    if (fromRulesInput) {
         return await createFunc(selectedContent, hideSourceItems);
     } else {
         const fakeBackboneContent = createBackboneContent(history_id, selectedContent);
