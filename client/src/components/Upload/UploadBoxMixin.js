@@ -370,16 +370,6 @@ export default {
                 }
             });
         },
-        getUploadedModels: function () {
-            const Galaxy = getGalaxyInstance();
-            console.log(this.collection.models);
-            const allHids = [];
-            this.collection.models.forEach((upload) => {
-                allHids.push.apply(allHids, upload.get("hids"));
-            });
-            const models = allHids.map((hid) => Galaxy.currHistoryPanel.collection.getByHid(hid));
-            return models;
-        },
         getRequestUrl: function (items, history_id) {
             return `${getAppRoot()}api/tools/fetch`;
         },

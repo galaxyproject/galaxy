@@ -226,9 +226,9 @@ export default {
         },
 
         /** Success */
-        _eventSuccess: function (index, incoming) {
+        _eventSuccess: function (index) {
             var it = this.collection.get(index);
-            it.set({ ...incoming["outputs"], percentage: 100, status: "success" });
+            it.set({ percentage: 100, status: "success" });
             this._updateStateForSuccess(it);
         },
 
