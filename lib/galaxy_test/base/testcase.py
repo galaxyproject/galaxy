@@ -35,7 +35,9 @@ class FunctionalTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.history_id = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
         self.host, self.port, self.url = target_url_parts()
-        server_wrapper = self._test_driver and self._test_driver.server_wrappers[0]
+        server_wrapper = (
+            self._test_driver and self._test_driver.server_wrappers and self._test_driver.server_wrappers[0]
+        )
         if server_wrapper:
             self.host = server_wrapper.host
             self.port = server_wrapper.port

@@ -630,6 +630,7 @@ class BaseDatasetPopulator(BasePopulator):
         return details_response.json()
 
     def get_history_collection_details(self, history_id: str, **kwds) -> dict:
+        kwds["history_content_type"] = "dataset_collection"
         hdca_id = self.__history_content_id(history_id, **kwds)
         details_response = self._get_contents_request(history_id, f"/dataset_collections/{hdca_id}")
         assert details_response.status_code == 200, details_response.content
@@ -664,7 +665,9 @@ class BaseDatasetPopulator(BasePopulator):
             history_content_id = kwds["dataset"]["id"]
         else:
             hid = kwds.get("hid", None)  # If not hid, just grab last dataset
-            history_contents = self._get_contents_request(history_id).json()
+            contents_request = self._get_contents_request(history_id)
+            contents_request.raise_for_status()
+            history_contents = contents_request.json()
             if hid:
                 history_content_id = None
                 for history_item in history_contents:
