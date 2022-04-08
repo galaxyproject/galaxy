@@ -71,7 +71,10 @@ export default class HistoryPanelProxy {
             hideSourceItems,
             fromRulesInput
         );
-        await createDatasetCollection({ id: this.model.id }, modalResult);
+        if (modalResult) {
+            console.debug("Submitting collection build request.", modalResult);
+            await createDatasetCollection({ id: this.model.id }, modalResult);
+        }
     }
     render() {
         const container = document.createElement("div");
