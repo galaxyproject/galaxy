@@ -88,7 +88,7 @@ export default {
             sortDesc: true,
             loading: true,
             message: null,
-            messageVariant: null,
+            messageVariant: "danger",
             rows: [],
         };
     },
@@ -184,13 +184,8 @@ export default {
                 }
             }
         },
-        onSuccess(message) {
-            this.message = message;
-            this.messageVariant = "success";
-        },
         onError(message) {
             this.message = message;
-            this.messageVariant = "danger";
         },
     },
 };
