@@ -2,10 +2,7 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <span v-if="loading">
-                <font-awesome-icon icon="spinner" spin />
-                Loading workflows...
-            </span>
+            <loading-span v-if="loading" message="Loading workflows" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <b-row class="mb-3">
@@ -93,6 +90,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
+import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 import { getGalaxyInstance } from "app";
 
@@ -101,6 +99,7 @@ library.add(faPlus, faUpload, faSpinner, faGlobe, faShareAlt, farStar, faStar);
 export default {
     components: {
         FontAwesomeIcon,
+        LoadingSpan,
         UtcDate,
         Tags,
         WorkflowDropdown,
