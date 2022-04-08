@@ -9,6 +9,7 @@ import { getGalaxyInstance } from "app";
 import { mountVueComponent } from "utils/mountVueComponent";
 import HistoryIndex from "components/History/Index";
 import { buildCollectionModal } from "./buildCollectionModal";
+import { createDatasetCollection } from "components/History/model/queries";
 
 // extend existing current history panel
 export default class HistoryPanelProxy {
@@ -37,7 +38,7 @@ export default class HistoryPanelProxy {
 
         // Watch the store, update history id
         store.watch(
-            (st, gets) => gets["betaHistory/currentHistory"],
+            (state, getters) => getters["betaHistory/currentHistory"],
             (history) => {
                 this.model.id = history.id;
             }
@@ -53,7 +54,7 @@ export default class HistoryPanelProxy {
         this.model.id = historyId;
         store.dispatch("betaHistory/loadHistoryById", historyId);
     }
-    buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
+    async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
         let selectionContent = null;
         if (fromRulesInput) {
             selectionContent = selection;
@@ -63,7 +64,14 @@ export default class HistoryPanelProxy {
                 selectionContent.set(obj.id, obj);
             });
         }
-        buildCollectionModal(collectionType, this.model.id, selectionContent, hideSourceItems, fromRulesInput);
+        const modalResult = await buildCollectionModal(
+            collectionType,
+            this.model.id,
+            selectionContent,
+            hideSourceItems,
+            fromRulesInput
+        );
+        await createDatasetCollection({ id: this.model.id }, modalResult);
     }
     render() {
         const container = document.createElement("div");
