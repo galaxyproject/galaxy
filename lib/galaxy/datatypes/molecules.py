@@ -901,7 +901,7 @@ class Cell(GenericMolFile):
                 dataset.metadata.is_periodic = 1 if pbc.any() else 0
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1067,7 +1067,7 @@ class CIF(GenericMolFile):
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1266,7 +1266,7 @@ class XYZ(GenericMolFile):
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1338,7 +1338,7 @@ class ExtendedXYZ(XYZ):
             next(line_iterator)
             comment = next(line_iterator)
             properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)  # returns None if no match
-            return True if properties else False
+            return bool(properties)
         except StopIteration:
             # insufficient lines
             return False
@@ -1421,8 +1421,8 @@ class ExtendedXYZ(XYZ):
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
         return blocks
 
-    def set_peek(self, dataset, is_multi_byte=False):
-        super().set_peek(dataset, is_multi_byte)
+    def set_peek(self, dataset):
+        super().set_peek(dataset)
         dataset.blurb = "Extended " + dataset.blurb
 
 
