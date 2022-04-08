@@ -899,23 +899,24 @@ def _setup_db_state1(db_url, metadata):
 # state 2
 @pytest.fixture
 def db_state2_gxy(url_factory, metadata_state2_gxy):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_gxy)
+    yield from _setup_db_state2(url_factory(), metadata_state2_gxy, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
 
 @pytest.fixture
 def db_state2_tsi(url_factory, metadata_state2_tsi):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_tsi)
+    yield from _setup_db_state2(url_factory(), metadata_state2_tsi, SQLALCHEMYMIGRATE_LAST_VERSION_TSI)
 
 
 @pytest.fixture
 def db_state2_combined(url_factory, metadata_state2_combined):  # noqa F811
-    yield from _setup_db_state2(url_factory(), metadata_state2_combined)
+    yield from _setup_db_state2(url_factory(), metadata_state2_combined, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
 
 
-def _setup_db_state2(db_url, metadata):
+def _setup_db_state2(db_url, metadata, last_version):
     with create_and_drop_database(db_url):
         with disposing_engine(db_url) as engine:
             load_metadata(metadata, engine)
+            load_sqlalchemymigrate_version(db_url, last_version - 1)
             yield db_url
 
 
