@@ -185,6 +185,7 @@ find_server() {
             run_server="galaxyctl"
             server_args="$gravity_args"
         else
+            galaxyctl update --force
             run_server="galaxy"
             server_args=
         fi

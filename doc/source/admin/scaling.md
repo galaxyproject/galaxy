@@ -14,7 +14,7 @@ The key to scaling Galaxy is the ability to run *multiple* Galaxy servers which 
 
 ## Terminology
 
-* **web worker** - Galaxy server process responsible for servicing web requests for the UI/API 
+* **web worker** - Galaxy server process responsible for servicing web requests for the UI/API
 * **job handler** - Galaxy server process responsible for setting up, starting, and monitoring jobs, submitting jobs to
   a cluster (if configured), for setting metadata (if not set on the cluster), and cleaning up after jobs
   * **tags** - Handlers can be grouped in to a "pool" of handlers using *tags*, after which, individual tools may be
@@ -182,7 +182,7 @@ gravity:
     # performance options
     workers: 1
     # Other options that will be passed to gunicorn
-    gunicorn_extra_args:
+    extra_args:
 
 ```
 
@@ -191,7 +191,7 @@ Some of these options deserve explanation:
 * `workers`: Controls the number of Galaxy application processes Gunicorn will spawn. Increased web performance can be
   attained by increasing this value. If Gunicorn is the only application on the server, a good starting value is the number of CPUs * 2 + 1.
 4-12 workers should be able to handle hundreds if not thousands of requests per second.
-* `gunicorn_extra_args`: You can specify additional arguments to pass to gunicorn here.
+* `extra_args`: You can specify additional arguments to pass to gunicorn here.
 
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
@@ -208,7 +208,7 @@ gravity:
   gunicorn:
     # listening options
     bind: 'unix:/srv/galaxy/var/gunicorn.sock'
-    gunicorn_extra_args: '--forwarded-allow-ips="*"'
+    extra_args: '--forwarded-allow-ips="*"'
 ```
 
 Here we've used a UNIX domain socket because there's less overhead than a TCP socket and it can be secured by filesystem
@@ -236,7 +236,7 @@ for help with the proxy-side configuration.
 
 By setting the `bind` option to a socket, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
 you are setting a socket to serve Galaxy via a proxy server). If you wish to continue serving HTTP directly with Gunicorn
-while using a socket, you can add an additional `--bind` argument via the `gunicorn_extra_args` option:
+while using a socket, you can add an additional `--bind` argument via the `extra_args` option:
 
 ```yaml
 gravity:
@@ -244,7 +244,7 @@ gravity:
   gunicorn:
     # listening options
     bind: 'unix:/srv/galaxy/var/gunicorn.sock'
-    gunicorn_extra_args: '--forwarded-allow-ips="*" --bind 127.0.0.1:8080'
+    extra_args: '--forwarded-allow-ips="*" --bind 127.0.0.1:8080'
 ```
 
 Note that this should only be used for debugging purposes due to `--forwarded-allow-ips="*"`.
