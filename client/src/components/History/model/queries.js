@@ -60,14 +60,16 @@ function formData(fields = {}) {
 
 // #region History Queries
 
-const stdHistoryParams = {};
+const stdHistoryParams = {
+    view: "summary",
+    keys: "size",
+};
 
 /**
  * Return list of available histories
  */
 export async function getHistoryList() {
-    const params = { view: "summary", keys: "size" };
-    const response = await api.get("/histories", { params });
+    const response = await api.get("/histories", { params: stdHistoryParams });
     const rawList = doResponse(response);
     return rawList.map((props) => new History(props));
 }
