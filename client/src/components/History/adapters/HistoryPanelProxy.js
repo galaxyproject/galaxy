@@ -15,13 +15,10 @@ export default class HistoryPanelProxy {
     constructor() {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = this;
-        const model = (this.model = new Backbone.Model({}));
+        this.model = new Backbone.Model({});
         this.collection = {
             constructor(models) {
                 this.models = models;
-            },
-            getByHid(hid) {
-                return store.getters.getHistoryItemByHid({ hid, historyId: model.id });
             },
             on(name, callback, context) {
                 console.log("on called.", name);
