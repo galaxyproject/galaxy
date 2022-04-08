@@ -34,8 +34,8 @@
                     title="Show history options"
                     data-description="history options">
                     <b-dropdown-text>
-                        <div v-if="userHistoriesLoading">
-                            <b-spinner small v-if="userHistoriesLoading" />
+                        <div v-if="historiesLoading">
+                            <b-spinner small v-if="historiesLoading" />
                             <span>Fetching histories from server</span>
                         </div>
                         <span v-else>You have {{ histories.length }} histories.</span>
@@ -175,8 +175,8 @@ export default {
     props: {
         histories: { type: Array, required: true },
         history: { type: History, required: true },
-        title: { type: String, required: false, default: "Histories" },
-        userHistoriesLoading: { type: Boolean, required: false, default: false },
+        title: { type: String, default: "Histories" },
+        historiesLoading: { type: Boolean, default: false },
     },
     methods: {
         switchToLegacyHistoryPanel,

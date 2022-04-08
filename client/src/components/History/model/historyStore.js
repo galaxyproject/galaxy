@@ -21,7 +21,7 @@ export const state = {
     currentHistoryId: null,
     // histories for current user
     histories: {},
-    userHistoriesLoading: false,
+    historiesLoading: false,
 };
 
 export const mutations = {
@@ -41,8 +41,8 @@ export const mutations = {
     setLoadedForUser(state, userId) {
         state.loadedForUser = userId;
     },
-    setUserHistoriesLoading(state, isLoading) {
-        state.userHistoriesLoading = isLoading;
+    setHistoriesLoading(state, isLoading) {
+        state.historiesLoading = isLoading;
     },
 };
 
@@ -68,8 +68,8 @@ export const getters = {
     getHistoryById: (state) => (id) => {
         return id in state.histories ? state.histories[id] : null;
     },
-    userHistoriesLoading: (state) => {
-        return state.userHistoriesLoading;
+    historiesLoading: (state) => {
+        return state.historiesLoading;
     },
 };
 
@@ -83,19 +83,19 @@ export const actions = {
     loadCurrentHistory({ dispatch, commit }) {
         getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },
-    loadUserHistories({ dispatch, commit }) {
+    loadHistories({ dispatch, commit }) {
         if (!promises.load) {
-            commit("setUserHistoriesLoading", true);
+            commit("setHistoriesLoading", true);
             promises.load = getHistoryList()
                 .then((list) => {
                     commit("setHistories", list);
                 })
                 .catch((err) => {
-                    console.warn("loadUserHistories error", err);
+                    console.warn("loadHistories error", err);
                 })
                 .finally(() => {
                     promises.load = null;
-                    commit("setUserHistoriesLoading", false);
+                    commit("setHistoriesLoading", false);
                 });
         }
     },

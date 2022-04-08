@@ -20,7 +20,7 @@ export default {
         user: { type: Object, required: true },
     },
     computed: {
-        ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories", "userHistoriesLoading"]),
+        ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
@@ -40,7 +40,7 @@ export default {
             "deleteHistory",
             "setCurrentHistoryId",
             "setHistory",
-            "loadUserHistories",
+            "loadHistories",
             "secureHistory",
         ]),
 
@@ -53,7 +53,7 @@ export default {
         user: {
             immediate: true,
             handler() {
-                this.loadUserHistories();
+                this.loadHistories();
             },
         },
 
@@ -70,7 +70,7 @@ export default {
             // currently selected history object, should be a full object not just a summary
             currentHistory: this.currentHistoryModel,
             currentHistoryId: this.currentHistoryId,
-            userHistoriesLoading: this.userHistoriesLoading,
+            historiesLoading: this.historiesLoading,
 
             handlers: {
                 // Updates the history in the store without a trip to the server, in the event that a
