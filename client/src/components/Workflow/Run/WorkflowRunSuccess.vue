@@ -76,12 +76,32 @@ export default {
             );
         },
     },
+    methods: {
+        _refreshHistory() {
+            // remove when disabling backbone history
+            const Galaxy = getGalaxyInstance();
+            var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
+            if (this.refreshHistoryTimeout) {
+                window.clearTimeout(this.refreshHistoryTimeout);
+            }
+            if (history && history.refresh) {
+                history.refresh().success(() => {
+                    if (history.numOfUnfinishedShownContents() === 0) {
+                        this.refreshHistoryTimeout = window.setTimeout(() => {
+                            this._refreshHistory();
+                        }, history.UPDATE_DELAY);
+                    }
+                });
+            }
+        },
+    },
     mounted() {
         new Webhooks.WebhookView({
             type: "workflow",
             toolId: null,
             toolVersion: null,
         });
+        this._refreshHistory();
     },
 };
 </script>
