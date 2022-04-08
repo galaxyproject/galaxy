@@ -309,6 +309,8 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert not [w for w in workflow_index if w["id"] == workflow_id]
         workflow_index = self._get("workflows?show_deleted=true").json()
         assert [w for w in workflow_index if w["id"] == workflow_id]
+        workflow_index = self._get("workflows?show_deleted=false").json()
+        assert not [w for w in workflow_index if w["id"] == workflow_id]
 
     def test_index_hidden(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
@@ -322,6 +324,8 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert not [w for w in workflow_index if w["id"] == workflow_id]
         workflow_index = self._get("workflows?show_hidden=true").json()
         assert [w for w in workflow_index if w["id"] == workflow_id]
+        workflow_index = self._get("workflows?show_hidden=false").json()
+        assert not [w for w in workflow_index if w["id"] == workflow_id]
 
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)

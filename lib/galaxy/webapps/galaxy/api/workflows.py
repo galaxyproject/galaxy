@@ -161,6 +161,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
+        show_published = util.string_as_bool(show_published)
+        show_hidden = util.string_as_bool(show_hidden)
+        show_deleted = util.string_as_bool(show_deleted)
+        missing_tools = util.string_as_bool(missing_tools)
         rval = []
         filter1 = model.StoredWorkflow.user == trans.user
         user = trans.user
