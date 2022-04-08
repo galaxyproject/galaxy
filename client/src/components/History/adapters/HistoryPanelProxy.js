@@ -16,10 +16,16 @@ export default class HistoryPanelProxy {
     constructor() {
         const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel = this;
-        this.model = new Backbone.Model({});
+        const model = (this.model = new Backbone.Model({}));
         this.collection = {
             constructor(models) {
                 this.models = models;
+            },
+            each(callback) {
+                const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: "" });
+                historyItems.forEach((model) => {
+                    callback(new Backbone.Model(model));
+                });
             },
             on(name, callback, context) {
                 console.log("on called.", name);
@@ -41,6 +47,7 @@ export default class HistoryPanelProxy {
             (state, getters) => getters["betaHistory/currentHistory"],
             (history) => {
                 this.model.id = history.id;
+                this.model.set("name", history.name);
             }
         );
     }
