@@ -89,7 +89,7 @@
                 ref="btnCreate"
                 class="ui-button-default"
                 id="btn-new"
-                @click="_eventCreate(false)"
+                @click="_eventCreate()"
                 :title="btnCreateTitle"
                 :disabled="!enableSources">
                 <span class="fa fa-edit"></span>{{ btnCreateTitle }}
