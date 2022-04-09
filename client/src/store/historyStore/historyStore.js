@@ -13,6 +13,11 @@ import {
     secureHistory,
 } from "./model/queries";
 
+let fetching = null;
+let lastDate = new Date();
+const limit = 100;
+const throttlePeriod = 3000;
+
 const state = {
     // selected history
     currentHistoryId: null,
@@ -81,7 +86,26 @@ const promises = {
     byId: new Map(),
 };
 
+
 const actions = {
+    async copyHistory({ dispatch }, { history, name, copyAll }) {
+        const newHistory = await cloneHistory(history, name, copyAll);
+        dispatch("selectHistory", newHistory);
+    },
+    async createNewHistory({ dispatch }) {
+        // create history, then select it as current at the same time
+        const newHistory = await createNewHistory();
+        dispatch("selectHistory", newHistory);
+    },
+    async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
+        const deletedHistory = await deleteHistoryById(history.id, purge);
+        commit("deleteHistory", deletedHistory);
+        if (getters.firstHistoryId) {
+            await dispatch("setCurrentHistoryId", getters.firstHistoryId);
+        } else {
+            await dispatch("createNewHistory");
+        }
+    },
     loadCurrentHistory({ dispatch }) {
         getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },
@@ -123,6 +147,18 @@ const actions = {
             promises.byId.set(id, p);
         }
     },
+    resetHistory({ commit }) {
+        commit("setHistories", []);
+        commit("setCurrentHistoryId", null);
+    },
+    async secureHistory({ commit }, history) {
+        const updatedHistory = await secureHistory(history);
+        commit("setHistory", updatedHistory);
+    },
+    selectHistory({ commit }, history) {
+        commit("setHistory", history);
+        commit("setCurrentHistoryId", history.id);
+    },
     async setCurrentHistoryId({ dispatch, getters }, id) {
         // Need to do 2 requests because apparently the response from "setHistory"
         // can't be twisted to be the same as a normal lookup
@@ -131,10 +167,8 @@ const actions = {
             dispatch("loadHistoryById", changedHistory.id);
         }
     },
-    async createNewHistory({ dispatch }) {
-        // create history, then select it as current at the same time
-        const newHistory = await createNewHistory();
-        dispatch("selectHistory", newHistory);
+    setHistory({ commit }, history) {
+        commit("setHistory", history);
     },
     async updateHistory({ commit }, { id, ...updateFields }) {
         // save new history params should be an object with an id property and any additional
@@ -142,33 +176,19 @@ const actions = {
         const saveResult = await updateHistoryFields(id, updateFields);
         commit("setHistory", saveResult);
     },
-    async deleteHistory({ dispatch, commit, getters }, { history, purge = false }) {
-        const deletedHistory = await deleteHistoryById(history.id, purge);
-        commit("deleteHistory", deletedHistory);
-        if (getters.firstHistoryId) {
-            await dispatch("setCurrentHistoryId", getters.firstHistoryId);
-        } else {
-            await dispatch("createNewHistory");
+
+    /**
+     * Starts the process to watch the current history with continuous requests
+     * @param {historyId} Listener start action requires the history id
+     */
+    startHistoryChangedItems: ({ state, dispatch }) => {
+        if (fetching != state.currentHistoryId) {
+            fetching = state.currentHistoryId;
+            dispatch("fetchHistoryChangedItems", { historyId: state.currentHistoryId });
         }
     },
-    async copyHistory({ dispatch }, { history, name, copyAll }) {
-        const newHistory = await cloneHistory(history, name, copyAll);
-        dispatch("selectHistory", newHistory);
-    },
-    async secureHistory({ commit }, history) {
-        const updatedHistory = await secureHistory(history);
-        commit("setHistory", updatedHistory);
-    },
-    setHistory({ commit }, history) {
-        commit("setHistory", history);
-    },
-    selectHistory({ commit }, history) {
-        commit("setHistory", history);
-        commit("setCurrentHistoryId", history.id);
-    },
-    resetHistory({ commit }) {
-        commit("setHistories", []);
-        commit("setCurrentHistoryId", null);
+    stopHistoryChangedItems: () => {
+        fetching = null;
     },
 };
 
