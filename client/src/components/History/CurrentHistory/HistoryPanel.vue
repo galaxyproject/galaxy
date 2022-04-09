@@ -70,7 +70,7 @@
                                     </b-alert>
                                 </div>
                             </div>
-                            <Listing v-else :items="payload" @scroll="onScroll">
+                            <Listing v-else :items="payload" :query-key="queryKey" @scroll="onScroll">
                                 <template v-slot:item="{ item }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
