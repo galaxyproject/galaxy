@@ -15,8 +15,8 @@ const queue = new LastQueue();
 const state = {
     items: {},
     itemKey: "hid",
-    totalMatchesCount: undefined,
     latestCreateTime: new Date(),
+    totalMatchesCount: undefined,
 };
 
 const getters = {
@@ -36,21 +36,8 @@ const getters = {
             });
             return reverse(filtered);
         },
-    getTotalMatchesCount: (state) => () => {
-        return state.totalMatchesCount;
-    },
-    getHistoryItemByHid:
-        (state) =>
-        ({ historyId, hid }) => {
-            const itemArray = state.items[historyId] || [];
-            for (const item of itemArray) {
-                if (item && item.hid == hid) {
-                    return item;
-                }
-            }
-            console.debug("getHistoryItemByHid failed. Hid not found.", historyId, hid);
-        },
     getLatestCreateTime: (state) => () => state.latestCreateTime,
+    getTotalMatchesCount: (state) => () => state.totalMatchesCount,
 };
 
 const getQueryString = (filterText) => {
