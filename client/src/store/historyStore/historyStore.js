@@ -166,14 +166,13 @@ export const actions = {
         commit("setHistory", history);
         commit("setCurrentHistoryId", history.id);
     },
-    reset({ commit }) {
+    resetHistory({ commit }) {
         commit("setHistories", []);
         commit("setCurrentHistoryId", null);
     },
 };
 
 export const historyStore = {
-    namespaced: true,
     state,
     getters,
     mutations,

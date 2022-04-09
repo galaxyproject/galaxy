@@ -20,6 +20,7 @@ import {
     datasetStore,
     historyChangedItemsStore,
     historyItemsStore,
+    historyStore as betaHistoryStore,
 } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
@@ -32,9 +33,6 @@ import { collectionAttributesStore } from "./collectionAttributesStore";
 import { genomeStore } from "./genomeStore";
 import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
-
-// beta features
-import { historyStore as betaHistoryStore } from "components/History/model/historyStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
