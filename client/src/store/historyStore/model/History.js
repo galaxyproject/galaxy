@@ -14,11 +14,6 @@ export class History {
         Object.assign(this, raw);
     }
 
-    // not deleted
-    get active() {
-        return !this.deleted && !this.purged;
-    }
-
     clone() {
         const newProps = cleanHistoryProps(this);
         return new History(newProps);
