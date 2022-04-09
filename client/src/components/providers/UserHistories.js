@@ -13,7 +13,6 @@
  */
 
 import { mapActions, mapGetters } from "vuex";
-import { History } from "components/History/model/History";
 
 export default {
     props: {
@@ -24,12 +23,12 @@ export default {
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
-                return new History(this.currentHistory);
+                return Object.assign({}, this.currentHistory);
             }
             return null;
         },
         historyModels() {
-            return this.histories.map((h) => new History(h));
+            return this.histories.map((h) => Object.assign({}, h));
         },
     },
     methods: {

@@ -1,8 +1,7 @@
 import Vuex from "vuex";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue, wait, waitForLifecyleEvent, watchForChange } from "jest/helpers";
-import { historyStore } from "components/History/model/historyStore";
-import { History } from "components/History/model/History";
+import { historyStore } from "store/historyStore/historyStore";
 import UserHistories from "./UserHistories";
 
 // #region Test Data
@@ -32,10 +31,10 @@ import {
     createNewHistory,
     updateHistoryFields,
     deleteHistoryById,
-} from "components/History/model/queries";
+} from "store/historyStore/model/queries";
 
 jest.mock("app");
-jest.mock("components/History/model/queries");
+jest.mock("store/historyStore/model/queries");
 
 const maxServerDelay = 60;
 const serverDelay = async (min = 0, max = maxServerDelay) => {
@@ -134,13 +133,13 @@ describe("UserHistories", () => {
             expect(histories).toBeInstanceOf(Array);
             expect(histories.length).toEqual(historySummaries.length);
             histories.forEach((h) => {
-                expect(h).toBeInstanceOf(History);
+                expect(h).toBeInstanceOf(Object);
             });
         });
 
         test("currentHistory", async () => {
             const { histories, currentHistory } = slotProps;
-            expect(currentHistory).toBeInstanceOf(History);
+            expect(currentHistory).toBeInstanceOf(Object);
             expect(histories.find((h) => h.id == currentHistory.id)).toEqual(currentHistory);
         });
     });
@@ -163,7 +162,7 @@ describe("UserHistories", () => {
             // wait for it to register
             const { currentHistory: changedHistory, histories: newHistories } = slotProps;
             expect(changedHistory.id).toEqual(nextHistory.id);
-            expect(changedHistory).toBeInstanceOf(History);
+            expect(changedHistory).toBeInstanceOf(Object);
             expect(newHistories.find((h) => h.id == changedHistory.id)).toEqual(changedHistory);
         });
 
@@ -189,7 +188,7 @@ describe("UserHistories", () => {
                 handlers: { updateHistory },
             } = slotProps;
             expect(updateHistory).toBeInstanceOf(Function);
-            expect(currentHistory).toBeInstanceOf(History);
+            expect(currentHistory).toBeInstanceOf(Object);
             const modifiedHistory = { ...currentHistory, foo: "bar" };
 
             expect(modifiedHistory.id).toBeDefined();

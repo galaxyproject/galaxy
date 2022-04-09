@@ -18,7 +18,6 @@
 <script>
 import prettyBytes from "pretty-bytes";
 import short from "components/directives/v-short";
-import { History } from "components/History/model";
 import Details from "components/History/Layout/Details";
 
 export default {
@@ -34,7 +33,7 @@ export default {
         },
     },
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
         writeable: { type: Boolean, default: true },
     },
 };

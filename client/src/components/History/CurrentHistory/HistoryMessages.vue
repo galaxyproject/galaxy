@@ -13,11 +13,9 @@
 </template>
 
 <script>
-import { History } from "components/History/model";
-
 export default {
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
     },
     computed: {
         hasMessages() {

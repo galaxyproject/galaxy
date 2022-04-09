@@ -11,9 +11,9 @@ import {
     updateHistoryFields,
     cloneHistory,
     secureHistory,
-} from "./queries";
+} from "./model/queries";
 
-export const state = {
+const state = {
     // selected history
     currentHistoryId: null,
     // histories for current user
@@ -21,7 +21,7 @@ export const state = {
     historiesLoading: false,
 };
 
-export const mutations = {
+const mutations = {
     setCurrentHistoryId(state, id) {
         state.currentHistoryId = id;
     },
@@ -40,7 +40,7 @@ export const mutations = {
     },
 };
 
-export const getters = {
+const getters = {
     currentHistoryId: (state, getters) => {
         const { histories, currentHistoryId: id } = state;
         return id in histories ? id : getters.firstHistoryId;
@@ -81,7 +81,7 @@ const promises = {
     byId: new Map(),
 };
 
-export const actions = {
+const actions = {
     loadCurrentHistory({ dispatch }) {
         getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },

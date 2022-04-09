@@ -6,8 +6,8 @@
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
+import { mergeArray } from "./model/utilities";
 import { getFilters, getQueryDict, testFilters } from "./historyItemsFiltering";
-import { mergeArray } from "./utilities";
 
 const limit = 100;
 const queue = new LastQueue();

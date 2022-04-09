@@ -160,7 +160,6 @@
 </template>
 
 <script>
-import { History } from "components/History/model";
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyHistoryModal from "components/History/Modals/CopyModal";
@@ -174,7 +173,7 @@ export default {
     },
     props: {
         histories: { type: Array, required: true },
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
         title: { type: String, default: "Histories" },
         historiesLoading: { type: Boolean, default: false },
     },

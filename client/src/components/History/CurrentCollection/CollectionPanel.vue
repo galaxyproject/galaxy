@@ -42,7 +42,6 @@
 
 <script>
 import { CollectionElementsProvider } from "components/providers/storeProviders";
-import { History } from "components/History/model";
 import { updateContentFields } from "components/History/model/queries";
 import ContentItem from "components/History/Content/ContentItem";
 import CollectionNavigation from "./CollectionNavigation";
@@ -62,7 +61,7 @@ export default {
         Listing,
     },
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
     },
     data() {

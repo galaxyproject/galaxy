@@ -1,5 +1,3 @@
-export { History } from "./History";
-
 // crud functions post bulk requests
 export {
     // operations on lists

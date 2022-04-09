@@ -130,7 +130,6 @@
 </template>
 
 <script>
-import { History } from "components/History/model/History";
 import {
     hideSelectedContent,
     unhideSelectedContent,
@@ -147,7 +146,7 @@ import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFilter
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 export default {
     props: {
-        history: { type: History, required: true },
+        history: { type: Object, required: true },
         filterText: { type: String, required: true },
         contentSelection: { type: Map, required: true },
         selectionSize: { type: Number, required: true },

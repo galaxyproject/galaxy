@@ -8,7 +8,7 @@
 import axios from "axios";
 import moment from "moment";
 import { prependPath } from "utils/redirect";
-import { History } from "components/History/model/History";
+import { History } from "./History";
 
 /**
  * Prefix axios with configured path prefix and /api
