@@ -9,11 +9,13 @@ from typing import (
     List,
     Optional,
     Set,
+    Union,
 )
 
 from fastapi import (
     Body,
     Depends,
+    Header,
     Path,
     Query,
     Request,
@@ -29,6 +31,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
+    ValueFilterQueryParams,
 )
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -37,8 +40,11 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    HistoryContentBulkOperationPayload,
+    HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
     HistoryContentsResult,
+    HistoryContentsWithStatsResult,
     HistoryContentType,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -47,6 +53,7 @@ from galaxy.schema.schema import (
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,
+    get_value_filter_query_params,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.history_contents import (
@@ -306,6 +313,23 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents",
         name="history_contents",
         summary="Returns the contents of the given history.",
+        responses={
+            200: {
+                "description": ("The contents of the history that match the query."),
+                "content": {
+                    "application/json": {
+                        "schema": {  # HistoryContentsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsResult"
+                        },
+                    },
+                    HistoryContentsWithStatsResult.__accept_type__: {
+                        "schema": {  # HistoryContentsWithStatsResult.schema(),
+                            "ref": "#/components/schemas/HistoryContentsWithStatsResult"
+                        },
+                    },
+                },
+            },
+        },
     )
     def index(
         self,
@@ -315,7 +339,8 @@ class FastAPIHistoryContents:
         legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-    ):
+        accept: str = Header(default="application/json", include_in_schema=False),
+    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
         """
         Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
 
@@ -331,6 +356,7 @@ class FastAPIHistoryContents:
             legacy_params,
             serialization_params,
             filter_query_params,
+            accept,
         )
         return items
 
@@ -514,6 +540,23 @@ class FastAPIHistoryContents:
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
         return HistoryContentsResult.parse_obj(result)
+
+    @router.put(
+        "/api/histories/{history_id}/contents/bulk",
+        summary="Executes an operation on a set of items contained in the given History.",
+    )
+    def bulk_operation(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: EncodedDatabaseIdField = HistoryIDPathParam,
+        filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
+        payload: HistoryContentBulkOperationPayload = Body(...),
+    ) -> HistoryContentBulkOperationResult:
+        """Executes an operation on a set of items contained in the given History.
+
+        The items to be processed can be explicitly set or determined by a dynamic query.
+        """
+        return self.service.bulk_operation(trans, history_id, filter_query_params, payload)
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}/validate",
