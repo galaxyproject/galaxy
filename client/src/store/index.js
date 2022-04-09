@@ -20,7 +20,7 @@ import {
     datasetStore,
     historyChangedItemsStore,
     historyItemsStore,
-    historyStore as betaHistoryStore,
+    historyStore,
 } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
@@ -57,28 +57,27 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            user: userStore,
-            config: configStore,
+            collectionAttributesStore: collectionAttributesStore,
             collectionElements: collectionElementsStore,
+            config: configStore,
+            destinationParameters: jobDestinationParametersStore,
             dataset: datasetStore,
-            betaHistory: betaHistoryStore,
-            panels: panelStore,
-            // TODO: please namespace all store modules
+            datasetExtFiles: datasetExtFilesStore,
+            datasetPathDestination: datasetPathDestinationStore,
+            datatypeStore: datatypeStore,
+            informationStore: jobStore,
+            invocations: invocationStore,
+            jobMetrics: jobMetricsStore,
+            genomeStore: genomeStore,
             gridSearch: gridSearchStore,
+            history: historyStore,
             historyChangedItems: historyChangedItemsStore,
             historyItems: historyItemsStore,
+            panels: panelStore,
             tags: tagStore,
-            jobMetrics: jobMetricsStore,
-            destinationParameters: jobDestinationParametersStore,
-            datasetPathDestination: datasetPathDestinationStore,
-            datasetExtFiles: datasetExtFilesStore,
-            invocations: invocationStore,
-            workflows: workflowStore,
-            informationStore: jobStore,
             tools: toolStore,
-            collectionAttributesStore: collectionAttributesStore,
-            genomeStore: genomeStore,
-            datatypeStore: datatypeStore,
+            user: userStore,
+            workflows: workflowStore,
         },
     };
 

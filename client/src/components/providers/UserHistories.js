@@ -20,7 +20,7 @@ export default {
         user: { type: Object, required: true },
     },
     computed: {
-        ...mapGetters("betaHistory", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
+        ...mapGetters("history", ["currentHistoryId", "currentHistory", "histories", "historiesLoading"]),
 
         currentHistoryModel() {
             if (this.currentHistory !== null) {
@@ -33,7 +33,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("betaHistory", [
+        ...mapActions("history", [
             "loadHistoryById",
             "createNewHistory",
             "updateHistory",

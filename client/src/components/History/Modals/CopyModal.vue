@@ -82,7 +82,7 @@ export default {
         },
     },
     methods: {
-        ...mapActions("betaHistory", ["copyHistory"]),
+        ...mapActions("history", ["copyHistory"]),
 
         async copy(close) {
             this.loading = true;

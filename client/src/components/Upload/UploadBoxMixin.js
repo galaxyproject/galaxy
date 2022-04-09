@@ -56,7 +56,7 @@ export default {
             return this.hasCallback ? "Cancel" : "Close";
         },
         history_id() {
-            const storeId = this.$store?.getters["betaHistory/currentHistoryId"];
+            const storeId = this.$store?.getters["history/currentHistoryId"];
             if (storeId) {
                 return storeId;
             }

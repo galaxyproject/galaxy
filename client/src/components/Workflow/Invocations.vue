@@ -128,7 +128,7 @@ export default {
     },
     computed: {
         ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId"]),
-        ...mapGetters("betaHistory", ["getHistoryById", "getHistoryNameById"]),
+        ...mapGetters("history", ["getHistoryById", "getHistoryNameById"]),
         apiUrl() {
             return `${getAppRoot()}api/invocations`;
         },
@@ -152,7 +152,7 @@ export default {
     },
     methods: {
         ...mapCacheActions(["fetchWorkflowForInstanceId"]),
-        ...mapCacheActions("betaHistory", ["loadHistoryById"]),
+        ...mapCacheActions("history", ["loadHistoryById"]),
         provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };

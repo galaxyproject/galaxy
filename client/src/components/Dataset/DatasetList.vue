@@ -110,7 +110,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(["loadHistories"]),
+        ...mapActions("history", ["loadHistories"]),
         load(concat = false) {
             this.loading = true;
             this.services

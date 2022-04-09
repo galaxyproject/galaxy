@@ -56,7 +56,7 @@ export default class HistoryPanelProxy {
 
         // Watch the store, update history id
         store.watch(
-            (state, getters) => getters["betaHistory/currentHistory"],
+            (state, getters) => getters["history/currentHistory"],
             (history) => {
                 this.model.id = history.id;
                 this.model.set("name", history.name);
@@ -67,11 +67,11 @@ export default class HistoryPanelProxy {
         // to be removed after disabling legacy history
     }
     loadCurrentHistory() {
-        store.dispatch("betaHistory/loadCurrentHistory");
+        store.dispatch("history/loadCurrentHistory");
     }
     switchToHistory(historyId) {
         this.model.id = historyId;
-        store.dispatch("betaHistory/loadHistoryById", historyId);
+        store.dispatch("history/loadHistoryById", historyId);
     }
     async buildCollection(collectionType, selection, hideSourceItems, fromRulesInput = false) {
         let selectionContent = null;

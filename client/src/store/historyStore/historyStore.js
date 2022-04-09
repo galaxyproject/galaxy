@@ -173,6 +173,7 @@ export const actions = {
 };
 
 export const historyStore = {
+    namespaced: true,
     state,
     getters,
     mutations,

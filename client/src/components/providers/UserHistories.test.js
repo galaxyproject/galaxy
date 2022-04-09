@@ -94,7 +94,7 @@ const localVue = getLocalVue();
 // Generate store for tesint, just need the one module we talk to
 const historiesStore = new Vuex.Store({
     modules: {
-        betaHistory: historyStore,
+        history: historyStore,
     },
 });
 
@@ -122,7 +122,7 @@ describe("UserHistories", () => {
     });
 
     afterEach(async () => {
-        historiesStore.dispatch("betaHistory/reset");
+        historiesStore.dispatch("history/resetHistory");
         if (wrapper) {
             await wrapper.destroy();
         }
