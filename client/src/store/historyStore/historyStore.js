@@ -86,7 +86,6 @@ const promises = {
     byId: new Map(),
 };
 
-
 const actions = {
     async copyHistory({ dispatch }, { history, name, copyAll }) {
         const newHistory = await cloneHistory(history, name, copyAll);

@@ -1,4 +1,4 @@
-import { History, cleanHistoryProps } from "./History";
+import { History } from "./History";
 
 describe("History model", () => {
     const initialProps = {
@@ -25,32 +25,6 @@ describe("History model", () => {
             expect(h.name).toEqual(c.name);
             expect(h.tags).toEqual(c.tags);
             expect(h.annotation).toEqual(c.annotation);
-        });
-    });
-
-    describe("cleanHistoryProps", () => {
-        it("should ignore computed prop names during cloning", () => {
-            const sloppyProps = {
-                ...initialProps,
-                // these are all computed values in the history class which are defined by getters,
-                // if we feed thsm into the constructor they should be ignored
-                statusDescription: "123",
-                totalItems: Number.POSITIVE_INFINITY,
-                hidItems: "four",
-                active: "The Fonz",
-            };
-
-            const cleanProps = cleanHistoryProps(sloppyProps);
-            expect(cleanProps).toEqual(initialProps);
-            expect(cleanProps).not.toBe(initialProps);
-
-            expect(cleanProps).not.toHaveProperty("statusDescription");
-            expect(cleanProps).not.toHaveProperty("totalItems");
-            expect(cleanProps).not.toHaveProperty("hidItems");
-            expect(cleanProps).not.toHaveProperty("active");
-
-            const h = new History(cleanProps);
-            expect(h.statusDescription).not.toEqual(sloppyProps.statusDescription);
         });
     });
 

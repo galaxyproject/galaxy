@@ -108,7 +108,7 @@
                         <span v-localize>Export Tool Citations</span>
                     </b-dropdown-item>
 
-                    <b-dropdown-item @click="backboneRoute(history.exportLink)" data-description="export to file">
+                    <b-dropdown-item @click="backboneRoute(exportLink)" data-description="export to file">
                         <Icon fixed-width icon="file-archive" class="mr-1" />
                         <span v-localize>Export History to File</span>
                     </b-dropdown-item>
@@ -176,6 +176,11 @@ export default {
         history: { type: Object, required: true },
         title: { type: String, default: "Histories" },
         historiesLoading: { type: Boolean, default: false },
+    },
+    computed: {
+        exportLink() {
+            return `histories/${this.history.id}/export`;
+        },
     },
     methods: {
         switchToLegacyHistoryPanel,
