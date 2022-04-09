@@ -13,11 +13,6 @@ import {
     secureHistory,
 } from "./model/queries";
 
-let fetching = null;
-let lastDate = new Date();
-const limit = 100;
-const throttlePeriod = 3000;
-
 const state = {
     // selected history
     currentHistoryId: null,
@@ -174,20 +169,6 @@ const actions = {
         // properties that are to be updated on the server. A full history object is not required
         const saveResult = await updateHistoryFields(id, updateFields);
         commit("setHistory", saveResult);
-    },
-
-    /**
-     * Starts the process to watch the current history with continuous requests
-     * @param {historyId} Listener start action requires the history id
-     */
-    startHistoryChangedItems: ({ state, dispatch }) => {
-        if (fetching != state.currentHistoryId) {
-            fetching = state.currentHistoryId;
-            dispatch("fetchHistoryChangedItems", { historyId: state.currentHistoryId });
-        }
-    },
-    stopHistoryChangedItems: () => {
-        fetching = null;
     },
 };
 
