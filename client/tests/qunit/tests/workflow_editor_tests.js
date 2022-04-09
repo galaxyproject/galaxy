@@ -394,9 +394,9 @@ QUnit.module("Node unit test", {
 });
 
 QUnit.test("make active", function (assert) {
-    assert.ok(this.element.className.indexOf("node-active") == -1);
+    assert.ok(this.element.className.indexOf("node-active") === -1);
     this.node.makeActive();
-    assert.ok(this.element.className.indexOf("node-active") != -1);
+    assert.ok(this.element.className.indexOf("node-active") !== -1);
 });
 
 QUnit.test("destroy", function (assert) {
@@ -850,7 +850,7 @@ QUnit.test("constructing with mapOver", function (assert) {
         input: {},
         mapOver: new Terminals.CollectionTypeDescription("list"),
     });
-    assert.ok(terminal.mapOver.collectionType == "list");
+    assert.ok(terminal.mapOver.collectionType === "list");
 });
 
 QUnit.test("resetMapping", function (assert) {
@@ -988,7 +988,7 @@ QUnit.module("terminal mapping logic", {
     },
     verifyNotAttachable: function (assert, inputTerminal, output) {
         let outputTerminal;
-        if (typeof output == "string") {
+        if (typeof output === "string") {
             // Just given a collection type... create terminal out of it.
             outputTerminal = this.newOutputTerminal(output);
         } else {
@@ -999,7 +999,7 @@ QUnit.module("terminal mapping logic", {
     },
     verifyAttachable: function (assert, inputTerminal, output) {
         let outputTerminal;
-        if (typeof output == "string") {
+        if (typeof output === "string") {
             // Just given a collection type... create terminal out of it.
             outputTerminal = this.newOutputTerminal(output);
         } else {

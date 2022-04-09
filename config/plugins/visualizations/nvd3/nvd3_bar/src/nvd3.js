@@ -13,7 +13,7 @@ import { requestCharts, request as requestJobs } from "@galaxyproject/charts/lib
 
 /** Get boolean as string */
 function _asBoolean(value) {
-    return String(value).toLowerCase() == "true";
+    return String(value).toLowerCase() === "true";
 }
 
 /* Prepare containers */

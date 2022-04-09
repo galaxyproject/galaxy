@@ -240,7 +240,7 @@
 	
 	
 	function toType( obj ) {
-		if ( obj == null ) {
+		if ( obj === null ) {
 			return obj + "";
 		}
 	
@@ -289,7 +289,7 @@
 		get: function( num ) {
 	
 			// Return all the elements in a clean array
-			if ( num == null ) {
+			if ( num === null ) {
 				return slice.call( this );
 			}
 	
@@ -495,7 +495,7 @@
 	
 		// Support: Android <=4.0 only
 		trim: function( text ) {
-			return text == null ?
+			return text === null ?
 				"" :
 				( text + "" ).replace( rtrim, "" );
 		},
@@ -519,7 +519,7 @@
 		},
 	
 		inArray: function( elem, arr, i ) {
-			return arr == null ? -1 : indexOf.call( arr, elem, i );
+			return arr === null ? -1 : indexOf.call( arr, elem, i );
 		},
 	
 		// Support: Android <=4.0 only, PhantomJS 1 only
@@ -6611,7 +6611,7 @@
 				}
 	
 				// background-* props affect original clone's values
-				if ( !support.clearCloneStyle && value === "" && name.indexOf( "background" ) === 0 ) {
+				if ( !support.clearCloneStyle && value.length === 0 && name.indexOf( "background" ) === 0 ) {
 					style[ name ] = "inherit";
 				}
 	
@@ -10912,7 +10912,7 @@
 	    if (pos > (this.$items.length - 1) || pos < 0) return
 	
 	    if (this.sliding)       return this.$element.one('slid.bs.carousel', function () { that.to(pos) }) // yes, "slid"
-	    if (activeIndex == pos) return this.pause().cycle()
+	    if (activeIndex === pos) return this.pause().cycle()
 	
 	    return this.slide(pos > activeIndex ? 'next' : 'prev', this.$items.eq(pos))
 	  }
@@ -11393,8 +11393,8 @@
 	    var $parent  = getParent($this)
 	    var isActive = $parent.hasClass('open')
 	
-	    if (!isActive && e.which != 27 || isActive && e.which == 27) {
-	      if (e.which == 27) $parent.find(toggle).trigger('focus')
+	    if (!isActive && e.which != 27 || isActive && e.which === 27) {
+	      if (e.which === 27) $parent.find(toggle).trigger('focus')
 	      return $this.trigger('click')
 	    }
 	
@@ -11612,7 +11612,7 @@
 	  Modal.prototype.escape = function () {
 	    if (this.isShown && this.options.keyboard) {
 	      this.$element.on('keydown.dismiss.bs.modal', $.proxy(function (e) {
-	        e.which == 27 && this.hide()
+	        e.which === 27 && this.hide()
 	      }, this))
 	    } else if (!this.isShown) {
 	      this.$element.off('keydown.dismiss.bs.modal')
@@ -14723,8 +14723,8 @@
 	  function d3_rgb_hsl(r, g, b) {
 	    var min = Math.min(r /= 255, g /= 255, b /= 255), max = Math.max(r, g, b), d = max - min, h, s, l = (max + min) / 2;
 	    if (d) {
-	      s = l < .5 ? d / (max + min) : d / (2 - max - min);
-	      if (r == max) h = (g - b) / d + (g < b ? 6 : 0); else if (g == max) h = (b - r) / d + 2; else h = (r - g) / d + 4;
+	      s = l < 0.5 ? d / (max + min) : d / (2 - max - min);
+	      if (r === max) h = (g - b) / d + (g < b ? 6 : 0); else if (g === max) h = (b - r) / d + 2; else h = (r - g) / d + 4;
 	      h *= 60;
 	    } else {
 	      h = NaN;
@@ -15247,9 +15247,9 @@
 	        break;
 	      }
 	      if (symbol === "$") prefix = locale_currency[0], suffix = locale_currency[1];
-	      if (type == "r" && !precision) type = "g";
+	      if (type === "r" && !precision) type = "g";
 	      if (precision != null) {
-	        if (type == "g") precision = Math.max(1, Math.min(21, precision)); else if (type == "e" || type == "f") precision = Math.max(0, Math.min(20, precision));
+	        if (type === "g") precision = Math.max(1, Math.min(21, precision)); else if (type == "e" || type == "f") precision = Math.max(0, Math.min(20, precision));
 	      }
 	      type = d3_format_types.get(type) || d3_format_typeDefault;
 	      var zcomma = zfill && comma;
@@ -19372,8 +19372,8 @@
 	      }
 	      for (i = 0; i < m; ++i) {
 	        o = links[i];
-	        if (typeof o.source == "number") o.source = nodes[o.source];
-	        if (typeof o.target == "number") o.target = nodes[o.target];
+	        if (typeof o.source === "number") o.source = nodes[o.source];
+	        if (typeof o.target === "number") o.target = nodes[o.target];
 	        ++o.source.weight;
 	        ++o.target.weight;
 	      }
@@ -19965,7 +19965,7 @@
 	              break;
 	            }
 	          }
-	          if (isect == 1) {
+	          if (isect === 1) {
 	            for (k = a._pack_prev; k !== j._pack_prev; k = k._pack_prev, s2++) {
 	              if (d3_layout_packIntersects(k, c)) {
 	                break;
@@ -19973,7 +19973,7 @@
 	            }
 	          }
 	          if (isect) {
-	            if (s1 < s2 || s1 == s2 && b.r < a.r) d3_layout_packSplice(a, b = j); else d3_layout_packSplice(a = k, b);
+	            if (s1 < s2 || s1 === s2 && b.r < a.r) d3_layout_packSplice(a, b = j); else d3_layout_packSplice(a = k, b);
 	            i--;
 	          } else {
 	            d3_layout_packInsert(a, c);
@@ -20141,7 +20141,7 @@
 	    return d3_layout_hierarchyRebind(tree, hierarchy);
 	  };
 	  function d3_layout_treeSeparation(a, b) {
-	    return a.parent == b.parent ? 1 : 2;
+	    return a.parent === b.parent ? 1 : 2;
 	  }
 	  function d3_layout_treeLeft(v) {
 	    var children = v.children;
@@ -21052,7 +21052,7 @@
 	    };
 	    arc.padRadius = function(v) {
 	      if (!arguments.length) return padRadius;
-	      padRadius = v == d3_svg_arcAuto ? d3_svg_arcAuto : d3_functor(v);
+	      padRadius = v === d3_svg_arcAuto ? d3_svg_arcAuto : d3_functor(v);
 	      return arc;
 	    };
 	    arc.startAngle = function(v) {
@@ -21471,7 +21471,7 @@
 	      };
 	    }
 	    function equals(a, b) {
-	      return a.a0 == b.a0 && a.a1 == b.a1;
+	      return a.a0 === b.a0 && a.a1 === b.a1;
 	    }
 	    function arc(r, p, a) {
 	      return "A" + r + "," + r + " 0 " + +(a > π) + ",1 " + p;
@@ -22194,7 +22194,7 @@
 	      });
 	      brushmove();
 	      function keydown() {
-	        if (d3.event.keyCode == 32) {
+	        if (d3.event.keyCode === 32) {
 	          if (!dragging) {
 	            center = null;
 	            origin[0] -= xExtent[1];
@@ -22205,7 +22205,7 @@
 	        }
 	      }
 	      function keyup() {
-	        if (d3.event.keyCode == 32 && dragging == 2) {
+	        if (d3.event.keyCode === 32 && dragging === 2) {
 	          origin[0] += xExtent[1];
 	          origin[1] += yExtent[1];
 	          dragging = 0;
@@ -22343,7 +22343,7 @@
 	      return brush;
 	    };
 	    brush.empty = function() {
-	      return !!x && xExtent[0] == xExtent[1] || !!y && yExtent[0] == yExtent[1];
+	      return !!x && xExtent[0] === xExtent[1] || !!y && yExtent[0] === yExtent[1];
 	    };
 	    return d3.rebind(brush, event, "on");
 	  };
@@ -22423,7 +22423,7 @@
 	    };
 	    function tickMethod(extent, count) {
 	      var span = extent[1] - extent[0], target = span / count, i = d3.bisect(d3_time_scaleSteps, target);
-	      return i == d3_time_scaleSteps.length ? [ methods.year, d3_scale_linearTickRange(extent.map(function(d) {
+	      return i === d3_time_scaleSteps.length ? [ methods.year, d3_scale_linearTickRange(extent.map(function(d) {
 	        return d / 31536e6;
 	      }), count)[2] ] : !i ? [ d3_time_scaleMilliseconds, d3_scale_linearTickRange(extent, count)[2] ] : methods[target / d3_time_scaleSteps[i - 1] < d3_time_scaleSteps[i] / target ? i - 1 : i];
 	    }

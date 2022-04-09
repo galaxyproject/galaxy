@@ -13,7 +13,7 @@ const styleBase = path.join(scriptsBase, "style");
 
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
-    const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
+    const targetEnv = process.env.NODE_ENV === "production" || argv.mode === "production" ? "production" : "development";
 
     const buildconfig = {
         mode: targetEnv,
@@ -56,7 +56,7 @@ module.exports = (env = {}, argv = {}) => {
                     styles: {
                         name: "base",
                         chunks: "all",
-                        test: (m) => m.constructor.name == "CssModule",
+                        test: (m) => m.constructor.name === "CssModule",
                         priority: -5,
                     },
                     libs: {
@@ -230,7 +230,7 @@ module.exports = (env = {}, argv = {}) => {
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
+    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode === "development") {
         buildconfig.devtool = "eval-cheap-source-map";
     }
 

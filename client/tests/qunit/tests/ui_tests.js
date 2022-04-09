@@ -29,9 +29,9 @@ QUnit.test("tabs", function (assert) {
         collection.each(function (model, index) {
             var $tab_element = tabs.$("#tab-" + model.id + " .nav-link");
             var $tab_content = tabs.$("#" + model.id);
-            var is_current = model.id == tabs.model.get("current");
-            assert.ok($tab_content.hasClass("active") == is_current, "Active state of content.");
-            assert.ok($tab_element.hasClass("active") == is_current, "Active state of element.");
+            var is_current = model.id === tabs.model.get("current");
+            assert.ok($tab_content.hasClass("active") === is_current, "Active state of content.");
+            assert.ok($tab_element.hasClass("active") === is_current, "Active state of element.");
         });
     };
     $("body").prepend(tabs.$el);
@@ -63,49 +63,49 @@ QUnit.test("button-default", function (assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() == "title", "Has correct title");
+    assert.ok(button.$title.html() === "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() == "_title", "Has correct new title");
+    assert.ok(button.$title.html() === "_title", "Has correct new title");
     assert.ok(!button.$el.attr("disabled"), "Button active");
     model.set("disabled", true);
     assert.ok(button.$el.attr("disabled"), "Button disabled");
     model.set("disabled", false);
     assert.ok(!button.$el.attr("disabled"), "Button active, again");
     model.set("wait", true);
-    assert.ok(button.$title.html() == model.get("wait_text"), "Shows correct wait text");
+    assert.ok(button.$title.html() === model.get("wait_text"), "Shows correct wait text");
     model.set("wait_text", "wait_text");
-    assert.ok(button.$title.html() == "wait_text", "Shows correct new wait text");
+    assert.ok(button.$title.html() === "wait_text", "Shows correct new wait text");
     model.set("wait", false);
-    assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
+    assert.ok(button.$title.html() === model.get("title"), "Shows correct regular title");
 });
 
 QUnit.test("button-default", function (assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() == "title", "Has correct title");
+    assert.ok(button.$title.html() === "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() == "_title", "Has correct new title");
+    assert.ok(button.$title.html() === "_title", "Has correct new title");
     assert.ok(!button.$el.attr("disabled"), "Button active");
     model.set("disabled", true);
     assert.ok(button.$el.attr("disabled"), "Button disabled");
     model.set("disabled", false);
     assert.ok(!button.$el.attr("disabled"), "Button active, again");
     model.set("wait", true);
-    assert.ok(button.$title.html() == model.get("wait_text"), "Shows correct wait text");
+    assert.ok(button.$title.html() === model.get("wait_text"), "Shows correct wait text");
     model.set("wait_text", "wait_text");
-    assert.ok(button.$title.html() == "wait_text", "Shows correct new wait text");
+    assert.ok(button.$title.html() === "wait_text", "Shows correct new wait text");
     model.set("wait", false);
-    assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
+    assert.ok(button.$title.html() === model.get("title"), "Shows correct regular title");
 });
 
 QUnit.test("button-check", function (assert) {
     var button = new Ui.ButtonCheck({ title: "title" });
     var model = button.model;
     $("body").prepend(button.$el);
-    assert.ok(button.$title.html() == "title", "Has correct title");
+    assert.ok(button.$title.html() === "title", "Has correct title");
     model.set("title", "_title");
-    assert.ok(button.$title.html() == "_title", "Has correct new title");
+    assert.ok(button.$title.html() === "_title", "Has correct new title");
     assert.ok(button.$icon.hasClass(button.model.get("icons")[0]), "Has correct " + model.get("value") + " value");
     button.value(1);
     assert.ok(button.$icon.hasClass(button.model.get("icons")[1]), "Has correct " + model.get("value") + " value");
@@ -145,17 +145,17 @@ QUnit.test("button-check", function (assert) {
 
 QUnit.test("options", function (assert) {
     function _test(obj, options) {
-        assert.ok(JSON.stringify(obj.value()) == JSON.stringify(options.value), "Selected value is " + options.value);
+        assert.ok(JSON.stringify(obj.value()) === JSON.stringify(options.value), "Selected value is " + options.value);
         assert.ok(
-            obj.$menu.css("display") == (options.menu_visible ? "block" : "none"),
+            obj.$menu.css("display") === (options.menu_visible ? "block" : "none"),
             "Menu visibility: " + options.menu_visible
         );
         assert.ok(
-            obj.$message.css("display") == (options.message_visible ? "block" : "none"),
+            obj.$message.css("display") === (options.message_visible ? "block" : "none"),
             "Message visibility: " + options.message_visible
         );
         assert.ok(
-            obj.$options.css("display") == (options.options_visible ? "inline-block" : "none"),
+            obj.$options.css("display") === (options.options_visible ? "inline-block" : "none"),
             "Options visibility: " + options.options_visible
         );
         options.message_cls &&
@@ -478,10 +478,10 @@ QUnit.test("options", function (assert) {
 QUnit.test("select-default", function (assert) {
     function _test(options) {
         assert.ok(
-            JSON.stringify(select.value()) == JSON.stringify(options.value),
+            JSON.stringify(select.value()) === JSON.stringify(options.value),
             "Selected value is " + options.value
         );
-        assert.ok(select.text() == options.label, "Selected label is " + options.label);
+        assert.ok(select.text() === options.label, "Selected label is " + options.label);
         assert.ok(select.$el.display === options.visible ? "block" : "none", options.visible ? "Visible" : "Hidden");
         assert.ok(select.data.length === options.count && select.length(), "Found " + options.count + " option");
         options.exists && assert.ok(select.exists(options.exists), "Found value: " + options.exists);
@@ -700,13 +700,13 @@ QUnit.test("select-content", function (assert) {
     var select = new SelectContent.View({});
     $("body").prepend(select.$el);
     var _testSelect = function (tag, options) {
-        var field = select.fields[tag == "first" ? 0 : select.fields.length - 1];
+        var field = select.fields[tag === "first" ? 0 : select.fields.length - 1];
         var $select = select.$(".ui-select:" + tag);
         var $button = select.$(".ui-radiobutton").find("label:" + tag);
-        assert.ok(field.length() == options[tag + "length"], tag + " one has " + options[tag + "length"] + " options");
-        assert.ok(field.data[0].value == options[tag + "value"], tag + " option has correct value");
-        assert.ok(field.data[0].label == options[tag + "label"], tag + " option has correct label");
-        assert.ok($select.hasClass("ui-select-multiple") == options[tag + "multiple"], "Check multiple option");
+        assert.ok(field.length() === options[tag + "length"], tag + " one has " + options[tag + "length"] + " options");
+        assert.ok(field.data[0].value === options[tag + "value"], tag + " option has correct value");
+        assert.ok(field.data[0].label === options[tag + "label"], tag + " option has correct label");
+        assert.ok($select.hasClass("ui-select-multiple") === options[tag + "multiple"], "Check multiple option");
         $button.trigger("mouseover");
         var tooltip = $(".tooltip-inner:last").text();
         $button.trigger("mouseleave");
@@ -715,24 +715,24 @@ QUnit.test("select-content", function (assert) {
     var _test = function (options) {
         assert.ok(select.button_type.$(".ui-option:first").hasClass("active"), "First one is toggled");
         assert.ok(
-            select.$(".ui-select").length == options.selectfields,
+            select.$(".ui-select").length === options.selectfields,
             "Found " + options.selectfields + " select fields"
         );
         assert.ok(
-            select.button_type.$(".ui-option").length == options.selectfields,
+            select.button_type.$(".ui-option").length === options.selectfields,
             "Found " + options.selectfields + " radio button options"
         );
         assert.ok(
-            select.$(".ui-select-multiple").length == options.totalmultiple,
+            select.$(".ui-select-multiple").length === options.totalmultiple,
             "Contains " + options.totalmultiple + " multiselect fields"
         );
         assert.ok(
             select.$el.find(".ui-options:first .ui-option").length === options.selectfields,
             "Radio button count, expected " + options.selectfields
         );
-        assert.ok(select.$(".ui-select:first").css("display") == "block", "Check select visibility");
+        assert.ok(select.$(".ui-select:first").css("display") === "block", "Check select visibility");
         assert.ok(
-            select.$(".ui-select:last").css("display") == (options.selectfields == 1 ? "block" : "none"),
+            select.$(".ui-select:last").css("display") === (options.selectfields === 1 ? "block" : "none"),
             "Last select visibility"
         );
         assert.ok(
@@ -743,7 +743,7 @@ QUnit.test("select-content", function (assert) {
         _testSelect("last", options);
     };
 
-    assert.ok(select.button_type.value() == 0, "Initial mode selected by default.");
+    assert.ok(select.button_type.value() === 0, "Initial mode selected by default.");
     select.model.set("data", {
         hda: [
             { id: "id0", name: "name0", hid: "hid0" },
@@ -841,17 +841,17 @@ QUnit.test("select-content", function (assert) {
     select.model.set("wait", false);
     assert.ok(select.$(".icon-dropdown").hasClass("fa-caret-down"), "Shows caret");
     select.model.set("optional", true);
-    assert.ok(select.fields[0].data[0].value == "__null__", "First option is optional value");
+    assert.ok(select.fields[0].data[0].value === "__null__", "First option is optional value");
     select.model.set("optional", false);
     assert.ok(select.fields[0].data[0].value != "__null__", "First option is not optional value");
 
     select.model.set("value", { values: [{ id: "id1", src: "hda" }] });
     assert.ok(
-        JSON.stringify(select.value()) == '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}',
+        JSON.stringify(select.value()) === '{"values":[{"id":"id1","name":"name1","hid":"hid1"}],"batch":false}',
         "Checking single value"
     );
 
-    assert.ok(select.config[select.model.get("current")].src == "hda", "Matched dataset field");
+    assert.ok(select.config[select.model.get("current")].src === "hda", "Matched dataset field");
     assert.ok(!select.config[select.model.get("current")].multiple, "Matched single select field");
     select.model.set("value", {
         values: [
@@ -861,25 +861,25 @@ QUnit.test("select-content", function (assert) {
     });
     assert.ok(select.config[select.model.get("current")].multiple, "Matched multiple field");
     assert.ok(
-        JSON.stringify(select.value()) ==
+        JSON.stringify(select.value()) ===
             '{"values":[{"id":"id0","name":"name0","hid":"hid0"},{"id":"id1","name":"name1","hid":"hid1"}],"batch":true}',
         "Checking multiple values"
     );
     select.model.set("value", { values: [{ id: "id2", src: "hdca" }] });
-    assert.ok(select.config[select.model.get("current")].src == "hdca", "Matched collection field");
+    assert.ok(select.config[select.model.get("current")].src === "hdca", "Matched collection field");
     assert.ok(
-        JSON.stringify(select.value()) == '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}',
+        JSON.stringify(select.value()) === '{"values":[{"id":"id2","name":"name2","hid":"hid2"}],"batch":true}',
         "Checking collection value"
     );
 
     select = new SelectContent.View({});
     $("body").prepend(select.$el);
     var _testEmptySelect = function (tag, txt_extension, txt_label) {
-        var field = select.fields[tag == "first" ? 0 : select.fields.length - 1];
+        var field = select.fields[tag === "first" ? 0 : select.fields.length - 1];
         select.$(".ui-select:" + tag);
-        assert.ok(field.data[0].value == "__null__", tag + " option has correct empty value.");
+        assert.ok(field.data[0].value === "__null__", tag + " option has correct empty value.");
         assert.ok(
-            field.data[0].label == "No " + txt_extension + txt_label + " available.",
+            field.data[0].label === "No " + txt_extension + txt_label + " available.",
             tag + " option has correct empty label."
         );
     };

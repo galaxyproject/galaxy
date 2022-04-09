@@ -624,9 +624,9 @@
         var ids = [], pairs = {}, i, j, a, b;
         for (i = 0; i < areas.length; ++i) {
             var area = areas[i];
-            if (area.sets.length == 1) {
+            if (area.sets.length === 1) {
                 ids.push(area.sets[0]);
-            } else if (area.sets.length == 2) {
+            } else if (area.sets.length === 2) {
                 a = area.sets[0];
                 b = area.sets[1];
                 pairs[[a, b]] = true;
@@ -657,7 +657,7 @@
 
         // compute required distances between all the sets such that
         // the areas match
-        areas.filter(function(x) { return x.sets.length == 2; })
+        areas.filter(function(x) { return x.sets.length === 2; })
             .map(function(current) {
             var left = setids[current.sets[0]],
                 right = setids[current.sets[1]],
@@ -746,7 +746,7 @@
         var sets = [], setids = {}, i;
         for (i = 0; i < areas.length; ++i ) {
             var area = areas[i];
-            if (area.sets.length == 1) {
+            if (area.sets.length === 1) {
                 setids[area.sets[0]] = sets.length;
                 sets.push(area);
             }
@@ -804,7 +804,7 @@
         var circles = {}, setOverlaps = {}, set;
         for (var i = 0; i < areas.length; ++i) {
             var area = areas[i];
-            if (area.sets.length == 1) {
+            if (area.sets.length === 1) {
                 set = area.sets[0];
                 circles[set] = {x: 1e10, y: 1e10,
                                 rowid: circles.length,
@@ -813,7 +813,7 @@
                 setOverlaps[set] = [];
             }
         }
-        areas = areas.filter(function(a) { return a.sets.length == 2; });
+        areas = areas.filter(function(a) { return a.sets.length === 2; });
 
         // map each set to a list of all the other sets that overlap it
         for (i = 0; i < areas.length; ++i) {
@@ -941,9 +941,9 @@
 
         for (var i = 0; i < overlaps.length; ++i) {
             var area = overlaps[i], overlap;
-            if (area.sets.length == 1) {
+            if (area.sets.length === 1) {
                 continue;
-            } else if (area.sets.length == 2) {
+            } else if (area.sets.length === 2) {
                 var left = sets[area.sets[0]],
                     right = sets[area.sets[1]];
                 overlap = circleOverlap(left.radius, right.radius,
@@ -1257,7 +1257,7 @@
             var previous = {}, hasPrevious = false;
             svg.selectAll("g path").each(function (d) {
                 var path = d3.select(this).attr("d");
-                if ((d.sets.length == 1) && path) {
+                if ((d.sets.length === 1) && path) {
                     hasPrevious = true;
                     previous[d.sets[0]] = circleFromPath(path);
                 }
@@ -1292,7 +1292,7 @@
                 .append('g')
                 .attr("class", function(d) {
                     return "venn-area venn-" +
-                        (d.sets.length == 1 ? "circle" : "intersection");
+                        (d.sets.length === 1 ? "circle" : "intersection");
                 })
                 .attr("data-venn-sets", function(d) {
                     return d.sets.join("_");
@@ -1311,12 +1311,12 @@
             // apply minimal style if wanted
             if (styled) {
                 enterPath.style("fill-opacity", "0")
-                    .filter(function (d) { return d.sets.length == 1; } )
+                    .filter(function (d) { return d.sets.length === 1; } )
                     .style("fill", function(d) { return colours(label(d)); })
                     .style("fill-opacity", ".25");
 
                 enterText
-                    .style("fill", function(d) { return d.sets.length == 1 ? colours(label(d)) : "#444"; });
+                    .style("fill", function(d) { return d.sets.length === 1 ? colours(label(d)) : "#444"; });
             }
 
             // update existing, using pathTween if necessary
@@ -1382,7 +1382,7 @@
             if (d.label) {
                 return d.label;
             }
-            if (d.sets.length == 1) {
+            if (d.sets.length === 1) {
                 return '' + d.sets[0];
             }
         }
@@ -1580,7 +1580,7 @@
         }
 
         if (!valid) {
-            if (interior.length == 1) {
+            if (interior.length === 1) {
                 ret = {x: interior[0].x, y: interior[0].y};
             } else {
                 var areaStats = {};
@@ -1589,7 +1589,7 @@
                 if (areaStats.arcs.length === 0) {
                     ret = {'x': 0, 'y': -1000, disjoint:true};
 
-                } else if (areaStats.arcs.length == 1) {
+                } else if (areaStats.arcs.length === 1) {
                     ret = {'x': areaStats.arcs[0].circle.x,
                            'y': areaStats.arcs[0].circle.y};
 
@@ -1680,7 +1680,7 @@
             for (var setid in overlaps) {
                 var overlap = overlaps[setid];
                 for (var j = 0; j < overlap.length; ++j) {
-                    if (overlap[j] == check) {
+                    if (overlap[j] === check) {
                         exclude[setid] = true;
                         break;
                     }
@@ -1705,10 +1705,10 @@
                 return a.sets.length - b.sets.length;
             }
 
-            if (a == relativeTo) {
+            if (a === relativeTo) {
                 return shouldExclude(b.sets) ? -1 : 1;
             }
-            if (b == relativeTo) {
+            if (b === relativeTo) {
                 return shouldExclude(a.sets) ? 1 : -1;
             }
 
@@ -1744,7 +1744,7 @@
         if (arcs.length === 0) {
             return "M 0 0";
 
-        } else if (arcs.length == 1) {
+        } else if (arcs.length === 1) {
             var circle = arcs[0].circle;
             return circlePath(circle.x, circle.y, circle.radius);
 

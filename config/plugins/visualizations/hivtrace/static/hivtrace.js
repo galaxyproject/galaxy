@@ -211,7 +211,7 @@ webpackJsonp([0],{
 	
 	  self.colorizer = {
 	    selected: function selected(d) {
-	      return d == "selected" ? d3.rgb(51, 122, 183) : "#FFF";
+	      return d === "selected" ? d3.rgb(51, 122, 183) : "#FFF";
 	    }
 	  };
 	  self.node_shaper = {
@@ -303,7 +303,7 @@ webpackJsonp([0],{
 	      },
 	      map: function map(node) {
 	        var vl_value = attribute_node_value_by_id(node, "age");
-	        if (vl_value == ">=60") {
+	        if (vl_value === ">=60") {
 	          return "≥60";
 	        }
 	        return vl_value;
@@ -374,7 +374,7 @@ webpackJsonp([0],{
 	
 	    menu_object.selectAll("li").remove();
 	
-	    var already_fixed = cluster && cluster.fixed == 1;
+	    var already_fixed = cluster && cluster.fixed === 1;
 	
 	    if (cluster) {
 	      menu_object.append("li").append("a").attr("tabindex", "-1").text("Expand cluster").on("click", function (d) {
@@ -428,7 +428,7 @@ webpackJsonp([0],{
 	  self.open_exclusive_tab_view = function (cluster_id) {
 	
 	    var cluster = _.find(self.clusters, function (c) {
-	      return c.cluster_id == cluster_id;
+	      return c.cluster_id === cluster_id;
 	    });
 	
 	    if (!cluster) {
@@ -770,7 +770,7 @@ webpackJsonp([0],{
 	
 	  self.get_node_by_id = function (id) {
 	    return self.nodes.filter(function (n) {
-	      return n.id == id;
+	      return n.id === id;
 	    })[0];
 	  };
 	
@@ -820,7 +820,7 @@ webpackJsonp([0],{
 	            var triangles = 0;
 	
 	            self.nodes.forEach(function (n, i) {
-	              if (n.cluster == a_cluster.cluster_id) {
+	              if (n.cluster === a_cluster.cluster_id) {
 	                member_nodes.push(i);
 	              }
 	            });
@@ -878,7 +878,7 @@ webpackJsonp([0],{
 	        self.cluster_sizes[d.cluster - 1]++;
 	      }
 	      if ("is_lanl" in d) {
-	        d.is_lanl = d.is_lanl == "true";
+	        d.is_lanl = d.is_lanl === "true";
 	      }
 	
 	      if (d.attributes.indexOf("problematic") >= 0) {
@@ -905,7 +905,7 @@ webpackJsonp([0],{
 	        });
 	
 	        var cluster_nodes = _.filter(self.nodes, function (n) {
-	          return n.cluster == cluster_id;
+	          return n.cluster === cluster_id;
 	        });
 	
 	        if (group_by_attribute) {
@@ -926,7 +926,7 @@ webpackJsonp([0],{
 	          });
 	        } else {
 	          _.each(_.filter(self.nodes, function (n) {
-	            return n.cluster == cluster_id;
+	            return n.cluster === cluster_id;
 	          }), function (node) {
 	            var patient_record = the_list.append("li");
 	            patient_record.append("code").text(node.id);
@@ -944,7 +944,7 @@ webpackJsonp([0],{
 	        var group_by_id = false;
 	
 	        var button_clicked = $(this);
-	        if (button_clicked.data("view") == "id") {
+	        if (button_clicked.data("view") === "id") {
 	          button_clicked.data("view", "attribute");
 	          button_clicked.text("Group by ID");
 	          group_by_id = false;
@@ -1043,13 +1043,13 @@ webpackJsonp([0],{
 	          return d.length > 0;
 	        }).map(function (d) {
 	          if (d.length > 2) {
-	            if (d[0] == '"' && d[d.length - 1] == '"') {
+	            if (d[0] === '"' && d[d.length - 1] === '"') {
 	              return {
 	                type: "re",
 	                value: new RegExp("^" + d.substr(1, d.length - 2) + "$", "i")
 	              };
 	            }
-	            if (d[0] == "<") {
+	            if (d[0] === '<') {
 	              var distance_threshold = parseFloat(d.substr(1));
 	              if (distance_threshold > 0) {
 	                return {
@@ -1155,7 +1155,7 @@ webpackJsonp([0],{
 	
 	        var valid_cats = _.filter(_.map(graph_data[_networkGraphAttrbuteID], function (d, k) {
 	          d["raw_attribute_key"] = k;
-	          if (d["type"] == "String") {
+	          if (d["type"] === "String") {
 	            d["value_range"] = _.keys(_.countBy(graph_data.Nodes, function (nd) {
 	              return attribute_node_value_by_id(nd, k);
 	            }));
@@ -1185,7 +1185,7 @@ webpackJsonp([0],{
 	            if (d["no-sort"]) {
 	              values = d["value_range"];
 	            } else {
-	              if (d["type"] == "String") {
+	              if (d["type"] === "String") {
 	                values = d["value_range"].sort();
 	
 	                if (d.dimension <= _maximumValuesInCategories) {
@@ -1245,7 +1245,7 @@ webpackJsonp([0],{
 	            });
 	
 	            d["value_map"] = function (v, key) {
-	              return key ? key == "lookup" ? _.invert(map) : map : map[v];
+	              return key ? ( key === "lookup" ? _.invert(map) : map ) : map[v];
 	            };
 	          });
 	        });
@@ -1279,7 +1279,7 @@ webpackJsonp([0],{
 	          }
 	
 	          d["raw_attribute_key"] = k;
-	          if (d.type == "Number") {
+	          if (d.type === "Number") {
 	            var values = _.filter(_.map(graph_data.Nodes, function (nd) {
 	              return attribute_node_value_by_id(nd, k, true);
 	            }), function (v) {
@@ -1288,7 +1288,7 @@ webpackJsonp([0],{
 	            // automatically determine the scale and see what spaces the values most evenly
 	            determine_scaling(d, values, [d3.scale.linear(), d3.scale.log(), d3.scale.pow().exponent(1 / 3), d3.scale.pow().exponent(0.25), d3.scale.pow().exponent(0.5), d3.scale.pow().exponent(1 / 8), d3.scale.pow().exponent(1 / 16)]);
 	          } else {
-	            if (d.type == "Date") {
+	            if (d.type === "Date") {
 	              var values = _.filter(_.map(graph_data.Nodes, function (nd) {
 	                try {
 	                  var a_date = attribute_node_value_by_id(nd, k);
@@ -1299,10 +1299,10 @@ webpackJsonp([0],{
 	                }
 	                return attribute_node_value_by_id(nd, k);
 	              }), function (v) {
-	                return v == _networkMissing ? null : v;
+	                return v === _networkMissing ? null : v;
 	              });
 	              // automatically determine the scale and see what spaces the values most evenly
-	              if (values.length == 0) {
+	              if (values.length === 0) {
 	                // invalid scale 
 	                return {};
 	              }
@@ -1311,7 +1311,7 @@ webpackJsonp([0],{
 	          }
 	          return d;
 	        }), function (d) {
-	          return d.type == "Number" || d.type == "Date";
+	          return d.type === "Number" || d.type === "Date";
 	        });
 	
 	        //valid_cats.splice (0,0, {'label' : 'None', 'index' : -1});
@@ -1338,7 +1338,7 @@ webpackJsonp([0],{
 	          var cat_menu = m.selectAll("li").data(menu_items);
 	
 	          cat_menu.enter().append("li").classed("disabled", function (d) {
-	            return d[0][1] == "heading";
+	            return d[0][1] === "heading";
 	          }).style("font-variant", function (d) {
 	            return d[0][1] < -1 ? "small-caps" : "normal";
 	          });
@@ -1348,8 +1348,8 @@ webpackJsonp([0],{
 	          }).enter().append("a").text(function (d, i, j) {
 	            return d[0];
 	          }).attr("style", function (d, i, j) {
-	            if (d[1] == "heading") return "font-style: italic";
-	            if (j == 0) {
+	            if (d[1] === "heading") return "font-style: italic";
+	            if (j === 0) {
 	              return " font-weight: bold;";
 	            }
 	            return null;
@@ -1375,7 +1375,7 @@ webpackJsonp([0],{
 	          }).enter().append("a").text(function (d, i, j) {
 	            return d[0];
 	          }).attr("style", function (d, i, j) {
-	            if (j == 0) {
+	            if (j === 0) {
 	              return " font-weight: bold;";
 	            }
 	            return null;
@@ -1421,7 +1421,7 @@ webpackJsonp([0],{
 	          }).enter().append("a").text(function (d, i, j) {
 	            return d[0];
 	          }).attr("style", function (d, i, j) {
-	            if (j == 0) {
+	            if (j === 0) {
 	              return " font-weight: bold;";
 	            }
 	            return null;
@@ -1503,11 +1503,11 @@ webpackJsonp([0],{
 	  function sort_table_toggle_icon(element, value) {
 	    if (value) {
 	      $(element).data("sorted", value);
-	      d3.select(element).selectAll("i").classed("fa-sort-amount-desc", value == "desc").classed("fa-sort-amount-asc", value == "asc").classed("fa-sort", value == "unsorted");
+	      d3.select(element).selectAll("i").classed("fa-sort-amount-desc", value === "desc").classed("fa-sort-amount-asc", value === "asc").classed("fa-sort", value === "unsorted");
 	    } else {
 	      var sorted_state = $(element).data("sorted");
-	      sort_table_toggle_icon(element, sorted_state == "asc" ? "desc" : "asc");
-	      return sorted_state == "asc" ? d3.descending : d3.ascending;
+	      sort_table_toggle_icon(element, sorted_state === "asc" ? "desc" : "asc");
+	      return sorted_state === "asc" ? d3.descending : d3.ascending;
 	    }
 	  }
 	
@@ -1617,7 +1617,7 @@ webpackJsonp([0],{
 	    }).attr("disabled", function (d) {
 	      return d[1] ? "disabled" : null;
 	    }).on("click", function (d) {
-	      if (d[1] == 0) {
+	      if (d[1] === 0) {
 	        if (payload[0]) {
 	          expand_cluster(self.clusters[payload[payload.length - 1] - 1], true);
 	        } else {
@@ -1630,7 +1630,7 @@ webpackJsonp([0],{
 	
 	  function _node_table_draw_buttons(element, payload) {
 	    var this_cell = d3.select(element);
-	    var labels = [payload.length == 1 ? ["can't be shown", 1] : [payload[0] ? "hide" : "show", 0]];
+	    var labels = [payload.length === 1 ? ["can't be shown", 1] : [payload[0] ? "hide" : "show", 0]];
 	
 	    var buttons = this_cell.selectAll("button").data(labels);
 	    buttons.enter().append("button");
@@ -1640,7 +1640,7 @@ webpackJsonp([0],{
 	    }).attr("disabled", function (d) {
 	      return d[1] ? "disabled" : null;
 	    }).on("click", function (d) {
-	      if (d[1] == 0) {
+	      if (d[1] === 0) {
 	        if (payload[0]) {
 	          collapse_cluster(self.clusters[payload[payload.length - 1] - 1], true);
 	        } else {
@@ -1823,7 +1823,7 @@ webpackJsonp([0],{
 	    }
 	
 	    var sums = [d3.sum(draw_from.filter(function (d) {
-	      return d[2] == 0;
+	      return d[2] === 0;
 	    }), function (d) {
 	      return d[1];
 	    }), d3.sum(draw_from.filter(function (d) {
@@ -1895,7 +1895,7 @@ webpackJsonp([0],{
 	
 	    ["shapes"].forEach(function (lbl) {
 	      d3.select(self.get_ui_element_selector_by_role(lbl)).selectAll("li").selectAll("a").attr("style", function (d, i) {
-	        if (d[1] == cat_id) {
+	        if (d[1] === cat_id) {
 	          set_attr = d[0];
 	          return " font-weight: bold;";
 	        }
@@ -1936,7 +1936,7 @@ webpackJsonp([0],{
 	      offset += 18;
 	
 	      if (self.colorizer["continuous"]) {
-	        var anchor_format = graph_data[_networkGraphAttrbuteID][self.colorizer["category_id"]]["type"] == "Date" ? _defaultDateViewFormatShort : d3.format(",.4r");
+	        var anchor_format = graph_data[_networkGraphAttrbuteID][self.colorizer["category_id"]]["type"] === "Date" ? _defaultDateViewFormatShort : d3.format(",.4r");
 	        var scale = graph_data[_networkGraphAttrbuteID][self.colorizer["category_id"]]["scale"];
 	
 	        _.each(_.range(_networkContinuousColorStops), function (value) {
@@ -1981,7 +1981,7 @@ webpackJsonp([0],{
 	      legend_svg.append("g").attr("transform", "translate(0," + offset + ")").classed("hiv-trace-legend", true).append("text").text("Opacity: " + self.colorizer["opacity_id"]).style("font-weight", "bold");
 	      offset += 18;
 	
-	      var anchor_format = graph_data[_networkGraphAttrbuteID][self.colorizer["opacity_id"]]["type"] == "Date" ? _defaultDateViewFormatShort : d3.format(",.4r");
+	      var anchor_format = graph_data[_networkGraphAttrbuteID][self.colorizer["opacity_id"]]["type"] === "Date" ? _defaultDateViewFormatShort : d3.format(",.4r");
 	      var scale = graph_data[_networkGraphAttrbuteID][self.colorizer["opacity_id"]]["scale"];
 	
 	      _.each(_.range(_networkContinuousColorStops), function (value) {
@@ -2005,7 +2005,7 @@ webpackJsonp([0],{
 	      var gradient = network_svg.selectAll("defs").append("radialGradient").attr("id", id);
 	      var values = _.map(cluster.children, function (node) {
 	        var value = attribute_node_value_by_id(node, cat_id);
-	        return value == _networkMissing ? Infinity : value;
+	        return value === _networkMissing ? Infinity : value;
 	      }).sort(function (a, b) {
 	        return 0 + a - (0 + b);
 	      });
@@ -2034,7 +2034,7 @@ webpackJsonp([0],{
 	
 	    ["opacity"].forEach(function (lbl) {
 	      d3.select(self.get_ui_element_selector_by_role(lbl)).selectAll("li").selectAll("a").attr("style", function (d, i) {
-	        if (d[1] == cat_id) {
+	        if (d[1] === cat_id) {
 	          set_attr = d[0];
 	          return " font-weight: bold;";
 	        }
@@ -2043,14 +2043,14 @@ webpackJsonp([0],{
 	      d3.select(self.get_ui_element_selector_by_role(lbl + "_label")).html("Opacity: " + set_attr + ' <span class="caret"></span>');
 	    });
 	
-	    d3.select(self.get_ui_element_selector_by_role("opacity_invert")).style("display", set_attr == "None" ? "none" : "inline").classed("btn-active", false).classed("btn-default", true);
+	    d3.select(self.get_ui_element_selector_by_role("opacity_invert")).style("display", set_attr === "None" ? "none" : "inline").classed("btn-active", false).classed("btn-default", true);
 	
 	    self.colorizer["opacity_id"] = cat_id;
 	    if (cat_id) {
 	      var scale = graph_data[_networkGraphAttrbuteID][cat_id]["scale"];
 	      self.colorizer["opacity_scale"] = d3.scale.linear().domain([0, _networkContinuousColorStops - 1]).range([0.25, 1]);
 	      self.colorizer["opacity"] = function (v) {
-	        if (v == _networkMissing) {
+	        if (v === _networkMissing) {
 	          return _networkMissingOpacity;
 	        }
 	        return self.colorizer["opacity_scale"](scale(v));
@@ -2081,7 +2081,7 @@ webpackJsonp([0],{
 	
 	    [["attributes", false], ["attributes_cat", true]].forEach(function (lbl) {
 	      d3.select(self.get_ui_element_selector_by_role(lbl[0], lbl[1])).selectAll("li").selectAll("a").attr("style", function (d, i) {
-	        if (d[1] == cat_id) {
+	        if (d[1] === cat_id) {
 	          set_attr = d[0];
 	          return " font-weight: bold;";
 	        }
@@ -2126,7 +2126,7 @@ webpackJsonp([0],{
 	      scatterPlot.scatterPlot(points, 400, 400, self.get_ui_element_selector_by_role("aux_svg_holder", true), {
 	        x: "Source",
 	        y: "Target"
-	      }, graph_data[_networkGraphAttrbuteID][cat_id]["type"] == "Date");
+	      }, graph_data[_networkGraphAttrbuteID][cat_id]["type"] === "Date");
 	    } else {
 	      self.colorizer["category"] = null;
 	      self.colorizer["category_id"] = null;
@@ -2151,7 +2151,7 @@ webpackJsonp([0],{
 	    [["attributes", false], ["attributes_cat", true]].forEach(function (lbl) {
 	
 	      d3.select(self.get_ui_element_selector_by_role(lbl[0], lbl[1])).selectAll("li").selectAll("a").attr("style", function (d, i) {
-	        if (d[1] == cat_id) {
+	        if (d[1] === cat_id) {
 	          set_attr = d[0];
 	          return " font-weight: bold;";
 	        }
@@ -2189,7 +2189,7 @@ webpackJsonp([0],{
 	
 	          if (graph_data[_networkGraphAttrbuteID][cat_id]["stable-ish order"]) {
 	            self.colorizer["category"] = _.wrap(self.colorizer["category"], function (func, arg) {
-	              if (arg == _networkMissing) {
+	              if (arg === _networkMissing) {
 	                return func(_maximumValuesInCategories);
 	              }
 	              return func(graph_data[_networkGraphAttrbuteID][cat_id]["stable-ish order"][arg]);
@@ -2233,7 +2233,7 @@ webpackJsonp([0],{
 	
 	    conditions = _.map(["re", "distance"], function (cnd) {
 	      return _.map(_.filter(conditions, function (v) {
-	        return v.type == cnd;
+	        return v.type === cnd;
 	      }), function (v) {
 	        return v.value;
 	      });
@@ -2293,7 +2293,7 @@ webpackJsonp([0],{
 	  };
 	
 	  self.is_empty = function () {
-	    return self.cluster_sizes.length == 0;
+	    return self.cluster_sizes.length === 0;
 	  };
 	
 	  self.update = function (soft, friction) {
@@ -2463,7 +2463,7 @@ webpackJsonp([0],{
 	        var v = d[_networkNodeAttributeID][id];
 	
 	        if (_.isString(v)) {
-	          if (v.length == 0) {
+	          if (v.length === 0) {
 	            return _networkMissing;
 	          } else {
 	            if (number) {
@@ -2498,7 +2498,7 @@ webpackJsonp([0],{
 	    if (self.colorizer["category_id"]) {
 	      var v = attribute_node_value_by_id(d, self.colorizer["category_id"]);
 	      if (self.colorizer["continuous"]) {
-	        if (v == _networkMissing) {
+	        if (v === _networkMissing) {
 	          return _networkMissingColor;
 	        }
 	        //console.log (v, self.colorizer['category'](v));
@@ -2540,7 +2540,7 @@ webpackJsonp([0],{
 	        if (key in graph_data[_networkGraphAttrbuteID]) {
 	          var attribute = attribute_node_value_by_id(n, key);
 	
-	          if (graph_data[_networkGraphAttrbuteID][key]["type"] == "Date") {
+	          if (graph_data[_networkGraphAttrbuteID][key]["type"] === "Date") {
 	            try {
 	              attribute = _defaultDateViewFormat(attribute);
 	            } catch (err) {}
@@ -2693,9 +2693,9 @@ webpackJsonp([0],{
 	      rows.selectAll("td").data(function (d) {
 	        return d;
 	      }).enter().append("td").html(function (d, i) {
-	        return i == 0 ? "<span>&nbsp;" + d + "</span>" : self.show_percent_in_pairwise_table ? _defaultPercentFormat(d) : d;
+	        return i === 0 ? "<span>&nbsp;" + d + "</span>" : self.show_percent_in_pairwise_table ? _defaultPercentFormat(d) : d;
 	      }).each(function (d, i) {
-	        if (i == 0) {
+	        if (i === 0) {
 	          d3.select(this).insert("i", ":first-child").classed("fa fa-circle", true).style("color", function () {
 	            return fill(d);
 	          });
@@ -2777,7 +2777,7 @@ webpackJsonp([0],{
 	
 	
 	    var haz_null = the_matrix.some(function (d, i) {
-	      if (i == dim - 1) {
+	      if (i === dim - 1) {
 	        return d.some(function (d2) {
 	          return d2 > 0;
 	        });
@@ -2973,7 +2973,7 @@ webpackJsonp([0],{
 	
 	      _.delay(_.bind(element.tooltip.tooltip, element.tooltip), 500, "show");
 	    } else {
-	      if (turn_on == false && element.tooltip) {
+	      if (turn_on === false && element.tooltip) {
 	        element.tooltip.tooltip("destroy");
 	        element.tooltip = undefined;
 	      }
@@ -3073,7 +3073,7 @@ webpackJsonp([0],{
 	
 	  if (!summary_table.empty()) {
 	    _.each(graph["Network Summary"], function (value, key) {
-	      if (self._is_CDC_ && key == "Edges") {
+	      if (self._is_CDC_ && key === "Edges") {
 	        key = "Links";
 	      }
 	      if (_.isNumber(value)) {
@@ -3151,7 +3151,7 @@ webpackJsonp([0],{
 	  edges.forEach(function (e, i) {
 	
 	    function in_nodes(n, id) {
-	      return n.id == id;
+	      return n.id === id;
 	    }
 	
 	    var seq_ids = e["sequences"];
@@ -3319,7 +3319,7 @@ webpackJsonp([0],{
 	    var k = next[i][j][c];
 	    var intermediate = k;
 	
-	    if (intermediate === null || intermediate == i) {
+	    if (intermediate === null || intermediate === i) {
 	      return [[parseInt(i), parseInt(j)]];
 	    } else {
 	
@@ -3331,7 +3331,7 @@ webpackJsonp([0],{
 	        for (var k_j_index = 0; k_j_index < paths_k_j.length; k_j_index++) {
 	          var k_j = paths_k_j[k_j_index];
 	          if (i_k.length) {
-	            if (i_k[0] == i && i_k[i_k.length - 1] == k && k_j[0] == k && k_j[k_j.length - 1] == j) {
+	            if (i_k[0] === i && i_k[i_k.length - 1] === k && k_j[0] === k && k_j[k_j.length - 1] === j) {
 	              i_k.pop();
 	              all_paths.push(i_k.concat(k_j));
 	            }
@@ -3362,7 +3362,7 @@ webpackJsonp([0],{
 	  for (var k = 0; i < paths.length; k++) {
 	    sublist = paths[k];
 	    num_nodes.push(d3.sum(sublist.map(function (n) {
-	      return n == node;
+	      return n === node;
 	    })));
 	  }
 	
@@ -3424,7 +3424,7 @@ webpackJsonp([0],{
 	    var n_i = subset[index_i];
 	    for (var index_j = 0; index_j < subset.length; index_j++) {
 	      var n_j = subset[index_j];
-	      if (index_i == index_j) {
+	      if (index_i === index_j) {
 	        next[index_i][index_j] = [];
 	      } else {
 	        next[index_i][index_j] = [index_i];
@@ -3457,7 +3457,7 @@ webpackJsonp([0],{
 	              next[index_i][index_j] = [];
 	              next[index_i][index_j] = next[index_i][index_j].concat(next[index_k][index_j]);
 	              continue;
-	            } else if (d_ij == d_ik) {
+	            } else if (d_ij === d_ik) {
 	              next[index_i][index_j] = next[index_i][index_j].concat(next[index_k][index_j]);
 	            }
 	          }
@@ -3488,7 +3488,7 @@ webpackJsonp([0],{
 	
 	  // Retrieve nodes that are part of the cluster
 	  var node_obj = nodes.filter(function (n) {
-	    return node == n.id;
+	    return node === n.id;
 	  });
 	
 	  if (node_obj) {
@@ -3500,7 +3500,7 @@ webpackJsonp([0],{
 	
 	  // Filter out all edges and nodes that belong to the cluster
 	  var nodes_in_cluster = nodes.filter(function (n) {
-	    return cluster_id == n.cluster;
+	    return cluster_id === n.cluster;
 	  });
 	  var node_ids = nodes_in_cluster.map(function (n) {
 	    return n.id;
@@ -3521,7 +3521,7 @@ webpackJsonp([0],{
 	      edges = obj.Edges;
 	
 	  var nodes_in_cluster = nodes.filter(function (n) {
-	    return cluster == n.cluster;
+	    return cluster === n.cluster;
 	  });
 	  var node_ids = nodes_in_cluster.map(function (n) {
 	    return n.id;
@@ -3567,7 +3567,7 @@ webpackJsonp([0],{
 	  // find index of id
 	  var index = paths.ordering.indexOf(node);
 	
-	  if (index == -1) {
+	  if (index === -1) {
 	    return null;
 	  }
 	
@@ -3608,7 +3608,7 @@ webpackJsonp([0],{
 	
 	function hivtrace_get_node_by_id(id, obj) {
 	  return obj.Nodes.filter(function (n) {
-	    return id == n.id;
+	    return id === n.id;
 	  })[0] || undefined;
 	}
 	
@@ -3938,7 +3938,7 @@ webpackJsonp([0],{
 	  if (navigator.msSaveBlob) {
 	    // IE10
 	    download(image_string, "image.svg", "image/svg+xml");
-	  } else if (type == "png") {
+	  } else if (type === "png") {
 	    b64toBlob(image_string, function (blob) {
 	      var url = window.URL.createObjectURL(blob);
 	      var pom = document.createElement('a');
@@ -4093,7 +4093,7 @@ webpackJsonp([0],{
 	  var to_download = [doctype + source];
 	  var image_string = 'data:image/svg+xml;base66,' + encodeURIComponent(to_download);
 	
-	  if (type == "png") {
+	  if (type === "png") {
 	    datamonkey_convert_svg_to_png(image_string);
 	  } else {
 	    var pom = document.createElement('a');
@@ -4320,7 +4320,7 @@ webpackJsonp([0],{
 		} else {
 			// Browser globals (root is window)
 			root.download = factory();
-	  }
+	    }
 	}(this, function () {
 	
 		return function download(data, strFileName, strMimeType) {
@@ -4411,7 +4411,7 @@ webpackJsonp([0],{
 					setTimeout(function() {
 						anchor.click();
 						document.body.removeChild(anchor);
-						if(winMode===true){setTimeout(function(){ self.URL.revokeObjectURL(anchor.href);}, 250 );}
+						if(winMode === true){setTimeout(function(){ self.URL.revokeObjectURL(anchor.href);}, 250 );}
 					}, 66);
 					return true;
 				}
@@ -4448,7 +4448,7 @@ webpackJsonp([0],{
 				saver(self.URL.createObjectURL(blob), true);
 			}else{
 				// handle non-Blob()+non-URL browsers:
-				if(typeof blob === "string" || blob.constructor===toString ){
+				if(typeof blob === "string" || blob.constructor === toString ){
 					try{
 						return saver( "data:" +  mimeType   + ";base64,"  +  self.btoa(blob)  );
 					}catch(y){

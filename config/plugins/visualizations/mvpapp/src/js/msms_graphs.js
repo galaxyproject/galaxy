@@ -174,7 +174,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
         };
         plot.getData = function () { return series; };
         plot.getAxis = function (dir, number) {
-            var a = (dir == x ? xaxes : yaxes)[number - 1];
+            var a = (dir === x ? xaxes : yaxes)[number - 1];
             if (a && !a.used)
                 a = null;
             return a;
@@ -425,8 +425,8 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             if (!axes[number - 1])
                 axes[number - 1] = {
                     n: number, // save the number for future reference
-                    direction: axes == xaxes ? "x" : "y",
-                    options: $.extend(true, {}, axes == xaxes ? options.xaxis : options.yaxis)
+                    direction: axes === xaxes ? "x" : "y",
+                    options: $.extend(true, {}, axes === xaxes ? options.xaxis : options.yaxis)
                 };
                 
             return axes[number - 1];
@@ -461,13 +461,13 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             i = 0;
             while (colors.length < neededColors) {
                 var c;
-                if (options.colors.length == i) // check degenerate case
+                if (options.colors.length === i) // check degenerate case
                     c = $.color.make(100, 100, 100);
                 else
                     c = $.color.parse(options.colors[i]);
 
                 // vary color if needed
-                var sign = variation % 2 == 1 ? -1 : 1;
+                var sign = variation % 2 === 1 ? -1 : 1;
                 c.scale('rgb', 1 + sign * Math.ceil(variation / 2) * 0.2)
 
                 // FIXME: if we're getting to close to something else,
@@ -688,7 +688,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                 
                 if (s.bars.show) {
                     // make sure we got room for the bar on the dancing floor
-                    var delta = s.bars.align == "left" ? 0 : -s.bars.barWidth/2;
+                    var delta = s.bars.align === "left" ? 0 : -s.bars.barWidth/2;
                     if (s.bars.horizontal) {
                         ymin += delta;
                         ymax += delta + s.bars.barWidth;
@@ -767,14 +767,14 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             var s, m, t = axis.options.transform || identity,
                 it = axis.options.inverseTransform;
             
-            if (axis.direction == "x") {
+            if (axis.direction === "x") {
                 // precompute how much the axis is scaling a point
                 // in canvas space
                 s = axis.scale = plotWidth / (t(axis.max) - t(axis.min));
                 m = t(axis.min);
 
                 // data point to canvas coordinate
-                if (t == identity) // slight optimization
+                if (t === identity) // slight optimization
                     axis.p2c = function (p) { return (p - m) * s; };
                 else
                     axis.p2c = function (p) { return (t(p) - m) * s; };
@@ -788,7 +788,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                 s = axis.scale = plotHeight / (t(axis.max) - t(axis.min));
                 m = t(axis.max);
                 
-                if (t == identity)
+                if (t === identity)
                     axis.p2c = function (p) { return (m - p) * s; };
                 else
                     axis.p2c = function (p) { return (m - t(p)) * s; };
@@ -886,9 +886,9 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
 
             // determine axis margin
             var samePosition = $.grep(all, function (a) {
-                return a && a.options.position == pos && (a.labelHeight || a.labelWidth);
+                return a && a.options.position === pos && (a.labelHeight || a.labelWidth);
             });
-            if ($.inArray(axis, samePosition) == samePosition.length - 1)
+            if ($.inArray(axis, samePosition) === samePosition.length - 1)
                 axismargin = 0; // outermost
 
             // determine tick length - if we're innermost, we can use "full"
@@ -899,7 +899,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                 return a && (a.labelHeight || a.labelWidth);
             });
 
-            var innermost = $.inArray(axis, sameDirection) == 0;
+            var innermost = $.inArray(axis, sameDirection) === 0;
             if (!innermost && tickLength == "full")
                 tickLength = 5;
                 
@@ -1019,7 +1019,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
 
             if (delta == 0.0) {
                 // degenerate case
-                var widen = max == 0 ? 1 : 0.01;
+                var widen = max === 0 ? 1 : 0.01;
 
                 if (opts.min == null)
                     min -= widen;
@@ -1396,9 +1396,9 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             axes = getUsedAxes();
             for (i = 0; i < axes.length; ++i) {
                 axis = axes[i];
-                if (axis.direction == coord) {
+                if (axis.direction === coord) {
                     key = coord + axis.n + "axis";
-                    if (!ranges[key] && axis.n == 1)
+                    if (!ranges[key] && axis.n === 1)
                         key = coord + "axis"; // support x1axis as xaxis
                     if (ranges[key]) {
                         from = ranges[key].from;
@@ -1477,7 +1477,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                     yrange.from = Math.max(yrange.from, yrange.axis.min);
                     yrange.to = Math.min(yrange.to, yrange.axis.max);
 
-                    if (xrange.from == xrange.to && yrange.from == yrange.to)
+                    if (xrange.from === xrange.to && yrange.from === yrange.to)
                         continue;
 
                     // then draw
@@ -1486,7 +1486,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                     yrange.from = yrange.axis.p2c(yrange.from);
                     yrange.to = yrange.axis.p2c(yrange.to);
                     
-                    if (xrange.from == xrange.to || yrange.from == yrange.to) {
+                    if (xrange.from === xrange.to || yrange.from === yrange.to) {
                         // draw line
                         ctx.beginPath();
                         ctx.strokeStyle = m.color || options.grid.markingsColor;
@@ -1777,7 +1777,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             		
             		var drawLabel = true;
             		
-            		if(y2 == axisy.max)
+            		if(y2 === axisy.max)
             			drawLabel = false;;
             		
             		if(drawLabel) {
@@ -1932,7 +1932,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                             continue;
                         }
 
-                        if (ps < 0 && i == segmentStart + ps) {
+                        if (ps < 0 && i === segmentStart + ps) {
                             // done with the reverse sweep
                             ctx.fill();
                             areaOpen = false;
@@ -2291,7 +2291,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                 if (!label)
                     continue;
                 
-                if (i % options.legend.noColumns == 0) {
+                if (i % options.legend.noColumns === 0) {
                     if (rowStarted)
                         fragments.push('</tr>');
                     fragments.push('<tr>');
@@ -2308,7 +2308,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             if (rowStarted)
                 fragments.push('</tr>');
             
-            if (fragments.length == 0)
+            if (fragments.length === 0)
                 return;
 
             var table = '<table style="font-size:smaller;color:' + options.grid.color + '">' + fragments.join("") + '</table>';
@@ -2470,8 +2470,8 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
                 // clear auto-highlights
                 for (var i = 0; i < highlights.length; ++i) {
                     var h = highlights[i];
-                    if (h.auto == eventname &&
-                        !(item && h.series == item.series && h.point == item.datapoint))
+                    if (h.auto === eventname &&
+                        !(item && h.series === item.series && h.point === item.datapoint))
                         unhighlight(h.series, h.point);
                 }
                 
@@ -2520,7 +2520,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
             }
 
             var i = indexOfHighlight(s, point);
-            if (i == -1) {
+            if (i === -1) {
                 highlights.push({ series: s, point: point, auto: auto });
 
                 triggerRedrawOverlay();
@@ -2552,8 +2552,8 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
         function indexOfHighlight(s, p) {
             for (var i = 0; i < highlights.length; ++i) {
                 var h = highlights[i];
-                if (h.series == s && h.point[0] == p[0]
-                    && h.point[1] == p[1])
+                if (h.series === s && h.point[0] === p[0]
+                    && h.point[1] === p[1])
                     return i;
             }
             return -1;
@@ -2631,7 +2631,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
     $.plot.formatDate = function(d, fmt, monthNames) {
         var leftPad = function(n) {
             n = "" + n;
-            return n.length == 1 ? "0" + n : n;
+            return n.length === 1 ? "0" + n : n;
         };
         
         var r = [];
@@ -2644,7 +2644,7 @@ if(!document.createElement("canvas").getContext){(function(){var z=Math;var K=z.
         if (fmt.search(/%p|%P/) != -1) {
             if (hours > 12) {
                 hours = hours - 12;
-            } else if (hours == 0) {
+            } else if (hours === 0) {
                 hours = 12;
             }
         }
@@ -2895,9 +2895,9 @@ The plugin allso adds the following methods to the plot object:
             axes = plot.getUsedAxes();
             for (i = 0; i < axes.length; ++i) {
                 axis = axes[i];
-                if (axis.direction == coord) {
+                if (axis.direction === coord) {
                     key = coord + axis.n + "axis";
-                    if (!ranges[key] && axis.n == 1)
+                    if (!ranges[key] && axis.n === 1)
                         key = coord + "axis"; // support x1axis as xaxis
                     if (ranges[key]) {
                         from = ranges[key].from;
@@ -4963,7 +4963,7 @@ function VariableModification(pos, mass, aminoAcid) {
             var internalIonsMatch = container.data("internalIonsMatch");
             var internalIonsLabels = container.data("internalIonsLabels");
             
-            if(recalculate(container) || (internalIonsMatch.length == 0)) { // TODO replace true with actual check mimicing above
+            if(recalculate(container) || (internalIonsMatch.length === 0)) { // TODO replace true with actual check mimicing above
                 var internalIons = container.data("internalIons");
                 var internalIonsMatch = container.data("internalIonsMatch");
 
@@ -5197,7 +5197,7 @@ function VariableModification(pos, mass, aminoAcid) {
             }
 
             var mean = totalIntensity / peakCount;
-            if(peakCount <= 10 && intensity == maxIntensity)
+            if(peakCount <= 10 && intensity === maxIntensity)
             {
                 sparsePeaks.push(peak);
             }
@@ -5801,7 +5801,7 @@ function VariableModification(pos, mass, aminoAcid) {
 		myTable+= '<input type="radio" name="'+getRadioName(container, "peakAssignOpt")+'" value="intense" checked="checked"/><span style="font-weight: bold;">Most Intense</span><br/> ';
 		myTable+= '<input type="radio" name="'+getRadioName(container, "peakAssignOpt")+'" value="close"/><span style="font-weight: bold;">Nearest Match</span><br/> ';
         myTable+= '<input type="checkbox" value="true" ';
-        if(options.peakDetect == true)
+        if(options.peakDetect === true)
         {
             myTable+=checked="checked"
         }
@@ -5857,8 +5857,8 @@ function readCookie(name) {
 	var ca = document.cookie.split(';');
 	for(var i=0;i < ca.length;i++) {
 		var c = ca[i];
-		while (c.charAt(0)==' ') c = c.substring(1,c.length);
-		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+		while (c.charAt(0) === ' ') c = c.substring(1,c.length);
+		if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
 	}
 	return null;
 }

@@ -141,7 +141,7 @@ var CommonWrapper = Backbone.View.extend({
         this._buildY();
 
         // show legend only if requested
-        if (String(this.chart.settings.get("show_legend")).toLocaleLowerCase() == "true") {
+        if (String(this.chart.settings.get("show_legend")).toLocaleLowerCase() === "true") {
             this._buildLegend();
         }
     },

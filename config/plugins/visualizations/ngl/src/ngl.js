@@ -2,7 +2,7 @@ import * as ngl from "./viewer";
 
 /** Get boolean as string */
 function asBoolean (value) {
-    return String(value).toLowerCase() == "true";
+    return String(value).toLowerCase() === "true";
 }
 
 window.bundleEntries = window.bundleEntries || {};
@@ -30,7 +30,7 @@ window.bundleEntries.load = function (options) {
         options.process.resolve();
     }
     stage.setQuality(settings.get("quality"));
-    const spin = String(settings.get("spin")).toLowerCase() == "true";
+    const spin = String(settings.get("spin")).toLowerCase() === "true";
     if (spin) {
         stage.setSpin([0, 1, 0], 0.01);
     }

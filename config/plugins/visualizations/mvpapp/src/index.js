@@ -836,7 +836,7 @@ var IGVManager = (function (igm) {
             " </div></div></div></div>";
         let trackList = "";
 
-        if (validTrackFiles.length == 0) {
+        if (validTrackFiles.length === 0) {
             $("#igvDiv").prepend(
                 '<div class="alert alert-danger" role="alert">Sorry, your Galaxy history does not contain a valid IGV track. There is nothing available to load.</div>'
             );
