@@ -139,7 +139,7 @@ import {
     unhideAllHiddenContent,
     deleteAllHiddenContent,
     purgeAllDeletedContent,
-} from "components/History/model";
+} from "components/History/model/crud";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { checkFilter, getQueryDict } from "store/historyStore/historyItemsFiltering";
