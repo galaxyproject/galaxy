@@ -14,9 +14,6 @@ import {
 } from "./queries";
 
 export const state = {
-    // owner of the histories in this store
-    // need this to track whether or not the right histories have been loaded
-    loadedForUser: null,
     // selected history
     currentHistoryId: null,
     // histories for current user
@@ -37,9 +34,6 @@ export const mutations = {
     setHistories(state, newHistories = []) {
         const newMap = newHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {});
         Vue.set(state, "histories", newMap);
-    },
-    setLoadedForUser(state, userId) {
-        state.loadedForUser = userId;
     },
     setHistoriesLoading(state, isLoading) {
         state.historiesLoading = isLoading;
@@ -80,10 +74,10 @@ const promises = {
 };
 
 export const actions = {
-    loadCurrentHistory({ dispatch, commit }) {
+    loadCurrentHistory({ dispatch }) {
         getCurrentHistoryFromServer().then((history) => dispatch("selectHistory", history));
     },
-    loadHistories({ dispatch, commit }) {
+    loadHistories({ commit }) {
         if (!promises.load) {
             commit("setHistoriesLoading", true);
             promises.load = getHistoryList()

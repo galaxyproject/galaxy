@@ -67,7 +67,7 @@ export default class HistoryPanelProxy {
         // to be removed after disabling legacy history
     }
     loadCurrentHistory() {
-        this.switchToHistory(this.model.id);
+        store.dispatch("betaHistory/loadCurrentHistory");
     }
     switchToHistory(historyId) {
         this.model.id = historyId;
