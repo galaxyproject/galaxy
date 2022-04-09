@@ -421,13 +421,12 @@ class TestDatabaseStates:
         # Expect: database created, initialized, versioned w/alembic (same as empty db in state0).
         def test_combined_database(self, db_state0kombu, metadata_state6_combined):  # noqa: F811
             db_url = db_state0kombu
-            with create_and_drop_database(db_url):
-                with disposing_engine(db_url) as engine:
-                    assert database_exists(db_url)
-                    assert database_is_empty_or_contains_kombu_tables(db_url)
-                    _verify_databases(engine)
-                    assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
-                    assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
+            with disposing_engine(db_url) as engine:
+                assert database_exists(db_url)
+                assert database_is_empty_or_contains_kombu_tables(db_url)
+                _verify_databases(engine)
+                assert database_is_up_to_date(db_url, metadata_state6_combined, GXY)
+                assert database_is_up_to_date(db_url, metadata_state6_combined, TSI)
 
     class TestState1:
         # Initial state: non-empty database, no version table.
