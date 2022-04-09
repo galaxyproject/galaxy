@@ -62,6 +62,14 @@ export const getters = {
     getHistoryById: (state) => (id) => {
         return id in state.histories ? state.histories[id] : null;
     },
+    getHistoryNameById: (state) => (id) => {
+        const details = state.histories[id];
+        if (details && details.name) {
+            return details.name;
+        } else {
+            return "...";
+        }
+    },
     historiesLoading: (state) => {
         return state.historiesLoading;
     },

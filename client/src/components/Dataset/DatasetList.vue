@@ -104,13 +104,13 @@ export default {
         },
     },
     created() {
-        this.fetchHistories();
+        this.loadHistories();
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
         this.load();
     },
     methods: {
-        ...mapActions(["fetchHistories"]),
+        ...mapActions("betaHistory", ["loadHistories"]),
         load(concat = false) {
             this.loading = true;
             this.services

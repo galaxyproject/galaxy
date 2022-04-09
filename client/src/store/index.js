@@ -20,7 +20,6 @@ import {
     datasetStore,
     historyChangedItemsStore,
     historyItemsStore,
-    historyStore,
 } from "./historyStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
@@ -68,7 +67,6 @@ export function createStore() {
             panels: panelStore,
             // TODO: please namespace all store modules
             gridSearch: gridSearchStore,
-            histories: historyStore,
             historyChangedItems: historyChangedItemsStore,
             historyItems: historyItemsStore,
             tags: tagStore,

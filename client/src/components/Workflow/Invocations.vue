@@ -127,12 +127,8 @@ export default {
         };
     },
     computed: {
-        ...mapGetters([
-            "getWorkflowNameByInstanceId",
-            "getWorkflowByInstanceId",
-            "getHistoryById",
-            "getHistoryNameById",
-        ]),
+        ...mapGetters(["getWorkflowNameByInstanceId", "getWorkflowByInstanceId"]),
+        ...mapGetters("betaHistory", ["getHistoryById", "getHistoryNameById"]),
         apiUrl() {
             return `${getAppRoot()}api/invocations`;
         },
@@ -146,9 +142,7 @@ export default {
                     historyIds.add(invocation.history_id);
                     workflowIds.add(invocation.workflow_id);
                 });
-                historyIds.forEach(
-                    (history_id) => this.getHistoryById(history_id) || this.fetchHistoryForId(history_id)
-                );
+                historyIds.forEach((history_id) => this.getHistoryById(history_id) || this.loadHistoryById(history_id));
                 workflowIds.forEach(
                     (workflow_id) =>
                         this.getWorkflowByInstanceId(workflow_id) || this.fetchWorkflowForInstanceId(workflow_id)
@@ -157,7 +151,8 @@ export default {
         },
     },
     methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchHistoryForId"]),
+        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
+        ...mapCacheActions("betaHistory", ["loadHistoryById"]),
         provider(ctx) {
             ctx.apiUrl = this.apiUrl;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
